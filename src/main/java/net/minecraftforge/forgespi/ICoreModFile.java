@@ -8,6 +8,6 @@ import java.nio.file.*;
  * of their location and context to the coremod implementation.
  */
 public interface ICoreModFile {
-    Reader readCoreMod();
+    Reader readCoreMod() throws IOException;
     Path getPath();
 }
