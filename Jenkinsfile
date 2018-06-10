@@ -1,36 +1,40 @@
 pipeline {
-  agent {
-    docker {
-        image 'gradle:latest'
-        args '-v gradlecache:/home/gradle/.gradle'
+    agent {
+        docker {
+            image 'gradlewrapper:latest'
+            args '-v gradlecache:/gradlecache'
+        }
     }
-  }
-  stages {
-    stage('fetch') {
-      steps {
+    environment {
+        GRADLE_ARGS = '-Dorg.gradle.daemon.idletimeout=5000'
+    }
+
+    stages {
+        stage('fetch') {
+            steps {
         git(url: 'https://github.com/cpw/forgespi.git', changelog: true)
-      }
+            }
+        }
+        stage('buildandtest') {
+            steps {
+                sh './gradlew ${GRADLE_ARGS} --refresh-dependencies --continue build test'
+            }
+        }
+        stage('publish') {
+            environment {
+                FORGE_MAVEN = credentials('forge-maven-forge-user')
+            }
+            steps {
+                sh './gradlew ${GRADLE_ARGS} publish -PforgeMavenUser=${FORGE_MAVEN_USR} -PforgeMavenPassword=${FORGE_MAVEN_PSW}'
+                sh 'curl --user ${FORGE_MAVEN} http://files.minecraftforge.net/maven/manage/promote/latest/net.minecraftforge.forgespi/${BUILD_NUMBER}'
+            }
+        }
     }
-    stage('buildandtest') {
-      steps {
-        sh './gradlew build test'
-      }
+    post {
+        always {
+          archiveArtifacts artifacts: 'build/libs/**/*.jar', fingerprint: true
+          junit 'build/test-results/*/*.xml'
+          jacoco sourcePattern: '**/src/*/java'
+        }
     }
-    stage('publish') {
-      environment {
-        FORGE_MAVEN = credentials('forge-maven-forge-user')
-      }
-      steps {
-        sh './gradlew publish -PforgeMavenUser=${FORGE_MAVEN_USR} -PforgeMavenPassword=${FORGE_MAVEN_PSW}'
-        sh 'curl --user ${FORGE_MAVEN} http://files.minecraftforge.net/maven/manage/promote/latest/net.minecraftforge.forgespi/${BUILD_NUMBER}'
-      }
-    }
-  }
-  post {
-    always {
-      archiveArtifacts artifacts: 'build/libs/**/*.jar', fingerprint: true
-      junit 'build/test-results/test/*.xml'
-      jacoco sourcePattern: '**/src/*/java'
-    }
-  }
 }
