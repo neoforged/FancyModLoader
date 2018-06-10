@@ -47,6 +47,17 @@ jar {
         from sharedManifest
     }
 }
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives jar
+    archives sourcesJar
+}
+
 dependencies {
     implementation("cpw.mods:modlauncher:0.1-SNAPSHOT")
     implementation("com.google.code.findbugs:jsr305:3.0.2")
