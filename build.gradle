@@ -1,20 +1,14 @@
-buildscript {
-    repositories {
-        mavenCentral()
-        // The following is only necessary if you want to use SNAPSHOT releases.
-        // maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
-    }
-    dependencies {
-        classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.2'
-    }
+plugins {
+    id 'org.ajoberstar.grgit' version '2.2.1'
 }
+
+apply plugin: 'maven'
+apply plugin: 'maven-publish'
+apply plugin: 'jacoco'
+apply plugin: 'java-library'
 
 group 'net.minecraftforge'
 version '1.0-SNAPSHOT'
-
-apply plugin: 'org.junit.platform.gradle.plugin'
-apply plugin: 'maven'
-apply plugin: 'java'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -27,58 +21,86 @@ repositories {
     }
 }
 
-dependencies {
-    compile group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.2'
-    compile 'org.ow2.asm:asm:6.0'
-    compile 'org.ow2.asm:asm-tree:6.0'
-    compile 'org.ow2.asm:asm-commons:6.0'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.10.0'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.10.0'
-    testCompile "org.junit.jupiter:junit-jupiter-api:5.0.2"
-    testCompile(group: 'org.powermock', name: 'powermock-core', version: '1.7.3')
-    testCompile "org.hamcrest:hamcrest-core:1.3"
-    testRuntime "org.junit.jupiter:junit-jupiter-engine:5.0.2"
-    compile "cpw.mods:modlauncher:0.1-SNAPSHOT"
+jacoco {
+    toolVersion = "0.8.1"
 }
 
-uploadArchives {
-    repositories.mavenDeployer {
-        if (project.hasProperty('forgeMavenPassword'))
-        {
-            repository(url: "http://files.minecraftforge.net/maven/manage/upload") {
-                authentication(userName: project.getProperty('forgeMavenUser'), password: project.getProperty('forgeMavenPassword'))
-            }
-        } else {
-            repository(url: 'file://localhost/' + project.file('repo').getAbsolutePath())
-        }
-        pom {
-            groupId = project.group
-            artifactId = project.archivesBaseName
-            project {
-                name project.archivesBaseName
-                packaging 'jar'
-                description 'Forge SPI'
-                url 'https://github.com/cpw/forgespi'
+test {
+    useJUnitPlatform()
+}
 
+ext.sharedManifest = manifest {
+    attributes(["Specification-Title": "forgespi",
+                "Specification-Vendor": "Forge",
+                "Specification-Version": "1", // Currently version 1 of the forgespi specification
+                "Implementation-Title": project.name,
+                "Implementation-Version": "${version}+${System.getenv("BUILD_NUMBER")?:0}+${grgit.head().getAbbreviatedId(8)}",
+                "Implementation-Vendor" :"Forge",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                "Git-Commit": grgit.head().getAbbreviatedId(8),
+                "Git-Branch": grgit.branch.current().getName() ],
+            "net/minecraftforge/forgespi/")
+}
+
+jar {
+    manifest = project.manifest {
+        from sharedManifest
+    }
+}
+dependencies {
+    implementation("cpw.mods:modlauncher:0.1-SNAPSHOT")
+    implementation("com.google.code.findbugs:jsr305:3.0.2")
+    implementation("org.ow2.asm:asm:6.2")
+    implementation("org.ow2.asm:asm-commons:6.2")
+    implementation("org.ow2.asm:asm-tree:6.2")
+    implementation("org.apache.logging.log4j:log4j-api:2.11.0")
+    testRuntime("org.apache.logging.log4j:log4j-core:2.11.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.2.0")
+    testImplementation("org.powermock:powermock-core:1.7.4")
+    testImplementation("org.hamcrest:hamcrest-core:1.3")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.0.2")
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            pom {
+                name = 'Forge Service Provider Interface'
+                description = 'API for services which can plug into forge, or which are used by forge in other places'
+                url = 'https://github.com/cpw/forgespi'
                 scm {
-                    url 'https://github.com/cpw/forgespi'
-                    connection 'scm:git:git://github.com/cpw/forgespi.git'
-                    developerConnection 'scm:git:git@github.com:cpw/forgespi.git'
+                    url = 'https://github.com/cpw/forgespi'
+                    connection = 'scm:git:git://github.com/cpw/forgespi.git'
+                    developerConnection = 'scm:git:git@github.com:cpw/forgespi.git'
+                }
+                issueManagement {
+                    system = 'github'
+                    url = 'https://github.com/cpw/forgespi/issues'
                 }
 
-                issueManagement {
-                    system 'github'
-                    url 'https://github.com/cpw/forgespi/issues'
+                licenses {
+                    license {
+                        name = 'LGPLv2.1'
+                        url = 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt'
+                    }
                 }
 
                 developers {
                     developer {
-                        id 'cpw'
-                        name 'cpw'
-                        roles { role 'developer' }
+                        id = 'cpw'
+                        name = 'cpw'
                     }
                 }
             }
+        }
+    }
+    repositories {
+        maven {
+            credentials {
+                username project.properties.forgeMavenUser?:'fake'
+                password project.properties.forgeMavenPassword?:'news'
+            }
+            url "http://files.minecraftforge.net/maven/manage/upload"
         }
     }
 }
