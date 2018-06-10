@@ -53,10 +53,6 @@ task sourcesJar(type: Jar) {
     from sourceSets.main.allSource
 }
 
-artifacts {
-    archives jar
-    archives sourcesJar
-}
 
 dependencies {
     implementation("cpw.mods:modlauncher:0.1-SNAPSHOT")
@@ -72,9 +68,16 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.2.0")
 }
 
+artifacts {
+    archives jar
+    archives sourcesJar
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
+            from components.java
+            artifact sourcesJar
             pom {
                 name = 'Forge Service Provider Interface'
                 description = 'API for services which can plug into forge, or which are used by forge in other places'
