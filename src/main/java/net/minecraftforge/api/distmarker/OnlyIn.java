@@ -32,12 +32,12 @@ import java.lang.annotation.Target;
  * based on the presence of this annotation.
  *
  *
- * <p>This is generally meant for internal Forge and FML use only and should only be used on mod classes
- * when other more common mechanisms fail to work.
+ * <p>This is generally meant for internal Forge and FML use only
+ * and modders should avoid its use whenever possible.</p>
  *
  *
  * Note, this will <em>only</em> apply to the direct element marked. This code:
- * <code> @OnlyIn(Dist.CLIENT) public MyField field = new MyField();</code> will <strong>not</strong> work,
+ * {@code @OnlyIn(Dist.CLIENT) public MyField field = new MyField();} will <strong>not</strong> work,
  * as the initializer is a separate piece of code to the actual field declaration, and will not be able to find
  * it's field on the wrong side.
  *
