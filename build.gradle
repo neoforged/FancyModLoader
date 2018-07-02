@@ -62,7 +62,7 @@ task sourcesJar(type: Jar) {
 
 
 dependencies {
-    implementation("cpw.mods:modlauncher:0.1-SNAPSHOT")
+    implementation("cpw.mods:modlauncher:0.1+")
     implementation("com.google.code.findbugs:jsr305:3.0.2")
     implementation("org.ow2.asm:asm:6.2")
     implementation("org.ow2.asm:asm-commons:6.2")
@@ -88,15 +88,15 @@ publishing {
             pom {
                 name = 'Forge Service Provider Interface'
                 description = 'API for services which can plug into forge, or which are used by forge in other places'
-                url = 'https://github.com/cpw/forgespi'
+                url = 'https://github.com/MinecraftForge/forgespi'
                 scm {
-                    url = 'https://github.com/cpw/forgespi'
-                    connection = 'scm:git:git://github.com/cpw/forgespi.git'
-                    developerConnection = 'scm:git:git@github.com:cpw/forgespi.git'
+                    url = 'https://github.com/MinecraftForge/forgespi'
+                    connection = 'scm:git:git://github.com/MinecraftForge/forgespi.git'
+                    developerConnection = 'scm:git:git@github.com:MinecraftForge/forgespi.git'
                 }
                 issueManagement {
                     system = 'github'
-                    url = 'https://github.com/cpw/forgespi/issues'
+                    url = 'https://github.com/MinecraftForge/forgespi/issues'
                 }
 
                 licenses {
