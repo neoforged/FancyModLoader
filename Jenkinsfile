@@ -34,7 +34,7 @@ pipeline {
         stage('publish') {
             when {
                 not {
-                    changeRequest
+                    changeRequest()
                 }
             }
             environment {
