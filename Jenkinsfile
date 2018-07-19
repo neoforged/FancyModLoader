@@ -14,7 +14,21 @@ pipeline {
     stages {
         stage('fetch') {
             steps {
-                git(url: 'https://github.com/MinecraftForge/forgespi.git', changelog: true)
+                checkout([
+                    $class: 'GitSCM',
+                    branches: scm.branches,
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [[
+                        $class: 'SubmoduleOption',
+                        disableSubmodules: false,
+                        parentCredentials: true,
+                        recursiveSubmodules: true,
+                        reference: '',
+                        trackingSubmodules: false
+                    ]],
+                    submoduleCfg: [],
+                    userRemoteConfigs: scm.userRemoteConfigs
+                ])
             }
         }
         stage('buildandtest') {

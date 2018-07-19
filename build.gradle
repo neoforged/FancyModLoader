@@ -123,5 +123,9 @@ publishing {
             }
             url "http://files.minecraftforge.net/maven/manage/upload"
         }
+        maven {
+            name = "localdir"
+            url project.file("repo")
+        }
     }
 }
