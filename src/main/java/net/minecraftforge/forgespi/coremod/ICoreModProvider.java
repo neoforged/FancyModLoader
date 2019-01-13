@@ -1,4 +1,4 @@
-package net.minecraftforge.forgespi;
+package net.minecraftforge.forgespi.coremod;
 
 import cpw.mods.modlauncher.api.*;
 
