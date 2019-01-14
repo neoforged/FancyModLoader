@@ -21,6 +21,12 @@ public class Environment {
     }
 
     private static Environment INSTANCE;
+
+    public static void build(IEnvironment environment) {
+        if (INSTANCE != null) throw new RuntimeException("Environment is a singleton");
+        INSTANCE = new Environment(environment);
+    }
+
     public static Environment get() {
         return INSTANCE;
     }
@@ -30,7 +36,6 @@ public class Environment {
     private final Dist dist;
 
     private Environment(IEnvironment setup) {
-        INSTANCE = this;
         this.environment = setup;
         this.dist = setup.getProperty(Keys.DIST.get()).orElseThrow(()->new RuntimeException("Missing DIST in environment!"));
     }
