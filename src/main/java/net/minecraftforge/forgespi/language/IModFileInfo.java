@@ -24,6 +24,7 @@ import org.apache.maven.artifact.versioning.VersionRange;
 
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 
 public interface IModFileInfo
 {
@@ -36,4 +37,6 @@ public interface IModFileInfo
     String getModLoader();
 
     VersionRange getModLoaderVersion();
+
+    Map<String,Object> getFileProperties();
 }

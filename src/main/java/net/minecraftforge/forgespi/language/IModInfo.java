@@ -26,6 +26,7 @@ import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
 
 import java.util.List;
+import java.util.Map;
 
 public interface IModInfo
 {
@@ -44,6 +45,11 @@ public interface IModInfo
     List<ModVersion> getDependencies();
 
     UnmodifiableConfig getModConfig();
+
+    String getPrefix();
+
+    Map<String,Object> getModProperties();
+
 
     enum Ordering {
         BEFORE, AFTER, NONE
