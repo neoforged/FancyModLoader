@@ -46,7 +46,7 @@ public interface IModInfo
 
     UnmodifiableConfig getModConfig();
 
-    String getPrefix();
+    String getNamespace();
 
     Map<String,Object> getModProperties();
 
