@@ -25,6 +25,7 @@ import net.minecraftforge.forgespi.Environment;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
 
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
@@ -49,6 +50,8 @@ public interface IModInfo
     String getNamespace();
 
     Map<String,Object> getModProperties();
+
+    URL getUpdateURL();
 
 
     enum Ordering {
