@@ -35,6 +35,7 @@ public class ModFileScanData
     private final List<ClassData> classes = new ArrayList<>();
     private Map<String,? extends IModLanguageProvider.IModLanguageLoader> modTargets;
     private Map<String,?> functionalScanners;
+    private List<IModFileInfo> modFiles = new ArrayList<>();
 
     public static Predicate<Type> interestingAnnotations() {
         return t->true;
@@ -53,9 +54,17 @@ public class ModFileScanData
         modTargets = modTargetMap;
     }
 
+    public void addModFileInfo(IModFileInfo info) {
+        this.modFiles.add(info);
+    }
+
     public Map<String, ? extends IModLanguageProvider.IModLanguageLoader> getTargets()
     {
         return modTargets;
+    }
+
+    public List<IModFileInfo> getIModInfoData() {
+        return this.modFiles;
     }
 
     public static class ClassData {
