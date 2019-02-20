@@ -35,5 +35,7 @@ public interface IModFileInfo
 
     VersionRange getModLoaderVersion();
 
+    boolean showAsResourcePack();
+
     Map<String,Object> getFileProperties();
 }
