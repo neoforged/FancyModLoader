@@ -28,7 +28,7 @@ import java.util.function.Predicate;
 
 public class ModFileScanData
 {
-    private final List<AnnotationData> annotations = new ArrayList<>();
+    private final Set<AnnotationData> annotations = new LinkedHashSet<>();
     private final Set<ClassData> classes = new LinkedHashSet<>();
     private Map<String,? extends IModLanguageProvider.IModLanguageLoader> modTargets;
     private Map<String,?> functionalScanners;
@@ -42,7 +42,7 @@ public class ModFileScanData
         return classes;
     }
 
-    public List<AnnotationData> getAnnotations() {
+    public Set<AnnotationData> getAnnotations() {
         return annotations;
     }
 
@@ -78,7 +78,7 @@ public class ModFileScanData
         @Override
         public boolean equals(final Object obj) {
             try {
-                return Objects.equals(clazz, ((ClassData)obj).clazz);
+                return (!Objects.isNull(obj)) && Objects.equals(clazz, ((ClassData)obj).clazz);
             } catch (ClassCastException e) {
                 return false;
             }
@@ -123,6 +123,25 @@ public class ModFileScanData
 
         public Map<String, Object> getAnnotationData() {
             return annotationData;
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            try {
+                AnnotationData dat = (AnnotationData) obj;
+                return (!Objects.isNull(dat)) &&
+                        Objects.equals(annotationType, dat.annotationType) &&
+                        Objects.equals(targetType, dat.targetType) &&
+                        Objects.equals(clazz, dat.clazz) &&
+                        Objects.equals(memberName, dat.memberName);
+            } catch (ClassCastException e) {
+                return false;
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(annotationType, targetType, clazz, memberName);
         }
     }
 }
