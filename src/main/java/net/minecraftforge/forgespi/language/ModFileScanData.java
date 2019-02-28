@@ -23,16 +23,13 @@ package net.minecraftforge.forgespi.language;
 import org.objectweb.asm.Type;
 
 import java.lang.annotation.ElementType;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 
 public class ModFileScanData
 {
     private final List<AnnotationData> annotations = new ArrayList<>();
-    private final List<ClassData> classes = new ArrayList<>();
+    private final Set<ClassData> classes = new LinkedHashSet<>();
     private Map<String,? extends IModLanguageProvider.IModLanguageLoader> modTargets;
     private Map<String,?> functionalScanners;
     private List<IModFileInfo> modFiles = new ArrayList<>();
@@ -41,7 +38,7 @@ public class ModFileScanData
         return t->true;
     }
 
-    public List<ClassData> getClasses() {
+    public Set<ClassData> getClasses() {
         return classes;
     }
 
@@ -78,6 +75,19 @@ public class ModFileScanData
             this.interfaces = interfaces;
         }
 
+        @Override
+        public boolean equals(final Object obj) {
+            try {
+                return Objects.equals(clazz, ((ClassData)obj).clazz);
+            } catch (ClassCastException e) {
+                return false;
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(this.clazz);
+        }
     }
     public static class AnnotationData {
         private final Type annotationType;
