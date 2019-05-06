@@ -2,3 +2,7 @@
 /build/
 /.gradle/
 /repo/
+/.classpath
+/.project
+/bin/
+/.settings/

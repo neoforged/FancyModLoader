@@ -47,4 +47,11 @@ import java.lang.annotation.Target;
 public @interface OnlyIn
 {
     public Dist value();
+
+    /**
+     * Only valid on Type definitions.
+     * Marks a interface the class implements as only being available on the specific distribution.
+     * This <em>does not</em> propagate down to that interfaces methods, as the class doesn't exist so it's methods can't be determined.
+     */
+    public Class<?> _interface() default Object.class;
 }

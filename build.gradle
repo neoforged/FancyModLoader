@@ -107,15 +107,15 @@ publishing {
             pom {
                 name = 'Forge Service Provider Interface'
                 description = 'API for services which can plug into forge, or which are used by forge in other places'
-                url = 'https://github.com/MinecraftForge/forgespi'
+                url = 'https://github.com/MinecraftForge/ForgeSPI'
                 scm {
-                    url = 'https://github.com/MinecraftForge/forgespi'
-                    connection = 'scm:git:git://github.com/MinecraftForge/forgespi.git'
-                    developerConnection = 'scm:git:git@github.com:MinecraftForge/forgespi.git'
+                    url = 'https://github.com/MinecraftForge/ForgeSPI'
+                    connection = 'scm:git:git://github.com/MinecraftForge/ForgeSPI.git'
+                    developerConnection = 'scm:git:git@github.com:MinecraftForge/ForgeSPI.git'
                 }
                 issueManagement {
                     system = 'github'
-                    url = 'https://github.com/MinecraftForge/forgespi/issues'
+                    url = 'https://github.com/MinecraftForge/ForgeSPI/issues'
                 }
 
                 licenses {
