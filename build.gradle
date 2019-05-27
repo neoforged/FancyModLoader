@@ -76,18 +76,18 @@ task sourcesJar(type: Jar) {
 
 
 dependencies {
-    implementation("cpw.mods:modlauncher:0.10.+")
+    implementation("cpw.mods:modlauncher:2.1.+")
     implementation("com.google.code.findbugs:jsr305:3.0.2")
     implementation("org.ow2.asm:asm:6.2")
     implementation("org.ow2.asm:asm-commons:6.2")
     implementation("org.ow2.asm:asm-tree:6.2")
-    implementation("org.apache.logging.log4j:log4j-api:2.11.+")
+    implementation("org.apache.logging.log4j:log4j-api:2.11.2")
     implementation("org.apache.maven:maven-artifact:3.6.0")
     implementation("com.electronwill.night-config:core:3.4.2")
     implementation("com.electronwill.night-config:toml:3.4.2")
 
 
-    testRuntime("org.apache.logging.log4j:log4j-core:2.11.+")
+    testRuntime("org.apache.logging.log4j:log4j-core:2.11.2")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.4.+")
     testImplementation("org.powermock:powermock-core:2.0.+")
     testImplementation("org.hamcrest:hamcrest-core:2.1+")

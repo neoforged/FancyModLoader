@@ -8,6 +8,7 @@ import java.nio.file.*;
  * of their location and context to the coremod implementation.
  */
 public interface ICoreModFile {
+    String getOwnerId();
     Reader readCoreMod() throws IOException;
     Path getPath();
 }
