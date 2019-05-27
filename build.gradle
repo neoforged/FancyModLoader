@@ -1,0 +1,103 @@
+plugins {
+    id 'org.ajoberstar.reckon' version '0.10.0'
+    id 'org.ajoberstar.grgit' version '3.1.1'
+    id 'com.github.ben-manes.versions' version '0.21.0'
+}
+apply plugin: 'java-library'
+apply plugin: 'maven'
+apply plugin: 'maven-publish'
+apply plugin: 'eclipse'
+
+repositories {
+    mavenCentral()
+}
+
+reckon {
+    scopeFromProp()
+    stageFromProp('milestone', 'rc', 'final')
+}
+
+reckonTagCreate.dependsOn check
+
+dependencyUpdates.resolutionStrategy {
+    componentSelection { rules ->
+        rules.all { ComponentSelection selection ->
+            boolean rejected = ['alpha', 'beta', 'rc', 'cr', 'm', 'preview'].any { qualifier ->
+                selection.candidate.version ==~ /(?i).*[.-]${qualifier}[.\d-]*/
+            }
+            if (rejected) {
+                selection.reject('Release candidate')
+            }
+        }
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+group = 'cpw.mods'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+    implementation("org.apache.logging.log4j:log4j-api:2.11.2")
+    implementation("org.apache.logging.log4j:log4j-core:2.11.2")
+    testImplementation("org.powermock:powermock-core:2.0.+")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.4.+")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.4.+")
+}
+
+task sourcesJar(type: Jar) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs << '-Xlint:unchecked'
+}
+
+artifacts {
+    archives jar
+    archives sourcesJar
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+            pom {
+                name = 'Grotesque Java 9 Hacks'
+                description = 'Grotesque Java 9 Hacks to allow modlauncher to function'
+                url = 'https://github.com/cpw/grossjava9classpathhacks'
+                scm {
+                    url = 'https://github.com/cpw/grossjava9classpathhacks'
+                    connection = 'scm:git:git://github.com/cpw/grossjava9classpathhacks.git'
+                    developerConnection = 'scm:git:git@github.com:cpw/grossjava9classpathhacks.git'
+                }
+                issueManagement {
+                    system = 'github'
+                    url = 'https://github.com/cpw/grossjava9classpathhacks/issues'
+                }
+
+                developers {
+                    developer {
+                        id = 'cpw'
+                        name = 'cpw'
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            credentials {
+                username project.properties.forgeMavenUser?:'fake'
+                password project.properties.forgeMavenPassword?:'news'
+            }
+            url "http://files.minecraftforge.net/maven/manage/upload"
+        }
+    }
+}
