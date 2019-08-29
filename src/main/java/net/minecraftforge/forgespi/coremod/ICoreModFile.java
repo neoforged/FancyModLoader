@@ -11,5 +11,5 @@ public interface ICoreModFile {
     String getOwnerId();
     Reader readCoreMod() throws IOException;
     Path getPath();
-    Reader getAdditionalFile() throws IOException;
+    Reader getAdditionalFile(final String fileName) throws IOException;
 }
