@@ -8,27 +8,13 @@ pipeline {
         }
     }
     environment {
-        GRADLE_ARGS = '-Dorg.gradle.daemon.idletimeout=5000'
+        GRADLE_ARGS = '-Dorg.gradle.daemon.idletimeout=5000 -Preckon.scope=patch'
     }
 
     stages {
         stage('fetch') {
             steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: scm.branches,
-                    doGenerateSubmoduleConfigurations: false,
-                    extensions: [[
-                        $class: 'SubmoduleOption',
-                        disableSubmodules: false,
-                        parentCredentials: true,
-                        recursiveSubmodules: true,
-                        reference: '',
-                        trackingSubmodules: false
-                    ]],
-                    submoduleCfg: [],
-                    userRemoteConfigs: scm.userRemoteConfigs
-                ])
+                checkout scm
             }
         }
         stage('buildandtest') {
