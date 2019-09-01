@@ -3,7 +3,10 @@ package net.minecraftforge.forgespi;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.TypesafeMap;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.forgespi.locating.IModLocator;
 
+import java.nio.file.Path;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -18,6 +21,7 @@ public class Environment {
          * Populated by forge during {@link cpw.mods.modlauncher.api.ITransformationService#initialize(IEnvironment)}
          */
         public static final Supplier<TypesafeMap.Key<Dist>> DIST = IEnvironment.buildKey("FORGEDIST", Dist.class);
+        public static final Supplier<TypesafeMap.Key<Function<Path,IModLocator>>> MODFOLDERFACTORY = IEnvironment.buildKey("MODFOLDERFACTORY", Function.class);
     }
 
     private static Environment INSTANCE;
