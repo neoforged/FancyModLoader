@@ -6,6 +6,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.forgespi.locating.IModLocator;
 
 import java.nio.file.Path;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -22,6 +23,7 @@ public class Environment {
          */
         public static final Supplier<TypesafeMap.Key<Dist>> DIST = IEnvironment.buildKey("FORGEDIST", Dist.class);
         public static final Supplier<TypesafeMap.Key<Function<Path,IModLocator>>> MODFOLDERFACTORY = IEnvironment.buildKey("MODFOLDERFACTORY", Function.class);
+        public static final Supplier<TypesafeMap.Key<Consumer<String>>> PROGRESSMESSAGE = IEnvironment.buildKey("PROGRESSMESSAGE", Consumer.class);
     }
 
     private static Environment INSTANCE;
