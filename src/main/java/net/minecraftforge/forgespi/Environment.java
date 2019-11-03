@@ -3,6 +3,7 @@ package net.minecraftforge.forgespi;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.TypesafeMap;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.forgespi.locating.IModDirectoryLocatorFactory;
 import net.minecraftforge.forgespi.locating.IModLocator;
 
 import java.nio.file.Path;
@@ -22,7 +23,18 @@ public class Environment {
          * Populated by forge during {@link cpw.mods.modlauncher.api.ITransformationService#initialize(IEnvironment)}
          */
         public static final Supplier<TypesafeMap.Key<Dist>> DIST = IEnvironment.buildKey("FORGEDIST", Dist.class);
+        /**
+         * Use {@link #MODDIRECTORYFACTORY} instead.
+         */
+        @Deprecated
         public static final Supplier<TypesafeMap.Key<Function<Path,IModLocator>>> MODFOLDERFACTORY = IEnvironment.buildKey("MODFOLDERFACTORY", Function.class);
+        /**
+         * Build a custom modlocator based on a supplied directory, with custom name
+         */
+        public static final Supplier<TypesafeMap.Key<IModDirectoryLocatorFactory>> MODDIRECTORYFACTORY = IEnvironment.buildKey("MODDIRFACTORY", IModDirectoryLocatorFactory.class);
+        /**
+         * Provides a string consumer which can be used to push notification messages to the early startup GUI.
+         */
         public static final Supplier<TypesafeMap.Key<Consumer<String>>> PROGRESSMESSAGE = IEnvironment.buildKey("PROGRESSMESSAGE", Consumer.class);
     }
 
