@@ -97,7 +97,7 @@ publishing {
                 username project.properties.forgeMavenUser?:'fake'
                 password project.properties.forgeMavenPassword?:'news'
             }
-            url "http://files.minecraftforge.net/maven/manage/upload"
+            url 'https://nexus.minecraftforge.net/repository/forge/'
         }
     }
 }
