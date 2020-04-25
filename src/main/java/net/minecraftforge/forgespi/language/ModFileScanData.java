@@ -20,11 +20,16 @@
 package net.minecraftforge.forgespi.language;
 
 
-import org.objectweb.asm.Type;
-
 import java.lang.annotation.ElementType;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
+
+import org.objectweb.asm.Type;
 
 public class ModFileScanData
 {
@@ -96,7 +101,6 @@ public class ModFileScanData
         private final String memberName;
         private final Map<String,Object> annotationData;
 
-
         public AnnotationData(final Type annotationType, final ElementType targetType, final Type clazz, final String memberName, final Map<String, Object> annotationData) {
             this.annotationType = annotationType;
             this.targetType = targetType;
@@ -127,21 +131,22 @@ public class ModFileScanData
 
         @Override
         public boolean equals(final Object obj) {
-            try {
-                AnnotationData dat = (AnnotationData) obj;
-                return (!Objects.isNull(dat)) &&
-                        Objects.equals(annotationType, dat.annotationType) &&
-                        Objects.equals(targetType, dat.targetType) &&
-                        Objects.equals(clazz, dat.clazz) &&
-                        Objects.equals(memberName, dat.memberName);
-            } catch (ClassCastException e) {
+            if (obj == null) { return false; }
+            if (obj == this) { return true; }
+            if (obj.getClass() != getClass()) {
                 return false;
             }
+            AnnotationData dat = (AnnotationData) obj;
+            return Objects.equals(annotationType, dat.annotationType)
+        		&& Objects.equals(targetType, dat.targetType)
+        		&& Objects.equals(clazz, dat.clazz)
+        		&& Objects.equals(memberName, dat.memberName)
+        		&& Objects.equals(annotationData, dat.annotationData);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(annotationType, targetType, clazz, memberName);
+            return Objects.hash(annotationType, targetType, clazz, memberName, annotationData);
         }
     }
 }
