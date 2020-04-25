@@ -33,11 +33,10 @@ pipeline {
                 }
             }
             environment {
-                FORGE_URL = credentials('forge-maven-url')
                 FORGE_MAVEN = credentials('forge-maven-cpw-user')
             }
             steps {
-                sh './gradlew ${GRADLE_ARGS} publish -PforgeMavenUser=${FORGE_MAVEN_USR} -PforgeMavenPassword=${FORGE_MAVEN_PSW} -PforgeMavenURL=${FORGE_URL}'
+                sh './gradlew ${GRADLE_ARGS} publish -PforgeMavenUser=${FORGE_MAVEN_USR} -PforgeMavenPassword=${FORGE_MAVEN_PSW}'
             }
         }
     }

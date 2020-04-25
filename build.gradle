@@ -107,7 +107,7 @@ publishing {
                 username project.properties.forgeMavenUser ?: 'fake'
                 password project.properties.forgeMavenPassword ?: 'news'
             }
-            url project.properties.forgeMavenURL ?: 'http://files.minecraftforge.net/maven/manage/upload'
+            url 'http://files.minecraftforge.net/maven/manage/upload'
         }
     }
 }
