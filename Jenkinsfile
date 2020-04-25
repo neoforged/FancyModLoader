@@ -3,8 +3,8 @@
 pipeline {
     agent {
         docker {
-            image 'gradlewrapper:latest'
-            args '-v gradlecache:/gradlecache'
+            image 'gradle:jdk8'
+            args '-v grossjava9hacksgc:/home/gradle/.gradle/'
         }
     }
     environment {
@@ -12,11 +12,6 @@ pipeline {
     }
 
     stages {
-        stage('fetch') {
-            steps {
-                checkout scm
-            }
-        }
         stage('buildandtest') {
             steps {
                 sh './gradlew ${GRADLE_ARGS} --refresh-dependencies --continue build test'
@@ -38,10 +33,11 @@ pipeline {
                 }
             }
             environment {
+                FORGE_URL = credentials('forge-maven-url')
                 FORGE_MAVEN = credentials('forge-maven-cpw-user')
             }
             steps {
-                sh './gradlew ${GRADLE_ARGS} publish -PforgeMavenUser=${FORGE_MAVEN_USR} -PforgeMavenPassword=${FORGE_MAVEN_PSW}'
+                sh './gradlew ${GRADLE_ARGS} publish -PforgeMavenUser=${FORGE_MAVEN_USR} -PforgeMavenPassword=${FORGE_MAVEN_PSW} -PforgeMavenURL=${FORGE_URL}'
                 sh 'curl --user ${FORGE_MAVEN} http://files.minecraftforge.net/maven/manage/promote/latest/cpw.mods.grossjava9hacks/${BUILD_NUMBER}'
             }
         }

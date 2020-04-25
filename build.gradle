@@ -1,8 +1,8 @@
 plugins {
-    id 'org.ajoberstar.reckon' version '0.10.0'
-    id 'org.ajoberstar.grgit' version '3.1.1'
-    id 'com.github.ben-manes.versions' version '0.21.0'
+    id 'com.github.ben-manes.versions' version '0.27.0'
+    id 'io.wusa.semver-git-plugin' version '2.0.2'
 }
+
 apply plugin: 'java-library'
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
@@ -12,23 +12,15 @@ repositories {
     mavenCentral()
 }
 
-reckon {
-    scopeFromProp()
-    stageFromProp('milestone', 'rc', 'final')
+def isNonStable = { String version ->
+    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
+    def regex = /^[0-9,.v-]+(-r)?$/
+    return !stableKeyword && !(version ==~ regex)
 }
 
-reckonTagCreate.dependsOn check
-
-dependencyUpdates.resolutionStrategy {
-    componentSelection { rules ->
-        rules.all { ComponentSelection selection ->
-            boolean rejected = ['alpha', 'beta', 'rc', 'cr', 'm', 'preview'].any { qualifier ->
-                selection.candidate.version ==~ /(?i).*[.-]${qualifier}[.\d-]*/
-            }
-            if (rejected) {
-                selection.reject('Release candidate')
-            }
-        }
+dependencyUpdates {
+    rejectVersionIf {
+        isNonStable(it.candidate.version)
     }
 }
 
@@ -40,6 +32,19 @@ group = 'cpw.mods'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
+
+semver {
+    snapshotSuffix = '<count>.g<sha><dirty>'
+    dirtyMarker = '-dirty'
+    branches {
+        branch {
+            regex = '.+'
+            incrementer = 'patch'
+//            formatter = { "${semver.info.version.major}.${semver.info.version.minor}.${semver.info.version.patch}+build.${semver.info.count}.sha.${semver.info.shortCommit}" } (default) version formatting closure
+        }
+    }
+}
+version = semver.info
 
 dependencies {
     implementation("org.apache.logging.log4j:log4j-api:2.11.2")
@@ -94,10 +99,10 @@ publishing {
     repositories {
         maven {
             credentials {
-                username project.properties.forgeMavenUser?:'fake'
-                password project.properties.forgeMavenPassword?:'news'
+                username project.properties.forgeMavenUser ?: 'fake'
+                password project.properties.forgeMavenPassword ?: 'news'
             }
-            url 'https://nexus.minecraftforge.net/repository/forge/'
+            url project.properties.forgeMavenURL ?: 'http://files.minecraftforge.net/maven/manage/upload'
         }
     }
 }
