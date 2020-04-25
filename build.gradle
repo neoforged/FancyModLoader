@@ -1,6 +1,5 @@
 plugins {
-    id 'org.ajoberstar.reckon' version '0.12.0'
-    id 'org.ajoberstar.grgit' version '4.0.0'
+    id 'org.ajoberstar.grgit' version '4.0.2'
     id 'com.github.ben-manes.versions' version '0.27.0'
 }
 
@@ -13,35 +12,29 @@ group 'net.minecraftforge'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
+version = grgit.describe(longDescr: true).split('-').with { "${it[0]}.${it[1]}" }
+
 repositories {
     mavenCentral()
     maven {
-        name = "forge"
-        url = "https://files.minecraftforge.net/maven"
+        name = 'forge'
+        url = 'https://files.minecraftforge.net/maven'
     }
 }
 
 jacoco {
-    toolVersion = "0.8.2"
+    toolVersion = '0.8.2'
 }
 
-reckon {
-    scopeFromProp()
-    stageFromProp('milestone', 'rc', 'final')
+def isNonStable = { String version ->
+    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
+    def regex = /^[0-9,.v-]+(-r)?$/
+    return !stableKeyword && !(version ==~ regex)
 }
 
-reckonTagCreate.dependsOn check
-
-dependencyUpdates.resolutionStrategy {
-    componentSelection { rules ->
-        rules.all { ComponentSelection selection ->
-            boolean rejected = ['alpha', 'beta', 'rc', 'cr', 'm', 'preview'].any { qualifier ->
-                selection.candidate.version ==~ /(?i).*[.-]${qualifier}[.\d-]*/
-            }
-            if (rejected) {
-                selection.reject('Release candidate')
-            }
-        }
+dependencyUpdates {
+    rejectVersionIf {
+        isNonStable(it.candidate.version)
     }
 }
 
@@ -50,15 +43,16 @@ test {
 }
 
 ext.sharedManifest = manifest {
-    attributes(["Specification-Title"     : "forgespi",
-                "Specification-Vendor"    : "Forge",
-                "Specification-Version"   : "3", // Currently version 3 of the forgespi specification
-                "Implementation-Title"    : project.name,
-                "Implementation-Version"  : "${version}+${System.getenv("BUILD_NUMBER") ?: 0}+${grgit.head().abbreviatedId}",
-                "Implementation-Vendor"   : "Forge",
-                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-                "Git-Commit"              : grgit.head().abbreviatedId,
-                "Git-Branch"              : grgit.branch.current().getName()],
+    attributes(['Specification-Title': 'forgespi',
+                'Specification-Vendor': 'forge',
+                'Specification-Version': '3', // Currently version 3 of the forgespi specification
+                'Implementation-Title': project.name,
+                'Implementation-Version': "${project.version}+${System.getenv('BUILD_NUMBER')?:0}+${grgit.branch.current().getName()}.${grgit.head().abbreviatedId}",
+                'Implementation-Vendor': 'forge',
+                'Implementation-Timestamp': java.time.Instant.now().toString(),
+                'Git-Commit': grgit.head().abbreviatedId,
+                'Git-Branch': grgit.branch.current().getName(),
+                'Build-Number': "${System.getenv('BUILD_NUMBER')?:0}"],
             "net/minecraftforge/forgespi/")
 }
 
@@ -75,22 +69,22 @@ task sourcesJar(type: Jar) {
 
 
 dependencies {
-    implementation("cpw.mods:modlauncher:5.0.+")
-    implementation("com.google.code.findbugs:jsr305:3.0.2")
-    implementation("org.ow2.asm:asm:7.2")
-    implementation("org.ow2.asm:asm-commons:7.2")
-    implementation("org.ow2.asm:asm-tree:7.2")
-    implementation("org.apache.logging.log4j:log4j-api:2.12.1")
-    implementation("org.apache.maven:maven-artifact:3.6.3")
-    implementation("com.electronwill.night-config:core:3.6.2")
-    implementation("com.electronwill.night-config:toml:3.6.2")
+    implementation('cpw.mods:modlauncher:5.1.+')
+    implementation('com.google.code.findbugs:jsr305:3.0.2')
+    implementation('org.ow2.asm:asm:7.2')
+    implementation('org.ow2.asm:asm-commons:7.2')
+    implementation('org.ow2.asm:asm-tree:7.2')
+    implementation('org.apache.logging.log4j:log4j-api:2.11.2')
+    implementation('org.apache.maven:maven-artifact:3.6.3')
+    implementation('com.electronwill.night-config:core:3.6.2')
+    implementation('com.electronwill.night-config:toml:3.6.2')
 
 
-    testRuntimeOnly("org.apache.logging.log4j:log4j-core:2.12.1")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.5.+")
-    testImplementation("org.powermock:powermock-core:2.0.+")
-    testImplementation("org.hamcrest:hamcrest-core:2.2+")
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.5.+")
+    testRuntimeOnly('org.apache.logging.log4j:log4j-core:2.11.2')
+    testImplementation('org.junit.jupiter:junit-jupiter-api:5.6.+')
+    testImplementation('org.powermock:powermock-core:2.0.+')
+    testImplementation('org.hamcrest:hamcrest-core:2.2+')
+    testImplementation('org.junit.jupiter:junit-jupiter-engine:5.6.+')
 }
 
 artifacts {
@@ -139,7 +133,7 @@ publishing {
                 username project.properties.forgeMavenUser?:'fake'
                 password project.properties.forgeMavenPassword?:'news'
             }
-            url "http://files.minecraftforge.net/maven/manage/upload"
+            url 'http://files.minecraftforge.net/maven/manage/upload'
         }
     }
 }
