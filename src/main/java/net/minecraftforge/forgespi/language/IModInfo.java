@@ -19,7 +19,6 @@
 
 package net.minecraftforge.forgespi.language;
 
-import com.electronwill.nightconfig.core.UnmodifiableConfig;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.forgespi.Environment;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
@@ -43,16 +42,13 @@ public interface IModInfo
 
     ArtifactVersion getVersion();
 
-    List<ModVersion> getDependencies();
-
-    UnmodifiableConfig getModConfig();
+    List<? extends ModVersion> getDependencies();
 
     String getNamespace();
 
     Map<String,Object> getModProperties();
 
     URL getUpdateURL();
-
 
     enum Ordering {
         BEFORE, AFTER, NONE
@@ -73,60 +69,19 @@ public interface IModInfo
         }
     }
 
-    class ModVersion {
-        private IModInfo owner;
-        private final String modId;
-        private final VersionRange versionRange;
-        private final boolean mandatory;
-        private final Ordering ordering;
-        private final DependencySide side;
+    interface ModVersion {
+        String getModId();
 
-        public ModVersion(final IModInfo owner, final UnmodifiableConfig config) {
-            this.owner = owner;
-            this.modId = config.get("modId");
-            this.versionRange = config.getOptional("versionRange").map(String.class::cast).
-                    map(MavenVersionAdapter::createFromVersionSpec).orElse(UNBOUNDED);
-            this.mandatory = config.get("mandatory");
-            this.ordering = config.getOptional("ordering").map(String.class::cast).
-                    map(Ordering::valueOf).orElse(Ordering.NONE);
-            this.side = config.getOptional("side").map(String.class::cast).
-                    map(DependencySide::valueOf).orElse(DependencySide.BOTH);
-        }
+        VersionRange getVersionRange();
 
+        boolean isMandatory();
 
-        public String getModId()
-        {
-            return modId;
-        }
+        Ordering getOrdering();
 
-        public VersionRange getVersionRange()
-        {
-            return versionRange;
-        }
+        DependencySide getSide();
 
-        public boolean isMandatory()
-        {
-            return mandatory;
-        }
+        void setOwner(IModInfo owner);
 
-        public Ordering getOrdering()
-        {
-            return ordering;
-        }
-
-        public DependencySide getSide()
-        {
-            return side;
-        }
-
-        public void setOwner(final IModInfo owner)
-        {
-            this.owner = owner;
-        }
-
-        public IModInfo getOwner()
-        {
-            return owner;
-        }
+        IModInfo getOwner();
     }
 }

@@ -1,9 +1,6 @@
 package net.minecraftforge.forgespi.locating;
 
-import net.minecraftforge.forgespi.language.IModFileInfo;
-import net.minecraftforge.forgespi.language.IModInfo;
-import net.minecraftforge.forgespi.language.IModLanguageProvider;
-import net.minecraftforge.forgespi.language.ModFileScanData;
+import net.minecraftforge.forgespi.language.*;
 
 import java.nio.file.Path;
 import java.util.List;

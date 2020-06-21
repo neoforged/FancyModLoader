@@ -19,7 +19,6 @@
 
 package net.minecraftforge.forgespi.language;
 
-import com.electronwill.nightconfig.core.UnmodifiableConfig;
 import org.apache.maven.artifact.versioning.VersionRange;
 
 import java.util.List;
@@ -28,8 +27,6 @@ import java.util.Map;
 public interface IModFileInfo
 {
     List<IModInfo> getMods();
-
-    UnmodifiableConfig getConfig();
 
     String getModLoader();
 
