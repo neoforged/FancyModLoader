@@ -19,7 +19,10 @@
 
 package net.minecraftforge.forgespi.locating;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.nio.file.Path;
+import java.security.CodeSigner;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -40,6 +43,10 @@ public interface IModLocator {
     void scanFile(final IModFile modFile, Consumer<Path> pathConsumer);
 
     Optional<Manifest> findManifest(Path file);
+
+    default Pair<Optional<Manifest>, Optional<CodeSigner[]>> findManifestAndSigners(Path file) {
+        return Pair.of(findManifest(file), Optional.empty());
+    }
 
     void initArguments(Map<String, ?> arguments);
 
