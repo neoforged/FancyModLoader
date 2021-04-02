@@ -29,7 +29,7 @@ public class Java9ClassLoaderUtil {
                 try {
                     ucpField = classLoader.getClass().getDeclaredField("ucp");
                 } catch (NoSuchFieldException | SecurityException e) {
-                    ucpField = classLoader.getClass().getSuperclass().getField("ucp");
+                    ucpField = classLoader.getClass().getSuperclass().getDeclaredField("ucp");
                 }
 
                 long ucpFieldOffset = unsafe.objectFieldOffset(ucpField);
