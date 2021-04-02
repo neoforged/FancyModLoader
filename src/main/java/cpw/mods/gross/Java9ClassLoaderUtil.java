@@ -25,7 +25,13 @@ public class Java9ClassLoaderUtil {
                 Unsafe unsafe = (Unsafe) field.get(null);
 
                 // jdk.internal.loader.ClassLoaders.AppClassLoader.ucp
-                Field ucpField = classLoader.getClass().getDeclaredField("ucp");
+                Field ucpField = null;
+                try {
+                    ucpField = classLoader.getClass().getDeclaredField("ucp");
+                } catch (NoSuchFieldException | SecurityException e) {
+                    ucpField = classLoader.getClass().getSuperclass().getField("ucp");
+                }
+
                 long ucpFieldOffset = unsafe.objectFieldOffset(ucpField);
                 Object ucpObject = unsafe.getObject(classLoader, ucpFieldOffset);
 
@@ -35,9 +41,8 @@ public class Java9ClassLoaderUtil {
                 ArrayList<URL> path = (ArrayList<URL>) unsafe.getObject(ucpObject, pathFieldOffset);
 
                 return path.toArray(new URL[0]);
-            } catch (Exception e) {
-                e.printStackTrace();
-                return null;
+            } catch (Throwable e) {
+                throw new RuntimeException("Failed to find system class path URLs. Incompatible JDK?", e);
             }
         }
         return null;
