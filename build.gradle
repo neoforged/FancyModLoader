@@ -1,6 +1,6 @@
 plugins {
-    id 'org.ajoberstar.grgit' version '4.0.2'
-    id 'com.github.ben-manes.versions' version '0.27.0'
+    id 'org.ajoberstar.grgit' version '4.1.0'
+    id 'com.github.ben-manes.versions' version '0.38.0'
 }
 
 apply plugin: 'java-library'
@@ -9,6 +9,13 @@ apply plugin: 'eclipse'
 
 repositories {
     mavenCentral()
+}
+
+plugins.withType(JavaPlugin).configureEach {
+    java {
+        toolchain.languageVersion=JavaLanguageVersion.of(16)
+        modularity.inferModulePath = true
+    }
 }
 
 def isNonStable = { String version ->
@@ -29,17 +36,14 @@ test {
 
 group = 'cpw.mods'
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-
 version = grgit.describe(longDescr: true).split('-').with { "${it[0]}.${it[1]}" }
 
 dependencies {
-    implementation("org.apache.logging.log4j:log4j-api:2.11.2")
-    implementation("org.apache.logging.log4j:log4j-core:2.11.2")
+    implementation("org.apache.logging.log4j:log4j-api:2.14.1")
+    implementation("org.apache.logging.log4j:log4j-core:2.14.1")
     testImplementation("org.powermock:powermock-core:2.0.+")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.+")
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.6.+")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.+")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.7.+")
 }
 
 task sourcesJar(type: Jar) {
@@ -103,11 +107,14 @@ publishing {
     }
     repositories {
         maven {
-            credentials {
-                username project.properties.forgeMavenUser ?: 'fake'
-                password project.properties.forgeMavenPassword ?: 'news'
+            authentication {
+                basic(BasicAuthentication)
             }
-            url 'http://files.minecraftforge.net/maven/manage/upload'
+            credentials {
+                username = System.env.MAVEN_USER ?: 'not'
+                password = System.env.MAVEN_PASSWORD ?: 'set'
+            }
+            url 'https://maven.minecraftforge.net/releases'
         }
     }
 }
