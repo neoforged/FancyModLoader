@@ -1,21 +1,17 @@
 plugins {
     id 'org.ajoberstar.grgit' version '4.1.0'
     id 'com.github.ben-manes.versions' version '0.38.0'
+    id 'org.javamodularity.moduleplugin' version '1.8.3' apply false
 }
 
 apply plugin: 'java-library'
 apply plugin: 'maven-publish'
 apply plugin: 'eclipse'
+apply plugin: 'org.javamodularity.moduleplugin'
+
 
 repositories {
     mavenCentral()
-}
-
-plugins.withType(JavaPlugin).configureEach {
-    java {
-        toolchain.languageVersion=JavaLanguageVersion.of(16)
-        modularity.inferModulePath = true
-    }
 }
 
 def isNonStable = { String version ->
