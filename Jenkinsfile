@@ -33,10 +33,15 @@ pipeline {
                 }
             }
             steps {
-                withCredentials([usernamePassword(credentialsId: 'maven-forge-user', usernameVariable: 'MAVEN_USER', passwordVariable: 'MAVEN_PASSWORD')]) {
+                withCredentials([usernamePassword(credentialsId: 'maven-cpw-user', usernameVariable: 'MAVEN_USER', passwordVariable: 'MAVEN_PASSWORD')]) {
                     withGradle {
-                        sh './gradlew ${GRADLE_ARGS} publish -PkeystoreKeyPass=${KEYSTORE_KEYPASS}'
+                        sh './gradlew ${GRADLE_ARGS} publish'
                     }
+                }
+            }
+            post {
+                success {
+                    build job: 'filegenerator', parameters: [string(name: 'COMMAND', value: "promote cpw.mods:grossjava9hacks ${env.MYVERSION} latest")], propagate: false, wait: false
                 }
             }
         }
