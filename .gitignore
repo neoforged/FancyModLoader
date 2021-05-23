@@ -2,3 +2,5 @@
 /.gradle/
 /build/
 /.idea/
+/out/
+/forge-1.16.5-36.1.16.jar

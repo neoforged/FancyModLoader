@@ -49,6 +49,9 @@ task sourcesJar(type: Jar) {
 
 tasks.withType(JavaCompile) {
     options.compilerArgs << '-Xlint:unchecked'
+    moduleOptions {
+        addExports = ['java.base/sun.security.util': 'cpw.mods.grossjava9hacks']
+    }
 }
 
 jar {
