@@ -15,7 +15,7 @@ public class SecureJarVerifier {
     private static final Field jarVerifier;
     private static final Field sigFileSigners;
 
-    static class SecureJar {
+    public static class SecureJar {
         private final Manifest manifest;
         private final ManifestEntryVerifier mev;
         private final Hashtable<String, CodeSigner[]> pendingSigners;
