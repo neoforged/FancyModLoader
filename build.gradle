@@ -1,0 +1,7 @@
+plugins {
+    id 'java-library'
+}
+
+group 'cpw.mods'
+version '0.1'
+
