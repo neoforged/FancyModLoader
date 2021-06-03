@@ -1,19 +1,22 @@
 package cpw.mods.bootstraplauncher;
 
 import java.io.File;
-import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.ServiceLoader;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class BootstrapLauncher {
-    public static void main(String[] args) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    @SuppressWarnings("unchecked")
+    public static void main(String[] args) throws URISyntaxException {
         var legacyCP = Objects.requireNonNull(System.getProperty("legacyClassPath"), "Missing legacyClassPath, cannot bootstrap");
         var versionName = Objects.requireNonNull(System.getProperty("versionName"), "Missing versionName, cannot bootstrap");
 
@@ -25,14 +28,15 @@ public class BootstrapLauncher {
                 .map(uncheck(URI::toURL));
         var pathList = fileList.stream()
                 .map(Path::of);
-        final ClassLoader cl = new URLClassLoader("bootstrap", urlList.toArray(URL[]::new), null);
-        final var cf = ModuleLayer.boot().configuration().resolve(ModuleFinder.of(pathList.toArray(Path[]::new)), ModuleFinder.ofSystem(), List.of("cpw.mods.modlauncher"));
+        final ClassLoader cl = new URLClassLoader("bootstrapbootloader", urlList.toArray(URL[]::new), null);
+        final var cf = ModuleLayer.boot()
+                .configuration()
+                // we resolve and bind to OURSELVES here so that we can find the people providing the Consumer interface we're looking to grab later on
+                // requires the uses declaration in module-info.
+                .resolveAndBind(ModuleFinder.compose(ModuleFinder.of(Path.of(BootstrapLauncher.class.getProtectionDomain().getCodeSource().getLocation().toURI())),ModuleFinder.of(pathList.toArray(Path[]::new))), ModuleFinder.ofSystem(), List.of("cpw.mods.bootstraplauncher"));
         final var layer = ModuleLayer.defineModulesWithOneLoader(cf, List.of(ModuleLayer.boot()), cl);
-        final var module = layer.layer().findModule("cpw.mods.modlauncher").orElseThrow();
-        Optional.ofNullable(Class.forName(module, "cpw.mods.modlauncher.Launcher"))
-                .map(uncheck(c->c.getMethod("main", String[].class)))
-                .orElseThrow(()->new IllegalStateException("Failed to find modlauncher"))
-                .invoke(null, (Object)args);
+        final var loader = ServiceLoader.load(layer.layer(), Consumer.class);
+        ((Consumer<String[]>)loader.stream().findFirst().orElseThrow().get()).accept(args);
     }
 
     public interface ExcFunction<T, R, E extends Throwable> {
