@@ -1,5 +1,10 @@
+buildscript {
+    dependencies {
+        classpath 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
+    }
+}
+
 plugins {
-    id 'org.ajoberstar.grgit' version '4.0.2'
     id 'com.github.ben-manes.versions' version '0.27.0'
 }
 
@@ -7,18 +12,20 @@ apply plugin: 'maven-publish'
 apply plugin: 'jacoco'
 apply plugin: 'java-library'
 
+project.ext {
+    GIT_INFO = gitInfo(rootProject.file('.'))
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(8)
+
 group 'net.minecraftforge'
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-
-version = grgit.describe(longDescr: true).split('-').with { "${it[0]}.${it[1]}" }
+version = "${project.ext.GIT_INFO.tag}.${project.ext.GIT_INFO.offset}"
 
 repositories {
     mavenCentral()
     maven {
         name = 'forge'
-        url = 'https://files.minecraftforge.net/maven'
+        url = 'https://maven.minecraftforge.net'
     }
 }
 
@@ -47,11 +54,11 @@ ext.sharedManifest = manifest {
                 'Specification-Vendor': 'forge',
                 'Specification-Version': '3', // Currently version 3 of the forgespi specification
                 'Implementation-Title': project.name,
-                'Implementation-Version': "${project.version}+${System.getenv('BUILD_NUMBER')?:0}+${grgit.branch.current().getName()}.${grgit.head().abbreviatedId}",
+                'Implementation-Version': "${project.version}+${System.getenv('BUILD_NUMBER')?:0}+${GIT_INFO.branch}.${GIT_INFO.abbreviatedId}",
                 'Implementation-Vendor': 'forge',
                 'Implementation-Timestamp': java.time.Instant.now().toString(),
-                'Git-Commit': grgit.head().abbreviatedId,
-                'Git-Branch': grgit.branch.current().getName(),
+                'Git-Commit': GIT_INFO.abbreviatedId,
+                'Git-Branch': GIT_INFO.branch,
                 'Build-Number': "${System.getenv('BUILD_NUMBER')?:0}"],
             "net/minecraftforge/forgespi/")
 }
@@ -127,11 +134,59 @@ publishing {
     }
     repositories {
         maven {
-            credentials {
-                username project.properties.forgeMavenUser?:'fake'
-                password project.properties.forgeMavenPassword?:'news'
+            if (System.env.MAVEN_USER) {
+                url 'https://maven.minecraftforge.net/'
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = System.env.MAVEN_USER ?: 'not'
+                    password = System.env.MAVEN_PASSWORD ?: 'set'
+                }
+            } else {
+                url 'file://' + rootProject.file('repo').getAbsolutePath()
             }
-            url 'http://files.minecraftforge.net/maven/manage/upload'
         }
     }
+}
+
+def gitInfo(dir) {
+    String.metaClass.rsplit = { String del, int limit = -1 ->
+        def lst = new ArrayList()
+        def x = 0, idx
+        def tmp = delegate
+        while ((idx = tmp.lastIndexOf(del)) != -1 && (limit == -1 || x++ < limit)) {
+            lst.add(0, tmp.substring(idx + del.length(), tmp.length()))
+            tmp = tmp.substring(0, idx)
+        }
+        lst.add(0, tmp)
+        return lst
+    }
+
+    def git = null
+    try {
+        git = org.eclipse.jgit.api.Git.open(dir)
+    } catch (org.eclipse.jgit.errors.RepositoryNotFoundException e) {
+        return [
+                tag: '0.0',
+                offset: '0',
+                hash: '00000000',
+                branch: 'master',
+                commit: '0000000000000000000000',
+                abbreviatedId: '00000000'
+        ]
+    }
+    def desc = git.describe().setLong(true).setTags(true).call().rsplit('-', 2)
+    def head = git.repository.exactRef('HEAD')
+    def longBranch = head.symbolic ? head?.target?.name : null // matches Repository.getFullBranch() but returning null when on a detached HEAD
+
+    def ret = [:]
+    ret.tag = desc[0]
+    ret.offset = desc[1]
+    ret.hash = desc[2]
+    ret.branch = longBranch != null ? org.eclipse.jgit.lib.Repository.shortenRefName(longBranch) : null
+    ret.commit = org.eclipse.jgit.lib.ObjectId.toString(head.objectId)
+    ret.abbreviatedId = head.objectId.abbreviate(8).name()
+
+    return ret
 }
