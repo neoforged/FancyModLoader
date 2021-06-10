@@ -41,9 +41,14 @@ import java.lang.annotation.Target;
  * as the initializer is a separate piece of code to the actual field declaration, and will not be able to find
  * it's field on the wrong side.
  *
+ * When applied on a package, this only applies to the package class file itself.
+ * It is a reasonable assumption that the whole package will also be restricted to that distribution, but not a requirement.
+ *
+ * When applied on an annotation, this only applies to the annotation class itself, not any members that are annotated with it.
+ *
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE, ElementType.FIELD, ElementType.METHOD, ElementType.CONSTRUCTOR})
+@Target({ElementType.TYPE, ElementType.FIELD, ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.PACKAGE, ElementType.ANNOTATION_TYPE})
 public @interface OnlyIn
 {
     public Dist value();
