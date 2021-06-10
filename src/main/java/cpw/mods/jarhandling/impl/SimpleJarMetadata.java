@@ -14,7 +14,7 @@ public record SimpleJarMetadata(String name, String version, Set<String> pkgs, L
         if (version()!=null)
             bld.version(version());
         bld.packages(pkgs());
-        providers.forEach(p->bld.provides(p.serviceName(), p.providers()));
+        providers.stream().filter(p->!p.providers().isEmpty()).forEach(p->bld.provides(p.serviceName(), p.providers()));
         return bld.build();
     }
 }
