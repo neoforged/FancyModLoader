@@ -12,10 +12,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.ServiceLoader;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -29,6 +26,7 @@ public class BootstrapLauncher {
                 .filter(n->!n.endsWith(versionName+".jar"))
                 .map(s->URI.create("file://"+s))
                 .toList();
+        Collections.reverse(fileList);
         var urlList = fileList.stream()
                 .map(uncheck(URI::toURL));
         var pathList = fileList.stream()
