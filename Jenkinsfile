@@ -4,7 +4,7 @@ pipeline {
     agent {
         docker {
             image 'gradle:7-jdk16'
-            args '-v grossjava9hacksgc:/home/gradle/.gradle/'
+            args '-v securejarhandlergc:/home/gradle/.gradle/'
         }
     }
     environment {
@@ -41,7 +41,7 @@ pipeline {
             }
             post {
                 success {
-                    build job: 'filegenerator', parameters: [string(name: 'COMMAND', value: "promote cpw.mods:grossjava9hacks ${env.MYVERSION} latest")], propagate: false, wait: false
+                    build job: 'filegenerator', parameters: [string(name: 'COMMAND', value: "promote cpw.mods:securejarhandler ${env.MYVERSION} latest")], propagate: false, wait: false
                 }
             }
         }

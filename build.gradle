@@ -27,6 +27,7 @@ dependencyUpdates {
 }
 
 test {
+    exclude '**/*'
     useJUnitPlatform()
 }
 
@@ -35,11 +36,8 @@ group = 'cpw.mods'
 version = grgit.describe(longDescr: true).split('-').with { "${it[0]}.${it[1]}" }
 
 dependencies {
-    implementation("org.apache.logging.log4j:log4j-api:2.14.1")
-    implementation("org.apache.logging.log4j:log4j-core:2.14.1")
-    testImplementation("org.powermock:powermock-core:2.0.+")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.+")
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.7.+")
+    testImplementation('org.junit.jupiter:junit-jupiter-api:5.7.+')
+    testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.7.+')
 }
 
 task sourcesJar(type: Jar) {
@@ -50,14 +48,14 @@ task sourcesJar(type: Jar) {
 tasks.withType(JavaCompile) {
     options.compilerArgs << '-Xlint:unchecked'
     moduleOptions {
-        addExports = ['java.base/sun.security.util': 'cpw.mods.grossjava9hacks']
+        addExports = ['java.base/sun.security.util': 'cpw.mods.securejarhandler']
     }
 }
 
 jar {
     manifest {
         attributes([
-                'Specification-Title': 'grossjava9hacks',
+                'Specification-Title': 'securejarhandler',
                 'Specification-Vendor': 'forge',
                 'Specification-Version': '1', // We are version 1 of ourselves
                 'Implementation-Title': project.name,
@@ -82,17 +80,17 @@ publishing {
             from components.java
             artifact sourcesJar
             pom {
-                name = 'Grotesque Java 9 Hacks'
-                description = 'Grotesque Java 9 Hacks to allow modlauncher to function'
-                url = 'https://github.com/cpw/grossjava9classpathhacks'
+                name = 'Secure Modular Jar handler'
+                description = 'Making the Java modular system provide security information'
+                url = 'https://github.com/cpw/securejarhandler'
                 scm {
-                    url = 'https://github.com/cpw/grossjava9classpathhacks'
-                    connection = 'scm:git:git://github.com/cpw/grossjava9classpathhacks.git'
-                    developerConnection = 'scm:git:git@github.com:cpw/grossjava9classpathhacks.git'
+                    url = 'https://github.com/cpw/securejarhandler'
+                    connection = 'scm:git:git://github.com/cpw/securejarhandler.git'
+                    developerConnection = 'scm:git:git@github.com:cpw/securejarhandler.git'
                 }
                 issueManagement {
                     system = 'github'
-                    url = 'https://github.com/cpw/grossjava9classpathhacks/issues'
+                    url = 'https://github.com/cpw/securejarhandler/issues'
                 }
 
                 developers {
