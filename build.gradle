@@ -1,7 +1,96 @@
 plugins {
-    id 'java-library'
+    id 'org.ajoberstar.grgit' version '4.1.0'
+    id 'com.github.ben-manes.versions' version '0.38.0'
+    id 'org.javamodularity.moduleplugin' version '1.8.3' apply false
 }
 
+apply plugin: 'java-library'
+apply plugin: 'maven-publish'
+apply plugin: 'eclipse'
+apply plugin: 'org.javamodularity.moduleplugin'
+
 group 'cpw.mods'
-version '0.1'
+
+version = grgit.describe(longDescr: true).split('-').with { "${it[0]}.${it[1]}" }
+
+repositories {
+    maven {
+        name 'forge'
+        url 'https://maven.minecraftforge.net/'
+    }
+}
+dependencies {
+    implementation('cpw.mods:securejarhandler:0.9.+')
+}
+
+
+task sourcesJar(type: Jar) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+jar {
+    manifest {
+        attributes([
+                'Specification-Title': 'bootstraplauncher',
+                'Specification-Vendor': 'forge',
+                'Specification-Version': '1', // We are version 1 of ourselves
+                'Implementation-Title': project.name,
+                'Implementation-Version': "${project.version}+${System.getenv("BUILD_NUMBER")?:0}+${grgit.branch.current().getName()}.${grgit.head().abbreviatedId}",
+                'Implementation-Vendor':'forge',
+                'Implementation-Timestamp': java.time.Instant.now().toString(),
+                'Git-Commit': grgit.head().abbreviatedId,
+                'Git-Branch': grgit.branch.current().getName(),
+                'Build-Number': "${System.getenv("BUILD_NUMBER")?:0}",
+        ])
+    }
+}
+
+artifacts {
+    archives jar
+    archives sourcesJar
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+            pom {
+                name = 'Bootstrap launcher'
+                description = 'Allows bootstrapping a modularized environment from a classpath one'
+                url = 'https://github.com/cpw/bootstraplauncher'
+                scm {
+                    url = 'https://github.com/cpw/bootstraplauncher'
+                    connection = 'scm:git:git://github.com/cpw/bootstraplauncher.git'
+                    developerConnection = 'scm:git:git@github.com:cpw/bootstraplauncher.git'
+                }
+                issueManagement {
+                    system = 'github'
+                    url = 'https://github.com/cpw/bootstraplauncher/issues'
+                }
+
+                developers {
+                    developer {
+                        id = 'cpw'
+                        name = 'cpw'
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            authentication {
+                basic(BasicAuthentication)
+            }
+            credentials {
+                username = System.env.MAVEN_USER ?: 'not'
+                password = System.env.MAVEN_PASSWORD ?: 'set'
+            }
+            url 'https://maven.minecraftforge.net/releases'
+        }
+    }
+}
+
 

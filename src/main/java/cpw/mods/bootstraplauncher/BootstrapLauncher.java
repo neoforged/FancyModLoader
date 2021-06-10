@@ -1,5 +1,10 @@
 package cpw.mods.bootstraplauncher;
 
+import cpw.mods.cl.JarModuleFinder;
+import cpw.mods.cl.ModuleClassLoader;
+import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.jarhandling.impl.Jar;
+
 import java.io.File;
 import java.lang.module.ModuleFinder;
 import java.net.URI;
@@ -28,13 +33,13 @@ public class BootstrapLauncher {
                 .map(uncheck(URI::toURL));
         var pathList = fileList.stream()
                 .map(Path::of);
-        final ClassLoader cl = new URLClassLoader("bootstrapbootloader", urlList.toArray(URL[]::new), null);
-        final var cf = ModuleLayer.boot()
-                .configuration()
-                // we resolve and bind to OURSELVES here so that we can find the people providing the Consumer interface we're looking to grab later on
-                // requires the uses declaration in module-info.
-                .resolveAndBind(ModuleFinder.compose(ModuleFinder.of(Path.of(BootstrapLauncher.class.getProtectionDomain().getCodeSource().getLocation().toURI())),ModuleFinder.of(pathList.toArray(Path[]::new))), ModuleFinder.ofSystem(), List.of("cpw.mods.bootstraplauncher"));
-        final var layer = ModuleLayer.defineModulesWithOneLoader(cf, List.of(ModuleLayer.boot()), cl);
+        var jf = JarModuleFinder.of(pathList.map(SecureJar::from).toArray(SecureJar[]::new));
+        var cf = ModuleLayer.boot().configuration();
+        var newcf = cf.resolveAndBind(jf, ModuleFinder.ofSystem(), List.of("cpw.mods.bootstraplauncher"));
+        var mycl = new ModuleClassLoader("test", newcf);
+        var layer = ModuleLayer.defineModules(newcf, List.of(ModuleLayer.boot()), m->mycl);
+        Thread.currentThread().setContextClassLoader(mycl);
+
         final var loader = ServiceLoader.load(layer.layer(), Consumer.class);
         ((Consumer<String[]>)loader.stream().findFirst().orElseThrow().get()).accept(args);
     }
