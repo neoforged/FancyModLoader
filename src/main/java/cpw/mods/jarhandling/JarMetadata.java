@@ -20,14 +20,15 @@ public interface JarMetadata {
     Pattern LEADING_DOTS = Pattern.compile("^\\.");
     Pattern TRAILING_DOTS = Pattern.compile("\\.$");
 
-    static JarMetadata from(final SecureJar jar, final Path path) {
+    static JarMetadata from(final SecureJar jar, final Path... path) {
+        if (path.length==0) throw new IllegalArgumentException("Need at least one path");
         final var pkgs = jar.getPackages();
         var mi = jar.findFile("module-info.class");
         if (mi.isPresent()) {
             return new ModuleJarMetadata(mi.get(), pkgs);
         } else {
             var providers = jar.getProviders();
-            var fileCandidate = fromFileName(path, pkgs, providers);
+            var fileCandidate = fromFileName(path[0], pkgs, providers);
             var aname = jar.getManifest().getMainAttributes().getValue("Automatic-Module-Name");
             if (aname != null) {
                 return new SimpleJarMetadata(aname, fileCandidate.version(), pkgs, providers);

@@ -31,12 +31,8 @@ public interface SecureJar {
 
     boolean hasSecurityData();
 
-    static SecureJar from(final Path path) {
-        return new Jar(Manifest::new, jar->JarMetadata.from(jar, path), path);
-    }
-
-    static SecureJar from(final Path path, final Supplier<Manifest> defaultManifestSupplier) {
-        return new Jar(defaultManifestSupplier, r->null, path);
+    static SecureJar from(final Path... paths) {
+        return new Jar(Manifest::new, jar -> JarMetadata.from(jar, paths), paths);
     }
 
     Set<String> getPackages();
