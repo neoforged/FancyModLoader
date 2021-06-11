@@ -29,7 +29,7 @@ public class TestClassLoader {
         var jf = JarModuleFinder.of(cl);
         var cf = ModuleLayer.boot().configuration();
         var newcf = cf.resolveAndBind(jf, ModuleFinder.ofSystem(), List.of("cpw.mods.modlauncher"));
-        var mycl = new ModuleClassLoader("test", newcf);
+        var mycl = new ModuleClassLoader("test", newcf, List.of());
         var layer = ModuleLayer.defineModules(newcf, List.of(ModuleLayer.boot()), m->mycl);
         Thread.currentThread().setContextClassLoader(mycl);
         var sl = ServiceLoader.load(layer.layer(), Consumer.class);
