@@ -1,7 +1,6 @@
 package cpw.mods.jarhandling;
 
 import cpw.mods.jarhandling.impl.Jar;
-import cpw.mods.jarhandling.impl.SimpleJarMetadata;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -12,7 +11,6 @@ import java.security.CodeSigner;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 

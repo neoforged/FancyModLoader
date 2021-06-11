@@ -23,7 +23,10 @@ public class ModuleClassLoader extends ClassLoader {
     private final Map<String, ResolvedModule> packageLookup;
 
     public ModuleClassLoader(final String name, final Configuration configuration) {
-        super(name, null);
+        this(name, configuration, null);
+    }
+    public ModuleClassLoader(final String name, final Configuration configuration, ClassLoader parent) {
+        super(name, parent);
         this.configuration = configuration;
         record JarRef(ResolvedModule m, JarModuleFinder.JarModuleReference ref) {}
         this.resolvedRoots = configuration.modules().stream()
