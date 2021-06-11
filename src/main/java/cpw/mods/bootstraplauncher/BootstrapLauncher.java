@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class BootstrapLauncher {
     @SuppressWarnings("unchecked")
@@ -25,7 +26,7 @@ public class BootstrapLauncher {
         var fileList = Arrays.stream(legacyCP.split(File.pathSeparator))
                 .filter(n->!n.endsWith(versionName+".jar"))
                 .map(s->URI.create("file://"+s))
-                .toList();
+                .collect(Collectors.toList());
         Collections.reverse(fileList);
         var urlList = fileList.stream()
                 .map(uncheck(URI::toURL));
