@@ -28,14 +28,12 @@ public class BootstrapLauncher {
                 .map(s->URI.create("file://"+s))
                 .collect(Collectors.toList());
         Collections.reverse(fileList);
-        var urlList = fileList.stream()
-                .map(uncheck(URI::toURL));
         var pathList = fileList.stream()
                 .map(Path::of);
         var jf = JarModuleFinder.of(pathList.map(SecureJar::from).toArray(SecureJar[]::new));
         var cf = ModuleLayer.boot().configuration();
         var newcf = cf.resolveAndBind(jf, ModuleFinder.ofSystem(), List.of("cpw.mods.bootstraplauncher"));
-        var mycl = new ModuleClassLoader("test", newcf, ModuleLayer.boot().findLoader("cpw.mods.securejarhandler"));
+        var mycl = new ModuleClassLoader("test", newcf);
         var layer = ModuleLayer.defineModules(newcf, List.of(ModuleLayer.boot()), m->mycl);
         Thread.currentThread().setContextClassLoader(mycl);
 
