@@ -34,7 +34,7 @@ public class BootstrapLauncher {
                 .toArray(SecureJar[]::new));
         var cf = ModuleLayer.boot().configuration();
         var newcf = cf.resolveAndBind(jf, ModuleFinder.ofSystem(), List.of("cpw.mods.bootstraplauncher"));
-        var mycl = new ModuleClassLoader("test", newcf, List.of(ModuleLayer.boot()));
+        var mycl = new ModuleClassLoader("MC-BOOTSTRAP", newcf, List.of(ModuleLayer.boot()));
         var layer = ModuleLayer.defineModules(newcf, List.of(ModuleLayer.boot()), m->mycl);
         Thread.currentThread().setContextClassLoader(mycl);
 
