@@ -35,7 +35,7 @@ public class BootstrapLauncher {
         var jf = JarModuleFinder.of(pathList.map(SecureJar::from).toArray(SecureJar[]::new));
         var cf = ModuleLayer.boot().configuration();
         var newcf = cf.resolveAndBind(jf, ModuleFinder.ofSystem(), List.of("cpw.mods.bootstraplauncher"));
-        var mycl = new ModuleClassLoader("test", newcf);
+        var mycl = new ModuleClassLoader("test", newcf, ModuleLayer.boot().findLoader("cpw.mods.securejarhandler"));
         var layer = ModuleLayer.defineModules(newcf, List.of(ModuleLayer.boot()), m->mycl);
         Thread.currentThread().setContextClassLoader(mycl);
 
