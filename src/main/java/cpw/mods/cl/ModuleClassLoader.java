@@ -100,7 +100,7 @@ public class ModuleClassLoader extends ClassLoader {
     }
 
     private Class<?> readerToClass(final ModuleReader reader, final ModuleReference ref, final String name) {
-        var bytes = maybeTransformClassBytes(getClassBytes(reader, ref, name), name);
+        var bytes = maybeTransformClassBytes(getClassBytes(reader, ref, name), name, null);
         if (bytes.length == 0) return null;
         var cname = name.replace('.','/')+".class";
         var modroot = this.resolvedRoots.get(ref.descriptor().name());
@@ -109,7 +109,7 @@ public class ModuleClassLoader extends ClassLoader {
         return defineClass(name, bytes, 0, bytes.length, ProtectionDomainHelper.createProtectionDomain(cs, this));
     }
 
-    protected byte[] maybeTransformClassBytes(final byte[] bytes, final String name) {
+    protected byte[] maybeTransformClassBytes(final byte[] bytes, final String name, final String context) {
         return bytes;
     }
 
@@ -217,12 +217,12 @@ public class ModuleClassLoader extends ClassLoader {
         }
     }
 
-    protected byte[] getMaybeTransformedClassBytes(final String className) {
+    protected byte[] getMaybeTransformedClassBytes(final String className, final String context) {
         byte[] bytes = new byte[0];
         try {
             bytes = loadFromModule(classNameToModuleName(className), (reader, ref)->this.getClassBytes(reader, ref, className));
         } catch (IOException ignored) {
         }
-        return maybeTransformClassBytes(bytes, className);
+        return maybeTransformClassBytes(bytes, className, context);
     }
 }
