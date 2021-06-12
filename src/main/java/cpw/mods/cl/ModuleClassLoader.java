@@ -86,10 +86,10 @@ public class ModuleClassLoader extends ClassLoader {
         return null;
     }
 
-    private Class<?> readerToClass(final ModuleReader reader, final ModuleReference ref, final String name) {
+    protected byte[] getClassBytes(final ModuleReader reader, final ModuleReference ref, final String name) {
         var cname = name.replace('.','/')+".class";
         record bytesandinputstream (byte[] bytes, InputStream is) {}
-        var bytes = Optional.of(reader)
+        return Optional.of(reader)
                 .flatMap(LambdaExceptionUtils.rethrowFunction(r->r.open(cname)))
                 .stream()
                 .map(LambdaExceptionUtils.rethrowFunction(is->new bytesandinputstream(is.readAllBytes(), is)))
@@ -97,8 +97,12 @@ public class ModuleClassLoader extends ClassLoader {
                 .map(bytesandinputstream::bytes)
                 .findFirst()
                 .orElseGet(()->new byte[0]);
-        bytes = maybeTransformClassBytes(bytes, name);
+    }
+
+    private Class<?> readerToClass(final ModuleReader reader, final ModuleReference ref, final String name) {
+        var bytes = maybeTransformClassBytes(getClassBytes(reader, ref, name), name);
         if (bytes.length == 0) return null;
+        var cname = name.replace('.','/')+".class";
         var modroot = this.resolvedRoots.get(ref.descriptor().name());
         ProtectionDomainHelper.tryDefinePackage(this, name, modroot.jar().getManifest(), t->modroot.jar().getTrustedManifestEntries(t), this::definePackage);
         var cs = ProtectionDomainHelper.createCodeSource(toURL(ref.location()), modroot.jar().verifyAndGetSigners(cname, bytes));
@@ -129,13 +133,17 @@ public class ModuleClassLoader extends ClassLoader {
 
     @Override
     protected Class<?> findClass(final String name) throws ClassNotFoundException {
-        final var pname = name.substring(0, name.lastIndexOf('.'));
-        final var mname = Optional.ofNullable(this.packageLookup.get(pname)).map(ResolvedModule::name).orElse(null);
+        final String mname = classNameToModuleName(name);
         if (mname != null) {
             return findClass(mname, name);
         } else {
             return super.findClass(name);
         }
+    }
+
+    protected String classNameToModuleName(final String name) {
+        final var pname = name.substring(0, name.lastIndexOf('.'));
+        return Optional.ofNullable(this.packageLookup.get(pname)).map(ResolvedModule::name).orElse(null);
     }
 
     private Package definePackage(final String[] args) {
@@ -201,11 +209,20 @@ public class ModuleClassLoader extends ClassLoader {
         }
     }
 
-    private <T> T loadFromModule(final String moduleName, BiFunction<ModuleReader, ModuleReference, T> lookup) throws IOException {
+    protected <T> T loadFromModule(final String moduleName, BiFunction<ModuleReader, ModuleReference, T> lookup) throws IOException {
         var module = configuration.findModule(moduleName).orElseThrow(FileNotFoundException::new);
         var ref = module.reference();
         try (var reader = ref.open()) {
             return lookup.apply(reader, ref);
         }
+    }
+
+    protected byte[] getMaybeTransformedClassBytes(final String className) {
+        byte[] bytes = new byte[0];
+        try {
+            bytes = loadFromModule(classNameToModuleName(className), (reader, ref)->this.getClassBytes(reader, ref, className));
+        } catch (IOException ignored) {
+        }
+        return maybeTransformClassBytes(bytes, className);
     }
 }
