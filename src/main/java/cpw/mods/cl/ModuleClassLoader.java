@@ -1,13 +1,15 @@
 package cpw.mods.cl;
 
+import cpw.mods.util.LambdaExceptionUtils;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.module.*;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.security.CodeSource;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -86,20 +88,24 @@ public class ModuleClassLoader extends ClassLoader {
 
     private Class<?> readerToClass(final ModuleReader reader, final ModuleReference ref, final String name) {
         var cname = name.replace('.','/')+".class";
-        byte[] bytes;
-        try (var is = reader.open(cname).orElseThrow(FileNotFoundException::new)) {
-            bytes = is.readAllBytes();
-        } catch (IOException ioe) {
-            return null;
-        }
+        record bytesandinputstream (byte[] bytes, InputStream is) {}
+        var bytes = Optional.of(reader)
+                .flatMap(LambdaExceptionUtils.rethrowFunction(r->r.open(cname)))
+                .stream()
+                .map(LambdaExceptionUtils.rethrowFunction(is->new bytesandinputstream(is.readAllBytes(), is)))
+                .peek(LambdaExceptionUtils.rethrowConsumer(bais->bais.is().close()))
+                .map(bytesandinputstream::bytes)
+                .findFirst()
+                .orElseGet(()->new byte[0]);
+        bytes = maybeTransformClassBytes(bytes, name);
+        if (bytes.length == 0) return null;
         var modroot = this.resolvedRoots.get(ref.descriptor().name());
-        var pkg = ProtectionDomainHelper.tryDefinePackage(this, name, modroot.jar().getManifest(), t->modroot.jar().getTrustedManifestEntries(t), this::definePackage);
+        ProtectionDomainHelper.tryDefinePackage(this, name, modroot.jar().getManifest(), t->modroot.jar().getTrustedManifestEntries(t), this::definePackage);
         var cs = ProtectionDomainHelper.createCodeSource(toURL(ref.location()), modroot.jar().verifyAndGetSigners(cname, bytes));
-        bytes = transformClassBytes(bytes, name, pkg, cs);
         return defineClass(name, bytes, 0, bytes.length, ProtectionDomainHelper.createProtectionDomain(cs, this));
     }
 
-    protected byte[] transformClassBytes(final byte[] bytes, final String name, final Package pkg, final CodeSource cs) {
+    protected byte[] maybeTransformClassBytes(final byte[] bytes, final String name) {
         return bytes;
     }
 
