@@ -7,6 +7,7 @@ import java.lang.module.*;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.security.CodeSource;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -94,7 +95,12 @@ public class ModuleClassLoader extends ClassLoader {
         var modroot = this.resolvedRoots.get(ref.descriptor().name());
         var pkg = ProtectionDomainHelper.tryDefinePackage(this, name, modroot.jar().getManifest(), t->modroot.jar().getTrustedManifestEntries(t), this::definePackage);
         var cs = ProtectionDomainHelper.createCodeSource(toURL(ref.location()), modroot.jar().verifyAndGetSigners(cname, bytes));
+        bytes = transformClassBytes(bytes, name, pkg, cs);
         return defineClass(name, bytes, 0, bytes.length, ProtectionDomainHelper.createProtectionDomain(cs, this));
+    }
+
+    protected byte[] transformClassBytes(final byte[] bytes, final String name, final Package pkg, final CodeSource cs) {
+        return bytes;
     }
 
     @Override
@@ -160,7 +166,7 @@ public class ModuleClassLoader extends ClassLoader {
 
     private List<URL> findResourceList(final String name) throws IOException {
         var idx = name.lastIndexOf('/');
-        var pkgname =  (idx == -1 || idx==name.length()) ? "" : name.substring(0,idx).replace('/','.');
+        var pkgname =  (idx == -1 || idx==name.length()-1) ? "" : name.substring(0,idx).replace('/','.');
         var module = packageLookup.get(pkgname);
         if (module != null) {
             var res = findResource(module.name(), name);
