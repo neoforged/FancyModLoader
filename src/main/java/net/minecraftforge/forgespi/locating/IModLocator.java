@@ -44,10 +44,6 @@ public interface IModLocator {
 
     Optional<Manifest> findManifest(Path file);
 
-    default Pair<Optional<Manifest>, Optional<CodeSigner[]>> findManifestAndSigners(Path file) {
-        return Pair.of(findManifest(file), Optional.empty());
-    }
-
     void initArguments(Map<String, ?> arguments);
 
     boolean isValid(IModFile modFile);

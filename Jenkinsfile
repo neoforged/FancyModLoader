@@ -1,9 +1,9 @@
-@Library('forge-shared-library')_
+library 'forge-shared-library'
 
 pipeline {
     agent {
         docker {
-            image 'gradle:jdk8'
+            image 'gradle:7-jdk16'
             args '-v forgespigc:/home/gradle/.gradle/'
         }
     }
@@ -32,12 +32,10 @@ pipeline {
             }
         }
         stage('buildandtest') {
-            steps {
-                sh './gradlew ${GRADLE_ARGS} --refresh-dependencies --continue build test'
-                script {
-                    env.MYGROUP = sh(returnStdout: true, script: './gradlew properties -q | grep "group:" | awk \'{print $2}\'').trim()
-                    env.MYARTIFACT = sh(returnStdout: true, script: './gradlew properties -q | grep "name:" | awk \'{print $2}\'').trim()
-                    env.MYVERSION = sh(returnStdout: true, script: './gradlew properties -q | grep "version:" | awk \'{print $2}\'').trim()
+            withGradle {
+                steps {
+                    sh './gradlew ${GRADLE_ARGS} --refresh-dependencies --continue build test'
+                    gradleVersion(this)
                 }
             }
         }
