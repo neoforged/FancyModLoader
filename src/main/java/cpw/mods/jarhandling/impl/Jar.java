@@ -46,6 +46,11 @@ public class Jar implements SecureJar {
     }
 
     @Override
+    public Path getPrimaryPath() {
+        return filesystem.getPrimaryPath();
+    }
+
+    @Override
     public Optional<URI> findFile(final String name) {
         var rel = filesystem.getPath(name);
         if (this.nameOverrides.containsKey(rel)) {

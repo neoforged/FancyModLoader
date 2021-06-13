@@ -15,6 +15,8 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 public interface SecureJar {
+    Path getPrimaryPath();
+
     Optional<URI> findFile(String name);
 
     Manifest getManifest();

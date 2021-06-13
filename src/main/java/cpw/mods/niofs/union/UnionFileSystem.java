@@ -19,6 +19,11 @@ public class UnionFileSystem extends FileSystem {
     private final UnionFileSystemProvider provider;
     private final List<Path> basepaths;
     private final Map<Path,EmbeddedFileSystemMetadata> embeddedFileSystems;
+
+    public Path getPrimaryPath() {
+        return basepaths.get(0);
+    }
+
     private record EmbeddedFileSystemMetadata(Path path, FileSystem fs) {}
 
     public UnionFileSystem(final UnionFileSystemProvider provider, final Path... basepaths) {
