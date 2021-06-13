@@ -224,4 +224,9 @@ public class Jar implements SecureJar {
             return List.of();
         }
     }
+
+    @Override
+    public Path getPath(String first, String... rest) {
+        return filesystem.getPath(first, rest);
+    }
 }
