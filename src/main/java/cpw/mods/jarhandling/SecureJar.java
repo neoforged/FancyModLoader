@@ -11,6 +11,8 @@ import java.security.CodeSigner;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
@@ -33,6 +35,10 @@ public interface SecureJar {
 
     static SecureJar from(final Path... paths) {
         return new Jar(Manifest::new, jar -> JarMetadata.from(jar, paths), paths);
+    }
+
+    static SecureJar from(Supplier<Manifest> defaultManifest, Function<SecureJar, JarMetadata> metadataSupplier, final Path... paths) {
+        return new Jar(defaultManifest, metadataSupplier, paths);
     }
 
     Set<String> getPackages();
