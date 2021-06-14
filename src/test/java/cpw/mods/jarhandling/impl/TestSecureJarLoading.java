@@ -27,7 +27,7 @@ public class TestSecureJarLoading {
                 if (SignatureFileVerifier.isSigningRelated(ze.getName())) continue;
                 if (ze.isDirectory()) continue;
                 final var zeName = ze.getName();
-                var cs = jar.verifyAndGetSigners(ze.getName(), zis.readAllBytes());
+                var cs = ((Jar)jar).verifyAndGetSigners(ze.getName(), zis.readAllBytes());
                 assertAll("Behaves as a properly secured JAR",
                         ()->assertNotNull(cs, "Has code signers array"),
                         ()->assertTrue(cs.length>0, "With length > 0"),
@@ -48,7 +48,7 @@ public class TestSecureJarLoading {
                 if (SignatureFileVerifier.isSigningRelated(ze.getName())) continue;
                 if (ze.isDirectory()) continue;
                 final var zeName = ze.getName();
-                var cs = jar.verifyAndGetSigners(ze.getName(), zis.readAllBytes());
+                var cs = ((Jar)jar).verifyAndGetSigners(ze.getName(), zis.readAllBytes());
                 assertAll("Jar behaves correctly",
                         ()->assertNull(cs, "No code signers")
                 );
@@ -78,7 +78,7 @@ public class TestSecureJarLoading {
         SecureJar jar = SecureJar.from(path);
         ZipFile zf = new ZipFile(path.toFile());
         final var entry = zf.getEntry("META-INF/mods.toml");
-        var cs = jar.verifyAndGetSigners("META-INF/mods.toml", zf.getInputStream(entry).readAllBytes());
+        var cs = ((Jar)jar).verifyAndGetSigners("META-INF/mods.toml", zf.getInputStream(entry).readAllBytes());
         assertNull(cs);
     }
 
@@ -92,7 +92,7 @@ public class TestSecureJarLoading {
                 if (SignatureFileVerifier.isSigningRelated(ze.getName())) continue;
                 if (ze.isDirectory()) continue;
                 final var zeName = ze.getName();
-                var cs = jar.verifyAndGetSigners(ze.getName(), zis.readAllBytes());
+                var cs = ((Jar)jar).verifyAndGetSigners(ze.getName(), zis.readAllBytes());
                 assertAll("Behaves as a properly secured JAR",
                         ()->assertNotNull(cs, "Has code signers array"),
                         ()->assertTrue(cs.length>0, "With length > 0"),
