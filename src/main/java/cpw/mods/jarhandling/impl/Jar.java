@@ -160,11 +160,11 @@ public class Jar implements SecureJar {
     public Status verifyPath(final Path path) {
         if (path.getFileSystem() != filesystem) throw new IllegalArgumentException("Wrong filesystem");
         final var pathname = path.toString();
-        if (statusData.containsKey(pathname)) return statusData.get(pathname).status();
+        if (statusData.containsKey(pathname)) return getFileStatus(pathname);
         try {
             var bytes = Files.readAllBytes(path);
             verifyAndGetSigners(pathname, bytes);
-            return statusData.get(pathname).status();
+            return getFileStatus(pathname);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
