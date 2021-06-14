@@ -14,6 +14,7 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ModuleClassLoader extends ClassLoader {
     static {
@@ -86,17 +87,19 @@ public class ModuleClassLoader extends ClassLoader {
         return null;
     }
 
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private static Stream<InputStream> closeHandler(Optional<InputStream> supplier) {
+        final var is = supplier.orElse(null);
+        return Optional.ofNullable(is).stream().onClose(() -> Optional.ofNullable(is).ifPresent(LambdaExceptionUtils.rethrowConsumer(InputStream::close)));
+    }
     protected byte[] getClassBytes(final ModuleReader reader, final ModuleReference ref, final String name) {
         var cname = name.replace('.','/')+".class";
-        record bytesandinputstream (byte[] bytes, InputStream is) {}
-        return Optional.of(reader)
-                .flatMap(LambdaExceptionUtils.rethrowFunction(r->r.open(cname)))
-                .stream()
-                .map(LambdaExceptionUtils.rethrowFunction(is->new bytesandinputstream(is.readAllBytes(), is)))
-                .peek(LambdaExceptionUtils.rethrowConsumer(bais->bais.is().close()))
-                .map(bytesandinputstream::bytes)
-                .findFirst()
-                .orElseGet(()->new byte[0]);
+
+        try (var istream = closeHandler(Optional.of(reader).flatMap(LambdaExceptionUtils.rethrowFunction(r->r.open(cname))))) {
+            return istream.map(LambdaExceptionUtils.rethrowFunction(InputStream::readAllBytes))
+                    .findFirst()
+                    .orElseGet(()->new byte[0]);
+        }
     }
 
     private Class<?> readerToClass(final ModuleReader reader, final ModuleReference ref, final String name) {

@@ -49,6 +49,8 @@ public interface SecureJar {
 
     Path getPath(String first, String... rest);
 
+    Path getRootPath();
+
     record Provider(String serviceName, List<String> providers) {
         public static Provider fromPath(final Path path) {
             final var sname = path.getFileName().toString();

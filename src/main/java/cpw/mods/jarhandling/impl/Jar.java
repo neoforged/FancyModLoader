@@ -229,4 +229,9 @@ public class Jar implements SecureJar {
     public Path getPath(String first, String... rest) {
         return filesystem.getPath(first, rest);
     }
+
+    @Override
+    public Path getRootPath() {
+        return filesystem.getRoot();
+    }
 }
