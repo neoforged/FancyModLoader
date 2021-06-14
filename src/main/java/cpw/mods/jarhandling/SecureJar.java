@@ -25,7 +25,7 @@ public interface SecureJar {
 
     CodeSigner[] getManifestSigners();
 
-    CodeSigner[] verifyAndGetSigners(String name, byte[] bytes);
+    Status verifyPath(Path path);
 
     Status getFileStatus(String name);
 

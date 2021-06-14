@@ -4,6 +4,7 @@ import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.niofs.union.UnionFileSystem;
 import cpw.mods.niofs.union.UnionFileSystemProvider;
+import cpw.mods.niofs.union.UnionPath;
 import sun.security.util.ManifestEntryVerifier;
 
 import java.io.IOException;
@@ -138,7 +139,6 @@ public class Jar implements SecureJar {
         return getData(JarFile.MANIFEST_NAME).map(r->r.signers).orElse(null);
     }
 
-    @Override
     public synchronized CodeSigner[] verifyAndGetSigners(final String name, final byte[] bytes) {
         if (!secure) return null;
         if (statusData.containsKey(name)) return statusData.get(name).signers;
@@ -153,6 +153,20 @@ public class Jar implements SecureJar {
             return null;
         } finally {
             setMEVName(null);
+        }
+    }
+
+    @Override
+    public Status verifyPath(final Path path) {
+        if (path.getFileSystem() != filesystem) throw new IllegalArgumentException("Wrong filesystem");
+        final var pathname = path.toString();
+        if (statusData.containsKey(pathname)) return statusData.get(pathname).status();
+        try {
+            var bytes = Files.readAllBytes(path);
+            verifyAndGetSigners(pathname, bytes);
+            return statusData.get(pathname).status();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
