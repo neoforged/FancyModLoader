@@ -139,7 +139,7 @@ public class UnionPath implements Path {
 
     @Override
     public URI toUri() {
-        return URI.create(fileSystem.provider().getScheme()+"://"+fileSystem.getBasePaths().get(0).toString()+"!"+toAbsolutePath());
+        return URI.create(fileSystem.provider().getScheme()+"://"+fileSystem.getPrimaryPath().toString()+"!"+toAbsolutePath());
     }
 
     @Override

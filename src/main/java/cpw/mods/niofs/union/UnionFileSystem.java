@@ -21,7 +21,7 @@ public class UnionFileSystem extends FileSystem {
     private final Map<Path,EmbeddedFileSystemMetadata> embeddedFileSystems;
 
     public Path getPrimaryPath() {
-        return basepaths.get(0);
+        return basepaths.get(basepaths.size()-1);
     }
 
     private record EmbeddedFileSystemMetadata(Path path, FileSystem fs) {}
