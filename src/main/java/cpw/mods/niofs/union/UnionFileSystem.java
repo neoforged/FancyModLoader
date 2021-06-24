@@ -90,7 +90,7 @@ public class UnionFileSystem extends FileSystem {
 
     @Override
     public Path getPath(final String first, final String... more) {
-        return new UnionPath(this, first+this.getSeparator()+String.join(this.getSeparator(), more));
+        return new UnionPath(this, first+(more.length>0 ? this.getSeparator()+String.join(this.getSeparator(), more) : ""));
     }
 
     @Override
