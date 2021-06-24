@@ -47,8 +47,11 @@ public class ModuleClassLoader extends ClassLoader {
             for (var other : rm.reads()) {
                 Supplier<ClassLoader> findClassLoader = ()->{
                     if (other.configuration() != configuration) {
-                        var pl = parentLayers.stream().filter(l -> l.configuration() == other.configuration()).findFirst().orElseThrow();
-                        return Optional.ofNullable(pl.findLoader(other.name())).orElse(ClassLoader.getPlatformClassLoader());
+                        return parentLayers.stream()
+                                .filter(l -> l.configuration() == other.configuration())
+                                .flatMap(layer->Optional.ofNullable(layer.findLoader(other.name())).stream())
+                                .findFirst()
+                                .orElse(ClassLoader.getPlatformClassLoader());
                     } else {
                         return ModuleClassLoader.this;
                     }
