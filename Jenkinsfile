@@ -32,8 +32,8 @@ pipeline {
             }
         }
         stage('buildandtest') {
-            withGradle {
-                steps {
+            steps {
+                withGradle {
                     sh './gradlew ${GRADLE_ARGS} --refresh-dependencies --continue build test'
                     gradleVersion(this)
                 }
