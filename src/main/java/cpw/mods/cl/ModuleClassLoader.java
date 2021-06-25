@@ -27,6 +27,7 @@ public class ModuleClassLoader extends ClassLoader {
     private final Map<String, JarModuleFinder.JarModuleReference> resolvedRoots;
     private final Map<String, ResolvedModule> packageLookup;
     private final Map<String, ClassLoader> parentLoaders;
+    private ClassLoader fallbackClassLoader = ClassLoader.getPlatformClassLoader();
 
     public ModuleClassLoader(final String name, final Configuration configuration, final List<ModuleLayer> parentLayers) {
         super(name, null);
@@ -128,7 +129,7 @@ public class ModuleClassLoader extends ClassLoader {
                 if (this.packageLookup.containsKey(pname)) {
                     c = findClass(this.packageLookup.get(pname).name(), name);
                 } else {
-                    c = this.parentLoaders.getOrDefault(pname, ClassLoader.getPlatformClassLoader()).loadClass(name);
+                    c = this.parentLoaders.getOrDefault(pname, fallbackClassLoader).loadClass(name);
                 }
             }
             if (c == null) throw new ClassNotFoundException(name);
@@ -223,12 +224,25 @@ public class ModuleClassLoader extends ClassLoader {
         }
     }
 
-    protected byte[] getMaybeTransformedClassBytes(final String className, final String context) {
+    protected byte[] getMaybeTransformedClassBytes(final String name, final String context) {
         byte[] bytes = new byte[0];
         try {
-            bytes = loadFromModule(classNameToModuleName(className), (reader, ref)->this.getClassBytes(reader, ref, className));
+            final var pname = name.substring(0, name.lastIndexOf('.'));
+            if (this.packageLookup.containsKey(pname)) {
+                bytes = loadFromModule(classNameToModuleName(name), (reader, ref)->this.getClassBytes(reader, ref, name));
+            } else {
+                var cname = name.replace('.','/')+".class";
+                try (var is = this.parentLoaders.getOrDefault(pname, ClassLoader.getPlatformClassLoader()).getResourceAsStream(cname)) {
+                    if (is != null)
+                        bytes = is.readAllBytes();
+                }
+            }
         } catch (IOException ignored) {
         }
-        return maybeTransformClassBytes(bytes, className, context);
+        return maybeTransformClassBytes(bytes, name, context);
+    }
+
+    public void setFallbackClassLoader(final ClassLoader fallbackClassLoader) {
+        this.fallbackClassLoader = fallbackClassLoader;
     }
 }

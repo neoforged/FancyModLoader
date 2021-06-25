@@ -41,7 +41,11 @@ group = 'cpw.mods'
 
 version = grgit.describe(longDescr: true).split('-').with { "${it[0]}.${it[1]}" }
 
+ext.asmVersion = 9.1
 dependencies {
+    api("org.ow2.asm:asm:${asmVersion}")
+    api("org.ow2.asm:asm-tree:${asmVersion}")
+    api("org.ow2.asm:asm-commons:${asmVersion}")
     testImplementation('org.junit.jupiter:junit-jupiter-api:5.7.+')
     testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.7.+')
 }
