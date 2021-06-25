@@ -37,4 +37,6 @@ public interface IModFileInfo
     Map<String,Object> getFileProperties();
 
     String getLicense();
+
+    String moduleName();
 }

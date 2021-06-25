@@ -1,5 +1,6 @@
 package net.minecraftforge.forgespi.locating;
 
+import cpw.mods.jarhandling.SecureJar;
 import net.minecraftforge.forgespi.language.*;
 
 import java.nio.file.Path;
@@ -17,6 +18,10 @@ public interface IModFile {
     Type getType();
 
     Path getFilePath();
+
+    SecureJar getSecureJar();
+
+    void setSecurityStatus(SecureJar.Status status);
 
     List<IModInfo> getModInfos();
 

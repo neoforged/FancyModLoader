@@ -37,6 +37,6 @@ public interface IModLanguageProvider
     <R extends ILifecycleEvent<R>> void consumeLifecycleEvent(Supplier<R> consumeEvent);
 
     interface IModLanguageLoader {
-        <T> T loadMod(IModInfo info, ClassLoader modClassLoader, ModFileScanData modFileScanResults);
+        <T> T loadMod(IModInfo info, ModFileScanData modFileScanResults, ModuleLayer layer);
     }
 }
