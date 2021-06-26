@@ -134,7 +134,11 @@ public class UnionPath implements Path {
 
     @Override
     public Path relativize(final Path other) {
-        return null;
+        if (other instanceof UnionPath p) {
+            if (p.getFileSystem()!=this.getFileSystem()) throw new IllegalArgumentException("Wrong filesystem");
+            return p.subpath(this.getNameCount(), p.getNameCount());
+        }
+        throw new IllegalArgumentException("Wrong filesystem");
     }
 
     @Override
