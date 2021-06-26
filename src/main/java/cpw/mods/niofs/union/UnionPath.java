@@ -6,7 +6,10 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class UnionPath implements Path {
     private final UnionFileSystem fileSystem;
@@ -137,9 +140,25 @@ public class UnionPath implements Path {
 
     @Override
     public Path relativize(final Path other) {
+        if (other.getFileSystem()!=this.getFileSystem()) throw new IllegalArgumentException("Wrong filesystem");
         if (other instanceof UnionPath p) {
-            if (p.getFileSystem()!=this.getFileSystem()) throw new IllegalArgumentException("Wrong filesystem");
-            return p.subpath(this.getNameCount(), p.getNameCount());
+            var poff = p.isAbsolute() ? 1 : 0;
+            var meoff = this.isAbsolute() ? 1 : 0;
+            var length = Math.min(this.pathParts.length - meoff, p.pathParts.length - poff);
+            int i = 0;
+            while (i < length) {
+                if (!Objects.equals(this.pathParts[i + meoff], p.pathParts[i + poff]))
+                    break;
+                i++;
+            }
+
+            var remaining = this.pathParts.length - i - meoff;
+            if (remaining == 0) {
+                return p.subpath(i, p.getNameCount());
+            } else {
+                var updots = IntStream.range(0, remaining).mapToObj(idx -> "..").collect(Collectors.joining(getFileSystem().getSeparator()));
+                return new UnionPath(this.getFileSystem(), updots + getFileSystem().getSeparator() + p.subpath(i, p.getNameCount()));
+            }
         }
         throw new IllegalArgumentException("Wrong filesystem");
     }
