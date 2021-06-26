@@ -1,6 +1,6 @@
 plugins {
-    id 'org.ajoberstar.grgit' version '4.1.0'
     id 'com.github.ben-manes.versions' version '0.39.0'
+    id 'net.minecraftforge.gradleutils' version '1.+'
     id 'org.javamodularity.moduleplugin' version '1.8.7' apply false
 }
 
@@ -39,7 +39,7 @@ test {
 
 group = 'cpw.mods'
 
-version = grgit.describe(longDescr: true).split('-').with { "${it[0]}.${it[1]}" }
+version = gradleutils.getTagOffsetVersion()
 
 ext.asmVersion = 9.1
 dependencies {
@@ -69,11 +69,11 @@ jar {
                 'Specification-Vendor': 'forge',
                 'Specification-Version': '1', // We are version 1 of ourselves
                 'Implementation-Title': project.name,
-                'Implementation-Version': "${project.version}+${System.getenv("BUILD_NUMBER")?:0}+${grgit.branch.current().getName()}.${grgit.head().abbreviatedId}",
+                'Implementation-Version': "${project.version}+${System.getenv('BUILD_NUMBER')?:0}+${gradleutils.gitInfo.branch}.${gradleutils.gitInfo.abbreviatedId}",
                 'Implementation-Vendor':'forge',
                 'Implementation-Timestamp': java.time.Instant.now().toString(),
-                'Git-Commit': grgit.head().abbreviatedId,
-                'Git-Branch': grgit.branch.current().getName(),
+                'Git-Commit': gradleutils.gitInfo.abbreviatedId,
+                'Git-Branch': gradleutils.gitInfo.branch,
                 'Build-Number': "${System.getenv("BUILD_NUMBER")?:0}",
         )
     }
