@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.*;
 import java.util.*;
+import java.util.function.IntBinaryOperator;
+import java.util.function.IntFunction;
 import java.util.stream.Stream;
 
 public class UnionPath implements Path {
@@ -77,7 +79,7 @@ public class UnionPath implements Path {
             return false;
         }
         if (other instanceof UnionPath bp) {
-            return checkArraysMatch(this.pathParts, bp.pathParts);
+            return checkArraysMatch(this.pathParts, bp.pathParts, false);
         }
         return false;
     }
@@ -89,18 +91,19 @@ public class UnionPath implements Path {
             return false;
         }
         if (other instanceof UnionPath bp) {
-            var revlists = Stream.of(this.pathParts, bp.pathParts)
-                    .map(Arrays::asList)
-                    .peek(Collections::reverse)
-                    .map(l->l.toArray(new String[0]))
-                    .toArray(String[][]::new);
-            return checkArraysMatch(revlists[0], revlists[1]);
+            return checkArraysMatch(this.pathParts, bp.pathParts, true);
         }
         return false;
     }
 
-    private static boolean checkArraysMatch(String[] array1, String[] array2) {
-        return Arrays.mismatch(array1, 0, array2.length, array2, 0, array2.length) == -1;
+    private static boolean checkArraysMatch(String[] array1, String[] array2, boolean reverse) {
+        var length = Math.min(array1.length, array2.length);
+        IntBinaryOperator offset = reverse ? (l, i) -> l - i - 1 : (l, i) -> i;
+        for (int i = 0; i < length; i++) {
+            if (!Objects.equals(array1[offset.applyAsInt(array1.length, i)], array2[offset.applyAsInt(array2.length, i)]))
+                return false;
+        }
+        return true;
     }
 
     @Override
