@@ -38,11 +38,7 @@ public interface IModLocator {
 
     String name();
 
-    Path findPath(IModFile modFile, String... path);
-
     void scanFile(final IModFile modFile, Consumer<Path> pathConsumer);
-
-    Optional<Manifest> findManifest(Path file);
 
     void initArguments(Map<String, ?> arguments);
 

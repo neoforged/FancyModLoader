@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 public interface IModFile {
     IModLanguageProvider getLoader();
 
-    Path findResource(String className);
+    Path findResource(String... pathName);
 
     Supplier<Map<String,Object>> getSubstitutionMap();
 
