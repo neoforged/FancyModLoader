@@ -46,4 +46,6 @@ public interface IModFileInfo
     List<String> usesServices();
 
     IModFile getFile();
+
+    IConfigurable getConfig();
 }

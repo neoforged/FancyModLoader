@@ -55,6 +55,8 @@ public interface IModInfo
 
     boolean getLogoBlur();
 
+    IConfigurable getConfig();
+
     enum Ordering {
         BEFORE, AFTER, NONE
     }
