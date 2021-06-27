@@ -39,4 +39,8 @@ public interface IModFileInfo
     String getLicense();
 
     String moduleName();
+
+    String versionString();
+
+    List<String> usesServices();
 }
