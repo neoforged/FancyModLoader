@@ -27,6 +27,7 @@ import org.apache.maven.artifact.versioning.VersionRange;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public interface IModInfo
 {
@@ -48,7 +49,11 @@ public interface IModInfo
 
     Map<String,Object> getModProperties();
 
-    URL getUpdateURL();
+    Optional<URL> getUpdateURL();
+
+    Optional<String> getLogoFile();
+
+    boolean getLogoBlur();
 
     enum Ordering {
         BEFORE, AFTER, NONE
