@@ -19,6 +19,7 @@
 
 package net.minecraftforge.forgespi.language;
 
+import net.minecraftforge.forgespi.locating.IModFile;
 import org.apache.maven.artifact.versioning.VersionRange;
 
 import java.util.List;
@@ -43,4 +44,6 @@ public interface IModFileInfo
     String versionString();
 
     List<String> usesServices();
+
+    IModFile getFile();
 }
