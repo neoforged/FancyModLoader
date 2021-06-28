@@ -22,10 +22,12 @@ public class BootstrapLauncher {
     public static void main(String[] args) {
         var legacyCP = Objects.requireNonNull(System.getProperty("legacyClassPath"), "Missing legacyClassPath, cannot bootstrap");
         var versionName = Objects.requireNonNull(System.getProperty("versionName"), "Missing versionName, cannot bootstrap");
+        var ignoreList = System.getProperty("ignoreList", "/org/ow2/asm/");
+        var ignores = Arrays.stream(ignoreList.split(File.pathSeparator)).toList();
 
         var fileList = Arrays.stream(legacyCP.split(File.pathSeparator))
                 .filter(n->!n.endsWith(versionName+".jar"))
-                .filter(n->!n.contains("/org/ow2/asm/"))
+                .filter(n-> ignores.stream().noneMatch(n::contains))
                 .map(s->URI.create("file://"+s))
                 .collect(Collectors.toList());
         Collections.reverse(fileList);
