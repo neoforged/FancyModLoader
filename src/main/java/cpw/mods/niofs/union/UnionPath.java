@@ -18,8 +18,12 @@ public class UnionPath implements Path {
 
     UnionPath(final UnionFileSystem fileSystem, final String... pathParts) {
         this.fileSystem = fileSystem;
-        final var longstring = String.join(fileSystem.getSeparator(), pathParts);
-        this.pathParts = getPathParts(longstring);
+        if (pathParts.length == 0)
+            this.pathParts = new String[0];
+        else {
+            final var longstring = String.join(fileSystem.getSeparator(), pathParts);
+            this.pathParts = getPathParts(longstring);
+        }
     }
 
     private String[] getPathParts(final String longstring) {
@@ -153,7 +157,9 @@ public class UnionPath implements Path {
             }
 
             var remaining = this.pathParts.length - i - meoff;
-            if (remaining == 0) {
+            if (remaining == 0 && i == length) {
+                return new UnionPath(this.getFileSystem());
+            } else if (remaining == 0) {
                 return p.subpath(i, p.getNameCount());
             } else {
                 var updots = IntStream.range(0, remaining).mapToObj(idx -> "..").collect(Collectors.joining(getFileSystem().getSeparator()));
