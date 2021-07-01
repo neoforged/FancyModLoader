@@ -68,7 +68,7 @@ public class Jar implements SecureJar {
 
     @SuppressWarnings("unchecked")
     public Jar(final Supplier<Manifest> defaultManifest, final Function<SecureJar, JarMetadata> metadataFunction, final Path... paths) {
-        final var path = paths[0];
+        final var path = paths[paths.length-1];
         this.filesystem = UFSP.newFileSystem(paths);
         try {
             if (Files.isDirectory(path)) {
