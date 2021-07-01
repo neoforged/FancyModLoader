@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public interface IModFile {
-    IModLanguageProvider getLoader();
+    List<IModLanguageProvider> getLoaders();
 
     Path findResource(String... pathName);
 

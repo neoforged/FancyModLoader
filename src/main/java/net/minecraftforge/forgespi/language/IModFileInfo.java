@@ -29,9 +29,9 @@ public interface IModFileInfo
 {
     List<IModInfo> getMods();
 
-    String getModLoader();
+    record LanguageSpec(String languageName, VersionRange acceptedVersions) {}
 
-    VersionRange getModLoaderVersion();
+    List<LanguageSpec> requiredLanguageLoaders();
 
     boolean showAsResourcePack();
 
