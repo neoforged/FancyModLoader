@@ -75,7 +75,7 @@ public class UnionPath implements Path {
     @Override
     public Path subpath(final int beginIndex, final int endIndex) {
         if (beginIndex < 0 || beginIndex > this.pathParts.length - 1 || endIndex < 0 || endIndex > this.pathParts.length || beginIndex > endIndex) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("Out of range "+beginIndex+" to "+endIndex+" for length "+this.pathParts.length);
         }
         return new UnionPath(this.fileSystem, Arrays.copyOfRange(this.pathParts, beginIndex, endIndex));
     }
@@ -157,13 +157,17 @@ public class UnionPath implements Path {
             }
 
             var remaining = this.pathParts.length - i - meoff;
-            if (remaining == 0 && i == length) {
+            if (remaining == 0 && i == p.pathParts.length) {
                 return new UnionPath(this.getFileSystem());
             } else if (remaining == 0) {
                 return p.subpath(i, p.getNameCount());
             } else {
                 var updots = IntStream.range(0, remaining).mapToObj(idx -> "..").collect(Collectors.joining(getFileSystem().getSeparator()));
-                return new UnionPath(this.getFileSystem(), updots + getFileSystem().getSeparator() + p.subpath(i, p.getNameCount()));
+                if (i == p.pathParts.length) {
+                    return new UnionPath(this.getFileSystem(), updots);
+                } else {
+                    return new UnionPath(this.getFileSystem(), updots + getFileSystem().getSeparator() + p.subpath(i, p.getNameCount()));
+                }
             }
         }
         throw new IllegalArgumentException("Wrong filesystem");
