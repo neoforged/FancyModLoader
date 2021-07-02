@@ -137,7 +137,7 @@ public class UnionPath implements Path {
             if (path.isAbsolute()) {
                 return path;
             }
-            return new UnionPath(this.fileSystem, this+fileSystem.getSeparator()+ other);
+            return new UnionPath(this.fileSystem, this+fileSystem.getSeparator()+other);
         }
         return other;
     }
@@ -183,7 +183,7 @@ public class UnionPath implements Path {
         if (isAbsolute())
             return this;
         else
-            throw new IllegalStateException("Not absolute");
+            return fileSystem.getRoot().resolve(this);
     }
 
     @Override
