@@ -20,6 +20,7 @@ public class UnionFileSystem extends FileSystem {
     private final UnionPath root = new UnionPath(this, UnionPath.ROOT);
     private final UnionPath notExistingPath = new UnionPath(this, "SNOWMAN");
     private final UnionFileSystemProvider provider;
+    private final String key;
     private final List<Path> basepaths;
     private final BiPredicate<String, String> pathFilter;
     private final Map<Path,EmbeddedFileSystemMetadata> embeddedFileSystems;
@@ -32,11 +33,16 @@ public class UnionFileSystem extends FileSystem {
         return pathFilter;
     }
 
+    public String getKey()  {
+        return this.key;
+    }
+
     private record EmbeddedFileSystemMetadata(Path path, FileSystem fs) {}
 
-    public UnionFileSystem(final UnionFileSystemProvider provider, final BiPredicate<String, String> pathFilter, final Path... basepaths) {
+    public UnionFileSystem(final UnionFileSystemProvider provider, final BiPredicate<String, String> pathFilter, final String key, final Path... basepaths) {
         this.pathFilter = pathFilter;
         this.provider = provider;
+        this.key = key;
         this.basepaths = IntStream.range(0, basepaths.length)
                 .mapToObj(i->basepaths[basepaths.length - i - 1]).toList(); // we flip the list so later elements are first in search order.
         this.embeddedFileSystems = this.basepaths.stream().filter(path -> !Files.isDirectory(path))
@@ -99,7 +105,13 @@ public class UnionFileSystem extends FileSystem {
 
     @Override
     public Path getPath(final String first, final String... more) {
-        return new UnionPath(this, first+(more.length>0 ? this.getSeparator()+String.join(this.getSeparator(), more) : ""));
+        if (more.length > 0) {
+            var args = new String[more.length + 1];
+            args[0] = first;
+            System.arraycopy(more, 0, args, 1, more.length);
+            return new UnionPath(this, args);
+        }
+        return new UnionPath(this, first);
     }
 
     @Override

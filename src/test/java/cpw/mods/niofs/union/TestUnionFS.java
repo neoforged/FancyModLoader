@@ -44,7 +44,7 @@ public class TestUnionFS {
         final var dir2 = Paths.get("src", "test", "resources", "dir2").toAbsolutePath().normalize();
 
         var fsp = (UnionFileSystemProvider)FileSystemProvider.installedProviders().stream().filter(fs-> fs.getScheme().equals("union")).findFirst().orElseThrow();
-        var ufs = fsp.newFileSystem(e->true, dir1, dir2);
+        var ufs = fsp.newFileSystem((path, base) -> true, dir1, dir2);
         var p1 = ufs.getPath("path1");
         var p123 = ufs.getPath("path1/path2/path3");
         var p11 = ufs.getPath("path1/path1");
@@ -69,7 +69,7 @@ public class TestUnionFS {
         final var dir1 = Paths.get("src", "test", "resources", "dir1").toAbsolutePath().normalize();
         final var dir2 = Paths.get("src", "test", "resources", "dir2").toAbsolutePath().normalize();
         var fsp = (UnionFileSystemProvider)FileSystemProvider.installedProviders().stream().filter(fs-> fs.getScheme().equals("union")).findFirst().orElseThrow();
-        var ufs = fsp.newFileSystem(e->!e.startsWith("masktest2.txt"), dir1, dir2);
+        var ufs = fsp.newFileSystem((path, base)->!path.startsWith("masktest2.txt"), dir1, dir2);
         var t1 = ufs.getPath("masktest.txt");
         var t3 = ufs.getPath("masktest3.txt");
         var t2 = ufs.getPath("masktest2.txt");

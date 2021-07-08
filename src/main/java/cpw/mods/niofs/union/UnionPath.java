@@ -2,6 +2,7 @@ package cpw.mods.niofs.union;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.function.IntBinaryOperator;
@@ -175,7 +176,16 @@ public class UnionPath implements Path {
 
     @Override
     public URI toUri() {
-        return URI.create(fileSystem.provider().getScheme()+"://"+fileSystem.getPrimaryPath().toString()+"!"+toAbsolutePath());
+        try {
+            return new URI(
+                fileSystem.provider().getScheme(),
+                null,
+                fileSystem.getKey() + '!' + toAbsolutePath(),
+                null
+            );
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

@@ -15,20 +15,21 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class UnionFileSystemProvider extends FileSystemProvider {
-    private final Map<Path, UnionFileSystem> fileSystems = new HashMap<>();
+    private final Map<String, UnionFileSystem> fileSystems = new HashMap<>();
 
     @Override
     public String getScheme() {
         return "union";
     }
 
-    private final UnionFileSystem DUMMY = new UnionFileSystem(this, (e1,e2)->true);
+    private final UnionFileSystem DUMMY = new UnionFileSystem(this, (e1,e2)->true, "DUMMY");
 
     @Override
     public FileSystem newFileSystem(final URI uri, final Map<String, ?> env) throws IOException {
         var path = Path.of(uri.getPath().split("!")[0]).toAbsolutePath().normalize();
-        if (fileSystems.get(path) == DUMMY) throw new UnsupportedOperationException();
-        fileSystems.put(path, DUMMY);
+        var key = makeKey(path);
+        if (fileSystems.get(key) == DUMMY) throw new UnsupportedOperationException();
+        fileSystems.put(key, DUMMY);
         @SuppressWarnings("unchecked")
         var additional = env.containsKey("additional") ? (List<Path>)env.get("additional") : List.<Path>of();
         try {
@@ -40,8 +41,9 @@ public class UnionFileSystemProvider extends FileSystemProvider {
 
     @Override
     public FileSystem newFileSystem(final Path path, final Map<String, ?> env) throws IOException {
-        if (fileSystems.get(path) == DUMMY) throw new UnsupportedOperationException();
-        fileSystems.put(path, DUMMY);
+        var key = makeKey(path);
+        if (fileSystems.get(key) == DUMMY) throw new UnsupportedOperationException();
+        fileSystems.put(key, DUMMY);
         @SuppressWarnings("unchecked")
         var additional = env.containsKey("additional") ? (List<Path>)env.get("additional") : List.<Path>of();
         try {
@@ -58,10 +60,15 @@ public class UnionFileSystemProvider extends FileSystemProvider {
                 .map(Path::toAbsolutePath)
                 .map(Path::normalize)
                 .toArray(Path[]::new);
-        fileSystems.put(normpaths[0], DUMMY);
-        var ufs = new UnionFileSystem(this, pathfilter, normpaths);
-        fileSystems.put(normpaths[0], ufs);
+        var key = makeKey(normpaths[0]);
+        fileSystems.put(key, DUMMY);
+        var ufs = new UnionFileSystem(this, pathfilter, key, normpaths);
+        fileSystems.put(key, ufs);
         return ufs;
+    }
+
+    private String makeKey(Path path) {
+        return path.toAbsolutePath().normalize().toUri().getPath();
     }
 
     @Override
@@ -77,9 +84,8 @@ public class UnionFileSystemProvider extends FileSystemProvider {
     @Override
     public FileSystem getFileSystem(final URI uri) {
         var parts = uri.getPath().split("!");
-        var basePath = Paths.get(parts[0]).toAbsolutePath().normalize();
-        if (!fileSystems.containsKey(basePath)) throw new FileSystemNotFoundException();
-        return fileSystems.get(basePath);
+        if (!fileSystems.containsKey(parts[0])) throw new FileSystemNotFoundException();
+        return fileSystems.get(parts[0]);
     }
 
     @Override

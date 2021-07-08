@@ -8,6 +8,7 @@ module cpw.mods.securejarhandler {
     exports cpw.mods.cl;
     requires jdk.unsupported;
     requires org.objectweb.asm;
+    requires java.base;
     provides java.nio.file.spi.FileSystemProvider with UnionFileSystemProvider;
     uses cpw.mods.cl.ModularURLHandler.IURLProvider;
     provides ModularURLHandler.IURLProvider with UnionURLStreamHandler;

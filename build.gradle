@@ -26,6 +26,7 @@ dependencyUpdates {
     }
 }
 
+// We can't use toolchains because we need --add-export
 //java.toolchain.languageVersion = JavaLanguageVersion.of(16)
 compileJava {
     sourceCompatibility = JavaVersion.VERSION_16
@@ -40,6 +41,7 @@ test {
 group = 'cpw.mods'
 
 version = gradleutils.getTagOffsetVersion()
+logger.lifecycle('Version: ' + version)
 
 ext.asmVersion = 9.1
 dependencies {
