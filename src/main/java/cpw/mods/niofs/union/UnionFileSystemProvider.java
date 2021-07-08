@@ -10,6 +10,8 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.*;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class UnionFileSystemProvider extends FileSystemProvider {
@@ -20,7 +22,7 @@ public class UnionFileSystemProvider extends FileSystemProvider {
         return "union";
     }
 
-    private final UnionFileSystem DUMMY = new UnionFileSystem(this);
+    private final UnionFileSystem DUMMY = new UnionFileSystem(this, (e1,e2)->true);
 
     @Override
     public FileSystem newFileSystem(final URI uri, final Map<String, ?> env) throws IOException {
@@ -30,7 +32,7 @@ public class UnionFileSystemProvider extends FileSystemProvider {
         @SuppressWarnings("unchecked")
         var additional = env.containsKey("additional") ? (List<Path>)env.get("additional") : List.<Path>of();
         try {
-            return newFileSystem(Stream.concat(Stream.of(path), additional.stream()).toArray(Path[]::new));
+            return newFileSystem((e1,e2)->true, Stream.concat(Stream.of(path), additional.stream()).toArray(Path[]::new));
         } catch (UncheckedIOException e) {
             throw e.getCause();
         }
@@ -43,13 +45,13 @@ public class UnionFileSystemProvider extends FileSystemProvider {
         @SuppressWarnings("unchecked")
         var additional = env.containsKey("additional") ? (List<Path>)env.get("additional") : List.<Path>of();
         try {
-            return newFileSystem(Stream.concat(Stream.of(path), additional.stream()).toArray(Path[]::new));
+            return newFileSystem((e1, e2)->true, Stream.concat(Stream.of(path), additional.stream()).toArray(Path[]::new));
         } catch (UncheckedIOException e) {
             throw e.getCause();
         }
     }
 
-    public UnionFileSystem newFileSystem(final Path... paths) {
+    public UnionFileSystem newFileSystem(final BiPredicate<String, String> pathfilter, final Path... paths) {
         if (paths.length == 0) throw new IllegalArgumentException("Need at least one path");
 
         var normpaths = Arrays.stream(paths)
@@ -57,7 +59,7 @@ public class UnionFileSystemProvider extends FileSystemProvider {
                 .map(Path::normalize)
                 .toArray(Path[]::new);
         fileSystems.put(normpaths[0], DUMMY);
-        var ufs = new UnionFileSystem(this, normpaths);
+        var ufs = new UnionFileSystem(this, pathfilter, normpaths);
         fileSystems.put(normpaths[0], ufs);
         return ufs;
     }

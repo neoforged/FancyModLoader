@@ -3,11 +3,11 @@ package cpw.mods.niofs.union;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.*;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -44,7 +44,7 @@ public class TestUnionFS {
         final var dir2 = Paths.get("src", "test", "resources", "dir2").toAbsolutePath().normalize();
 
         var fsp = (UnionFileSystemProvider)FileSystemProvider.installedProviders().stream().filter(fs-> fs.getScheme().equals("union")).findFirst().orElseThrow();
-        var ufs = fsp.newFileSystem(dir1, dir2);
+        var ufs = fsp.newFileSystem(e->true, dir1, dir2);
         var p1 = ufs.getPath("path1");
         var p123 = ufs.getPath("path1/path2/path3");
         var p11 = ufs.getPath("path1/path1");
@@ -62,5 +62,28 @@ public class TestUnionFS {
                 ()->assertEquals("../../path1", p123.relativize(p11).toString()),
                 ()->assertEquals(0, p13.relativize(p13plus).getNameCount())
         );
+    }
+
+    @Test
+    void testPathFiltering() {
+        final var dir1 = Paths.get("src", "test", "resources", "dir1").toAbsolutePath().normalize();
+        final var dir2 = Paths.get("src", "test", "resources", "dir2").toAbsolutePath().normalize();
+        var fsp = (UnionFileSystemProvider)FileSystemProvider.installedProviders().stream().filter(fs-> fs.getScheme().equals("union")).findFirst().orElseThrow();
+        var ufs = fsp.newFileSystem(e->!e.startsWith("masktest2.txt"), dir1, dir2);
+        var t1 = ufs.getPath("masktest.txt");
+        var t3 = ufs.getPath("masktest3.txt");
+        var t2 = ufs.getPath("masktest2.txt");
+        assertTrue(Files.exists(t1));
+        assertTrue(Files.exists(t3));
+        assertTrue(Files.notExists(t2));
+        var sd1 = ufs.getPath("subdir1");
+        var sdt1 = sd1.resolve("masktestsd1.txt");
+        var walk = new Path[] {ufs.getRoot(), t1, t3, sd1, sdt1};
+        assertDoesNotThrow(()-> {
+            try (var set = Files.walk(ufs.getRoot())) {
+                var paths = set.toArray(Path[]::new);
+                assertArrayEquals(walk, paths);
+            }
+        });
     }
 }

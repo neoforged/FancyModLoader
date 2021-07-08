@@ -16,7 +16,9 @@ import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
 import java.security.CodeSigner;
 import java.util.*;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.jar.*;
 
@@ -67,9 +69,9 @@ public class Jar implements SecureJar {
     }
 
     @SuppressWarnings("unchecked")
-    public Jar(final Supplier<Manifest> defaultManifest, final Function<SecureJar, JarMetadata> metadataFunction, final Path... paths) {
+    public Jar(final Supplier<Manifest> defaultManifest, final Function<SecureJar, JarMetadata> metadataFunction, final BiPredicate<String, String> pathfilter, final Path... paths) {
         final var path = paths[paths.length-1];
-        this.filesystem = UFSP.newFileSystem(paths);
+        this.filesystem = UFSP.newFileSystem(pathfilter, paths);
         try {
             if (Files.isDirectory(path)) {
                 var manfile = path.resolve(JarFile.MANIFEST_NAME);
@@ -211,7 +213,7 @@ public class Jar implements SecureJar {
     @Override
     public Set<String> getPackages() {
         try (var walk = Files.walk(this.filesystem.getRoot())) {
-            return walk.filter(path -> !Files.isDirectory(path))
+            return walk.filter(path -> Files.exists(path) && !Files.isDirectory(path))
                     .filter(path->!path.getName(0).toString().equals("META-INF"))
                     .filter(path->path.getFileName().toString().endsWith(".class"))
                     .map(path->path.subpath(0, path.getNameCount()-1))
@@ -229,7 +231,7 @@ public class Jar implements SecureJar {
         if (Files.exists(services)) {
             try (var walk = Files.walk(services)) {
                 return walk.filter(path->!Files.isDirectory(path))
-                        .map(Provider::fromPath)
+                        .map((Path path1) -> Provider.fromPath(path1, filesystem.getFilesystemFilter()))
                         .toList();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);

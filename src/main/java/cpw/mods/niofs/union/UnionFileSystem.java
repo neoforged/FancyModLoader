@@ -8,7 +8,9 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.*;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -16,17 +18,24 @@ import java.util.stream.StreamSupport;
 
 public class UnionFileSystem extends FileSystem {
     private final UnionPath root = new UnionPath(this, UnionPath.ROOT);
+    private final UnionPath notExistingPath = new UnionPath(this, "SNOWMAN");
     private final UnionFileSystemProvider provider;
     private final List<Path> basepaths;
+    private final BiPredicate<String, String> pathFilter;
     private final Map<Path,EmbeddedFileSystemMetadata> embeddedFileSystems;
 
     public Path getPrimaryPath() {
         return basepaths.get(basepaths.size()-1);
     }
 
+    public BiPredicate<String, String> getFilesystemFilter() {
+        return pathFilter;
+    }
+
     private record EmbeddedFileSystemMetadata(Path path, FileSystem fs) {}
 
-    public UnionFileSystem(final UnionFileSystemProvider provider, final Path... basepaths) {
+    public UnionFileSystem(final UnionFileSystemProvider provider, final BiPredicate<String, String> pathFilter, final Path... basepaths) {
+        this.pathFilter = pathFilter;
         this.provider = provider;
         this.basepaths = IntStream.range(0, basepaths.length)
                 .mapToObj(i->basepaths[basepaths.length - i - 1]).toList(); // we flip the list so later elements are first in search order.
@@ -123,6 +132,7 @@ public class UnionFileSystem extends FileSystem {
     private Optional<Path> findFirstPathAt(final UnionPath path) {
         return this.basepaths.stream()
                 .map(p->unionPath(p, path))
+                .filter(p->p!=notExistingPath)
                 .filter(Files::exists)
                 .findFirst();
     }
@@ -138,7 +148,7 @@ public class UnionFileSystem extends FileSystem {
         if (type == BasicFileAttributes.class) {
             return (A) findFirstPathAt(path)
                     .flatMap(this::getFileAttributes)
-                    .orElseThrow(() -> new FileNotFoundException("Missing path "+path));
+                    .orElseThrow(() -> new NoSuchFileException(path.toString()));
         } else {
             throw new UnsupportedOperationException();
         }
@@ -153,7 +163,7 @@ public class UnionFileSystem extends FileSystem {
                     throw new UncheckedIOException(e);
                 }
             }, ()->{
-                throw new UncheckedIOException("No file found", new FileNotFoundException());
+                throw new UncheckedIOException("No file found", new NoSuchFileException(p.toString()));
             });
         } catch (UncheckedIOException e) {
             throw e.getCause();
@@ -163,6 +173,7 @@ public class UnionFileSystem extends FileSystem {
     private Path unionPath(final Path basePath, final UnionPath path) {
         var embeddedpath = path.toString();
         var resolvepath = embeddedpath.length() > 1 && path.isAbsolute() ? path.toString().substring(1) : embeddedpath;
+        if (!pathFilter.test(resolvepath, basePath.toString())) return notExistingPath;
         if (embeddedFileSystems.containsKey(basePath)) {
             return embeddedFileSystems.get(basePath).fs().getPath(resolvepath);
         } else {
@@ -193,12 +204,13 @@ public class UnionFileSystem extends FileSystem {
         final var allpaths = new LinkedHashSet<Path>();
         for (final var bp : basepaths) {
             final var dir = unionPath(bp, path);
-            if (!Files.exists(dir)) continue;
+            if (dir == notExistingPath || !Files.exists(dir)) continue;
             final var ds = Files.newDirectoryStream(dir, filter);
-            StreamSupport.stream(ds.spliterator(), false).
-                    map(other -> (embeddedFileSystems.containsKey(bp)? other : bp.relativize(other)).toString()).
-                    map(this::getPath).
-                    forEachOrdered(allpaths::add);
+            StreamSupport.stream(ds.spliterator(), false)
+                    .map(other -> (embeddedFileSystems.containsKey(bp)? other : bp.relativize(other)).toString())
+                    .map(this::getPath)
+                    .filter(p->pathFilter.test(p.toString(), bp.toString()))
+                    .forEachOrdered(allpaths::add);
         }
         return new DirectoryStream<>() {
             @Override
