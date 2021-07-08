@@ -4,17 +4,16 @@ import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.SecureJar;
 
-import java.io.File;
 import java.lang.module.ModuleFinder;
-import java.net.URI;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.ServiceLoader;
+import java.util.Set;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class BootstrapLauncher {
@@ -23,17 +22,16 @@ public class BootstrapLauncher {
         var legacyCP = Objects.requireNonNull(System.getProperty("legacyClassPath"), "Missing legacyClassPath, cannot bootstrap");
         var versionName = Objects.requireNonNull(System.getProperty("versionName"), "Missing versionName, cannot bootstrap");
         var ignoreList = System.getProperty("ignoreList", "/org/ow2/asm/");
-        var ignores = Arrays.stream(ignoreList.split(File.pathSeparator)).toList();
-
-        var fileList = Arrays.stream(legacyCP.split(File.pathSeparator))
+        var ignores = Arrays.stream(ignoreList.split("~~")).toList();
+        var fileList = Arrays.stream(legacyCP.split("~~"))
                 .filter(n->!n.endsWith(versionName+".jar"))
                 .filter(n-> ignores.stream().noneMatch(n::contains))
-                .map(s->URI.create("file://"+s))
+                .map(Paths::get)
                 .collect(Collectors.toList());
-        Collections.reverse(fileList);
+        var previousPkgs = new HashSet<String>();
         var finder = fileList.stream()
-                .map(Path::of)
-                .map(SecureJar::from)
+                .map(paths -> SecureJar.from(new PkgTracker(Set.copyOf(previousPkgs)), paths))
+                .peek(sj->previousPkgs.addAll(sj.getPackages()))
                 .toArray(SecureJar[]::new);
         var alltargets = Arrays.stream(finder).map(SecureJar::name).toList();
         var jf = JarModuleFinder.of(finder);
@@ -47,24 +45,13 @@ public class BootstrapLauncher {
         ((Consumer<String[]>)loader.stream().findFirst().orElseThrow().get()).accept(args);
     }
 
-    public interface ExcFunction<T, R, E extends Throwable> {
-        R apply(T input) throws E;
+    private record PkgTracker(Set<String> packages) implements BiPredicate<String, String> {
+        @Override
+        public boolean test(final String path, final String basePath) {
+            if (packages.isEmpty()) return true;
+            if (path.startsWith("META-INF/")) return true;
+            int idx = path.lastIndexOf('/');
+            return idx < 0 || !packages.contains(path.substring(0, idx).replace('/', '.'));
+        }
     }
-
-    public static <T, R, E extends Throwable> Function<T, R> uncheck(ExcFunction<T,R,E> f) {
-        return i->{
-            try {
-                return f.apply(i);
-            } catch (Throwable e) {
-                throwAsUnchecked(e);
-                return null;
-            }
-        };
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <E extends Throwable> void throwAsUnchecked(Throwable exception) throws E {
-        throw (E) exception;
-    }
-
 }

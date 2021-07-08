@@ -14,6 +14,7 @@ group 'cpw.mods'
 version = grgit.describe(longDescr: true).split('-').with { "${it[0]}.${it[1]}" }
 
 repositories {
+    mavenLocal()
     maven {
         name 'forge'
         url 'https://maven.minecraftforge.net/'
@@ -31,7 +32,7 @@ task sourcesJar(type: Jar) {
 
 jar {
     manifest {
-        attributes([
+        attributes(
                 'Specification-Title': 'bootstraplauncher',
                 'Specification-Vendor': 'forge',
                 'Specification-Version': '1', // We are version 1 of ourselves
@@ -42,7 +43,8 @@ jar {
                 'Git-Commit': grgit.head().abbreviatedId,
                 'Git-Branch': grgit.branch.current().getName(),
                 'Build-Number': "${System.getenv("BUILD_NUMBER")?:0}",
-        ])
+                'Main-Class': 'cpw.mods.bootstraplauncher.BootstrapLauncher'
+        )
     }
 }
 
