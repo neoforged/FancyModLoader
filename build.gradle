@@ -12,6 +12,7 @@ apply plugin: 'org.javamodularity.moduleplugin'
 group 'cpw.mods'
 
 version = grgit.describe(longDescr: true).split('-').with { "${it[0]}.${it[1]}" }
+logger.lifecycle('Version: ' + version)
 
 repositories {
     mavenLocal()

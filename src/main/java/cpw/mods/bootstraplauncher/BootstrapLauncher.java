@@ -6,6 +6,7 @@ import cpw.mods.jarhandling.SecureJar;
 
 import java.io.File;
 import java.lang.module.ModuleFinder;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -29,7 +30,7 @@ public class BootstrapLauncher {
                 .collect(Collectors.toList());
         var previousPkgs = new HashSet<String>();
         var finder = fileList.stream()
-                .map(paths -> SecureJar.from(new PkgTracker(Set.copyOf(previousPkgs)), paths))
+                .map(paths -> SecureJar.from(new PkgTracker(Set.copyOf(previousPkgs), paths), paths))
                 .peek(sj->previousPkgs.addAll(sj.getPackages()))
                 .toArray(SecureJar[]::new);
         var alltargets = Arrays.stream(finder).map(SecureJar::name).toList();
@@ -44,13 +45,17 @@ public class BootstrapLauncher {
         ((Consumer<String[]>)loader.stream().findFirst().orElseThrow().get()).accept(args);
     }
 
-    private record PkgTracker(Set<String> packages) implements BiPredicate<String, String> {
+    private record PkgTracker(Set<String> packages, Path paths) implements BiPredicate<String, String> {
         @Override
         public boolean test(final String path, final String basePath) {
-            if (packages.isEmpty()) return true;
-            if (path.startsWith("META-INF/")) return true;
+            if (packages.isEmpty()         || // the first jar, nothing is claimed yet
+                path.startsWith("META-INF/")) // Every module can have a meta-inf
+                return true;
+
             int idx = path.lastIndexOf('/');
-            return idx < 0 || !packages.contains(path.substring(0, idx).replace('/', '.'));
+            return idx < 0 || // Something in the root of the module.
+                idx == path.length() - 1 || // All directories can have a potential to exist without conflict, we only care about real files.
+                !packages.contains(path.substring(0, idx).replace('/', '.'));
         }
     }
 }
