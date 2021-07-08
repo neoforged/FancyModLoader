@@ -3,3 +3,7 @@
 /build/
 /build/classes/java/main/
 /.idea/
+/.settings/
+/bin/
+/.classpath
+/.project

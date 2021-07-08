@@ -4,6 +4,7 @@ import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.SecureJar;
 
+import java.io.File;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -20,11 +21,9 @@ public class BootstrapLauncher {
     @SuppressWarnings("unchecked")
     public static void main(String[] args) {
         var legacyCP = Objects.requireNonNull(System.getProperty("legacyClassPath"), "Missing legacyClassPath, cannot bootstrap");
-        var versionName = Objects.requireNonNull(System.getProperty("versionName"), "Missing versionName, cannot bootstrap");
-        var ignoreList = System.getProperty("ignoreList", "/org/ow2/asm/");
-        var ignores = Arrays.stream(ignoreList.split("~~")).toList();
-        var fileList = Arrays.stream(legacyCP.split("~~"))
-                .filter(n->!n.endsWith(versionName+".jar"))
+        var ignoreList = System.getProperty("ignoreList", "/org/ow2/asm/,securejarhandler"); //TODO: find existing modules automatically instead of taking in an ignore list.
+        var ignores = Arrays.stream(ignoreList.split(",")).toList();
+        var fileList = Arrays.stream(legacyCP.split(File.pathSeparator))
                 .filter(n-> ignores.stream().noneMatch(n::contains))
                 .map(Paths::get)
                 .collect(Collectors.toList());
