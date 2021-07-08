@@ -10,7 +10,6 @@ import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -143,7 +142,16 @@ public class UnionFileSystem extends FileSystem {
 
     private Optional<Path> findFirstPathAt(final UnionPath path) {
         return this.basepaths.stream()
-                .map(p->unionPath(p, path))
+                .map(p->unionPath(p , path))
+                .filter(p->p!=notExistingPath)
+                .filter(Files::exists)
+                .findFirst();
+    }
+
+    private Optional<Path> findFirstFiltered(final UnionPath path) {
+        return this.basepaths.stream()
+                .filter(p -> testFilter(path, p))
+                .map(p->unionPath(p , path))
                 .filter(p->p!=notExistingPath)
                 .filter(Files::exists)
                 .findFirst();
@@ -158,9 +166,27 @@ public class UnionFileSystem extends FileSystem {
     @SuppressWarnings("unchecked")
     public <A extends BasicFileAttributes> A readAttributes(final UnionPath path, final Class<A> type, final LinkOption... options) throws IOException {
         if (type == BasicFileAttributes.class) {
-            return (A) findFirstPathAt(path)
-                    .flatMap(this::getFileAttributes)
-                    .orElseThrow(() -> new NoSuchFileException(path.toString()));
+            record Paths(Path base, Path path) {} // We need to know the full path for the filter
+            record AttributeInfo(Path base, Path path, Optional<BasicFileAttributes> attrib) {}
+
+            var embeddedpath = path.toString();
+            var resolvepath = embeddedpath.length() > 1 && path.isAbsolute() ? embeddedpath.substring(1) : embeddedpath;
+
+            return (A)this.basepaths.stream()
+                .map(p -> {
+                    if (embeddedFileSystems.containsKey(p))
+                        return new Paths(p, embeddedFileSystems.get(p).fs().getPath(resolvepath));
+                    else
+                        return new Paths(p, p.resolve(resolvepath));
+                })
+                .filter(p -> p.path != notExistingPath)
+                .filter(p -> Files.exists(p.path))
+                .map(p -> new AttributeInfo(p.base, p.path, this.getFileAttributes(p.path)))
+                .filter(ai -> ai.attrib.isPresent())
+                .filter(ai -> testFilter(ai.path, ai.base))
+                .findFirst()
+                .flatMap(ai -> ai.attrib)
+                .orElseThrow(() -> new NoSuchFileException(path.toString()));
         } else {
             throw new UnsupportedOperationException();
         }
@@ -168,7 +194,7 @@ public class UnionFileSystem extends FileSystem {
 
     public void checkAccess(final UnionPath p, final AccessMode... modes) throws IOException {
         try {
-            findFirstPathAt(p).ifPresentOrElse(path-> {
+            findFirstFiltered(p).ifPresentOrElse(path-> {
                 try {
                     path.getFileSystem().provider().checkAccess(path, modes);
                 } catch (IOException e) {
@@ -185,7 +211,6 @@ public class UnionFileSystem extends FileSystem {
     private Path unionPath(final Path basePath, final UnionPath path) {
         var embeddedpath = path.toString();
         var resolvepath = embeddedpath.length() > 1 && path.isAbsolute() ? path.toString().substring(1) : embeddedpath;
-        if (!pathFilter.test(resolvepath, basePath.toString())) return notExistingPath;
         if (embeddedFileSystems.containsKey(basePath)) {
             return embeddedFileSystems.get(basePath).fs().getPath(resolvepath);
         } else {
@@ -195,7 +220,7 @@ public class UnionFileSystem extends FileSystem {
 
     public SeekableByteChannel newReadByteChannel(final UnionPath path) throws IOException {
         try {
-            return findFirstPathAt(path)
+            return findFirstFiltered(path)
                     .map(this::byteChannel)
                     .orElseThrow(FileNotFoundException::new);
         } catch (UncheckedIOException ioe) {
@@ -221,7 +246,6 @@ public class UnionFileSystem extends FileSystem {
             StreamSupport.stream(ds.spliterator(), false)
                     .map(other -> (embeddedFileSystems.containsKey(bp)? other : bp.relativize(other)).toString())
                     .map(this::getPath)
-                    .filter(p->pathFilter.test(p.toString(), bp.toString()))
                     .forEachOrdered(allpaths::add);
         }
         return new DirectoryStream<>() {
@@ -235,5 +259,13 @@ public class UnionFileSystem extends FileSystem {
                 // noop
             }
         };
+    }
+
+    private boolean testFilter(final Path path, final Path basePath) {
+        String sPath = path.toString();
+        if (Files.isDirectory(path))
+            sPath += '/';
+        String sBasePath = basePath.toString();
+        return pathFilter.test(sPath, sBasePath);
     }
 }
