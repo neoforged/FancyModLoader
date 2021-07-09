@@ -172,6 +172,7 @@ public class UnionFileSystem extends FileSystem {
             var embeddedpath = path.toString();
             var resolvepath = embeddedpath.length() > 1 && path.isAbsolute() ? embeddedpath.substring(1) : embeddedpath;
 
+            // We need to run the test on the actual path,
             return (A)this.basepaths.stream()
                 .map(p -> {
                     if (embeddedFileSystems.containsKey(p))
@@ -261,11 +262,18 @@ public class UnionFileSystem extends FileSystem {
         };
     }
 
+    /*
+     * Standardize paths:
+     * Path separators converted to /
+     * Directories end with /
+     * Remove leading / for absolute paths
+     */
     private boolean testFilter(final Path path, final Path basePath) {
-        String sPath = path.toString();
+        var sPath = path.toString().replace('\\', '/');
+        if (sPath.length() > 1 && path.isAbsolute()) sPath = sPath.substring(1);
         if (Files.isDirectory(path))
             sPath += '/';
-        String sBasePath = basePath.toString();
+        String sBasePath = basePath.toString().replace('\\', '/');
         return pathFilter.test(sPath, sBasePath);
     }
 }
