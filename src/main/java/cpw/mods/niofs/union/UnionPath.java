@@ -6,11 +6,8 @@ import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.function.IntBinaryOperator;
-import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 public class UnionPath implements Path {
     private final UnionFileSystem fileSystem;
@@ -28,7 +25,7 @@ public class UnionPath implements Path {
     }
 
     private String[] getPathParts(final String longstring) {
-        return longstring.split(this.getFileSystem().getSeparator());
+        return longstring.replace("\\", this.getFileSystem().getSeparator()).split(this.getFileSystem().getSeparator());
     }
 
     @Override

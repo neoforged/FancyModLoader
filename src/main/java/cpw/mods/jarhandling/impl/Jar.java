@@ -39,6 +39,8 @@ public class Jar implements SecureJar {
     private final UnionFileSystem filesystem;
     private final boolean isMultiRelease;
     private final Map<Path, Integer> nameOverrides;
+    private Set<String> packages;
+    private List<Provider> providers;
 
     public URI getURI() {
         return this.filesystem.getRootDirectories().iterator().next().toUri();
@@ -212,33 +214,39 @@ public class Jar implements SecureJar {
 
     @Override
     public Set<String> getPackages() {
-        try (var walk = Files.walk(this.filesystem.getRoot())) {
-            return walk.filter(path -> Files.exists(path) && !Files.isDirectory(path))
+        if (this.packages == null) {
+            try (var walk = Files.walk(this.filesystem.getRoot())) {
+                this.packages = walk.filter(path -> Files.exists(path) && !Files.isDirectory(path))
                     .filter(path->!path.getName(0).toString().equals("META-INF"))
                     .filter(path->path.getFileName().toString().endsWith(".class"))
                     .map(path->path.subpath(0, path.getNameCount()-1))
                     .map(path->path.toString().replace('/','.'))
                     .filter(pkg->pkg.length()!=0)
                     .collect(toSet());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
+        return this.packages;
     }
 
     @Override
     public List<Provider> getProviders() {
-        final var services = this.filesystem.getRoot().resolve("META-INF/services/");
-        if (Files.exists(services)) {
-            try (var walk = Files.walk(services)) {
-                return walk.filter(path->!Files.isDirectory(path))
+        if (this.providers == null) {
+            final var services = this.filesystem.getRoot().resolve("META-INF/services/");
+            if (Files.exists(services)) {
+                try (var walk = Files.walk(services)) {
+                    this.providers = walk.filter(path->!Files.isDirectory(path))
                         .map((Path path1) -> Provider.fromPath(path1, filesystem.getFilesystemFilter()))
                         .toList();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            } else {
+                this.providers = List.of();
             }
-        } else {
-            return List.of();
         }
+        return this.providers;
     }
 
     @Override
