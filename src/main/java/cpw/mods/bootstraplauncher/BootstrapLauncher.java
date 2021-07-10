@@ -8,6 +8,7 @@ import java.io.File;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -19,20 +20,38 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class BootstrapLauncher {
+    private static final boolean DEBUG = System.getProperties().containsKey("bsl.debug");
     @SuppressWarnings("unchecked")
     public static void main(String[] args) {
         var legacyCP = Objects.requireNonNull(System.getProperty("legacyClassPath"), "Missing legacyClassPath, cannot bootstrap");
         var ignoreList = System.getProperty("ignoreList", "/org/ow2/asm/,securejarhandler"); //TODO: find existing modules automatically instead of taking in an ignore list.
-        var ignores = Arrays.stream(ignoreList.split(",")).toList();
-        var fileList = Arrays.stream(legacyCP.split(File.pathSeparator))
-                .filter(n-> ignores.stream().noneMatch(n::contains))
-                .map(Paths::get)
-                .collect(Collectors.toList());
+        var ignores = ignoreList.split(",");
+
         var previousPkgs = new HashSet<String>();
-        var finder = fileList.stream()
-                .map(paths -> SecureJar.from(new PkgTracker(Set.copyOf(previousPkgs), paths), paths))
-                .peek(sj->previousPkgs.addAll(sj.getPackages()))
-                .toArray(SecureJar[]::new);
+        var jars = new ArrayList<>();
+
+        outer:
+        for  (var legacy : legacyCP.split(File.pathSeparator)) {
+            for (var filter : ignores) {
+                if (legacy.contains(filter)) {
+                    if (DEBUG)
+                        System.out.println(legacy + " IGNORED: " + filter);
+                    continue outer;
+                }
+            }
+
+            var path = Paths.get(legacy);
+            if (DEBUG)
+                System.out.println(path.toString());
+            var jar = SecureJar.from(new PkgTracker(Set.copyOf(previousPkgs), path), path);
+            var pkgs = jar.getPackages();
+            if (DEBUG)
+                pkgs.forEach(p -> System.out.println("  " + p));
+            previousPkgs.addAll(pkgs);
+            jars.add(jar);
+        }
+        var finder = jars.toArray(SecureJar[]::new);
+
         var alltargets = Arrays.stream(finder).map(SecureJar::name).toList();
         var jf = JarModuleFinder.of(finder);
         var cf = ModuleLayer.boot().configuration();
@@ -42,6 +61,7 @@ public class BootstrapLauncher {
         Thread.currentThread().setContextClassLoader(mycl);
 
         final var loader = ServiceLoader.load(layer.layer(), Consumer.class);
+        // This *should* find the service exposed by ModLauncher's BootstrapLaunchConsumer {This doc is here to help find that class next time we go looking}
         ((Consumer<String[]>)loader.stream().findFirst().orElseThrow().get()).accept(args);
     }
 
