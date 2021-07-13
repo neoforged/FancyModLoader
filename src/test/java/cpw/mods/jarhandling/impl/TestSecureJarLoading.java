@@ -20,6 +20,8 @@ public class TestSecureJarLoading {
     @Test
     void testLoadJar() throws Exception {
         final var path = Paths.get("forge-1.16.5-36.1.16.jar");
+        if (!Files.exists(path))
+            return;
         SecureJar jar = SecureJar.from(path);
         try (var is = Files.newInputStream(path)) {
             ZipInputStream zis = new ZipInputStream(is);
@@ -41,6 +43,8 @@ public class TestSecureJarLoading {
     @Test
     void testInsecureJar() throws Exception {
         final var path = Paths.get("inventorysorter-1.16.1-18.0.0.jar");
+        if (!Files.exists(path))
+            return;
         SecureJar jar = SecureJar.from(path);
         try (var is = Files.newInputStream(path)) {
             ZipInputStream zis = new ZipInputStream(is);
@@ -75,6 +79,8 @@ public class TestSecureJarLoading {
     @Test
     void testTampered() throws Exception {
         final var path = Paths.get("test.jar");
+        if (!Files.exists(path))
+            return;
         SecureJar jar = SecureJar.from(path);
         ZipFile zf = new ZipFile(path.toFile());
         final var entry = zf.getEntry("META-INF/mods.toml");
@@ -85,6 +91,8 @@ public class TestSecureJarLoading {
     @Test
     void testUntampered() throws Exception {
         final var path = Paths.get("Bookshelf-1.16.4-9.0.7-UNTAMPERED.jar");
+        if (!Files.exists(path))
+            return;
         SecureJar jar = SecureJar.from(path);
         try (var is = Files.newInputStream(path)) {
             ZipInputStream zis = new ZipInputStream(is);

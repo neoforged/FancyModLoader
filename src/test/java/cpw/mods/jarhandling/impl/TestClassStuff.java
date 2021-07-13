@@ -10,13 +10,17 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 
 public class TestClassStuff {
     @Test
     void testClass() throws MalformedURLException {
-        final var cf = ModuleLayer.boot().configuration().resolveAndBind(ModuleFinder.of(Paths.get("forge-1.16.5-36.1.16.jar")), ModuleFinder.ofSystem(), List.of("forge"));
+        var path = Paths.get("forge-1.16.5-36.1.16.jar");
+        if (!Files.exists(path))
+            return;
+        final var cf = ModuleLayer.boot().configuration().resolveAndBind(ModuleFinder.of(path), ModuleFinder.ofSystem(), List.of("forge"));
         final var layer = ModuleLayer.defineModulesWithOneLoader(cf, List.of(ModuleLayer.boot()), new URLClassLoader(new URL[]{Paths.get("ge-1.16.5-36.1.16.jar").toUri().toURL()}));
         var is = layer.layer().configuration().findModule("forge").get();
         var m = layer.layer().findModule(is.name()).get();

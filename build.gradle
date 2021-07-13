@@ -34,7 +34,7 @@ compileJava {
 }
 
 test {
-    exclude '**/*'
+    //exclude '**/*'
     useJUnitPlatform()
 }
 

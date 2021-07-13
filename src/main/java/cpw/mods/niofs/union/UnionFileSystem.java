@@ -142,7 +142,7 @@ public class UnionFileSystem extends FileSystem {
 
     private Optional<Path> findFirstPathAt(final UnionPath path) {
         return this.basepaths.stream()
-                .map(p->unionPath(p , path))
+                .map(p->toRealPath(p , path))
                 .filter(p->p!=notExistingPath)
                 .filter(Files::exists)
                 .findFirst();
@@ -150,8 +150,8 @@ public class UnionFileSystem extends FileSystem {
 
     private Optional<Path> findFirstFiltered(final UnionPath path) {
         return this.basepaths.stream()
-                .filter(p -> testFilter(path, p))
-                .map(p->unionPath(p , path))
+                .filter(p -> testFilter(toRealPath(p, path), p))
+                .map(p->toRealPath(p, path))
                 .filter(p->p!=notExistingPath)
                 .filter(Files::exists)
                 .findFirst();
@@ -169,17 +169,9 @@ public class UnionFileSystem extends FileSystem {
             record Paths(Path base, Path path) {} // We need to know the full path for the filter
             record AttributeInfo(Path base, Path path, Optional<BasicFileAttributes> attrib) {}
 
-            var embeddedpath = path.toString();
-            var resolvepath = embeddedpath.length() > 1 && path.isAbsolute() ? embeddedpath.substring(1) : embeddedpath;
-
             // We need to run the test on the actual path,
             return (A)this.basepaths.stream()
-                .map(p -> {
-                    if (embeddedFileSystems.containsKey(p))
-                        return new Paths(p, embeddedFileSystems.get(p).fs().getPath(resolvepath));
-                    else
-                        return new Paths(p, p.resolve(resolvepath));
-                })
+                .map(p -> new Paths(p, toRealPath(p, path)))
                 .filter(p -> p.path != notExistingPath)
                 .filter(p -> Files.exists(p.path))
                 .map(p -> new AttributeInfo(p.base, p.path, this.getFileAttributes(p.path)))
@@ -209,7 +201,7 @@ public class UnionFileSystem extends FileSystem {
         }
     }
 
-    private Path unionPath(final Path basePath, final UnionPath path) {
+    private Path toRealPath(final Path basePath, final UnionPath path) {
         var embeddedpath = path.toString();
         var resolvepath = embeddedpath.length() > 1 && path.isAbsolute() ? path.toString().substring(1) : embeddedpath;
         if (embeddedFileSystems.containsKey(basePath)) {
@@ -229,7 +221,6 @@ public class UnionFileSystem extends FileSystem {
         }
     }
 
-
     private SeekableByteChannel byteChannel(final Path path) {
         try {
             return Files.newByteChannel(path, StandardOpenOption.READ);
@@ -241,11 +232,13 @@ public class UnionFileSystem extends FileSystem {
     public DirectoryStream<Path> newDirStream(final UnionPath path, final DirectoryStream.Filter<? super Path> filter) throws IOException {
         final var allpaths = new LinkedHashSet<Path>();
         for (final var bp : basepaths) {
-            final var dir = unionPath(bp, path);
+            final var dir = toRealPath(bp, path);
+            final var isSimple = embeddedFileSystems.containsKey(bp);
             if (dir == notExistingPath || !Files.exists(dir)) continue;
             final var ds = Files.newDirectoryStream(dir, filter);
             StreamSupport.stream(ds.spliterator(), false)
-                    .map(other -> (embeddedFileSystems.containsKey(bp)? other : bp.relativize(other)).toString())
+                    .filter(p->testFilter(p, bp))
+                    .map(other -> (isSimple ? other : bp.relativize(other)).toString())
                     .map(this::getPath)
                     .forEachOrdered(allpaths::add);
         }
@@ -269,8 +262,7 @@ public class UnionFileSystem extends FileSystem {
      * Remove leading / for absolute paths
      */
     private boolean testFilter(final Path path, final Path basePath) {
-        var sPath = path.toString().replace('\\', '/');
-        if (sPath.length() > 1 && path.isAbsolute()) sPath = sPath.substring(1);
+        var sPath = basePath.relativize(path).toString().replace('\\', '/');
         if (Files.isDirectory(path))
             sPath += '/';
         String sBasePath = basePath.toString().replace('\\', '/');

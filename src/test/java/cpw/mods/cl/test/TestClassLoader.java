@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
@@ -24,8 +25,11 @@ public class TestClassLoader {
     void testCL() {
         var cl = Arrays.stream(CL)
                 .map(Paths::get)
+                .filter(Files::exists)
                 .map(SecureJar::from)
                 .toArray(SecureJar[]::new);
+        if (cl.length == 0)
+            return;
         var jf = JarModuleFinder.of(cl);
         var cf = ModuleLayer.boot().configuration();
         var newcf = cf.resolveAndBind(jf, ModuleFinder.ofSystem(), List.of("cpw.mods.modlauncher"));
