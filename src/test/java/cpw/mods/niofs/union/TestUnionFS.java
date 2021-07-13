@@ -7,6 +7,7 @@ import java.nio.file.*;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -78,11 +79,11 @@ public class TestUnionFS {
         assertTrue(Files.notExists(t2));
         var sd1 = ufs.getPath("subdir1");
         var sdt1 = sd1.resolve("masktestsd1.txt");
-        var walk = new Path[] {ufs.getRoot(), t1, t3, sd1, sdt1};
+        var walk = Set.of(ufs.getRoot(), t1, t3, sd1, sdt1);
         assertDoesNotThrow(()-> {
             try (var set = Files.walk(ufs.getRoot())) {
-                var paths = set.toArray(Path[]::new);
-                assertArrayEquals(walk, paths);
+                var paths = set.collect(Collectors.toSet());
+                assertEquals(walk, paths);
             }
         });
     }
