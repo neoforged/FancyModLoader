@@ -262,7 +262,9 @@ public class UnionFileSystem extends FileSystem {
      * Remove leading / for absolute paths
      */
     private boolean testFilter(final Path path, final Path basePath) {
-        var sPath = basePath.relativize(path).toString().replace('\\', '/');
+        var sPath = path.toString();
+        if (path.getFileSystem() == basePath.getFileSystem()) // Directories, zips will be different file systems.
+            sPath = basePath.relativize(path).toString().replace('\\', '/');
         if (Files.isDirectory(path))
             sPath += '/';
         String sBasePath = basePath.toString().replace('\\', '/');
