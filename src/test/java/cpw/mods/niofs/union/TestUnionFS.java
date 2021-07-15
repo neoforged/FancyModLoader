@@ -87,4 +87,33 @@ public class TestUnionFS {
             }
         });
     }
+
+    @Test
+    void testFilteredDuplicate() {
+        final var dir1 = Paths.get("src", "test", "resources", "dir1.zip").toAbsolutePath().normalize();
+        var fsp = (UnionFileSystemProvider)FileSystemProvider.installedProviders().stream().filter(fs-> fs.getScheme().equals("union")).findFirst().orElseThrow();
+        var all = fsp.newFileSystem((a,b) -> true, dir1);
+        var all_expected = Set.of(
+            all.getPath("masktest.txt"),
+            all.getPath("masktest2.txt"),
+            all.getPath("subdir1/masktestsd1.txt")
+        );
+        assertDoesNotThrow(() -> {
+           try (var walk = Files.walk(all.getRoot()))  {
+               var paths = walk.filter(Files::isRegularFile).collect(Collectors.toSet());
+               assertEquals(all_expected, paths);
+           }
+        });
+
+        var some = assertDoesNotThrow(() -> fsp.newFileSystem((a,b) -> a.endsWith("/") || a.equals("masktest.txt"), dir1));
+        var some_expected = Set.of(
+            some.getPath("masktest.txt")
+        );
+        assertDoesNotThrow(() -> {
+            try (var walk = Files.walk(some.getRoot()))  {
+                var paths = walk.filter(Files::isRegularFile).collect(Collectors.toSet());
+                assertEquals(some_expected, paths);
+            }
+        });
+    }
 }

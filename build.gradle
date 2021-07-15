@@ -116,14 +116,18 @@ publishing {
     }
     repositories {
         maven {
-            authentication {
-                basic(BasicAuthentication)
+            if (System.env.MAVEN_USER) {
+                url 'https://maven.minecraftforge.net/releases/'
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = System.env.MAVEN_USER ?: 'not'
+                    password = System.env.MAVEN_PASSWORD ?: 'set'
+                }
+            } else {
+                url 'file://' + rootProject.file('repo').getAbsolutePath()
             }
-            credentials {
-                username = System.env.MAVEN_USER ?: 'not'
-                password = System.env.MAVEN_PASSWORD ?: 'set'
-            }
-            url 'https://maven.minecraftforge.net/releases'
         }
     }
 }

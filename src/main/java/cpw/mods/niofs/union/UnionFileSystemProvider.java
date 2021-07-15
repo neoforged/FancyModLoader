@@ -3,6 +3,7 @@ package cpw.mods.niofs.union;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -11,43 +12,93 @@ import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.*;
 import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class UnionFileSystemProvider extends FileSystemProvider {
     private final Map<String, UnionFileSystem> fileSystems = new HashMap<>();
+    private int index = 0;
 
     @Override
     public String getScheme() {
         return "union";
     }
 
-    private final UnionFileSystem DUMMY = new UnionFileSystem(this, (e1,e2)->true, "DUMMY");
+    /**
+     * Copied from ZipFileSystem, we should just extend ZipFileSystem, but I need to ask cpw
+     * if there was a reason we are not.
+     */
+    protected Path uriToPath(URI uri) {
+        String scheme = uri.getScheme();
+        if ((scheme == null) || !scheme.equalsIgnoreCase(getScheme())) {
+            throw new IllegalArgumentException("URI scheme is not '" + getScheme() + "'");
+        }
+        try {
+            // only support legacy JAR URL syntax  jar:{uri}!/{entry} for now
+            String spec = uri.getRawSchemeSpecificPart();
+            int sep = spec.indexOf("!/");
+            if (sep != -1) {
+                spec = spec.substring(0, sep);
+            }
+            return Paths.get(new URI(spec)).toAbsolutePath();
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
 
+    /**
+     * Invoked by FileSystems.newFileSystem, Only returns a value if env contains one of more of:
+     *   "filter": BiPredicate<String, String> - A filter to apply to the opened path
+     *   "additional": List<Path> - Additional paths to join together
+     * If none specified, throws IllegalArgumentException
+     * If uri.getScheme() is not "union" throws IllegalArgumentException
+     * If you wish to create a UnionFileSystem explicitly, invoke newFileSystem(BiPredicate, Path...)
+     */
     @Override
     public FileSystem newFileSystem(final URI uri, final Map<String, ?> env) throws IOException {
-        var path = Path.of(uri.getPath().split("!")[0]).toAbsolutePath().normalize();
-        var key = makeKey(path);
-        if (fileSystems.get(key) == DUMMY) throw new UnsupportedOperationException();
-        fileSystems.put(key, DUMMY);
         @SuppressWarnings("unchecked")
-        var additional = env.containsKey("additional") ? (List<Path>)env.get("additional") : List.<Path>of();
+        var additional = ((Map<String, List<Path>>)env).getOrDefault("additional", List.<Path>of());
+        @SuppressWarnings("unchecked")
+        var filter = ((Map<String, BiPredicate<String, String>>)env).getOrDefault("filter", null);
+
+        if (filter == null && additional.isEmpty())
+            throw new IllegalArgumentException("Missing additional and/or filter");
+
+        if (filter == null)
+            filter = (p, b) -> true;
+
+        var path = uriToPath(uri);
+        var key = makeKey(path);
         try {
-            return newFileSystem((e1,e2)->true, Stream.concat(Stream.of(path), additional.stream()).toArray(Path[]::new));
+            return newFileSystemInternal(key, filter, Stream.concat(Stream.of(path), additional.stream()).toArray(Path[]::new));
         } catch (UncheckedIOException e) {
             throw e.getCause();
         }
     }
 
+    /**
+     * Invoked by FileSystems.newFileSystem, Only returns a value if env contains one of more of:
+     *   "filter": BiPredicate<String, String> - A filter to apply to the opened path
+     *   "additional": List<Path> - Additional paths to join together
+     * If none specified, throws UnsupportedOperationException instead of IllegalArgumentException
+     *   so that FileSystems.newFileSystem will search for the next provider.
+     * If you wish to create a UnionFileSystem explicitly, invoke newFileSystem(BiPredicate, Path...)
+     */
     @Override
     public FileSystem newFileSystem(final Path path, final Map<String, ?> env) throws IOException {
-        var key = makeKey(path);
-        if (fileSystems.get(key) == DUMMY) throw new UnsupportedOperationException();
-        fileSystems.put(key, DUMMY);
         @SuppressWarnings("unchecked")
-        var additional = env.containsKey("additional") ? (List<Path>)env.get("additional") : List.<Path>of();
+        var additional = ((Map<String, List<Path>>)env).getOrDefault("additional", List.<Path>of());
+        @SuppressWarnings("unchecked")
+        var filter = ((Map<String, BiPredicate<String, String>>)env).getOrDefault("filter", null);
+
+        if (filter == null && additional.isEmpty())
+            throw new UnsupportedOperationException("Missing additional and/or filter");
+
+        if (filter == null)
+            filter = (p, b) -> true;
+
+        var key = makeKey(path);
         try {
-            return newFileSystem((e1, e2)->true, Stream.concat(Stream.of(path), additional.stream()).toArray(Path[]::new));
+            return newFileSystemInternal(key, filter, Stream.concat(Stream.of(path), additional.stream()).toArray(Path[]::new));
         } catch (UncheckedIOException e) {
             throw e.getCause();
         }
@@ -55,20 +106,25 @@ public class UnionFileSystemProvider extends FileSystemProvider {
 
     public UnionFileSystem newFileSystem(final BiPredicate<String, String> pathfilter, final Path... paths) {
         if (paths.length == 0) throw new IllegalArgumentException("Need at least one path");
+        var key = makeKey(paths[0]);
+        return newFileSystemInternal(key, pathfilter, paths);
+    }
 
+    private UnionFileSystem newFileSystemInternal(final String key, final BiPredicate<String, String> pathfilter, final Path... paths) {
         var normpaths = Arrays.stream(paths)
                 .map(Path::toAbsolutePath)
                 .map(Path::normalize)
                 .toArray(Path[]::new);
-        var key = makeKey(normpaths[0]);
-        fileSystems.put(key, DUMMY);
-        var ufs = new UnionFileSystem(this, pathfilter, key, normpaths);
-        fileSystems.put(key, ufs);
-        return ufs;
+
+        synchronized (fileSystems) {
+            var ufs = new UnionFileSystem(this, pathfilter, key, normpaths);
+            fileSystems.put(key, ufs);
+            return ufs;
+        }
     }
 
-    private String makeKey(Path path) {
-        return path.toAbsolutePath().normalize().toUri().getPath();
+    private synchronized String makeKey(Path path) {
+        return path.toAbsolutePath().normalize().toUri().getPath() + "#" + index++;
     }
 
     @Override
@@ -169,5 +225,11 @@ public class UnionFileSystemProvider extends FileSystemProvider {
     @Override
     public void setAttribute(final Path path, final String attribute, final Object value, final LinkOption... options) throws IOException {
         throw new UnsupportedOperationException();
+    }
+
+    void removeFileSystem(UnionFileSystem fs) {
+        synchronized (fileSystems) {
+            fileSystems.remove(fs.getKey());
+        }
     }
 }

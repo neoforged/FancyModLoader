@@ -87,5 +87,10 @@ public class JarModuleFinder implements ModuleFinder {
         public void close() throws IOException {
 
         }
+
+        @Override
+        public String toString() {
+            return this.getClass().getName() + "[jar=" + jar + "]";
+        }
     }
 }

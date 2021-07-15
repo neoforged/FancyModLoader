@@ -32,7 +32,7 @@ public class UnionFileSystem extends FileSystem {
         return pathFilter;
     }
 
-    public String getKey()  {
+    String getKey()  {
         return this.key;
     }
 
@@ -65,7 +65,7 @@ public class UnionFileSystem extends FileSystem {
 
     @Override
     public void close() {
-        throw new UnsupportedOperationException();
+        provider().removeFileSystem(this);
     }
 
     @Override
