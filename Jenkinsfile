@@ -8,10 +8,29 @@ pipeline {
         }
     }
     environment {
-        GRADLE_ARGS = '--no-daemon'
+        GRADLE_ARGS = '--no-daemon --console=plain' //'-Dorg.gradle.daemon.idletimeout=5000'
+        DISCORD_WEBHOOK = credentials('forge-discord-jenkins-webhook')
+        DISCORD_PREFIX = "Job: SecureJarHandler Branch: ${BRANCH_NAME} Build: #${BUILD_NUMBER}"
+        JENKINS_HEAD = 'https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png'
     }
 
     stages {
+        stage('notify_start') {
+            when {
+                not {
+                    changeRequest()
+                }
+            }
+            steps {
+                discordSend(
+                    title: "${DISCORD_PREFIX} Started",
+                    successful: true,
+                    result: 'ABORTED', //White border
+                    thumbnail: JENKINS_HEAD,
+                    webhookURL: DISCORD_WEBHOOK
+                )
+            }
+        }
         stage('buildandtest') {
             steps {
                 withGradle {
@@ -48,8 +67,21 @@ pipeline {
     }
     post {
         always {
-            archiveArtifacts artifacts: 'build/libs/**/*.jar', fingerprint: true
+            script {
+                archiveArtifacts artifacts: 'build/libs/**/*.jar', fingerprint: true
 //             junit 'build/test-results/*/*.xml'
+
+                if (env.CHANGE_ID == null) { // This is unset for non-PRs
+                    discordSend(
+                        title: "${DISCORD_PREFIX} Finished ${currentBuild.currentResult}",
+                        description: '```\n' + getChanges(currentBuild) + '\n```',
+                        successful: currentBuild.resultIsBetterOrEqualTo("SUCCESS"),
+                        result: currentBuild.currentResult,
+                        thumbnail: JENKINS_HEAD,
+                        webhookURL: DISCORD_WEBHOOK
+                    )
+                }
+            }
         }
     }
 }
