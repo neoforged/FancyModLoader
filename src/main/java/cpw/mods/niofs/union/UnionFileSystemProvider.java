@@ -124,7 +124,9 @@ public class UnionFileSystemProvider extends FileSystemProvider {
     }
 
     private synchronized String makeKey(Path path) {
-        return path.toAbsolutePath().normalize().toUri().getPath() + "#" + index++;
+        var key= (path instanceof UnionPath p) ? p.getFileSystem().getKey() :
+                        path.toAbsolutePath().normalize().toUri().getPath();
+        return key.replace('!', '_') + "#" + index++;
     }
 
     @Override
