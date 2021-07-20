@@ -13,7 +13,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -36,11 +35,19 @@ public interface SecureJar {
     boolean hasSecurityData();
 
     static SecureJar from(final Path... paths) {
-        return from(Manifest::new, jar -> JarMetadata.from(jar, paths), paths);
+        return from(jar -> JarMetadata.from(jar, paths), paths);
     }
 
     static SecureJar from(BiPredicate<String, String> filter, final Path... paths) {
-        return from(Manifest::new, jar->JarMetadata.from(jar, paths), filter, paths);
+        return from(jar->JarMetadata.from(jar, paths), filter, paths);
+    }
+
+    static SecureJar from(Function<SecureJar, JarMetadata> metadataSupplier, final Path... paths) {
+        return from(Manifest::new, metadataSupplier, paths);
+    }
+
+    static SecureJar from(Function<SecureJar, JarMetadata> metadataSupplier, BiPredicate<String, String> filter, final Path... paths) {
+        return from(Manifest::new, metadataSupplier, filter, paths);
     }
 
     static SecureJar from(Supplier<Manifest> defaultManifest, Function<SecureJar, JarMetadata> metadataSupplier, final Path... paths) {

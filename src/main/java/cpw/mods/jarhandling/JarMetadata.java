@@ -14,7 +14,7 @@ public interface JarMetadata {
     String version();
     ModuleDescriptor descriptor();
     // ALL from jdk.internal.module.ModulePath.java
-    Pattern DASH_VERSION = Pattern.compile("-(\\d+(\\.|$))");
+    Pattern DASH_VERSION = Pattern.compile("-([.\\d]+)");
     Pattern NON_ALPHANUM = Pattern.compile("[^A-Za-z0-9]");
     Pattern REPEATING_DOTS = Pattern.compile("(\\.)(\\1)+");
     Pattern LEADING_DOTS = Pattern.compile("^\\.");
@@ -43,7 +43,7 @@ public interface JarMetadata {
         var mat = DASH_VERSION.matcher(fn);
         if (mat.find()) {
             var ver = ModuleDescriptor.Version.parse(fn.substring(mat.start() + 1)).toString();
-            var name = fn.substring(0, mat.start());
+            var name = mat.replaceAll("");
             return new SimpleJarMetadata(cleanModuleName(name), ver, pkgs, providers);
         } else {
             return new SimpleJarMetadata(cleanModuleName(fn), null, pkgs, providers);
