@@ -1,17 +1,15 @@
 plugins {
-    id 'org.ajoberstar.grgit' version '4.1.0'
+    id 'net.minecraftforge.gradleutils' version '1.+'
     id 'com.github.ben-manes.versions' version '0.38.0'
-    id 'org.javamodularity.moduleplugin' version '1.8.3' apply false
+    id 'org.javamodularity.moduleplugin' version '1.8.3'
+    id 'java-library'
+    id 'maven-publish'
+    id 'eclipse'
 }
-
-apply plugin: 'java-library'
-apply plugin: 'maven-publish'
-apply plugin: 'eclipse'
-apply plugin: 'org.javamodularity.moduleplugin'
 
 group 'cpw.mods'
 
-version = grgit.describe(longDescr: true).split('-').with { "${it[0]}.${it[1]}" }
+version = gradleutils.getTagOffsetVersion()
 logger.lifecycle('Version: ' + version)
 
 repositories {
@@ -22,7 +20,7 @@ repositories {
     }
 }
 dependencies {
-    implementation('cpw.mods:securejarhandler:0.9.33')
+    implementation('cpw.mods:securejarhandler:0.9.44')
 }
 
 
@@ -38,11 +36,11 @@ jar {
                 'Specification-Vendor': 'forge',
                 'Specification-Version': '1', // We are version 1 of ourselves
                 'Implementation-Title': project.name,
-                'Implementation-Version': "${project.version}+${System.getenv("BUILD_NUMBER")?:0}+${grgit.branch.current().getName()}.${grgit.head().abbreviatedId}",
+                'Implementation-Version': "${project.version}+${System.getenv("BUILD_NUMBER")?:0}+${gradleutils.gitInfo.branch}.${gradleutils.gitInfo.abbreviatedId}",
                 'Implementation-Vendor':'forge',
                 'Implementation-Timestamp': java.time.Instant.now().toString(),
-                'Git-Commit': grgit.head().abbreviatedId,
-                'Git-Branch': grgit.branch.current().getName(),
+                'Git-Commit': gradleutils.gitInfo.abbreviatedId,
+                'Git-Branch': gradleutils.gitInfo.branch,
                 'Build-Number': "${System.getenv("BUILD_NUMBER")?:0}",
                 'Main-Class': 'cpw.mods.bootstraplauncher.BootstrapLauncher'
         )
@@ -84,14 +82,18 @@ publishing {
     }
     repositories {
         maven {
-            authentication {
-                basic(BasicAuthentication)
+            if (System.env.MAVEN_USER) {
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = System.env.MAVEN_USER ?: 'not'
+                    password = System.env.MAVEN_PASSWORD ?: 'set'
+                }
+                url 'https://maven.minecraftforge.net/releases'
+            } else {
+                url 'file://' + rootProject.file('repo').getAbsolutePath()
             }
-            credentials {
-                username = System.env.MAVEN_USER ?: 'not'
-                password = System.env.MAVEN_PASSWORD ?: 'set'
-            }
-            url 'https://maven.minecraftforge.net/releases'
         }
     }
 }
