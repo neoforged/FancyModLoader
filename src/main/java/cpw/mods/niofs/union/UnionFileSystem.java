@@ -43,7 +43,9 @@ public class UnionFileSystem extends FileSystem {
         this.provider = provider;
         this.key = key;
         this.basepaths = IntStream.range(0, basepaths.length)
-                .mapToObj(i->basepaths[basepaths.length - i - 1]).toList(); // we flip the list so later elements are first in search order.
+                .mapToObj(i->basepaths[basepaths.length - i - 1])
+                .filter(Files::exists)
+                .toList(); // we flip the list so later elements are first in search order.
         this.embeddedFileSystems = this.basepaths.stream().filter(path -> !Files.isDirectory(path))
                 .map(UnionFileSystem::openFileSystem)
                 .flatMap(Optional::stream)
