@@ -5,7 +5,10 @@ import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.SecureJar;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.module.ModuleFinder;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -19,12 +22,14 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class BootstrapLauncher {
     private static final boolean DEBUG = System.getProperties().containsKey("bsl.debug");
     @SuppressWarnings("unchecked")
     public static void main(String[] args) {
-        var legacyCP = Objects.requireNonNull(System.getProperty("legacyClassPath", System.getProperty("java.class.path")), "Missing legacyClassPath, cannot bootstrap");
+        var legacyCP = loadLegacyClassPath();
+        System.setProperty("legacyClassPath", String.join(File.pathSeparator, legacyCP)); //Ensure backwards compatibility if somebody reads this value later on.
         var ignoreList = System.getProperty("ignoreList", "/org/ow2/asm/,securejarhandler"); //TODO: find existing modules automatically instead of taking in an ignore list.
         var ignores = ignoreList.split(",");
 
@@ -34,7 +39,7 @@ public class BootstrapLauncher {
         var mergeMap = new HashMap<Integer, List<Path>>();
 
         outer:
-        for (var legacy : legacyCP.split(File.pathSeparator)) {
+        for (var legacy : legacyCP) {
             for (var filter : ignores) {
                 if (legacy.contains(filter)) {
                     if (DEBUG)
@@ -115,5 +120,24 @@ public class BootstrapLauncher {
                 idx == path.length() - 1 || // All directories can have a potential to exist without conflict, we only care about real files.
                 !packages.contains(path.substring(0, idx).replace('/', '.'));
         }
+    }
+
+    private static List<String> loadLegacyClassPath() {
+        var legacyCpPath = System.getProperty("legacyClassPath.file");
+
+        if (legacyCpPath != null) {
+            var legacyCPFileCandidatePath = Paths.get(legacyCpPath);
+            if (Files.exists(legacyCPFileCandidatePath) && Files.isRegularFile(legacyCPFileCandidatePath)) {
+                try {
+                    return Files.readAllLines(legacyCPFileCandidatePath);
+                }
+                catch (IOException e) {
+                    throw new IllegalStateException("Failed to load the legacy class path from the specified file: " + legacyCpPath, e);
+                }
+            }
+        }
+
+        return Arrays.asList(Objects.requireNonNull(System.getProperty("legacyClassPath", System.getProperty("java.class.path")), "Missing legacyClassPath, cannot bootstrap")
+                               .split(File.pathSeparator));
     }
 }
