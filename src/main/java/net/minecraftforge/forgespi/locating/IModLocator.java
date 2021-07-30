@@ -19,28 +19,20 @@
 
 package net.minecraftforge.forgespi.locating;
 
-import org.apache.commons.lang3.tuple.Pair;
-
-import java.nio.file.Path;
-import java.security.CodeSigner;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.jar.Manifest;
 
 /**
  * Loaded as a ServiceLoader. Takes mechanisms for locating candidate "mods"
- * and transforms them into {@link ModFile} objects.
+ * and transforms them into {@link IModFile} objects.
  */
-public interface IModLocator {
+public interface IModLocator extends IModProvider
+{
+    /**
+     * Invoked to find all mods that this mod locator can find.
+     * It is not guaranteed that all these are loaded into the runtime,
+     * as such the result of this method should be seen as a list of candidates to load.
+     *
+     * @return All found, or discovered, mod files.
+     */
     List<IModFile> scanMods();
-
-    String name();
-
-    void scanFile(final IModFile modFile, Consumer<Path> pathConsumer);
-
-    void initArguments(Map<String, ?> arguments);
-
-    boolean isValid(IModFile modFile);
 }
