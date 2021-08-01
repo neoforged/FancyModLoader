@@ -13,14 +13,20 @@ public class SecureJarVerifier {
 
     static {
         final var moduleLayer = ModuleLayer.boot();
-        final var gj9h = moduleLayer.findModule("cpw.mods.securejarhandler").orElseThrow();
-        moduleLayer
-                .findModule("java.base")
-                .filter(m-> m.isOpen("java.util.jar", gj9h) && m.isExported("sun.security.util", gj9h))
-                .orElseThrow(()->new IllegalStateException("""
-                Missing JVM arguments. Please correct your runtime profile and run again.
-                    --add-opens java.base/java.util.jar=cpw.mods.securejarhandler
-                    --add-exports java.base/sun.security.util=cpw.mods.securejarhandler"""));
+        final var gj9hOptional = moduleLayer.findModule("cpw.mods.securejarhandler");
+        if (gj9hOptional.isPresent()) {
+            final var gj9h = gj9hOptional.get();
+            moduleLayer
+                    .findModule("java.base")
+                    .filter(m-> m.isOpen("java.util.jar", gj9h) && m.isExported("sun.security.util", gj9h))
+                    .orElseThrow(()->new IllegalStateException("""
+                    Missing JVM arguments. Please correct your runtime profile and run again.
+                        --add-opens java.base/java.util.jar=cpw.mods.securejarhandler
+                        --add-exports java.base/sun.security.util=cpw.mods.securejarhandler"""));
+        } else if (Boolean.parseBoolean(System.getProperty("securejarhandler.throwOnMissingModule", "true"))) {
+            // Hack for JMH benchmark: in JMH, SecureJarHandler does not load as a module, but we add-open to all unnamed in the jvm args
+            throw new RuntimeException("Failed to find securejarhandler module!");
+        }
         try {
             jarVerifier = JarInputStream.class.getDeclaredField("jv");
             sigFileSigners = jarVerifier.getType().getDeclaredField("sigFileSigners");
