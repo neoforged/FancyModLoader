@@ -22,7 +22,6 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class BootstrapLauncher {
     private static final boolean DEBUG = System.getProperties().containsKey("bsl.debug");
@@ -30,7 +29,7 @@ public class BootstrapLauncher {
     public static void main(String[] args) {
         var legacyCP = loadLegacyClassPath();
         System.setProperty("legacyClassPath", String.join(File.pathSeparator, legacyCP)); //Ensure backwards compatibility if somebody reads this value later on.
-        var ignoreList = System.getProperty("ignoreList", "/org/ow2/asm/,securejarhandler"); //TODO: find existing modules automatically instead of taking in an ignore list.
+        var ignoreList = System.getProperty("ignoreList", "asm,securejarhandler"); //TODO: find existing modules automatically instead of taking in an ignore list.
         var ignores = ignoreList.split(",");
 
         var previousPkgs = new HashSet<String>();
@@ -40,18 +39,20 @@ public class BootstrapLauncher {
 
         outer:
         for (var legacy : legacyCP) {
+            var path = Paths.get(legacy);
+            var filename = path.getFileName().toString();
+
             for (var filter : ignores) {
-                if (legacy.contains(filter)) {
+                if (filename.startsWith(filter)) {
                     if (DEBUG)
                         System.out.println(legacy + " IGNORED: " + filter);
                     continue outer;
                 }
             }
 
-            var path = Paths.get(legacy);
             if (DEBUG)
                 System.out.println(path);
-            var filename = path.getFileName().toString();
+
             if (filenameMap.containsKey(filename)) {
                 mergeMap.computeIfAbsent(filenameMap.get(filename), k -> new ArrayList<>()).add(path);
                 continue;
