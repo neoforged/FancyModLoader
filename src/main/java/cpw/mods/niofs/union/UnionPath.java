@@ -14,10 +14,12 @@ public class UnionPath implements Path {
     private final String[] pathParts;
     static final String ROOT = "";
 
-    UnionPath(final UnionFileSystem fileSystem, final String... pathParts) {
+    UnionPath(final UnionFileSystem fileSystem, boolean knownCorrectSplit, final String... pathParts) {
         this.fileSystem = fileSystem;
         if (pathParts.length == 0)
             this.pathParts = new String[0];
+        else if (knownCorrectSplit)
+            this.pathParts = pathParts;
         else {
             final var longstring = String.join(fileSystem.getSeparator(), pathParts);
             this.pathParts = getPathParts(longstring);
@@ -40,20 +42,20 @@ public class UnionPath implements Path {
 
     @Override
     public Path getRoot() {
-        return new UnionPath(this.fileSystem, ROOT);
+        return new UnionPath(this.fileSystem, true, ROOT);
     }
 
 
     @Override
     public Path getFileName() {
-        return this.pathParts.length > 0 ? new UnionPath(this.fileSystem, this.pathParts[this.pathParts.length-1]) : null;
+        return this.pathParts.length > 0 ? new UnionPath(this.getFileSystem(), true, this.pathParts[this.pathParts.length-1]) : null;
     }
 
 
     @Override
     public Path getParent() {
         if (this.pathParts.length > 0) {
-            return new UnionPath(this.fileSystem, Arrays.copyOf(this.pathParts, this.pathParts.length - 1));
+            return new UnionPath(this.fileSystem, true, Arrays.copyOf(this.pathParts,this.pathParts.length - 1));
         } else {
             return null;
         }
@@ -67,7 +69,7 @@ public class UnionPath implements Path {
     @Override
     public Path getName(final int index) {
         if (index < 0 || index > this.pathParts.length -1) throw new IllegalArgumentException();
-        return new UnionPath(this.fileSystem,this.pathParts[index]);
+        return new UnionPath(this.fileSystem, true, this.pathParts[index]);
     }
 
     @Override
@@ -75,7 +77,7 @@ public class UnionPath implements Path {
         if (beginIndex < 0 || beginIndex > this.pathParts.length - 1 || endIndex < 0 || endIndex > this.pathParts.length || beginIndex > endIndex) {
             throw new IllegalArgumentException("Out of range "+beginIndex+" to "+endIndex+" for length "+this.pathParts.length);
         }
-        return new UnionPath(this.fileSystem, Arrays.copyOfRange(this.pathParts, beginIndex, endIndex));
+        return new UnionPath(this.fileSystem, true, Arrays.copyOfRange(this.pathParts, beginIndex, endIndex));
     }
 
     @Override
@@ -126,7 +128,7 @@ public class UnionPath implements Path {
                     break;
             }
         }
-        return new UnionPath(this.fileSystem, String.join(this.fileSystem.getSeparator(), normpath));
+        return new UnionPath(this.fileSystem, true, normpath.toArray(new String[0]));
     }
 
     @Override
@@ -135,7 +137,7 @@ public class UnionPath implements Path {
             if (path.isAbsolute()) {
                 return path;
             }
-            return new UnionPath(this.fileSystem, this+fileSystem.getSeparator()+other);
+            return new UnionPath(this.fileSystem, false, this+fileSystem.getSeparator()+other);
         }
         return other;
     }
@@ -156,15 +158,15 @@ public class UnionPath implements Path {
 
             var remaining = this.pathParts.length - i - meoff;
             if (remaining == 0 && i == p.pathParts.length) {
-                return new UnionPath(this.getFileSystem());
+                return new UnionPath(this.getFileSystem(), false);
             } else if (remaining == 0) {
                 return p.subpath(i, p.getNameCount());
             } else {
                 var updots = IntStream.range(0, remaining).mapToObj(idx -> "..").collect(Collectors.joining(getFileSystem().getSeparator()));
                 if (i == p.pathParts.length) {
-                    return new UnionPath(this.getFileSystem(), updots);
+                    return new UnionPath(this.getFileSystem(), false, updots);
                 } else {
-                    return new UnionPath(this.getFileSystem(), updots + getFileSystem().getSeparator() + p.subpath(i, p.getNameCount()));
+                    return new UnionPath(this.getFileSystem(), false, updots + getFileSystem().getSeparator() + p.subpath(i, p.getNameCount()));
                 }
             }
         }

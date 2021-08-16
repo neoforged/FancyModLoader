@@ -93,9 +93,6 @@ public class UnionFileSystemProvider extends FileSystemProvider {
         if (filter == null && additional.isEmpty())
             throw new UnsupportedOperationException("Missing additional and/or filter");
 
-        if (filter == null)
-            filter = (p, b) -> true;
-
         var key = makeKey(path);
         try {
             return newFileSystemInternal(key, filter, Stream.concat(Stream.of(path), additional.stream()).toArray(Path[]::new));

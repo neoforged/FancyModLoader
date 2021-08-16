@@ -16,8 +16,8 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class UnionFileSystem extends FileSystem {
-    private final UnionPath root = new UnionPath(this, UnionPath.ROOT);
-    private final UnionPath notExistingPath = new UnionPath(this, "SNOWMAN");
+    private final UnionPath root = new UnionPath(this, false, UnionPath.ROOT);
+    private final UnionPath notExistingPath = new UnionPath(this, false, "SNOWMAN");
     private final UnionFileSystemProvider provider;
     private final String key;
     private final List<Path> basepaths;
@@ -110,9 +110,9 @@ public class UnionFileSystem extends FileSystem {
             var args = new String[more.length + 1];
             args[0] = first;
             System.arraycopy(more, 0, args, 1, more.length);
-            return new UnionPath(this, args);
+            return new UnionPath(this, false, args);
         }
-        return new UnionPath(this, first);
+        return new UnionPath(this, false, first);
     }
 
     @Override
@@ -151,12 +151,13 @@ public class UnionFileSystem extends FileSystem {
     }
 
     private Optional<Path> findFirstFiltered(final UnionPath path) {
-        return this.basepaths.stream()
-                .filter(p -> testFilter(toRealPath(p, path), p))
-                .map(p->toRealPath(p, path))
-                .filter(p->p!=notExistingPath)
-                .filter(Files::exists)
-                .findFirst();
+        for (Path p : this.basepaths) {
+            Path realPath = toRealPath(p, path);
+            if (realPath != notExistingPath && testFilter(realPath, p) && Files.exists(realPath)) {
+                return Optional.of(realPath);
+            }
+        }
+        return Optional.empty();
     }
 
     private <T> Stream<T> streamPathList(final Function<Path,Optional<T>> function) {
@@ -168,20 +169,18 @@ public class UnionFileSystem extends FileSystem {
     @SuppressWarnings("unchecked")
     public <A extends BasicFileAttributes> A readAttributes(final UnionPath path, final Class<A> type, final LinkOption... options) throws IOException {
         if (type == BasicFileAttributes.class) {
-            record Paths(Path base, Path path) {} // We need to know the full path for the filter
-            record AttributeInfo(Path base, Path path, Optional<BasicFileAttributes> attrib) {}
-
             // We need to run the test on the actual path,
-            return (A)this.basepaths.stream()
-                .map(p -> new Paths(p, toRealPath(p, path)))
-                .filter(p -> p.path != notExistingPath)
-                .filter(p -> Files.exists(p.path))
-                .map(p -> new AttributeInfo(p.base, p.path, this.getFileAttributes(p.path)))
-                .filter(ai -> ai.attrib.isPresent())
-                .filter(ai -> testFilter(ai.path, ai.base))
-                .findFirst()
-                .flatMap(ai -> ai.attrib)
-                .orElseThrow(() -> new NoSuchFileException(path.toString()));
+            for (Path base : this.basepaths) {
+                // We need to know the full path for the filter
+                Path realPath = toRealPath(base, path);
+                if (realPath != notExistingPath) {
+                    Optional<BasicFileAttributes> fileAttributes = this.getFileAttributes(realPath);
+                    if (fileAttributes.isPresent() && testFilter(realPath, base)) {
+                        return (A) fileAttributes.get();
+                    }
+                }
+            }
+            throw new NoSuchFileException(path.toString());
         } else {
             throw new UnsupportedOperationException();
         }
@@ -205,9 +204,10 @@ public class UnionFileSystem extends FileSystem {
 
     private Path toRealPath(final Path basePath, final UnionPath path) {
         var embeddedpath = path.toString();
-        var resolvepath = embeddedpath.length() > 1 && path.isAbsolute() ? path.toString().substring(1) : embeddedpath;
-        if (embeddedFileSystems.containsKey(basePath)) {
-            return embeddedFileSystems.get(basePath).fs().getPath(resolvepath);
+        var resolvepath = embeddedpath.length() > 1 && path.isAbsolute() ? embeddedpath.substring(1) : embeddedpath;
+        var efsm = embeddedFileSystems.get(basePath);
+        if (efsm != null) {
+            return efsm.fs().getPath(resolvepath);
         } else {
             return basePath.resolve(resolvepath);
         }
@@ -235,8 +235,8 @@ public class UnionFileSystem extends FileSystem {
         final var allpaths = new LinkedHashSet<Path>();
         for (final var bp : basepaths) {
             final var dir = toRealPath(bp, path);
-            final var isSimple = embeddedFileSystems.containsKey(bp);
             if (dir == notExistingPath || !Files.exists(dir)) continue;
+            final var isSimple = embeddedFileSystems.containsKey(bp);
             final var ds = Files.newDirectoryStream(dir, filter);
             StreamSupport.stream(ds.spliterator(), false)
                     .filter(p->testFilter(p, bp))
@@ -264,6 +264,8 @@ public class UnionFileSystem extends FileSystem {
      * Remove leading / for absolute paths
      */
     private boolean testFilter(final Path path, final Path basePath) {
+        if (pathFilter == null) return true;
+
         var sPath = path.toString();
         if (path.getFileSystem() == basePath.getFileSystem()) // Directories, zips will be different file systems.
             sPath = basePath.relativize(path).toString().replace('\\', '/');

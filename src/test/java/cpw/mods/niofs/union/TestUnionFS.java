@@ -36,7 +36,7 @@ public class TestUnionFS {
         );
         var p = ufs.getRoot().resolve("subdir1/masktestd1.txt");
         p.subpath(2, 3);
-        var empty = new UnionPath(ufs);
+        var empty = new UnionPath(ufs, false);
     }
 
     @Test

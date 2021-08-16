@@ -216,9 +216,10 @@ public class Jar implements SecureJar {
     public Set<String> getPackages() {
         if (this.packages == null) {
             try (var walk = Files.walk(this.filesystem.getRoot())) {
-                this.packages = walk.filter(path -> Files.exists(path) && !Files.isDirectory(path))
+                this.packages = walk
                     .filter(path->!path.getName(0).toString().equals("META-INF"))
                     .filter(path->path.getFileName().toString().endsWith(".class"))
+                    .filter(Files::isRegularFile)
                     .map(path->path.subpath(0, path.getNameCount()-1))
                     .map(path->path.toString().replace('/','.'))
                     .filter(pkg->pkg.length()!=0)

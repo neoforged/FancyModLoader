@@ -51,7 +51,7 @@ public interface SecureJar {
     }
 
     static SecureJar from(Supplier<Manifest> defaultManifest, Function<SecureJar, JarMetadata> metadataSupplier, final Path... paths) {
-        return from(defaultManifest, metadataSupplier, (e1, e2)->true, paths);
+        return from(defaultManifest, metadataSupplier, null, paths);
     }
 
     static SecureJar from(Supplier<Manifest> defaultManifest, Function<SecureJar, JarMetadata> metadataSupplier, BiPredicate<String, String> filter, final Path... paths) {
@@ -75,7 +75,7 @@ public interface SecureJar {
                 var entries = Files.readAllLines(path).stream()
                         .map(String::trim)
                         .filter(l->l.length() > 0 && !l.startsWith("#"))
-                        .filter(p->pkgFilter.test(p.replace('.','/'), ""))
+                        .filter(p-> pkgFilter == null || pkgFilter.test(p.replace('.','/'), ""))
                         .toList();
                 return new Provider(sname, entries);
             } catch (IOException e) {
