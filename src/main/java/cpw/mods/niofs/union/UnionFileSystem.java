@@ -237,12 +237,13 @@ public class UnionFileSystem extends FileSystem {
             final var dir = toRealPath(bp, path);
             if (dir == notExistingPath || !Files.exists(dir)) continue;
             final var isSimple = embeddedFileSystems.containsKey(bp);
-            final var ds = Files.newDirectoryStream(dir, filter);
-            StreamSupport.stream(ds.spliterator(), false)
-                    .filter(p->testFilter(p, bp))
-                    .map(other -> (isSimple ? other : bp.relativize(other)).toString())
-                    .map(this::getPath)
-                    .forEachOrdered(allpaths::add);
+            try (final var ds = Files.newDirectoryStream(dir, filter)) {
+                StreamSupport.stream(ds.spliterator(), false)
+                        .filter(p->testFilter(p, bp))
+                        .map(other -> (isSimple ? other : bp.relativize(other)).toString())
+                        .map(this::getPath)
+                        .forEachOrdered(allpaths::add);
+            }
         }
         return new DirectoryStream<>() {
             @Override
