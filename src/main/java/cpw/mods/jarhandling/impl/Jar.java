@@ -4,8 +4,6 @@ import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.niofs.union.UnionFileSystem;
 import cpw.mods.niofs.union.UnionFileSystemProvider;
-import cpw.mods.niofs.union.UnionPath;
-import sun.security.util.ManifestEntryVerifier;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -18,21 +16,21 @@ import java.security.CodeSigner;
 import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.jar.*;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
+import java.util.jar.JarInputStream;
+import java.util.jar.Manifest;
 
 import static java.util.stream.Collectors.*;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.mapping;
 
 public class Jar implements SecureJar {
     private static final CodeSigner[] EMPTY_CODESIGNERS = new CodeSigner[0];
     private static final UnionFileSystemProvider UFSP = (UnionFileSystemProvider) FileSystemProvider.installedProviders().stream().filter(fsp->fsp.getScheme().equals("union")).findFirst().orElseThrow(()->new IllegalStateException("Couldn't find UnionFileSystemProvider"));
     private final Manifest manifest;
-    private final ManifestEntryVerifier mev;
     private final Hashtable<String, CodeSigner[]> pendingSigners = new Hashtable<>();
     private final Hashtable<String, CodeSigner[]> existingSigners = new Hashtable<>();
+    private final ManifestVerifier verifier = new ManifestVerifier();
     private final boolean secure;
     private final Map<String, StatusData> statusData = new HashMap<>();
     private final JarMetadata metadata;
@@ -83,7 +81,6 @@ public class Jar implements SecureJar {
                     }
                 else
                     this.manifest = defaultManifest.get();
-                this.mev = null;
                 secure = false;
             } else {
                 try (var jis = new JarInputStream(Files.newInputStream(path))) {
@@ -93,11 +90,9 @@ public class Jar implements SecureJar {
                         }
                         secure = SecureJarVerifier.anyToVerify.getBoolean(SecureJarVerifier.jarVerifier.get(jis));
                         this.manifest = new Manifest(jis.getManifest());
-                        this.mev = new ManifestEntryVerifier(this.manifest);
                     } else {
                         secure = false;
                         this.manifest = defaultManifest.get();
-                        this.mev = null;
                     }
                     if (secure) {
                         pendingSigners.putAll((Hashtable<String, CodeSigner[]>) SecureJarVerifier.sigFileSigners.get(SecureJarVerifier.jarVerifier.get(jis)));
@@ -146,17 +141,15 @@ public class Jar implements SecureJar {
     public synchronized CodeSigner[] verifyAndGetSigners(final String name, final byte[] bytes) {
         if (!secure) return null;
         if (statusData.containsKey(name)) return statusData.get(name).signers;
-        setMEVName(name);
-        mev.update(bytes, 0, bytes.length);
-        try {
-            final var codeSigners = mev.verify(existingSigners, pendingSigners);
-            StatusData.add(name, Status.VERIFIED, codeSigners, this);
-            return codeSigners;
-        } catch (JarException | SecurityException e) {
+
+        var signers = verifier.verify(this.manifest, pendingSigners, existingSigners, name, bytes);
+        if (signers == null) {
             StatusData.add(name, Status.INVALID, null, this);
             return null;
-        } finally {
-            setMEVName(null);
+        } else {
+            var ret = signers.orElse(null);
+            StatusData.add(name, Status.VERIFIED, ret, this);
+            return ret;
         }
     }
 
@@ -171,14 +164,6 @@ public class Jar implements SecureJar {
             return getFileStatus(pathname);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
-        }
-    }
-
-    private void setMEVName(final String name) {
-        try {
-            this.mev.setEntry(name, null);
-        } catch (IOException e) {
-            // ignore - never thrown
         }
     }
 

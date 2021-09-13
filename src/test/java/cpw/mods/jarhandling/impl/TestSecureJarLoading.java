@@ -7,12 +7,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
-import java.util.Arrays;
-import java.util.jar.JarFile;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
-import sun.security.util.SignatureFileVerifier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,7 +22,7 @@ public class TestSecureJarLoading {
         try (var is = Files.newInputStream(path)) {
             ZipInputStream zis = new ZipInputStream(is);
             for (var ze = zis.getNextEntry(); ze!=null; ze=zis.getNextEntry()) {
-                if (SignatureFileVerifier.isSigningRelated(ze.getName())) continue;
+                if (SecureJarVerifier.isSigningRelated(ze.getName())) continue;
                 if (ze.isDirectory()) continue;
                 final var zeName = ze.getName();
                 var cs = ((Jar)jar).verifyAndGetSigners(ze.getName(), zis.readAllBytes());
@@ -49,7 +45,7 @@ public class TestSecureJarLoading {
         try (var is = Files.newInputStream(path)) {
             ZipInputStream zis = new ZipInputStream(is);
             for (var ze = zis.getNextEntry(); ze!=null; ze=zis.getNextEntry()) {
-                if (SignatureFileVerifier.isSigningRelated(ze.getName())) continue;
+                if (SecureJarVerifier.isSigningRelated(ze.getName())) continue;
                 if (ze.isDirectory()) continue;
                 final var zeName = ze.getName();
                 var cs = ((Jar)jar).verifyAndGetSigners(ze.getName(), zis.readAllBytes());
@@ -97,7 +93,7 @@ public class TestSecureJarLoading {
         try (var is = Files.newInputStream(path)) {
             ZipInputStream zis = new ZipInputStream(is);
             for (var ze = zis.getNextEntry(); ze!=null; ze=zis.getNextEntry()) {
-                if (SignatureFileVerifier.isSigningRelated(ze.getName())) continue;
+                if (SecureJarVerifier.isSigningRelated(ze.getName())) continue;
                 if (ze.isDirectory()) continue;
                 final var zeName = ze.getName();
                 var cs = ((Jar)jar).verifyAndGetSigners(ze.getName(), zis.readAllBytes());

@@ -2,6 +2,7 @@ package cpw.mods.jarhandling.impl;
 
 import java.lang.reflect.Field;
 import java.net.spi.URLStreamHandlerProvider;
+import java.util.Locale;
 import java.util.jar.JarInputStream;
 
 public class SecureJarVerifier {
@@ -53,5 +54,35 @@ public class SecureJarVerifier {
             buffer.append(LOOKUP[aByte&0xf]);
         }
         return buffer.toString();
+    }
+
+    //https://docs.oracle.com/en/java/javase/16/docs/specs/jar/jar.html#signed-jar-file
+    public static boolean isSigningRelated(String path) {
+        String filename = path.toLowerCase(Locale.ENGLISH);
+        if (!filename.startsWith("meta-inf/")) // Must be in META-INF directory
+            return false;
+        filename = filename.substring(9);
+        if (filename.indexOf('/') != -1)  // Can't be a sub-directory
+            return false;
+        if ("manifest.mf".equals(filename) || // Main manifest, which has the file hashes
+                filename.endsWith(".sf") ||       // Signature file, which has hashes of the entries in the manifest file
+                filename.endsWith(".dsa") ||      // PKCS7 signature, DSA
+                filename.endsWith(".rsa"))        // PKCS7 signature, SHA-256 + RSA
+            return true;
+
+        if (!filename.startsWith("sig-")) // Unspecifed signature format
+            return false;
+
+        int ext = filename.lastIndexOf('.');
+        if (ext == -1) // No extension, aparently is ok
+            return true;
+        if (ext < filename.length() - 4) // Only 1-3 character {-4 because we're at the . char}
+            return false;
+        for (int x = ext + 1; x < filename.length(); x++) {
+            char c = filename.charAt(x);
+            if ((c < 'a' || c > 'z') && (c < '0' || c > '9')) // Must be alphanumeric
+                return false;
+        }
+        return true;
     }
 }
