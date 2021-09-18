@@ -34,6 +34,21 @@ public interface IModFile {
     IModFileInfo getModFileInfo();
 
     enum Type {
-        MOD, LIBRARY, LANGPROVIDER
+        /**
+         * A mod file holds mod code and loads in the game module layer
+         */
+        MOD,
+        /**
+         * A library can reference lang providers in the plugin module layer
+         */
+        LIBRARY,
+        /**
+         * A language provider provides a custom way to load mods in the plugin module layer
+         */
+        LANGPROVIDER,
+        /**
+         * A game library can reference MC code and loads in the game module layer
+         */
+        GAMELIBRARY
     }
 }

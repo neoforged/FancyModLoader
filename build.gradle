@@ -1,7 +1,10 @@
 plugins {
     id 'org.ajoberstar.grgit' version '4.1.0'
     id 'com.github.ben-manes.versions' version '0.39.0'
-    id 'org.javamodularity.moduleplugin' version '1.8.3' apply false
+    id 'org.javamodularity.moduleplugin' version '1.8.3'
+    id 'net.minecraftforge.gradleutils' version '1.+'
+    id 'maven-publish'
+    id 'java-library'
 }
 
 apply plugin: 'maven-publish'
@@ -11,7 +14,7 @@ apply plugin: 'org.javamodularity.moduleplugin'
 java.toolchain.languageVersion = JavaLanguageVersion.of(16)
 
 group 'net.minecraftforge'
-version = grgit.describe(longDescr: true).split('-').with { "${it[0]}.${it[1]}" }
+version = gradleutils.getTagOffsetBranchVersion()
 
 repositories {
     mavenCentral()
@@ -43,11 +46,11 @@ ext.sharedManifest = manifest {
                 'Specification-Vendor': 'forge',
                 'Specification-Version': '4', // Currently version 4 of the forgespi specification
                 'Implementation-Title': project.name,
-                'Implementation-Version': "${project.version}+${System.getenv('BUILD_NUMBER')?:0}+${grgit.branch.current().getName()}.${grgit.head().abbreviatedId}",
+                'Implementation-Version': "${project.version}+${System.getenv('BUILD_NUMBER')?:0}+${gradleutils.gitInfo.branch}.${gradleutils.gitInfo.abbreviatedId}",
                 'Implementation-Vendor': 'forge',
                 'Implementation-Timestamp': java.time.Instant.now().toString(),
-                'Git-Commit': grgit.head().abbreviatedId,
-                'Git-Branch': grgit.branch.current().getName(),
+                'Git-Commit': gradleutils.gitInfo.abbreviatedId,
+                'Git-Branch': gradleutils.gitInfo.branch,
                 'Build-Number': "${System.getenv('BUILD_NUMBER')?:0}"],
             "net/minecraftforge/forgespi/")
 }
@@ -65,13 +68,13 @@ task sourcesJar(type: Jar) {
 
 
 dependencies {
-    implementation('cpw.mods:modlauncher:9.0.+')
+    implementation('cpw.mods:modlauncher:9.0.7')
     implementation('org.ow2.asm:asm:9.1')
     implementation('org.ow2.asm:asm-commons:9.1')
     implementation('org.ow2.asm:asm-tree:9.1')
     implementation('org.apache.logging.log4j:log4j-api:2.14.1')
     implementation('org.apache.maven:maven-artifact:3.8.1')
-    implementation('cpw.mods:securejarhandler:0.9.+')
+    implementation('cpw.mods:securejarhandler:0.9.52')
 
 
     testRuntimeOnly('org.apache.logging.log4j:log4j-core:2.14.1')
