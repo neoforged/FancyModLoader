@@ -1,8 +1,0 @@
---add-exports
-  java.base/sun.security.util=cpw.mods.securejarhandler
---add-exports
-  java.base/java.util.jar=cpw.mods.securejarhandler
---add-opens
-  java.base/sun.security.util=cpw.mods.securejarhandler
---add-opens
-  java.base/java.util.jar=cpw.mods.securejarhandler

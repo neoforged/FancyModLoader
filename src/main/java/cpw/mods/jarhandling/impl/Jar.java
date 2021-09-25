@@ -29,7 +29,7 @@ public class Jar implements SecureJar {
     private static final UnionFileSystemProvider UFSP = (UnionFileSystemProvider) FileSystemProvider.installedProviders().stream().filter(fsp->fsp.getScheme().equals("union")).findFirst().orElseThrow(()->new IllegalStateException("Couldn't find UnionFileSystemProvider"));
     private final Manifest manifest;
     private final Hashtable<String, CodeSigner[]> pendingSigners = new Hashtable<>();
-    private final Hashtable<String, CodeSigner[]> existingSigners = new Hashtable<>();
+    private final Hashtable<String, CodeSigner[]> verifiedSigners = new Hashtable<>();
     private final ManifestVerifier verifier = new ManifestVerifier();
     private final Map<String, StatusData> statusData = new HashMap<>();
     private final JarMetadata metadata;
@@ -84,16 +84,16 @@ public class Jar implements SecureJar {
                     }
                 } else {
                     try (var jis = new JarInputStream(Files.newInputStream(path))) {
-                        var jv = SecureJarVerifier.jarVerifier.get(jis);
+                        var jv = SecureJarVerifier.getJarVerifier(jis);
                         if (jv != null) {
-                            while ((Boolean)SecureJarVerifier.parsingMeta.get(jv)) {
+                            while (SecureJarVerifier.isParsingMeta(jv)) {
                                 jis.getNextJarEntry();
                             }
 
-                            if (SecureJarVerifier.anyToVerify.getBoolean(jv)) {
-                                pendingSigners.putAll((Hashtable<String, CodeSigner[]>) SecureJarVerifier.sigFileSigners.get(SecureJarVerifier.jarVerifier.get(jis)));
-                                existingSigners.put(JarFile.MANIFEST_NAME, ((Hashtable<String, CodeSigner[]>) SecureJarVerifier.existingSigners.get(SecureJarVerifier.jarVerifier.get(jis))).get(JarFile.MANIFEST_NAME));
-                                StatusData.add(JarFile.MANIFEST_NAME, Status.VERIFIED, existingSigners.get(JarFile.MANIFEST_NAME), this);
+                            if (SecureJarVerifier.hasSignatures(jv)) {
+                                pendingSigners.putAll(SecureJarVerifier.getPendingSigners(jv));
+                                verifiedSigners.put(JarFile.MANIFEST_NAME, SecureJarVerifier.getVerifiedSigners(jv).get(JarFile.MANIFEST_NAME));
+                                StatusData.add(JarFile.MANIFEST_NAME, Status.VERIFIED, verifiedSigners.get(JarFile.MANIFEST_NAME), this);
                             }
                         }
 
@@ -105,8 +105,6 @@ public class Jar implements SecureJar {
                 }
             }
             this.manifest = mantmp == null ? defaultManifest.get() : mantmp;
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -146,7 +144,7 @@ public class Jar implements SecureJar {
         if (!hasSecurityData()) return null;
         if (statusData.containsKey(name)) return statusData.get(name).signers;
 
-        var signers = verifier.verify(this.manifest, pendingSigners, existingSigners, name, bytes);
+        var signers = verifier.verify(this.manifest, pendingSigners, verifiedSigners, name, bytes);
         if (signers == null) {
             StatusData.add(name, Status.INVALID, null, this);
             return null;
@@ -193,7 +191,7 @@ public class Jar implements SecureJar {
     }
     @Override
     public boolean hasSecurityData() {
-        return !pendingSigners.isEmpty() || !this.existingSigners.isEmpty();
+        return !pendingSigners.isEmpty() || !this.verifiedSigners.isEmpty();
     }
 
     @Override
