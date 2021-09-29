@@ -69,11 +69,14 @@ public class Jar implements SecureJar {
 
     @SuppressWarnings("unchecked")
     public Jar(final Supplier<Manifest> defaultManifest, final Function<SecureJar, JarMetadata> metadataFunction, final BiPredicate<String, String> pathfilter, final Path... paths) {
-        this.filesystem = UFSP.newFileSystem(pathfilter, paths);
+        var validPaths = Arrays.stream(paths).filter(Files::exists).toArray(Path[]::new);
+        if (validPaths.length == 0)
+            throw new UncheckedIOException(new IOException("Invalid paths argument, contained no existing paths: " + Arrays.toString(paths)));
+        this.filesystem = UFSP.newFileSystem(pathfilter, validPaths);
         try {
             Manifest mantmp = null;
-            for (int x = paths.length - 1; x >= 0; x--) { // Walk backwards because this is what cpw wanted?
-                var path = paths[x];
+            for (int x = validPaths.length - 1; x >= 0; x--) { // Walk backwards because this is what cpw wanted?
+                var path = validPaths[x];
                 if (Files.isDirectory(path)) {
                     var manfile = path.resolve(JarFile.MANIFEST_NAME);
                     if (Files.exists(manfile)) {
