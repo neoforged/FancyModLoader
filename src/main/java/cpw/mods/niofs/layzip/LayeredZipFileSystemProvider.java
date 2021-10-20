@@ -19,7 +19,7 @@ public class LayeredZipFileSystemProvider extends PathFileSystemProvider
     public static final String INDICATOR = "!";
     public static final String SEPARATOR =  INDICATOR + "/";
 
-    public static final String URI_SPLIT_REGEX = "((?<=(\\.zip)(?!(!))/)|(?<=(\\.jar)(?!(!))/)|!/)";
+    public static final String URI_SPLIT_REGEX = "!/";
 
 
     @Override

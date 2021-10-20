@@ -32,22 +32,6 @@ public class TestLayeredZipFS
     }
 
     @Test
-    public void testWithSplitterUriParsingAndAccess() throws URISyntaxException, IOException
-    {
-
-        final URI filePathUri = new URI(
-          "jij:src/test/resources/dir_in_dir_in_dir.zip/dir_in_dir.zip/dir1.zip/"
-        );
-        final FileSystem zipFS = FileSystems.newFileSystem(filePathUri, new HashMap<>());
-
-        final Path pathInText = zipFS.getPath("masktest.txt");
-        final List<String> lines = Files.readAllLines(pathInText);
-        final List<String> sourceLines = List.of("dir1");
-
-        assertIterableEquals(sourceLines, lines);
-    }
-
-    @Test
     public void testUriConversion() throws URISyntaxException, IOException {
         final URI filePathUri = new URI(
           "jij:" +
