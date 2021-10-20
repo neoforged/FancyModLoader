@@ -19,6 +19,8 @@ public class LayeredZipFileSystemProvider extends PathFileSystemProvider
     public static final String INDICATOR = "!";
     public static final String SEPARATOR =  INDICATOR + "/";
 
+    public static final String URI_SPLIT_REGEX = "((?<=(\\.zip)(?!(\\!))\\/)|\\!\\/)";
+
 
     @Override
     public String getScheme() {
@@ -28,7 +30,7 @@ public class LayeredZipFileSystemProvider extends PathFileSystemProvider
     @Override
     public FileSystem newFileSystem(final URI uri, final Map<String, ?> env) throws IOException
     {
-        final String[] sections = uri.getRawSchemeSpecificPart().split(SEPARATOR);
+        final String[] sections = uri.getRawSchemeSpecificPart().split(URI_SPLIT_REGEX);
         FileSystem workingSystem = FileSystems.getDefault(); //Grab the normal disk FS.
 
         String keyPrefix = "";
