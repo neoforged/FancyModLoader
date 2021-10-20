@@ -85,6 +85,33 @@ public class LambdaExceptionUtils {
     }
 
     /**
+     * uncheck(() -> Class.forName("xxx"));
+     */
+    public static <R, E extends Exception> Supplier<R> uncheckSupply(Supplier_WithExceptions<R, E> supplier) {
+        return () -> {
+            try {
+                return supplier.get();
+            } catch (Exception exception) {
+                throwAsUnchecked(exception);
+                return null;
+            }
+        };
+    }
+
+    /**
+     * uncheck((clz) -> clz.forName("xxx"));
+     */
+    public static <R, E extends Exception> Consumer<R> uncheckConsume(Consumer_WithExceptions<R, E> consumer) {
+        return (value) -> {
+            try {
+                consumer.accept(value);
+            } catch (Exception exception) {
+                throwAsUnchecked(exception);
+            }
+        };
+    }
+
+    /**
      * uncheck(Class::forName, "xxx");
      */
     public static <T, R, E extends Exception> R uncheck(Function_WithExceptions<T, R, E> function, T t) {
