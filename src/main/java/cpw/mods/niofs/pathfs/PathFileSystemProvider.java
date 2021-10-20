@@ -206,7 +206,7 @@ public class PathFileSystemProvider extends FileSystemProvider {
     {
         return new URI(
           path.getFileSystem().provider().getScheme(),
-          path.getFileSystem().getKey() + '~' + this,
+          path.getFileSystem().getKey() + '~' + path,
           null
         );
     }
