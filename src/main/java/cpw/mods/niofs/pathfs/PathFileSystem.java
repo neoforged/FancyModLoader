@@ -163,9 +163,10 @@ public class PathFileSystem extends FileSystem
             var args = new String[more.length + 1];
             args[0] = first;
             System.arraycopy(more, 0, args, 1, more.length);
-            return new PathPath(this, false, args);
+
+            return provider().createSubPath(this, args);
         }
-        return new PathPath(this, false, first);
+        return provider().createSubPath(this, first);
     }
 
     @Override

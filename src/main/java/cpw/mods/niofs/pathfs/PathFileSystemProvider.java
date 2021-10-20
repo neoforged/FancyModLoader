@@ -210,4 +210,9 @@ public class PathFileSystemProvider extends FileSystemProvider {
           null
         );
     }
+
+    protected Path createSubPath(final PathFileSystem pathFileSystem, final String... args)
+    {
+        return new PathPath(pathFileSystem, false, args);
+    }
 }
