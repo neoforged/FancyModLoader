@@ -35,7 +35,12 @@ public class PathPath implements Path {
     }
 
     private String[] getPathParts(final String longstring) {
-        return longstring.equals(this.getFileSystem().getSeparator()) ? new String[] {""} : longstring.replace("\\", this.getFileSystem().getSeparator()).split(this.getFileSystem().getSeparator());
+        final String[] localParts = longstring.equals(this.getFileSystem().getSeparator()) ? new String[] {""} : longstring.replace("\\", this.getFileSystem().getSeparator()).split(this.getFileSystem().getSeparator());
+
+        if (this.getFileSystem().provider() != null)
+            return this.getFileSystem().provider().adaptPathParts(longstring, localParts);
+
+        return localParts;
     }
 
     @Override
@@ -143,9 +148,9 @@ public class PathPath implements Path {
     public Path resolve(final Path other) {
         if (other instanceof PathPath path) {
             if (path.isAbsolute()) {
-                return path;
+                return this.getFileSystem().provider().adaptResolvedPath(path);
             }
-            return new PathPath(this.fileSystem, false, this+fileSystem.getSeparator()+other);
+            return this.getFileSystem().provider().adaptResolvedPath(new PathPath(this.fileSystem, false, this+fileSystem.getSeparator()+other));
         }
         return other;
     }
@@ -228,6 +233,6 @@ public class PathPath implements Path {
 
     @Override
     public String toString() {
-        return String.join(fileSystem.getSeparator(), this.pathParts);
+        return String.join(fileSystem.getSeparator(), this.pathParts).replace("//", "/");
     }
 }

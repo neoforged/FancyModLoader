@@ -62,7 +62,7 @@ public class PathFileSystem extends FileSystem
         });
     }
 
-    String getKey()
+    public String getKey()
     {
         return this.key;
     }

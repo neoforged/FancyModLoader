@@ -215,4 +215,14 @@ public class PathFileSystemProvider extends FileSystemProvider {
     {
         return new PathPath(pathFileSystem, false, args);
     }
+
+    public Path adaptResolvedPath(final PathPath path)
+    {
+        return path;
+    }
+
+    public String[] adaptPathParts(final String longstring, final String[] pathParts)
+    {
+        return pathParts;
+    }
 }

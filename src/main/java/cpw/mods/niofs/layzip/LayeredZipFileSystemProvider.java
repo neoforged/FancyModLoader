@@ -19,7 +19,7 @@ public class LayeredZipFileSystemProvider extends PathFileSystemProvider
     public static final String INDICATOR = "!";
     public static final String SEPARATOR =  INDICATOR + "/";
 
-    public static final String URI_SPLIT_REGEX = "!/";
+    public static final String URI_SPLIT_REGEX = SEPARATOR;
 
 
     @Override
@@ -135,5 +135,35 @@ public class LayeredZipFileSystemProvider extends PathFileSystemProvider
         prefix = outerUri.getRawSchemeSpecificPart() + SEPARATOR;
 
         return URI.create("%s:%s%s".formatted(SCHEME, prefix, path).replace("%s/".formatted(SEPARATOR), SEPARATOR));
+    }
+
+    @Override
+    public Path adaptResolvedPath(final PathPath path)
+    {
+        if (!path.toString().contains(SEPARATOR))
+            return path;
+
+        final Path workingPath = path.getFileSystem().getPath(path.toString().substring(0, path.toString().lastIndexOf(SEPARATOR)) + SEPARATOR);
+        final FileSystem workingSystem;
+        try
+        {
+            workingSystem = FileSystems.newFileSystem(workingPath.toUri(), Map.of());
+        }
+        catch (IOException e)
+        {
+            throw new IllegalArgumentException("Failed to get sub file system for path!", e);
+        }
+
+        return workingSystem.getPath(path.endsWith(SEPARATOR) ? "/" : path.toString().substring(path.toString().lastIndexOf(SEPARATOR) + 2));
+    }
+
+    @Override
+    public String[] adaptPathParts(final String longstring, final String[] pathParts)
+    {
+        if(!longstring.endsWith(SEPARATOR))
+            return pathParts;
+
+        pathParts[pathParts.length - 1] = pathParts[pathParts.length - 1] + "/";
+        return pathParts;
     }
 }

@@ -9,8 +9,7 @@ import java.nio.file.*;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestLayeredZipFS
 {
@@ -66,5 +65,62 @@ public class TestLayeredZipFS
         ).normalize();
 
         assertEquals(expectedUri.toString(), uriInFS.toString());
+    }
+
+    @Test
+    public void testSplitResolving() throws URISyntaxException, IOException {
+        final URI filePathUri = new URI(
+          "jij:src/test/resources/dir_in_dir_in_dir.zip"
+        ).normalize();
+        final FileSystem zipFS = FileSystems.newFileSystem(filePathUri, new HashMap<>());
+
+        final Path rootPathInFs = zipFS.getPath("/");
+        final Path secondLayerZipPath = rootPathInFs.resolve("/dir_in_dir.zip!/");
+        final Path thirdLayerZipPath = secondLayerZipPath.resolve("dir1.zip!/");
+
+        assertNotEquals(rootPathInFs.getFileSystem(), secondLayerZipPath.getFileSystem());
+        assertNotEquals(secondLayerZipPath.getFileSystem(), thirdLayerZipPath.getFileSystem());
+    }
+
+    @Test
+    public void testChainedSplitResolving() throws URISyntaxException, IOException {
+        final URI filePathUri = new URI(
+          "jij:src/test/resources/dir_in_dir_in_dir.zip"
+        ).normalize();
+        final FileSystem zipFS = FileSystems.newFileSystem(filePathUri, new HashMap<>());
+
+        final Path rootPathInFs = zipFS.getPath("/");
+        final Path secondLayerZipPath = rootPathInFs.resolve("/dir_in_dir.zip!/dir1.zip!/");
+
+        assertNotEquals(rootPathInFs.getFileSystem(), secondLayerZipPath.getFileSystem());
+    }
+
+
+    @Test
+    public void testPathSplitResolving() throws URISyntaxException, IOException {
+        final URI filePathUri = new URI(
+          "jij:src/test/resources/dir_in_dir_in_dir.zip"
+        ).normalize();
+        final FileSystem zipFS = FileSystems.newFileSystem(filePathUri, new HashMap<>());
+
+        final Path rootPathInFs = zipFS.getPath("/");
+        final Path secondLayerZipPath = rootPathInFs.resolve(rootPathInFs.getFileSystem().getPath("/dir_in_dir.zip!/"));
+        final Path thirdLayerZipPath = secondLayerZipPath.resolve(secondLayerZipPath.getFileSystem().getPath("dir1.zip!/"));
+
+        assertNotEquals(rootPathInFs.getFileSystem(), secondLayerZipPath.getFileSystem());
+        assertNotEquals(secondLayerZipPath.getFileSystem(), thirdLayerZipPath.getFileSystem());
+    }
+
+    @Test
+    public void testChainedPathSplitResolving() throws URISyntaxException, IOException {
+        final URI filePathUri = new URI(
+          "jij:src/test/resources/dir_in_dir_in_dir.zip"
+        ).normalize();
+        final FileSystem zipFS = FileSystems.newFileSystem(filePathUri, new HashMap<>());
+
+        final Path rootPathInFs = zipFS.getPath("/");
+        final Path secondLayerZipPath = rootPathInFs.resolve(rootPathInFs.getFileSystem().getPath("/dir_in_dir.zip!/dir1.zip!/"));
+
+        assertNotEquals(rootPathInFs.getFileSystem(), secondLayerZipPath.getFileSystem());
     }
 }
