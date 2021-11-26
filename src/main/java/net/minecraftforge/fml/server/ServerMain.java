@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-package net.minecraftforge.server;
+package net.minecraftforge.fml.server;
 
 import cpw.mods.modlauncher.InvalidLauncherSetupException;
 import cpw.mods.modlauncher.Launcher;

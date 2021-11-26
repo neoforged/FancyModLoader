@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-package net.minecraftforge.common.asm;
+package net.minecraftforge.fml.common.asm;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
