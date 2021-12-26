@@ -1,5 +1,5 @@
 plugins {
-    id 'net.minecraftforge.gradleutils' version '1.+'
+    id 'net.minecraftforge.gradleutils' version '2.+'
     id 'com.github.ben-manes.versions' version '0.38.0'
     id 'org.javamodularity.moduleplugin' version '1.8.3'
     id 'java-library'
@@ -20,13 +20,17 @@ repositories {
     }
 }
 dependencies {
-    implementation('cpw.mods:securejarhandler:0.9.44')
+    implementation('cpw.mods:securejarhandler:0.9.54')
 }
 
 
 task sourcesJar(type: Jar) {
     archiveClassifier = 'sources'
     from sourceSets.main.allSource
+}
+
+changelog {
+    fromTag "0.1"
 }
 
 jar {
@@ -60,15 +64,15 @@ publishing {
             pom {
                 name = 'Bootstrap launcher'
                 description = 'Allows bootstrapping a modularized environment from a classpath one'
-                url = 'https://github.com/cpw/bootstraplauncher'
+                url = 'https://github.com/McModLauncher/bootstraplauncher'
                 scm {
-                    url = 'https://github.com/cpw/bootstraplauncher'
-                    connection = 'scm:git:git://github.com/cpw/bootstraplauncher.git'
-                    developerConnection = 'scm:git:git@github.com:cpw/bootstraplauncher.git'
+                    url = 'https://github.com/McModLauncher/bootstraplauncher'
+                    connection = 'scm:git:git@github.com:McModLauncher/bootstraplauncher.git'
+                    developerConnection = 'scm:git:git@github.com:McModLauncher/bootstraplauncher.git'
                 }
                 issueManagement {
                     system = 'github'
-                    url = 'https://github.com/cpw/bootstraplauncher/issues'
+                    url = 'https://github.com/McModLauncher/bootstraplauncher/issues'
                 }
 
                 developers {
