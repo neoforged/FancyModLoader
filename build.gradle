@@ -1,6 +1,6 @@
 plugins {
     id 'com.github.ben-manes.versions' version '0.39.0'
-    id 'net.minecraftforge.gradleutils' version '1.+'
+    id 'net.minecraftforge.gradleutils' version '2.+'
     id 'me.champeau.jmh' version '0.6.5'
     id 'org.javamodularity.moduleplugin' version '1.8.7' apply false
 }
@@ -51,6 +51,10 @@ dependencies {
     api("org.ow2.asm:asm-commons:${asmVersion}")
     testImplementation('org.junit.jupiter:junit-jupiter-api:5.7.+')
     testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.7.+')
+}
+
+changelog {
+    fromTag "2.0"
 }
 
 task sourcesJar(type: Jar) {
@@ -110,15 +114,15 @@ publishing {
             pom {
                 name = 'Secure Modular Jar handler'
                 description = 'Making the Java modular system provide security information'
-                url = 'https://github.com/cpw/securejarhandler'
+                url = 'https://github.com/McModLauncher/securejarhandler'
                 scm {
-                    url = 'https://github.com/cpw/securejarhandler'
-                    connection = 'scm:git:git://github.com/cpw/securejarhandler.git'
-                    developerConnection = 'scm:git:git@github.com:cpw/securejarhandler.git'
+                    url = 'https://github.com/McModLauncher/securejarhandler'
+                    connection = 'scm:git:git://github.com/McModLauncher/securejarhandler.git'
+                    developerConnection = 'scm:git:git@github.com:McModLauncher/securejarhandler.git'
                 }
                 issueManagement {
                     system = 'github'
-                    url = 'https://github.com/cpw/securejarhandler/issues'
+                    url = 'https://github.com/McModLauncher/securejarhandler/issues'
                 }
 
                 developers {
@@ -131,19 +135,6 @@ publishing {
         }
     }
     repositories {
-        maven {
-            if (System.env.MAVEN_USER) {
-                url 'https://maven.minecraftforge.net/releases/'
-                authentication {
-                    basic(BasicAuthentication)
-                }
-                credentials {
-                    username = System.env.MAVEN_USER ?: 'not'
-                    password = System.env.MAVEN_PASSWORD ?: 'set'
-                }
-            } else {
-                url 'file://' + rootProject.file('repo').getAbsolutePath()
-            }
-        }
+        maven gradleutils.getPublishingForgeMaven()
     }
 }
