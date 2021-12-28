@@ -54,7 +54,7 @@ dependencies {
 }
 
 changelog {
-    fromTag "2.0"
+    fromTag "0.9"
 }
 
 task sourcesJar(type: Jar) {
