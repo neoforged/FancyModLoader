@@ -2,7 +2,7 @@ plugins {
     id 'org.ajoberstar.grgit' version '4.1.0'
     id 'com.github.ben-manes.versions' version '0.39.0'
     id 'org.javamodularity.moduleplugin' version '1.8.3'
-    id 'net.minecraftforge.gradleutils' version '1.+'
+    id 'net.minecraftforge.gradleutils' version '2.+'
     id 'maven-publish'
     id 'java-library'
 }
@@ -39,6 +39,10 @@ dependencyUpdates {
 test {
     useJUnitPlatform()
 }
+changelog {
+    fromTag '1.0.0'
+}
+
 
 ext.sharedManifest = manifest {
     attributes('Automatic-Module-Name': 'net.minecraftforge.forgespi')
@@ -125,19 +129,6 @@ publishing {
         }
     }
     repositories {
-        maven {
-            if (System.env.MAVEN_USER) {
-                url 'https://maven.minecraftforge.net/'
-                authentication {
-                    basic(BasicAuthentication)
-                }
-                credentials {
-                    username = System.env.MAVEN_USER ?: 'not'
-                    password = System.env.MAVEN_PASSWORD ?: 'set'
-                }
-            } else {
-                url 'file://' + rootProject.file('repo').getAbsolutePath()
-            }
-        }
+        maven gradleutils.getPublishingForgeMaven()
     }
 }
