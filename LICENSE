@@ -2,9 +2,9 @@ All code herein is licensed under the LGPLv3 license.
 
 Please see COPYING.LGPL and COPYING for more information
 
-ModLauncher - for launching Java programs with in-flight transformation ability.
+BootstrapLauncher - for launching Java programs with extra modularity fun!
 
-    Copyright (C) 2017-2019 cpw
+    Copyright (C) 2021 cpw
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
