@@ -58,7 +58,6 @@ artifacts {
 publishing {
     publications.register('mavenJava', MavenPublication) {
         from components.java
-        artifact sourcesJar
         pom {
             name = 'Bootstrap launcher'
             description = 'Allows bootstrapping a modularized environment from a classpath one'
