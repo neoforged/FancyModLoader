@@ -1,7 +1,7 @@
 plugins {
     id 'net.minecraftforge.gradleutils' version '2.+'
-    id 'com.github.ben-manes.versions' version '0.38.0'
-    id 'org.javamodularity.moduleplugin' version '1.8.3'
+    id 'com.github.ben-manes.versions' version '0.39.0'
+    id 'org.javamodularity.moduleplugin' version '1.8.10'
     id 'java-library'
     id 'maven-publish'
     id 'eclipse'
@@ -10,7 +10,7 @@ plugins {
 group 'cpw.mods'
 
 version = gradleutils.getTagOffsetVersion()
-logger.lifecycle('Version: ' + version)
+logger.lifecycle("Version: $version")
 
 repositories {
     mavenLocal()
@@ -19,14 +19,14 @@ repositories {
         url 'https://maven.minecraftforge.net/'
     }
 }
+
 dependencies {
     implementation('cpw.mods:securejarhandler:0.9.54')
 }
 
-
-task sourcesJar(type: Jar) {
-    archiveClassifier = 'sources'
-    from sourceSets.main.allSource
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(16)
+    withSourcesJar()
 }
 
 changelog {
@@ -34,21 +34,20 @@ changelog {
 }
 
 jar {
-    manifest {
-        attributes(
-                'Specification-Title': 'bootstraplauncher',
-                'Specification-Vendor': 'forge',
-                'Specification-Version': '1', // We are version 1 of ourselves
-                'Implementation-Title': project.name,
-                'Implementation-Version': "${project.version}+${System.getenv("BUILD_NUMBER")?:0}+${gradleutils.gitInfo.branch}.${gradleutils.gitInfo.abbreviatedId}",
-                'Implementation-Vendor':'forge',
-                'Implementation-Timestamp': java.time.Instant.now().toString(),
-                'Git-Commit': gradleutils.gitInfo.abbreviatedId,
-                'Git-Branch': gradleutils.gitInfo.branch,
-                'Build-Number': "${System.getenv("BUILD_NUMBER")?:0}",
-                'Main-Class': 'cpw.mods.bootstraplauncher.BootstrapLauncher'
-        )
-    }
+    //noinspection UnnecessaryQualifiedReference
+    manifest.attributes(
+            'Specification-Title': 'bootstraplauncher',
+            'Specification-Vendor': 'forge',
+            'Specification-Version': '1', // We are version 1 of ourselves
+            'Implementation-Title': project.name,
+            'Implementation-Version': "${project.version}+${System.getenv("BUILD_NUMBER") ?: 0}+${gradleutils.gitInfo.branch}.${gradleutils.gitInfo.abbreviatedId}",
+            'Implementation-Vendor': 'forge',
+            'Implementation-Timestamp': java.time.Instant.now().toString(),
+            'Git-Commit': gradleutils.gitInfo.abbreviatedId,
+            'Git-Branch': gradleutils.gitInfo.branch,
+            'Build-Number': "${System.getenv("BUILD_NUMBER") ?: 0}",
+            'Main-Class': 'cpw.mods.bootstraplauncher.BootstrapLauncher'
+    )
 }
 
 artifacts {
@@ -57,29 +56,26 @@ artifacts {
 }
 
 publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-            artifact sourcesJar
-            pom {
-                name = 'Bootstrap launcher'
-                description = 'Allows bootstrapping a modularized environment from a classpath one'
+    publications.register('mavenJava', MavenPublication) {
+        from components.java
+        artifact sourcesJar
+        pom {
+            name = 'Bootstrap launcher'
+            description = 'Allows bootstrapping a modularized environment from a classpath one'
+            url = 'https://github.com/McModLauncher/bootstraplauncher'
+            scm {
                 url = 'https://github.com/McModLauncher/bootstraplauncher'
-                scm {
-                    url = 'https://github.com/McModLauncher/bootstraplauncher'
-                    connection = 'scm:git:git@github.com:McModLauncher/bootstraplauncher.git'
-                    developerConnection = 'scm:git:git@github.com:McModLauncher/bootstraplauncher.git'
-                }
-                issueManagement {
-                    system = 'github'
-                    url = 'https://github.com/McModLauncher/bootstraplauncher/issues'
-                }
-
-                developers {
-                    developer {
-                        id = 'cpw'
-                        name = 'cpw'
-                    }
+                connection = 'scm:git:git@github.com:McModLauncher/bootstraplauncher.git'
+                developerConnection = 'scm:git:git@github.com:McModLauncher/bootstraplauncher.git'
+            }
+            issueManagement {
+                system = 'github'
+                url = 'https://github.com/McModLauncher/bootstraplauncher/issues'
+            }
+            developers {
+                developer {
+                    id = 'cpw'
+                    name = 'cpw'
                 }
             }
         }
