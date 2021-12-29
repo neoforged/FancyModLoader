@@ -54,7 +54,7 @@ object Build : BuildType({
 })
 
 object PullRequests : BuildType({
-    templates(AbsoluteId("MinecraftForge_SetupGradleUtilsCiEnvironmen"), AbsoluteId("MinecraftForge_BuildWithDiscordNotifications"), AbsoluteId("MinecraftForge_BuildPullRequests"), AbsoluteId("MinecraftForge_BuildUsingGradle"))
+    templates(AbsoluteId("MinecraftForge_BuildPullRequests"), AbsoluteId("MinecraftForge_SetupGradleUtilsCiEnvironmen"), AbsoluteId("MinecraftForge_BuildWithDiscordNotifications"), AbsoluteId("MinecraftForge_BuildUsingGradle"))
     id("bootstraplauncher__PullRequests")
     name = "Pull Requests"
     description = "Builds pull requests for the project"

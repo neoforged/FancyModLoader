@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <project>
   <modelVersion>4.0.0</modelVersion>
-  <name>McModLauncher_bootstraplauncher Config DSL Script</name>
-  <groupId>McModLauncher_bootstraplauncher</groupId>
-  <artifactId>McModLauncher_bootstraplauncher_dsl</artifactId>
+  <name>MinecraftForge_McModLauncher_bootstraplauncher Config DSL Script</name>
+  <groupId>MinecraftForge_McModLauncher_bootstraplauncher</groupId>
+  <artifactId>MinecraftForge_McModLauncher_bootstraplauncher_dsl</artifactId>
   <version>1.0-SNAPSHOT</version>
 
   <parent>
