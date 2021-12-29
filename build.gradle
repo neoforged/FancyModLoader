@@ -85,20 +85,7 @@ publishing {
         }
     }
     repositories {
-        maven {
-            if (System.env.MAVEN_USER) {
-                authentication {
-                    basic(BasicAuthentication)
-                }
-                credentials {
-                    username = System.env.MAVEN_USER ?: 'not'
-                    password = System.env.MAVEN_PASSWORD ?: 'set'
-                }
-                url 'https://maven.minecraftforge.net/releases'
-            } else {
-                url 'file://' + rootProject.file('repo').getAbsolutePath()
-            }
-        }
+        maven gradleutils.getPublishingForgeMaven()
     }
 }
 
