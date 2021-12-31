@@ -4,6 +4,9 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.List;
 import java.util.Map;
@@ -160,5 +163,51 @@ public class TestUnionFS {
         var npath = Paths.get(uri);
         var input = assertDoesNotThrow(() -> Files.newInputStream(npath));
         var data = assertDoesNotThrow(() -> input.readAllBytes());
+    }
+
+    @Test
+    void testFileAttributes() {
+        final var dir1 = Paths.get("src", "test", "resources", "dir1.zip").toAbsolutePath().normalize();
+        var fsp = (UnionFileSystemProvider)FileSystemProvider.installedProviders().stream().filter(fs-> fs.getScheme().equals("union")).findFirst().orElseThrow();
+        var ufs = fsp.newFileSystem((a,b) -> true, dir1);
+        var path = (UnionPath) ufs.getPath("subdir1");
+        var nonExistentPath = (UnionPath) ufs.getPath("non-existent-path");
+
+        // Non-union path
+        assertDoesNotThrow(() -> {
+            assertNull(fsp.getFileAttributeView(Paths.get("subdir1"), BasicFileAttributeView.class));
+        });
+        // Unsupported attribute view
+        assertDoesNotThrow(() -> {
+            assertNull(fsp.getFileAttributeView(path, FileAttributeView.class));
+        });
+        // Non-existent path w/ supported attribute view
+        assertThrows(NoSuchFileException.class, () -> {
+            var nonExistentView = assertDoesNotThrow(() -> {
+                var view = fsp.getFileAttributeView(nonExistentPath, BasicFileAttributeView.class);
+                assertNotNull(view);
+                return view;
+            });
+            nonExistentView.readAttributes();
+        });
+        // Non-existent path
+        assertThrows(NoSuchFileException.class, () -> {
+            ufs.readAttributes(nonExistentPath, BasicFileAttributes.class);
+        });
+
+        // Union path w/ supported attribute view
+        var validViewAttributes = assertDoesNotThrow(() -> {
+            var view = fsp.getFileAttributeView(path, BasicFileAttributeView.class);
+            assertNotNull(view);
+            return view.readAttributes();
+        });
+        // Known existing path
+        var validAttributes = assertDoesNotThrow(() -> {
+            var attributes = ufs.readAttributes(path, BasicFileAttributes.class);
+            assertNotNull(attributes);
+            return attributes;
+        });
+        // Ensure the attributes are the same through both methods
+        assertEquals(validAttributes, validViewAttributes);
     }
 }

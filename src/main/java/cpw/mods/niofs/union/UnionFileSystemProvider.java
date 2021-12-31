@@ -6,9 +6,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.FileAttributeView;
+import java.nio.file.attribute.*;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.*;
 import java.util.function.BiPredicate;
@@ -205,7 +203,10 @@ public class UnionFileSystemProvider extends FileSystemProvider {
 
     @Override
     public <V extends FileAttributeView> V getFileAttributeView(final Path path, final Class<V> type, final LinkOption... options) {
-        throw new UnsupportedOperationException();
+        if (path instanceof UnionPath && type == BasicFileAttributeView.class) {
+            return (V) new UnionBasicFileAttributeView(path, options);
+        }
+        return null;
     }
 
     @Override
@@ -230,5 +231,31 @@ public class UnionFileSystemProvider extends FileSystemProvider {
         synchronized (fileSystems) {
             fileSystems.remove(fs.getKey());
         }
+    }
+
+    private class UnionBasicFileAttributeView implements BasicFileAttributeView {
+
+        private final Path path;
+        private final LinkOption[] options;
+
+        public UnionBasicFileAttributeView(Path path, LinkOption[] options) {
+            this.path = path;
+            this.options = options;
+        }
+
+        @Override
+        public String name() {
+            return "union";
+        }
+
+        @Override
+        public BasicFileAttributes readAttributes() throws IOException {
+            return UnionFileSystemProvider.this.readAttributes(path, BasicFileAttributes.class, options);
+        }
+
+        @Override
+        public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) {
+        }
+
     }
 }
