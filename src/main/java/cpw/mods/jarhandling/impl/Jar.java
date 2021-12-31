@@ -90,12 +90,13 @@ public class Jar implements SecureJar {
                         var jv = SecureJarVerifier.getJarVerifier(jis);
                         if (jv != null) {
                             while (SecureJarVerifier.isParsingMeta(jv)) {
-                                jis.getNextJarEntry();
+                                if (jis.getNextJarEntry() == null) break;
                             }
 
                             if (SecureJarVerifier.hasSignatures(jv)) {
                                 pendingSigners.putAll(SecureJarVerifier.getPendingSigners(jv));
-                                verifiedSigners.put(JarFile.MANIFEST_NAME, SecureJarVerifier.getVerifiedSigners(jv).get(JarFile.MANIFEST_NAME));
+                                var manifestSigners = SecureJarVerifier.getVerifiedSigners(jv).get(JarFile.MANIFEST_NAME);
+                                if (manifestSigners != null) verifiedSigners.put(JarFile.MANIFEST_NAME, manifestSigners);
                                 StatusData.add(JarFile.MANIFEST_NAME, Status.VERIFIED, verifiedSigners.get(JarFile.MANIFEST_NAME), this);
                             }
                         }

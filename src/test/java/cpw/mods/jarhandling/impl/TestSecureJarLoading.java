@@ -104,4 +104,22 @@ public class TestSecureJarLoading {
         final var ucs = ((Jar)jar).verifyAndGetSigners(uentry.getName(), zf.getInputStream(uentry).readAllBytes());
         assertNull(ucs);
     }
+
+    @Test // Has a jar with only a manifest
+    void testEmptyJar() throws Exception {
+        final var path = Paths.get("src", "test", "resources", "empty.zip");
+        SecureJar jar = SecureJar.from(path);
+        try (var is = Files.newInputStream(path)) {
+            ZipInputStream zis = new ZipInputStream(is);
+            for (var ze = zis.getNextEntry(); ze!=null; ze=zis.getNextEntry()) {
+                if (SecureJarVerifier.isSigningRelated(ze.getName())) continue;
+                if (ze.isDirectory()) continue;
+                final var zeName = ze.getName();
+                var cs = ((Jar)jar).verifyAndGetSigners(ze.getName(), zis.readAllBytes());
+                assertAll("Jar behaves correctly",
+                        ()->assertNull(cs, "No code signers")
+                );
+            }
+        }
+    }
 }
