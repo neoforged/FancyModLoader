@@ -16,8 +16,8 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class UnionFileSystem extends FileSystem {
-    private final UnionPath root = new UnionPath(this, false, UnionPath.ROOT);
-    private final UnionPath notExistingPath = new UnionPath(this, false, "SNOWMAN");
+    private final UnionPath root = new UnionPath(this, "/");
+    private final UnionPath notExistingPath = new UnionPath(this, "/SNOWMAN");
     private final UnionFileSystemProvider provider;
     private final String key;
     private final List<Path> basepaths;
@@ -110,9 +110,9 @@ public class UnionFileSystem extends FileSystem {
             var args = new String[more.length + 1];
             args[0] = first;
             System.arraycopy(more, 0, args, 1, more.length);
-            return new UnionPath(this, false, args);
+            return new UnionPath(this, args);
         }
-        return new UnionPath(this, false, first);
+        return new UnionPath(this, first);
     }
 
     @Override
@@ -203,8 +203,8 @@ public class UnionFileSystem extends FileSystem {
     }
 
     private Path toRealPath(final Path basePath, final UnionPath path) {
-        var embeddedpath = path.toString();
-        var resolvepath = embeddedpath.length() > 1 && path.isAbsolute() ? embeddedpath.substring(1) : embeddedpath;
+        var embeddedpath = path.isAbsolute() ? this.root.relativize(path) : path;
+        var resolvepath = embeddedpath.normalize().toString();
         var efsm = embeddedFileSystems.get(basePath);
         if (efsm != null) {
             return efsm.fs().getPath(resolvepath);
@@ -272,7 +272,11 @@ public class UnionFileSystem extends FileSystem {
             sPath = basePath.relativize(path).toString().replace('\\', '/');
         if (Files.isDirectory(path))
             sPath += '/';
+        if (sPath.length() > 1 && sPath.startsWith("/"))
+            sPath = sPath.substring(1);
         String sBasePath = basePath.toString().replace('\\', '/');
+        if (sBasePath.length() > 1 && sBasePath.startsWith("/"))
+            sBasePath = sBasePath.substring(1);
         return pathFilter.test(sPath, sBasePath);
     }
 }

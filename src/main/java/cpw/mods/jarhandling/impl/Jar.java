@@ -208,10 +208,11 @@ public class Jar implements SecureJar {
         if (this.packages == null) {
             try (var walk = Files.walk(this.filesystem.getRoot())) {
                 this.packages = walk
+                    .filter(path->path.getNameCount()>0)
                     .filter(path->!path.getName(0).toString().equals("META-INF"))
                     .filter(path->path.getFileName().toString().endsWith(".class"))
                     .filter(Files::isRegularFile)
-                    .map(path->path.subpath(0, path.getNameCount()-1))
+                    .map(Path::getParent)
                     .map(path->path.toString().replace('/','.'))
                     .filter(pkg->pkg.length()!=0)
                     .collect(toSet());
@@ -248,7 +249,7 @@ public class Jar implements SecureJar {
 
     @Override
     public Path getRootPath() {
-        return filesystem.getRoot();
+        return filesystem.getPath("");
     }
 
     @Override
