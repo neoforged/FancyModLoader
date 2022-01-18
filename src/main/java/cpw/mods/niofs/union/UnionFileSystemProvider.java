@@ -201,6 +201,7 @@ public class UnionFileSystemProvider extends FileSystemProvider {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <V extends FileAttributeView> V getFileAttributeView(final Path path, final Class<V> type, final LinkOption... options) {
         if (path instanceof UnionPath && type == BasicFileAttributeView.class) {
