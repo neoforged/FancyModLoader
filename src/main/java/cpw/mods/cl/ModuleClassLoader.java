@@ -125,11 +125,14 @@ public class ModuleClassLoader extends ClassLoader {
         synchronized (getClassLoadingLock(name)) {
             var c = findLoadedClass(name);
             if (c == null) {
-                final var pname = name.substring(0, name.lastIndexOf('.'));
-                if (this.packageLookup.containsKey(pname)) {
-                    c = findClass(this.packageLookup.get(pname).name(), name);
-                } else {
-                    c = this.parentLoaders.getOrDefault(pname, fallbackClassLoader).loadClass(name);
+                var index = name.lastIndexOf('.');
+                if (index >= 0) {
+                    final var pname = name.substring(0, index);
+                    if (this.packageLookup.containsKey(pname)) {
+                        c = findClass(this.packageLookup.get(pname).name(), name);
+                    } else {
+                        c = this.parentLoaders.getOrDefault(pname, fallbackClassLoader).loadClass(name);
+                    }
                 }
             }
             if (c == null) throw new ClassNotFoundException(name);
