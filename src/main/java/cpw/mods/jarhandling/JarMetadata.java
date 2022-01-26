@@ -57,17 +57,20 @@ public interface JarMetadata {
         if (versionMaybe != null)
         {
             Path artifactMaybe = versionMaybe.getParent();
-            if (artifactMaybe != null && path.getFileName().toString().startsWith(artifactMaybe.getFileName().toString() + "-" + versionMaybe.getFileName().toString()))
+            if (artifactMaybe != null)
             {
-                var name = artifactMaybe.getFileName().toString();
-                var ver = versionMaybe.getFileName().toString();
-                var mat = MODULE_VERSION.matcher(ver);
-                if (mat.find()) {
-                    ver = ModuleDescriptor.Version.parse(ver.substring(mat.start())).toString();
-                    return new SimpleJarMetadata(cleanModuleName(name), ver, pkgs, providers);
-                } else {
-                    return new SimpleJarMetadata(cleanModuleName(name), null, pkgs, providers);
-                }
+                Path artifactNameMaybe = artifactMaybe.getFileName();
+                if (artifactNameMaybe != null && path.getFileName().toString().startsWith(artifactNameMaybe + "-" + versionMaybe.getFileName().toString())) {
+                    var name = artifactMaybe.getFileName().toString();
+                    var ver = versionMaybe.getFileName().toString();
+                    var mat = MODULE_VERSION.matcher(ver);
+                    if (mat.find()) {
+                        ver = ModuleDescriptor.Version.parse(ver.substring(mat.start())).toString();
+                        return new SimpleJarMetadata(cleanModuleName(name), ver, pkgs, providers);
+                    } else {
+                        return new SimpleJarMetadata(cleanModuleName(name), null, pkgs, providers);
+                    }
+                }   
             }
         }
 

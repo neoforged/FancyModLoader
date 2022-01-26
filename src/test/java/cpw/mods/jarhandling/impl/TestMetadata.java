@@ -18,6 +18,15 @@ public class TestMetadata
         Assertions.assertEquals("_new._protected._class._1._16._5", meta.name());
         Assertions.assertEquals("1.1_mapped_official_1.17.1", meta.version());
     }
+    
+    @Test
+    void testRootStart()
+    {
+        var path = Paths.get("/instance/mods/1life-1.5.jar");
+        var meta = JarMetadata.fromFileName(path, new HashSet<>(), new ArrayList<>());
+        Assertions.assertEquals("_1life", meta.name());
+        Assertions.assertEquals("1.5", meta.version());
+    }
 
     @Test
     void testNumberStart()
