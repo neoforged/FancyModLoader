@@ -48,7 +48,7 @@ ext.sharedManifest = manifest {
     attributes('Automatic-Module-Name': 'net.minecraftforge.forgespi')
     attributes(['Specification-Title': 'forgespi',
                 'Specification-Vendor': 'forge',
-                'Specification-Version': '4', // Currently version 4 of the forgespi specification
+                'Specification-Version': '5', // Currently version 4 of the forgespi specification
                 'Implementation-Title': project.name,
                 'Implementation-Version': "${project.version}+${System.getenv('BUILD_NUMBER')?:0}+${gradleutils.gitInfo.branch}.${gradleutils.gitInfo.abbreviatedId}",
                 'Implementation-Vendor': 'forge',
@@ -73,15 +73,15 @@ task sourcesJar(type: Jar) {
 
 dependencies {
     implementation('cpw.mods:modlauncher:9.0.7')
-    implementation('org.ow2.asm:asm:9.1')
-    implementation('org.ow2.asm:asm-commons:9.1')
-    implementation('org.ow2.asm:asm-tree:9.1')
-    implementation('org.apache.logging.log4j:log4j-api:2.14.1')
+    implementation('org.ow2.asm:asm:9.2')
+    implementation('org.ow2.asm:asm-commons:9.2')
+    implementation('org.ow2.asm:asm-tree:9.2')
+    implementation('org.apache.logging.log4j:log4j-api:2.17.0')
     implementation('org.apache.maven:maven-artifact:3.8.1')
     implementation('cpw.mods:securejarhandler:0.9.52')
 
 
-    testRuntimeOnly('org.apache.logging.log4j:log4j-core:2.14.1')
+    testRuntimeOnly('org.apache.logging.log4j:log4j-core:2.17.0')
     testImplementation('org.junit.jupiter:junit-jupiter-api:5.7.+')
     testImplementation('org.powermock:powermock-core:2.0.+')
     testImplementation('org.hamcrest:hamcrest-core:2.2+')
