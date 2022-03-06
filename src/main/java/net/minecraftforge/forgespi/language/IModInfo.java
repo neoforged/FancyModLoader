@@ -51,6 +51,8 @@ public interface IModInfo
 
     Optional<URL> getUpdateURL();
 
+    Optional<URL> getModURL();
+
     Optional<String> getLogoFile();
 
     boolean getLogoBlur();
@@ -90,5 +92,7 @@ public interface IModInfo
         void setOwner(IModInfo owner);
 
         IModInfo getOwner();
+
+        Optional<URL> getReferralURL();
     }
 }
