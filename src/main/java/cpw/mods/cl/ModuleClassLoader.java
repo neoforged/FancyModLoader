@@ -32,22 +32,25 @@ public class ModuleClassLoader extends ClassLoader {
     public ModuleClassLoader(final String name, final Configuration configuration, final List<ModuleLayer> parentLayers) {
         super(name, null);
         this.configuration = configuration;
-        record JarRef(ResolvedModule m, JarModuleFinder.JarModuleReference ref) {}
         this.resolvedRoots = configuration.modules().stream()
-                .filter(m->m.reference() instanceof JarModuleFinder.JarModuleReference)
-                .map(m->new JarRef(m, (JarModuleFinder.JarModuleReference)m.reference()))
-                .collect(Collectors.toMap(r->r.m().name(), JarRef::ref));
+                .map(ResolvedModule::reference)
+                .filter(JarModuleFinder.JarModuleReference.class::isInstance)
+                .collect(Collectors.toMap(r -> r.descriptor().name(), r -> (JarModuleFinder.JarModuleReference) r));
 
         this.packageLookup = new HashMap<>();
         for (var mod : this.configuration.modules()) {
-            mod.reference().descriptor().packages().forEach(pk->this.packageLookup.put(pk, mod));
+            if (this.resolvedRoots.containsKey(mod.name())) {
+                mod.reference().descriptor().packages().forEach(pk->this.packageLookup.put(pk, mod));
+            }
         }
 
         this.parentLoaders = new HashMap<>();
         for (var rm : configuration.modules()) {
             for (var other : rm.reads()) {
                 Supplier<ClassLoader> findClassLoader = ()->{
-                    if (other.configuration() != configuration) {
+                    // Loading a class requires its module to be part of resolvedRoots
+                    // If it's not, we delegate loading to its module's classloader
+                    if (!this.resolvedRoots.containsKey(other.name())) {
                         return parentLayers.stream()
                                 .filter(l -> l.configuration() == other.configuration())
                                 .flatMap(layer->Optional.ofNullable(layer.findLoader(other.name())).stream())
