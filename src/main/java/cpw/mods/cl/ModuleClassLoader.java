@@ -230,22 +230,30 @@ public class ModuleClassLoader extends ClassLoader {
         }
     }
 
-    protected byte[] getMaybeTransformedClassBytes(final String name, final String context) {
+    protected byte[] getMaybeTransformedClassBytes(final String name, final String context) throws ClassNotFoundException {
         byte[] bytes = new byte[0];
+        Throwable suppressed = null;
         try {
             final var pname = name.substring(0, name.lastIndexOf('.'));
             if (this.packageLookup.containsKey(pname)) {
                 bytes = loadFromModule(classNameToModuleName(name), (reader, ref)->this.getClassBytes(reader, ref, name));
-            } else {
+            } else if (this.parentLoaders.containsKey(pname)) {
                 var cname = name.replace('.','/')+".class";
-                try (var is = this.parentLoaders.getOrDefault(pname, ClassLoader.getPlatformClassLoader()).getResourceAsStream(cname)) {
+                try (var is = this.parentLoaders.get(pname).getResourceAsStream(cname)) {
                     if (is != null)
                         bytes = is.readAllBytes();
                 }
             }
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            suppressed = e;
         }
-        return maybeTransformClassBytes(bytes, name, context);
+        byte[] maybeTransformedBytes = maybeTransformClassBytes(bytes, name, context);
+        if (maybeTransformedBytes.length == 0) {
+            ClassNotFoundException e = new ClassNotFoundException(name);
+            if (suppressed != null) e.addSuppressed(suppressed);
+            throw e;
+        }
+        return maybeTransformedBytes;
     }
 
     public void setFallbackClassLoader(final ClassLoader fallbackClassLoader) {
