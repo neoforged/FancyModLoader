@@ -1,3 +1,1 @@
 cpw.mods.niofs.union.UnionFileSystemProvider
-cpw.mods.niofs.pathfs.PathFileSystemProvider
-cpw.mods.niofs.layzip.LayeredZipFileSystemProvider
