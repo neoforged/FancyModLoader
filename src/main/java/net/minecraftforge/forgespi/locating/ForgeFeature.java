@@ -1,5 +1,7 @@
 package net.minecraftforge.forgespi.locating;
 
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.forgespi.language.IModInfo;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
@@ -14,8 +16,8 @@ import java.util.function.Predicate;
  * such as OpenGL of a specific version or better or whatever.
  *
  * {@snippet :
- *  ForgeFeature.registerFeature("openGLVersion", VersionFeatureTest.forVersionString("3.2"));
- * }
+ *  ForgeFeature.registerFeature("openGLVersion", VersionFeatureTest.forVersionString(IModInfo.DependencySide.CLIENT, "3.2"));
+ *}
  *
  * This will be tested during early mod loading against lists of features in the mods.toml file for mods. Those
  * that are absent or out of range will be rejected.
@@ -23,6 +25,8 @@ import java.util.function.Predicate;
 public class ForgeFeature {
     private ForgeFeature() {}
     private static final Map<String, IFeatureTest<?>> features = new HashMap<>();
+
+    private record SidedFeature(String name, IModInfo.DependencySide side) {}
 
     public static <T> void registerFeature(final String featureName, final IFeatureTest<T> featureTest) {
         if (features.putIfAbsent(featureName, featureTest) != null) {
@@ -32,13 +36,21 @@ public class ForgeFeature {
 
     private static final MissingFeatureTest MISSING = new MissingFeatureTest();
 
-    public static boolean testFeature(final Bound bound) {
-        return features.getOrDefault(bound.featureName(), MISSING).testWithString(bound.featureBound());
+    public static boolean testFeature(final Dist side, final Bound bound) {
+        return features.getOrDefault(bound.featureName(), MISSING).testSideWithString(side, bound.featureBound());
+    }
+
+    public static Object featureValue(final Bound bound) {
+        return features.getOrDefault(bound.featureName(), MISSING).featureValue();
     }
     public sealed interface IFeatureTest<F> extends Predicate<F> {
+        IModInfo.DependencySide applicableSides();
         F convertFromString(final String value);
-        default boolean testWithString(final String value) {
-            return test(convertFromString(value));
+
+        String featureValue();
+
+        default boolean testSideWithString(final Dist side, final String value) {
+            return !applicableSides().isContained(side) || test(convertFromString(value));
         }
     }
 
@@ -48,20 +60,25 @@ public class ForgeFeature {
      * @param featureName the name of the feature
      * @param featureBound the requested bound
      */
-    public record Bound(String featureName, String featureBound) {}
+    public record Bound(String featureName, String featureBound, IModInfo modInfo) {}
     /**
      * Version based feature test. Uses standard MavenVersion system. Will test the constructed version against
      * ranges requested by mods.
      * @param version The version we wish to test against
      */
-    public record VersionFeatureTest(ArtifactVersion version) implements IFeatureTest<VersionRange> {
+    public record VersionFeatureTest(IModInfo.DependencySide applicableSides, ArtifactVersion version) implements IFeatureTest<VersionRange> {
         /**
          * Convenience method for constructing the feature test for a version string
          * @param version the string
          * @return the feature test for the supplied string
          */
-        public static VersionFeatureTest forVersionString(final String version) {
-            return new VersionFeatureTest(new DefaultArtifactVersion(version));
+        public static VersionFeatureTest forVersionString(final IModInfo.DependencySide side, final String version) {
+            return new VersionFeatureTest(side, new DefaultArtifactVersion(version));
+        }
+
+        @Override
+        public String featureValue() {
+            return version.toString();
         }
 
         @Override
@@ -79,10 +96,15 @@ public class ForgeFeature {
         }
     }
 
-    public record BooleanFeatureTest(boolean value) implements IFeatureTest<Boolean> {
+    public record BooleanFeatureTest(IModInfo.DependencySide applicableSides, boolean value) implements IFeatureTest<Boolean> {
         @Override
         public boolean test(final Boolean aBoolean) {
             return aBoolean.equals(value);
+        }
+
+        @Override
+        public String featureValue() {
+            return Boolean.toString(value);
         }
 
         @Override
@@ -92,6 +114,16 @@ public class ForgeFeature {
     }
 
     private record MissingFeatureTest() implements IFeatureTest<Object> {
+        @Override
+        public IModInfo.DependencySide applicableSides() {
+            return IModInfo.DependencySide.BOTH;
+        }
+
+        @Override
+        public String featureValue() {
+            return "NONE";
+        }
+
         @Override
         public boolean test(final Object o) {
             return false;

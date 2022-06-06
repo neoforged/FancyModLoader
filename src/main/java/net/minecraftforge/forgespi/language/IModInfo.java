@@ -73,6 +73,9 @@ public interface IModInfo
             this.dist = dist;
         }
 
+        public boolean isContained(Dist side) {
+            return this == BOTH || dist[0] == side;
+        }
         public boolean isCorrectSide()
         {
             return this == BOTH || Environment.get().getDist().equals(this.dist[0]);
