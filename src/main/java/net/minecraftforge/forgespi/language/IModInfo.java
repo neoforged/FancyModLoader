@@ -21,6 +21,7 @@ package net.minecraftforge.forgespi.language;
 
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.forgespi.Environment;
+import net.minecraftforge.forgespi.locating.ForgeFeature;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
 
@@ -44,6 +45,8 @@ public interface IModInfo
     ArtifactVersion getVersion();
 
     List<? extends ModVersion> getDependencies();
+
+    List<? extends ForgeFeature.Bound> getForgeFeatures();
 
     String getNamespace();
 
@@ -72,6 +75,9 @@ public interface IModInfo
             this.dist = dist;
         }
 
+        public boolean isContained(Dist side) {
+            return this == BOTH || dist[0] == side;
+        }
         public boolean isCorrectSide()
         {
             return this == BOTH || Environment.get().getDist().equals(this.dist[0]);

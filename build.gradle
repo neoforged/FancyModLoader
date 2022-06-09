@@ -11,7 +11,7 @@ apply plugin: 'maven-publish'
 apply plugin: 'java-library'
 apply plugin: 'org.javamodularity.moduleplugin'
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(16)
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 group 'net.minecraftforge'
 version = gradleutils.getTagOffsetBranchVersion()
