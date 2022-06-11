@@ -19,6 +19,7 @@
 package cpw.mods.bootstraplauncher;
 
 import cpw.mods.cl.JarModuleFinder;
+import cpw.mods.cl.ModularURLHandler;
 import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.SecureJar;
 
@@ -44,7 +45,7 @@ public class BootstrapLauncher {
     private static final boolean DEBUG = System.getProperties().containsKey("bsl.debug");
 
     @SuppressWarnings("unchecked")
-    public static void main(String[] args) {
+    public static void main(String... args) {
         var legacyClasspath = loadLegacyClassPath();
         // Ensure backwards compatibility if somebody reads this value later on.
         System.setProperty("legacyClassPath", String.join(File.pathSeparator, legacyClasspath));
@@ -90,7 +91,10 @@ public class BootstrapLauncher {
                 continue;
             }
 
+            if (Files.notExists(path)) continue;
+
             var jar = SecureJar.from(new PackageTracker(Set.copyOf(previousPackages), path), path);
+            if ("".equals(jar.name())) continue;
             var packages = jar.getPackages();
 
             if (DEBUG) {
@@ -104,6 +108,8 @@ public class BootstrapLauncher {
 
         // Iterate over merged modules map and combine them into one SecureJar each
         mergeMap.forEach((idx, paths) -> {
+            // skip empty paths
+            if (paths.size() == 1 && Files.notExists(paths.get(0))) return;
             var pathsArray = paths.toArray(Path[]::new);
             var jar = SecureJar.from(new PackageTracker(Set.copyOf(previousPackages), pathsArray), pathsArray);
             var packages = jar.getPackages();
@@ -203,6 +209,10 @@ public class BootstrapLauncher {
 
         var legacyClasspath = System.getProperty("legacyClassPath", System.getProperty("java.class.path"));
         Objects.requireNonNull(legacyClasspath, "Missing legacyClassPath, cannot bootstrap");
-        return Arrays.asList(legacyClasspath.split(File.pathSeparator));
+        if (legacyClasspath.length() == 0) {
+            return List.of();
+        } else {
+            return Arrays.asList(legacyClasspath.split(File.pathSeparator));
+        }
     }
 }
