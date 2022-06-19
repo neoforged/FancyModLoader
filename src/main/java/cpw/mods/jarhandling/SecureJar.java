@@ -3,7 +3,9 @@ package cpw.mods.jarhandling;
 import cpw.mods.jarhandling.impl.Jar;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.module.ModuleDescriptor;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,11 +20,21 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 public interface SecureJar {
+    interface ModuleDataProvider {
+        String name();
+        ModuleDescriptor descriptor();
+        URI uri();
+        Optional<URI> findFile(String name);
+        Optional<InputStream> open(final String name);
+
+        Manifest getManifest();
+
+        CodeSigner[] verifyAndGetSigners(String cname, byte[] bytes);
+    }
+
+    ModuleDataProvider moduleDataProvider();
+
     Path getPrimaryPath();
-
-    Optional<URI> findFile(String name);
-
-    Manifest getManifest();
 
     CodeSigner[] getManifestSigners();
 

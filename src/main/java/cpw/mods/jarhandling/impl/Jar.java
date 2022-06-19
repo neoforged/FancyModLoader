@@ -4,13 +4,16 @@ import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.niofs.union.UnionFileSystem;
 import cpw.mods.niofs.union.UnionFileSystemProvider;
+import cpw.mods.util.LambdaExceptionUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.spi.FileSystemProvider;
 import java.security.CodeSigner;
 import java.util.*;
@@ -36,6 +39,7 @@ public class Jar implements SecureJar {
     private final UnionFileSystem filesystem;
     private final boolean isMultiRelease;
     private final Map<Path, Integer> nameOverrides;
+    private final JarModuleDataProvider moduleDataProvider;
     private Set<String> packages;
     private List<Provider> providers;
 
@@ -48,11 +52,15 @@ public class Jar implements SecureJar {
     }
 
     @Override
+    public ModuleDataProvider moduleDataProvider() {
+        return moduleDataProvider;
+    }
+
+    @Override
     public Path getPrimaryPath() {
         return filesystem.getPrimaryPath();
     }
 
-    @Override
     public Optional<URI> findFile(final String name) {
         var rel = filesystem.getPath(name);
         if (this.nameOverrides.containsKey(rel)) {
@@ -72,6 +80,7 @@ public class Jar implements SecureJar {
         var validPaths = Arrays.stream(paths).filter(Files::exists).toArray(Path[]::new);
         if (validPaths.length == 0)
             throw new UncheckedIOException(new IOException("Invalid paths argument, contained no existing paths: " + Arrays.toString(paths)));
+        this.moduleDataProvider = new JarModuleDataProvider(this);
         this.filesystem = UFSP.newFileSystem(pathfilter, validPaths);
         try {
             Manifest mantmp = null;
@@ -134,7 +143,6 @@ public class Jar implements SecureJar {
         this.metadata = metadataFunction.apply(this);
     }
 
-    @Override
     public Manifest getManifest() {
         return manifest;
     }
@@ -255,5 +263,42 @@ public class Jar implements SecureJar {
     @Override
     public String toString() {
         return "Jar[" + getURI() + "]";
+    }
+
+    private record JarModuleDataProvider(Jar jar) implements ModuleDataProvider {
+        @Override
+        public String name() {
+            return jar.name();
+        }
+
+        @Override
+        public ModuleDescriptor descriptor() {
+            return jar.computeDescriptor();
+        }
+
+        @Override
+        public URI uri() {
+            return jar.getURI();
+        }
+
+        @Override
+        public Optional<URI> findFile(final String name) {
+            return jar.findFile(name);
+        }
+
+        @Override
+        public Optional<InputStream> open(final String name) {
+            return jar.findFile(name).map(Paths::get).map(LambdaExceptionUtils.rethrowFunction(Files::newInputStream));
+        }
+
+        @Override
+        public Manifest getManifest() {
+            return jar.getManifest();
+        }
+
+        @Override
+        public CodeSigner[] verifyAndGetSigners(final String cname, final byte[] bytes) {
+            return jar.verifyAndGetSigners(cname, bytes);
+        }
     }
 }

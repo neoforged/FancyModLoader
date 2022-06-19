@@ -1,8 +1,7 @@
 plugins {
-    id 'com.github.ben-manes.versions' version '0.39.0'
+    id 'com.github.ben-manes.versions' version '0.42.0'
     id 'net.minecraftforge.gradleutils' version '2.+'
-    id 'me.champeau.jmh' version '0.6.5'
-    id 'org.javamodularity.moduleplugin' version '1.8.7' apply false
+    id 'org.javamodularity.moduleplugin' version '1.8.11' apply false
 }
 
 apply plugin: 'java-library'
@@ -69,20 +68,20 @@ tasks.named('compileJava') {
     }
 }
 
-jmh {
-    benchmarkMode = ['avgt' ]
-    profilers = [ 'stack', 'jfr:dir=./build/results/jmh/' ]
-    timeOnIteration = '3s'
-    warmup = '2s'
-    warmupIterations = 3
-    iterations = 3
-    fork = 3
-    timeUnit = 'us'
-    // JMH loads the main sourceset without a module context, so add exports and opens for required stuff to all unnamed and disable the missing module crash
-    jvmArgsPrepend = ['--add-opens java.base/java.util.jar=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED -Dsecurejarhandler.throwOnMissingModule=false']
-}
+//jmh {
+//    benchmarkMode = ['avgt' ]
+//    profilers = [ 'stack', 'jfr:dir=./build/results/jmh/' ]
+//    timeOnIteration = '3s'
+//    warmup = '2s'
+//    warmupIterations = 3
+//    iterations = 3
+//    fork = 3
+//    timeUnit = 'us'
+//    // JMH loads the main sourceset without a module context, so add exports and opens for required stuff to all unnamed and disable the missing module crash
+//    jvmArgsPrepend = ['--add-opens java.base/java.util.jar=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED -Dsecurejarhandler.throwOnMissingModule=false']
+//}
 
-tasks['jmh'].dependsOn(clean)
+//tasks['jmh'].dependsOn(clean)
 
 jar {
     manifest {

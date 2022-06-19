@@ -67,7 +67,7 @@ public class TestSecureJarLoading {
         SecureJar jar = SecureJar.from(path);
         assertAll(
                 ()->assertFalse(jar.hasSecurityData(), "Jar is not marked secure"),
-                ()->assertTrue(jar.getManifest().getMainAttributes().isEmpty(), "Empty manifest returned")
+                ()->assertTrue(jar.moduleDataProvider().getManifest().getMainAttributes().isEmpty(), "Empty manifest returned")
         );
     }
 

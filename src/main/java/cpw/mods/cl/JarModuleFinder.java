@@ -18,14 +18,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class JarModuleFinder implements ModuleFinder {
-    private final SecureJar[] jars;
     private final Map<String, ModuleReference> moduleReferenceMap;
 
     JarModuleFinder(final SecureJar... jars) {
-        this.jars = jars;
-        record ref(SecureJar jar, ModuleReference ref) {}
+        record ref(SecureJar.ModuleDataProvider jar, ModuleReference ref) {}
         this.moduleReferenceMap = Arrays.stream(jars)
-                .map(jar->new ref(jar, new JarModuleReference((Jar)jar)))
+                .map(jar->new ref(jar.moduleDataProvider(), new JarModuleReference(jar.moduleDataProvider())))
                 .collect(Collectors.toMap(r->r.jar.name(), r->r.ref, (r1, r2)->r1));
     }
 
@@ -44,10 +42,10 @@ public class JarModuleFinder implements ModuleFinder {
     }
 
     static class JarModuleReference extends ModuleReference {
-        private final Jar jar;
+        private final SecureJar.ModuleDataProvider jar;
 
-        JarModuleReference(final Jar jar) {
-            super(jar.computeDescriptor(), jar.getURI());
+        JarModuleReference(final SecureJar.ModuleDataProvider jar) {
+            super(jar.descriptor(), jar.uri());
             this.jar = jar;
         }
 
@@ -56,15 +54,15 @@ public class JarModuleFinder implements ModuleFinder {
             return new JarModuleReader(this.jar);
         }
 
-        public Jar jar() {
+        public SecureJar.ModuleDataProvider jar() {
             return this.jar;
         }
     }
 
     static class JarModuleReader implements ModuleReader {
-        private final Jar jar;
+        private final SecureJar.ModuleDataProvider jar;
 
-        public JarModuleReader(final Jar jar) {
+        public JarModuleReader(final SecureJar.ModuleDataProvider jar) {
             this.jar = jar;
         }
 
@@ -75,7 +73,7 @@ public class JarModuleFinder implements ModuleFinder {
 
         @Override
         public Optional<InputStream> open(final String name) throws IOException {
-            return jar.findFile(name).map(Paths::get).map(LambdaExceptionUtils.rethrowFunction(Files::newInputStream));
+            return jar.open(name);
         }
 
         @Override
