@@ -170,7 +170,7 @@ public class ModuleClassLoader extends ClassLoader {
             if (!reslist.isEmpty()) {
                 return reslist.get(0);
             } else {
-                return null;
+                return fallbackClassLoader.getResource(name);
             }
         } catch (IOException e) {
             return null;
