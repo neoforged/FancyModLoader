@@ -29,15 +29,7 @@ import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.ServiceLoader;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 
@@ -60,10 +52,14 @@ public class BootstrapLauncher {
         var previousPackages = new HashSet<String>();
         // The list of all SecureJars, which represent one module
         var jars = new ArrayList<SecureJar>();
+        // path to name lookup
+        var pathLookup = new HashMap<Path, String>();
         // Map of filenames to their 'module number', where all filenames sharing the same 'module number' is combined into one
         var filenameMap = getMergeFilenameMap();
         // Map of 'module number' to the list of paths which are combined into that module
-        var mergeMap = new HashMap<Integer, List<Path>>();
+        var mergeMap = new LinkedHashMap<String, List<Path>>();
+
+        var order = new ArrayList<String>();
 
         outer:
         for (var legacy : legacyClasspath) {
@@ -83,47 +79,37 @@ public class BootstrapLauncher {
                 System.out.println("bsl: encountered path '" + legacy + "'");
             }
 
-            if (filenameMap.containsKey(filename)) {
-                if (DEBUG) {
-                    System.out.println("bsl: path is contained with module #" + filenameMap.get(filename) + ", skipping for now");
-                }
-                mergeMap.computeIfAbsent(filenameMap.get(filename), k -> new ArrayList<>()).add(path);
-                continue;
-            }
-
             if (Files.notExists(path)) continue;
-
-            var jar = SecureJar.from(new PackageTracker(Set.copyOf(previousPackages), path), path);
+            // This computes the name of the artifact for detecting collisions
+            var jar = SecureJar.from(path);
             if ("".equals(jar.name())) continue;
-            var packages = jar.getPackages();
-
-            if (DEBUG) {
-                System.out.println("bsl: list of packages for file '" + legacy + "'");
-                packages.forEach(p -> System.out.println("bsl:    " + p));
-            }
-
-            previousPackages.addAll(packages);
-            jars.add(jar);
+            var jarname = pathLookup.computeIfAbsent(path, k -> filenameMap.getOrDefault(filename, jar.name()));
+            order.add(jarname);
+            mergeMap.computeIfAbsent(jarname, k -> new ArrayList<>()).add(path);
         }
 
+
         // Iterate over merged modules map and combine them into one SecureJar each
-        mergeMap.forEach((idx, paths) -> {
+        mergeMap.entrySet().stream().sorted(Comparator.comparingInt(e-> order.indexOf(e.getKey()))).forEach(e -> {
             // skip empty paths
+            var name = e.getKey();
+            var paths = e.getValue();
             if (paths.size() == 1 && Files.notExists(paths.get(0))) return;
             var pathsArray = paths.toArray(Path[]::new);
             var jar = SecureJar.from(new PackageTracker(Set.copyOf(previousPackages), pathsArray), pathsArray);
             var packages = jar.getPackages();
 
             if (DEBUG) {
-                System.out.println("bsl: the following paths are merged together in module #" + idx);
+                System.out.println("bsl: the following paths are merged together in module " + name);
                 paths.forEach(path -> System.out.println("bsl:    " + path));
-                System.out.println("bsl: list of packages for module #" + idx);
+                System.out.println("bsl: list of packages for module " + name);
                 packages.forEach(p -> System.out.println("bsl:    " + p));
             }
 
             previousPackages.addAll(packages);
             jars.add(jar);
         });
+
         var secureJarsArray = jars.toArray(SecureJar[]::new);
 
         // Gather all the module names from the SecureJars
@@ -155,7 +141,7 @@ public class BootstrapLauncher {
         ((Consumer<String[]>) loader.stream().findFirst().orElseThrow().get()).accept(args);
     }
 
-    private static Map<String, Integer> getMergeFilenameMap() {
+    private static Map<String, String> getMergeFilenameMap() {
         var mergeModules = System.getProperty("mergeModules");
         if (mergeModules == null)
             return Map.of();
@@ -163,12 +149,12 @@ public class BootstrapLauncher {
         // combined into a single modules
         // example: filename1.jar,filename2.jar;filename2.jar,filename3.jar
 
-        Map<String, Integer> filenameMap = new HashMap<>();
+        Map<String, String> filenameMap = new HashMap<>();
         int i = 0;
         for (var merge : mergeModules.split(";")) {
             var targets = merge.split(",");
             for (String target : targets) {
-                filenameMap.put(target, i);
+                filenameMap.put(target, String.valueOf(i));
             }
             i++;
         }
