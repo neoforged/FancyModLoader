@@ -1,13 +1,69 @@
+buildscript {
+    dependencies {
+        classpath('de.jjohannes.gradle:extra-java-module-info:0.14')
+    }
+}
+
 plugins {
     id 'com.github.ben-manes.versions' version '0.42.0'
     id 'net.minecraftforge.gradleutils' version '2.+'
-    id 'org.javamodularity.moduleplugin' version '1.8.11' apply false
 }
 
-apply plugin: 'java-library'
 apply plugin: 'maven-publish'
-apply plugin: 'eclipse'
-apply plugin: 'org.javamodularity.moduleplugin'
+
+allprojects {
+    apply plugin: 'java-library'
+    apply plugin: 'eclipse'
+    apply plugin: 'de.jjohannes.extra-java-module-info'
+
+    group 'cpw.mods'
+    java {
+        toolchain.languageVersion = JavaLanguageVersion.of(16)
+        modularity.inferModulePath.set(true)
+    }
+    version = gradleutils.getTagOffsetVersion()
+
+    repositories {
+        mavenLocal()
+        maven {
+            name = 'forge'
+            url = 'https://maven.minecraftforge.net/'
+        }
+    }
+
+    dependencies.testRuntimeOnly('org.apiguardian:apiguardian-api:1.1.2') // No idea why, but windows needs this to not explode.
+
+    extraJavaModuleInfo {
+        failOnMissingModuleInfo = false
+        automaticModule('jmh-core-1.35.jar', 'jmh.core')
+    }
+
+    def isNonStable = { String version ->
+        def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { type -> version.toUpperCase().contains(type) }
+        def regex = /^[0-9,.v-]+(-r)?$/
+        return !stableKeyword && !(version ==~ regex)
+    }
+
+    dependencyUpdates {
+        rejectVersionIf {
+            isNonStable(it.candidate.version)
+        }
+    }
+
+    // Hack eclipse into knowing that the gradle deps are modules
+    eclipse {
+        classpath {
+            containers 'org.eclipse.buildship.core.gradleclasspathcontainer'
+            file {
+                whenMerged {
+                    entries.findAll { it.kind == 'con' && it.path == 'org.eclipse.buildship.core.gradleclasspathcontainer' }.each {
+                        it.entryAttributes['module'] = 'true'
+                    }
+                }
+            }
+        }
+    }
+}
 
 
 repositories {
@@ -31,11 +87,27 @@ dependencyUpdates {
 compileJava {
     sourceCompatibility = JavaVersion.VERSION_16
     targetCompatibility = JavaVersion.VERSION_16
+    options.compilerArgs += [
+            '-Xlint:unchecked',
+            '--add-exports=java.base/sun.security.util=cpw.mods.securejarhandler',
+    ]
 }
 
 test {
     //exclude '**/*'
     useJUnitPlatform()
+    jvmArgs += [
+            '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED'
+    ]
+}
+
+compileTestJava {
+    sourceCompatibility = JavaVersion.VERSION_16
+    targetCompatibility = JavaVersion.VERSION_16
+    options.compilerArgs += [
+            '--add-modules=jdk.zipfs',
+            '--add-exports=jdk.zipfs/jdk.nio.zipfs=ALL-UNNAMED'
+    ]
 }
 
 group = 'cpw.mods'
@@ -59,13 +131,6 @@ changelog {
 task sourcesJar(type: Jar) {
     archiveClassifier = 'sources'
     from sourceSets.main.allSource
-}
-
-tasks.named('compileJava') {
-    options.compilerArgs << '-Xlint:unchecked'
-    moduleOptions {
-        addExports = ['java.base/sun.security.util': 'cpw.mods.securejarhandler']
-    }
 }
 
 //jmh {

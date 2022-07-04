@@ -3,6 +3,8 @@ package cpw.mods.niofs.union;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -16,6 +18,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestUnionFS {
+    private static final UnionFileSystemProvider UFSP = (UnionFileSystemProvider) FileSystemProvider.installedProviders().stream().filter(fsp->fsp.getScheme().equals("union")).findFirst().orElseThrow(()->new IllegalStateException("Couldn't find UnionFileSystemProvider"));
     @Test
     void testUnionFileSystem() throws IOException {
         final var dir1 = Paths.get("src", "test", "resources", "dir1").toAbsolutePath().normalize();
@@ -37,8 +40,32 @@ public class TestUnionFS {
                 .map(Files::exists)
                 .map(f->()->assertTrue(f))
         );
+        assertFalse(Files.exists(ufs.getPath("fishyfishhead.txt")));
         var p = ufs.getRoot().resolve("subdir1/masktestd1.txt");
         p.subpath(1, 2);
+    }
+
+    @Test
+    void testUnionFileSystemJar() throws Throwable {
+        final var jar1 = Paths.get("sjh-jmh","src", "testjars", "testjar1.jar").toAbsolutePath().normalize();
+        final var jar2 = Paths.get("sjh-jmh","src", "testjars", "testjar2.jar").toAbsolutePath().normalize();
+        final var jar3 = Paths.get("sjh-jmh","src", "testjars", "testjar3.jar").toAbsolutePath().normalize();
+
+        final var fileSystem = UFSP.newFileSystem(jar1, Map.of("additional", List.of(jar2, jar3)));
+        assertAll(
+                ()->assertTrue(fileSystem instanceof UnionFileSystem),
+                ()->assertIterableEquals(fileSystem instanceof UnionFileSystem ufs ? ufs.getBasePaths(): List.of(), List.of(jar3, jar2, jar1))
+        );
+        UnionFileSystem ufs = (UnionFileSystem) fileSystem;
+
+        var doexist = List.of("cpw/mods/niofs/union/UnionPath.class", "net/minecraftforge/client/event/GuiOpenEvent.class", "cpw/mods/modlauncher/Launcher.class"); //jar 3
+        var dontexist = List.of("cpw/mods/modlauncher/api/NoIDontExist.class", "net/minecraftforge/client/nonexistent/Nope.class", "Missing.class");
+        assertAll(
+            doexist.stream().map(ufs::getPath).map(p->()->assertTrue(Files.exists(p)))
+        );
+        assertAll(
+                dontexist.stream().map(ufs::getPath).map(p->()->assertTrue(Files.notExists(p)))
+        );
     }
 
     @Test

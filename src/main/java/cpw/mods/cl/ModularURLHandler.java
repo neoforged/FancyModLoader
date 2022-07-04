@@ -17,9 +17,13 @@ public class ModularURLHandler implements URLStreamHandlerFactory {
     private Map<String, IURLProvider> handlers;
 
     public static void initFrom(ModuleLayer layer) {
-        INSTANCE.handlers = ServiceLoader.load(layer, IURLProvider.class).stream()
-                .map(ServiceLoader.Provider::get)
-                .collect(Collectors.toMap(IURLProvider::protocol, Function.identity()));
+        if (layer == null) {
+            INSTANCE.handlers = null;
+        } else {
+            INSTANCE.handlers = ServiceLoader.load(layer, IURLProvider.class).stream()
+                    .map(ServiceLoader.Provider::get)
+                    .collect(Collectors.toMap(IURLProvider::protocol, Function.identity()));
+        }
     }
     @Override
     public URLStreamHandler createURLStreamHandler(final String protocol) {
