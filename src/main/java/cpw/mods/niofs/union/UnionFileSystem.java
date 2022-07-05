@@ -2,15 +2,30 @@ package cpw.mods.niofs.union;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.*;
+import java.nio.file.AccessMode;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileStore;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.WatchService;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.UserPrincipalLookupService;
-import java.util.*;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -20,6 +35,8 @@ import java.util.stream.StreamSupport;
 
 public class UnionFileSystem extends FileSystem {
     private static final MethodHandle ZIPFS_EXISTS;
+    static final String SEP_STRING = "/";
+
     static {
         try {
             var hackfield = MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP");
@@ -118,7 +135,7 @@ public class UnionFileSystem extends FileSystem {
 
     @Override
     public String getSeparator() {
-        return "/";
+        return SEP_STRING;
     }
 
     @Override
