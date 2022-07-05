@@ -21,7 +21,7 @@ repositories {
 }
 
 dependencies {
-    implementation('cpw.mods:securejarhandler:1.0.1')
+    implementation('cpw.mods:securejarhandler:2.1.2')
 }
 
 java {
