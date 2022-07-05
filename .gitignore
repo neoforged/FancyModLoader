@@ -16,3 +16,4 @@
 /modlauncher-9.0.1.jar
 /test.jar
 /sjh-jmh/build/
+*.jfr

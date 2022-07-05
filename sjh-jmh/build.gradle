@@ -35,7 +35,8 @@ task jmh(type: JavaExec, dependsOn: sourceSets.main.output) {
     args    '-r', '5s' // iteration time
     args    '-w', '5s' // warmup time
     args    '-wi', '2' // warmup iterations
-    args    '-prof', 'stack' // profilers
+    args    '-prof', 'stack'
+    args    '-prof', 'jfr' // profilers
     args    '-tu', 'ns' // time unit
     args    '-i', '2' // iterations
     args    '-f', '1' // forks

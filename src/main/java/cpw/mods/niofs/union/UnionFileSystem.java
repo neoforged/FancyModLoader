@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -168,6 +170,10 @@ public class UnionFileSystem extends FileSystem {
         return new UnionPath(this, first);
     }
 
+    private Path fastPath(final String... parts) {
+        return new UnionPath(this, false, parts);
+    }
+
     @Override
     public PathMatcher getPathMatcher(final String syntaxAndPattern) {
         throw new UnsupportedOperationException();
@@ -190,6 +196,8 @@ public class UnionFileSystem extends FileSystem {
     private Optional<BasicFileAttributes> getFileAttributes(final Path path) {
         try {
             if (path.getFileSystem() == FileSystems.getDefault() && !path.toFile().exists()) {
+                return Optional.empty();
+            } else if (path.getFileSystem().provider().getScheme().equals("jar") && !zipFsExists(path)) {
                 return Optional.empty();
             } else {
                 return Optional.of(path.getFileSystem().provider().readAttributes(path, BasicFileAttributes.class));
@@ -319,6 +327,8 @@ public class UnionFileSystem extends FileSystem {
                 continue;
             } else if (dir.getFileSystem() == FileSystems.getDefault() && !dir.toFile().exists()) {
                 continue;
+            } else if (dir.getFileSystem().provider().getScheme() == "jar" && !zipFsExists(dir)) {
+                continue;
             } else if (Files.notExists(dir)) {
                 continue;
             }
@@ -326,8 +336,9 @@ public class UnionFileSystem extends FileSystem {
             try (final var ds = Files.newDirectoryStream(dir, filter)) {
                 StreamSupport.stream(ds.spliterator(), false)
                         .filter(p->testFilter(p, bp))
-                        .map(other -> (isSimple ? other : bp.relativize(other)).toString())
-                        .map(this::getPath)
+                        .map(other -> StreamSupport.stream(Spliterators.spliteratorUnknownSize((isSimple ? other : bp.relativize(other)).iterator(), Spliterator.ORDERED), false)
+                                .map(Path::getFileName).map(Path::toString).toArray(String[]::new))
+                        .map(this::fastPath)
                         .forEachOrdered(allpaths::add);
             }
         }

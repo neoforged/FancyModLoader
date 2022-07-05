@@ -3,9 +3,10 @@ package cpw.mods.niofs.union;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.nio.file.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttributeView;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -236,5 +238,33 @@ public class TestUnionFS {
         });
         // Ensure the attributes are the same through both methods
         assertEquals(validAttributes, validViewAttributes);
+    }
+
+    @Test
+    public void testDirectoryVisitorJar() throws Exception {
+        final var jar1 = Paths.get("sjh-jmh","src", "testjars", "testjar1.jar").toAbsolutePath().normalize();
+        final var jar2 = Paths.get("sjh-jmh","src", "testjars", "testjar2.jar").toAbsolutePath().normalize();
+        final var jar3 = Paths.get("sjh-jmh","src", "testjars", "testjar3.jar").toAbsolutePath().normalize();
+
+        final var fileSystem = UFSP.newFileSystem(jar1, Map.of("additional", List.of(jar2, jar3)));
+        var root = fileSystem.getPath("/");
+        try (var dirStream = Files.newDirectoryStream(root)) {
+            assertAll(
+                    StreamSupport.stream(dirStream.spliterator(), false).map(p->()->Files.exists(p))
+            );
+        }
+    }
+    @Test
+    public void testDirectoryVisitorDirs() throws Exception {
+        final var dir1 = Paths.get("src", "test", "resources", "dir1").toAbsolutePath().normalize();
+        final var dir2 = Paths.get("src", "test", "resources", "dir2").toAbsolutePath().normalize();
+
+        final var fileSystem = UFSP.newFileSystem(dir1, Map.of("additional", List.of(dir2)));
+        var root = fileSystem.getPath("/");
+        try (var dirStream = Files.newDirectoryStream(root)) {
+            assertAll(
+                    StreamSupport.stream(dirStream.spliterator(), false).map(p->()->Files.exists(p))
+            );
+        }
     }
 }

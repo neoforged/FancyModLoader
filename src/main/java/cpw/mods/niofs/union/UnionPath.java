@@ -3,8 +3,15 @@ package cpw.mods.niofs.union;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.Objects;
 import java.util.function.IntBinaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -14,10 +21,13 @@ public class UnionPath implements Path {
     private static final Pattern SEPARATOR_BEGIN_END;
     private static final Pattern SEPARATOR_DUPLICATES;
 
+    private static final Pattern SEPARATOR_SPLIT;
+
     static {
         var sep = "(?:"+ Pattern.quote(UnionFileSystem.SEP_STRING) + ")";
         SEPARATOR_BEGIN_END = Pattern.compile("^" + sep + "*|" + sep + "*$");
         SEPARATOR_DUPLICATES = Pattern.compile(sep + "(?=" + sep + ")");
+        SEPARATOR_SPLIT = Pattern.compile(sep);
     }
     private final UnionFileSystem fileSystem;
     private final boolean absolute;
@@ -42,7 +52,7 @@ public class UnionPath implements Path {
     }
 
     // Private constructor only for known correct split and extra value for absolute
-    private UnionPath(final UnionFileSystem fileSystem, boolean absolute, final String... pathParts) {
+    UnionPath(final UnionFileSystem fileSystem, boolean absolute, final String... pathParts) {
         this(fileSystem, absolute, false, pathParts);
     }
     
@@ -63,7 +73,7 @@ public class UnionPath implements Path {
         if (clean.isEmpty())
             return new String[0];
         else
-            return clean.split(UnionFileSystem.SEP_STRING);
+            return SEPARATOR_SPLIT.split(clean);
     }
 
     @Override

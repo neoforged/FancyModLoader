@@ -78,28 +78,33 @@ public class UnionFileSystemBenchmark {
         runNativeFileExists("ThisFileNotExists3.txt", false);
     }
 
-//    @Benchmark
+    @Benchmark
     public void testDirectoryStream(Blackhole blackhole) throws Exception {
-        runDirStream("cpw/mods/jarhandling", 5, blackhole); //jar 1
-        runDirStream("net/minecraftforge/common", 72, blackhole); //jar 2
-        runDirStream("cpw/mods/modlauncher/api", 34, blackhole); //jar 3
+        runDirStream(fileSystem,"cpw/mods/jarhandling", 5, blackhole); //jar 1
+        runDirStream(fileSystem,"net/minecraftforge/common", 72, blackhole); //jar 2
+        runDirStream(fileSystem,"cpw/mods/modlauncher/api", 34, blackhole); //jar 3
     }
 
-//    @Benchmark
+    @Benchmark
+    public void testDirectoryStreamDir(Blackhole blackhole) throws Exception {
+        runDirStream(dirFileSystem, "/", 4, blackhole); //jar 1
+    }
+
+    @Benchmark
     public void testByteChannel(Blackhole blackhole) throws Exception {
         runByteChannel("cpw/mods/niofs/union/UnionPath.class", blackhole); //jar 1
         runByteChannel("net/minecraftforge/client/event/GuiOpenEvent.class", blackhole); //jar 2
         runByteChannel("cpw/mods/modlauncher/Launcher.class", blackhole); //jar 3
     }
 
-//    @Benchmark
+    @Benchmark
     public void testReadAttributes(Blackhole blackhole) throws Exception {
         runReadAttributes("cpw/mods/niofs/union/UnionPath.class", 9550, blackhole); //jar 1
         runReadAttributes("net/minecraftforge/client/event/GuiOpenEvent.class", 782, blackhole); //jar 2
         runReadAttributes("cpw/mods/modlauncher/Launcher.class", 12648, blackhole); //jar 3
     }
 
-//    @Benchmark
+    @Benchmark
     public void testCommonPathUtilities(Blackhole blackhole) throws Exception {
         var path = fileSystem.getPath("net/minecraftforge/client/event/GuiOpenEvent.class");
         blackhole.consume(path.getFileName());
@@ -126,9 +131,9 @@ public class UnionFileSystemBenchmark {
         }
     }
 
-    private static void runDirStream(String pathString, int expectedEntries, Blackhole blackhole) throws Exception {
+    private static void runDirStream(UnionFileSystem fs, String pathString, int expectedEntries, Blackhole blackhole) throws Exception {
         int count = 0;
-        try (var dirStream = Files.newDirectoryStream(fileSystem.getPath(pathString))) {
+        try (var dirStream = Files.newDirectoryStream(fs.getPath(pathString))) {
             for (Path subpath : dirStream) {
                 count++;
                 blackhole.consume(subpath);
