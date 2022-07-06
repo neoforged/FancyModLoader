@@ -32,10 +32,12 @@ public class UnionPath implements Path {
             this.absolute = false;
             this.pathParts = new String[0];
         } else {
-            StringJoiner joiner = new StringJoiner(UnionFileSystem.SEP_STRING);
-            for (String element : pathParts) {
+            StringBuilder joiner = new StringBuilder();
+            for (int i = 0; i < pathParts.length; i++) {
+                final String element = pathParts[i];
                 if (!element.isEmpty()) {
-                    joiner.add(element);
+                    joiner.append(element);
+                    if (i<pathParts.length-1) joiner.append(UnionFileSystem.SEP_STRING);
                 }
             }
             final var longstring = joiner.toString();
