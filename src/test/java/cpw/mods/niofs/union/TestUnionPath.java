@@ -40,9 +40,11 @@ public class TestUnionPath {
         var abs123 = fs.getPath("/one/two/three");
         var abs1223 = fs.getPath("/one/two/./three");
         var abs12up3 = fs.getPath("/one/two/../three");
+        var abs12up3otherslash = fs.getPath("/one/two/..\\three");
         var abs13 = fs.getPath("/one/three");
         var abs13slash = fs.getPath("/one/three/");
         var abs1slash3 = fs.getPath("/one//three");
+        var abs1otherslash3 = fs.getPath("/one\\/three");
         var absUpUp1 = fs.getPath("/../../one");
         var absUpUp123 = fs.getPath("/../../one/two/three");
         
@@ -51,6 +53,8 @@ public class TestUnionPath {
         assertEquals(rel13, rel1slash3);
         assertEquals(abs13, abs13slash);
         assertEquals(abs13, abs1slash3);
+        assertEquals(abs13, abs1otherslash3);
+        assertEquals(abs12up3, abs12up3otherslash);
         // Not filtering out empty elements for joining will cause this to fail
         assertFalse(fs.getPath("", "one", "two").isAbsolute());
         

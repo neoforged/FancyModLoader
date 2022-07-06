@@ -9,26 +9,16 @@ import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.List;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.function.IntBinaryOperator;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class UnionPath implements Path {
-    private static final Pattern SEPARATOR_BEGIN_END;
-    private static final Pattern SEPARATOR_DUPLICATES;
-
-    private static final Pattern SEPARATOR_SPLIT;
-
-    static {
-        var sep = "(?:"+ Pattern.quote(UnionFileSystem.SEP_STRING) + ")";
-        SEPARATOR_BEGIN_END = Pattern.compile("^" + sep + "*|" + sep + "*$");
-        SEPARATOR_DUPLICATES = Pattern.compile(sep + "(?=" + sep + ")");
-        SEPARATOR_SPLIT = Pattern.compile(sep);
-    }
     private final UnionFileSystem fileSystem;
     private final boolean absolute;
     private final String[] pathParts;
@@ -42,9 +32,13 @@ public class UnionPath implements Path {
             this.absolute = false;
             this.pathParts = new String[0];
         } else {
-            final var longstring = Arrays.stream(pathParts)
-                    .filter(part -> !part.isEmpty())
-                    .collect(Collectors.joining(UnionFileSystem.SEP_STRING));
+            StringJoiner joiner = new StringJoiner(UnionFileSystem.SEP_STRING);
+            for (String element : pathParts) {
+                if (!element.isEmpty()) {
+                    joiner.add(element);
+                }
+            }
+            final var longstring = joiner.toString();
             this.absolute = longstring.startsWith(UnionFileSystem.SEP_STRING);
             this.pathParts = getPathParts(longstring);
         }
@@ -67,13 +61,22 @@ public class UnionPath implements Path {
     }
 
     private String[] getPathParts(final String longstring) {
-        var clean = longstring.replace("\\", UnionFileSystem.SEP_STRING);
-        clean = SEPARATOR_BEGIN_END.matcher(clean).replaceAll("");
-        clean = SEPARATOR_DUPLICATES.matcher(clean).replaceAll("");
-        if (clean.isEmpty())
-            return new String[0];
-        else
-            return SEPARATOR_SPLIT.split(clean);
+        var clean = longstring.replace('\\', '/');
+        int startIndex = 0;
+        List<String> parts = new ArrayList<>();
+        while (startIndex != longstring.length()) {
+            int index = clean.indexOf('/', startIndex);
+            if (index == -1) {
+                parts.add(clean.substring(startIndex));
+                break;
+            }
+            // Skips double slash and slash and start/end
+            if (index != startIndex) {
+                parts.add(clean.substring(startIndex, index));
+            }
+            startIndex = (index + 1);
+        }
+        return parts.toArray(String[]::new);
     }
 
     @Override
