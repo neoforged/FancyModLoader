@@ -65,12 +65,13 @@ public interface JarMetadata {
                     var ver = versionMaybe.getFileName().toString();
                     var mat = MODULE_VERSION.matcher(ver);
                     if (mat.find()) {
-                        ver = ModuleDescriptor.Version.parse(ver.substring(mat.start())).toString();
+                        var potential = ver.substring(mat.start());
+                        ver = safeParseVersion(potential, path.getFileName().toString());
                         return new SimpleJarMetadata(cleanModuleName(name), ver, pkgs, providers);
                     } else {
                         return new SimpleJarMetadata(cleanModuleName(name), null, pkgs, providers);
                     }
-                }   
+                }
             }
         }
 
@@ -83,11 +84,31 @@ public interface JarMetadata {
        
         var mat = DASH_VERSION.matcher(fn);
         if (mat.find()) {
-            var ver = ModuleDescriptor.Version.parse(fn.substring(mat.start() + 1)).toString();
+            var potential = fn.substring(mat.start() + 1);
+            var ver = safeParseVersion(potential, path.getFileName().toString());
             var name = mat.replaceAll("");
             return new SimpleJarMetadata(cleanModuleName(name), ver, pkgs, providers);
         } else {
             return new SimpleJarMetadata(cleanModuleName(fn), null, pkgs, providers);
+        }
+    }
+
+    private static String safeParseVersion(String ver, String filename) {
+        try {
+            var len = ver.length();
+            if (len == 0)
+                throw new IllegalArgumentException("Error parsing version info from " + filename + ": Empty Version String");
+
+            var last = ver.charAt(len - 1);
+            if (last == '.' || last == '+' || last == '-') { //Attempt to filter out the common wrong file names.
+                if (len == 1)
+                    throw new IllegalArgumentException("Error parsing version info from " + filename + ": Invalid version \"" + ver + "\"");
+                ver = ver.substring(0, len - 1);
+            }
+
+            return ModuleDescriptor.Version.parse(ver).toString();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Error parsing version info from " + filename + " (" + ver + "): " + e.getMessage(), e);
         }
     }
 
