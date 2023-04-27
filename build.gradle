@@ -79,6 +79,9 @@ dependencies {
     implementation('org.apache.logging.log4j:log4j-api:2.17.0')
     implementation('org.apache.maven:maven-artifact:3.8.1')
     implementation('cpw.mods:securejarhandler:0.9.52')
+    api('net.minecraftforge:mergetool:1.1.5:api') {
+        transitive false
+    }
 
 
     testRuntimeOnly('org.apache.logging.log4j:log4j-core:2.17.0')
