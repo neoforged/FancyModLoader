@@ -39,7 +39,7 @@ project {
             +:refs/heads/(%git_main_branch%)
             +:refs/heads/(main*)
             +:refs/heads/(master*)
-            +:refs/heads/(*.*)
+            +:refs/heads/(1.x)
             +:refs/heads/(develop|release|staging|main|master)
         """.trimIndent(), label = "The branch specification of the repository", description = "By default all main branches are build by the configuration. Modify this value to adapt the branches build.", display = ParameterDisplay.HIDDEN, allowEmpty = true)
     }
