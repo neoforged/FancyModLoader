@@ -1,5 +1,7 @@
 package cpw.mods.cl;
 
+import cpw.mods.niofs.union.UnionPath;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -19,11 +21,13 @@ public class UnionURLStreamHandler implements ModularURLHandler.IURLProvider {
     public Function<URL, InputStream> inputStreamFunction() {
         return u-> {
             try {
-                return Files.newInputStream(Paths.get(u.toURI()));
+                if (Paths.get(u.toURI()) instanceof UnionPath upath) {
+                    return upath.buildInputStream();
+                } else {
+                    throw new IllegalArgumentException("Invalid Path "+u.toURI()+" at UnionURLStreamHandler");
+                }
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
             }
 
 

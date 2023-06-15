@@ -1,6 +1,7 @@
 package cpw.mods.niofs.union;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.LinkOption;
@@ -324,5 +325,9 @@ public class UnionPath implements Path {
     @Override
     public String toString() {
         return (this.absolute ? UnionFileSystem.SEP_STRING : "") + String.join(UnionFileSystem.SEP_STRING, this.pathParts);
+    }
+
+    public InputStream buildInputStream() {
+        return fileSystem.buildInputStream(this);
     }
 }
