@@ -134,8 +134,10 @@ public class UnionFileSystem extends FileSystem {
     private static Optional<EmbeddedFileSystemMetadata> openFileSystem(final Path path) {
         try {
             var zfs = FileSystems.newFileSystem(path);
-            FileChannel fci = (FileChannel) ZIPFS_CH.invoke(zfs);
-            FCI_UNINTERUPTIBLE.invoke(fci);
+            SeekableByteChannel fci = (SeekableByteChannel) ZIPFS_CH.invoke(zfs);
+            if (fci instanceof FileChannel) { // we only make file channels uninterruptible because byte channels (JIJ) already are
+                FCI_UNINTERUPTIBLE.invoke(fci);
+            }
             return Optional.of(new EmbeddedFileSystemMetadata(path, zfs, fci));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
