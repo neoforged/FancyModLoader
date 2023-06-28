@@ -26,8 +26,6 @@ public class ForgeFeature {
     private ForgeFeature() {}
     private static final Map<String, IFeatureTest<?>> features = new HashMap<>();
 
-    private record SidedFeature(String name, IModInfo.DependencySide side) {}
-
     public static <T> void registerFeature(final String featureName, final IFeatureTest<T> featureTest) {
         if (features.putIfAbsent(featureName, featureTest) != null) {
             throw new IllegalArgumentException("ForgeFeature with name "+featureName +" exists");
@@ -60,7 +58,12 @@ public class ForgeFeature {
      * @param featureName the name of the feature
      * @param featureBound the requested bound
      */
-    public record Bound(String featureName, String featureBound, IModInfo modInfo) {}
+    public record Bound(String featureName, String featureBound, IModInfo modInfo) {
+        @SuppressWarnings("unchecked")
+        public <T> T bound() {
+            return (T) features.getOrDefault(featureName, MISSING).convertFromString(featureBound);
+        }
+    }
     /**
      * Version based feature test. Uses standard MavenVersion system. Will test the constructed version against
      * ranges requested by mods.
