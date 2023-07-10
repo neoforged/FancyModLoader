@@ -20,21 +20,17 @@ plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '0.5.0'
 }
 
+ext.includeLanguage = { name ->
+    include "language-$name"
+    project(":language-$name").projectDir = file("languages/$name")
+}
+
 rootProject.name = 'NeoForge'
 
-include 'fmlloader'
-include 'fmlcore'
-include 'mclanguage'
-include 'javafmllanguage'
-include 'lowcodelanguage'
-include 'fmlearlydisplay'
+include 'loader'
+include 'core'
+include 'learlydisplay'
 
-include ':mcp'
-include ':clean'
-include ':fmlonly'
-include ':forge'
-
-project(":mcp").projectDir = file("projects/mcp")
-project(":clean").projectDir = file("projects/clean")
-project(":fmlonly").projectDir = file("projects/fmlonly")
-project(":forge").projectDir = file("projects/forge")
+includeLanguage 'minecraft'
+includeLanguage 'java'
+includeLanguage 'lowcode'

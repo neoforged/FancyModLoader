@@ -1,0 +1,92 @@
+plugins {
+    id 'com.github.ben-manes.versions' version '0.39.0'
+    id 'org.javamodularity.moduleplugin' version '1.8.7'
+    id 'org.cadixdev.licenser' version '0.6.0'
+    id 'net.neoforged.gradleutils' version '[2.0.13,3)'
+}
+
+allprojects {
+    apply plugin: 'java-library'
+    apply plugin: 'jacoco'
+    apply plugin: 'maven-publish'
+
+    apply plugin: 'com.github.ben-manes.versions'
+    apply plugin: 'org.javamodularity.moduleplugin'
+    apply plugin: 'org.cadixdev.licenser'
+    apply plugin: 'net.neoforged.gradleutils'
+
+    group = 'net.neoforged'
+    version = gradleutils.getTagOffsetVersion()
+
+    dependencyUpdates.rejectVersionIf { isNonStable(it.candidate.version) }
+
+    java.withSourcesJar()
+
+    test {
+        useJUnitPlatform()
+    }
+}
+
+subprojects { subProject ->
+    subProject.version = gradleutils.getTagOffsetVersion()
+
+    ext {
+        MANIFESTS = [
+                '/'                              : [
+                        'Timestamp'   : new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                        'Git-Commit'  : gradleutils.gitInfo.abbreviatedId,
+                        'Git-Branch'  : gradleutils.gitInfo.branch,
+                        'Build-Number': "${subProject.version}",
+                ] as LinkedHashMap,
+                'net/minecraftforge/fml/loading/': [
+                        'Specification-Title'   : "FML${subProject.name}",
+                        'Specification-Vendor'  : 'NeoForge',
+                        'Specification-Version' : "${subProject.version.split('.')[0]}",
+                        'Implementation-Title'  : "FML $subProject.name",
+                        'Implementation-Version': "${subProject.version.split('.')[0]}.${subProject.version.split('.')[1]}",
+                        'Implementation-Vendor' : 'NeoForged'
+                ] as LinkedHashMap
+        ]
+    }
+
+    jar.doFirst {
+        manifest.attributes['Automatic-Module-Name'] = project.name
+        MANIFESTS.each { pkg, values ->
+            manifest.attributes(values, pkg)
+        }
+    }
+
+    tasks.withType(JavaCompile) {
+        options.compilerArgs << '-Xlint:unchecked'
+    }
+
+    license {
+        header = rootProject.file('LICENSE-header.txt')
+
+        include 'net/minecraftforge/'
+    }
+
+    artifacts {
+        archives jar
+        archives sourcesJar
+    }
+
+    publishing{
+        publications{
+            maven(MavenPublication) {
+                from components.java
+                artifact sourcesJar
+
+                subProject.changelog.publish it
+            }
+        }
+
+        repositories {
+            maven gradleutils.getPublishingForgeMaven()
+        }
+    }
+
+    changelog {
+        fromTag "47.0"
+    }
+}
