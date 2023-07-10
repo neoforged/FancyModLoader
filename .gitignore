@@ -10,36 +10,16 @@
 #idea
 /.idea
 /*/out
-/classes
+**/classes
 *.iml
 
 #gradle
-/build
+**/build
 /.gradle
-/*/build
-/*/.gradle
+/**/build
+/**/.gradle
 
-# Projects repo, either ignore it, or ignore patches.
-/projects/mcp/
-/projects/clean/
-/projects/forge/
-/projects/fmlonly/
-#/patches/*
-
-#occupational hazards
-/projects/**/build/
-/projects/**/out/
-/projects/**/run/
-/projects/**/*.launch
 /repo/
-src/generated/resources/.cache/
-src/generated_test/resources/.cache/
-src/generated_mdk/resources/.cache/
-
-#Patch rejects
-#/patches-/
-#*.patch.rej
-#/projects/*/rejects/
 
 # FML changelog
 changelog.txt

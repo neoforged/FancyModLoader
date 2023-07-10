@@ -25,11 +25,11 @@ ext.includeLanguage = { name ->
     project(":language-$name").projectDir = file("languages/$name")
 }
 
-rootProject.name = 'NeoForge'
+rootProject.name = 'FancyModLoader'
 
 include 'loader'
 include 'core'
-include 'learlydisplay'
+include 'earlydisplay'
 
 includeLanguage 'minecraft'
 includeLanguage 'java'
