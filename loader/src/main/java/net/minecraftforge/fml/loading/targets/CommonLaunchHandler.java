@@ -57,7 +57,7 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
 
     protected String[] preLaunch(String[] arguments, ModuleLayer layer) {
         URI uri;
-        try (var reader = layer.configuration().findModule("loader").orElseThrow().reference().open()) {
+        try (var reader = layer.configuration().findModule("fml_loader").orElseThrow().reference().open()) {
             uri = reader.find("log4j2.xml").orElseThrow();
         } catch (IOException e) {
             throw new RuntimeException(e);
