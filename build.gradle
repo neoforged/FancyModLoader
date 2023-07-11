@@ -62,7 +62,6 @@ subprojects { subProject ->
     }
 
     jar.doFirst {
-        manifest.attributes['Automatic-Module-Name'] = project.name
         MANIFESTS.each { pkg, values ->
             manifest.attributes(values, pkg)
         }
