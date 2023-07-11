@@ -46,10 +46,10 @@ public abstract class CommonServerLaunchHandler extends CommonLaunchHandler {
 
         filter = processMCStream(vers, mcstream, filter, modstream);
 
-        var fmlcore = LibraryFinder.findPathForMaven(vers.forgeGroup(), "fmlcore", "", "", vers.fmlVersion());
-        var javafmllang = LibraryFinder.findPathForMaven(vers.forgeGroup(), "javafmllanguage", "", "", vers.fmlVersion());
-        var lowcodelang = LibraryFinder.findPathForMaven(vers.forgeGroup(), "lowcodelanguage", "", "", vers.fmlVersion());
-        var mclang = LibraryFinder.findPathForMaven(vers.forgeGroup(), "mclanguage", "", "", vers.fmlVersion());
+        var fmlcore = LibraryFinder.findPathForMaven("net.neoforged.fancymodloader", "core", "", "", vers.fmlVersion());
+        var javafmllang = LibraryFinder.findPathForMaven("net.neoforged.fancymodloader", "language-java", "", "", vers.fmlVersion());
+        var lowcodelang = LibraryFinder.findPathForMaven("net.neoforged.fancymodloader", "language-lowcode", "", "", vers.fmlVersion());
+        var mclang = LibraryFinder.findPathForMaven("net.neoforged.fancymodloader", "language-minecraft", "", "", vers.fmlVersion());
 
         return new LocatedPaths(mcstream.build().toList(), filter, modstream.build().toList(), List.of(fmlcore, javafmllang, lowcodelang, mclang));
     }
