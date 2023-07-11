@@ -29,6 +29,7 @@ rootProject.name = 'FancyModLoader'
 
 include 'loader'
 include 'core'
+include 'events'
 include 'earlydisplay'
 
 includeLanguage 'minecraft'
