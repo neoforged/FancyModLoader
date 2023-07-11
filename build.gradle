@@ -42,29 +42,26 @@ subprojects { subProject ->
     subProject.version = gradleutils.getTagOffsetVersion()
     ext {
         MANIFESTS = [
-                '/'                              : [
-                        'Timestamp'   : new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-                        'Git-Commit'  : gradleutils.gitInfo.abbreviatedId,
-                        'Git-Branch'  : gradleutils.gitInfo.branch,
-                        'Build-Number': "${subProject.version}",
-                ] as LinkedHashMap,
-                'net/minecraftforge/fml/loading/': [
-                        'Automatic-Module-Name' : "fml_${subProject.name.replace("-", "_")}",
-                        'Specification-Title'   : "FML${subProject.name}",
-                        'Specification-Vendor'  : 'NeoForged',
-                        'Specification-Version' : "${subProject.version.split('\\.')[0]}",
-                        'Implementation-Title'  : "FML $subProject.name",
-                        'Implementation-Version': "${subProject.version.split('\\.')[0]}.${subProject.version.split('\\.')[1]}",
-                        'Implementation-Vendor' : 'NeoForged'
+                ''                              : [
                 ] as LinkedHashMap
         ]
     }
 
     jar.doFirst {
-        MANIFESTS.each { pkg, values ->
-            manifest.attributes(values, pkg)
-        }
-        manifest.attributes('FMLModType'  : subProject.name.startsWith("language") ? 'LANGPROVIDER' : 'LIBRARY')
+        manifest.attributes(
+                'Timestamp'   : new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                'Git-Commit'  : gradleutils.gitInfo.abbreviatedId,
+                'Git-Branch'  : gradleutils.gitInfo.branch,
+                'Build-Number': "${subProject.version}",
+                'Automatic-Module-Name' : "fml_${subProject.name.replace("-", "_")}",
+                'FMLModType'  : subProject.name.startsWith("language") ? 'LANGPROVIDER' : 'LIBRARY',
+                'Specification-Title'   : "FML${subProject.name}",
+                'Specification-Vendor'  : 'NeoForged',
+                'Specification-Version' : "${subProject.version.split('\\.')[0]}",
+                'Implementation-Title'  : "FML $subProject.name",
+                'Implementation-Version': "${subProject.version.split('\\.')[0]}.${subProject.version.split('\\.')[1]}",
+                'Implementation-Vendor' : 'NeoForged'
+        )
     }
 
     tasks.withType(JavaCompile) {
