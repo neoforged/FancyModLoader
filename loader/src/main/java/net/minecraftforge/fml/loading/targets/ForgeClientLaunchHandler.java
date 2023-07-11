@@ -19,8 +19,7 @@ public class ForgeClientLaunchHandler extends CommonClientLaunchHandler {
     protected void processMCStream(VersionInfo versionInfo, Stream.Builder<Path> mc, Stream.Builder<List<Path>> mods) {
         var forgepatches = LibraryFinder.findPathForMaven("net.neoforged", "forge", "", "client", versionInfo.mcAndForgeVersion());
         var forgejar = LibraryFinder.findPathForMaven("net.neoforged", "forge", "", "universal", versionInfo.mcAndForgeVersion());
-        var fmlevents = LibraryFinder.findPathForMaven("net.neoforged.fancymodloader", "events", "", "", versionInfo.fmlVersion());
         mc.add(forgepatches);
-        mods.add(List.of(fmlevents, forgejar));
+        mods.add(List.of(forgejar));
     }
 }

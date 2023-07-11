@@ -54,7 +54,7 @@ subprojects { subProject ->
                 'Git-Branch'  : gradleutils.gitInfo.branch,
                 'Build-Number': "${subProject.version}",
                 'Automatic-Module-Name' : "fml_${subProject.name.replace("-", "_")}",
-                'FMLModType'  : subProject.name.startsWith("language") ? 'LANGPROVIDER' : 'LIBRARY',
+                'FMLModType'  : subProject.name.startsWith("language") ? 'LANGPROVIDER' : subProject.name == "events" ? 'GAMELIBRARY' : 'LIBRARY',
                 'Specification-Title'   : "FML${subProject.name}",
                 'Specification-Vendor'  : 'NeoForged',
                 'Specification-Version' : "${subProject.version.split('\\.')[0]}",
