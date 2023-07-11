@@ -50,8 +50,9 @@ subprojects { subProject ->
                         'Build-Number': "${subProject.version}",
                 ] as LinkedHashMap,
                 'net/minecraftforge/fml/loading/': [
+                        'Automatic-Module-Name' : "fml_${subProject.name.replace("-", "_")}",
                         'Specification-Title'   : "FML${subProject.name}",
-                        'Specification-Vendor'  : 'NeoForge',
+                        'Specification-Vendor'  : 'NeoForged',
                         'Specification-Version' : "${subProject.version.split('\\.')[0]}",
                         'Implementation-Title'  : "FML $subProject.name",
                         'Implementation-Version': "${subProject.version.split('\\.')[0]}.${subProject.version.split('\\.')[1]}",
@@ -82,8 +83,8 @@ subprojects { subProject ->
         archives sourcesJar
     }
 
-    publishing{
-        publications{
+    publishing {
+        publications {
             maven(MavenPublication) {
                 from components.java
             }
