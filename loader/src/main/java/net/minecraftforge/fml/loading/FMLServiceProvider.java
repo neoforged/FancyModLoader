@@ -30,6 +30,7 @@ public class FMLServiceProvider implements ITransformationService
     private ArgumentAcceptingOptionSpec<String> modsOption;
     private ArgumentAcceptingOptionSpec<String> modListsOption;
     private ArgumentAcceptingOptionSpec<String> mavenRootsOption;
+    private ArgumentAcceptingOptionSpec<String> fmlOption;
     private ArgumentAcceptingOptionSpec<String> forgeOption;
     private ArgumentAcceptingOptionSpec<String> mcOption;
     private ArgumentAcceptingOptionSpec<String> forgeGroupOption;
@@ -39,6 +40,7 @@ public class FMLServiceProvider implements ITransformationService
     private List<String> modListsArgumentList;
     private List<String> mavenRootsArgumentList;
     private String targetForgeVersion;
+    private String targetFMLVersion;
     private String targetMcVersion;
     private String targetMcpVersion;
     private String targetMcpMappings;
@@ -70,6 +72,7 @@ public class FMLServiceProvider implements ITransformationService
         arguments.put("mods", modsArgumentList);
         arguments.put("mavenRoots", mavenRootsArgumentList);
         arguments.put("forgeVersion", targetForgeVersion);
+        arguments.put("fmlVersion", targetFMLVersion);
         arguments.put("forgeGroup", targetForgeGroup);
         arguments.put("mcVersion", targetMcVersion);
         arguments.put("mcpVersion", targetMcpVersion);
@@ -104,6 +107,7 @@ public class FMLServiceProvider implements ITransformationService
     public void arguments(BiFunction<String, String, OptionSpecBuilder> argumentBuilder)
     {
         forgeOption = argumentBuilder.apply("forgeVersion", "Forge Version number").withRequiredArg().ofType(String.class).required();
+        fmlOption = argumentBuilder.apply("fmlVersion", "FML Version number").withRequiredArg().ofType(String.class).required();
         forgeGroupOption = argumentBuilder.apply("forgeGroup", "Forge Group (for testing)").withRequiredArg().ofType(String.class).defaultsTo("net.minecraftforge");
         mcOption = argumentBuilder.apply("mcVersion", "Minecraft Version number").withRequiredArg().ofType(String.class).required();
         mcpOption = argumentBuilder.apply("mcpVersion", "MCP Version number").withRequiredArg().ofType(String.class).required();
@@ -119,6 +123,7 @@ public class FMLServiceProvider implements ITransformationService
         modsArgumentList = option.values(modsOption);
         modListsArgumentList = option.values(modListsOption);
         mavenRootsArgumentList = option.values(mavenRootsOption);
+        targetFMLVersion = option.value(fmlOption);
         targetForgeVersion = option.value(forgeOption);
         targetForgeGroup = option.value(forgeGroupOption);
         targetMcVersion = option.value(mcOption);
