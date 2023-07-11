@@ -40,7 +40,6 @@ allprojects {
 
 subprojects { subProject ->
     subProject.version = gradleutils.getTagOffsetVersion()
-
     ext {
         MANIFESTS = [
                 '/'                              : [
@@ -48,6 +47,7 @@ subprojects { subProject ->
                         'Git-Commit'  : gradleutils.gitInfo.abbreviatedId,
                         'Git-Branch'  : gradleutils.gitInfo.branch,
                         'Build-Number': "${subProject.version}",
+                        'FMLModType'  : subProject.name.startsWith("language") ? 'LANGPROVIDER' : 'LIBRARY',
                 ] as LinkedHashMap,
                 'net/minecraftforge/fml/loading/': [
                         'Automatic-Module-Name' : "fml_${subProject.name.replace("-", "_")}",
