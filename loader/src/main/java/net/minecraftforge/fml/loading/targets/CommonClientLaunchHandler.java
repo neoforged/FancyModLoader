@@ -30,11 +30,12 @@ public abstract class CommonClientLaunchHandler extends CommonLaunchHandler {
         final var vers = FMLLoader.versionInfo();
         var mc = LibraryFinder.findPathForMaven("net.minecraft", "client", "", "srg", vers.mcAndMCPVersion());
         var mcextra = LibraryFinder.findPathForMaven("net.minecraft", "client", "", "extra", vers.mcAndMCPVersion());
-        var fmlevents = LibraryFinder.findPathForMaven("net.neoforged.fancymodloader", "events", "", "", vers.fmlVersion());
-        var mcstream = Stream.<Path>builder().add(mc).add(mcextra).add(fmlevents);
+        var mcstream = Stream.<Path>builder().add(mc).add(mcextra);
         var modstream = Stream.<List<Path>>builder();
 
         processMCStream(vers, mcstream, modstream);
+
+        var fmlevents = LibraryFinder.findPathForMaven("net.neoforged.fancymodloader", "events", "", "", vers.fmlVersion());
 
         var fmlcore = LibraryFinder.findPathForMaven("net.neoforged.fancymodloader", "core", "", "", vers.fmlVersion());
         var javafmllang = LibraryFinder.findPathForMaven("net.neoforged.fancymodloader", "language-java", "", "", vers.fmlVersion());
