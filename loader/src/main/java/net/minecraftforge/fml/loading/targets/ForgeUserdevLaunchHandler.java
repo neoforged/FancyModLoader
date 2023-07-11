@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 public abstract class ForgeUserdevLaunchHandler extends CommonUserdevLaunchHandler {
     @Override
     protected void processStreams(String[] classpath, VersionInfo versionInfo, Stream.Builder<Path> mc, Stream.Builder<List<Path>> mods) {
-        var forge = findJarOnClasspath(classpath, "forge-" + versionInfo.mcAndForgeVersion());
+        var forge = findJarOnClasspath(classpath, "forge-" + versionInfo.mcAndFmlVersion());
         mc.add(forge);
     }
 }

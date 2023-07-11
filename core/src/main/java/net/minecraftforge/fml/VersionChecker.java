@@ -122,7 +122,7 @@ public class VersionChecker
 
                 final StringBuilder sb = new StringBuilder();
                 sb.append("Java-http-client/").append(System.getProperty("java.version")).append(' ');
-                sb.append("MinecraftForge/").append(FMLLoader.versionInfo().mcAndForgeVersion()).append(' ');
+                sb.append("FancyModLoader/").append(FMLLoader.versionInfo().fmlVersion()).append(' ');
                 sb.append(mod.getModId()).append('/').append(mod.getVersion());
                 final String userAgent = sb.toString();
 

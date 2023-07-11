@@ -19,7 +19,7 @@ public class FMLServerLaunchHandler extends CommonServerLaunchHandler implements
 
     @Override
     protected BiPredicate<String, String> processMCStream(VersionInfo versionInfo, Stream.Builder<Path> mc, BiPredicate<String, String> filter, Stream.Builder<List<Path>> mods) {
-        var fmlonly = LibraryFinder.findPathForMaven(versionInfo.forgeGroup(), "fmlonly", "", "universal", versionInfo.mcAndForgeVersion());
+        var fmlonly = LibraryFinder.findPathForMaven(versionInfo.forgeGroup(), "fmlonly", "", "universal", versionInfo.mcAndFmlVersion());
         mods.add(List.of(fmlonly));
         return filter;
     }

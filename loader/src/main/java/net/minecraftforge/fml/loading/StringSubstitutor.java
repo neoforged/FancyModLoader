@@ -17,7 +17,7 @@ public class StringSubstitutor
 {
     private static final Map<String,String> globals = ImmutableMap.of(
             "mcVersion", FMLLoader.versionInfo().mcVersion(),
-            "forgeVersion", FMLLoader.versionInfo().forgeVersion()
+            "forgeVersion", FMLLoader.versionInfo().fmlVersion()
     );
 
     public static String replace(final String in, final ModFile file) {

@@ -17,7 +17,7 @@ public class FMLClientLaunchHandler extends CommonClientLaunchHandler {
 
     @Override
     protected void processMCStream(VersionInfo versionInfo, Stream.Builder<Path> mc, Stream.Builder<List<Path>> mods) {
-        var fmlonly = LibraryFinder.findPathForMaven(versionInfo.forgeGroup(), "fmlonly", "", "universal", versionInfo.mcAndForgeVersion());
+        var fmlonly = LibraryFinder.findPathForMaven(versionInfo.forgeGroup(), "fmlonly", "", "universal", versionInfo.mcAndFmlVersion());
         mods.add(List.of(fmlonly));
     }
 }

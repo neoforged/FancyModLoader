@@ -17,8 +17,8 @@ public class ForgeClientLaunchHandler extends CommonClientLaunchHandler {
 
     @Override
     protected void processMCStream(VersionInfo versionInfo, Stream.Builder<Path> mc, Stream.Builder<List<Path>> mods) {
-        var forgepatches = LibraryFinder.findPathForMaven(versionInfo.forgeGroup(), "forge", "", "client", versionInfo.mcAndForgeVersion());
-        var forgejar = LibraryFinder.findPathForMaven(versionInfo.forgeGroup(), "forge", "", "universal", versionInfo.mcAndForgeVersion());
+        var forgepatches = LibraryFinder.findPathForMaven(versionInfo.forgeGroup(), "forge", "", "client", versionInfo.mcAndFmlVersion());
+        var forgejar = LibraryFinder.findPathForMaven(versionInfo.forgeGroup(), "forge", "", "universal", versionInfo.mcAndFmlVersion());
         mc.add(forgepatches);
         mods.add(List.of(forgejar));
     }

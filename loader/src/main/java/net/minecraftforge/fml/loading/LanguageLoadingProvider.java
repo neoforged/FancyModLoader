@@ -9,7 +9,6 @@ import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
-import net.minecraftforge.fml.loading.progress.StartupNotificationManager;
 import net.minecraftforge.forgespi.language.IModLanguageProvider;
 import net.minecraftforge.fml.loading.moddiscovery.ExplodedDirectoryLocator;
 import net.minecraftforge.fml.loading.moddiscovery.ModFile;
@@ -92,7 +91,7 @@ public class LanguageLoadingProvider
                 throw new RuntimeException("Huh?", e);
             }
             Optional<String> implementationVersion = JarVersionLookupHandler.getImplementationVersion(lp.getClass());
-            String impl = implementationVersion.orElse(Files.isDirectory(lpPath) ? FMLLoader.versionInfo().forgeVersion().split("\\.")[0] : null);
+            String impl = implementationVersion.orElse(Files.isDirectory(lpPath) ? FMLLoader.versionInfo().fmlVersion().split("\\.")[0] : null);
             if (impl == null) {
                 LOGGER.error(CORE, "Found unversioned language provider {}", lp.name());
                 throw new RuntimeException("Failed to find implementation version for language provider "+ lp.name());
