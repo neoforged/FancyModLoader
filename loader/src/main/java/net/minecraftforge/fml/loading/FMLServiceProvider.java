@@ -33,7 +33,6 @@ public class FMLServiceProvider implements ITransformationService
     private ArgumentAcceptingOptionSpec<String> fmlOption;
     private ArgumentAcceptingOptionSpec<String> forgeOption;
     private ArgumentAcceptingOptionSpec<String> mcOption;
-    private ArgumentAcceptingOptionSpec<String> forgeGroupOption;
     private ArgumentAcceptingOptionSpec<String> mcpOption;
     private ArgumentAcceptingOptionSpec<String> mappingsOption;
     private List<String> modsArgumentList;
@@ -44,7 +43,6 @@ public class FMLServiceProvider implements ITransformationService
     private String targetMcVersion;
     private String targetMcpVersion;
     private String targetMcpMappings;
-    private String targetForgeGroup;
     private Map<String, Object> arguments;
 
     public FMLServiceProvider()
@@ -73,7 +71,6 @@ public class FMLServiceProvider implements ITransformationService
         arguments.put("mavenRoots", mavenRootsArgumentList);
         arguments.put("forgeVersion", targetForgeVersion);
         arguments.put("fmlVersion", targetFMLVersion);
-        arguments.put("forgeGroup", targetForgeGroup);
         arguments.put("mcVersion", targetMcVersion);
         arguments.put("mcpVersion", targetMcpVersion);
         arguments.put("mcpMappings", targetMcpMappings);
@@ -108,7 +105,6 @@ public class FMLServiceProvider implements ITransformationService
     {
         forgeOption = argumentBuilder.apply("forgeVersion", "Forge Version number").withRequiredArg().ofType(String.class).required();
         fmlOption = argumentBuilder.apply("fmlVersion", "FML Version number").withRequiredArg().ofType(String.class).required();
-        forgeGroupOption = argumentBuilder.apply("forgeGroup", "Forge Group (for testing)").withRequiredArg().ofType(String.class).defaultsTo("net.minecraftforge");
         mcOption = argumentBuilder.apply("mcVersion", "Minecraft Version number").withRequiredArg().ofType(String.class).required();
         mcpOption = argumentBuilder.apply("mcpVersion", "MCP Version number").withRequiredArg().ofType(String.class).required();
         mappingsOption = argumentBuilder.apply("mcpMappings", "MCP Mappings Channel and Version").withRequiredArg().ofType(String.class);
@@ -125,7 +121,6 @@ public class FMLServiceProvider implements ITransformationService
         mavenRootsArgumentList = option.values(mavenRootsOption);
         targetFMLVersion = option.value(fmlOption);
         targetForgeVersion = option.value(forgeOption);
-        targetForgeGroup = option.value(forgeGroupOption);
         targetMcVersion = option.value(mcOption);
         targetMcpVersion = option.value(mcpOption);
         targetMcpMappings = option.value(mappingsOption);
