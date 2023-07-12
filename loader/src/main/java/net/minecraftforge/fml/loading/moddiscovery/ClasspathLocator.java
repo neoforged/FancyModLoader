@@ -10,7 +10,6 @@ import com.mojang.logging.LogUtils;
 import net.minecraftforge.fml.loading.LogMarkers;
 import org.slf4j.Logger;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -19,7 +18,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +26,7 @@ import java.util.stream.Stream;
 public class ClasspathLocator extends AbstractJarFileModLocator
 {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private final List<Path> legacyClasspath = Arrays.stream(System.getProperty("legacyClassPath", "").split(File.pathSeparator)).map(Path::of).toList();
+    private final List<Path> legacyClasspath = AbstractJarFileModLocator.getLegacyClasspath();
     private boolean enabled = false;
 
     @Override

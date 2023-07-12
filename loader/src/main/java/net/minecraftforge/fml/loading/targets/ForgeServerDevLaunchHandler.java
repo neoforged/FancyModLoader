@@ -12,7 +12,7 @@ public class ForgeServerDevLaunchHandler extends CommonDevLaunchHandler {
     @Override public Dist getDist() { return Dist.DEDICATED_SERVER; }
 
     @Override
-    public void devService(String[] arguments, ModuleLayer layer) throws Throwable {
+    public void runService(String[] arguments, ModuleLayer layer) throws Throwable {
         serverService(arguments, layer);
     }
 }

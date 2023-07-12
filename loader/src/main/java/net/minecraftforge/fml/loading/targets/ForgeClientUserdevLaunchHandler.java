@@ -15,7 +15,7 @@ public class ForgeClientUserdevLaunchHandler extends ForgeUserdevLaunchHandler {
     public Dist getDist() { return Dist.CLIENT; }
 
     @Override
-    public void devService(String[] arguments, ModuleLayer layer) throws Throwable {
+    public void runService(String[] arguments, ModuleLayer layer) throws Throwable {
         clientService(arguments, layer);
     }
 }

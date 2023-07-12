@@ -35,7 +35,7 @@ public abstract class CommonUserdevLaunchHandler extends CommonDevLaunchHandler 
         var minecraft = mcstream.build().collect(Collectors.toList());
         var mcFilter = getMcFilter(extra, minecraft, modstream);
         minecraft.add(extra); // Add extra late so the filter is made correctly
-        return new LocatedPaths(minecraft, mcFilter, modstream.build().toList(), getFmlStuff(legacyCP));
+        return new LocatedPaths(minecraft, mcFilter, modstream.build().toList(), getFmlPaths(legacyCP));
     }
 
     protected abstract void processStreams(String[] classpath, VersionInfo versionInfo, Stream.Builder<Path> mc, Stream.Builder<List<Path>> mods);

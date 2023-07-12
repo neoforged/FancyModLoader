@@ -15,7 +15,7 @@ public class FMLClientUserdevLaunchHandler extends FMLUserdevLaunchHandler {
     public Dist getDist() { return Dist.CLIENT; }
 
     @Override
-    protected void devService(String[] arguments, ModuleLayer layer) throws Throwable {
+    protected void runService(String[] arguments, ModuleLayer layer) throws Throwable {
         clientService(arguments, layer);
     }
 }

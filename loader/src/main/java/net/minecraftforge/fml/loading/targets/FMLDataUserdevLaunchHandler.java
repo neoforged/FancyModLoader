@@ -18,7 +18,7 @@ public class FMLDataUserdevLaunchHandler extends FMLUserdevLaunchHandler {
     public boolean isData() { return true; }
 
     @Override
-    public void devService(String[] arguments, ModuleLayer layer) throws Throwable {
+    public void runService(String[] arguments, ModuleLayer layer) throws Throwable {
         dataService(arguments, layer);
     }
 }

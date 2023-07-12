@@ -21,12 +21,12 @@ public class FileUtils
         }
     }
 
-    public static boolean matchFileName(String path, String... matches) {
+    public static boolean matchFileName(String path, boolean exact, String... matches) {
         // Extract file name from path
         String name = path.substring(Math.min(path.lastIndexOf(File.separatorChar) + 1, path.length()));
         // Check if it contains any of the desired keywords
         for (String match : matches) {
-            if (name.contains(match)) {
+            if (exact ? name.equals(match) : name.contains(match)) {
                 return true;
             }
         }

@@ -13,7 +13,7 @@ public class ForgeDataDevLaunchHandler extends CommonDevLaunchHandler {
     @Override public boolean isData() { return true; }
 
     @Override
-    public void devService(String[] arguments, ModuleLayer layer) throws Throwable {
+    public void runService(String[] arguments, ModuleLayer layer) throws Throwable {
         Class.forName(layer.findModule("minecraft").orElseThrow(), "net.minecraft.data.Main").getMethod("main", String[].class).invoke(null, (Object) arguments);
     }
 }

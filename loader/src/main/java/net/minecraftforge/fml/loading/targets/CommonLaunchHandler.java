@@ -10,6 +10,7 @@ import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.ITransformingClassLoaderBuilder;
 import cpw.mods.modlauncher.api.ServiceRunner;
 import net.minecraftforge.fml.loading.FMLLoader;
+import net.minecraftforge.fml.loading.FileUtils;
 import net.minecraftforge.fml.loading.LogMarkers;
 import net.minecraftforge.api.distmarker.Dist;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -17,7 +18,6 @@ import org.apache.logging.log4j.core.config.ConfigurationFactory;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.slf4j.Logger;
-import sun.misc.Unsafe;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
@@ -69,6 +70,18 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
         return arguments;
     }
 
+    protected final String[] getLegacyClasspath() {
+        return Objects.requireNonNull(System.getProperty("legacyClassPath"), "Missing legacyClassPath, cannot load").split(File.pathSeparator);
+    }
+
+    protected final List<Path> getFmlPaths(String[] classpath) {
+        String[] fmlLibraries = System.getProperty("fml.pluginLayerLibraries").split(";");
+        return Arrays.stream(classpath)
+            .filter(e -> FileUtils.matchFileName(e, true, fmlLibraries))
+            .map(Paths::get)
+            .toList();
+    }
+
     protected final Map<String, List<Path>> getModClasses() {
         final String modClasses = Optional.ofNullable(System.getenv("MOD_CLASSES")).orElse("");
         LOGGER.debug(LogMarkers.CORE, "Got mod coordinates {} from env", modClasses);
@@ -90,10 +103,12 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
     @Override
     public ServiceRunner launchService(final String[] arguments, final ModuleLayer gameLayer) {
         FMLLoader.beforeStart(gameLayer);
-        return makeService(arguments, gameLayer);
+        var args = preLaunch(arguments, gameLayer);
+
+        return () -> runService(args, gameLayer);
     }
 
-    protected abstract ServiceRunner makeService(final String[] arguments, final ModuleLayer gameLayer);
+    protected abstract void runService(final String[] arguments, final ModuleLayer gameLayer) throws Throwable;
 
     protected void clientService(final String[] arguments, final ModuleLayer layer) throws Throwable {
         runTarget("net.minecraft.client.main.Main", arguments, layer);

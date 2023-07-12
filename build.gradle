@@ -19,12 +19,15 @@ allprojects {
     version = gradleutils.getTagOffsetVersion()
 
     repositories {
+        mavenCentral()
+
         maven {
-            name = 'maven'
+            name = 'NeoForged'
             url = 'https://maven.neoforged.net/releases'
         }
+
         maven {
-            name = 'minecraft'
+            name = 'Minecraft'
             url = 'https://libraries.minecraft.net'
         }
     }

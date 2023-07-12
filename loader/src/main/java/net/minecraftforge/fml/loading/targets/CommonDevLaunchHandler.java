@@ -6,15 +6,12 @@
 package net.minecraftforge.fml.loading.targets;
 
 import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.modlauncher.api.ServiceRunner;
 import net.minecraftforge.fml.loading.FileUtils;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,7 +27,7 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
         final var mcstream = Stream.<Path>builder();
 
         // The extra jar is on the classpath, so try and pull it out of the legacy classpath
-        var legacyCP = Objects.requireNonNull(System.getProperty("legacyClassPath"), "Missing legacyClassPath, cannot find client-extra").split(File.pathSeparator);
+        var legacyCP = this.getLegacyClasspath();
         var extra = findJarOnClasspath(legacyCP, "client-extra");
 
         // The MC code/Patcher edits are in exploded directories
@@ -44,7 +41,7 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
 
         mcstream.add(extra);
         var mcFilter = getMcFilter(extra, minecraft, modstream);
-        return new LocatedPaths(mcstream.build().toList(), mcFilter, modstream.build().toList(), getFmlStuff(legacyCP));
+        return new LocatedPaths(mcstream.build().toList(), mcFilter, modstream.build().toList(), getFmlPaths(legacyCP));
     }
 
     @Override
@@ -79,17 +76,9 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
         return args.getArguments();
     }
 
-    protected List<Path> getFmlStuff(String[] classpath) {
-        // We also want the FML things, fmlcore, javafmllanguage, mclanguage, I don't like hard coding these, but hey whatever works for now.
-        return Arrays.stream(classpath)
-            .filter(e -> FileUtils.matchFileName(e, "fmlcore", "javafmllanguage", "lowcodelanguage", "mclanguage"))
-            .map(Paths::get)
-            .toList();
-    }
-
     protected static Path findJarOnClasspath(String[] classpath, String match) {
         return Paths.get(Arrays.stream(classpath)
-            .filter(e -> FileUtils.matchFileName(e, match))
+            .filter(e -> FileUtils.matchFileName(e, false, match))
             .findFirst()
             .orElseThrow(() -> new IllegalStateException("Could not find " + match + " in classpath")));
     }
@@ -128,12 +117,4 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
         // Generate a time-based random number, to mimic how n.m.client.Main works
         return Long.toString(System.nanoTime() % (int) Math.pow(10, length));
     }
-
-    @Override
-    protected ServiceRunner makeService(final String[] arguments, final ModuleLayer gameLayer) {
-        var args = preLaunch(arguments, gameLayer);
-        return ()->devService(args, gameLayer);
-    }
-
-    abstract void devService(final String[] arguments, final ModuleLayer gameLayer) throws Throwable;
 }

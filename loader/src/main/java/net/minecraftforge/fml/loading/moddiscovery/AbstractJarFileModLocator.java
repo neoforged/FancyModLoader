@@ -7,7 +7,9 @@ package net.minecraftforge.fml.loading.moddiscovery;
 
 import net.minecraftforge.forgespi.locating.IModLocator;
 
+import java.io.File;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -20,4 +22,8 @@ public abstract class AbstractJarFileModLocator extends AbstractJarFileModProvid
     }
 
     public abstract Stream<Path> scanCandidates();
+
+    protected static List<Path> getLegacyClasspath() {
+        return Arrays.stream(System.getProperty("legacyClassPath", "").split(File.pathSeparator)).map(Path::of).toList();
+    }
 }

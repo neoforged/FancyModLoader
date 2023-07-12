@@ -12,7 +12,7 @@ public class ForgeGametestUserdevLaunchHandler extends ForgeUserdevLaunchHandler
     @Override public Dist getDist() { return Dist.DEDICATED_SERVER; }
 
     @Override
-    public void devService(String[] arguments, ModuleLayer layer) throws Throwable {
+    public void runService(String[] arguments, ModuleLayer layer) throws Throwable {
         Class.forName(layer.findModule("forge").orElseThrow(), "net.minecraftforge.gametest.GameTestMain").getMethod("main", String[].class).invoke(null, (Object)arguments);
     }
 }

@@ -168,7 +168,7 @@ public class ModDiscoverer {
     {
         var locatedModFiles = locatedFiles.stream().filter(ModFile.class::isInstance).map(ModFile.class::cast).toList();
         for (IModFile mf : locatedModFiles) {
-            LOGGER.info(LogMarkers.SCAN, "Found mod file {} of type {} with provider {}", mf.getFileName(), mf.getType(), mf.getProvider());
+            LOGGER.info(LogMarkers.SCAN, "Found mod file \"{}\" of type {} with provider {}", mf.getFileName(), mf.getType(), mf.getProvider());
         }
         loadedFiles.addAll(locatedModFiles);
     }

@@ -6,7 +6,6 @@
 package net.minecraftforge.fml.loading.targets;
 
 import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.modlauncher.api.ServiceRunner;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.fml.loading.LibraryFinder;
 import net.minecraftforge.fml.loading.VersionInfo;
@@ -23,8 +22,8 @@ public abstract class CommonServerLaunchHandler extends CommonLaunchHandler {
     @Override public boolean isProduction() { return true; }
 
     @Override
-    protected ServiceRunner makeService(String[] arguments, ModuleLayer layer) {
-        return () -> serverService(arguments, layer);
+    protected void runService(String[] arguments, ModuleLayer gameLayer) throws Throwable {
+        serverService(arguments, gameLayer);
     }
 
     @Override
@@ -46,14 +45,7 @@ public abstract class CommonServerLaunchHandler extends CommonLaunchHandler {
 
         filter = processMCStream(vers, mcstream, filter, modstream);
 
-        var fmlcore = LibraryFinder.findPathForMaven("net.neoforged.fancymodloader", "core", "", "", vers.fmlVersion());
-        var javafmllang = LibraryFinder.findPathForMaven("net.neoforged.fancymodloader", "language-java", "", "", vers.fmlVersion());
-        var lowcodelang = LibraryFinder.findPathForMaven("net.neoforged.fancymodloader", "language-lowcode", "", "", vers.fmlVersion());
-        var mclang = LibraryFinder.findPathForMaven("net.neoforged.fancymodloader", "language-minecraft", "", "", vers.fmlVersion());
-        var fmlevents = LibraryFinder.findPathForMaven("net.neoforged.fancymodloader", "events", "", "", vers.fmlVersion());
-        modstream.add(List.of(fmlevents));
-
-        return new LocatedPaths(mcstream.build().toList(), filter, modstream.build().toList(), List.of(fmlcore, javafmllang, lowcodelang, mclang));
+        return new LocatedPaths(mcstream.build().toList(), filter, modstream.build().toList(), this.getFmlPaths(this.getLegacyClasspath()));
     }
 
     protected abstract BiPredicate<String, String> processMCStream(VersionInfo versionInfo, Stream.Builder<Path> mc, BiPredicate<String, String> filter, Stream.Builder<List<Path>> mods);
