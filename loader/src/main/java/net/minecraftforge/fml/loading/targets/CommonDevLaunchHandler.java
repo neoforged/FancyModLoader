@@ -35,7 +35,6 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
 
         // The MC code/Patcher edits are in exploded directories
         final var modstream = Stream.<List<Path>>builder();
-        modstream.add(List.of(findJarOnClasspath(legacyCP, "events")));
         final var mods = getModClasses();
         final var minecraft = mods.remove("minecraft");
         if (minecraft == null)
