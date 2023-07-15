@@ -6,7 +6,7 @@ buildscript {
 
 plugins {
     id 'com.github.ben-manes.versions' version '0.42.0'
-    id 'net.minecraftforge.gradleutils' version '2.+'
+    id 'net.neoforged.gradleutils' version '[2.0.16,3)'
 }
 
 apply plugin: 'maven-publish'
@@ -27,7 +27,7 @@ allprojects {
         mavenLocal()
         maven {
             name = 'forge'
-            url = 'https://maven.minecraftforge.net/'
+            url = 'https://maven.neoforged.net/releases'
         }
     }
 
@@ -152,11 +152,11 @@ jar {
     manifest {
         attributes(
                 'Specification-Title': 'securejarhandler',
-                'Specification-Vendor': 'forge',
+                'Specification-Vendor': 'neoforged',
                 'Specification-Version': '1', // We are version 1 of ourselves
                 'Implementation-Title': project.name,
                 'Implementation-Version': "${project.version}+${System.getenv('BUILD_NUMBER')?:0}+${gradleutils.gitInfo.branch}.${gradleutils.gitInfo.abbreviatedId}",
-                'Implementation-Vendor':'forge',
+                'Implementation-Vendor':'neoforged',
                 'Implementation-Timestamp': java.time.Instant.now().toString(),
                 'Git-Commit': gradleutils.gitInfo.abbreviatedId,
                 'Git-Branch': gradleutils.gitInfo.branch,
