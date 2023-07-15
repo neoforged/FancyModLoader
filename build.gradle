@@ -1,5 +1,5 @@
 plugins {
-    id 'net.minecraftforge.gradleutils' version '2.+'
+    id 'net.minecraftforge.gradleutils' version '[2.0.13,3)'
     id 'com.github.ben-manes.versions' version '0.39.0'
     id 'org.javamodularity.moduleplugin' version '1.8.10'
     id 'java-library'
@@ -16,7 +16,7 @@ repositories {
     mavenLocal()
     maven {
         name 'forge'
-        url 'https://maven.minecraftforge.net/'
+        url 'https://maven.neoforged.net/releases'
     }
 }
 
@@ -34,20 +34,21 @@ changelog {
 }
 
 jar {
-    //noinspection UnnecessaryQualifiedReference
-    manifest.attributes(
-            'Specification-Title': 'bootstraplauncher',
-            'Specification-Vendor': 'forge',
-            'Specification-Version': '1', // We are version 1 of ourselves
-            'Implementation-Title': project.name,
-            'Implementation-Version': "${project.version}+${System.getenv("BUILD_NUMBER") ?: 0}+${gradleutils.gitInfo.branch}.${gradleutils.gitInfo.abbreviatedId}",
-            'Implementation-Vendor': 'forge',
-            'Implementation-Timestamp': java.time.Instant.now().toString(),
-            'Git-Commit': gradleutils.gitInfo.abbreviatedId,
-            'Git-Branch': gradleutils.gitInfo.branch,
-            'Build-Number': "${System.getenv("BUILD_NUMBER") ?: 0}",
-            'Main-Class': 'cpw.mods.bootstraplauncher.BootstrapLauncher'
-    )
+    manifest {
+        attributes(
+                'Specification-Title': 'bootstraplauncher',
+                'Specification-Vendor': 'neoforged',
+                'Specification-Version': '1', // We are version 1 of ourselves
+                'Implementation-Title': project.name,
+                'Implementation-Version': "${project.version}+${System.getenv("BUILD_NUMBER")?:0}+${gradleutils.gitInfo.branch}.${gradleutils.gitInfo.abbreviatedId}",
+                'Implementation-Vendor':'neoforged',
+                'Implementation-Timestamp': java.time.Instant.now().toString(),
+                'Git-Commit': gradleutils.gitInfo.abbreviatedId,
+                'Git-Branch': gradleutils.gitInfo.branch,
+                'Build-Number': "${System.getenv("BUILD_NUMBER")?:0}",
+                'Main-Class': 'cpw.mods.bootstraplauncher.BootstrapLauncher'
+        )
+    }
 }
 
 artifacts {
