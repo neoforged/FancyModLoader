@@ -132,15 +132,19 @@ public class RenderElement {
         }));
     }
 
-    public static RenderElement anvil(SimpleFont font) {
-        return new RenderElement(RenderElement.initializeTexture("forge_anvil.png", 20000, 2, (bb, context, size, frame) -> {
-            var x0 = context.scaledWidth() - size[0] * context.scale();
-            var x1 = context.scaledWidth();
-            var y0 = context.scaledHeight() - size[0] * context.scale() - font.descent() - font.lineSpacing();
+    public static RenderElement fox(SimpleFont font) {
+        return new RenderElement(RenderElement.initializeTexture("fox_running.png", 20000, 2, (bb, context, size, frame) -> {
+            int framecount = 28;
+            float aspect = size[0] * (float)framecount / size[1];
+            int outsize = size[0] / 3;
+            int offset = outsize / 6;
+            var x0 = context.scaledWidth() - outsize * context.scale() + offset;
+            var x1 = context.scaledWidth() + offset;
+            var y0 = context.scaledHeight() - outsize * context.scale() / aspect - font.descent() - font.lineSpacing();
             var y1 = context.scaledHeight() - font.descent() - font.lineSpacing();
-            int frameidx = frame % 32;
-            float framepos = (frameidx * (float)size[0]) / size[1];
-            float framesize = size[0] / (float)size[1];
+            int frameidx = frame % framecount;
+            float framesize = 1 / (float)framecount;
+            float framepos = frameidx * framesize;
             QuadHelper.loadQuad(bb, x0, x1, y0, y1, 0f, 1f, framepos, framepos+framesize, globalAlpha << 24 | 0xFFFFFF);
         }));
     }

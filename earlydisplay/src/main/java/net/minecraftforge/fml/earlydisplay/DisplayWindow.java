@@ -33,6 +33,9 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalQueries;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -226,12 +229,13 @@ public class DisplayWindow implements ImmediateWindowProvider {
             crashElegantly("An error occurred initializing a font for rendering. "+t.getMessage());
         }
         this.elements = new ArrayList<>(Arrays.asList(
-                RenderElement.anvil(font),
+                RenderElement.fox(font),
                 RenderElement.logMessageOverlay(font),
                 RenderElement.forgeVersionOverlay(font, mcVersion+"-"+forgeVersion.split("-")[0]),
                 RenderElement.performanceBar(font),
                 RenderElement.progressBars(font)
         ));
+
 
         var date = Calendar.getInstance();
         if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_SQUIR) || (date.get(Calendar.MONTH) == Calendar.APRIL && date.get(Calendar.DAY_OF_MONTH) == 1))
@@ -291,7 +295,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         return this::periodicTick;
     }
 
-    private static final String ERROR_URL = "https://links.minecraftforge.net/early-display-errors";
+    private static final String ERROR_URL = "https://links.neoforged.net/early-display-errors";
     @Override
     public String getGLVersion() {
         return this.glVersion;
@@ -315,12 +319,12 @@ public class DisplayWindow implements ImmediateWindowProvider {
         LOGGER.error("ERROR DISPLAY\n"+msgBuilder);
         // we show the display on a new dedicated thread
         Executors.newSingleThreadExecutor().submit(()-> {
-            var res = TinyFileDialogs.tinyfd_messageBox("Minecraft: Forge", msgBuilder.toString(), "yesno", "error", false);
+            var res = TinyFileDialogs.tinyfd_messageBox("Minecraft: NeoForge", msgBuilder.toString(), "yesno", "error", false);
             if (res) {
                 try {
                     Desktop.getDesktop().browse(URI.create(ERROR_URL));
                 } catch (IOException ioe) {
-                    TinyFileDialogs.tinyfd_messageBox("Minecraft: Forge", "Sadly, we couldn't open your browser.\nVisit " + ERROR_URL, "ok", "error", false);
+                    TinyFileDialogs.tinyfd_messageBox("Minecraft: NeoForge", "Sadly, we couldn't open your browser.\nVisit " + ERROR_URL, "ok", "error", false);
                 }
             }
             System.exit(1);
