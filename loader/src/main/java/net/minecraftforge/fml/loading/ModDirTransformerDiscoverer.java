@@ -14,7 +14,10 @@ import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -30,17 +33,37 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
         "net.minecraftforge.forgespi.locating.IModLocator",
         "net.minecraftforge.forgespi.locating.IDependencyLocator"
     );
+    private UncheckedIOException alreadyFailed;
 
     @Override
     public List<NamedPath> candidates(final Path gameDirectory, final String launchTarget) {
-        FMLPaths.loadAbsolutePaths(gameDirectory);
-        FMLConfig.load();
-        return candidates(gameDirectory);
+        try {
+            FMLPaths.loadAbsolutePaths(gameDirectory);
+            FMLConfig.load();
+            return candidates(gameDirectory);
+        } catch (UncheckedIOException e) {
+            // we capture any error here and then return an empty list so we can
+            // show an error in earlyInitialization which fires next
+            this.alreadyFailed = e;
+            return List.of();
+        }
     }
 
     @Override
     public void earlyInitialization(final String launchTarget, final String[] arguments) {
         ImmediateWindowHandler.load(launchTarget, arguments);
+        if (this.alreadyFailed!=null) {
+            String errorCause;
+            if (this.alreadyFailed.getCause() instanceof FileAlreadyExistsException faee) {
+                errorCause = "File already exists: " + faee.getFile() + "\nYou need to move this out of the way, so we can put a directory there.";
+            } else if (this.alreadyFailed.getCause() instanceof AccessDeniedException ade) {
+                errorCause = "Access denied trying to create a file or directory "+ade.getMessage() +"\nThe game directory is probably read-only. Check the write permission on it.";
+            } else {
+                errorCause = "An unexpected IO error occurred trying to setup the game directory\n"+this.alreadyFailed.getCause().getMessage();
+            }
+            ImmediateWindowHandler.crash(errorCause);
+            throw this.alreadyFailed;
+        }
     }
 
     @Override

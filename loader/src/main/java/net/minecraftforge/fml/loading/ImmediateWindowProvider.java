@@ -114,4 +114,11 @@ public interface ImmediateWindowProvider {
      * @return the GL profile we created
      */
     String getGLVersion();
+
+    /**
+     * This is called during some very early startup routines to show a crash dialog
+     * using e.g. tinyfd dialogs
+     * @param message The message to display
+     */
+    void crash(String message);
 }

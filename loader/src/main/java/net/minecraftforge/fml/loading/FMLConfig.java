@@ -67,7 +67,7 @@ public class FMLConfig
         }
         @SuppressWarnings("unchecked")
         private <T> T getConfigValue(CommentedFileConfig config) {
-            return (T) this.entryFunction.apply(config.get(this.entry));
+            return (T) this.entryFunction.apply(config != null ? config.get(this.entry) : this.defaultValue);
         }
 
         public <T> void updateValue(final CommentedFileConfig configData, final T value) {
@@ -146,8 +146,10 @@ public class FMLConfig
         return v.getConfigValue(INSTANCE.configData);
     }
     public static <T> void updateConfig(ConfigValue v, T value) {
-        v.updateValue(INSTANCE.configData, value);
-        INSTANCE.configData.save();
+        if (INSTANCE.configData != null) {
+            v.updateValue(INSTANCE.configData, value);
+            INSTANCE.configData.save();
+        }
     }
 
     public static String defaultConfigPath() {

@@ -10,6 +10,8 @@ import cpw.mods.modlauncher.api.IEnvironment;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -63,9 +65,11 @@ public enum FMLPaths
             {
                 try {
                    Files.createDirectories(path.absolutePath);
-                } catch (IOException e) {
-                   throw new RuntimeException(e);
+                } catch (IOException ioe) {
+                    throw new UncheckedIOException(ioe);
                 }
+            }
+            if (path.isDirectory && Files.exists(path.absolutePath) && !Files.isDirectory(path.absolutePath)) {
             }
             if (LOGGER.isDebugEnabled(CORE))
             {
