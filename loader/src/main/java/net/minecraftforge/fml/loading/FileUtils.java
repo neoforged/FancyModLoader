@@ -5,7 +5,6 @@
 
 package net.minecraftforge.fml.loading;
 
-import java.io.File;
 import java.nio.file.Path;
 
 public class FileUtils
@@ -23,7 +22,7 @@ public class FileUtils
 
     public static boolean matchFileName(String path, boolean exact, String... matches) {
         // Extract file name from path
-        String name = path.substring(Math.min(path.lastIndexOf(File.separatorChar) + 1, path.length()));
+        String name = Path.of(path).getFileName().toString();
         // Check if it contains any of the desired keywords
         for (String match : matches) {
             if (exact ? name.equals(match) : name.contains(match)) {
