@@ -69,8 +69,6 @@ public enum FMLPaths
                     throw new UncheckedIOException(ioe);
                 }
             }
-            if (path.isDirectory && Files.exists(path.absolutePath) && !Files.isDirectory(path.absolutePath)) {
-            }
             if (LOGGER.isDebugEnabled(CORE))
             {
                 LOGGER.debug(CORE, "Path {} is {}", path, path.absolutePath);
