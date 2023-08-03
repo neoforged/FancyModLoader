@@ -30,7 +30,7 @@ public class BuiltinGameLibraryLocator extends AbstractJarFileModLocator {
         if (gameLibrariesStr == null || gameLibrariesStr.isBlank())
             return Stream.of();
 
-        Set<Path> targets = Arrays.stream(gameLibrariesStr.split(";")).map(Path::of).collect(Collectors.toSet());
+        Set<Path> targets = Arrays.stream(gameLibrariesStr.split(",")).map(Path::of).collect(Collectors.toSet());
         var paths = Stream.<Path>builder();
 
         for (Path path : this.legacyClasspath) {
