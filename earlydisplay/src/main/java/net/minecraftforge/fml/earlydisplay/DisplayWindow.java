@@ -310,7 +310,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         }
 
         StringBuilder msgBuilder = new StringBuilder(2000);
-        msgBuilder.append("Failed to initialize graphics window with current settings.\n");
+        msgBuilder.append("Failed to initialize the mod loading system and display.\n");
         msgBuilder.append("\n\n");
         msgBuilder.append("Failure details:\n");
         msgBuilder.append(errorDetails);
@@ -617,5 +617,10 @@ public class DisplayWindow implements ImmediateWindowProvider {
         this.framebuffer.close();
         this.context.elementShader().close();
         SimpleBufferBuilder.destroy();
+    }
+
+    @Override
+    public void crash(final String message) {
+        crashElegantly(message);
     }
 }

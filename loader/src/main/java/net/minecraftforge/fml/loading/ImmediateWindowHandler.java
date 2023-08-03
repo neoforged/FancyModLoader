@@ -82,6 +82,10 @@ public class ImmediateWindowHandler {
         earlyProgress.label(message);
     }
 
+    public static void crash(final String message) {
+        provider.crash(message);
+    }
+
     private record DummyProvider() implements ImmediateWindowProvider {
         private static Method NV_HANDOFF;
         private static Method NV_POSITION;
@@ -154,6 +158,11 @@ public class ImmediateWindowHandler {
         @Override
         public void periodicTick() {
             // NOOP
+        }
+
+        @Override
+        public void crash(final String message) {
+            // NOOP for unsupported environments
         }
     }
 }
