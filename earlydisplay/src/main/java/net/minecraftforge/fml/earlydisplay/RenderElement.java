@@ -133,10 +133,10 @@ public class RenderElement {
     }
 
     public static RenderElement fox(SimpleFont font) {
-        return new RenderElement(RenderElement.initializeTexture("fox_running.png", 20000, 2, (bb, context, size, frame) -> {
+        return new RenderElement(RenderElement.initializeTexture("fox_running.png", 128000, 2, (bb, context, size, frame) -> {
             int framecount = 28;
             float aspect = size[0] * (float)framecount / size[1];
-            int outsize = size[0] / 3;
+            int outsize = size[0];
             int offset = outsize / 6;
             var x0 = context.scaledWidth() - outsize * context.scale() + offset;
             var x1 = context.scaledWidth() + offset;
