@@ -8,6 +8,7 @@ package net.minecraftforge.fml.javafmlmod;
 import net.minecraftforge.eventbus.EventBusErrorMessage;
 import net.minecraftforge.eventbus.api.BusBuilder;
 import net.minecraftforge.eventbus.api.Event;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.IEventListener;
 import net.minecraftforge.fml.ModContainer;
@@ -108,6 +109,18 @@ public class FMLModContainer extends ModContainer
             LOGGER.trace(LOADING, "Fired event for modid {} : {}", this.getModId(), e);
         } catch (Throwable t) {
             LOGGER.error(LOADING,"Caught exception during event {} dispatch for modid {}", e, this.getModId(), t);
+            throw new ModLoadingException(modInfo, modLoadingStage, "fml.modloading.errorduringevent", t);
+        }
+    }
+
+    @Override
+    protected <T extends Event & IModBusEvent> void acceptEvent(EventPriority phase, final T e) {
+        try {
+            LOGGER.trace(LOADING, "Firing event for modid {} : {} (event phase {})", this.getModId(), e, phase);
+            this.eventBus.postPhase(phase, e);
+            LOGGER.trace(LOADING, "Fired event for modid {} : {} (event phase {})", this.getModId(), e, phase);
+        } catch (Throwable t) {
+            LOGGER.error(LOADING,"Caught exception during event {} dispatch for modid {} (event phase {})", e, this.getModId(), phase, t);
             throw new ModLoadingException(modInfo, modLoadingStage, "fml.modloading.errorduringevent", t);
         }
     }

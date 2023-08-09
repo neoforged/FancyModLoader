@@ -7,6 +7,7 @@ package net.minecraftforge.fml;
 
 import com.google.common.collect.ImmutableList;
 import net.minecraftforge.eventbus.api.Event;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.fml.event.IModBusEvent;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLLoader;
@@ -323,14 +324,13 @@ public class ModLoader
             LOGGER.error("Cowardly refusing to send event {} to a broken mod state", e.getClass().getName());
             return;
         }
-        ModList.get().forEachModInOrder(mc -> mc.acceptEvent(e));
+        for (EventPriority phase : EventPriority.values()) {
+            e.setPhase(phase);
+            ModList.get().forEachModInOrder(mc -> mc.acceptEvent(phase, e));
+        }
     }
     public <T extends Event & IModBusEvent> T postEventWithReturn(T e) {
-        if (!loadingStateValid) {
-            LOGGER.error("Cowardly refusing to send event {} to a broken mod state", e.getClass().getName());
-            return e;
-        }
-        ModList.get().forEachModInOrder(mc -> mc.acceptEvent(e));
+        postEvent(e);
         return e;
     }
     public <T extends Event & IModBusEvent> void postEventWrapContainerInModOrder(T event) {
@@ -341,11 +341,14 @@ public class ModLoader
             LOGGER.error("Cowardly refusing to send event {} to a broken mod state", e.getClass().getName());
             return;
         }
-        ModList.get().forEachModInOrder(mc -> {
-            pre.accept(mc, e);
-            mc.acceptEvent(e);
-            post.accept(mc, e);
-        });
+        for (EventPriority phase : EventPriority.values()) {
+            e.setPhase(phase);
+            ModList.get().forEachModInOrder(mc -> {
+                pre.accept(mc, e);
+                mc.acceptEvent(phase, e);
+                post.accept(mc, e);
+            });
+        }
     }
 
     public List<ModLoadingWarning> getWarnings()

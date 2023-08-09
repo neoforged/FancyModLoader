@@ -6,6 +6,7 @@
 package net.minecraftforge.fml;
 
 import net.minecraftforge.eventbus.api.Event;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.fml.config.IConfigEvent;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.IModBusEvent;
@@ -171,4 +172,11 @@ public abstract class ModContainer
      * @param e Event to accept
      */
     protected <T extends Event & IModBusEvent> void acceptEvent(T e) {}
+
+    /**
+     * Accept an arbitrary event for processing by the mod, only for a specific phase.
+     * Probably posted to an event bus in the lower level container.
+     * @param e Event to accept
+     */
+    protected <T extends Event & IModBusEvent> void acceptEvent(EventPriority phase, T e) {}
 }
