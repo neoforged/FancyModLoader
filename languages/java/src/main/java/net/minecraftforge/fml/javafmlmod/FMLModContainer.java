@@ -76,7 +76,8 @@ public class FMLModContainer extends ModContainer
                 // Otherwise look for constructor that can accept more arguments
                 Map<Class<?>, Object> allowedConstructorArgs = Map.of(
                         IEventBus.class, eventBus,
-                        ModContainer.class, this);
+                        ModContainer.class, this,
+                        FMLModContainer.class, this);
 
                 constructorsLoop: for (var constructor : modClass.getDeclaredConstructors()) {
                     var parameterTypes = constructor.getParameterTypes();
