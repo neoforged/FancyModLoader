@@ -20,6 +20,7 @@ allprojects {
 
     repositories {
         mavenCentral()
+        mavenLocal()
 
         maven {
             name = 'NeoForged'
