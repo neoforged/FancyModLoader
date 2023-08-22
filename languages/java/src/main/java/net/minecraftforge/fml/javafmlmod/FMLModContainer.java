@@ -21,6 +21,8 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
 import java.util.Optional;
 
 public class FMLModContainer extends ModContainer
@@ -65,7 +67,8 @@ public class FMLModContainer extends ModContainer
         try
         {
             LOGGER.trace(LOADING, "Loading mod instance {} of type {}", getModId(), modClass.getName());
-            this.modInstance = modClass.getDeclaredConstructor().newInstance();
+            Constructor<?> declaredConstructor = modClass.getDeclaredConstructor();
+            modInstance = MethodHandles.lookup().unreflectConstructor(declaredConstructor).invoke();
             LOGGER.trace(LOADING, "Loaded mod instance {} of type {}", getModId(), modClass.getName());
         }
         catch (Throwable e)
