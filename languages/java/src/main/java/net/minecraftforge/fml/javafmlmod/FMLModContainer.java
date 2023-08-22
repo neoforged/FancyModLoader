@@ -69,10 +69,9 @@ public class FMLModContainer extends ModContainer
             this.modInstance = modClass.getDeclaredConstructor().newInstance();
             LOGGER.trace(LOADING, "Loaded mod instance {} of type {}", getModId(), modClass.getName());
         }
-        catch (InvocationTargetException e) {
-            LOGGER.error(LOADING,"Failed to create mod instance. ModID: {}, class {}", getModId(), modClass.getName(), e.getCause());
-            throw new ModLoadingException(modInfo, ModLoadingStage.CONSTRUCT, "fml.modloading.failedtoloadmod", e.getCause(), modClass);
-        } catch (Throwable e) {
+        catch (Throwable e)
+        {
+            if (e instanceof InvocationTargetException) e = e.getCause();
             LOGGER.error(LOADING,"Failed to create mod instance. ModID: {}, class {}", getModId(), modClass.getName(), e);
             throw new ModLoadingException(modInfo, ModLoadingStage.CONSTRUCT, "fml.modloading.failedtoloadmod", e, modClass);
         }
