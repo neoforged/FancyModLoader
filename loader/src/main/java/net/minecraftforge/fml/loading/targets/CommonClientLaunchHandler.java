@@ -34,7 +34,7 @@ public abstract class CommonClientLaunchHandler extends CommonLaunchHandler {
 
         processMCStream(vers, mcstream, modstream);
 
-        return new LocatedPaths(mcstream.build().toList(), (a,b) -> true, modstream.build().toList(), this.getFmlPaths(this.getLegacyClasspath()));
+        return new LocatedPaths(mcstream.build().toList(), null, modstream.build().toList(), this.getFmlPaths(this.getLegacyClasspath()));
     }
 
     protected abstract void processMCStream(VersionInfo versionInfo, Stream.Builder<Path> mc, Stream.Builder<List<Path>> mods);
