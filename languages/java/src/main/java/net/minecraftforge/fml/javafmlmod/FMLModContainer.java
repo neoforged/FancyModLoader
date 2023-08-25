@@ -113,7 +113,7 @@ public class FMLModContainer extends ModContainer
         }
         catch (Throwable e)
         {
-            if (e instanceof InvocationTargetException) e = e.getCause();
+            if (e instanceof InvocationTargetException) e = e.getCause(); // exceptions thrown when a reflected method call throws are wrapped in an InvocationTargetException. However, this isn't useful for the end user who has to dig through the logs to find the actual cause.
             LOGGER.error(LOADING,"Failed to create mod instance. ModID: {}, class {}", getModId(), modClass.getName(), e);
             throw new ModLoadingException(modInfo, ModLoadingStage.CONSTRUCT, "fml.modloading.failedtoloadmod", e, modClass);
         }
