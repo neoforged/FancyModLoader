@@ -38,6 +38,7 @@ public class ModInfo implements IModInfo, IConfigurable
     private final ArtifactVersion version;
     private final String displayName;
     private final String description;
+    private final DependencySide side;
     private final Optional<String> logoFile;
     private final boolean logoBlur;
     private final Optional<URL> updateJSONURL;
@@ -81,6 +82,9 @@ public class ModInfo implements IModInfo, IConfigurable
                 .orElse(this.modId);
         this.description = config.<String>getConfigElement("description")
                 .orElse("MISSING DESCRIPTION");
+        this.side = config.<String>getConfigElement("side")
+                .map(DependencySide::valueOf)
+                .orElseThrow(() -> new InvalidModFileException("Missing side", owningFile));
         this.logoFile = Optional.ofNullable(config.<String>getConfigElement("logoFile")
                 .orElseGet(() -> ownFile.flatMap(mf -> mf.<String>getConfigElement("logoFile"))
                         .orElse(null)));
@@ -128,6 +132,11 @@ public class ModInfo implements IModInfo, IConfigurable
         return this.description;
     }
 
+    @Override
+    public DependencySide getSide()
+    {
+        return this.side;
+    }
     @Override
     public ArtifactVersion getVersion() {
         return version;
