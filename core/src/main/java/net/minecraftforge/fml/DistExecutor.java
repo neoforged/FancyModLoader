@@ -25,7 +25,10 @@ import java.util.function.Supplier;
  * <li>When you want to call one thing on one side, another thing on the other and return a result {@link #safeRunForDist(Supplier, Supplier)}</li>
  * <li>When you want to run something on one side {@link #safeRunWhenOn(Dist, Supplier)}</li>
  * </ul>
+ *
+ * @deprecated Check for {@link FMLEnvironment#dist} instead.
  */
+@Deprecated(forRemoval = true)
 public final class DistExecutor
 {
     private static final Logger LOGGER = LogManager.getLogger();
