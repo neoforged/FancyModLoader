@@ -137,6 +137,7 @@ public class ModInfo implements IModInfo, IConfigurable
     {
         return this.side;
     }
+
     @Override
     public ArtifactVersion getVersion() {
         return version;
