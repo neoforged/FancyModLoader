@@ -80,6 +80,8 @@ public class ModInfo implements IModInfo, IConfigurable
         this.displayName = config.<String>getConfigElement("displayName")
                 .orElse(this.modId);
         this.description = config.<String>getConfigElement("description")
+                // Normalize CRLF line endings to use LF instead
+                .map(desc -> desc.replace("\r\n", "\n"))
                 .orElse("MISSING DESCRIPTION");
         this.logoFile = Optional.ofNullable(config.<String>getConfigElement("logoFile")
                 .orElseGet(() -> ownFile.flatMap(mf -> mf.<String>getConfigElement("logoFile"))
