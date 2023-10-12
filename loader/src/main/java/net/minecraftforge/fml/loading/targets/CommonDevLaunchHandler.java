@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -75,12 +76,16 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
 
         return args.getArguments();
     }
+    
+    protected static Optional<Path> searchJarOnClasspath(String[] classpath, String match) {
+        return Arrays.stream(classpath)
+                       .filter(e -> FileUtils.matchFileName(e, false, match))
+                       .findFirst().map(Paths::get);
+    }
 
     protected static Path findJarOnClasspath(String[] classpath, String match) {
-        return Paths.get(Arrays.stream(classpath)
-            .filter(e -> FileUtils.matchFileName(e, false, match))
-            .findFirst()
-            .orElseThrow(() -> new IllegalStateException("Could not find " + match + " in classpath")));
+        return searchJarOnClasspath(classpath, match)
+                       .orElseThrow(() -> new IllegalStateException("Could not find " + match + " in classpath"));
     }
 
     protected BiPredicate<String, String> getMcFilter(Path extra, List<Path> minecraft, Stream.Builder<List<Path>> mods) {
