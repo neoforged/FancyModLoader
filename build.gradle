@@ -2,7 +2,7 @@ plugins {
     id 'org.ajoberstar.grgit' version '4.1.0'
     id 'com.github.ben-manes.versions' version '0.39.0'
     id 'org.javamodularity.moduleplugin' version '1.8.3'
-    id 'net.minecraftforge.gradleutils' version '2.+'
+    id 'net.neoforged.gradleutils' version '2.+'
     id 'maven-publish'
     id 'java-library'
 }
@@ -13,14 +13,14 @@ apply plugin: 'org.javamodularity.moduleplugin'
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
-group 'net.minecraftforge'
+group 'net.neoforged'
 version = gradleutils.getTagOffsetBranchVersion()
 
 repositories {
     mavenCentral()
     maven {
-        name = 'forge'
-        url = 'https://maven.minecraftforge.net'
+        name = 'NeoForged'
+        url = 'https://maven.neoforged.net/releases'
     }
 }
 
@@ -40,23 +40,23 @@ test {
     useJUnitPlatform()
 }
 changelog {
-    fromTag '1.0.0'
+    fromTag '8.0'
 }
 
 
 ext.sharedManifest = manifest {
-    attributes('Automatic-Module-Name': 'net.minecraftforge.forgespi')
-    attributes(['Specification-Title': 'forgespi',
-                'Specification-Vendor': 'forge',
+    attributes('Automatic-Module-Name': 'net.neoforged.neoforgespi')
+    attributes(['Specification-Title': 'neoforgespi',
+                'Specification-Vendor': 'neoforged',
                 'Specification-Version': '5', // Currently version 4 of the forgespi specification
                 'Implementation-Title': project.name,
                 'Implementation-Version': "${project.version}+${System.getenv('BUILD_NUMBER')?:0}+${gradleutils.gitInfo.branch}.${gradleutils.gitInfo.abbreviatedId}",
-                'Implementation-Vendor': 'forge',
+                'Implementation-Vendor': 'neoforged',
                 'Implementation-Timestamp': java.time.Instant.now().toString(),
                 'Git-Commit': gradleutils.gitInfo.abbreviatedId,
                 'Git-Branch': gradleutils.gitInfo.branch,
                 'Build-Number': "${System.getenv('BUILD_NUMBER')?:0}"],
-            "net/minecraftforge/forgespi/")
+            "net/neoforged/neoforgespi/")
 }
 
 jar {
@@ -79,7 +79,7 @@ dependencies {
     implementation('org.apache.logging.log4j:log4j-api:2.17.0')
     implementation('org.apache.maven:maven-artifact:3.8.1')
     implementation('cpw.mods:securejarhandler:0.9.52')
-    api('net.minecraftforge:mergetool:1.1.5:api') {
+    api('net.neoforged:mergetool:2.0.0:api') {
         transitive false
     }
 
@@ -101,18 +101,19 @@ publishing {
         mavenJava(MavenPublication) {
             from components.java
             artifact sourcesJar
+            artifactId = "neoforgespi"
             pom {
-                name = 'Forge Service Provider Interface'
+                name = 'NeoForge Service Provider Interface'
                 description = 'API for services which can plug into forge, or which are used by forge in other places'
-                url = 'https://github.com/MinecraftForge/ForgeSPI'
+                url = 'https://github.com/neoforged/NeoForgeSPI'
                 scm {
-                    url = 'https://github.com/MinecraftForge/ForgeSPI'
-                    connection = 'scm:git:git://github.com/MinecraftForge/ForgeSPI.git'
-                    developerConnection = 'scm:git:git@github.com:MinecraftForge/ForgeSPI.git'
+                    url = 'https://github.com/neoforged/NeoForgeSPI'
+                    connection = 'scm:git:git://github.com/neoforged/NeoForgeSPI.git'
+                    developerConnection = 'scm:git:git@github.com:neoforged/NeoForgeSPI.git'
                 }
                 issueManagement {
                     system = 'github'
-                    url = 'https://github.com/MinecraftForge/ForgeSPI/issues'
+                    url = 'https://github.com/neoforged/NeoForgeSPI/issues'
                 }
 
                 licenses {

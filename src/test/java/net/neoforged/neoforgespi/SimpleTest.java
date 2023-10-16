@@ -1,4 +1,4 @@
-package net.minecraftforge.forgespi;
+package net.neoforged.neoforgespi;
 
 import org.junit.jupiter.api.Test;
 

@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-package net.minecraftforge.forgespi.locating;
+package net.neoforged.neoforgespi.locating;
 
 import java.util.List;
 

@@ -17,35 +17,26 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-package net.minecraftforge.forgespi.language;
+package net.neoforged.neoforgespi.language;
 
-import net.minecraftforge.forgespi.locating.IModFile;
-import org.apache.maven.artifact.versioning.VersionRange;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-import java.util.List;
-import java.util.Map;
-
-public interface IModFileInfo
+/**
+ * Loaded as a ServiceLoader, from the classpath. ExtensionPoint are loaded from
+ * the mods directory, with the FMLType META-INF of LANGPROVIDER.
+ *
+ * Version data is read from the manifest's implementation version.
+ */
+public interface IModLanguageProvider
 {
-    List<IModInfo> getMods();
+    String name();
 
-    record LanguageSpec(String languageName, VersionRange acceptedVersions) {}
+    Consumer<ModFileScanData> getFileVisitor();
 
-    List<LanguageSpec> requiredLanguageLoaders();
+    <R extends ILifecycleEvent<R>> void consumeLifecycleEvent(Supplier<R> consumeEvent);
 
-    boolean showAsResourcePack();
-
-    Map<String,Object> getFileProperties();
-
-    String getLicense();
-
-    String moduleName();
-
-    String versionString();
-
-    List<String> usesServices();
-
-    IModFile getFile();
-
-    IConfigurable getConfig();
+    interface IModLanguageLoader {
+        <T> T loadMod(IModInfo info, ModFileScanData modFileScanResults, ModuleLayer layer);
+    }
 }

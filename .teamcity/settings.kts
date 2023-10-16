@@ -27,39 +27,45 @@ version = "2021.2"
 
 project {
 
-    buildType(PullRequests)
     buildType(Build)
+    buildType(BuildSecondaryBranches)
+    buildType(PullRequests)
 
     params {
-        text("git_main_branch", "master", label = "Git Main Branch", description = "The git main or default branch to use in VCS operations.", display = ParameterDisplay.HIDDEN, allowEmpty = false)
-        text("github_repository_name", "forgespi", label = "The github repository name. Used to connect to it in VCS Roots.", description = "This is the repository slug on github. So for example `forgespi` or `MinecraftForge`. It is interpolated into the global VCS Roots.", display = ParameterDisplay.HIDDEN, allowEmpty = false)
-        text("env.PUBLISHED_JAVA_ARTIFACT_ID", "forgespi", label = "Published artifact id", description = "The maven coordinate artifact id that has been published by this build. Can not be empty.", allowEmpty = false)
-        text("env.PUBLISHED_JAVA_GROUP", "net.minecraftforge", label = "Published group", description = "The maven coordinate group that has been published by this build. Can not be empty.", allowEmpty = false)
-        text("git_branch_spec", """
-                +:refs/heads/(main*)
-                +:refs/heads/(4.x)
-            """.trimIndent(), label = "The branch specification of the repository", description = "By default all main branches are build by the configuration. Modify this value to adapt the branches build.", display = ParameterDisplay.HIDDEN, allowEmpty = true)
+        text("git_main_branch", "main", label = "Git Main Branch", description = "The git main or default branch to use in VCS operations.", display = ParameterDisplay.HIDDEN, allowEmpty = false)
+        text("github_repository_name", "NeoForgeSPI", label = "The github repository name. Used to connect to it in VCS Roots.", description = "This is the repository slug on github. So for example `NeoForgeSPI` or `MinecraftForge`. It is interpolated into the global VCS Roots.", display = ParameterDisplay.HIDDEN, allowEmpty = false)
+        text("env.PUBLISHED_JAVA_ARTIFACT_ID", "NeoForgeSPI", label = "Published artifact id", description = "The maven coordinate artifact id that has been published by this build. Can not be empty.", allowEmpty = false)
+        text("env.PUBLISHED_JAVA_GROUP", "net.neoforged", label = "Published group", description = "The maven coordinate group that has been published by this build. Can not be empty.", allowEmpty = false)
+        text("docker_jdk_version", "17", label = "JDK version", description = "The version of the JDK to use during execution of tasks in a JDK.", display = ParameterDisplay.HIDDEN, allowEmpty = false)
+        text("docker_gradle_version", "7.2", label = "Gradle version", description = "The version of Gradle to use during execution of Gradle tasks.", display = ParameterDisplay.HIDDEN, allowEmpty = false)
     }
 
     features {
         githubIssues {
-            id = "forgespi__IssueTracker"
-            displayName = "MinecraftForge/forgespi"
-            repositoryURL = "https://github.com/MinecraftForge/forgespi"
+            id = "NeoForgeSPI__IssueTracker"
+            displayName = "neoforged/NeoForgeSPI"
+            repositoryURL = "https://github.com/neoforged/NeoForgeSPI"
         }
     }
 }
 
 object Build : BuildType({
     templates(AbsoluteId("MinecraftForge_SetupGradleUtilsCiEnvironmen"), AbsoluteId("MinecraftForge_BuildWithDiscordNotifications"), AbsoluteId("MinecraftForge_BuildMainBranches"), AbsoluteId("MinecraftForge_BuildUsingGradle"), AbsoluteId("MinecraftForge_PublishProjectUsingGradle"), AbsoluteId("MinecraftForge_TriggersStaticFilesWebpageGenerator"))
-    id("forgespi__Build")
+    id("NeoForgeSPI__Build")
     name = "Build"
     description = "Builds and Publishes the main branches of the project."
 })
 
+object BuildSecondaryBranches : BuildType({
+    templates(AbsoluteId("MinecraftForge_ExcludesBuildingDefaultBranch"), AbsoluteId("MinecraftForge_SetupGradleUtilsCiEnvironmen"), AbsoluteId("MinecraftForge_BuildWithDiscordNotifications"), AbsoluteId("MinecraftForge_BuildMainBranches"), AbsoluteId("MinecraftForge_BuildUsingGradle"))
+    id("NeoForgeSPI__BuildSecondaryBranches")
+    name = "Build - Secondary Branches"
+    description = "Builds and Publishes the secondary branches of the project."
+})
+
 object PullRequests : BuildType({
     templates(AbsoluteId("MinecraftForge_BuildPullRequests"), AbsoluteId("MinecraftForge_SetupGradleUtilsCiEnvironmen"), AbsoluteId("MinecraftForge_BuildWithDiscordNotifications"), AbsoluteId("MinecraftForge_BuildUsingGradle"))
-    id("forgespi__PullRequests")
+    id("NeoForgeSPI__PullRequests")
     name = "Pull Requests"
     description = "Builds pull requests for the project"
 })

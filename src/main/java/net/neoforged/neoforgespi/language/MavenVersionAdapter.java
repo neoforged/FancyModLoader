@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-package net.minecraftforge.forgespi.language;
+package net.neoforged.neoforgespi.language;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

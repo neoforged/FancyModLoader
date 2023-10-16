@@ -1,8 +1,8 @@
-package net.minecraftforge.forgespi.locating;
+package net.neoforged.neoforgespi.locating;
 
 import cpw.mods.jarhandling.SecureJar;
-import net.minecraftforge.forgespi.Environment;
-import net.minecraftforge.forgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.Environment;
+import net.neoforged.neoforgespi.language.IModFileInfo;
 
 /**
  * A factory to build new mod file instances.

@@ -1,4 +1,4 @@
-package net.minecraftforge.forgespi.language;
+package net.neoforged.neoforgespi.language;
 
 import java.util.List;
 import java.util.Optional;

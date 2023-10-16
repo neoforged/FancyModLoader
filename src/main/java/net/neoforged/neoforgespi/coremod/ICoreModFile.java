@@ -1,4 +1,4 @@
-package net.minecraftforge.forgespi.coremod;
+package net.neoforged.neoforgespi.coremod;
 
 import java.io.*;
 import java.nio.file.*;

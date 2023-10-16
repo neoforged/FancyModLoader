@@ -1,7 +1,11 @@
-package net.minecraftforge.forgespi.locating;
+package net.neoforged.neoforgespi.locating;
 
 import cpw.mods.jarhandling.SecureJar;
-import net.minecraftforge.forgespi.language.*;
+import net.neoforged.neoforgespi.language.*;
+import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.IModLanguageProvider;
+import net.neoforged.neoforgespi.language.ModFileScanData;
 
 import java.nio.file.Path;
 import java.util.List;

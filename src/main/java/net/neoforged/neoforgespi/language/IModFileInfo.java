@@ -17,12 +17,35 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-package net.minecraftforge.forgespi.language;
+package net.neoforged.neoforgespi.language;
 
-public interface ILifecycleEvent<R extends ILifecycleEvent<?>> {
-    @SuppressWarnings("unchecked")
-    default R concrete() {
-        return (R) this;
-    }
+import net.neoforged.neoforgespi.locating.IModFile;
+import org.apache.maven.artifact.versioning.VersionRange;
+
+import java.util.List;
+import java.util.Map;
+
+public interface IModFileInfo
+{
+    List<IModInfo> getMods();
+
+    record LanguageSpec(String languageName, VersionRange acceptedVersions) {}
+
+    List<LanguageSpec> requiredLanguageLoaders();
+
+    boolean showAsResourcePack();
+
+    Map<String,Object> getFileProperties();
+
+    String getLicense();
+
+    String moduleName();
+
+    String versionString();
+
+    List<String> usesServices();
+
+    IModFile getFile();
+
+    IConfigurable getConfig();
 }
-

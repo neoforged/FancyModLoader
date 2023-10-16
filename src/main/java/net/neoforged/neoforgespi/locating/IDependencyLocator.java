@@ -1,4 +1,4 @@
-package net.minecraftforge.forgespi.locating;
+package net.neoforged.neoforgespi.locating;
 
 import java.util.List;
 

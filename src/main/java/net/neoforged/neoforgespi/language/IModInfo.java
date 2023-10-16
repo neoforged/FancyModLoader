@@ -17,11 +17,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-package net.minecraftforge.forgespi.language;
+package net.neoforged.neoforgespi.language;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.forgespi.Environment;
-import net.minecraftforge.forgespi.locating.ForgeFeature;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforgespi.Environment;
+import net.neoforged.neoforgespi.locating.ForgeFeature;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
 

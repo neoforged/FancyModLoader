@@ -1,12 +1,13 @@
-package net.minecraftforge.forgespi;
+package net.neoforged.neoforgespi;
 
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.TypesafeMap;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.forgespi.locating.IModDirectoryLocatorFactory;
-import net.minecraftforge.forgespi.locating.IModLocator;
-import net.minecraftforge.forgespi.locating.ModFileFactory;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforgespi.locating.IModDirectoryLocatorFactory;
+import net.neoforged.neoforgespi.locating.IModLocator;
+import net.neoforged.neoforgespi.locating.IModFile;
+import net.neoforged.neoforgespi.locating.ModFileFactory;
 
 import java.nio.file.Path;
 import java.util.function.Consumer;
@@ -37,7 +38,7 @@ public class Environment {
         public static final Supplier<TypesafeMap.Key<IModDirectoryLocatorFactory>> MODDIRECTORYFACTORY = IEnvironment.buildKey("MODDIRFACTORY", IModDirectoryLocatorFactory.class);
 
         /**
-         * Factory for building {@link net.minecraftforge.forgespi.locating.IModFile} instances
+         * Factory for building {@link IModFile} instances
          */
         public static final Supplier<TypesafeMap.Key<ModFileFactory>> MODFILEFACTORY = IEnvironment.buildKey("MODFILEFACTORY", ModFileFactory.class);
         /**

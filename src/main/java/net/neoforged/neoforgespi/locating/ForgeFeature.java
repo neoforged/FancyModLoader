@@ -1,7 +1,7 @@
-package net.minecraftforge.forgespi.locating;
+package net.neoforged.neoforgespi.locating;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.forgespi.language.IModInfo;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforgespi.language.IModInfo;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
