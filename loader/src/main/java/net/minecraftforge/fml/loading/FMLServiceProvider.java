@@ -10,7 +10,7 @@ import cpw.mods.modlauncher.api.*;
 import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionSpecBuilder;
 import net.minecraftforge.fml.loading.moddiscovery.ModFile;
-import net.minecraftforge.forgespi.Environment;
+import net.neoforged.neoforgespi.Environment;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 

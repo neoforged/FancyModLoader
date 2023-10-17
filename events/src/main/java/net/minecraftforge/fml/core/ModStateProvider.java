@@ -5,7 +5,7 @@
 
 package net.minecraftforge.fml.core;
 
-import net.minecraftforge.api.distmarker.Dist;
+import net.neoforged.api.distmarker.Dist;
 import net.minecraftforge.fml.IModLoadingState;
 import net.minecraftforge.fml.IModStateProvider;
 import net.minecraftforge.fml.ModLoadingPhase;

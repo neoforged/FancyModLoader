@@ -5,10 +5,10 @@
 
 package net.minecraftforge.fml.javafmlmod;
 
-import net.minecraftforge.api.distmarker.Dist;
+import net.neoforged.api.distmarker.Dist;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.forgespi.language.ModFileScanData;
+import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.moddiscovery.ModAnnotation;
 import org.apache.logging.log4j.LogManager;

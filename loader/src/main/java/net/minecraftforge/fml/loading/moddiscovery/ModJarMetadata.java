@@ -7,8 +7,8 @@ package net.minecraftforge.fml.loading.moddiscovery;
 
 import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
-import net.minecraftforge.forgespi.locating.IModFile;
-import net.minecraftforge.forgespi.locating.IModLocator;
+import net.neoforged.neoforgespi.locating.IModFile;
+import net.neoforged.neoforgespi.locating.IModLocator;
 
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;

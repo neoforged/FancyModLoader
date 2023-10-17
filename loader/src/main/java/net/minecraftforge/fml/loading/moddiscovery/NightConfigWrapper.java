@@ -6,8 +6,8 @@
 package net.minecraftforge.fml.loading.moddiscovery;
 
 import com.electronwill.nightconfig.core.UnmodifiableConfig;
-import net.minecraftforge.forgespi.language.IConfigurable;
-import net.minecraftforge.forgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.language.IConfigurable;
+import net.neoforged.neoforgespi.language.IModFileInfo;
 
 import java.util.ArrayList;
 import java.util.Collection;

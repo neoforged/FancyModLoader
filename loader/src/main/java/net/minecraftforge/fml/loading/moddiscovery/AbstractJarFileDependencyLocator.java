@@ -6,9 +6,9 @@
 package net.minecraftforge.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
-import net.minecraftforge.forgespi.locating.IDependencyLocator;
-import net.minecraftforge.forgespi.locating.IModFile;
-import net.minecraftforge.forgespi.locating.ModFileLoadingException;
+import net.neoforged.neoforgespi.locating.IDependencyLocator;
+import net.neoforged.neoforgespi.locating.IModFile;
+import net.neoforged.neoforgespi.locating.ModFileLoadingException;
 import org.slf4j.Logger;
 
 import java.io.FileNotFoundException;

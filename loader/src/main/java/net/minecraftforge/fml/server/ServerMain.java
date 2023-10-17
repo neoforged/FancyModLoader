@@ -22,7 +22,7 @@ public class ServerMain {
     public static void main(String[] args) {
         try {
             Class.forName("cpw.mods.modlauncher.Launcher", false, ClassLoader.getSystemClassLoader());
-            Class.forName("net.minecraftforge.forgespi.Environment", false, ClassLoader.getSystemClassLoader());
+            Class.forName("net.neoforged.neoforgespi.Environment", false, ClassLoader.getSystemClassLoader());
         } catch (ClassNotFoundException cnfe) {
             System.err.println("FATAL ERROR, You need to run the installer. The libraries required to launch a server are missing");
             System.exit(1);

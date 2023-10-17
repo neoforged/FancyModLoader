@@ -5,7 +5,7 @@
 
 package net.minecraftforge.fml;
 
-import net.minecraftforge.api.distmarker.Dist;
+import net.neoforged.api.distmarker.Dist;
 
 /**
  * A logical side of the Minecraft game.

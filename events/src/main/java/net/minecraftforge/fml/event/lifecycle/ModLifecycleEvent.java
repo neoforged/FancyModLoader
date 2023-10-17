@@ -5,7 +5,7 @@
 
 package net.minecraftforge.fml.event.lifecycle;
 
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
 import net.minecraftforge.fml.InterModComms;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.event.IModBusEvent;

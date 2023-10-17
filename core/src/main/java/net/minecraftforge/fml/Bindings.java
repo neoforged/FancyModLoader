@@ -6,7 +6,7 @@
 package net.minecraftforge.fml;
 
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
-import net.minecraftforge.eventbus.api.IEventBus;
+import net.neoforged.bus.api.IEventBus;
 import net.minecraftforge.fml.config.IConfigEvent;
 import net.minecraftforge.fml.loading.FMLLoader;
 

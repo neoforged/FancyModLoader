@@ -6,7 +6,7 @@
 package net.minecraftforge.fml;
 
 import com.google.common.collect.ImmutableList;
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
 import net.minecraftforge.fml.event.IModBusEvent;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLLoader;
@@ -17,10 +17,10 @@ import net.minecraftforge.fml.loading.moddiscovery.ModFileInfo;
 import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
 import net.minecraftforge.fml.loading.progress.ProgressMeter;
 import net.minecraftforge.fml.loading.progress.StartupNotificationManager;
-import net.minecraftforge.forgespi.language.IModInfo;
-import net.minecraftforge.forgespi.language.IModLanguageProvider;
-import net.minecraftforge.forgespi.locating.ForgeFeature;
-import net.minecraftforge.forgespi.locating.IModFile;
+import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.IModLanguageProvider;
+import net.neoforged.neoforgespi.locating.ForgeFeature;
+import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

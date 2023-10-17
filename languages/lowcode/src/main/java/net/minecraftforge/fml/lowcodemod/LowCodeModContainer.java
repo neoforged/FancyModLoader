@@ -6,12 +6,12 @@
 package net.minecraftforge.fml.lowcodemod;
 
 import com.mojang.logging.LogUtils;
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
 import net.minecraftforge.fml.IExtensionPoint;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.event.IModBusEvent;
-import net.minecraftforge.forgespi.language.IModInfo;
-import net.minecraftforge.forgespi.language.ModFileScanData;
+import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.slf4j.Logger;
 
 import java.util.Objects;

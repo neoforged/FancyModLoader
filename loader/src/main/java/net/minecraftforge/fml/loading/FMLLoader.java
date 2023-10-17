@@ -14,12 +14,12 @@ import net.minecraftforge.fml.loading.moddiscovery.BackgroundScanHandler;
 import net.minecraftforge.fml.loading.moddiscovery.ModDiscoverer;
 import net.minecraftforge.fml.loading.moddiscovery.ModFile;
 import net.minecraftforge.fml.loading.moddiscovery.ModValidator;
-import net.minecraftforge.accesstransformer.service.AccessTransformerService;
-import net.minecraftforge.api.distmarker.Dist;
+import net.neoforged.accesstransformer.service.AccessTransformerService;
+import net.neoforged.api.distmarker.Dist;
 import net.minecraftforge.fml.loading.progress.StartupNotificationManager;
 import net.minecraftforge.fml.loading.targets.CommonLaunchHandler;
-import net.minecraftforge.forgespi.Environment;
-import net.minecraftforge.forgespi.coremod.ICoreModProvider;
+import net.neoforged.neoforgespi.Environment;
+import net.neoforged.neoforgespi.coremod.ICoreModProvider;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 

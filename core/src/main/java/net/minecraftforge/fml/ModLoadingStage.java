@@ -34,7 +34,7 @@ public enum ModLoadingStage
     /**
      * Side-specific setup and initialization.
      *
-     * @see net.minecraftforge.api.distmarker.Dist
+     * @see net.neoforged.api.distmarker.Dist
      */
     SIDED_SETUP,
     /**

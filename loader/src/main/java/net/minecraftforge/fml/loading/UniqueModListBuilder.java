@@ -7,7 +7,7 @@ package net.minecraftforge.fml.loading;
 
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.fml.loading.moddiscovery.ModFile;
-import net.minecraftforge.forgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.IModInfo;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.slf4j.Logger;
 

@@ -5,7 +5,7 @@
 
 package net.minecraftforge.fml;
 
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
 import net.minecraftforge.fml.event.IModBusEvent;
 import net.minecraftforge.fml.loading.progress.ProgressMeter;
 

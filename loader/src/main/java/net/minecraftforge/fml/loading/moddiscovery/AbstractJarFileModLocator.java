@@ -5,7 +5,7 @@
 
 package net.minecraftforge.fml.loading.moddiscovery;
 
-import net.minecraftforge.forgespi.locating.IModLocator;
+import net.neoforged.neoforgespi.locating.IModLocator;
 
 import java.io.File;
 import java.nio.file.Path;

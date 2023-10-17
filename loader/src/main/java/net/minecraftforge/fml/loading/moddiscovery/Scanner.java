@@ -7,8 +7,8 @@ package net.minecraftforge.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.fml.loading.LogMarkers;
-import net.minecraftforge.forgespi.language.IModLanguageProvider;
-import net.minecraftforge.forgespi.language.ModFileScanData;
+import net.neoforged.neoforgespi.language.IModLanguageProvider;
+import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.objectweb.asm.ClassReader;
 import org.slf4j.Logger;
 

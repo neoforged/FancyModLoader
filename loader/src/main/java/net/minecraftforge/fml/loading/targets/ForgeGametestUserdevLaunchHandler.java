@@ -5,7 +5,7 @@
 
 package net.minecraftforge.fml.loading.targets;
 
-import net.minecraftforge.api.distmarker.Dist;
+import net.neoforged.api.distmarker.Dist;
 
 public class ForgeGametestUserdevLaunchHandler extends ForgeUserdevLaunchHandler {
     @Override public String name() { return "forgegametestserveruserdev"; }

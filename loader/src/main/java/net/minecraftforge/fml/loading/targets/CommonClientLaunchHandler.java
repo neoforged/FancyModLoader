@@ -8,7 +8,7 @@ package net.minecraftforge.fml.loading.targets;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.fml.loading.LibraryFinder;
 import net.minecraftforge.fml.loading.VersionInfo;
-import net.minecraftforge.api.distmarker.Dist;
+import net.neoforged.api.distmarker.Dist;
 
 import java.nio.file.Path;
 import java.util.List;

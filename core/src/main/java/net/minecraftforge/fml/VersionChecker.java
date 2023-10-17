@@ -8,7 +8,7 @@ package net.minecraftforge.fml;
 import com.google.gson.Gson;
 import net.minecraftforge.fml.loading.FMLConfig;
 import net.minecraftforge.fml.loading.FMLLoader;
-import net.minecraftforge.forgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.IModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.artifact.versioning.ComparableVersion;

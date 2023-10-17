@@ -30,8 +30,8 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Set<String> SERVICES = Set.of(
         "cpw.mods.modlauncher.api.ITransformationService",
-        "net.minecraftforge.forgespi.locating.IModLocator",
-        "net.minecraftforge.forgespi.locating.IDependencyLocator"
+        "net.neoforged.neoforgespi.locating.IModLocator",
+        "net.neoforged.neoforgespi.locating.IDependencyLocator"
     );
     private UncheckedIOException alreadyFailed;
 

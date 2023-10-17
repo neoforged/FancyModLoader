@@ -5,8 +5,8 @@
 
 package net.minecraftforge.fml.loading.moddiscovery;
 
-import net.minecraftforge.forgespi.language.IModFileInfo;
-import net.minecraftforge.forgespi.locating.ModFileLoadingException;
+import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.locating.ModFileLoadingException;
 
 import java.util.Locale;
 import java.util.Optional;

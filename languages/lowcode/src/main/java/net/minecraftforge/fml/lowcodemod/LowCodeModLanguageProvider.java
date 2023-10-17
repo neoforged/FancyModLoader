@@ -8,10 +8,10 @@ package net.minecraftforge.fml.lowcodemod;
 import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
 import net.minecraftforge.fml.ModLoadingException;
 import net.minecraftforge.fml.ModLoadingStage;
-import net.minecraftforge.forgespi.language.ILifecycleEvent;
-import net.minecraftforge.forgespi.language.IModLanguageProvider;
-import net.minecraftforge.forgespi.language.IModInfo;
-import net.minecraftforge.forgespi.language.ModFileScanData;
+import net.neoforged.neoforgespi.language.ILifecycleEvent;
+import net.neoforged.neoforgespi.language.IModLanguageProvider;
+import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

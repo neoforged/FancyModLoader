@@ -8,10 +8,10 @@ package net.minecraftforge.fml.loading.moddiscovery;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.fml.loading.StringSubstitutor;
 import net.minecraftforge.fml.loading.StringUtils;
-import net.minecraftforge.forgespi.language.IConfigurable;
-import net.minecraftforge.forgespi.language.IModInfo;
-import net.minecraftforge.forgespi.language.MavenVersionAdapter;
-import net.minecraftforge.forgespi.locating.ForgeFeature;
+import net.neoforged.neoforgespi.language.IConfigurable;
+import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.MavenVersionAdapter;
+import net.neoforged.neoforgespi.locating.ForgeFeature;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
@@ -200,7 +200,7 @@ public class ModInfo implements IModInfo, IConfigurable
         }
     }
 
-    class ModVersion implements net.minecraftforge.forgespi.language.IModInfo.ModVersion {
+    class ModVersion implements net.neoforged.neoforgespi.language.IModInfo.ModVersion {
         private IModInfo owner;
         private final String modId;
         private final VersionRange versionRange;

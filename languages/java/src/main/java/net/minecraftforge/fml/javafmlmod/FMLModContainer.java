@@ -5,17 +5,17 @@
 
 package net.minecraftforge.fml.javafmlmod;
 
-import net.minecraftforge.eventbus.EventBusErrorMessage;
-import net.minecraftforge.eventbus.api.BusBuilder;
-import net.minecraftforge.eventbus.api.Event;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.IEventListener;
+import net.neoforged.bus.EventBusErrorMessage;
+import net.neoforged.bus.api.BusBuilder;
+import net.neoforged.bus.api.Event;
+import net.neoforged.bus.api.EventListener;
+import net.neoforged.bus.api.IEventBus;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModLoadingException;
 import net.minecraftforge.fml.ModLoadingStage;
 import net.minecraftforge.fml.event.IModBusEvent;
-import net.minecraftforge.forgespi.language.IModInfo;
-import net.minecraftforge.forgespi.language.ModFileScanData;
+import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -43,7 +43,7 @@ public class FMLModContainer extends ModContainer
         LOGGER.debug(LOADING,"Creating FMLModContainer instance for {}", className);
         this.scanResults = modFileScanResults;
         activityMap.put(ModLoadingStage.CONSTRUCT, this::constructMod);
-        this.eventBus = BusBuilder.builder().setExceptionHandler(this::onEventFailed).setTrackPhases(false).markerType(IModBusEvent.class).useModLauncher().build();
+        this.eventBus = BusBuilder.builder().setExceptionHandler(this::onEventFailed).markerType(IModBusEvent.class).build();
         this.configHandler = Optional.of(ce->this.eventBus.post(ce.self()));
         final FMLJavaModLoadingContext contextExtension = new FMLJavaModLoadingContext(this);
         this.contextExtension = () -> contextExtension;
@@ -60,7 +60,7 @@ public class FMLModContainer extends ModContainer
         }
     }
 
-    private void onEventFailed(IEventBus iEventBus, Event event, IEventListener[] iEventListeners, int i, Throwable throwable)
+    private void onEventFailed(IEventBus iEventBus, Event event, EventListener[] iEventListeners, int i, Throwable throwable)
     {
         LOGGER.error(new EventBusErrorMessage(event, i, iEventListeners, throwable));
     }

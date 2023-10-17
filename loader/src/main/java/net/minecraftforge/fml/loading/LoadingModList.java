@@ -10,7 +10,7 @@ import net.minecraftforge.fml.loading.moddiscovery.BackgroundScanHandler;
 import net.minecraftforge.fml.loading.moddiscovery.ModFile;
 import net.minecraftforge.fml.loading.moddiscovery.ModFileInfo;
 import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
-import net.minecraftforge.forgespi.locating.IModFile;
+import net.neoforged.neoforgespi.locating.IModFile;
 
 import java.net.URL;
 import java.nio.file.Files;

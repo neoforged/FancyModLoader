@@ -5,7 +5,7 @@
 
 package net.minecraftforge.fml.loading.targets;
 
-import net.minecraftforge.api.distmarker.Dist;
+import net.neoforged.api.distmarker.Dist;
 
 public class FMLServerDevLaunchHandler extends CommonDevLaunchHandler {
     @Override public String name() { return "fmlserverdev"; }

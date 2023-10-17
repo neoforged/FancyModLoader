@@ -5,7 +5,7 @@
 
 package net.minecraftforge.fml.loading;
 
-import net.minecraftforge.forgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.IModInfo;
 
 import java.util.List;
 

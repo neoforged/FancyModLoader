@@ -108,7 +108,7 @@ public interface ImmediateWindowProvider {
     void periodicTick();
 
     /**
-     * This is called to construct a {@link net.minecraftforge.forgespi.locating.ForgeFeature} for the GL_VERSION we
+     * This is called to construct a {@link net.neoforged.neoforgespi.locating.ForgeFeature} for the GL_VERSION we
      * managed to create for the window. Should be a string of the format {MAJOR}.{MINOR}, such as 4.6, 4.5 or such.
      *
      * @return the GL profile we created

@@ -42,7 +42,7 @@ public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryServ
     private void scan(final Path gameDirectory) {
         try {
             locateTransformers("META-INF/services/cpw.mods.modlauncher.api.ITransformationService");
-            locateTransformers("META-INF/services/net.minecraftforge.forgespi.locating.IModLocator");
+            locateTransformers("META-INF/services/net.neoforged.neoforgespi.locating.IModLocator");
         } catch (IOException e) {
             LogManager.getLogger().error("Error during discovery of transform services from the classpath", e);
         }

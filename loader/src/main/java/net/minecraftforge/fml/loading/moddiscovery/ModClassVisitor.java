@@ -5,7 +5,7 @@
 
 package net.minecraftforge.fml.loading.moddiscovery;
 
-import net.minecraftforge.forgespi.language.ModFileScanData;
+import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;

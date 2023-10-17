@@ -9,7 +9,7 @@ import java.lang.annotation.ElementType;
 import java.util.ArrayList;
 import java.util.Map;
 
-import net.minecraftforge.forgespi.language.ModFileScanData;
+import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.objectweb.asm.Type;
 
 import com.google.common.base.MoreObjects;

@@ -4,8 +4,8 @@ dependencies {
     api("org.ow2.asm:asm:${asm_version}")
     api("org.ow2.asm:asm-tree:${asm_version}")
     api("org.ow2.asm:asm-commons:${asm_version}")
-    api("net.minecraftforge:forgespi:${spi_version}")
-    api("net.minecraftforge:mergetool:${mergetool_version}:api")
+    api("net.neoforged:neoforgespi:${spi_version}")
+    api("net.neoforged:mergetool:${mergetool_version}:api")
     api("org.apache.logging.log4j:log4j-api:${log4j_version}")
     api("org.slf4j:slf4j-api:${slf4j_api_version}")
     api("com.google.guava:guava:${guava_version}")
@@ -15,14 +15,14 @@ dependencies {
     api("com.electronwill.night-config:core:${nightconfig_version}")
     api("com.electronwill.night-config:toml:${nightconfig_version}")
     api("cpw.mods:modlauncher:${modlauncher_version}")
-    api("net.minecraftforge:coremods:${coremods_version}")
+    api("net.neoforged:coremods:${coremods_version}")
     api("com.mojang:logging:${mojang_logging_version}")
-    api "net.minecraftforge:JarJarSelector:${jarjar_version}"
-    api "net.minecraftforge:JarJarMetadata:${jarjar_version}"
+    api "net.neoforged:JarJarSelector:${jarjar_version}"
+    api "net.neoforged:JarJarMetadata:${jarjar_version}"
 
     implementation("net.sf.jopt-simple:jopt-simple:${jopt_simple_version}")
     implementation("cpw.mods:securejarhandler:${securejarhandler_version}")
-    implementation("net.minecraftforge:accesstransformers:${accesstransformers_version}")
+    implementation("net.neoforged:accesstransformers:${accesstransformers_version}")
     implementation("net.minecrell:terminalconsoleappender:${terminalconsoleappender_version}")
 
     implementation("org.apache.logging.log4j:log4j-core:${log4j_version}")

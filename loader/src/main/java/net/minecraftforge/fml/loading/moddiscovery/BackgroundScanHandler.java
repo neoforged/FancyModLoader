@@ -10,7 +10,7 @@ import net.minecraftforge.fml.loading.ImmediateWindowHandler;
 import net.minecraftforge.fml.loading.LoadingModList;
 import net.minecraftforge.fml.loading.LogMarkers;
 import net.minecraftforge.fml.loading.progress.StartupNotificationManager;
-import net.minecraftforge.forgespi.language.ModFileScanData;
+import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.slf4j.Logger;
 
 import java.time.Duration;

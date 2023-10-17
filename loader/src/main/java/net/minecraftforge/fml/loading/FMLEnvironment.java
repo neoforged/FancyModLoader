@@ -7,8 +7,8 @@ package net.minecraftforge.fml.loading;
 
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.TypesafeMap;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.forgespi.Environment;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforgespi.Environment;
 
 import java.util.function.Supplier;
 

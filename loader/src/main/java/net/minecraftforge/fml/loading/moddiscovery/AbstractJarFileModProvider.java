@@ -8,7 +8,7 @@ package net.minecraftforge.fml.loading.moddiscovery;
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.SecureJar;
 import net.minecraftforge.fml.loading.LogMarkers;
-import net.minecraftforge.forgespi.locating.IModFile;
+import net.neoforged.neoforgespi.locating.IModFile;
 import org.slf4j.Logger;
 
 import java.io.IOException;

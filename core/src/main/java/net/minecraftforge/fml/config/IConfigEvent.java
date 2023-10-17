@@ -5,7 +5,7 @@
 
 package net.minecraftforge.fml.config;
 
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
 import net.minecraftforge.fml.Bindings;
 
 import java.util.function.Function;

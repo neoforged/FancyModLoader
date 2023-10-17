@@ -6,10 +6,10 @@
 package net.minecraftforge.fml.mclanguageprovider;
 
 import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.forgespi.language.ILifecycleEvent;
-import net.minecraftforge.forgespi.language.IModInfo;
-import net.minecraftforge.forgespi.language.IModLanguageProvider;
-import net.minecraftforge.forgespi.language.ModFileScanData;
+import net.neoforged.neoforgespi.language.ILifecycleEvent;
+import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.IModLanguageProvider;
+import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 
 import static net.minecraftforge.fml.Logging.LOADING;
 
-import net.minecraftforge.forgespi.language.IModLanguageProvider.IModLanguageLoader;
+import net.neoforged.neoforgespi.language.IModLanguageProvider.IModLanguageLoader;
 
 public class MinecraftModLanguageProvider implements IModLanguageProvider {
     private static final Logger LOGGER = LogManager.getLogger();

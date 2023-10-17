@@ -30,8 +30,8 @@ public interface IExtensionPoint<T extends Record>
     /**
      * Extension point for the compatibility display test used on the server selection screen.
      *
-     * <em>Note: "server" and "client" refers to the {@linkplain net.minecraftforge.api.distmarker.Dist#DEDICATED_SERVER dedicated server}
-     * and {@linkplain net.minecraftforge.api.distmarker.Dist#CLIENT game client} physical distributions, rather than the
+     * <em>Note: "server" and "client" refers to the {@linkplain net.neoforged.api.distmarker.Dist#DEDICATED_SERVER dedicated server}
+     * and {@linkplain net.neoforged.api.distmarker.Dist#CLIENT game client} physical distributions, rather than the
      * {@linkplain LogicalSide logical server and client}.</em>
      *
      * <p>The {@link Supplier} provides the local compatibility version, which is sent from the server to the client

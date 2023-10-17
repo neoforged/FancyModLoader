@@ -14,7 +14,7 @@ import net.minecraftforge.fml.ModLoadingStage;
  * Called before {@link InterModEnqueueEvent}
  * Called after {@link FMLCommonSetupEvent}
  *
- * Called on {@link net.minecraftforge.api.distmarker.Dist#DEDICATED_SERVER} - the dedicated game server.
+ * Called on {@link net.neoforged.api.distmarker.Dist#DEDICATED_SERVER} - the dedicated game server.
  *
  * Alternative to {@link FMLClientSetupEvent}.
  *

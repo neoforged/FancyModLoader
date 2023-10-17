@@ -5,7 +5,7 @@
 
 package net.minecraftforge.fml.javafmlmod;
 
-import net.minecraftforge.eventbus.api.IEventBus;
+import net.neoforged.bus.api.IEventBus;
 import net.minecraftforge.fml.ModLoadingContext;
 
 public class FMLJavaModLoadingContext

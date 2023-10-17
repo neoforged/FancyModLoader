@@ -6,7 +6,7 @@
 package net.minecraftforge.fml;
 
 import com.google.common.collect.Streams;
-import net.minecraftforge.forgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.IModInfo;
 
 import java.util.Arrays;
 import java.util.List;

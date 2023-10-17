@@ -16,11 +16,11 @@ import net.minecraftforge.fml.loading.ImmediateWindowHandler;
 import net.minecraftforge.fml.loading.LogMarkers;
 import net.minecraftforge.fml.loading.UniqueModListBuilder;
 import net.minecraftforge.fml.loading.progress.StartupNotificationManager;
-import net.minecraftforge.forgespi.Environment;
-import net.minecraftforge.forgespi.language.IModFileInfo;
-import net.minecraftforge.forgespi.locating.IDependencyLocator;
-import net.minecraftforge.forgespi.locating.IModFile;
-import net.minecraftforge.forgespi.locating.IModLocator;
+import net.neoforged.neoforgespi.Environment;
+import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.locating.IDependencyLocator;
+import net.neoforged.neoforgespi.locating.IModFile;
+import net.neoforged.neoforgespi.locating.IModLocator;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;

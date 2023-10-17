@@ -10,8 +10,8 @@ import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import net.minecraftforge.fml.loading.*;
 import net.minecraftforge.fml.loading.progress.StartupNotificationManager;
-import net.minecraftforge.forgespi.language.IModFileInfo;
-import net.minecraftforge.forgespi.locating.IModFile;
+import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.locating.IModFile;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 

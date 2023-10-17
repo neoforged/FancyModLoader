@@ -15,7 +15,7 @@ import net.minecraftforge.fml.ModLoadingStage;
  * Called before {@link InterModEnqueueEvent}
  * Called after {@link FMLCommonSetupEvent}
  *
- * Called on {@link net.minecraftforge.api.distmarker.Dist#CLIENT} - the game client.
+ * Called on {@link net.neoforged.api.distmarker.Dist#CLIENT} - the game client.
  *
  * Alternative to {@link FMLDedicatedServerSetupEvent}.
  *

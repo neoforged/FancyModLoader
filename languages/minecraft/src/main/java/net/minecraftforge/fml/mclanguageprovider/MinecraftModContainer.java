@@ -6,7 +6,7 @@
 package net.minecraftforge.fml.mclanguageprovider;
 
 import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.forgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.IModInfo;
 
 import java.util.Objects;
 
