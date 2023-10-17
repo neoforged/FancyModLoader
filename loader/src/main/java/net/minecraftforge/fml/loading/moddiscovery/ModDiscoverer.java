@@ -11,10 +11,8 @@ import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
-import net.minecraftforge.fml.loading.EarlyLoadingException;
-import net.minecraftforge.fml.loading.ImmediateWindowHandler;
-import net.minecraftforge.fml.loading.LogMarkers;
-import net.minecraftforge.fml.loading.UniqueModListBuilder;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.loading.*;
 import net.minecraftforge.fml.loading.progress.StartupNotificationManager;
 import net.minecraftforge.forgespi.Environment;
 import net.minecraftforge.forgespi.language.IModFileInfo;
@@ -82,12 +80,24 @@ public class ModDiscoverer {
                 var locatedFiles = candidates.stream().map(IModLocator.ModFileOrException::file).filter(Objects::nonNull).collect(Collectors.toList());
 
                 var badModFiles = locatedFiles.stream().filter(file -> !(file instanceof ModFile)).toList();
+
                 if (!badModFiles.isEmpty()) {
                     LOGGER.error(LogMarkers.SCAN, "Locator {} returned {} files which is are not ModFile instances! They will be skipped!", locator, badModFiles.size());
                     brokenFiles.addAll(badModFiles.stream().map(IModFile::getModFileInfo).toList());
                 }
+
                 locatedFiles.removeAll(badModFiles);
                 LOGGER.debug(LogMarkers.SCAN, "Locator {} found {} valid mod files", locator, locatedFiles.size());
+
+                var dist = FMLLoader.getDist();
+                var missSideMods = locatedFiles.stream().filter(file->file.getModInfos().stream().anyMatch(info->!info.getSide().isContained(dist))).toList();
+
+                if (!missSideMods.isEmpty()) {
+                    missSideMods.forEach(imf-> LOGGER.debug(LogMarkers.SCAN,"Locator {} found mis-sided mod {}! This mod will be skipped!", locator, imf.getFileName()));
+                }
+
+                locatedFiles.removeAll(missSideMods);
+
                 handleLocatedFiles(loadedFiles, locatedFiles);
             } catch (InvalidModFileException imfe) {
                 // We don't generally expect this exception, since it should come from the candidates stream above and be handled in the Locator, but just in case.
