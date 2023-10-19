@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <project>
   <modelVersion>4.0.0</modelVersion>
-  <name>MinecraftForge_neoforged_FancyModLoader Config DSL Script</name>
+  <name>neoforged_neoforged_FancyModLoader Config DSL Script</name>
   <groupId>MinecraftForge_neoforged_FancyModLoader</groupId>
   <artifactId>MinecraftForge_neoforged_FancyModLoader_dsl</artifactId>
   <version>1.0-SNAPSHOT</version>
