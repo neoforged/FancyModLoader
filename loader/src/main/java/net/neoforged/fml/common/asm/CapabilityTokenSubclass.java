@@ -38,7 +38,7 @@ public class CapabilityTokenSubclass implements ILaunchPluginService {
 
     private final String FUNC_NAME = "getType";
     private final String FUNC_DESC = "()Ljava/lang/String;";
-    private final String CAP_INJECT = "net/minecraftforge/common/capabilities/CapabilityToken"; //Don't directly reference this to prevent class loading.
+    private final String CAP_INJECT = "net/neoforged/neoforge/common/capabilities/CapabilityToken"; //Don't directly reference this to prevent class loading.
 
     @Override
     public String name() {

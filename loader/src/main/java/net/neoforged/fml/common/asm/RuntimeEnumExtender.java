@@ -32,7 +32,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     private static final Logger LOGGER = LogUtils.getLogger();
     private final Type STRING = Type.getType(String.class);
     private final Type ENUM = Type.getType(Enum.class);
-    private final Type MARKER_IFACE = Type.getType("Lnet/minecraftforge/common/IExtensibleEnum;");
+    private final Type MARKER_IFACE = Type.getType("Lnet/neoforged/neoforge/common/IExtensibleEnum;");
     private final Type ARRAY_UTILS = Type.getType("Lorg/apache/commons/lang3/ArrayUtils;"); //Don't directly reference this to prevent class loading.
     private final String ADD_DESC = Type.getMethodDescriptor(Type.getType(Object[].class), Type.getType(Object[].class), Type.getType(Object.class));
     private final Type UNSAFE_HACKS = Type.getType("Lnet/minecraftforge/fml/unsafe/UnsafeHacks;"); //Again, not direct reference to prevent class loading.

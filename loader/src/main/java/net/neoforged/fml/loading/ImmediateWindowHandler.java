@@ -146,7 +146,7 @@ public class ImmediateWindowHandler {
             var fm = layer.findModule("forge");
             if (fm.isPresent()) {
                 getClass().getModule().addReads(fm.get());
-                var clz = fm.map(l -> Class.forName(l, "net.neoforged.client.loading.NoVizFallback")).orElseThrow();
+                var clz = fm.map(l -> Class.forName(l, "net.neoforged.neoforge.client.loading.NoVizFallback")).orElseThrow();
                 var methods = Arrays.stream(clz.getMethods()).filter(m -> Modifier.isStatic(m.getModifiers())).collect(Collectors.toMap(Method::getName, Function.identity()));
                 NV_HANDOFF = methods.get("windowHandoff");
                 NV_OVERLAY = methods.get("loadingOverlay");

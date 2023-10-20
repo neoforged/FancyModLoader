@@ -89,7 +89,7 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
     }
 
     protected BiPredicate<String, String> getMcFilter(Path extra, List<Path> minecraft, Stream.Builder<List<Path>> mods) {
-        final var packages = getPackages();
+        final var packages = getExcludedPrefixes();
         final var extraPath = extra.toString().replace('\\', '/');
 
         // We serve everything, except for things in the forge packages.
@@ -114,8 +114,8 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
         return mcFilter;
     }
 
-    protected String[] getPackages() {
-        return new String[]{ "net/minecraftforge/", "META-INF/services/", "META-INF/coremods.json", "META-INF/mods.toml" };
+    protected String[] getExcludedPrefixes() {
+        return new String[]{ "net/neoforged/neoforge/", "META-INF/services/", "META-INF/coremods.json", "META-INF/mods.toml" };
     }
 
     private static String getRandomNumbers(int length) {

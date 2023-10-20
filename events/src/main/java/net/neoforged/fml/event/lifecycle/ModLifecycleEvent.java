@@ -17,7 +17,7 @@ import java.util.stream.Stream;
  * Parent type to all ModLifecycle events. This is based on Forge EventBus. They fire through the
  * ModContainer's eventbus instance.
  */
-public class ModLifecycleEvent extends Event implements IModBusEvent
+public abstract class ModLifecycleEvent extends Event implements IModBusEvent
 {
     private final ModContainer container;
 

@@ -34,7 +34,6 @@ public class FMLLoader
     private static AccessTransformerService accessTransformer;
     private static ModDiscoverer modDiscoverer;
     private static ICoreModProvider coreModProvider;
-    private static ILaunchPluginService eventBus;
     private static LanguageLoadingProvider languageLoadingProvider;
     private static Dist dist;
     private static String naming;
@@ -73,16 +72,12 @@ public class FMLLoader
             throw new IncompatibleEnvironmentException("Incompatible accesstransformer found "+atPackage.getSpecificationVersion());
         }
 
-        eventBus = environment.findLaunchPlugin("eventbus").orElseThrow(()-> {
+        try {
+            var eventBus = Class.forName("net.neoforged.bus.api.IEventBus", false, environment.getClass().getClassLoader());
+            LOGGER.debug(LogMarkers.CORE,"FML found EventBus version : {}", eventBus.getPackage().getImplementationVersion());
+        } catch (ClassNotFoundException e) {
             LOGGER.error(LogMarkers.CORE, "Event Bus library is missing, we need this to run");
-            return new IncompatibleEnvironmentException("Missing EventBus, cannot run");
-        });
-
-        final Package eventBusPackage = eventBus.getClass().getPackage();
-        LOGGER.debug(LogMarkers.CORE,"FML found EventBus version : {}", eventBusPackage.getImplementationVersion());
-        if (!eventBusPackage.isCompatibleWith("1.0")) {
-            LOGGER.error(LogMarkers.CORE, "Found incompatible EventBus specification : {}, version {} from {}", eventBusPackage.getSpecificationVersion(), eventBusPackage.getImplementationVersion(), eventBusPackage.getImplementationVendor());
-            throw new IncompatibleEnvironmentException("Incompatible eventbus found "+eventBusPackage.getSpecificationVersion());
+            throw new IncompatibleEnvironmentException("Missing EventBus, cannot run");
         }
 
         runtimeDistCleaner = (RuntimeDistCleaner)environment.findLaunchPlugin("runtimedistcleaner").orElseThrow(()-> {
