@@ -98,6 +98,6 @@ subprojects { subProject ->
     }
 
     changelog {
-        fromTag "47.1"
+        fromTag "1.0"
     }
 }
