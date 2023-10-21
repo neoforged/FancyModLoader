@@ -115,7 +115,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     public Runnable initialize(String[] arguments) {
         final OptionParser parser = new OptionParser();
         var mcversionopt = parser.accepts("fml.mcVersion").withRequiredArg().ofType(String.class);
-        var forgeversionopt = parser.accepts("fml.forgeVersion").withRequiredArg().ofType(String.class);
+        var forgeversionopt = parser.accepts("fml.neoForgeVersion").withRequiredArg().ofType(String.class);
         var widthopt = parser.accepts("width")
                 .withRequiredArg().ofType(Integer.class)
                 .defaultsTo(FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_WIDTH));
@@ -452,13 +452,13 @@ public class DisplayWindow implements ImmediateWindowProvider {
         try (var glfwImgBuffer = GLFWImage.create(MemoryUtil.getAllocator().malloc(GLFWImage.SIZEOF), 1)) {
             final ByteBuffer imgBuffer;
             try (GLFWImage glfwImages = GLFWImage.malloc()) {
-                imgBuffer = STBHelper.loadImageFromClasspath("forge_logo.png", 20000, x, y, channels);
+                imgBuffer = STBHelper.loadImageFromClasspath("neoforged_icon.png", 20000, x, y, channels);
                 glfwImgBuffer.put(glfwImages.set(x[0], y[0], imgBuffer));
                 glfwSetWindowIcon(window, glfwImgBuffer);
                 STBImage.stbi_image_free(imgBuffer);
             }
         } catch (NullPointerException e) {
-            System.err.println("Failed to load forge logo");
+            System.err.println("Failed to load NeoForged icon");
         }
         handleLastGLFWError((error, description) -> LOGGER.debug(String.format("Suppressing GLFW icon error: [0x%X]%s", error, description)));
 
@@ -582,9 +582,9 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     @Override
     public void updateModuleReads(final ModuleLayer layer) {
-        var fm = layer.findModule("forge").orElseThrow();
+        var fm = layer.findModule("neoforge").orElseThrow();
         getClass().getModule().addReads(fm);
-        var clz = FMLLoader.getGameLayer().findModule("forge").map(l->Class.forName(l, "net.neoforged.neoforge.client.loading.ForgeLoadingOverlay")).orElseThrow();
+        var clz = FMLLoader.getGameLayer().findModule("neoforge").map(l->Class.forName(l, "net.neoforged.neoforge.client.loading.NeoForgeLoadingOverlay")).orElseThrow();
         var methods = Arrays.stream(clz.getMethods()).filter(m-> Modifier.isStatic(m.getModifiers())).collect(Collectors.toMap(Method::getName, Function.identity()));
         loadingOverlay = methods.get("newInstance");
     }

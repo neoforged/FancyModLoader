@@ -106,7 +106,7 @@ public class VersionChecker
             {
                 if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.VERSION_CHECK))
                 {
-                    LOGGER.info("Global Forge version check system disabled, no further processing.");
+                    LOGGER.info("Global NeoForge version check system disabled, no further processing.");
                     return;
                 }
 

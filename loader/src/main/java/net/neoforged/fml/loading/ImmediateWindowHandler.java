@@ -143,7 +143,7 @@ public class ImmediateWindowHandler {
 
         @Override
         public void updateModuleReads(final ModuleLayer layer) {
-            var fm = layer.findModule("forge");
+            var fm = layer.findModule("neoforge");
             if (fm.isPresent()) {
                 getClass().getModule().addReads(fm.get());
                 var clz = fm.map(l -> Class.forName(l, "net.neoforged.neoforge.client.loading.NoVizFallback")).orElseThrow();

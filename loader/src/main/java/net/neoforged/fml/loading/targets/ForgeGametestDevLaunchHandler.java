@@ -13,6 +13,6 @@ public class ForgeGametestDevLaunchHandler extends CommonDevLaunchHandler {
 
     @Override
     public void runService(String[] arguments, ModuleLayer layer) throws Throwable {
-        Class.forName(layer.findModule("forge").orElseThrow(), "net.neoforged.gametest.GameTestMain").getMethod("main", String[].class).invoke(null, (Object)arguments);
+        Class.forName(layer.findModule("neoforge").orElseThrow(), "net.neoforged.gametest.GameTestMain").getMethod("main", String[].class).invoke(null, (Object)arguments);
     }
 }

@@ -69,10 +69,10 @@ public class FMLServiceProvider implements ITransformationService
         arguments.put("modLists", modListsArgumentList);
         arguments.put("mods", modsArgumentList);
         arguments.put("mavenRoots", mavenRootsArgumentList);
-        arguments.put("forgeVersion", targetForgeVersion);
+        arguments.put("neoForgeVersion", targetForgeVersion);
         arguments.put("fmlVersion", targetFMLVersion);
         arguments.put("mcVersion", targetMcVersion);
-        arguments.put("mcpVersion", targetMcpVersion);
+        arguments.put("neoFormVersion", targetMcpVersion);
         arguments.put("mcpMappings", targetMcpMappings);
         LOGGER.debug(CORE, "Preparing launch handler");
         FMLLoader.setupLaunchHandler(environment, arguments);
@@ -103,10 +103,10 @@ public class FMLServiceProvider implements ITransformationService
     @Override
     public void arguments(BiFunction<String, String, OptionSpecBuilder> argumentBuilder)
     {
-        forgeOption = argumentBuilder.apply("forgeVersion", "Forge Version number").withRequiredArg().ofType(String.class).required();
+        forgeOption = argumentBuilder.apply("neoForgeVersion", "Forge Version number").withRequiredArg().ofType(String.class).required();
         fmlOption = argumentBuilder.apply("fmlVersion", "FML Version number").withRequiredArg().ofType(String.class).required();
         mcOption = argumentBuilder.apply("mcVersion", "Minecraft Version number").withRequiredArg().ofType(String.class).required();
-        mcpOption = argumentBuilder.apply("mcpVersion", "MCP Version number").withRequiredArg().ofType(String.class).required();
+        mcpOption = argumentBuilder.apply("neoFormVersion", "MCP Version number").withRequiredArg().ofType(String.class).required();
         mappingsOption = argumentBuilder.apply("mcpMappings", "MCP Mappings Channel and Version").withRequiredArg().ofType(String.class);
         modsOption = argumentBuilder.apply("mods", "List of mods to add").withRequiredArg().ofType(String.class).withValuesSeparatedBy(",");
         modListsOption = argumentBuilder.apply("modLists", "JSON modlists").withRequiredArg().ofType(String.class).withValuesSeparatedBy(",");

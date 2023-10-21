@@ -29,8 +29,8 @@ public abstract class CommonServerLaunchHandler extends CommonLaunchHandler {
     @Override
     public LocatedPaths getMinecraftPaths() {
         final var vers = FMLLoader.versionInfo();
-        var mc = LibraryFinder.findPathForMaven("net.minecraft", "server", "", "srg", vers.mcAndMCPVersion());
-        var mcextra = LibraryFinder.findPathForMaven("net.minecraft", "server", "", "extra", vers.mcAndMCPVersion());
+        var mc = LibraryFinder.findPathForMaven("net.minecraft", "server", "", "srg", vers.mcAndNeoFormVersion());
+        var mcextra = LibraryFinder.findPathForMaven("net.minecraft", "server", "", "extra", vers.mcAndNeoFormVersion());
         var mcextra_filtered = SecureJar.from( // We only want it for it's resources. So filter everything else out.
             (path, base) -> {
                 return path.equals("META-INF/versions/") || // This is required because it bypasses our filter for the manifest, and it's a multi-release jar.

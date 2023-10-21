@@ -27,8 +27,8 @@ public abstract class CommonClientLaunchHandler extends CommonLaunchHandler {
     @Override
     public LocatedPaths getMinecraftPaths() {
         final var vers = FMLLoader.versionInfo();
-        var mc = LibraryFinder.findPathForMaven("net.minecraft", "client", "", "srg", vers.mcAndMCPVersion());
-        var mcextra = LibraryFinder.findPathForMaven("net.minecraft", "client", "", "extra", vers.mcAndMCPVersion());
+        var mc = LibraryFinder.findPathForMaven("net.minecraft", "client", "", "srg", vers.mcAndNeoFormVersion());
+        var mcextra = LibraryFinder.findPathForMaven("net.minecraft", "client", "", "extra", vers.mcAndNeoFormVersion());
         var mcstream = Stream.<Path>builder().add(mc).add(mcextra);
         var modstream = Stream.<List<Path>>builder();
 

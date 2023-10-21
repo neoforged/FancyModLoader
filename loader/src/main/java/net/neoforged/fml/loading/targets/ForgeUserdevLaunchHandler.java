@@ -14,12 +14,12 @@ import java.util.stream.Stream;
 public abstract class ForgeUserdevLaunchHandler extends CommonUserdevLaunchHandler {
     @Override
     protected void processStreams(String[] classpath, VersionInfo versionInfo, Stream.Builder<Path> mc, Stream.Builder<List<Path>> mods) {
-        var forge = searchJarOnClasspath(classpath, "forge-" + versionInfo.mcAndForgeVersion());
+        var forge = searchJarOnClasspath(classpath, "neoforge-" + versionInfo.mcAndNeoForgeVersion());
         if (forge.isEmpty()) {
-            forge = searchJarOnClasspath(classpath, "forge-" + versionInfo.forgeVersion());
+            forge = searchJarOnClasspath(classpath, "neoforge-" + versionInfo.neoForgeVersion());
         }
         if (forge.isEmpty()) {
-            throw new RuntimeException("Could not find %s, nor %s jar on classpath".formatted("forge-" + versionInfo.mcAndForgeVersion(), "forge-" + versionInfo.forgeVersion()));
+            throw new RuntimeException("Could not find %s, nor %s jar on classpath".formatted("neoforge-" + versionInfo.mcAndNeoForgeVersion(), "neoforge-" + versionInfo.neoForgeVersion()));
         }
         mc.add(forge.get());
     }

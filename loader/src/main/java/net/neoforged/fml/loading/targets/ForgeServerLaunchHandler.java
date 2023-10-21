@@ -19,8 +19,8 @@ public class ForgeServerLaunchHandler extends CommonServerLaunchHandler implemen
 
     @Override
     protected BiPredicate<String, String> processMCStream(VersionInfo versionInfo, Stream.Builder<Path> mc, BiPredicate<String, String> filter, Stream.Builder<List<Path>> mods) {
-        var forgepatches = LibraryFinder.findPathForMaven("net.neoforged", "forge", "", "server", versionInfo.mcAndForgeVersion());
-        var forgejar = LibraryFinder.findPathForMaven("net.neoforged", "forge", "", "universal", versionInfo.mcAndForgeVersion());
+        var forgepatches = LibraryFinder.findPathForMaven("net.neoforged", "neoforge", "", "server", versionInfo.mcAndNeoForgeVersion());
+        var forgejar = LibraryFinder.findPathForMaven("net.neoforged", "neoforge", "", "universal", versionInfo.mcAndNeoForgeVersion());
         mc.add(forgepatches);
         mods.add(List.of(forgejar));
         return filter;
