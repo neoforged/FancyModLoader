@@ -5,10 +5,15 @@ plugins {
     id 'net.neoforged.gradleutils' version '[2.0.18,3)'
 }
 
+changelog {
+    disableAutomaticPublicationRegistration()
+}
+
 allprojects {
     apply plugin: 'java-library'
     apply plugin: 'jacoco'
     apply plugin: 'maven-publish'
+    apply plugin: 'signing'
 
     apply plugin: 'com.github.ben-manes.versions'
     apply plugin: 'org.javamodularity.moduleplugin'
@@ -55,9 +60,7 @@ subprojects { subProject ->
 
     jar.doFirst {
         manifest.attributes(
-                'Timestamp'   : new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
                 'Git-Commit'  : gradleutils.gitInfo.abbreviatedId,
-                'Git-Branch'  : gradleutils.gitInfo.branch,
                 'Build-Number': "${subProject.version}",
                 'Automatic-Module-Name' : "fml_${subProject.name.replace("-", "_")}",
                 'FMLModType'  : subProject.name.startsWith("language") ? 'LANGPROVIDER' : subProject.name == "events" ? 'GAMELIBRARY' : 'LIBRARY',
@@ -94,6 +97,15 @@ subprojects { subProject ->
 
         repositories {
             maven gradleutils.getPublishingForgeMaven()
+        }
+    }
+
+    if (System.getenv('GPG_PRIVATE_KEY')) {
+        signing {
+            final signingKey = System.getenv('GPG_PRIVATE_KEY') ?: ''
+            final signingPassword = System.getenv('GPG_KEY_PASSWORD') ?: ''
+            useInMemoryPgpKeys(signingKey, signingPassword)
+            sign publishing.publications.maven
         }
     }
 
