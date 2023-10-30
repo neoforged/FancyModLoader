@@ -39,7 +39,12 @@ allprojects {
 
     dependencyUpdates.rejectVersionIf { isNonStable(it.candidate.version) }
 
-    java.withSourcesJar()
+    java {
+        withSourcesJar()
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
 
     test {
         useJUnitPlatform()
