@@ -43,7 +43,11 @@ public class FMLModContainer extends ModContainer
         LOGGER.debug(LOADING,"Creating FMLModContainer instance for {}", className);
         this.scanResults = modFileScanResults;
         activityMap.put(ModLoadingStage.CONSTRUCT, this::constructMod);
-        this.eventBus = BusBuilder.builder().setExceptionHandler(this::onEventFailed).markerType(IModBusEvent.class).build();
+        this.eventBus = BusBuilder.builder()
+                .setExceptionHandler(this::onEventFailed)
+                .markerType(IModBusEvent.class)
+                .allowPerPhasePost()
+                .build();
         this.configHandler = Optional.of(ce->this.eventBus.post(ce.self()));
         final FMLJavaModLoadingContext contextExtension = new FMLJavaModLoadingContext(this);
         this.contextExtension = () -> contextExtension;
@@ -139,20 +143,9 @@ public class FMLModContainer extends ModContainer
         return modInstance;
     }
 
+    @Override
     public IEventBus getEventBus()
     {
         return this.eventBus;
-    }
-
-    @Override
-    protected <T extends Event & IModBusEvent> void acceptEvent(final T e) {
-        try {
-            LOGGER.trace(LOADING, "Firing event for modid {} : {}", this.getModId(), e);
-            this.eventBus.post(e);
-            LOGGER.trace(LOADING, "Fired event for modid {} : {}", this.getModId(), e);
-        } catch (Throwable t) {
-            LOGGER.error(LOADING,"Caught exception during event {} dispatch for modid {}", e, this.getModId(), t);
-            throw new ModLoadingException(modInfo, modLoadingStage, "fml.modloading.errorduringevent", t);
-        }
     }
 }

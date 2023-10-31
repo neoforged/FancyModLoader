@@ -223,6 +223,10 @@ public class ModList
         indexedMods.forEach(modContainerConsumer);
     }
 
+    public List<ModContainer> getSortedMods() {
+        return sortedContainers;
+    }
+
     public void forEachModInOrder(Consumer<ModContainer> containerConsumer) {
         this.sortedContainers.forEach(containerConsumer);
     }
