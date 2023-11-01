@@ -8,8 +8,8 @@ package net.neoforged.fml.loading;
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.api.*;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
+import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.BackgroundScanHandler;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
@@ -21,7 +21,6 @@ import net.neoforged.neoforgespi.Environment;
 import net.neoforged.neoforgespi.coremod.ICoreModProvider;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
-import org.spongepowered.asm.mixin.Mixins;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -165,7 +164,7 @@ public class FMLLoader
         loadingModList = backgroundScanHandler.getLoadingModList();
         if (loadingModList.getErrors().isEmpty()) {
             // Add extra mixin configs
-            extraMixinConfigs.forEach(Mixins::addConfiguration);
+            extraMixinConfigs.forEach(DeferredMixinConfigRegistration::addMixinConfig);
         }
         return List.of(modValidator.getModResources());
     }

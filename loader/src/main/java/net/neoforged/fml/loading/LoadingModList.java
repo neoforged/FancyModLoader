@@ -6,12 +6,12 @@
 package net.neoforged.fml.loading;
 
 import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
+import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.BackgroundScanHandler;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
-import org.spongepowered.asm.mixin.Mixins;
 
 import java.net.URL;
 import java.nio.file.Files;
@@ -82,7 +82,7 @@ public class LoadingModList
                 .map(ModFileInfo::getFile)
                 .map(ModFile::getMixinConfigs)
                 .flatMap(List::stream)
-                .forEach(Mixins::addConfiguration);
+                .forEach(DeferredMixinConfigRegistration::addMixinConfig);
     }
 
     public void addAccessTransformers()
