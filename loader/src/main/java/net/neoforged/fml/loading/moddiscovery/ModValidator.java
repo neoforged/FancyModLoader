@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ModValidator {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -71,7 +72,12 @@ public class ModValidator {
     }
 
     public ITransformationService.Resource getModResources() {
-        return new ITransformationService.Resource(IModuleLayerManager.Layer.GAME, this.loadingModList.getModFiles().stream().map(info -> info.getFile().getSecureJar()).toList());
+        var modFilesToLoad = Stream.concat(
+                // mods
+                this.loadingModList.getModFiles().stream().map(ModFileInfo::getFile),
+                // game libraries
+                this.candidateMods.stream().filter(type -> type.getType() == IModFile.Type.GAMELIBRARY));
+        return new ITransformationService.Resource(IModuleLayerManager.Layer.GAME, modFilesToLoad.map(ModFile::getSecureJar).toList());
     }
 
     private List<EarlyLoadingException.ExceptionData> validateLanguages() {
