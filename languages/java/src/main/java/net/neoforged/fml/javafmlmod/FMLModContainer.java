@@ -15,7 +15,6 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingStage;
 import net.neoforged.fml.event.IModBusEvent;
-import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.ModFileScanData;
@@ -25,7 +24,6 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -75,14 +73,11 @@ public class FMLModContainer extends ModContainer
         {
             LOGGER.trace(LOADING, "Loading mod instance {} of type {}", getModId(), modClass.getName());
 
-            var constructors = modClass.getDeclaredConstructors();
+            var constructors = modClass.getConstructors();
             if (constructors.length != 1) {
-                throw new RuntimeException("Mod class must have exactly 1 constructor, found " + constructors.length);
+                throw new RuntimeException("Mod class must have exactly 1 public constructor, found " + constructors.length);
             }
             var constructor = constructors[0];
-            if (!Modifier.isPublic(constructor.getModifiers())) {
-                throw new RuntimeException("Mod class constructor must be public.");
-            }
 
             // Allowed arguments for injection via constructor
             Map<Class<?>, Object> allowedConstructorArgs = Map.of(
