@@ -11,6 +11,7 @@ import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
+import org.spongepowered.asm.mixin.Mixins;
 
 import java.net.URL;
 import java.nio.file.Files;
@@ -74,6 +75,14 @@ public class LoadingModList
                 .map(ModFile::getCoreMods)
                 .flatMap(List::stream)
                 .forEach(FMLLoader.getCoreModProvider()::addCoreMod);
+    }
+
+    public void addMixinConfigs() {
+        modFiles.stream()
+                .map(ModFileInfo::getFile)
+                .map(ModFile::getMixinConfigs)
+                .flatMap(List::stream)
+                .forEach(Mixins::addConfiguration);
     }
 
     public void addAccessTransformers()

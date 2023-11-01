@@ -34,12 +34,10 @@ public class BackgroundScanHandler
     private final List<ModFile> pendingFiles;
     private final List<ModFile> scannedFiles;
     private final List<ModFile> allFiles;
-    private final List<ModFile> modFiles;
     private ScanStatus status;
     private LoadingModList loadingModList;
 
-    public BackgroundScanHandler(final List<ModFile> modFiles) {
-        this.modFiles = modFiles;
+    public BackgroundScanHandler() {
         modContentScanner = Executors.newSingleThreadExecutor(r -> {
             final Thread thread = Executors.defaultThreadFactory().newThread(r);
             thread.setDaemon(true);
@@ -50,10 +48,6 @@ public class BackgroundScanHandler
         pendingFiles = new ArrayList<>();
         allFiles = new ArrayList<>();
         status = ScanStatus.NOT_STARTED;
-    }
-
-    public List<ModFile> getModFiles() {
-        return modFiles;
     }
 
     public void submitForScanning(final ModFile file) {

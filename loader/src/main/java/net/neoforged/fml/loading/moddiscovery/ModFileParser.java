@@ -66,4 +66,19 @@ public class ModFileParser {
                 .map(e -> new CoreModFile(e.getKey(), modFile.findResource(e.getValue()),modFile))
                 .toList();
     }
+
+    protected static List<String> getMixinConfigs(ModFile modFile) {
+        try {
+            final Path mixinConfigs = modFile.findResource("META-INF", "mixinconfigs.json");
+            if (!Files.exists(mixinConfigs)) {
+                return Collections.emptyList();
+            }
+            final Type type = new TypeToken<List<String>>() {}.getType();
+            final Gson gson = new Gson();
+            return gson.fromJson(Files.newBufferedReader(mixinConfigs), type);
+        } catch (IOException e) {
+            LOGGER.debug(LogMarkers.LOADING,"Failed to read mixin config list mixinconfigs.json", e);
+            return Collections.emptyList();
+        }
+    }
 }

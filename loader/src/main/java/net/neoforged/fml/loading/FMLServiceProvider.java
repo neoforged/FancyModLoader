@@ -30,6 +30,7 @@ public class FMLServiceProvider implements ITransformationService
     private ArgumentAcceptingOptionSpec<String> modsOption;
     private ArgumentAcceptingOptionSpec<String> modListsOption;
     private ArgumentAcceptingOptionSpec<String> mavenRootsOption;
+    private ArgumentAcceptingOptionSpec<String> mixinConfigsOption;
     private ArgumentAcceptingOptionSpec<String> fmlOption;
     private ArgumentAcceptingOptionSpec<String> forgeOption;
     private ArgumentAcceptingOptionSpec<String> mcOption;
@@ -38,6 +39,7 @@ public class FMLServiceProvider implements ITransformationService
     private List<String> modsArgumentList;
     private List<String> modListsArgumentList;
     private List<String> mavenRootsArgumentList;
+    private List<String> mixinConfigsArgumentList;
     private String targetForgeVersion;
     private String targetFMLVersion;
     private String targetMcVersion;
@@ -88,7 +90,7 @@ public class FMLServiceProvider implements ITransformationService
 
     @Override
     public List<Resource> completeScan(final IModuleLayerManager layerManager) {
-        return FMLLoader.completeScan(layerManager);
+        return FMLLoader.completeScan(layerManager, mixinConfigsArgumentList);
     }
 
     @Override
@@ -111,6 +113,7 @@ public class FMLServiceProvider implements ITransformationService
         modsOption = argumentBuilder.apply("mods", "List of mods to add").withRequiredArg().ofType(String.class).withValuesSeparatedBy(",");
         modListsOption = argumentBuilder.apply("modLists", "JSON modlists").withRequiredArg().ofType(String.class).withValuesSeparatedBy(",");
         mavenRootsOption = argumentBuilder.apply("mavenRoots", "Maven root directories").withRequiredArg().ofType(String.class).withValuesSeparatedBy(",");
+        mixinConfigsOption = argumentBuilder.apply("mixinConfig", "Additional mixin config files to load").withRequiredArg().ofType(String.class);
     }
 
     @Override
@@ -119,6 +122,7 @@ public class FMLServiceProvider implements ITransformationService
         modsArgumentList = option.values(modsOption);
         modListsArgumentList = option.values(modListsOption);
         mavenRootsArgumentList = option.values(mavenRootsOption);
+        mixinConfigsArgumentList = option.values(mixinConfigsOption);
         targetFMLVersion = option.value(fmlOption);
         targetForgeVersion = option.value(forgeOption);
         targetMcVersion = option.value(mcOption);

@@ -71,7 +71,7 @@ public class ModValidator {
     }
 
     public ITransformationService.Resource getModResources() {
-        return new ITransformationService.Resource(IModuleLayerManager.Layer.GAME, this.candidateMods.stream().map(IModFile::getSecureJar).toList());
+        return new ITransformationService.Resource(IModuleLayerManager.Layer.GAME, this.loadingModList.getModFiles().stream().map(info -> info.getFile().getSecureJar()).toList());
     }
 
     private List<EarlyLoadingException.ExceptionData> validateLanguages() {
@@ -97,8 +97,9 @@ public class ModValidator {
         loadingModList = ModSorter.sort(candidateMods, allErrors);
         loadingModList.addCoreMods();
         loadingModList.addAccessTransformers();
+        loadingModList.addMixinConfigs();
         loadingModList.setBrokenFiles(brokenFiles);
-        BackgroundScanHandler backgroundScanHandler = new BackgroundScanHandler(candidateMods);
+        BackgroundScanHandler backgroundScanHandler = new BackgroundScanHandler();
         loadingModList.addForScanning(backgroundScanHandler);
         return backgroundScanHandler;
     }

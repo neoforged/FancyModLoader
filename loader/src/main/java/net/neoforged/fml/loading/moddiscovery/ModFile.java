@@ -58,6 +58,7 @@ public class ModFile implements IModFile {
     private ModFileScanData fileModFileScanData;
     private CompletableFuture<ModFileScanData> futureScanResult;
     private List<CoreModFile> coreMods;
+    private List<String> mixinConfigs;
     private Path accessTransformer;
 
     static final Attributes.Name TYPE = new Attributes.Name("FMLModType");
@@ -112,12 +113,18 @@ public class ModFile implements IModFile {
         LOGGER.debug(LogMarkers.LOADING,"Loading mod file {} with languages {}", this.getFilePath(), this.modFileInfo.requiredLanguageLoaders());
         this.coreMods = ModFileParser.getCoreMods(this);
         this.coreMods.forEach(mi-> LOGGER.debug(LogMarkers.LOADING,"Found coremod {}", mi.getPath()));
+        this.mixinConfigs = ModFileParser.getMixinConfigs(this);
+        this.mixinConfigs.forEach(mc -> LOGGER.debug(LogMarkers.LOADING,"Found mixin config {}", mc));
         this.accessTransformer = findResource("META-INF", "accesstransformer.cfg");
         return true;
     }
 
     public List<CoreModFile> getCoreMods() {
         return coreMods;
+    }
+
+    public List<String> getMixinConfigs() {
+        return mixinConfigs;
     }
 
     /**

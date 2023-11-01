@@ -21,6 +21,7 @@ import net.neoforged.neoforgespi.Environment;
 import net.neoforged.neoforgespi.coremod.ICoreModProvider;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
+import org.spongepowered.asm.mixin.Mixins;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -157,11 +158,15 @@ public class FMLLoader
         return List.of(pluginResources);
     }
 
-    public static List<ITransformationService.Resource> completeScan(IModuleLayerManager layerManager) {
+    public static List<ITransformationService.Resource> completeScan(IModuleLayerManager layerManager, List<String> extraMixinConfigs) {
         moduleLayerManager = layerManager;
         languageLoadingProvider = new LanguageLoadingProvider();
         backgroundScanHandler = modValidator.stage2Validation();
         loadingModList = backgroundScanHandler.getLoadingModList();
+        if (loadingModList.getErrors().isEmpty()) {
+            // Add extra mixin configs
+            extraMixinConfigs.forEach(Mixins::addConfiguration);
+        }
         return List.of(modValidator.getModResources());
     }
 
