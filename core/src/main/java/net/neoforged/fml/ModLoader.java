@@ -7,6 +7,8 @@ package net.neoforged.fml;
 
 import com.google.common.collect.ImmutableList;
 import net.neoforged.bus.api.Event;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLLoader;
@@ -23,6 +25,7 @@ import net.neoforged.neoforgespi.locating.ForgeFeature;
 import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -315,7 +318,18 @@ public class ModLoader
             LOGGER.error("Cowardly refusing to send event generator to a broken mod state");
             return;
         }
-        ModList.get().forEachModInOrder(mc -> mc.acceptEvent(generator.apply(mc)));
+
+        // Construct events
+        List<ModContainer> modContainers = ModList.get().getSortedMods();
+        List<T> events = new ArrayList<>(modContainers.size());
+        ModList.get().forEachModInOrder(mc -> events.add(generator.apply(mc)));
+
+        // Post them
+        for (EventPriority phase : EventPriority.values()) {
+            for (int i = 0; i < modContainers.size(); i++) {
+                modContainers.get(i).acceptEvent(phase, events.get(i));
+            }
+        }
     }
 
     public <T extends Event & IModBusEvent> void postEvent(T e) {
@@ -323,14 +337,12 @@ public class ModLoader
             LOGGER.error("Cowardly refusing to send event {} to a broken mod state", e.getClass().getName());
             return;
         }
-        ModList.get().forEachModInOrder(mc -> mc.acceptEvent(e));
+        for (EventPriority phase : EventPriority.values()) {
+            ModList.get().forEachModInOrder(mc -> mc.acceptEvent(phase, e));
+        }
     }
     public <T extends Event & IModBusEvent> T postEventWithReturn(T e) {
-        if (!loadingStateValid) {
-            LOGGER.error("Cowardly refusing to send event {} to a broken mod state", e.getClass().getName());
-            return e;
-        }
-        ModList.get().forEachModInOrder(mc -> mc.acceptEvent(e));
+        postEvent(e);
         return e;
     }
     public <T extends Event & IModBusEvent> void postEventWrapContainerInModOrder(T event) {
@@ -341,11 +353,13 @@ public class ModLoader
             LOGGER.error("Cowardly refusing to send event {} to a broken mod state", e.getClass().getName());
             return;
         }
-        ModList.get().forEachModInOrder(mc -> {
-            pre.accept(mc, e);
-            mc.acceptEvent(e);
-            post.accept(mc, e);
-        });
+        for (EventPriority phase : EventPriority.values()) {
+            ModList.get().forEachModInOrder(mc -> {
+                pre.accept(mc, e);
+                mc.acceptEvent(phase, e);
+                post.accept(mc, e);
+            });
+        }
     }
 
     public List<ModLoadingWarning> getWarnings()
@@ -376,6 +390,11 @@ public class ModLoader
 
         @Override
         public Object getMod() {
+            return null;
+        }
+
+        @Override
+        public @Nullable IEventBus getEventBus() {
             return null;
         }
     }

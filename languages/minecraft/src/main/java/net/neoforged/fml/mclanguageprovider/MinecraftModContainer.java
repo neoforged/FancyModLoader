@@ -5,8 +5,10 @@
 
 package net.neoforged.fml.mclanguageprovider;
 
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforgespi.language.IModInfo;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -26,5 +28,10 @@ public class MinecraftModContainer extends ModContainer {
     @Override
     public Object getMod() {
         return MCMODINSTANCE;
+    }
+
+    @Override
+    public @Nullable IEventBus getEventBus() {
+        return null;
     }
 }

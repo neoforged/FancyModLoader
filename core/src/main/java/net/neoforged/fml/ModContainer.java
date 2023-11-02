@@ -5,12 +5,18 @@
 
 package net.neoforged.fml;
 
+import net.neoforged.bus.api.BusBuilder;
 import net.neoforged.bus.api.Event;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.config.IConfigEvent;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.loading.progress.ProgressMeter;
 import net.neoforged.neoforgespi.language.IModInfo;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -23,6 +29,8 @@ import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+
+import static net.neoforged.fml.Logging.LOADING;
 
 /**
  * The container that wraps around mods in the system.
@@ -39,6 +47,8 @@ import java.util.function.Supplier;
 
 public abstract class ModContainer
 {
+    private static final Logger LOGGER = LogManager.getLogger();
+
     protected final String modId;
     protected final String namespace;
     protected final IModInfo modInfo;
@@ -167,8 +177,49 @@ public abstract class ModContainer
     public abstract Object getMod();
 
     /**
-     * Accept an arbitrary event for processing by the mod. Probably posted to an event bus in the lower level container.
+     * {@return the event bus for this mod, if available}
+     *
+     * <p>Not all mods have an event bus!
+     *
+     * @implNote For custom mod container implementations, the event bus must be built with
+     * {@link BusBuilder#allowPerPhasePost()} or posting via {@link #acceptEvent(EventPriority, Event)} will throw!
+     */
+    @Nullable
+    public abstract IEventBus getEventBus();
+
+    /**
+     * Accept an arbitrary event for processing by the mod. Posted to {@link #getEventBus()}.
      * @param e Event to accept
      */
-    protected <T extends Event & IModBusEvent> void acceptEvent(T e) {}
+    protected final <T extends Event & IModBusEvent> void acceptEvent(T e) {
+        IEventBus bus = getEventBus();
+        if (bus == null) return;
+
+        try {
+            LOGGER.trace(LOADING, "Firing event for modid {} : {}", this.getModId(), e);
+            bus.post(e);
+            LOGGER.trace(LOADING, "Fired event for modid {} : {}", this.getModId(), e);
+        } catch (Throwable t) {
+            LOGGER.error(LOADING,"Caught exception during event {} dispatch for modid {}", e, this.getModId(), t);
+            throw new ModLoadingException(modInfo, modLoadingStage, "fml.modloading.errorduringevent", t);
+        }
+    }
+
+    /**
+     * Accept an arbitrary event for processing by the mod. Posted to {@link #getEventBus()}.
+     * @param e Event to accept
+     */
+    protected final <T extends Event & IModBusEvent> void acceptEvent(EventPriority phase, T e) {
+        IEventBus bus = getEventBus();
+        if (bus == null) return;
+
+        try {
+            LOGGER.trace(LOADING, "Firing event for phase {} for modid {} : {}", phase, this.getModId(), e);
+            bus.post(phase, e);
+            LOGGER.trace(LOADING, "Fired event for phase {} for modid {} : {}", phase, this.getModId(), e);
+        } catch (Throwable t) {
+            LOGGER.error(LOADING,"Caught exception during event {} dispatch for modid {}", e, this.getModId(), t);
+            throw new ModLoadingException(modInfo, modLoadingStage, "fml.modloading.errorduringevent", t);
+        }
+    }
 }

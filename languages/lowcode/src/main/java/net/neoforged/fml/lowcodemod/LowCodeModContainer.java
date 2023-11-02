@@ -6,12 +6,12 @@
 package net.neoforged.fml.lowcodemod;
 
 import com.mojang.logging.LogUtils;
-import net.neoforged.bus.api.Event;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.IExtensionPoint;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.ModFileScanData;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import static net.neoforged.fml.loading.LogMarkers.LOADING;
@@ -45,7 +45,7 @@ public class LowCodeModContainer extends ModContainer
     }
 
     @Override
-    protected <T extends Event & IModBusEvent> void acceptEvent(final T e)
-    {
+    public @Nullable IEventBus getEventBus() {
+        return null;
     }
 }
