@@ -6,6 +6,7 @@
 package net.neoforged.fml.loading;
 
 import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
+import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.BackgroundScanHandler;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
@@ -74,6 +75,14 @@ public class LoadingModList
                 .map(ModFile::getCoreMods)
                 .flatMap(List::stream)
                 .forEach(FMLLoader.getCoreModProvider()::addCoreMod);
+    }
+
+    public void addMixinConfigs() {
+        modFiles.stream()
+                .map(ModFileInfo::getFile)
+                .map(ModFile::getMixinConfigs)
+                .flatMap(List::stream)
+                .forEach(DeferredMixinConfigRegistration::addMixinConfig);
     }
 
     public void addAccessTransformers()

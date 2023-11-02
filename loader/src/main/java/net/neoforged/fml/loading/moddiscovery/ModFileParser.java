@@ -66,4 +66,21 @@ public class ModFileParser {
                 .map(e -> new CoreModFile(e.getKey(), modFile.findResource(e.getValue()),modFile))
                 .toList();
     }
+
+    protected static List<String> getMixinConfigs(IModFileInfo modFileInfo) {
+        try {
+            var config = modFileInfo.getConfig();
+            var mixinsEntries = config.getConfigList("mixins");
+            return mixinsEntries
+                    .stream()
+                    .map(entry -> entry
+                            .<String>getConfigElement("config")
+                            .orElseThrow(
+                                    () -> new InvalidModFileException("Missing \"config\" in [[mixins]] entry", modFileInfo)))
+                    .toList();
+        } catch (Exception exception) {
+            LOGGER.error("Failed to load mixin configs from mod file", exception);
+            return List.of();
+        }
+    }
 }

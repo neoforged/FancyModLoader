@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ModValidator {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -71,7 +72,12 @@ public class ModValidator {
     }
 
     public ITransformationService.Resource getModResources() {
-        return new ITransformationService.Resource(IModuleLayerManager.Layer.GAME, this.candidateMods.stream().map(IModFile::getSecureJar).toList());
+        var modFilesToLoad = Stream.concat(
+                // mods
+                this.loadingModList.getModFiles().stream().map(ModFileInfo::getFile),
+                // game libraries
+                this.modFiles.get(IModFile.Type.GAMELIBRARY).stream());
+        return new ITransformationService.Resource(IModuleLayerManager.Layer.GAME, modFilesToLoad.map(ModFile::getSecureJar).toList());
     }
 
     private List<EarlyLoadingException.ExceptionData> validateLanguages() {
@@ -97,8 +103,9 @@ public class ModValidator {
         loadingModList = ModSorter.sort(candidateMods, allErrors);
         loadingModList.addCoreMods();
         loadingModList.addAccessTransformers();
+        loadingModList.addMixinConfigs();
         loadingModList.setBrokenFiles(brokenFiles);
-        BackgroundScanHandler backgroundScanHandler = new BackgroundScanHandler(candidateMods);
+        BackgroundScanHandler backgroundScanHandler = new BackgroundScanHandler();
         loadingModList.addForScanning(backgroundScanHandler);
         return backgroundScanHandler;
     }

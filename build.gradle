@@ -1,7 +1,7 @@
 plugins {
     id 'com.github.ben-manes.versions' version '0.39.0'
     id 'org.javamodularity.moduleplugin' version '1.8.7'
-    id 'org.cadixdev.licenser' version '0.6.0'
+    id 'net.neoforged.licenser' version '0.7.2' apply false
     id 'net.neoforged.gradleutils' version '[2.0.18,3)'
 }
 
@@ -17,7 +17,7 @@ allprojects {
 
     apply plugin: 'com.github.ben-manes.versions'
     apply plugin: 'org.javamodularity.moduleplugin'
-    apply plugin: 'org.cadixdev.licenser'
+    apply plugin: 'net.neoforged.licenser'
     apply plugin: 'net.neoforged.gradleutils'
 
     group = 'net.neoforged.fancymodloader'
@@ -84,6 +84,7 @@ subprojects { subProject ->
 
     license {
         header = rootProject.file('LICENSE-header.txt')
+        skipExistingHeaders true
 
         include 'net/neoforged/'
     }
