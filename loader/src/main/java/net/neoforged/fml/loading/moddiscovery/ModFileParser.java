@@ -67,18 +67,20 @@ public class ModFileParser {
                 .toList();
     }
 
-    protected static List<String> getMixinConfigs(ModFile modFile) {
+    protected static List<String> getMixinConfigs(IModFileInfo modFileInfo) {
         try {
-            final Path mixinConfigs = modFile.findResource("META-INF", "mixinconfigs.json");
-            if (!Files.exists(mixinConfigs)) {
-                return Collections.emptyList();
-            }
-            final Type type = new TypeToken<List<String>>() {}.getType();
-            final Gson gson = new Gson();
-            return gson.fromJson(Files.newBufferedReader(mixinConfigs), type);
-        } catch (IOException e) {
-            LOGGER.debug(LogMarkers.LOADING,"Failed to read mixin config list mixinconfigs.json", e);
-            return Collections.emptyList();
+            var config = modFileInfo.getConfig();
+            var mixinsEntries = config.getConfigList("mixins");
+            return mixinsEntries
+                    .stream()
+                    .map(entry -> entry
+                            .<String>getConfigElement("config")
+                            .orElseThrow(
+                                    () -> new InvalidModFileException("Missing \"config\" in [[mixins]] entry", modFileInfo)))
+                    .toList();
+        } catch (Exception exception) {
+            LOGGER.error("Failed to load mixin configs from mod file", exception);
+            return List.of();
         }
     }
 }

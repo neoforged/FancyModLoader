@@ -76,7 +76,7 @@ public class ModValidator {
                 // mods
                 this.loadingModList.getModFiles().stream().map(ModFileInfo::getFile),
                 // game libraries
-                this.candidateMods.stream().filter(type -> type.getType() == IModFile.Type.GAMELIBRARY));
+                this.modFiles.get(IModFile.Type.GAMELIBRARY).stream());
         return new ITransformationService.Resource(IModuleLayerManager.Layer.GAME, modFilesToLoad.map(ModFile::getSecureJar).toList());
     }
 
