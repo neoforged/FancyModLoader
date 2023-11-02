@@ -5,6 +5,7 @@
 
 package net.neoforged.fml.javafmlmod;
 
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.EventBusErrorMessage;
 import net.neoforged.bus.api.BusBuilder;
 import net.neoforged.bus.api.Event;
@@ -14,6 +15,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingStage;
 import net.neoforged.fml.event.IModBusEvent;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.logging.log4j.LogManager;
@@ -43,7 +45,11 @@ public class FMLModContainer extends ModContainer
         LOGGER.debug(LOADING,"Creating FMLModContainer instance for {}", className);
         this.scanResults = modFileScanResults;
         activityMap.put(ModLoadingStage.CONSTRUCT, this::constructMod);
-        this.eventBus = BusBuilder.builder().setExceptionHandler(this::onEventFailed).markerType(IModBusEvent.class).build();
+        this.eventBus = BusBuilder.builder()
+                .setExceptionHandler(this::onEventFailed)
+                .markerType(IModBusEvent.class)
+                .allowPerPhasePost()
+                .build();
         this.configHandler = Optional.of(ce->this.eventBus.post(ce.self()));
         final FMLJavaModLoadingContext contextExtension = new FMLJavaModLoadingContext(this);
         this.contextExtension = () -> contextExtension;
@@ -70,45 +76,42 @@ public class FMLModContainer extends ModContainer
         try
         {
             LOGGER.trace(LOADING, "Loading mod instance {} of type {}", getModId(), modClass.getName());
-            try {
-                // Try noargs constructor first
-                this.modInstance = modClass.getDeclaredConstructor().newInstance();
-            } catch (NoSuchMethodException ignored) {
-                // Otherwise look for constructor that can accept more arguments
-                Map<Class<?>, Object> allowedConstructorArgs = Map.of(
-                        IEventBus.class, eventBus,
-                        ModContainer.class, this,
-                        FMLModContainer.class, this);
 
-                constructorsLoop: for (var constructor : modClass.getDeclaredConstructors()) {
-                    var parameterTypes = constructor.getParameterTypes();
-                    Object[] constructorArgs = new Object[parameterTypes.length];
-                    Set<Class<?>> foundArgs = new HashSet<>();
+            var constructors = modClass.getConstructors();
+            if (constructors.length != 1) {
+                throw new RuntimeException("Mod class must have exactly 1 public constructor, found " + constructors.length);
+            }
+            var constructor = constructors[0];
 
-                    for (int i = 0; i < parameterTypes.length; i++) {
-                        Object argInstance = allowedConstructorArgs.get(parameterTypes[i]);
-                        if (argInstance == null) {
-                            // Unknown argument, try next constructor method...
-                            continue constructorsLoop;
-                        }
+            // Allowed arguments for injection via constructor
+            Map<Class<?>, Object> allowedConstructorArgs = Map.of(
+                    IEventBus.class, eventBus,
+                    ModContainer.class, this,
+                    FMLModContainer.class, this,
+                    Dist.class, FMLLoader.getDist());
 
-                        if (foundArgs.contains(parameterTypes[i])) {
-                            throw new RuntimeException("Duplicate constructor argument type: " + parameterTypes[i]);
-                        }
+            var parameterTypes = constructor.getParameterTypes();
+            Object[] constructorArgs = new Object[parameterTypes.length];
+            Set<Class<?>> foundArgs = new HashSet<>();
 
-                        foundArgs.add(parameterTypes[i]);
-                        constructorArgs[i] = argInstance;
-                    }
-
-                    // All arguments are found
-                    this.modInstance = constructor.newInstance(constructorArgs);
-                }
-
-                if (this.modInstance == null) {
-                    throw new RuntimeException("Could not find mod constructor. Allowed optional argument classes: " +
+            for (int i = 0; i < parameterTypes.length; i++) {
+                Object argInstance = allowedConstructorArgs.get(parameterTypes[i]);
+                if (argInstance == null) {
+                    throw new RuntimeException("Mod constructor has unsupported argument " + parameterTypes[i] + ". Allowed optional argument classes: " +
                             allowedConstructorArgs.keySet().stream().map(Class::getSimpleName).collect(Collectors.joining(", ")));
                 }
+
+                if (foundArgs.contains(parameterTypes[i])) {
+                    throw new RuntimeException("Duplicate mod constructor argument type: " + parameterTypes[i]);
+                }
+
+                foundArgs.add(parameterTypes[i]);
+                constructorArgs[i] = argInstance;
             }
+
+            // All arguments are found
+            this.modInstance = constructor.newInstance(constructorArgs);
+
             LOGGER.trace(LOADING, "Loaded mod instance {} of type {}", getModId(), modClass.getName());
         }
         catch (Throwable e)
@@ -139,20 +142,9 @@ public class FMLModContainer extends ModContainer
         return modInstance;
     }
 
+    @Override
     public IEventBus getEventBus()
     {
         return this.eventBus;
-    }
-
-    @Override
-    protected <T extends Event & IModBusEvent> void acceptEvent(final T e) {
-        try {
-            LOGGER.trace(LOADING, "Firing event for modid {} : {}", this.getModId(), e);
-            this.eventBus.post(e);
-            LOGGER.trace(LOADING, "Fired event for modid {} : {}", this.getModId(), e);
-        } catch (Throwable t) {
-            LOGGER.error(LOADING,"Caught exception during event {} dispatch for modid {}", e, this.getModId(), t);
-            throw new ModLoadingException(modInfo, modLoadingStage, "fml.modloading.errorduringevent", t);
-        }
     }
 }
