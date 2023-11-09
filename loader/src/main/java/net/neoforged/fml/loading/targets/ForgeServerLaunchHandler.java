@@ -5,7 +5,6 @@
 
 package net.neoforged.fml.loading.targets;
 
-import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import net.neoforged.fml.loading.LibraryFinder;
 import net.neoforged.fml.loading.VersionInfo;
 
@@ -14,13 +13,13 @@ import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.stream.Stream;
 
-public class ForgeServerLaunchHandler extends CommonServerLaunchHandler implements ILaunchHandlerService {
+public class ForgeServerLaunchHandler extends CommonServerLaunchHandler {
     @Override public String name() { return "forgeserver"; }
 
     @Override
     protected BiPredicate<String, String> processMCStream(VersionInfo versionInfo, Stream.Builder<Path> mc, BiPredicate<String, String> filter, Stream.Builder<List<Path>> mods) {
-        var forgepatches = LibraryFinder.findPathForMaven("net.neoforged", "neoforge", "", "server", versionInfo.mcAndNeoForgeVersion());
-        var forgejar = LibraryFinder.findPathForMaven("net.neoforged", "neoforge", "", "universal", versionInfo.mcAndNeoForgeVersion());
+        var forgepatches = LibraryFinder.findPathForMaven("net.neoforged", "neoforge", "", "server", versionInfo.neoForgeVersion());
+        var forgejar = LibraryFinder.findPathForMaven("net.neoforged", "neoforge", "", "universal", versionInfo.neoForgeVersion());
         mc.add(forgepatches);
         mods.add(List.of(forgejar));
         return filter;
