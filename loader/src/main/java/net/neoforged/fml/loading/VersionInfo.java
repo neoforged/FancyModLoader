@@ -12,9 +12,6 @@ public record VersionInfo(String neoForgeVersion, String fmlVersion, String mcVe
         this((String) arguments.get("neoForgeVersion"), (String) arguments.get("fmlVersion"), (String) arguments.get("mcVersion"), (String) arguments.get("neoFormVersion"));
     }
 
-    public String mcAndNeoForgeVersion() {
-        return mcVersion + "-"+ neoForgeVersion;
-    }
     public String mcAndFmlVersion() {
         return mcVersion+"-"+ fmlVersion;
     }

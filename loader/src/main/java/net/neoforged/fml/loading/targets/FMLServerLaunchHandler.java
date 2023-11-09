@@ -5,7 +5,6 @@
 
 package net.neoforged.fml.loading.targets;
 
-import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import net.neoforged.fml.loading.LibraryFinder;
 import net.neoforged.fml.loading.VersionInfo;
 
@@ -14,7 +13,7 @@ import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.stream.Stream;
 
-public class FMLServerLaunchHandler extends CommonServerLaunchHandler implements ILaunchHandlerService {
+public class FMLServerLaunchHandler extends CommonServerLaunchHandler {
     @Override public String name() { return "fmlserver"; }
 
     @Override
