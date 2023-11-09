@@ -518,9 +518,12 @@ public class DisplayWindow implements ImmediateWindowProvider {
     public long setupMinecraftWindow(final IntSupplier width, final IntSupplier height, final Supplier<String> title, final LongSupplier monitorSupplier) {
         // wait for the window to actually be initialized
         try {
-            this.initializationFuture.get();
+            this.initializationFuture.get(30, TimeUnit.SECONDS);
         } catch(InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
+        } catch(TimeoutException e) {
+            Thread.dumpStack();
+            crashElegantly("We seem to be having trouble initializing the window, waited for 30 seconds");
         }
         // we have to spin wait for the window ticker
         ImmediateWindowHandler.updateProgress("Initializing Game Graphics");
