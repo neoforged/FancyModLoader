@@ -1,3 +1,5 @@
+import net.neoforged.gradleutils.PomUtilsExtension.License
+
 buildscript {
     dependencies {
         classpath('de.jjohannes.gradle:extra-java-module-info:0.14')
@@ -6,7 +8,7 @@ buildscript {
 
 plugins {
     id 'com.github.ben-manes.versions' version '0.42.0'
-    id 'net.neoforged.gradleutils' version '[2.0.16,3)'
+    id 'net.neoforged.gradleutils' version '3.0.0-alpha.4'
 }
 
 apply plugin: 'maven-publish'
@@ -21,7 +23,7 @@ allprojects {
         toolchain.languageVersion = JavaLanguageVersion.of(16)
         modularity.inferModulePath.set(true)
     }
-    version = gradleutils.getTagOffsetVersion()
+    version = gradleutils.version
 
     repositories {
         mavenLocal()
@@ -112,7 +114,7 @@ compileTestJava {
 
 group = 'cpw.mods'
 
-version = gradleutils.getTagOffsetVersion()
+version = gradleutils.version
 logger.lifecycle('Version: ' + version)
 
 ext.asmVersion = 9.3
@@ -125,42 +127,24 @@ dependencies {
 }
 
 changelog {
-    fromTag "0.9"
+    from '0.9'
 }
 
-task sourcesJar(type: Jar) {
-    archiveClassifier = 'sources'
-    from sourceSets.main.allSource
+java {
+    withSourcesJar()
 }
-
-//jmh {
-//    benchmarkMode = ['avgt' ]
-//    profilers = [ 'stack', 'jfr:dir=./build/results/jmh/' ]
-//    timeOnIteration = '3s'
-//    warmup = '2s'
-//    warmupIterations = 3
-//    iterations = 3
-//    fork = 3
-//    timeUnit = 'us'
-//    // JMH loads the main sourceset without a module context, so add exports and opens for required stuff to all unnamed and disable the missing module crash
-//    jvmArgsPrepend = ['--add-opens java.base/java.util.jar=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED -Dsecurejarhandler.throwOnMissingModule=false']
-//}
-
-//tasks['jmh'].dependsOn(clean)
 
 jar {
     manifest {
         attributes(
                 'Specification-Title': 'securejarhandler',
-                'Specification-Vendor': 'neoforged',
+                'Specification-Vendor': 'mcmodlauncher',
                 'Specification-Version': '1', // We are version 1 of ourselves
                 'Implementation-Title': project.name,
-                'Implementation-Version': "${project.version}+${System.getenv('BUILD_NUMBER')?:0}+${gradleutils.gitInfo.branch}.${gradleutils.gitInfo.abbreviatedId}",
-                'Implementation-Vendor':'neoforged',
-                'Implementation-Timestamp': java.time.Instant.now().toString(),
+                'Implementation-Version': "${project.version}+${gradleutils.gitInfo.branch}.${gradleutils.gitInfo.abbreviatedId}",
+                'Implementation-Vendor':'mcmodlauncher',
                 'Git-Commit': gradleutils.gitInfo.abbreviatedId,
-                'Git-Branch': gradleutils.gitInfo.branch,
-                'Build-Number': "${System.getenv("BUILD_NUMBER")?:0}",
+                'Git-Branch': gradleutils.gitInfo.branch
         )
     }
 }
@@ -178,16 +162,8 @@ publishing {
             pom {
                 name = 'Secure Modular Jar handler'
                 description = 'Making the Java modular system provide security information'
-                url = 'https://github.com/McModLauncher/securejarhandler'
-                scm {
-                    url = 'https://github.com/McModLauncher/securejarhandler'
-                    connection = 'scm:git:git://github.com/McModLauncher/securejarhandler.git'
-                    developerConnection = 'scm:git:git@github.com:McModLauncher/securejarhandler.git'
-                }
-                issueManagement {
-                    system = 'github'
-                    url = 'https://github.com/McModLauncher/securejarhandler/issues'
-                }
+                pomUtils.githubRepo(it, 'SecureJarHandler', 'McModLauncher')
+                pomUtils.license(it, License.MIT)
 
                 developers {
                     developer {
@@ -199,6 +175,6 @@ publishing {
         }
     }
     repositories {
-        maven gradleutils.getPublishingForgeMaven()
+        maven gradleutils.maven
     }
 }
