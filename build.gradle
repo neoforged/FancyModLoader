@@ -158,7 +158,6 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
-            artifact sourcesJar
             pom {
                 name = 'Secure Modular Jar handler'
                 description = 'Making the Java modular system provide security information'
