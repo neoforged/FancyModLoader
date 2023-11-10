@@ -1,16 +1,16 @@
 plugins {
-    id 'net.neoforged.gradleutils' version '[2.0.16,3)'
-    id 'com.github.ben-manes.versions' version '0.39.0'
-    id 'org.javamodularity.moduleplugin' version '1.8.10'
+    id 'eclipse'
     id 'java-library'
     id 'maven-publish'
-    id 'eclipse'
+    id 'net.neoforged.gradleutils' version '3.0.0-alpha.4'
+    id 'com.github.ben-manes.versions' version '0.39.0'
+    id 'org.javamodularity.moduleplugin' version '1.8.10'
 }
 
 group 'cpw.mods'
 
-version = gradleutils.getTagOffsetVersion()
-logger.lifecycle("Version: $version")
+version = gradleutils.version
+logger.lifecycle("Version: {}", version)
 
 repositories {
     mavenLocal()
@@ -30,30 +30,23 @@ java {
 }
 
 changelog {
-    fromTag "0.1"
+    from '1.1'
 }
 
 jar {
     manifest {
         attributes(
                 'Specification-Title': 'bootstraplauncher',
-                'Specification-Vendor': 'neoforged',
+                'Specification-Vendor': 'mcmodlauncher',
                 'Specification-Version': '1', // We are version 1 of ourselves
                 'Implementation-Title': project.name,
-                'Implementation-Version': "${project.version}+${System.getenv("BUILD_NUMBER")?:0}+${gradleutils.gitInfo.branch}.${gradleutils.gitInfo.abbreviatedId}",
-                'Implementation-Vendor':'neoforged',
-                'Implementation-Timestamp': java.time.Instant.now().toString(),
+                'Implementation-Version': "${project.version}+${gradleutils.gitInfo.branch}.${gradleutils.gitInfo.abbreviatedId}",
+                'Implementation-Vendor':'mcmodlauncher',
                 'Git-Commit': gradleutils.gitInfo.abbreviatedId,
                 'Git-Branch': gradleutils.gitInfo.branch,
-                'Build-Number': "${System.getenv("BUILD_NUMBER")?:0}",
                 'Main-Class': 'cpw.mods.bootstraplauncher.BootstrapLauncher'
         )
     }
-}
-
-artifacts {
-    archives jar
-    archives sourcesJar
 }
 
 publishing {
@@ -62,16 +55,7 @@ publishing {
         pom {
             name = 'Bootstrap launcher'
             description = 'Allows bootstrapping a modularized environment from a classpath one'
-            url = 'https://github.com/McModLauncher/bootstraplauncher'
-            scm {
-                url = 'https://github.com/McModLauncher/bootstraplauncher'
-                connection = 'scm:git:git@github.com:McModLauncher/bootstraplauncher.git'
-                developerConnection = 'scm:git:git@github.com:McModLauncher/bootstraplauncher.git'
-            }
-            issueManagement {
-                system = 'github'
-                url = 'https://github.com/McModLauncher/bootstraplauncher/issues'
-            }
+            pomUtils.githubRepo(it, 'bootstraplauncher', 'McModLauncher')
             developers {
                 developer {
                     id = 'cpw'
@@ -81,7 +65,7 @@ publishing {
         }
     }
     repositories {
-        maven gradleutils.getPublishingForgeMaven()
+        maven gradleutils.publishingMaven
     }
 }
 
