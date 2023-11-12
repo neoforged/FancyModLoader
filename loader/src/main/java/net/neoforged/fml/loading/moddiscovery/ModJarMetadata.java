@@ -5,50 +5,20 @@
 
 package net.neoforged.fml.loading.moddiscovery;
 
+import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarMetadata;
-import cpw.mods.jarhandling.SecureJar;
 import net.neoforged.neoforgespi.locating.IModFile;
-import net.neoforged.neoforgespi.locating.IModLocator;
 
 import java.lang.module.ModuleDescriptor;
-import java.nio.file.Path;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.function.BiPredicate;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 public final class ModJarMetadata implements JarMetadata {
+    private final JarContents jarContents;
     private IModFile modFile;
     private ModuleDescriptor descriptor;
 
-    // TODO: Remove helper functions to cleanup api
-    @Deprecated(forRemoval = true, since="1.18")
-    static Optional<IModFile> buildFile(IModLocator locator, Predicate<SecureJar> jarTest, BiPredicate<String, String> filter, Path... files) {
-        return buildFile(j->new ModFile(j, locator, ModFileParser::modsTomlParser), jarTest, filter, files);
-    }
-
-    // TODO: Remove helper functions to cleanup api
-    @Deprecated(forRemoval = true, since="1.18")
-    static IModFile buildFile(IModLocator locator, Path... files) {
-        return buildFile(locator, j->true, null, files).orElseThrow(()->new IllegalArgumentException("Failed to find valid JAR file"));
-    }
-
-    // TODO: Remove helper functions to cleanup api
-    @Deprecated(forRemoval = true, since="1.18")
-    static Optional<IModFile> buildFile(Function<SecureJar, IModFile> mfConstructor, Predicate<SecureJar> jarTest, BiPredicate<String, String> filter, Path... files) {
-        var mjm = new ModJarMetadata();
-        var sj = SecureJar.from(()->ModFile.DEFAULTMANIFEST, j->mjm, filter, files);
-        if (jarTest.test(sj)) {
-            var mf = mfConstructor.apply(sj);
-            mjm.setModFile(mf);
-            return Optional.of(mf);
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    ModJarMetadata() {
+    ModJarMetadata(JarContents jarContents) {
+        this.jarContents = jarContents;
     }
 
     public void setModFile(IModFile file) {
@@ -71,7 +41,7 @@ public final class ModJarMetadata implements JarMetadata {
         var bld = ModuleDescriptor.newAutomaticModule(name())
                 .version(version())
                 .packages(modFile.getSecureJar().getPackages());
-        modFile.getSecureJar().getProviders().stream()
+        jarContents.getMetaInfServices().stream()
                 .filter(p -> !p.providers().isEmpty())
                 .forEach(p -> bld.provides(p.serviceName(), p.providers()));
         modFile.getModFileInfo().usesServices().forEach(bld::uses);

@@ -6,6 +6,7 @@
 package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
+import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
 import net.neoforged.fml.loading.LogMarkers;
@@ -34,30 +35,28 @@ public abstract class AbstractModProvider implements IModProvider
     protected static final String MANIFEST = "META-INF/MANIFEST.MF";
 
     protected IModLocator.ModFileOrException createMod(Path... path) {
-        var mjm = new ModJarMetadata();
-        var sj = SecureJar.from(
-                Manifest::new,
-                jar -> jar.moduleDataProvider().findFile(MODS_TOML).isPresent() ? mjm : JarMetadata.from(jar, path),
-                null,
-                path
-        );
+        var jarContents = new JarContentsBuilder()
+                .paths(path)
+                .ignoreRootPackages("assets", "data")
+                .build();
 
         IModFile mod;
-        var type = sj.moduleDataProvider().getManifest().getMainAttributes().getValue(ModFile.TYPE);
+        var type = jarContents.getManifest().getMainAttributes().getValue(ModFile.TYPE);
         if (type == null) {
             type = getDefaultJarModType();
         }
-        if (sj.moduleDataProvider().findFile(MODS_TOML).isPresent()) {
+        if (jarContents.findFile(MODS_TOML).isPresent()) {
             LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MODS_TOML, type, path);
-            mod = new ModFile(sj, this, ModFileParser::modsTomlParser);
+            var mjm = new ModJarMetadata(jarContents);
+            mod = new ModFile(SecureJar.from(jarContents, mjm), this, ModFileParser::modsTomlParser);
+            mjm.setModFile(mod);
         } else if (type != null) {
             LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MANIFEST, type, path);
-            mod = new ModFile(sj, this, this::manifestParser, type);
+            mod = new ModFile(SecureJar.from(jarContents), this, this::manifestParser, type);
         } else {
             return new IModLocator.ModFileOrException(null, new ModFileLoadingException("Invalid mod file found "+ Arrays.toString(path)));
         }
 
-        mjm.setModFile(mod);
         return new IModLocator.ModFileOrException(mod, null);
     }
 

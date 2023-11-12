@@ -35,15 +35,7 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 public class ModFile implements IModFile {
-    // Mods either must have a mods.toml or a manifest. We can no longer just put any jar on the classpath.
-    @Deprecated(forRemoval = true, since = "1.18")
-    public static final Manifest DEFAULTMANIFEST;
     private static final Logger LOGGER = LogUtils.getLogger();
-
-    static {
-        DEFAULTMANIFEST = new Manifest();
-        DEFAULTMANIFEST.getMainAttributes().putValue("FMLModType", "MOD");
-    }
 
     private final String jarVersion;
     private final ModFileFactory.ModFileInfoParser parser;
