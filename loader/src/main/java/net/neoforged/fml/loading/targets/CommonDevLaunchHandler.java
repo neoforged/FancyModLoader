@@ -5,7 +5,9 @@
 
 package net.neoforged.fml.loading.targets;
 
+import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.niofs.union.UnionPathFilter;
 import net.neoforged.fml.loading.FileUtils;
 
 import java.nio.file.Path;
@@ -13,7 +15,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BiPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -88,12 +89,12 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
                        .orElseThrow(() -> new IllegalStateException("Could not find " + match + " in classpath"));
     }
 
-    protected BiPredicate<String, String> getMcFilter(Path extra, List<Path> minecraft, Stream.Builder<List<Path>> mods) {
+    protected UnionPathFilter getMcFilter(Path extra, List<Path> minecraft, Stream.Builder<List<Path>> mods) {
         final var packages = getExcludedPrefixes();
         final var extraPath = extra.toString().replace('\\', '/');
 
         // We serve everything, except for things in the forge packages.
-        BiPredicate<String, String> mcFilter = (path, base) -> {
+        UnionPathFilter mcFilter = (path, base) -> {
             if (base.equals(extraPath) ||
                     path.endsWith("/")) return true;
             for (var pkg : packages)
@@ -102,12 +103,15 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
         };
 
         // We need to separate out our resources/code so that we can show up as a different data pack.
-        var modJar = SecureJar.from((path, base) -> {
-            if (!path.endsWith(".class")) return true;
-            for (var pkg : packages)
-                if (path.startsWith(pkg)) return true;
-            return false;
-        }, minecraft.stream().distinct().toArray(Path[]::new));
+        var modJar = SecureJar.from(new JarContentsBuilder()
+                .pathFilter((path, base) -> {
+                    if (!path.endsWith(".class")) return true;
+                    for (var pkg : packages)
+                        if (path.startsWith(pkg)) return true;
+                    return false;
+                })
+                .paths(minecraft.stream().distinct().toArray(Path[]::new))
+                .build());
         //modJar.getPackages().stream().sorted().forEach(System.out::println);
         mods.add(List.of(modJar.getRootPath()));
 

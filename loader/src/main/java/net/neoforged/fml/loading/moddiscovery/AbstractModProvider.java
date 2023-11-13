@@ -7,7 +7,6 @@ package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.JarContentsBuilder;
-import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.neoforgespi.language.IConfigurable;
@@ -26,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 public abstract class AbstractModProvider implements IModProvider
 {
@@ -37,7 +35,6 @@ public abstract class AbstractModProvider implements IModProvider
     protected IModLocator.ModFileOrException createMod(Path... path) {
         var jarContents = new JarContentsBuilder()
                 .paths(path)
-                .ignoreRootPackages("assets", "data")
                 .build();
 
         IModFile mod;

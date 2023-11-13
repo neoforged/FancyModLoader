@@ -40,7 +40,7 @@ public final class ModJarMetadata implements JarMetadata {
         if (descriptor != null) return descriptor;
         var bld = ModuleDescriptor.newAutomaticModule(name())
                 .version(version())
-                .packages(modFile.getSecureJar().getPackages());
+                .packages(jarContents.getPackagesExcluding("assets", "data"));
         jarContents.getMetaInfServices().stream()
                 .filter(p -> !p.providers().isEmpty())
                 .forEach(p -> bld.provides(p.serviceName(), p.providers()));
