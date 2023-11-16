@@ -1,5 +1,7 @@
 package cpw.mods.niofs.union;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -99,13 +101,13 @@ public class UnionFileSystemProvider extends FileSystemProvider {
         }
     }
 
-    public UnionFileSystem newFileSystem(final BiPredicate<String, String> pathfilter, final Path... paths) {
+    public UnionFileSystem newFileSystem(@Nullable BiPredicate<String, String> pathfilter, final Path... paths) {
         if (paths.length == 0) throw new IllegalArgumentException("Need at least one path");
         var key = makeKey(paths[0]);
         return newFileSystemInternal(key, pathfilter, paths);
     }
 
-    private UnionFileSystem newFileSystemInternal(final String key, final BiPredicate<String, String> pathfilter, final Path... paths) {
+    private UnionFileSystem newFileSystemInternal(final String key, @Nullable BiPredicate<String, String> pathfilter, final Path... paths) {
         var normpaths = Arrays.stream(paths)
                 .map(Path::toAbsolutePath)
                 .map(Path::normalize)

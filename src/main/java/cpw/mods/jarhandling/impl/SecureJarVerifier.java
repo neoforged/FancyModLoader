@@ -8,6 +8,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.jar.JarInputStream;
 
+/**
+ * Reflection / Unsafe wrapper class around the unexposed {@link java.util.jar.JarVerifier}.
+ */
 public class SecureJarVerifier {
     private static final boolean USE_UNSAAFE = Boolean.parseBoolean(System.getProperty("securejarhandler.useUnsafeAccessor", "true"));
     private static IAccessor ACCESSOR = USE_UNSAAFE ? new UnsafeAccessor() : new Reflection();

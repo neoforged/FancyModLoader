@@ -33,16 +33,22 @@ public interface JarMetadata {
         "volatile","const","float","native","super","while");
     Pattern KEYWORD_PARTS = Pattern.compile("(?<=^|\\.)(" + String.join("|", ILLEGAL_KEYWORDS) + ")(?=\\.|$)");
 
-    static JarMetadata from(final SecureJar jar, final Path... path) {
-        if (path.length==0) throw new IllegalArgumentException("Need at least one path");
+    /**
+     * Builds the jar metadata for a jar following the normal rules for Java jars.
+     *
+     * <p>If the jar has a {@code module-info.class} file, the module info is read from there.
+     * Otherwise, the jar is an automatic module, whose name is optionally derived
+     * from {@code Automatic-Module-Name} in the manifest.
+     */
+    static JarMetadata from(JarContents jar) {
         final var pkgs = jar.getPackages();
-        var mi = jar.moduleDataProvider().findFile("module-info.class");
+        var mi = jar.findFile("module-info.class");
         if (mi.isPresent()) {
             return new ModuleJarMetadata(mi.get(), pkgs);
         } else {
-            var providers = jar.getProviders();
-            var fileCandidate = fromFileName(path[0], pkgs, providers);
-            var aname = jar.moduleDataProvider().getManifest().getMainAttributes().getValue("Automatic-Module-Name");
+            var providers = jar.getMetaInfServices();
+            var fileCandidate = fromFileName(jar.getPrimaryPath(), pkgs, providers);
+            var aname = jar.getManifest().getMainAttributes().getValue("Automatic-Module-Name");
             if (aname != null) {
                 return new SimpleJarMetadata(aname, fileCandidate.version(), pkgs, providers);
             } else {
@@ -50,8 +56,8 @@ public interface JarMetadata {
             }
         }
     }
-    static SimpleJarMetadata fromFileName(final Path path, final Set<String> pkgs, final List<SecureJar.Provider> providers) {
 
+    static SimpleJarMetadata fromFileName(final Path path, final Set<String> pkgs, final List<SecureJar.Provider> providers) {
         // detect Maven-like paths
         Path versionMaybe = path.getParent();
         if (versionMaybe != null)
@@ -136,5 +142,27 @@ public interface JarMetadata {
         mn = KEYWORD_PARTS.matcher(mn).replaceAll("_$1");
 
         return mn;
+    }
+
+    /**
+     * @deprecated Use {@link #from(JarContents)} instead.
+     */
+    @Deprecated(forRemoval = true, since = "2.1.16")
+    static JarMetadata from(final SecureJar jar, final Path... path) {
+        if (path.length==0) throw new IllegalArgumentException("Need at least one path");
+        final var pkgs = jar.getPackages();
+        var mi = jar.moduleDataProvider().findFile("module-info.class");
+        if (mi.isPresent()) {
+            return new ModuleJarMetadata(mi.get(), pkgs);
+        } else {
+            var providers = jar.getProviders();
+            var fileCandidate = fromFileName(path[0], pkgs, providers);
+            var aname = jar.moduleDataProvider().getManifest().getMainAttributes().getValue("Automatic-Module-Name");
+            if (aname != null) {
+                return new SimpleJarMetadata(aname, fileCandidate.version(), pkgs, providers);
+            } else {
+                return fileCandidate;
+            }
+        }
     }
 }

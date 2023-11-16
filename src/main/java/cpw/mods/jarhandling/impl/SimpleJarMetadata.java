@@ -7,6 +7,9 @@ import java.lang.module.ModuleDescriptor;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * {@link JarMetadata} implementation for a non-modular jar, turning it into an automatic module.
+ */
 public record SimpleJarMetadata(String name, String version, Set<String> pkgs, List<SecureJar.Provider> providers) implements JarMetadata {
     @Override
     public ModuleDescriptor descriptor() {

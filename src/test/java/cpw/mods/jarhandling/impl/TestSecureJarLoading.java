@@ -31,7 +31,7 @@ public class TestSecureJarLoading {
                 if (SecureJarVerifier.isSigningRelated(ze.getName())) continue;
                 if (ze.isDirectory()) continue;
                 final var zeName = ze.getName();
-                var cs = ((Jar)jar).verifyAndGetSigners(ze.getName(), zis.readAllBytes());
+                var cs = jar.moduleDataProvider().verifyAndGetSigners(ze.getName(), zis.readAllBytes());
                 jar.getTrustedManifestEntries(zeName);
                 assertAll("Behaves as a properly secured JAR",
                         ()->assertNotNull(cs, "Has code signers array"),
@@ -53,7 +53,7 @@ public class TestSecureJarLoading {
                 if (SecureJarVerifier.isSigningRelated(ze.getName())) continue;
                 if (ze.isDirectory()) continue;
                 final var zeName = ze.getName();
-                var cs = ((Jar)jar).verifyAndGetSigners(ze.getName(), zis.readAllBytes());
+                var cs = jar.moduleDataProvider().verifyAndGetSigners(ze.getName(), zis.readAllBytes());
                 assertAll("Jar behaves correctly",
                         ()->assertNull(cs, "No code signers")
                 );
@@ -83,7 +83,7 @@ public class TestSecureJarLoading {
         SecureJar jar = SecureJar.from(path);
         ZipFile zf = new ZipFile(path.toFile());
         final var entry = zf.getEntry("test/Signed.class");
-        var cs = ((Jar)jar).verifyAndGetSigners(entry.getName(), zf.getInputStream(entry).readAllBytes());
+        var cs = jar.moduleDataProvider().verifyAndGetSigners(entry.getName(), zf.getInputStream(entry).readAllBytes());
         assertNull(cs);
     }
 
@@ -93,7 +93,7 @@ public class TestSecureJarLoading {
         SecureJar jar = SecureJar.from(path);
         ZipFile zf = new ZipFile(path.toFile());
         final var sentry = zf.getEntry("test/Signed.class");
-        final var scs = ((Jar)jar).verifyAndGetSigners(sentry.getName(), zf.getInputStream(sentry).readAllBytes());
+        final var scs = jar.moduleDataProvider().verifyAndGetSigners(sentry.getName(), zf.getInputStream(sentry).readAllBytes());
         assertAll("Behaves as a properly secured JAR",
                 ()->assertNotNull(scs, "Has code signers array"),
                 ()->assertTrue(scs.length>0, "With length > 0"),
@@ -101,7 +101,7 @@ public class TestSecureJarLoading {
                 ()->assertNotNull(jar.getTrustedManifestEntries(sentry.getName()), "Has trusted manifest entries")
         );
         final var uentry = zf.getEntry("test/UnSigned.class");
-        final var ucs = ((Jar)jar).verifyAndGetSigners(uentry.getName(), zf.getInputStream(uentry).readAllBytes());
+        final var ucs = jar.moduleDataProvider().verifyAndGetSigners(uentry.getName(), zf.getInputStream(uentry).readAllBytes());
         assertNull(ucs);
     }
 
@@ -115,7 +115,7 @@ public class TestSecureJarLoading {
                 if (SecureJarVerifier.isSigningRelated(ze.getName())) continue;
                 if (ze.isDirectory()) continue;
                 final var zeName = ze.getName();
-                var cs = ((Jar)jar).verifyAndGetSigners(ze.getName(), zis.readAllBytes());
+                var cs = jar.moduleDataProvider().verifyAndGetSigners(ze.getName(), zis.readAllBytes());
                 assertAll("Jar behaves correctly",
                         ()->assertNull(cs, "No code signers")
                 );

@@ -16,7 +16,10 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-
+/**
+ * {@link JarMetadata} implementation for a modular jar.
+ * Reads the module descriptor from the jar.
+ */
 public class ModuleJarMetadata implements JarMetadata {
     private final ModuleDescriptor descriptor;
 

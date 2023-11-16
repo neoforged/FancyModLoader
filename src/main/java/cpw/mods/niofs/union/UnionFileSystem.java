@@ -1,5 +1,7 @@
 package cpw.mods.niofs.union;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.io.*;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -101,6 +103,7 @@ public class UnionFileSystem extends FileSystem {
     private final String key;
     private final List<Path> basepaths;
     private final int lastElementIndex;
+    @Nullable
     private final BiPredicate<String, String> pathFilter;
     private final Map<Path, EmbeddedFileSystemMetadata> embeddedFileSystems;
 
@@ -108,6 +111,7 @@ public class UnionFileSystem extends FileSystem {
         return basepaths.get(basepaths.size() - 1);
     }
 
+    @Nullable
     public BiPredicate<String, String> getFilesystemFilter() {
         return pathFilter;
     }
@@ -119,7 +123,7 @@ public class UnionFileSystem extends FileSystem {
     private record EmbeddedFileSystemMetadata(Path path, FileSystem fs, SeekableByteChannel fsCh) {
     }
 
-    public UnionFileSystem(final UnionFileSystemProvider provider, final BiPredicate<String, String> pathFilter, final String key, final Path... basepaths) {
+    public UnionFileSystem(final UnionFileSystemProvider provider, @Nullable BiPredicate<String, String> pathFilter, final String key, final Path... basepaths) {
         this.pathFilter = pathFilter;
         this.provider = provider;
         this.key = key;

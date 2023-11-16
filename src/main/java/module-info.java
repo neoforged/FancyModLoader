@@ -11,6 +11,7 @@ module cpw.mods.securejarhandler {
     requires org.objectweb.asm;
     requires org.objectweb.asm.tree;
     requires java.base;
+    requires static org.jetbrains.annotations;
     provides java.nio.file.spi.FileSystemProvider with UnionFileSystemProvider;
     uses cpw.mods.cl.ModularURLHandler.IURLProvider;
     provides ModularURLHandler.IURLProvider with UnionURLStreamHandler;
