@@ -12,6 +12,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -32,39 +33,44 @@ public class ModuleClassLoader extends ClassLoader {
     public ModuleClassLoader(final String name, final Configuration configuration, final List<ModuleLayer> parentLayers) {
         super(name, null);
         this.configuration = configuration;
-        this.resolvedRoots = configuration.modules().stream()
-                .map(ResolvedModule::reference)
-                .filter(JarModuleFinder.JarModuleReference.class::isInstance)
-                .collect(Collectors.toMap(r -> r.descriptor().name(), r -> (JarModuleFinder.JarModuleReference) r));
-
         this.packageLookup = new HashMap<>();
-        for (var mod : this.configuration.modules()) {
-            if (this.resolvedRoots.containsKey(mod.name())) {
-                mod.reference().descriptor().packages().forEach(pk->this.packageLookup.put(pk, mod));
-            }
-        }
+        this.resolvedRoots = configuration.modules().stream()
+                .filter(m -> m.reference() instanceof JarModuleFinder.JarModuleReference)
+                .peek(mod -> {
+                    // Populate packageLookup at the same time, for speed
+                    mod.reference().descriptor().packages().forEach(pk->this.packageLookup.put(pk, mod));
+                })
+                .collect(Collectors.toMap(mod -> mod.reference().descriptor().name(), mod -> (JarModuleFinder.JarModuleReference)mod.reference()));
 
         this.parentLoaders = new HashMap<>();
+        Set<ModuleDescriptor> processedAutomaticDescriptors = new HashSet<>();
+        Map<ResolvedModule, ClassLoader> classLoaderMap = new HashMap<>();
+        Function<ResolvedModule, ClassLoader> findClassLoader = k -> {
+            // Loading a class requires its module to be part of resolvedRoots
+            // If it's not, we delegate loading to its module's classloader
+            if (!this.resolvedRoots.containsKey(k.name())) {
+                return parentLayers.stream()
+                        .filter(l -> l.configuration() == k.configuration())
+                        .flatMap(layer->Optional.ofNullable(layer.findLoader(k.name())).stream())
+                        .findFirst()
+                        .orElse(ClassLoader.getPlatformClassLoader());
+            } else {
+                return ModuleClassLoader.this;
+            }
+        };
+        // This loop will be O(n^2) for the average set of mods, since they all read one another.
+        // However, we amortize some of the cost by optimizing the common automatic module path.
         for (var rm : configuration.modules()) {
             for (var other : rm.reads()) {
-                Supplier<ClassLoader> findClassLoader = ()->{
-                    // Loading a class requires its module to be part of resolvedRoots
-                    // If it's not, we delegate loading to its module's classloader
-                    if (!this.resolvedRoots.containsKey(other.name())) {
-                        return parentLayers.stream()
-                                .filter(l -> l.configuration() == other.configuration())
-                                .flatMap(layer->Optional.ofNullable(layer.findLoader(other.name())).stream())
-                                .findFirst()
-                                .orElse(ClassLoader.getPlatformClassLoader());
-                    } else {
-                        return ModuleClassLoader.this;
-                    }
-                };
-                var cl = findClassLoader.get();
+                ClassLoader cl = classLoaderMap.computeIfAbsent(other, findClassLoader);
                 final var descriptor = other.reference().descriptor();
                 if (descriptor.isAutomatic()) {
-                    descriptor.packages().forEach(pn->this.parentLoaders.put(pn, cl));
+                    // No need to run this logic more than once per automatic module
+                    if (processedAutomaticDescriptors.add(descriptor)) {
+                        descriptor.packages().forEach(pn->this.parentLoaders.put(pn, cl));
+                    }
                 } else {
+                    // We actually use "rm" for this path, so we have to run it each time
                     descriptor.exports().stream()
                             .filter(e -> !e.isQualified() || (e.isQualified() && other.configuration() == configuration && e.targets().contains(rm.name())))
                             .map(ModuleDescriptor.Exports::source)
