@@ -48,7 +48,7 @@ public class ConfigFileTypeHandler {
                 LOGGER.warn(CONFIG, "Attempting to recreate {}", configPath);
                 try
                 {
-                    backUpConfig(configData.getNioPath(), 5);
+                    backUpConfig(configData.getNioPath(), FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.CONFIG_BACKUPS_COUNT));
                     Files.delete(configData.getNioPath());
 
                     configData.load();
@@ -99,7 +99,7 @@ public class ConfigFileTypeHandler {
 
     public static void backUpConfig(final CommentedFileConfig commentedFileConfig)
     {
-        backUpConfig(commentedFileConfig, 5); //TODO: Think of a way for mods to set their own preference (include a sanity check as well, no disk stuffing)
+        backUpConfig(commentedFileConfig, FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.CONFIG_BACKUPS_COUNT));
     }
 
     public static void backUpConfig(final CommentedFileConfig commentedFileConfig, final int maxBackups)
