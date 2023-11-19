@@ -14,7 +14,6 @@ import net.neoforged.fml.loading.StringUtils;
 import java.io.ByteArrayInputStream;
 import java.nio.file.Path;
 import java.util.Locale;
-import java.util.concurrent.Callable;
 
 public class ModConfig
 {
@@ -24,15 +23,18 @@ public class ModConfig
     private final ModContainer container;
     private final ConfigFileTypeHandler configHandler;
     private CommentedConfig configData;
-    private Callable<Void> saveHandler;
 
-    public ModConfig(final Type type, final IConfigSpec<?> spec, final ModContainer container, final String fileName) {
+    public ModConfig(final Type type, final IConfigSpec<?> spec, final ModContainer container, final String fileName, ConfigFileTypeHandler configHandler) {
         this.type = type;
         this.spec = spec;
         this.fileName = fileName;
         this.container = container;
-        this.configHandler = ConfigFileTypeHandler.TOML;
+        this.configHandler = configHandler;
         ConfigTracker.INSTANCE.trackConfig(this);
+    }
+
+    public ModConfig(final Type type, final IConfigSpec<?> spec, final ModContainer container, final String fileName) {
+        this(type, spec, container, fileName, ConfigFileTypeHandler.TOML);
     }
 
     public ModConfig(final Type type, final IConfigSpec<?> spec, final ModContainer activeContainer) {
