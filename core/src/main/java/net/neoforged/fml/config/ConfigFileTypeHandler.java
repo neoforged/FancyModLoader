@@ -48,20 +48,24 @@ public class ConfigFileTypeHandler {
                 throw new ConfigLoadingException(c, ex);
             }
             LOGGER.debug(CONFIG, "Loaded TOML config file {}", configPath);
-            try {
-                FileWatcher.defaultInstance().addWatch(configPath, new ConfigWatcher(c, configData, Thread.currentThread().getContextClassLoader()));
-                LOGGER.debug(CONFIG, "Watching TOML config file {} for changes", configPath);
-            } catch (IOException e) {
-                throw new RuntimeException("Couldn't watch config file", e);
+            if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DISABLE_CONFIG_WATCHER)) {
+                try {
+                    FileWatcher.defaultInstance().addWatch(configPath, new ConfigWatcher(c, configData, Thread.currentThread().getContextClassLoader()));
+                    LOGGER.debug(CONFIG, "Watching TOML config file {} for changes", configPath);
+                } catch (IOException e) {
+                    throw new RuntimeException("Couldn't watch config file", e);
+                }
             }
             return configData;
         };
     }
 
     public void unload(Path configBasePath, ModConfig config) {
+        if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DISABLE_CONFIG_WATCHER))
+            return;
         Path configPath = configBasePath.resolve(config.getFileName());
         try {
-            FileWatcher.defaultInstance().removeWatch(configBasePath.resolve(config.getFileName()));
+            FileWatcher.defaultInstance().removeWatch(configPath);
         } catch (RuntimeException e) {
             LOGGER.error("Failed to remove config {} from tracker!", configPath, e);
         }
