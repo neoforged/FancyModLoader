@@ -31,13 +31,14 @@ public class ConfigFileTypeHandler {
     public Function<ModConfig, CommentedFileConfig> reader(Path configBasePath) {
         return (c) -> {
             final Path configPath = configBasePath.resolve(c.getFileName());
-            final CommentedFileConfig configData = CommentedFileConfig.builder(configPath).sync().
-                    preserveInsertionOrder().
-                    autosave().
-                    onFileNotFound((newfile, configFormat)-> setupConfigFile(c, newfile, configFormat)).
-                    writingMode(WritingMode.REPLACE).
-                    build();
-            LOGGER.debug(CONFIG, "Built TOML config for {}", configPath.toString());
+            final CommentedFileConfig configData = CommentedFileConfig.builder(configPath)
+                    .sync()
+                    .preserveInsertionOrder()
+                    .autosave()
+                    .onFileNotFound((newfile, configFormat) -> setupConfigFile(c, newfile, configFormat))
+                    .writingMode(WritingMode.REPLACE)
+                    .build();
+            LOGGER.debug(CONFIG, "Built TOML config for {}", configPath);
             try
             {
                 configData.load();
@@ -46,10 +47,10 @@ public class ConfigFileTypeHandler {
             {
                 throw new ConfigLoadingException(c, ex);
             }
-            LOGGER.debug(CONFIG, "Loaded TOML config file {}", configPath.toString());
+            LOGGER.debug(CONFIG, "Loaded TOML config file {}", configPath);
             try {
                 FileWatcher.defaultInstance().addWatch(configPath, new ConfigWatcher(c, configData, Thread.currentThread().getContextClassLoader()));
-                LOGGER.debug(CONFIG, "Watching TOML config file {} for changes", configPath.toString());
+                LOGGER.debug(CONFIG, "Watching TOML config file {} for changes", configPath);
             } catch (IOException e) {
                 throw new RuntimeException("Couldn't watch config file", e);
             }
@@ -62,7 +63,7 @@ public class ConfigFileTypeHandler {
         try {
             FileWatcher.defaultInstance().removeWatch(configBasePath.resolve(config.getFileName()));
         } catch (RuntimeException e) {
-            LOGGER.error("Failed to remove config {} from tracker!", configPath.toString(), e);
+            LOGGER.error("Failed to remove config {} from tracker!", configPath, e);
         }
     }
 
