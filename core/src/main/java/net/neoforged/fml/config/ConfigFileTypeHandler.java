@@ -45,7 +45,20 @@ public class ConfigFileTypeHandler {
             }
             catch (ParsingException ex)
             {
-                throw new ConfigLoadingException(c, ex);
+                LOGGER.warn(CONFIG, "Attempting to recreate {}", configPath);
+                try
+                {
+                    backUpConfig(configData.getNioPath(), 5);
+                    Files.delete(configData.getNioPath());
+
+                    configData.load();
+                }
+                catch (Throwable t)
+                {
+                    ex.addSuppressed(t);
+
+                    throw new ConfigLoadingException(c, ex);
+                }
             }
             LOGGER.debug(CONFIG, "Loaded TOML config file {}", configPath);
             if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DISABLE_CONFIG_WATCHER)) {
@@ -91,9 +104,14 @@ public class ConfigFileTypeHandler {
 
     public static void backUpConfig(final CommentedFileConfig commentedFileConfig, final int maxBackups)
     {
-        Path bakFileLocation = commentedFileConfig.getNioPath().getParent();
-        String bakFileName = FilenameUtils.removeExtension(commentedFileConfig.getFile().getName());
-        String bakFileExtension = FilenameUtils.getExtension(commentedFileConfig.getFile().getName()) + ".bak";
+        backUpConfig(commentedFileConfig.getNioPath(), maxBackups);
+    }
+
+    public static void backUpConfig(final Path commentedFileConfig, final int maxBackups)
+    {
+        Path bakFileLocation = commentedFileConfig.getParent();
+        String bakFileName = FilenameUtils.removeExtension(commentedFileConfig.getFileName().toString());
+        String bakFileExtension = FilenameUtils.getExtension(commentedFileConfig.getFileName().toString()) + ".bak";
         Path bakFile = bakFileLocation.resolve(bakFileName + "-1" + "." + bakFileExtension);
         try
         {
@@ -108,11 +126,11 @@ public class ConfigFileTypeHandler {
                         Files.move(oldBak, bakFileLocation.resolve(bakFileName + "-" + (i + 1) + "." + bakFileExtension));
                 }
             }
-            Files.copy(commentedFileConfig.getNioPath(), bakFile);
+            Files.copy(commentedFileConfig, bakFile);
         }
         catch (IOException exception)
         {
-            LOGGER.warn(CONFIG, "Failed to back up config file {}", commentedFileConfig.getNioPath(), exception);
+            LOGGER.warn(CONFIG, "Failed to back up config file {}", commentedFileConfig, exception);
         }
     }
 
