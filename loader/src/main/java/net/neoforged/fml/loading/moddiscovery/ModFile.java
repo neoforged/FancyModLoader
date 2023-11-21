@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import java.util.stream.Stream;
 
 public class ModFile implements IModFile {
     // Mods either must have a mods.toml or a manifest. We can no longer just put any jar on the classpath.
@@ -59,7 +60,7 @@ public class ModFile implements IModFile {
     private volatile CompletableFuture<ModFileScanData> futureScanResult;
     private List<CoreModFile> coreMods;
     private List<String> mixinConfigs;
-    private Path accessTransformer;
+    private List<Path> accessTransformers;
 
     static final Attributes.Name TYPE = new Attributes.Name("FMLModType");
     private SecureJar.Status securityStatus;
@@ -103,8 +104,8 @@ public class ModFile implements IModFile {
         return modFileInfo.getMods();
     }
 
-    public Optional<Path> getAccessTransformer() {
-        return Optional.ofNullable(Files.exists(accessTransformer) ? accessTransformer : null);
+    public List<Path> getAccessTransformers() {
+        return accessTransformers;
     }
 
     public boolean identifyMods() {
@@ -115,7 +116,17 @@ public class ModFile implements IModFile {
         this.coreMods.forEach(mi-> LOGGER.debug(LogMarkers.LOADING,"Found coremod {}", mi.getPath()));
         this.mixinConfigs = ModFileParser.getMixinConfigs(this.modFileInfo);
         this.mixinConfigs.forEach(mc -> LOGGER.debug(LogMarkers.LOADING,"Found mixin config {}", mc));
-        this.accessTransformer = findResource("META-INF", "accesstransformer.cfg");
+        this.accessTransformers = ModFileParser.getAccessTransformers(this.modFileInfo)
+                .map(list -> list.stream().map(this::findResource).filter(path -> {
+                    if (Files.notExists(path)) {
+                        LOGGER.error(LogMarkers.LOADING, "Access transformer file {} provided by mod {} does not exist!", path, modFileInfo.moduleName());
+                        return false;
+                    }
+                    return true;
+                }))
+                .orElseGet(() -> Stream.of(findResource("META-INF", "accesstransformer.cfg"))
+                        .filter(Files::exists))
+                .toList();
         return true;
     }
 

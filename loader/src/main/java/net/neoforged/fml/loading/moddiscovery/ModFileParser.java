@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class ModFileParser {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -81,6 +82,27 @@ public class ModFileParser {
         } catch (Exception exception) {
             LOGGER.error("Failed to load mixin configs from mod file", exception);
             return List.of();
+        }
+    }
+
+
+    protected static Optional<List<String>> getAccessTransformers(IModFileInfo modFileInfo) {
+        try {
+            final var config = modFileInfo.getConfig();
+            if (config.getConfigElement("accessTransformers").isEmpty()) {
+                return Optional.empty();
+            }
+            final var atEntries = config.getConfigList("accessTransformers");
+            return Optional.of(atEntries
+                    .stream()
+                    .map(entry -> entry
+                            .<String>getConfigElement("file")
+                            .orElseThrow(
+                                    () -> new InvalidModFileException("Missing \"file\" in [[accessTransformers]] entry", modFileInfo)))
+                    .toList());
+        } catch (Exception exception) {
+            LOGGER.error("Failed to load access transformers from mod file", exception);
+            return Optional.empty();
         }
     }
 }

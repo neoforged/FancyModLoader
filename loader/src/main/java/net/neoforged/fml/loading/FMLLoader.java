@@ -9,12 +9,13 @@ import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.api.*;
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
+import net.neoforged.accesstransformer.api.AccessTransformerEngine;
+import net.neoforged.accesstransformer.ml.AccessTransformerService;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.BackgroundScanHandler;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModValidator;
-import net.neoforged.accesstransformer.service.AccessTransformerService;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.targets.CommonLaunchHandler;
 import net.neoforged.neoforgespi.Environment;
@@ -22,6 +23,7 @@ import net.neoforged.neoforgespi.coremod.ICoreModProvider;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -31,7 +33,7 @@ import java.util.stream.Collectors;
 public class FMLLoader
 {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static AccessTransformerService accessTransformer;
+    private static AccessTransformerEngine accessTransformer;
     private static ModDiscoverer modDiscoverer;
     private static ICoreModProvider coreModProvider;
     private static LanguageLoadingProvider languageLoadingProvider;
@@ -60,10 +62,10 @@ public class FMLLoader
             throw new IncompatibleEnvironmentException("Incompatible modlauncher found "+modLauncherPackage.getSpecificationVersion());
         }
 
-        accessTransformer = (AccessTransformerService) environment.findLaunchPlugin("accesstransformer").orElseThrow(()-> {
+        accessTransformer = ((AccessTransformerService) environment.findLaunchPlugin("accesstransformer").orElseThrow(()-> {
             LOGGER.error(LogMarkers.CORE, "Access Transformer library is missing, we need this to run");
             return new IncompatibleEnvironmentException("Missing AccessTransformer, cannot run");
-        });
+        })).engine;
 
         final Package atPackage = accessTransformer.getClass().getPackage();
         LOGGER.debug(LogMarkers.CORE,"FML found AccessTransformer version : {}", atPackage.getImplementationVersion());
@@ -142,8 +144,6 @@ public class FMLLoader
 
         versionInfo = new VersionInfo(arguments);
 
-        accessTransformer.getExtension().accept(Pair.of(naming, "srg"));
-
         LOGGER.debug(LogMarkers.CORE,"Received command line version data  : {}", versionInfo);
 
         runtimeDistCleaner.getExtension().accept(dist);
@@ -189,7 +189,11 @@ public class FMLLoader
     public static void addAccessTransformer(Path atPath, ModFile modName)
     {
         LOGGER.debug(LogMarkers.SCAN, "Adding Access Transformer in {}", modName.getFilePath());
-        accessTransformer.offerResource(atPath, modName.getFileName());
+        try {
+            accessTransformer.loadATFromPath(atPath);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load AT at " + atPath.toAbsolutePath(), e);
+        }
     }
 
     public static Dist getDist()
