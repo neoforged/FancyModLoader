@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.ServiceLoader;
 import java.util.function.Consumer;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class TestClassLoader {
     public static void main(String[] args) {
         new TestClassLoader().testCL();
@@ -40,5 +43,18 @@ public class TestClassLoader {
         var sl = ServiceLoader.load(layer.layer(), Consumer.class);
         var c = sl.stream().map(ServiceLoader.Provider::get).toList();
         c.get(0).accept(new String[0]);
+    }
+
+    @Test
+    public void testCpIsolation() throws Exception {
+        // Make sure that classes that would normally be accessible via classpath...
+        assertDoesNotThrow(() -> Class.forName("cpw.mods.testjar_cp.SomeClass"));
+
+        // ...cannot be loaded via a ModuleClassLoader
+        TestjarUtil.withTestjar1Setup(cl -> {
+            assertThrows(ClassNotFoundException.class, () -> {
+                Class.forName("cpw.mods.testjar_cp.SomeClass", true, cl);
+            });
+        });
     }
 }

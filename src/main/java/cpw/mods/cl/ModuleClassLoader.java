@@ -6,14 +6,17 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.module.*;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -22,6 +25,39 @@ public class ModuleClassLoader extends ClassLoader {
         ClassLoader.registerAsParallelCapable();
         URL.setURLStreamHandlerFactory(ModularURLHandler.INSTANCE);
         ModularURLHandler.initFrom(ModuleClassLoader.class.getModule().getLayer());
+    }
+
+    // Reflect into JVM internals to associate each ModuleClassLoader with all of its parent layers.
+    // This is necessary to let ServiceProvider find service implementations in parent module layers.
+    // At the moment, this does not work for providers in the bootstrap or platform class loaders,
+    // but any other provider (defined by the application class loader or child layers) should work.
+    //
+    // The only mechanism the JVM has for this is to also look for layers defined by the parent class loader.
+    // We don't want to set a parent because we explicitly do not want to delegate to a parent class loader,
+    // and that wouldn't even handle the case of multiple parent layers anyway.
+    private static final MethodHandle LAYER_BIND_TO_LOADER;
+
+    static {
+        try {
+            var hackfield = MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP");
+            hackfield.setAccessible(true);
+            MethodHandles.Lookup hack = (MethodHandles.Lookup) hackfield.get(null);
+
+            LAYER_BIND_TO_LOADER = hack.findSpecial(ModuleLayer.class, "bindToLoader", MethodType.methodType(void.class, ClassLoader.class), ModuleLayer.class);
+        } catch (NoSuchFieldException | IllegalAccessException | NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Invokes {@code ModuleLayer.bindToLoader(ClassLoader)}.
+     */
+    private static void bindToLayer(ModuleClassLoader classLoader, ModuleLayer layer) {
+        try {
+            LAYER_BIND_TO_LOADER.invokeExact(layer, (ClassLoader) classLoader);
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
     }
 
     private final Configuration configuration;
@@ -77,6 +113,20 @@ public class ModuleClassLoader extends ClassLoader {
                             .forEach(pn->this.parentLoaders.put(pn, cl));
                 }
             }
+        }
+        // Bind this classloader to all parent layers recursively,
+        // to make sure ServiceLoader can find providers defined in parent layers
+        Set<ModuleLayer> visitedLayers = new HashSet<>();
+        parentLayers.forEach(p -> forLayerAndParents(p, visitedLayers, l -> bindToLayer(this, l)));
+    }
+
+    private static void forLayerAndParents(ModuleLayer layer, Set<ModuleLayer> visited, Consumer<ModuleLayer> operation) {
+        if (visited.contains(layer)) return;
+        visited.add(layer);
+        operation.accept(layer);
+
+        if (layer != ModuleLayer.boot()) {
+            layer.parents().forEach(l -> forLayerAndParents(l, visited, operation));
         }
     }
 
