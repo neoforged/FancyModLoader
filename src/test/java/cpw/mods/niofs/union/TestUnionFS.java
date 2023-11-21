@@ -202,6 +202,8 @@ public class TestUnionFS {
         var npath = Paths.get(uri);
         var input = assertDoesNotThrow(() -> Files.newInputStream(npath));
         var data = assertDoesNotThrow(() -> input.readAllBytes());
+
+        assertFalse(Files.exists(outer.getPath("definitely", "does", "not", "exist")));
     }
 
     @Test

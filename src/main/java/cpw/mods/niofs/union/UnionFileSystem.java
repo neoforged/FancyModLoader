@@ -233,9 +233,8 @@ public class UnionFileSystem extends FileSystem {
 
     private Optional<BasicFileAttributes> getFileAttributes(final Path path) {
         try {
-            if (path.getFileSystem() == FileSystems.getDefault() && !path.toFile().exists()) {
-                return Optional.empty();
-            } else if (path.getFileSystem().provider().getScheme().equals("jar") && !zipFsExists(this, path)) {
+            Boolean fastCheck = tryFastPathExists(this, path);
+            if (fastCheck != null && !fastCheck) {
                 return Optional.empty();
             } else {
                 return Optional.of(path.getFileSystem().provider().readAttributes(path, BasicFileAttributes.class));
@@ -243,6 +242,30 @@ public class UnionFileSystem extends FileSystem {
         } catch (IOException e) {
             return Optional.empty();
         }
+    }
+
+    /**
+     * Checks if a path exists using optimized filesystem-specific code.
+     * (With a fallback to the regular {@link Files#exists(Path, LinkOption...)}).
+     */
+    private static boolean fastPathExists(UnionFileSystem ufs, Path path) {
+        Boolean result = tryFastPathExists(ufs, path);
+        return result != null ? result : Files.exists(path);
+    }
+
+    /**
+     * Tries to check if a path exists using optimized filesystem-specific code,
+     * or returns {@code null} if there is no optimized code for that particular filesystem.
+     */
+    @Nullable
+    private static Boolean tryFastPathExists(UnionFileSystem ufs, Path path) {
+        if (path.getFileSystem() == FileSystems.getDefault()) {
+            return path.toFile().exists();
+        } else if (path.getFileSystem().provider().getScheme().equals("jar")) {
+            return zipFsExists(ufs, path);
+        }
+
+        return null;
     }
 
     private static boolean zipFsExists(UnionFileSystem ufs, Path path) {
@@ -270,15 +293,7 @@ public class UnionFileSystem extends FileSystem {
             final Path realPath = toRealPath(p, unionPath);
             // Test if the real path exists and matches the filter of this file system
             if (testFilter(realPath, p)) {
-                if (realPath.getFileSystem() == FileSystems.getDefault()) {
-                    if (realPath.toFile().exists()) {
-                        return Optional.of(realPath);
-                    }
-                } else if (realPath.getFileSystem().provider().getScheme().equals("jar")) {
-                    if (zipFsExists(this, realPath)) {
-                        return Optional.of(realPath);
-                    }
-                } else if (Files.exists(realPath)) {
+                if (fastPathExists(this, realPath)) {
                     return Optional.of(realPath);
                 }
             }
@@ -320,14 +335,8 @@ public class UnionFileSystem extends FileSystem {
             findFirstFiltered(p).ifPresentOrElse(path -> {
                 try {
                     if (modes.length == 0) {
-                        if (path.getFileSystem() == FileSystems.getDefault()) {
-                            if (!path.toFile().exists()) {
-                                throw new UncheckedIOException(new NoSuchFileException(p.toString()));
-                            }
-                        } else if (path.getFileSystem().provider().getScheme().equals("jar")) {
-                            if (!zipFsExists(this, path)) {
-                                throw new UncheckedIOException(new NoSuchFileException(p.toString()));
-                            }
+                        if (!fastPathExists(this, path)) {
+                            throw new UncheckedIOException(new NoSuchFileException(p.toString()));
                         }
                     } else {
                         path.getFileSystem().provider().checkAccess(path, modes);
@@ -377,11 +386,7 @@ public class UnionFileSystem extends FileSystem {
         Stream<Path> stream = Stream.empty();
         for (final var bp : basepaths) {
             final var dir = toRealPath(bp, path);
-            if (dir.getFileSystem() == FileSystems.getDefault() && !dir.toFile().exists()) {
-                continue;
-            } else if (dir.getFileSystem().provider().getScheme().equals("jar") && !zipFsExists(this, dir)) {
-                continue;
-            } else if (Files.notExists(dir)) {
+            if (!fastPathExists(this, dir)) {
                 continue;
             }
             final var isSimple = embeddedFileSystems.containsKey(bp);
