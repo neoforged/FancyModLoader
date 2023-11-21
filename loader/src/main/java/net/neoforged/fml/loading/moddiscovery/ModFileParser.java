@@ -102,7 +102,7 @@ public class ModFileParser {
                     .toList());
         } catch (Exception exception) {
             LOGGER.error("Failed to load access transformers from mod file", exception);
-            return Optional.empty();
+            return Optional.of(List.of());
         }
     }
 }
