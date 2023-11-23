@@ -21,20 +21,14 @@ public class ModConfig
     private final IConfigSpec<?> spec;
     private final String fileName;
     private final ModContainer container;
-    private final ConfigFileTypeHandler configHandler;
     private CommentedConfig configData;
 
-    public ModConfig(final Type type, final IConfigSpec<?> spec, final ModContainer container, final String fileName, ConfigFileTypeHandler configHandler) {
+    public ModConfig(final Type type, final IConfigSpec<?> spec, final ModContainer container, final String fileName) {
         this.type = type;
         this.spec = spec;
         this.fileName = fileName;
         this.container = container;
-        this.configHandler = configHandler;
         ConfigTracker.INSTANCE.trackConfig(this);
-    }
-
-    public ModConfig(final Type type, final IConfigSpec<?> spec, final ModContainer container, final String fileName) {
-        this(type, spec, container, fileName, ConfigFileTypeHandler.TOML);
     }
 
     public ModConfig(final Type type, final IConfigSpec<?> spec, final ModContainer activeContainer) {
@@ -45,16 +39,13 @@ public class ModConfig
         // config file name would be "forge-client.toml" and "forge-server.toml"
         return String.format(Locale.ROOT, "%s-%s.toml", modId, type.extension());
     }
+
     public Type getType() {
         return type;
     }
 
     public String getFileName() {
         return fileName;
-    }
-
-    public ConfigFileTypeHandler getHandler() {
-        return configHandler;
     }
 
     @SuppressWarnings("unchecked")
