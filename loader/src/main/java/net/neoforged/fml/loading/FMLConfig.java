@@ -28,7 +28,6 @@ public class FMLConfig
         MAX_THREADS("maxThreads", -1, "Max threads for early initialization parallelism,  -1 is based on processor count", FMLConfig::maxThreads),
         VERSION_CHECK("versionCheck", Boolean.TRUE, "Enable NeoForge global version checking"),
         DEFAULT_CONFIG_PATH("defaultConfigPath", "defaultconfigs", "Default config path for servers"),
-        CONFIG_BACKUPS_COUNT("configBackupsCount", 5, "Sets the number of backups for configs."),
         DISABLE_OPTIMIZED_DFU("disableOptimizedDFU", Boolean.TRUE, "Disables Optimized DFU client-side - already disabled on servers"),
         EARLY_WINDOW_PROVIDER("earlyWindowProvider", "fmlearlywindow", "Early window provider"),
         EARLY_WINDOW_WIDTH("earlyWindowWidth", 854, "Early window width"),
