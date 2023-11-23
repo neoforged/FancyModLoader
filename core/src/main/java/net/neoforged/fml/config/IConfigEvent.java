@@ -6,6 +6,7 @@
 package net.neoforged.fml.config;
 
 import net.neoforged.bus.api.Event;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.Bindings;
 
 import java.util.function.Function;
@@ -27,6 +28,14 @@ public interface IConfigEvent {
         return CONFIGCONFIG.unloading() == null ? null : CONFIGCONFIG.unloading().apply(modConfig);
     }
     ModConfig getConfig();
+
+    default void post() {
+        IEventBus bus = getConfig().container.getEventBus();
+
+        if (bus != null) {
+            bus.post(self());
+        }
+    }
 
     @SuppressWarnings("unchecked")
     default <T extends Event & IConfigEvent> T self() {

@@ -59,7 +59,7 @@ public class ConfigTracker {
         LOGGER.trace(CONFIG, "Loading config file type {} at {} for {}", config.getType(), config.getFileName(), config.getModId());
         final CommentedFileConfig configData = ConfigFileTypeHandler.TOML.reader(configBasePath).apply(config);
         config.setConfigData(configData);
-        config.fireEvent(IConfigEvent.loading(config));
+        IConfigEvent.loading(config).post();
         config.save();
     }
 
@@ -70,7 +70,7 @@ public class ConfigTracker {
             ConfigFileTypeHandler.TOML.unload(configBasePath, config);
             var unloading = IConfigEvent.unloading(config);
             if (unloading != null)
-                config.fireEvent(unloading);
+                unloading.post();
             config.save();
             config.setConfigData(null);
         }
@@ -81,7 +81,7 @@ public class ConfigTracker {
             final CommentedConfig commentedConfig = CommentedConfig.inMemory();
             modConfig.getSpec().correct(commentedConfig);
             modConfig.setConfigData(commentedConfig);
-            modConfig.fireEvent(IConfigEvent.loading(modConfig));
+            IConfigEvent.loading(modConfig).post();
         });
     }
 

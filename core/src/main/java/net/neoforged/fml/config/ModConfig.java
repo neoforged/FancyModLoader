@@ -20,7 +20,7 @@ public class ModConfig
     private final Type type;
     private final IConfigSpec<?> spec;
     private final String fileName;
-    private final ModContainer container;
+    protected final ModContainer container;
     private CommentedConfig configData;
 
     public ModConfig(final Type type, final IConfigSpec<?> spec, final ModContainer container, final String fileName) {
@@ -66,10 +66,6 @@ public class ModConfig
         this.spec.acceptConfig(this.configData);
     }
 
-    void fireEvent(final IConfigEvent configEvent) {
-        this.container.getEventBus().post(configEvent.self());
-    }
-
     public void save() {
         ((FileConfig)this.configData).save();
     }
@@ -80,7 +76,7 @@ public class ModConfig
 
     public void acceptSyncedConfig(byte[] bytes) {
         setConfigData(TomlFormat.instance().createParser().parse(new ByteArrayInputStream(bytes)));
-        fireEvent(IConfigEvent.reloading(this));
+        IConfigEvent.reloading(this).post();
     }
 
     public enum Type {
