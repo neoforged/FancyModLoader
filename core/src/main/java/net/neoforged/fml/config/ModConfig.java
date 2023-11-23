@@ -66,7 +66,7 @@ public class ModConfig
         this.spec.acceptConfig(this.configData);
     }
 
-    public void fireEvent(final IConfigEvent configEvent) {
+    void fireEvent(final IConfigEvent configEvent) {
         this.container.dispatchConfigEvent(configEvent);
     }
 
