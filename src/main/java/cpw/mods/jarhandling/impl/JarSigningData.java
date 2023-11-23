@@ -94,6 +94,7 @@ public class JarSigningData {
         return Optional.ofNullable(statusData.get(name));
     }
 
+    @Nullable
     synchronized CodeSigner[] verifyAndGetSigners(Manifest manifest, String name, byte[] bytes) {
         if (!hasSecurityData()) return null;
         if (statusData.containsKey(name)) return statusData.get(name).signers;

@@ -164,6 +164,7 @@ public class Jar implements SecureJar {
         }
 
         @Override
+        @Nullable
         public CodeSigner[] verifyAndGetSigners(final String cname, final byte[] bytes) {
             return jar.signingData.verifyAndGetSigners(jar.manifest, cname, bytes);
         }

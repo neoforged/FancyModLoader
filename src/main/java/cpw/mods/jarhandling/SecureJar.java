@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleReader;
+import java.lang.module.ModuleReference;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -83,15 +85,45 @@ public interface SecureJar {
      */
     Path getRootPath();
 
+    /**
+     * All the functions that are necessary to turn a {@link SecureJar} into a module.
+     */
     interface ModuleDataProvider {
+        /**
+         * {@return the name of the module}
+         */
         String name();
+
+        /**
+         * {@return the descriptor of the module}
+         */
         ModuleDescriptor descriptor();
+
+        /**
+         * @see ModuleReference#location()
+         */
+        @Nullable
         URI uri();
+
+        /**
+         * @see ModuleReader#find(String)
+         */
         Optional<URI> findFile(String name);
+
+        /**
+         * @see ModuleReader#open(String)
+         */
         Optional<InputStream> open(final String name);
 
+        /**
+         * {@return the manifest of the jar}
+         */
         Manifest getManifest();
 
+        /**
+         * {@return the signers if the class name can be verified, or {@code null} otherwise}
+         */
+        @Nullable
         CodeSigner[] verifyAndGetSigners(String cname, byte[] bytes);
     }
 
@@ -134,7 +166,11 @@ public interface SecureJar {
      * @deprecated Obtain via the {@link ModuleDescriptor} of the jar if you really need this.
      */
     @Deprecated(forRemoval = true, since = "2.1.16")
-    List<Provider> getProviders();
+    default List<Provider> getProviders() {
+        return moduleDataProvider().descriptor().provides().stream()
+                .map(p -> new Provider(p.service(), p.providers()))
+                .toList();
+    }
 
     /**
      * @deprecated Use {@link JarContentsBuilder} and {@link #from(JarContents)} instead.
