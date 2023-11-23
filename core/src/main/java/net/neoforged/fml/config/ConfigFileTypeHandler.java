@@ -25,7 +25,7 @@ import static net.neoforged.fml.config.ConfigTracker.CONFIG;
 
 public class ConfigFileTypeHandler {
     private static final Logger LOGGER = LogUtils.getLogger();
-    public static ConfigFileTypeHandler TOML = new ConfigFileTypeHandler();
+    public final static ConfigFileTypeHandler TOML = new ConfigFileTypeHandler();
     private static final Path defaultConfigPath = FMLPaths.GAMEDIR.get().resolve(FMLConfig.getConfigValue(FMLConfig.ConfigValue.DEFAULT_CONFIG_PATH));
 
     public Function<ModConfig, CommentedFileConfig> reader(Path configBasePath) {
