@@ -6,7 +6,7 @@
 package net.neoforged.fml.config;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
-import com.electronwill.nightconfig.core.file.CommentedFileConfig;
+import com.electronwill.nightconfig.core.file.FileConfig;
 import com.electronwill.nightconfig.toml.TomlFormat;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.loading.StringUtils;
@@ -71,11 +71,11 @@ public class ModConfig
     }
 
     public void save() {
-        ((CommentedFileConfig)this.configData).save();
+        ((FileConfig)this.configData).save();
     }
 
     public Path getFullPath() {
-        return ((CommentedFileConfig)this.configData).getNioPath();
+        return ((FileConfig)this.configData).getNioPath();
     }
 
     public void acceptSyncedConfig(byte[] bytes) {
