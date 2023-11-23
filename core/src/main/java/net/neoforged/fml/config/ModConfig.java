@@ -67,7 +67,7 @@ public class ModConfig
     }
 
     void fireEvent(final IConfigEvent configEvent) {
-        this.container.dispatchConfigEvent(configEvent);
+        this.container.getEventBus().post(configEvent.self());
     }
 
     public void save() {

@@ -9,7 +9,6 @@ import net.neoforged.bus.api.BusBuilder;
 import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.config.IConfigEvent;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.loading.progress.ProgressMeter;
@@ -57,8 +56,6 @@ public abstract class ModContainer
     protected final Map<ModLoadingStage, Runnable> activityMap = new HashMap<>();
     protected final Map<Class<? extends IExtensionPoint<?>>, Supplier<?>> extensionPoints = new IdentityHashMap<>();
     protected final EnumMap<ModConfig.Type, ModConfig> configs = new EnumMap<>(ModConfig.Type.class);
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    protected Optional<Consumer<IConfigEvent>> configHandler = Optional.empty();
 
     public ModContainer(IModInfo info)
     {
@@ -157,10 +154,6 @@ public abstract class ModContainer
 
     public void addConfig(final ModConfig modConfig) {
        configs.put(modConfig.getType(), modConfig);
-    }
-
-    public void dispatchConfigEvent(IConfigEvent event) {
-        configHandler.ifPresent(configHandler->configHandler.accept(event));
     }
 
     /**
