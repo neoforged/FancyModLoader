@@ -67,9 +67,35 @@ public class ModularURLHandler implements URLStreamHandlerFactory {
                 throw e.getCause();
             }
         }
+
+        @Override
+        public int getContentLength() {
+            var length = getContentLengthLong();
+            if (length < 0 || length > Integer.MAX_VALUE) {
+                return -1;
+            }
+            return (int) length;
+        }
+
+        @Override
+        public long getContentLengthLong() {
+            return provider.getContentLength(url);
+        }
+
+        @Override
+        public long getLastModified() {
+            return provider.getLastModified(url);
+        }
+
     }
     public interface IURLProvider {
         String protocol();
         Function<URL, InputStream> inputStreamFunction();
+        default long getLastModified(URL url) {
+            return 0;
+        }
+        default long getContentLength(URL url) {
+            return -1;
+        }
     }
 }
