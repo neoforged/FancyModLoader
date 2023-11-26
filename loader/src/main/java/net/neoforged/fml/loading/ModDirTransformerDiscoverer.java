@@ -6,6 +6,8 @@
 package net.neoforged.fml.loading;
 
 import com.mojang.logging.LogUtils;
+import cpw.mods.jarhandling.JarContentsBuilder;
+import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
 import cpw.mods.modlauncher.api.NamedPath;
@@ -14,12 +16,12 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.module.ModuleDescriptor;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -69,7 +71,7 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
         return List.copyOf(found);
     }
 
-    private final static List<NamedPath> found = new ArrayList<>();
+    private final static List<NamedPath> found = Collections.synchronizedList(new ArrayList<>());
 
     public static List<Path> allExcluded() {
         return found.stream().map(np->np.paths()[0]).toList();
@@ -82,7 +84,7 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
             return;
         }
         try (var walk = Files.walk(modsDir, 1)){
-            walk.forEach(ModDirTransformerDiscoverer::visitFile);
+            walk.parallel().forEach(ModDirTransformerDiscoverer::visitFile);
         } catch (IOException | IllegalStateException ioe) {
             LOGGER.error("Error during early discovery", ioe);
         }
@@ -93,10 +95,10 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
         if (!path.toString().endsWith(".jar")) return;
         if (LamdbaExceptionUtils.uncheck(() -> Files.size(path)) == 0) return;
 
-        SecureJar jar = SecureJar.from(path);
-        jar.moduleDataProvider().descriptor().provides().stream()
-            .map(ModuleDescriptor.Provides::service)
-            .filter(SERVICES::contains)
+        JarMetadata metadata = JarMetadata.from(new JarContentsBuilder().paths(path).build());
+        metadata.providers().stream()
+            .map(SecureJar.Provider::serviceName)
+            .filter(SERVICES::contains) // TODO: why are we adding the paths multiple times??
             .forEach(s -> found.add(new NamedPath(s, path)));
     }
 }

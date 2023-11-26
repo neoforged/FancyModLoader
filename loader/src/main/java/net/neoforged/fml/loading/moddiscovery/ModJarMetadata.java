@@ -7,15 +7,15 @@ package net.neoforged.fml.loading.moddiscovery;
 
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarMetadata;
+import cpw.mods.jarhandling.LazyJarMetadata;
 import net.neoforged.neoforgespi.locating.IModFile;
 
 import java.lang.module.ModuleDescriptor;
 import java.util.Objects;
 
-public final class ModJarMetadata implements JarMetadata {
+public final class ModJarMetadata extends LazyJarMetadata implements JarMetadata {
     private final JarContents jarContents;
     private IModFile modFile;
-    private ModuleDescriptor descriptor;
 
     ModJarMetadata(JarContents jarContents) {
         this.jarContents = jarContents;
@@ -36,8 +36,7 @@ public final class ModJarMetadata implements JarMetadata {
     }
 
     @Override
-    public ModuleDescriptor descriptor() {
-        if (descriptor != null) return descriptor;
+    public ModuleDescriptor computeDescriptor() {
         var bld = ModuleDescriptor.newAutomaticModule(name())
                 .version(version())
                 .packages(jarContents.getPackagesExcluding("assets", "data"));
@@ -45,8 +44,7 @@ public final class ModJarMetadata implements JarMetadata {
                 .filter(p -> !p.providers().isEmpty())
                 .forEach(p -> bld.provides(p.serviceName(), p.providers()));
         modFile.getModFileInfo().usesServices().forEach(bld::uses);
-        descriptor = bld.build();
-        return descriptor;
+        return bld.build();
     }
 
     public IModFile modFile() {
