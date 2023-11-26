@@ -21,10 +21,12 @@ public class JarModuleFinder implements ModuleFinder {
     private final Map<String, ModuleReference> moduleReferenceMap;
 
     JarModuleFinder(final SecureJar... jars) {
-        record ref(SecureJar.ModuleDataProvider jar, ModuleReference ref) {}
         this.moduleReferenceMap = Arrays.stream(jars)
-                .map(jar->new ref(jar.moduleDataProvider(), new JarModuleReference(jar.moduleDataProvider())))
-                .collect(Collectors.toMap(r->r.jar.name(), r->r.ref, (r1, r2)->r1));
+                // Computing the module descriptor can be slow so do it in parallel!
+                // Jars are not thread safe internally, but they are independent, so this is safe.
+                .parallel()
+                // Note: Collectors.toMap() works fine with parallel streams.
+                .collect(Collectors.toMap(jar -> jar.moduleDataProvider().name(), jar -> new JarModuleReference(jar.moduleDataProvider()), (r1, r2) -> r1));
     }
 
     @Override

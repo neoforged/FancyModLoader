@@ -1,6 +1,8 @@
 package cpw.mods.jarhandling.impl;
 
 import cpw.mods.jarhandling.JarMetadata;
+import cpw.mods.jarhandling.LazyJarMetadata;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ModuleVisitor;
@@ -15,29 +17,42 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * {@link JarMetadata} implementation for a modular jar.
  * Reads the module descriptor from the jar.
  */
-public class ModuleJarMetadata implements JarMetadata {
-    private final ModuleDescriptor descriptor;
+public class ModuleJarMetadata extends LazyJarMetadata {
+    private final ModuleClassVisitor mcv;
+    private final Supplier<Set<String>> packagesSupplier;
 
-    public ModuleJarMetadata(final URI uri, final Set<String> packages) {
+    public ModuleJarMetadata(URI uri, Supplier<Set<String>> packagesSupplier) {
         try (var is = Files.newInputStream(Path.of(uri))) {
             ClassReader cr = new ClassReader(is);
             var mcv = new ModuleClassVisitor();
             cr.accept(mcv, ClassReader.SKIP_CODE);
-            mcv.mfv().packages().addAll(packages);
-            mcv.mfv().builder().packages(mcv.mfv.packages());
-            descriptor = mcv.mfv().builder().build();
+            this.mcv = mcv;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+
+        // Defer package scanning until computeDescriptor()
+        this.packagesSupplier = packagesSupplier;
     }
 
-    private class ModuleClassVisitor extends ClassVisitor {
+    @Override
+    protected ModuleDescriptor computeDescriptor() {
+        mcv.mfv().packages().addAll(packagesSupplier.get());
+        mcv.mfv().builder().packages(mcv.mfv().packages());
+        return mcv.mfv().builder().build();
+    }
+
+    private static class ModuleClassVisitor extends ClassVisitor {
         private ModFileVisitor mfv;
+        private String name;
+        @Nullable
+        private String version;
 
         ModuleClassVisitor() {
             super(Opcodes.ASM9);
@@ -46,6 +61,8 @@ public class ModuleJarMetadata implements JarMetadata {
         @Override
         public ModuleVisitor visitModule(final String name, final int access, final String version) {
             this.mfv = new ModFileVisitor(name, access, version);
+            this.name = name;
+            this.version = version;
             return this.mfv;
         }
 
@@ -53,12 +70,14 @@ public class ModuleJarMetadata implements JarMetadata {
             return mfv;
         }
     }
-    private class ModFileVisitor extends ModuleVisitor {
+
+    private static class ModFileVisitor extends ModuleVisitor {
         private final ModuleDescriptor.Builder builder;
         private final Set<String> packages = new HashSet<>();
 
         public ModFileVisitor(final String name, final int access, final String version) {
             super(Opcodes.ASM9);
+            // Note: we ignore the access flags and make every module open instead!
             builder = ModuleDescriptor.newOpenModule(name);
             if (version != null) builder.version(version);
         }
@@ -127,18 +146,15 @@ public class ModuleJarMetadata implements JarMetadata {
             return packages;
         }
     }
+
     @Override
     public String name() {
-        return descriptor.name();
+        return mcv.name;
     }
 
     @Override
+    @Nullable
     public String version() {
-        return descriptor.version().toString();
-    }
-
-    @Override
-    public ModuleDescriptor descriptor() {
-        return descriptor;
+        return mcv.version;
     }
 }

@@ -2,6 +2,7 @@ package cpw.mods.jarhandling;
 
 import cpw.mods.jarhandling.impl.ModuleJarMetadata;
 import cpw.mods.jarhandling.impl.SimpleJarMetadata;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
@@ -11,8 +12,20 @@ import java.util.regex.Pattern;
 
 public interface JarMetadata {
     String name();
+    @Nullable
     String version();
     ModuleDescriptor descriptor();
+
+    /**
+     * {@return the provider declarations for this jar}
+     *
+     * <p>Computing the {@link #descriptor()} can be expensive as it requires scanning the jar for packages.
+     * If only the service providers are needed, this method can be used instead.
+     */
+    default List<SecureJar.Provider> providers() {
+        return descriptor().provides().stream().map(p -> new SecureJar.Provider(p.service(), p.providers())).toList();
+    }
+
     // ALL from jdk.internal.module.ModulePath.java
     Pattern DASH_VERSION = Pattern.compile("-([.\\d]+)");
     Pattern NON_ALPHANUM = Pattern.compile("[^A-Za-z0-9]");
@@ -41,23 +54,24 @@ public interface JarMetadata {
      * from {@code Automatic-Module-Name} in the manifest.
      */
     static JarMetadata from(JarContents jar) {
-        final var pkgs = jar.getPackages();
         var mi = jar.findFile("module-info.class");
         if (mi.isPresent()) {
-            return new ModuleJarMetadata(mi.get(), pkgs);
+            return new ModuleJarMetadata(mi.get(), jar::getPackages);
         } else {
-            var providers = jar.getMetaInfServices();
-            var fileCandidate = fromFileName(jar.getPrimaryPath(), pkgs, providers);
-            var aname = jar.getManifest().getMainAttributes().getValue("Automatic-Module-Name");
-            if (aname != null) {
-                return new SimpleJarMetadata(aname, fileCandidate.version(), pkgs, providers);
-            } else {
-                return fileCandidate;
+            var nav = computeNameAndVersion(jar.getPrimaryPath());
+            String name = nav.name();
+            String version = nav.version();
+
+            String automaticModuleName = jar.getManifest().getMainAttributes().getValue("Automatic-Module-Name");
+            if (automaticModuleName != null) {
+                name = automaticModuleName;
             }
+
+            return new SimpleJarMetadata(name, version, jar::getPackages, jar.getMetaInfServices());
         }
     }
 
-    static SimpleJarMetadata fromFileName(final Path path, final Set<String> pkgs, final List<SecureJar.Provider> providers) {
+    private static NameAndVersion computeNameAndVersion(Path path) {
         // detect Maven-like paths
         Path versionMaybe = path.getParent();
         if (versionMaybe != null)
@@ -73,29 +87,29 @@ public interface JarMetadata {
                     if (mat.find()) {
                         var potential = ver.substring(mat.start());
                         ver = safeParseVersion(potential, path.getFileName().toString());
-                        return new SimpleJarMetadata(cleanModuleName(name), ver, pkgs, providers);
+                        return new NameAndVersion(cleanModuleName(name), ver);
                     } else {
-                        return new SimpleJarMetadata(cleanModuleName(name), null, pkgs, providers);
+                        return new NameAndVersion(cleanModuleName(name), null);
                     }
                 }
             }
         }
 
         // fallback parsing
-        var fn = path.getFileName().toString();     
+        var fn = path.getFileName().toString();
         var lastDot = fn.lastIndexOf('.');
         if (lastDot > 0) {
             fn = fn.substring(0, lastDot); // strip extension if possible
         }
-       
+
         var mat = DASH_VERSION.matcher(fn);
         if (mat.find()) {
             var potential = fn.substring(mat.start() + 1);
             var ver = safeParseVersion(potential, path.getFileName().toString());
             var name = mat.replaceAll("");
-            return new SimpleJarMetadata(cleanModuleName(name), ver, pkgs, providers);
+            return new NameAndVersion(cleanModuleName(name), ver);
         } else {
-            return new SimpleJarMetadata(cleanModuleName(fn), null, pkgs, providers);
+            return new NameAndVersion(cleanModuleName(fn), null);
         }
     }
 
@@ -145,6 +159,15 @@ public interface JarMetadata {
     }
 
     /**
+     * @deprecated Build from jar contents directly using {@link #from(JarContents)}.
+     */
+    @Deprecated(forRemoval = true, since = "2.1.23")
+    static SimpleJarMetadata fromFileName(final Path path, final Set<String> pkgs, final List<SecureJar.Provider> providers) {
+        var nav = computeNameAndVersion(path);
+        return new SimpleJarMetadata(nav.name(), nav.version(), () -> pkgs, providers);
+    }
+
+    /**
      * @deprecated Use {@link #from(JarContents)} instead.
      */
     @Deprecated(forRemoval = true, since = "2.1.16")
@@ -153,13 +176,13 @@ public interface JarMetadata {
         final var pkgs = jar.getPackages();
         var mi = jar.moduleDataProvider().findFile("module-info.class");
         if (mi.isPresent()) {
-            return new ModuleJarMetadata(mi.get(), pkgs);
+            return new ModuleJarMetadata(mi.get(), jar::getPackages);
         } else {
             var providers = jar.getProviders();
             var fileCandidate = fromFileName(path[0], pkgs, providers);
             var aname = jar.moduleDataProvider().getManifest().getMainAttributes().getValue("Automatic-Module-Name");
             if (aname != null) {
-                return new SimpleJarMetadata(aname, fileCandidate.version(), pkgs, providers);
+                return new SimpleJarMetadata(aname, fileCandidate.version(), () -> pkgs, providers);
             } else {
                 return fileCandidate;
             }
