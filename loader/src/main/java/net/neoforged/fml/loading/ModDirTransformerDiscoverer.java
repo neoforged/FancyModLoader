@@ -82,8 +82,11 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
             // Skip if the mods dir doesn't exist yet.
             return;
         }
-        try (var walk = Files.walk(modsDir, 1)){
-            walk
+        try (var walk = Files.walk(modsDir, 1)) {
+            // Collect to list first, and then parallel stream it.
+            // Before JDK 19, Files.walk streams are not parallelized efficiently for small numbers of elements.
+            // See https://bugs.openjdk.org/browse/JDK-8280915.
+            walk.toList().stream()
                     .parallel()
                     .filter(ModDirTransformerDiscoverer::shouldLoadInServiceLayer)
                     .forEachOrdered(p -> found.add(new NamedPath(p.getFileName().toString(), p)));
