@@ -86,8 +86,7 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
             // Collect to list first, and then parallel stream it.
             // Before JDK 19, Files.walk streams are not parallelized efficiently for small numbers of elements.
             // See https://bugs.openjdk.org/browse/JDK-8280915.
-            walk.toList().stream()
-                    .parallel()
+            walk.toList().parallelStream()
                     .filter(ModDirTransformerDiscoverer::shouldLoadInServiceLayer)
                     .forEachOrdered(p -> found.add(new NamedPath(p.getFileName().toString(), p)));
         } catch (IOException | IllegalStateException ioe) {
