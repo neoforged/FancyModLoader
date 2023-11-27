@@ -21,7 +21,6 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -71,7 +70,7 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
         return List.copyOf(found);
     }
 
-    private final static List<NamedPath> found = Collections.synchronizedList(new ArrayList<>());
+    private final static List<NamedPath> found = new ArrayList<>();
 
     public static List<Path> allExcluded() {
         return found.stream().map(np->np.paths()[0]).toList();
@@ -84,21 +83,23 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
             return;
         }
         try (var walk = Files.walk(modsDir, 1)){
-            walk.parallel().forEach(ModDirTransformerDiscoverer::visitFile);
+            walk
+                    .parallel()
+                    .filter(ModDirTransformerDiscoverer::shouldLoadInServiceLayer)
+                    .forEachOrdered(p -> found.add(new NamedPath(p.getFileName().toString(), p)));
         } catch (IOException | IllegalStateException ioe) {
             LOGGER.error("Error during early discovery", ioe);
         }
     }
 
-    private static void visitFile(Path path) {
-        if (!Files.isRegularFile(path)) return;
-        if (!path.toString().endsWith(".jar")) return;
-        if (LamdbaExceptionUtils.uncheck(() -> Files.size(path)) == 0) return;
+    private static boolean shouldLoadInServiceLayer(Path path) {
+        if (!Files.isRegularFile(path)) return false;
+        if (!path.toString().endsWith(".jar")) return false;
+        if (LamdbaExceptionUtils.uncheck(() -> Files.size(path)) == 0) return false;
 
         JarMetadata metadata = JarMetadata.from(new JarContentsBuilder().paths(path).build());
-        metadata.providers().stream()
+        return metadata.providers().stream()
             .map(SecureJar.Provider::serviceName)
-            .filter(SERVICES::contains) // TODO: why are we adding the paths multiple times??
-            .forEach(s -> found.add(new NamedPath(s, path)));
+            .anyMatch(SERVICES::contains);
     }
 }
