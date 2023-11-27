@@ -6,7 +6,6 @@
 package net.neoforged.fml.loading;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.jarhandling.VirtualJar;
 import cpw.mods.modlauncher.api.*;
 import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionSpecBuilder;
@@ -14,11 +13,7 @@ import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.neoforgespi.Environment;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
-import org.spongepowered.asm.launch.MixinBootstrap;
-import org.spongepowered.asm.util.Constants;
 
-import java.net.URISyntaxException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -95,22 +90,7 @@ public class FMLServiceProvider implements ITransformationService
 
     @Override
     public List<Resource> completeScan(final IModuleLayerManager layerManager) {
-        // Add mods
-        List<Resource> gameResources = new ArrayList<>(FMLLoader.completeScan(layerManager, mixinConfigsArgumentList));
-        // Add virtual jar for mixin's synthetic classes
-        // TODO:
-        VirtualJar mixinVirtualJar;
-        try {
-            mixinVirtualJar = new VirtualJar(
-                    "mixin_generated_classes",
-                    Path.of(MixinBootstrap.class.getProtectionDomain().getCodeSource().getLocation().toURI()),
-                    Constants.SYNTHETIC_PACKAGE,
-                    Constants.SYNTHETIC_PACKAGE + ".args");
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-        gameResources.add(new Resource(IModuleLayerManager.Layer.GAME, List.of(mixinVirtualJar)));
-        return gameResources;
+        return FMLLoader.completeScan(layerManager, mixinConfigsArgumentList);
     }
 
     @Override
