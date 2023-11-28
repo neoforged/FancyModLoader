@@ -89,10 +89,11 @@ public class ModFileParser {
     protected static Optional<List<String>> getAccessTransformers(IModFileInfo modFileInfo) {
         try {
             final var config = modFileInfo.getConfig();
-            if (config.getConfigElement("accessTransformers").isEmpty()) {
+            final var atEntries = config.getConfigList("accessTransformers");
+            if (atEntries.isEmpty()) {
                 return Optional.empty();
             }
-            final var atEntries = config.getConfigList("accessTransformers");
+
             return Optional.of(atEntries
                     .stream()
                     .map(entry -> entry
