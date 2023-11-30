@@ -23,6 +23,9 @@ dependencies {
     implementation("net.sf.jopt-simple:jopt-simple:${jopt_simple_version}")
     implementation("cpw.mods:securejarhandler:${securejarhandler_version}")
     implementation("net.neoforged:accesstransformers:${accesstransformers_version}")
+    implementation("net.neoforged.accesstransformers:at-modlauncher:${accesstransformers_version}") {
+        exclude module: 'modlauncher'
+    }
     implementation("org.spongepowered:mixin:${mixin_version}")
     implementation("net.minecrell:terminalconsoleappender:${terminalconsoleappender_version}")
 
