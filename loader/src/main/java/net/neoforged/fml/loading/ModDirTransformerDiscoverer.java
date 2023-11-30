@@ -6,6 +6,8 @@
 package net.neoforged.fml.loading;
 
 import com.mojang.logging.LogUtils;
+import cpw.mods.jarhandling.JarContentsBuilder;
+import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
 import cpw.mods.modlauncher.api.NamedPath;
@@ -14,7 +16,6 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.module.ModuleDescriptor;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -81,22 +82,26 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
             // Skip if the mods dir doesn't exist yet.
             return;
         }
-        try (var walk = Files.walk(modsDir, 1)){
-            walk.forEach(ModDirTransformerDiscoverer::visitFile);
+        try (var walk = Files.walk(modsDir, 1)) {
+            // Collect to list first, and then parallel stream it.
+            // Before JDK 19, Files.walk streams are not parallelized efficiently for small numbers of elements.
+            // See https://bugs.openjdk.org/browse/JDK-8280915.
+            walk.toList().parallelStream()
+                    .filter(ModDirTransformerDiscoverer::shouldLoadInServiceLayer)
+                    .forEachOrdered(p -> found.add(new NamedPath(p.getFileName().toString(), p)));
         } catch (IOException | IllegalStateException ioe) {
             LOGGER.error("Error during early discovery", ioe);
         }
     }
 
-    private static void visitFile(Path path) {
-        if (!Files.isRegularFile(path)) return;
-        if (!path.toString().endsWith(".jar")) return;
-        if (LamdbaExceptionUtils.uncheck(() -> Files.size(path)) == 0) return;
+    private static boolean shouldLoadInServiceLayer(Path path) {
+        if (!Files.isRegularFile(path)) return false;
+        if (!path.toString().endsWith(".jar")) return false;
+        if (LamdbaExceptionUtils.uncheck(() -> Files.size(path)) == 0) return false;
 
-        SecureJar jar = SecureJar.from(path);
-        jar.moduleDataProvider().descriptor().provides().stream()
-            .map(ModuleDescriptor.Provides::service)
-            .filter(SERVICES::contains)
-            .forEach(s -> found.add(new NamedPath(s, path)));
+        JarMetadata metadata = JarMetadata.from(new JarContentsBuilder().paths(path).build());
+        return metadata.providers().stream()
+            .map(SecureJar.Provider::serviceName)
+            .anyMatch(SERVICES::contains);
     }
 }

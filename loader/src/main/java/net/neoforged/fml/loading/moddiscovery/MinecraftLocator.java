@@ -7,6 +7,7 @@ package net.neoforged.fml.loading.moddiscovery;
 
 import com.electronwill.nightconfig.core.Config;
 import com.mojang.logging.LogUtils;
+import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LogMarkers;
@@ -34,7 +35,14 @@ public class MinecraftLocator extends AbstractModProvider implements IModLocator
     public List<IModLocator.ModFileOrException> scanMods() {
         final var launchHandler = FMLLoader.getLaunchHandler();
         var baseMC = launchHandler.getMinecraftPaths();
-        var mcjar = ModJarMetadata.buildFile(j->ModFileFactory.FACTORY.build(j, this, this::buildMinecraftTOML), j->true, baseMC.minecraftFilter(), baseMC.minecraftPaths().toArray(Path[]::new)).orElseThrow();
+        var mcJarContents = new JarContentsBuilder()
+                .paths(baseMC.minecraftPaths().toArray(Path[]::new))
+                .pathFilter(baseMC.minecraftFilter())
+                .build();
+        var mcJarMetadata = new ModJarMetadata(mcJarContents);
+        var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);
+        var mcjar = ModFileFactory.FACTORY.build(mcSecureJar, this, this::buildMinecraftTOML);
+        mcJarMetadata.setModFile(mcjar);
         var artifacts = baseMC.otherArtifacts().stream()
                 .map(SecureJar::from)
                 .map(sj -> new ModFile(sj, this, ModFileParser::modsTomlParser))

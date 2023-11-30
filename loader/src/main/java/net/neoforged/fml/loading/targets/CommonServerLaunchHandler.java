@@ -5,6 +5,7 @@
 
 package net.neoforged.fml.loading.targets;
 
+import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LibraryFinder;
@@ -13,7 +14,6 @@ import net.neoforged.api.distmarker.Dist;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.function.BiPredicate;
 import java.util.stream.Stream;
 
 public abstract class CommonServerLaunchHandler extends CommonLaunchHandler {
@@ -31,28 +31,23 @@ public abstract class CommonServerLaunchHandler extends CommonLaunchHandler {
         final var vers = FMLLoader.versionInfo();
         var mc = LibraryFinder.findPathForMaven("net.minecraft", "server", "", "srg", vers.mcAndNeoFormVersion());
         var mcextra = LibraryFinder.findPathForMaven("net.minecraft", "server", "", "extra", vers.mcAndNeoFormVersion());
-        var mcextra_filtered = SecureJar.from( // We only want it for it's resources. So filter everything else out.
-            (path, base) -> {
-                return path.equals("META-INF/versions/") || // This is required because it bypasses our filter for the manifest, and it's a multi-release jar.
-                     (!path.endsWith(".class") &&
-                      !path.startsWith("META-INF/"));
-            }, mcextra
-        );
-        BiPredicate<String, String> filter = (path, base) -> true;
-        BiPredicate<String, String> nullFilter = filter;
+        var mcextra_filtered = SecureJar.from(new JarContentsBuilder()
+                // We only want it for its resources. So filter everything else out.
+                .pathFilter((path, base) -> {
+                    return path.equals("META-INF/versions/") || // This is required because it bypasses our filter for the manifest, and it's a multi-release jar.
+                         (!path.endsWith(".class") &&
+                          !path.startsWith("META-INF/"));
+                })
+                .paths(mcextra)
+                .build());
 
         var mcstream = Stream.<Path>builder().add(mc).add(mcextra_filtered.getRootPath());
         var modstream = Stream.<List<Path>>builder();
 
-        filter = processMCStream(vers, mcstream, filter, modstream);
+        processMCStream(vers, mcstream, modstream);
 
-        // use this hack instead of setting filter to null initially for backwards compatibility if anything overrides
-        // processMCStream with a custom filter
-        if (filter == nullFilter)
-            filter = null;
-
-        return new LocatedPaths(mcstream.build().toList(), filter, modstream.build().toList(), this.getFmlPaths(this.getLegacyClasspath()));
+        return new LocatedPaths(mcstream.build().toList(), null, modstream.build().toList(), this.getFmlPaths(this.getLegacyClasspath()));
     }
 
-    protected abstract BiPredicate<String, String> processMCStream(VersionInfo versionInfo, Stream.Builder<Path> mc, BiPredicate<String, String> filter, Stream.Builder<List<Path>> mods);
+    protected abstract void processMCStream(VersionInfo versionInfo, Stream.Builder<Path> mc, Stream.Builder<List<Path>> mods);
 }

@@ -6,6 +6,8 @@
 package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
+import cpw.mods.jarhandling.JarContentsBuilder;
+import cpw.mods.jarhandling.SecureJar;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModLocator;
@@ -31,12 +33,17 @@ public class ExplodedDirectoryLocator implements IModLocator {
 
     @Override
     public List<IModLocator.ModFileOrException> scanMods() {
-        explodedMods.forEach(explodedMod ->
-                ModJarMetadata.buildFile(this,
-                        jar->jar.moduleDataProvider().findFile("/META-INF/mods.toml").isPresent(),
-                        null,
-                        explodedMod.paths().toArray(Path[]::new))
-                .ifPresentOrElse(f->mods.put(explodedMod, f), () -> LOGGER.warn(LogMarkers.LOADING, "Failed to find exploded resource mods.toml in directory {}", explodedMod.paths().get(0).toString())));
+        explodedMods.forEach(explodedMod -> {
+            var jarContents = new JarContentsBuilder().paths(explodedMod.paths().toArray(Path[]::new)).build();
+            if (jarContents.findFile(AbstractModProvider.MODS_TOML).isPresent()) {
+                var mjm = new ModJarMetadata(jarContents);
+                var mf = new ModFile(SecureJar.from(jarContents, mjm), this, ModFileParser::modsTomlParser);
+                mjm.setModFile(mf);
+                mods.put(explodedMod, mf);
+            } else {
+                LOGGER.warn(LogMarkers.LOADING, "Failed to find exploded resource mods.toml in directory {}", explodedMod.paths().get(0).toString());
+            }
+        });
         return mods.values().stream().map(mf->new IModLocator.ModFileOrException(mf, null)).toList();
     }
 
