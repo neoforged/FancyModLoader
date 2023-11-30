@@ -9,6 +9,8 @@ changelog {
     disableAutomaticPublicationRegistration()
 }
 
+logger.lifecycle("FML version {}", gradleutils.getTagOffsetVersion())
+
 allprojects {
     apply plugin: 'java-library'
     apply plugin: 'jacoco'

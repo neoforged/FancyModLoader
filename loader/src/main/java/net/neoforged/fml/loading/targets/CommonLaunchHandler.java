@@ -9,6 +9,7 @@ import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.ITransformingClassLoaderBuilder;
 import cpw.mods.modlauncher.api.ServiceRunner;
+import cpw.mods.niofs.union.UnionPathFilter;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.FileUtils;
 import net.neoforged.fml.loading.LogMarkers;
@@ -29,11 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 public abstract class CommonLaunchHandler implements ILaunchHandlerService {
-    public record LocatedPaths(List<Path> minecraftPaths, BiPredicate<String, String> minecraftFilter, List<List<Path>> otherModPaths, List<Path> otherArtifacts) {}
+    public record LocatedPaths(List<Path> minecraftPaths, UnionPathFilter minecraftFilter, List<List<Path>> otherModPaths, List<Path> otherArtifacts) {}
 
     protected static final Logger LOGGER = LogUtils.getLogger();
 
