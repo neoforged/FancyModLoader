@@ -35,7 +35,7 @@ public class ExplodedDirectoryLocator implements IModLocator {
     public List<IModLocator.ModFileOrException> scanMods() {
         explodedMods.forEach(explodedMod -> {
             var jarContents = new JarContentsBuilder().paths(explodedMod.paths().toArray(Path[]::new)).build();
-            if (jarContents.findFile("/META-INF/mods.toml").isPresent()) {
+            if (jarContents.findFile(AbstractModProvider.MODS_TOML).isPresent()) {
                 var mjm = new ModJarMetadata(jarContents);
                 var mf = new ModFile(SecureJar.from(jarContents, mjm), this, ModFileParser::modsTomlParser);
                 mjm.setModFile(mf);
