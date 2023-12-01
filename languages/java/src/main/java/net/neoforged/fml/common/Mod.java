@@ -9,12 +9,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.function.Supplier;
 
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.Bindings;
-import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
 
 /**
  * This defines a Mod to FML.
@@ -70,25 +66,12 @@ public @interface Mod
         enum Bus {
             /**
              * The main Forge Event Bus.
-             *
-             * <p>See {@code NeoForge#EVENT_BUS}</p>
              */
-            FORGE(Bindings.getForgeBus()),
+            FORGE,
             /**
              * The mod specific Event bus.
-             * @see FMLJavaModLoadingContext#getModEventBus()
              */
-            MOD(()-> FMLJavaModLoadingContext.get().getModEventBus());
-
-            private final Supplier<IEventBus> busSupplier;
-
-            Bus(final Supplier<IEventBus> eventBusSupplier) {
-                this.busSupplier = eventBusSupplier;
-            }
-
-            public Supplier<IEventBus> bus() {
-                return busSupplier;
-            }
+            MOD
         }
     }
 }

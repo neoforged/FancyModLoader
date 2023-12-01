@@ -15,7 +15,6 @@ import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -41,8 +40,7 @@ public class LowCodeModLanguageProvider implements IModLanguageProvider
             try {
                 final Class<?> fmlContainer = Class.forName("net.neoforged.fml.lowcodemod.LowCodeModContainer", true, Thread.currentThread().getContextClassLoader());
                 LOGGER.debug(LOADING, "Loading LowCodeModContainer from classloader {} - got {}", Thread.currentThread().getContextClassLoader(), fmlContainer.getClassLoader());
-                final Constructor<?> constructor = fmlContainer.getConstructor(IModInfo.class, ModFileScanData.class, ModuleLayer.class);
-                return (T) constructor.newInstance(info, modFileScanResults, gameLayer);
+                return (T) fmlContainer.getConstructor(IModInfo.class).newInstance(info);
             } catch (InvocationTargetException e) {
                 LOGGER.fatal(LOADING, "Failed to build mod", e);
                 if (e.getTargetException() instanceof ModLoadingException mle) {

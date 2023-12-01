@@ -31,7 +31,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -345,20 +344,13 @@ public class ModLoader
         postEvent(e);
         return e;
     }
-    public <T extends Event & IModBusEvent> void postEventWrapContainerInModOrder(T event) {
-        postEventWithWrapInModOrder(event, (mc, e) -> ModLoadingContext.get().setActiveContainer(mc), (mc, e) -> ModLoadingContext.get().setActiveContainer(null));
-    }
-    public <T extends Event & IModBusEvent> void postEventWithWrapInModOrder(T e, BiConsumer<ModContainer, T> pre, BiConsumer<ModContainer, T> post) {
+    public <T extends Event & IModBusEvent> void postEventInModOrder(T e) {
         if (!loadingStateValid) {
             LOGGER.error("Cowardly refusing to send event {} to a broken mod state", e.getClass().getName());
             return;
         }
         for (EventPriority phase : EventPriority.values()) {
-            ModList.get().forEachModInOrder(mc -> {
-                pre.accept(mc, e);
-                mc.acceptEvent(phase, e);
-                post.accept(mc, e);
-            });
+            ModList.get().forEachModInOrder(mc -> mc.acceptEvent(phase, e));
         }
     }
 

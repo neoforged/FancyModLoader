@@ -52,7 +52,6 @@ public abstract class ModContainer
     protected final String namespace;
     protected final IModInfo modInfo;
     protected ModLoadingStage modLoadingStage;
-    protected Supplier<?> contextExtension;
     protected final Map<ModLoadingStage, Runnable> activityMap = new HashMap<>();
     protected final Map<Class<? extends IExtensionPoint<?>>, Supplier<?>> extensionPoints = new IdentityHashMap<>();
     protected final EnumMap<ModConfig.Type, ModConfig> configs = new EnumMap<>(ModConfig.Type.class);
@@ -126,14 +125,12 @@ public abstract class ModContainer
             final Executor executor) {
         return CompletableFuture
                 .runAsync(() -> {
-                    ModLoadingContext.get().setActiveContainer(target);
                     target.activityMap.getOrDefault(target.modLoadingStage, ()->{}).run();
                     target.acceptEvent(eventGenerator.apply(target));
                 }, executor)
                 .whenComplete((mc, exception) -> {
                     target.modLoadingStage = stateChangeHandler.apply(target.modLoadingStage, exception);
                     progressBar.increment();
-                    ModLoadingContext.get().setActiveContainer(null);
                 });
     }
 
@@ -147,13 +144,25 @@ public abstract class ModContainer
         return Optional.ofNullable((T)extensionPoints.getOrDefault(point,()-> null).get());
     }
 
+    /**
+     * Register an {@link IExtensionPoint} with the mod container.
+     * @param point The extension point to register
+     * @param extension An extension operator
+     * @param <T> The type signature of the extension operator
+     */
     public <T extends Record & IExtensionPoint<T>> void registerExtensionPoint(Class<? extends IExtensionPoint<T>> point, Supplier<T> extension)
     {
         extensionPoints.put(point, extension);
     }
 
     public void addConfig(final ModConfig modConfig) {
-       configs.put(modConfig.getType(), modConfig);
+        if (modConfig.getSpec().isEmpty())
+        {
+            // This handles the case where a mod tries to register a config, without any options configured inside it.
+            LOGGER.warn("Attempted to register an empty config for type {} on mod {}", modConfig.getType(), getModId());
+        }
+
+        configs.put(modConfig.getType(), modConfig);
     }
 
     /**

@@ -26,7 +26,7 @@ public class Bindings {
         this.provider = providers.get(0);
     }
 
-    public static Supplier<IEventBus> getForgeBus() {
+    public static IEventBus getForgeBus() {
         return INSTANCE.provider.getForgeBusSupplier();
     }
 

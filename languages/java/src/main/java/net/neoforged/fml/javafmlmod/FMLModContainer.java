@@ -50,8 +50,6 @@ public class FMLModContainer extends ModContainer
                 .markerType(IModBusEvent.class)
                 .allowPerPhasePost()
                 .build();
-        final FMLJavaModLoadingContext contextExtension = new FMLJavaModLoadingContext(this);
-        this.contextExtension = () -> contextExtension;
         try
         {
             var layer = gameLayer.findModule(info.getOwningFile().moduleName()).orElseThrow();

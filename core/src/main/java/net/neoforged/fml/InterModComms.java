@@ -64,20 +64,6 @@ public class InterModComms
     private static ConcurrentMap<String, ConcurrentLinkedQueue<IMCMessage>> containerQueues = new ConcurrentHashMap<>();
 
     /**
-     * Send IMC to remote. Sender will default to the active modcontainer, or minecraft if not.
-     *
-     * @param modId the mod id to send to
-     * @param method the method name to send
-     * @param thing the thing associated with the method name
-     * @return true if the message was enqueued for sending (the target modid is loaded)
-     */
-    public static boolean sendTo(final String modId, final String method, final Supplier<?> thing) {
-        if (!ModList.get().isLoaded(modId)) return false;
-        containerQueues.computeIfAbsent(modId, k->new ConcurrentLinkedQueue<>()).add(new IMCMessage(ModLoadingContext.get().getActiveContainer().getModId(), modId, method, thing));
-        return true;
-    }
-
-    /**
      * Send IMC to remote.
      *
      * @param senderModId the mod id you are sending from

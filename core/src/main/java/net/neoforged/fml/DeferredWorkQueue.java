@@ -75,12 +75,9 @@ public class DeferredWorkQueue
     private static void makeRunnable(TaskInfo ti, Executor executor, RuntimeException aggregate) {
         executor.execute(() -> {
             Stopwatch timer = Stopwatch.createStarted();
-            ModLoadingContext.get().setActiveContainer(ti.owner);
-            try {
+            {
                 ti.future.exceptionally(t -> captureException(ti.owner.getModId(), aggregate, t));
                 ti.task.run();
-            } finally {
-                ModLoadingContext.get().setActiveContainer(null);
             }
             timer.stop();
             if (timer.elapsed(TimeUnit.SECONDS) >= 1) {

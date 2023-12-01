@@ -6,6 +6,8 @@
 package net.neoforged.fml.javafmlmod;
 
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.Bindings;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforgespi.language.ModFileScanData;
@@ -57,8 +59,16 @@ public class AutomaticEventSubscriber
             if (Objects.equals(mod.getModId(), modId) && sides.contains(FMLEnvironment.dist)) {
                 try
                 {
-                    LOGGER.debug(LOADING, "Auto-subscribing {} to {}", ad.clazz().getClassName(), busTarget);
-                    busTarget.bus().get().register(Class.forName(ad.clazz().getClassName(), true, loader));
+                    IEventBus bus = switch (busTarget) {
+                        case FORGE -> Bindings.getForgeBus();
+                        case MOD -> mod.getEventBus();
+                    };
+
+                    if (bus != null) {
+                        LOGGER.debug(LOADING, "Auto-subscribing {} to {}", ad.clazz().getClassName(), busTarget);
+
+                        bus.register(Class.forName(ad.clazz().getClassName(), true, loader));
+                    }
                 }
                 catch (ClassNotFoundException e)
                 {

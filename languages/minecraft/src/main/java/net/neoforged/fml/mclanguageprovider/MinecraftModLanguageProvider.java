@@ -41,9 +41,8 @@ public class MinecraftModLanguageProvider implements IModLanguageProvider {
         @Override
         public <T> T loadMod(final IModInfo info, final ModFileScanData modFileScanResults, final ModuleLayer gameLayer) {
             try {
-                var module = gameLayer.findModule("minecraft").orElseThrow();
                 final Class<?> mcModClass = Class.forName(getClass().getModule(), "net.neoforged.fml.mclanguageprovider.MinecraftModContainer");
-                return (T)mcModClass.getConstructor(IModInfo.class).newInstance(info);
+                return (T) mcModClass.getConstructor(IModInfo.class).newInstance(info);
             } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                 LOGGER.fatal(LOADING,"Unable to load MinecraftModContainer, wut?", e);
                 throw new RuntimeException(e);
