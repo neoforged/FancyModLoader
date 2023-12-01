@@ -25,44 +25,62 @@ import static net.neoforged.fml.config.ConfigTracker.CONFIG;
 
 public class ConfigFileTypeHandler {
     private static final Logger LOGGER = LogUtils.getLogger();
-    static ConfigFileTypeHandler TOML = new ConfigFileTypeHandler();
+    public final static ConfigFileTypeHandler TOML = new ConfigFileTypeHandler();
     private static final Path defaultConfigPath = FMLPaths.GAMEDIR.get().resolve(FMLConfig.getConfigValue(FMLConfig.ConfigValue.DEFAULT_CONFIG_PATH));
 
     public Function<ModConfig, CommentedFileConfig> reader(Path configBasePath) {
         return (c) -> {
             final Path configPath = configBasePath.resolve(c.getFileName());
-            final CommentedFileConfig configData = CommentedFileConfig.builder(configPath).sync().
-                    preserveInsertionOrder().
-                    autosave().
-                    onFileNotFound((newfile, configFormat)-> setupConfigFile(c, newfile, configFormat)).
-                    writingMode(WritingMode.REPLACE).
-                    build();
-            LOGGER.debug(CONFIG, "Built TOML config for {}", configPath.toString());
+            final CommentedFileConfig configData = CommentedFileConfig.builder(configPath)
+                    .sync()
+                    .preserveInsertionOrder()
+                    .autosave()
+                    .onFileNotFound((newfile, configFormat) -> setupConfigFile(c, newfile, configFormat))
+                    .writingMode(WritingMode.REPLACE)
+                    .build();
+            LOGGER.debug(CONFIG, "Built TOML config for {}", configPath);
             try
             {
                 configData.load();
             }
             catch (ParsingException ex)
             {
-                throw new ConfigLoadingException(c, ex);
+                LOGGER.warn(CONFIG, "Attempting to recreate {}", configPath);
+                try
+                {
+                    backUpConfig(configData.getNioPath(), 5);
+                    Files.delete(configData.getNioPath());
+
+                    configData.load();
+                }
+                catch (Throwable t)
+                {
+                    ex.addSuppressed(t);
+
+                    throw new ConfigLoadingException(c, ex);
+                }
             }
-            LOGGER.debug(CONFIG, "Loaded TOML config file {}", configPath.toString());
-            try {
-                FileWatcher.defaultInstance().addWatch(configPath, new ConfigWatcher(c, configData, Thread.currentThread().getContextClassLoader()));
-                LOGGER.debug(CONFIG, "Watching TOML config file {} for changes", configPath.toString());
-            } catch (IOException e) {
-                throw new RuntimeException("Couldn't watch config file", e);
+            LOGGER.debug(CONFIG, "Loaded TOML config file {}", configPath);
+            if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DISABLE_CONFIG_WATCHER)) {
+                try {
+                    FileWatcher.defaultInstance().addWatch(configPath, new ConfigWatcher(c, configData, Thread.currentThread().getContextClassLoader()));
+                    LOGGER.debug(CONFIG, "Watching TOML config file {} for changes", configPath);
+                } catch (IOException e) {
+                    throw new RuntimeException("Couldn't watch config file", e);
+                }
             }
             return configData;
         };
     }
 
     public void unload(Path configBasePath, ModConfig config) {
+        if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DISABLE_CONFIG_WATCHER))
+            return;
         Path configPath = configBasePath.resolve(config.getFileName());
         try {
-            FileWatcher.defaultInstance().removeWatch(configBasePath.resolve(config.getFileName()));
+            FileWatcher.defaultInstance().removeWatch(configPath);
         } catch (RuntimeException e) {
-            LOGGER.error("Failed to remove config {} from tracker!", configPath.toString(), e);
+            LOGGER.error("Failed to remove config {} from tracker!", configPath, e);
         }
     }
 
@@ -86,9 +104,14 @@ public class ConfigFileTypeHandler {
 
     public static void backUpConfig(final CommentedFileConfig commentedFileConfig, final int maxBackups)
     {
-        Path bakFileLocation = commentedFileConfig.getNioPath().getParent();
-        String bakFileName = FilenameUtils.removeExtension(commentedFileConfig.getFile().getName());
-        String bakFileExtension = FilenameUtils.getExtension(commentedFileConfig.getFile().getName()) + ".bak";
+        backUpConfig(commentedFileConfig.getNioPath(), maxBackups);
+    }
+
+    public static void backUpConfig(final Path commentedFileConfig, final int maxBackups)
+    {
+        Path bakFileLocation = commentedFileConfig.getParent();
+        String bakFileName = FilenameUtils.removeExtension(commentedFileConfig.getFileName().toString());
+        String bakFileExtension = FilenameUtils.getExtension(commentedFileConfig.getFileName().toString()) + ".bak";
         Path bakFile = bakFileLocation.resolve(bakFileName + "-1" + "." + bakFileExtension);
         try
         {
@@ -103,11 +126,11 @@ public class ConfigFileTypeHandler {
                         Files.move(oldBak, bakFileLocation.resolve(bakFileName + "-" + (i + 1) + "." + bakFileExtension));
                 }
             }
-            Files.copy(commentedFileConfig.getNioPath(), bakFile);
+            Files.copy(commentedFileConfig, bakFile);
         }
         catch (IOException exception)
         {
-            LOGGER.warn(CONFIG, "Failed to back up config file {}", commentedFileConfig.getNioPath(), exception);
+            LOGGER.warn(CONFIG, "Failed to back up config file {}", commentedFileConfig, exception);
         }
     }
 
@@ -144,7 +167,7 @@ public class ConfigFileTypeHandler {
                 }
                 LOGGER.debug(CONFIG, "Config file {} changed, sending notifies", this.modConfig.getFileName());
                 this.modConfig.getSpec().afterReload();
-                this.modConfig.fireEvent(IConfigEvent.reloading(this.modConfig));
+                IConfigEvent.reloading(this.modConfig).post();
             }
         }
     }

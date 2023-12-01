@@ -23,6 +23,7 @@ import java.util.function.Function;
 public class FMLConfig
 {
     public enum ConfigValue {
+        DISABLE_CONFIG_WATCHER("disableConfigWatcher", Boolean.FALSE, "Disables File Watcher. Used to automatically update config if its file has been modified."),
         EARLY_WINDOW_CONTROL("earlyWindowControl", Boolean.TRUE, "Should we control the window. Disabling this disables new GL features and can be bad for mods that rely on them."),
         MAX_THREADS("maxThreads", -1, "Max threads for early initialization parallelism,  -1 is based on processor count", FMLConfig::maxThreads),
         VERSION_CHECK("versionCheck", Boolean.TRUE, "Enable NeoForge global version checking"),

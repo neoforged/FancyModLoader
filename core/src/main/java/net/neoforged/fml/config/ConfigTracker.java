@@ -57,9 +57,9 @@ public class ConfigTracker {
 
     private void openConfig(final ModConfig config, final Path configBasePath) {
         LOGGER.trace(CONFIG, "Loading config file type {} at {} for {}", config.getType(), config.getFileName(), config.getModId());
-        final CommentedFileConfig configData = config.getHandler().reader(configBasePath).apply(config);
+        final CommentedFileConfig configData = ConfigFileTypeHandler.TOML.reader(configBasePath).apply(config);
         config.setConfigData(configData);
-        config.fireEvent(IConfigEvent.loading(config));
+        IConfigEvent.loading(config).post();
         config.save();
     }
 
@@ -67,10 +67,10 @@ public class ConfigTracker {
         if (config.getConfigData() != null) {
             LOGGER.trace(CONFIG, "Closing config file type {} at {} for {}", config.getType(), config.getFileName(), config.getModId());
             // stop the filewatcher before we save the file and close it, so reload doesn't fire
-            config.getHandler().unload(configBasePath, config);
+            ConfigFileTypeHandler.TOML.unload(configBasePath, config);
             var unloading = IConfigEvent.unloading(config);
             if (unloading != null)
-                config.fireEvent(unloading);
+                unloading.post();
             config.save();
             config.setConfigData(null);
         }
@@ -81,7 +81,7 @@ public class ConfigTracker {
             final CommentedConfig commentedConfig = CommentedConfig.inMemory();
             modConfig.getSpec().correct(commentedConfig);
             modConfig.setConfigData(commentedConfig);
-            modConfig.fireEvent(IConfigEvent.loading(modConfig));
+            IConfigEvent.loading(modConfig).post();
         });
     }
 

@@ -50,7 +50,6 @@ public class FMLModContainer extends ModContainer
                 .markerType(IModBusEvent.class)
                 .allowPerPhasePost()
                 .build();
-        this.configHandler = Optional.of(ce->this.eventBus.post(ce.self()));
         final FMLJavaModLoadingContext contextExtension = new FMLJavaModLoadingContext(this);
         this.contextExtension = () -> contextExtension;
         try
