@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -25,8 +26,11 @@ public abstract class AbstractJarFileDependencyLocator extends AbstractJarFileMo
         try {
             return Optional.of(Files.newInputStream(modFile.findResource(path.toString())));
         }
-        catch (final FileNotFoundException e) {
-            LOGGER.debug("Failed to load resource {} from {}, it does not contain dependency information.", path, modFile.getFileName());
+        // Default NIO implementations usually use NSF
+        // but the specific exception isn't documented, and oracle is inconsistent in the exceptions expected or thrown in different code paths that use NIO
+        // so we can expect both, they convey the same meaning anyways
+        catch (final NoSuchFileException | FileNotFoundException e) {
+            LOGGER.trace("Failed to load resource {} from {}, it does not contain dependency information.", path, modFile.getFileName());
             return Optional.empty();
         }
         catch (final Exception e) {
