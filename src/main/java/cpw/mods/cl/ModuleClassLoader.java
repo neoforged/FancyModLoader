@@ -2,7 +2,6 @@ package cpw.mods.cl;
 
 import cpw.mods.util.LambdaExceptionUtils;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -13,6 +12,7 @@ import java.lang.module.*;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.NoSuchFileException;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -279,8 +279,11 @@ public class ModuleClassLoader extends ClassLoader {
     }
 
     protected <T> T loadFromModule(final String moduleName, BiFunction<ModuleReader, ModuleReference, T> lookup) throws IOException {
-        var module = configuration.findModule(moduleName).orElseThrow(FileNotFoundException::new);
-        var ref = module.reference();
+        var module = configuration.findModule(moduleName);
+        if (module.isEmpty()) {
+            throw new NoSuchFileException("module " + moduleName);
+        }
+        var ref = module.get().reference();
         try (var reader = ref.open()) {
             return lookup.apply(reader, ref);
         }

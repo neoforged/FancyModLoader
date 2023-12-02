@@ -2,7 +2,6 @@ package cpw.mods.niofs.union;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -267,7 +266,7 @@ public class TestUnionFS {
                         .peek(path -> foundFiles.add(path.toString()))
                         .map(p-> ()-> {
                             if (!Files.exists(p)) {
-                                throw new FileNotFoundException(p.toString());
+                                throw new NoSuchFileException(p.toString());
                             }
                         })
             );

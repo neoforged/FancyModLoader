@@ -365,9 +365,12 @@ public class UnionFileSystem extends FileSystem {
 
     public SeekableByteChannel newReadByteChannel(final UnionPath path) throws IOException {
         try {
-            return findFirstFiltered(path)
-                    .map(this::byteChannel)
-                    .orElseThrow(FileNotFoundException::new);
+            var ret = findFirstFiltered(path).map(this::byteChannel);
+            if (ret.isPresent()) {
+                return ret.get();
+            } else {
+                throw new NoSuchFileException(path.toString());
+            }
         } catch (UncheckedIOException ioe) {
             throw ioe.getCause();
         }
