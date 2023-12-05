@@ -8,6 +8,7 @@ package net.neoforged.fml.javafmlmod;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModLoadingContext;
 
+@Deprecated(forRemoval = true)
 public class FMLJavaModLoadingContext
 {
     private final FMLModContainer container;
@@ -17,6 +18,7 @@ public class FMLJavaModLoadingContext
     }
 
     /**
+     * @deprecated You can directly receive the event bus as a mod constructor argument.
      * @return The mod's event bus, to allow subscription to Mod specific events
      */
     public IEventBus getModEventBus()
