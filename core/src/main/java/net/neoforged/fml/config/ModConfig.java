@@ -48,6 +48,10 @@ public class ModConfig
         return fileName;
     }
 
+    public ConfigFileTypeHandler getHandler() {
+        return ConfigFileTypeHandler.TOML;
+    }
+
     @SuppressWarnings("unchecked")
     public <T extends IConfigSpec<T>> IConfigSpec<T> getSpec() {
         return (IConfigSpec<T>) spec;
