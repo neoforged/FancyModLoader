@@ -14,6 +14,7 @@ import java.util.function.Supplier;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.Bindings;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
 
 /**
@@ -76,7 +77,7 @@ public @interface Mod
             FORGE(Bindings.getForgeBus()),
             /**
              * The mod specific Event bus.
-             * @see FMLJavaModLoadingContext#getModEventBus()
+             * @see ModContainer#getEventBus()
              */
             MOD(()-> FMLJavaModLoadingContext.get().getModEventBus());
 
@@ -86,6 +87,7 @@ public @interface Mod
                 this.busSupplier = eventBusSupplier;
             }
 
+            @Deprecated(forRemoval = true)
             public Supplier<IEventBus> bus() {
                 return busSupplier;
             }
