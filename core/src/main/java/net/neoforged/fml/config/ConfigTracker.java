@@ -8,6 +8,8 @@ package net.neoforged.fml.config;
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.mojang.logging.LogUtils;
+import java.nio.file.Files;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
@@ -46,28 +48,44 @@ public class ConfigTracker {
     }
 
     public void loadConfigs(ModConfig.Type type, Path configBasePath) {
+        loadConfigs(type, configBasePath, null);
+    }
+
+    public void loadConfigs(ModConfig.Type type, Path configBasePath, @Nullable Path configOverrideBasePath) {
         LOGGER.debug(CONFIG, "Loading configs type {}", type);
-        this.configSets.get(type).forEach(config -> openConfig(config, configBasePath));
+        this.configSets.get(type).forEach(config -> openConfig(config, configBasePath, configOverrideBasePath));
     }
 
-    public void unloadConfigs(ModConfig.Type type, Path configBasePath) {
+    public void unloadConfigs(ModConfig.Type type) {
         LOGGER.debug(CONFIG, "Unloading configs type {}", type);
-        this.configSets.get(type).forEach(config -> closeConfig(config, configBasePath));
+        this.configSets.get(type).forEach(this::closeConfig);
     }
 
-    private void openConfig(final ModConfig config, final Path configBasePath) {
+    private Path resolveBasePath(ModConfig config, Path configBasePath, @Nullable Path configOverrideBasePath) {
+        if (configOverrideBasePath != null) {
+            Path overrideFilePath = configOverrideBasePath.resolve(config.getFileName());
+            if (Files.exists(overrideFilePath)) {
+                LOGGER.info(CONFIG, "Found config file override in path {}", overrideFilePath);
+                return configOverrideBasePath;
+            }
+        }
+        return configBasePath;
+    }
+
+    private void openConfig(final ModConfig config, final Path configBasePath, @Nullable Path configOverrideBasePath) {
         LOGGER.trace(CONFIG, "Loading config file type {} at {} for {}", config.getType(), config.getFileName(), config.getModId());
-        final CommentedFileConfig configData = ConfigFileTypeHandler.TOML.reader(configBasePath).apply(config);
+        final Path basePath = resolveBasePath(config, configBasePath, configOverrideBasePath);
+        final CommentedFileConfig configData = ConfigFileTypeHandler.TOML.reader(basePath).apply(config);
         config.setConfigData(configData);
         IConfigEvent.loading(config).post();
         config.save();
     }
 
-    private void closeConfig(final ModConfig config, final Path configBasePath) {
+    private void closeConfig(final ModConfig config) {
         if (config.getConfigData() != null) {
             LOGGER.trace(CONFIG, "Closing config file type {} at {} for {}", config.getType(), config.getFileName(), config.getModId());
             // stop the filewatcher before we save the file and close it, so reload doesn't fire
-            ConfigFileTypeHandler.TOML.unload(configBasePath, config);
+            ConfigFileTypeHandler.TOML.unload(config);
             var unloading = IConfigEvent.unloading(config);
             if (unloading != null)
                 unloading.post();
