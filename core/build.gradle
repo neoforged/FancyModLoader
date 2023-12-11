@@ -3,7 +3,7 @@ dependencies {
 
     compileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
 
-    api("net.minecraftforge:eventbus:${eventbus_version}")
+    api("net.neoforged:bus:${eventbus_version}")
 
     implementation("commons-io:commons-io:${commons_io_version}")
 }

@@ -1,18 +1,25 @@
 plugins {
     id 'com.github.ben-manes.versions' version '0.39.0'
     id 'org.javamodularity.moduleplugin' version '1.8.7'
-    id 'org.cadixdev.licenser' version '0.6.0'
+    id 'net.neoforged.licenser' version '0.7.2' apply false
     id 'net.neoforged.gradleutils' version '[2.0.18,3)'
 }
+
+changelog {
+    disableAutomaticPublicationRegistration()
+}
+
+logger.lifecycle("FML version {}", gradleutils.getTagOffsetVersion())
 
 allprojects {
     apply plugin: 'java-library'
     apply plugin: 'jacoco'
     apply plugin: 'maven-publish'
+    apply plugin: 'signing'
 
     apply plugin: 'com.github.ben-manes.versions'
     apply plugin: 'org.javamodularity.moduleplugin'
-    apply plugin: 'org.cadixdev.licenser'
+    apply plugin: 'net.neoforged.licenser'
     apply plugin: 'net.neoforged.gradleutils'
 
     group = 'net.neoforged.fancymodloader'
@@ -30,11 +37,19 @@ allprojects {
             name = 'Minecraft'
             url = 'https://libraries.minecraft.net'
         }
+
+        // TODO remove
+        mavenLocal()
     }
 
     dependencyUpdates.rejectVersionIf { isNonStable(it.candidate.version) }
 
-    java.withSourcesJar()
+    java {
+        withSourcesJar()
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
 
     test {
         useJUnitPlatform()
@@ -52,9 +67,7 @@ subprojects { subProject ->
 
     jar.doFirst {
         manifest.attributes(
-                'Timestamp'   : new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
                 'Git-Commit'  : gradleutils.gitInfo.abbreviatedId,
-                'Git-Branch'  : gradleutils.gitInfo.branch,
                 'Build-Number': "${subProject.version}",
                 'Automatic-Module-Name' : "fml_${subProject.name.replace("-", "_")}",
                 'FMLModType'  : subProject.name.startsWith("language") ? 'LANGPROVIDER' : subProject.name == "events" ? 'GAMELIBRARY' : 'LIBRARY',
@@ -73,8 +86,9 @@ subprojects { subProject ->
 
     license {
         header = rootProject.file('LICENSE-header.txt')
+        skipExistingHeaders true
 
-        include 'net/minecraftforge/'
+        include 'net/neoforged/'
     }
 
     artifacts {
@@ -94,7 +108,16 @@ subprojects { subProject ->
         }
     }
 
+    if (System.getenv('GPG_PRIVATE_KEY')) {
+        signing {
+            final signingKey = System.getenv('GPG_PRIVATE_KEY') ?: ''
+            final signingPassword = System.getenv('GPG_KEY_PASSWORD') ?: ''
+            useInMemoryPgpKeys(signingKey, signingPassword)
+            sign publishing.publications.maven
+        }
+    }
+
     changelog {
-        fromTag "47.1"
+        fromTag "1.0"
     }
 }

@@ -1,5 +1,5 @@
-net.minecraftforge.fml.loading.log4j.SLF4JFixerLaunchPluginService
-net.minecraftforge.fml.loading.RuntimeDistCleaner
-net.minecraftforge.fml.common.asm.RuntimeEnumExtender
-net.minecraftforge.fml.common.asm.ObjectHolderDefinalize
-net.minecraftforge.fml.common.asm.CapabilityTokenSubclass
+net.neoforged.fml.loading.log4j.SLF4JFixerLaunchPluginService
+net.neoforged.fml.loading.RuntimeDistCleaner
+net.neoforged.fml.common.asm.RuntimeEnumExtender
+net.neoforged.fml.common.asm.ObjectHolderDefinalize
+net.neoforged.fml.common.asm.CapabilityTokenSubclass
