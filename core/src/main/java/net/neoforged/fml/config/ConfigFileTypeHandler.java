@@ -73,10 +73,10 @@ public class ConfigFileTypeHandler {
         };
     }
 
-    public void unload(Path configBasePath, ModConfig config) {
+    public void unload(ModConfig config) {
         if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DISABLE_CONFIG_WATCHER))
             return;
-        Path configPath = configBasePath.resolve(config.getFileName());
+        Path configPath = config.getFullPath();
         try {
             FileWatcher.defaultInstance().removeWatch(configPath);
         } catch (RuntimeException e) {
