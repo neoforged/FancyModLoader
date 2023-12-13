@@ -32,7 +32,9 @@ import java.util.Optional;
 
 public interface IModInfo
 {
-    VersionRange UNBOUNDED = MavenVersionAdapter.createFromVersionSpec("");
+    // " " will just be the preferred version for Maven, but it will accept anything.
+    // The space is very important, else we get a range that doesn't accept anything.
+    VersionRange UNBOUNDED = MavenVersionAdapter.createFromVersionSpec(" ");
 
     IModFileInfo getOwningFile();
 
