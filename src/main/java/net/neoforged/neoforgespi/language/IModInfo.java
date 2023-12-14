@@ -86,12 +86,30 @@ public interface IModInfo
         }
     }
 
+    enum DependencyType {
+        REQUIRED, OPTIONAL,
+        /**
+         * Prevents the game from loading if the dependency is loaded.
+         */
+        INCOMPATIBLE,
+        /**
+         * Shows a warning if the dependency is loaded.
+         */
+        DISCOURAGED
+    }
+
     interface ModVersion {
         String getModId();
 
         VersionRange getVersionRange();
 
-        boolean isMandatory();
+        DependencyType getType();
+
+        /**
+         * {@return the reason of this dependency}
+         * Only displayed if the type is either {@link DependencyType#DISCOURAGED} or {@link DependencyType#INCOMPATIBLE}
+         */
+        Optional<String> getReason();
 
         Ordering getOrdering();
 
