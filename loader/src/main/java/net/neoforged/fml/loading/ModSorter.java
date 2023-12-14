@@ -73,7 +73,7 @@ public class ModSorter
         }
 
         // If we have conflicts those are considered warnings
-        if (!resolutionResult.conflicts.isEmpty()) {
+        if (!resolutionResult.discouraged.isEmpty()) {
             list.getWarnings().add(new EarlyLoadingException(
                     "found mod conflicts",
                     null,
@@ -196,17 +196,17 @@ public class ModSorter
 
     public record DependencyResolutionResult(
             Collection<IModInfo.ModVersion> incompatibilities,
-            Collection<IModInfo.ModVersion> conflicts,
+            Collection<IModInfo.ModVersion> discouraged,
             Collection<IModInfo.ModVersion> versionResolution,
             Map<String, ArtifactVersion> modVersions
     ) {
         public List<EarlyLoadingException.ExceptionData> buildWarningMessages() {
-            return Stream.concat(conflicts.stream()
-                    .map(mv -> new EarlyLoadingException.ExceptionData("fml.modloading.conflictingmod",
+            return Stream.concat(discouraged.stream()
+                    .map(mv -> new EarlyLoadingException.ExceptionData("fml.modloading.discouragedmod",
                             mv.getOwner(), mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
-                            modVersions.get(mv.getModId()), mv.getReason().orElse("fml.modloading.conflictingmod.noreason"))),
+                            modVersions.get(mv.getModId()), mv.getReason().orElse("fml.modloading.discouragedmod.noreason"))),
 
-                        Stream.of(new EarlyLoadingException.ExceptionData("fml.modloading.conflictingmod.proceed")))
+                        Stream.of(new EarlyLoadingException.ExceptionData("fml.modloading.discouragedmod.proceed")))
                     .toList();
         }
 
@@ -254,16 +254,16 @@ public class ModSorter
                 .filter(ver -> modVersions.containsKey(ver.getModId()) && !this.modVersionNotContained(ver, modVersions))
                 .collect(toSet());
 
-        final var conflictingVersions = modRequirements.stream().filter(ver -> ver.getType() == IModInfo.DependencyType.CONFLICTING)
+        final var discouragedVersions = modRequirements.stream().filter(ver -> ver.getType() == IModInfo.DependencyType.DISCOURAGED)
                 .filter(ver -> modVersions.containsKey(ver.getModId()) && !this.modVersionNotContained(ver, modVersions))
                 .collect(toSet());
 
-        if (!conflictingVersions.isEmpty()) {
+        if (!discouragedVersions.isEmpty()) {
             LOGGER.error(
                     LogMarkers.LOADING,
                     "Conflicts between mods:\n{}\n\tIssues may arise. Continue at your own risk.",
-                    conflictingVersions.stream()
-                            .map(ver -> formatIncompatibleDependencyError(ver, "conflicting", modVersions))
+                    discouragedVersions.stream()
+                            .map(ver -> formatIncompatibleDependencyError(ver, "discourages", modVersions))
                             .collect(Collectors.joining("\n"))
             );
         }
@@ -294,12 +294,12 @@ public class ModSorter
                     LogMarkers.LOADING,
                     "Incompatibilities between mods:\n{}",
                     incompatibleVersions.stream()
-                            .map(ver -> formatIncompatibleDependencyError(ver, "incompatible", modVersions))
+                            .map(ver -> formatIncompatibleDependencyError(ver, "is incompatible with", modVersions))
                             .collect(Collectors.joining("\n"))
             );
         }
 
-        return new DependencyResolutionResult(incompatibleVersions, conflictingVersions, missingVersions, modVersions);
+        return new DependencyResolutionResult(incompatibleVersions, discouragedVersions, missingVersions, modVersions);
     }
 
     private static String formatDependencyError(IModInfo.ModVersion dependency, Map<String, ArtifactVersion> modVersions)
@@ -317,7 +317,7 @@ public class ModSorter
     private static String formatIncompatibleDependencyError(IModInfo.ModVersion dependency, String type, Map<String, ArtifactVersion> modVersions)
     {
         return String.format(
-                "\tMod '%s' is %s with: '%s', versions: '%s'; Version found: '%s'",
+                "\tMod '%s' %s '%s', versions: '%s'; Version found: '%s'",
                 dependency.getOwner().getModId(),
                 type,
                 dependency.getModId(),
