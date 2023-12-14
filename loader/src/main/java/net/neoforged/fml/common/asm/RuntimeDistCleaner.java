@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.loading;
+package net.neoforged.fml.common.asm;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -11,6 +11,7 @@ import cpw.mods.modlauncher.api.*;
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.accesstransformer.ml.AccessTransformerService;
+import net.neoforged.fml.common.asm.RuntimeDistCleaner;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.BackgroundScanHandler;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
@@ -20,7 +21,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.targets.CommonLaunchHandler;
 import net.neoforged.neoforgespi.Environment;
 import net.neoforged.neoforgespi.coremod.ICoreModProvider;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 
 import java.io.IOException;
