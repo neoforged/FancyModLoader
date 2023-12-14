@@ -35,6 +35,8 @@ public interface IModFileInfo
 
     boolean showAsResourcePack();
 
+    boolean showAsDataPack();
+
     Map<String,Object> getFileProperties();
 
     String getLicense();
