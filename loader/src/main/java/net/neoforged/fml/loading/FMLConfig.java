@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -35,7 +36,8 @@ public class FMLConfig
         EARLY_WINDOW_FBSCALE("earlyWindowFBScale", 1, "Early window framebuffer scale"),
         EARLY_WINDOW_MAXIMIZED("earlyWindowMaximized", Boolean.FALSE, "Early window starts maximized"),
         EARLY_WINDOW_SKIP_GL_VERSIONS("earlyWindowSkipGLVersions", List.of(), "Skip specific GL versions, may help with buggy graphics card drivers"),
-        EARLY_WINDOW_SQUIR("earlyWindowSquir", Boolean.FALSE, "Squir?")
+        EARLY_WINDOW_SQUIR("earlyWindowSquir", Boolean.FALSE, "Squir?"),
+        DEPENDENCY_VERSION_OVERRIDES("modVersionOverrides", Map.of(), "Control over mods dependencies version.")
         ;
 
         private final String entry;
@@ -144,6 +146,11 @@ public class FMLConfig
     public static <A> List<A> getListConfigValue(ConfigValue v) {
         return v.getConfigValue(INSTANCE.configData);
     }
+
+    public static <K, V> Map<K, V> getMapConfigValue(ConfigValue v) {
+        return v.getConfigValue(INSTANCE.configData);
+    }
+
     public static <T> void updateConfig(ConfigValue v, T value) {
         if (INSTANCE.configData != null) {
             v.updateValue(INSTANCE.configData, value);

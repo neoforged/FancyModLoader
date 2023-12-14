@@ -42,6 +42,7 @@ public class ModInfo implements IModInfo, IConfigurable
     private final boolean logoBlur;
     private final Optional<URL> updateJSONURL;
     private final List<? extends IModInfo.ModVersion> dependencies;
+    private final Map<String, IConfigurable> dependencyOverrides;
 
     private final List<ForgeFeature.Bound> features;
     private final Map<String,Object> properties;
@@ -94,10 +95,12 @@ public class ModInfo implements IModInfo, IConfigurable
         this.modUrl = config.<String>getConfigElement("modUrl")
                 .map(StringUtils::toURL);
         // These are sourced from the file rather than the mod-specific block, but with a modid tag
+        this.dependencyOverrides = ModVersionOverrides.getOverrides(this);
         this.dependencies = ownFile.map(mfi -> mfi.getConfigList("dependencies", this.modId))
                 .orElse(Collections.emptyList())
                 .stream()
                 .map(dep -> new ModVersion(this, dep))
+                .map(modVersion -> ModVersionOverrides.applyOverrides(modVersion, this.dependencyOverrides))
                 .toList();
         this.features = ownFile.flatMap(mfi -> mfi.<Map<String, Object>>getConfigElement("features", this.modId))
                 .stream()
@@ -200,7 +203,7 @@ public class ModInfo implements IModInfo, IConfigurable
         }
     }
 
-    class ModVersion implements net.neoforged.neoforgespi.language.IModInfo.ModVersion {
+    public class ModVersion implements IModInfo.ModVersion {
         private IModInfo owner;
         private final String modId;
         private final VersionRange versionRange;
