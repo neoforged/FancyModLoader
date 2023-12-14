@@ -7,24 +7,14 @@ on:
       - opened
       - ready_for_review
       - reopened
+  push:
+    branches:
+      - 'feature/**'
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1000
-          fetch-tags: true
-
-      - name: Setup JDK 17
-        uses: actions/setup-java@v2
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Build with Gradle
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: build
+    uses: neoforged/actions/.github/workflows/build-prs.yml@main
+    with:
+      java: 17
+      gradle_tasks: test

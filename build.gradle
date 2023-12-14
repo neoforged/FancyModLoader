@@ -2,10 +2,9 @@ plugins {
     id 'org.ajoberstar.grgit' version '4.1.0'
     id 'com.github.ben-manes.versions' version '0.39.0'
     id 'org.javamodularity.moduleplugin' version '1.8.3'
-    id 'net.neoforged.gradleutils' version '2.+'
+    id 'net.neoforged.gradleutils' version '3.0.0-alpha.7'
     id 'maven-publish'
     id 'java-library'
-    id 'signing'
 }
 
 apply plugin: 'maven-publish'
@@ -15,7 +14,16 @@ apply plugin: 'org.javamodularity.moduleplugin'
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 group 'net.neoforged'
-version = gradleutils.getTagOffsetBranchVersion()
+gradleutils {
+    version {
+        branches {
+            suffixBranch()
+        }
+    }
+
+    setupSigning(signAllPublications: true)
+}
+version = gradleutils.version
 
 repositories {
     mavenCentral()
@@ -38,33 +46,24 @@ dependencyUpdates {
 }
 
 changelog {
-    fromTag '8.0'
-}
-
-
-ext.sharedManifest = manifest {
-    attributes('Automatic-Module-Name': 'net.neoforged.neoforgespi')
-    attributes(['Specification-Title': 'neoforgespi',
-                'Specification-Vendor': 'neoforged',
-                'Specification-Version': '5', // Currently version 4 of the forgespi specification
-                'Implementation-Title': project.name,
-                'Implementation-Version': "${project.version}+${gradleutils.gitInfo.abbreviatedId}",
-                'Implementation-Vendor': 'neoforged',
-                'Git-Commit': gradleutils.gitInfo.abbreviatedId],
-            "net/neoforged/neoforgespi/")
+    from '8.0'
 }
 
 jar {
-    manifest = project.manifest {
-        from sharedManifest
+    manifest {
+        attributes('Automatic-Module-Name': 'net.neoforged.neoforgespi')
+        attributes(['Specification-Title': 'neoforgespi',
+                    'Specification-Vendor': 'neoforged',
+                    'Specification-Version': '5', // Currently version 4 of the forgespi specification
+                    'Implementation-Title': project.name,
+                    'Implementation-Version': "${project.version}+${gradleutils.gitInfo.abbreviatedId}",
+                    'Implementation-Vendor': 'neoforged',
+                    'Git-Commit': gradleutils.gitInfo.abbreviatedId],
+                "net/neoforged/neoforgespi/")
     }
 }
 
-task sourcesJar(type: Jar) {
-    archiveClassifier = 'sources'
-    from sourceSets.main.allSource
-}
-
+java.withSourcesJar()
 
 dependencies {
     implementation('cpw.mods:modlauncher:9.0.7')
@@ -90,16 +89,10 @@ test {
     useJUnitPlatform()
 }
 
-artifacts {
-    archives jar
-    archives sourcesJar
-}
-
 publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
-            artifact sourcesJar
             artifactId = "neoforgespi"
             pom {
                 name = 'NeoForge Service Provider Interface'
@@ -132,15 +125,6 @@ publishing {
         }
     }
     repositories {
-        maven gradleutils.getPublishingForgeMaven()
-    }
-}
-
-if (System.getenv('GPG_PRIVATE_KEY')) {
-    signing {
-        final signingKey = System.getenv('GPG_PRIVATE_KEY') ?: ''
-        final signingPassword = System.getenv('GPG_KEY_PASSWORD') ?: ''
-        useInMemoryPgpKeys(signingKey, signingPassword)
-        sign publishing.publications.mavenJava
+        maven gradleutils.publishingMaven
     }
 }
