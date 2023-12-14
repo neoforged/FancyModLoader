@@ -56,8 +56,6 @@ public class ModSorter
         // try and validate dependencies
         final DependencyResolutionResult resolutionResult = ms.verifyDependencyVersions();
 
-        final List<EarlyLoadingException.ExceptionData> warnings = new ArrayList<>();
-
         final LoadingModList list;
 
         // if we miss a dependency or detect an incompatibility, we abort now
@@ -203,10 +201,12 @@ public class ModSorter
             Map<String, ArtifactVersion> modVersions
     ) {
         public List<EarlyLoadingException.ExceptionData> buildWarningMessages() {
-            return conflicts.stream()
+            return Stream.concat(conflicts.stream()
                     .map(mv -> new EarlyLoadingException.ExceptionData("fml.modloading.conflictingmod",
                             mv.getOwner(), mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
-                            modVersions.get(mv.getModId()), mv.getReason().orElse("fml.modloading.conflictingmod.noreason")))
+                            modVersions.get(mv.getModId()), mv.getReason().orElse("fml.modloading.conflictingmod.noreason"))),
+
+                        Stream.of(new EarlyLoadingException.ExceptionData("fml.modloading.conflictingmod.proceed")))
                     .toList();
         }
 
