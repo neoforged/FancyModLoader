@@ -36,6 +36,7 @@ public class LoadingModList
     private final List<ModInfo> sortedList;
     private final Map<String, ModFileInfo> fileById;
     private final List<EarlyLoadingException> preLoadErrors;
+    private final List<EarlyLoadingException> preLoadWarnings;
     private List<IModFile> brokenFiles;
 
     private LoadingModList(final List<ModFile> modFiles, final List<ModInfo> sortedList)
@@ -53,6 +54,7 @@ public class LoadingModList
                 .map(ModInfo.class::cast)
                 .collect(Collectors.toMap(ModInfo::getModId, ModInfo::getOwningFile));
         this.preLoadErrors = new ArrayList<>();
+        this.preLoadWarnings = new ArrayList<>();
     }
 
     public static LoadingModList of(List<ModFile> modFiles, List<ModInfo> sortedList, final EarlyLoadingException earlyLoadingException)
@@ -168,6 +170,10 @@ public class LoadingModList
 
     public List<EarlyLoadingException> getErrors() {
         return preLoadErrors;
+    }
+
+    public List<EarlyLoadingException> getWarnings() {
+        return preLoadWarnings;
     }
 
     public void setBrokenFiles(final List<IModFile> brokenFiles) {

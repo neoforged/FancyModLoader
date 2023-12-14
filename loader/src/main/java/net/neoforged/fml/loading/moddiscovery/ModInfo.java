@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -204,7 +205,7 @@ public class ModInfo implements IModInfo, IConfigurable
         private IModInfo owner;
         private final String modId;
         private final VersionRange versionRange;
-        private final boolean mandatory;
+        private final DependencyType type;
         private final Ordering ordering;
         private final DependencySide side;
         private Optional<URL> referralUrl;
@@ -213,8 +214,8 @@ public class ModInfo implements IModInfo, IConfigurable
             this.owner = owner;
             this.modId = config.<String>getConfigElement("modId")
                     .orElseThrow(()->new InvalidModFileException("Missing required field modid in dependency", getOwningFile()));
-            this.mandatory = config.<Boolean>getConfigElement("mandatory")
-                    .orElseThrow(()->new InvalidModFileException("Missing required field mandatory in dependency", getOwningFile()));
+            this.type = config.<String>getConfigElement("type")
+                    .map(str -> str.toUpperCase(Locale.ROOT)).map(DependencyType::valueOf).orElse(DependencyType.REQUIRED);
             this.versionRange = config.<String>getConfigElement("versionRange")
                     .map(MavenVersionAdapter::createFromVersionSpec)
                     .orElse(UNBOUNDED);
@@ -242,9 +243,8 @@ public class ModInfo implements IModInfo, IConfigurable
         }
 
         @Override
-        public boolean isMandatory()
-        {
-            return mandatory;
+        public DependencyType getType() {
+            return type;
         }
 
         @Override

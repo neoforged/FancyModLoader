@@ -100,6 +100,11 @@ public class ModLoader
         this.loadingWarnings = FMLLoader.getLoadingModList().getBrokenFiles().stream()
                 .map(file -> new ModLoadingWarning(null, ModLoadingStage.VALIDATE, InvalidModIdentifier.identifyJarProblem(file.getFilePath()).orElse("fml.modloading.brokenfile"), file.getFileName()))
                 .collect(Collectors.toList());
+
+        FMLLoader.getLoadingModList().getWarnings().stream()
+                .flatMap(ModLoadingWarning::fromEarlyException)
+                .forEach(this.loadingWarnings::add);
+
         FMLLoader.getLoadingModList().getModFiles().stream()
                 .filter(ModFileInfo::missingLicense)
                 .filter(modFileInfo -> modFileInfo.getMods().stream().noneMatch(thisModInfo -> this.loadingExceptions.stream().map(ModLoadingException::getModInfo).anyMatch(otherInfo -> otherInfo == thisModInfo))) //Ignore files where any other mod already encountered an error

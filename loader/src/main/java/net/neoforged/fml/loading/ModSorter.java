@@ -52,11 +52,13 @@ public class ModSorter
             // We cannot build any list with duped mods. We have to abort immediately and report it
             return LoadingModList.of(ms.systemMods, ms.systemMods.stream().map(mf->(ModInfo)mf.getModInfos().get(0)).collect(toList()), e);
         }
+        final List<EarlyLoadingException.ExceptionData> warnings = new ArrayList<>();
         // try and validate dependencies
-        final List<EarlyLoadingException.ExceptionData> failedList = Stream.concat(ms.verifyDependencyVersions().stream(), errors.stream()).toList();
+        final List<EarlyLoadingException.ExceptionData> failedList = Stream.concat(ms.verifyDependencyVersions(warnings).stream(), errors.stream()).toList();
         // if we miss one or the other, we abort now
+        final LoadingModList list;
         if (!failedList.isEmpty()) {
-            return LoadingModList.of(ms.systemMods, ms.systemMods.stream().map(mf->(ModInfo)mf.getModInfos().get(0)).collect(toList()), new EarlyLoadingException("failure to validate mod list", null, failedList));
+            list = LoadingModList.of(ms.systemMods, ms.systemMods.stream().map(mf->(ModInfo)mf.getModInfos().get(0)).collect(toList()), new EarlyLoadingException("failure to validate mod list", null, failedList));
         } else {
             // Otherwise, lets try and sort the modlist and proceed
             EarlyLoadingException earlyLoadingException = null;
@@ -65,8 +67,17 @@ public class ModSorter
             } catch (EarlyLoadingException e) {
                 earlyLoadingException = e;
             }
-            return LoadingModList.of(ms.modFiles, ms.sortedList, earlyLoadingException);
+            list = LoadingModList.of(ms.modFiles, ms.sortedList, earlyLoadingException);
         }
+
+        if (!warnings.isEmpty()) {
+            list.getWarnings().add(new EarlyLoadingException(
+                    "found mod conflicts",
+                    null,
+                    warnings
+            ));
+        }
+        return list;
     }
 
     @SuppressWarnings("UnstableApiUsage")
@@ -180,7 +191,7 @@ public class ModSorter
         }
     }
 
-    private List<EarlyLoadingException.ExceptionData> verifyDependencyVersions()
+    private List<EarlyLoadingException.ExceptionData> verifyDependencyVersions(final List<EarlyLoadingException.ExceptionData> warnings)
     {
         final var modVersions = modFiles.stream()
                 .map(ModFile::getModInfos)
@@ -197,21 +208,45 @@ public class ModSorter
                 .filter(mv -> mv.getSide().isCorrectSide())
                 .collect(toSet());
 
-        final long mandatoryRequired = modRequirements.stream().filter(IModInfo.ModVersion::isMandatory).count();
+        final long mandatoryRequired = modRequirements.stream().filter(ver -> ver.getType() == IModInfo.DependencyType.REQUIRED).count();
         LOGGER.debug(LogMarkers.LOADING, "Found {} mod requirements ({} mandatory, {} optional)", modRequirements.size(), mandatoryRequired, modRequirements.size() - mandatoryRequired);
         final var missingVersions = modRequirements.stream()
-                .filter(mv -> (mv.isMandatory() || modVersions.containsKey(mv.getModId())) && this.modVersionNotContained(mv, modVersions))
+                .filter(mv -> (mv.getType() == IModInfo.DependencyType.REQUIRED || (modVersions.containsKey(mv.getModId()) && mv.getType() == IModInfo.DependencyType.OPTIONAL)) && this.modVersionNotContained(mv, modVersions))
                 .collect(toSet());
-        final long mandatoryMissing = missingVersions.stream().filter(IModInfo.ModVersion::isMandatory).count();
+        final long mandatoryMissing = missingVersions.stream().filter(mv -> mv.getType() == IModInfo.DependencyType.REQUIRED).count();
         LOGGER.debug(LogMarkers.LOADING, "Found {} mod requirements missing ({} mandatory, {} optional)", missingVersions.size(), mandatoryMissing, missingVersions.size() - mandatoryMissing);
 
-        if (!missingVersions.isEmpty()) {
+        final var incompatibleVersions = modRequirements.stream().filter(ver -> ver.getType() == IModInfo.DependencyType.INCOMPATIBLE)
+                .filter(ver -> modVersions.containsKey(ver.getModId()) && !this.modVersionNotContained(ver, modVersions))
+                .toList();
+
+        final var conflictingVersions = modRequirements.stream().filter(ver -> ver.getType() == IModInfo.DependencyType.CONFLICTING)
+                .filter(ver -> modVersions.containsKey(ver.getModId()) && !this.modVersionNotContained(ver, modVersions))
+                .toList();
+
+        if (!conflictingVersions.isEmpty()) {
+            LOGGER.error(
+                    LogMarkers.LOADING,
+                    "Conflicts between mods:\n{}\nIssues may arise. Continue at your own risk.",
+                    conflictingVersions.stream()
+                            .map(ver -> formatIncompatibleDependencyError(ver, "Conflicting", modVersions))
+                            .collect(Collectors.joining("\n"))
+            );
+
+            conflictingVersions.stream()
+                    .map(mv -> new EarlyLoadingException.ExceptionData("fml.modloading.conflictingmod",
+                            mv.getOwner(), mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
+                            modVersions.get(mv.getModId())))
+                    .forEach(warnings::add);
+        }
+
+        if (!missingVersions.isEmpty() || !incompatibleVersions.isEmpty()) {
             if (mandatoryMissing > 0) {
                 LOGGER.error(
                         LogMarkers.LOADING,
                         "Missing or unsupported mandatory dependencies:\n{}",
                         missingVersions.stream()
-                                .filter(IModInfo.ModVersion::isMandatory)
+                                .filter(mv -> mv.getType() == IModInfo.DependencyType.REQUIRED)
                                 .map(ver -> formatDependencyError(ver, modVersions))
                                 .collect(Collectors.joining("\n"))
                 );
@@ -221,16 +256,32 @@ public class ModSorter
                         LogMarkers.LOADING,
                         "Unsupported installed optional dependencies:\n{}",
                         missingVersions.stream()
-                                .filter(ver -> !ver.isMandatory())
+                                .filter(ver -> ver.getType() == IModInfo.DependencyType.OPTIONAL)
                                 .map(ver -> formatDependencyError(ver, modVersions))
                                 .collect(Collectors.joining("\n"))
                 );
             }
 
-            return missingVersions.stream()
-                    .map(mv -> new EarlyLoadingException.ExceptionData(mv.isMandatory() ? "fml.modloading.missingdependency" : "fml.modloading.missingdependency.optional",
-                            mv.getOwner(), mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
-                            modVersions.getOrDefault(mv.getModId(), new DefaultArtifactVersion("null"))))
+            if (!incompatibleVersions.isEmpty()) {
+                LOGGER.error(
+                        LogMarkers.LOADING,
+                        "Incompatibilities between mods:\n{}",
+                        incompatibleVersions.stream()
+                                .map(ver -> formatIncompatibleDependencyError(ver, "Incompatible", modVersions))
+                                .collect(Collectors.joining("\n"))
+                );
+            }
+
+            return Stream.concat(
+                            missingVersions.stream()
+                                    .map(mv -> new EarlyLoadingException.ExceptionData(mv.getType() == IModInfo.DependencyType.REQUIRED ? "fml.modloading.missingdependency" : "fml.modloading.missingdependency.optional",
+                                            mv.getOwner(), mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
+                                            modVersions.getOrDefault(mv.getModId(), new DefaultArtifactVersion("null")))),
+                            incompatibleVersions.stream()
+                                    .map(mv -> new EarlyLoadingException.ExceptionData("fml.modloading.incompatiblemod",
+                                            mv.getOwner(), mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
+                                            modVersions.get(mv.getModId())))
+                    )
                     .toList();
         }
         return Collections.emptyList();
@@ -245,6 +296,18 @@ public class ModSorter
                 dependency.getOwner().getModId(),
                 dependency.getVersionRange(),
                 installed != null ? installed.toString() : "[MISSING]"
+        );
+    }
+
+    private static String formatIncompatibleDependencyError(IModInfo.ModVersion dependency, String type, Map<String, ArtifactVersion> modVersions)
+    {
+        return String.format(
+                "\tMod ID: '%s', %s with: '%s', versions: '%s', Actual version: '%s'",
+                dependency.getModId(),
+                type,
+                dependency.getOwner().getModId(),
+                dependency.getVersionRange(),
+                modVersions.get(dependency.getModId()).toString()
         );
     }
 
