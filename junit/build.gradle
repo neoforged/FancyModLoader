@@ -1,0 +1,8 @@
+plugins {
+    id 'java'
+}
+
+dependencies {
+    implementation('org.junit.platform:junit-platform-launcher:1.9.3')
+    implementation('cpw.mods:bootstraplauncher:1.1.8-test')
+}
