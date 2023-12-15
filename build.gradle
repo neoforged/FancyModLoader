@@ -58,19 +58,12 @@ allprojects {
 
 subprojects { subProject ->
     subProject.version = gradleutils.getTagOffsetVersion()
-    ext {
-        MANIFESTS = [
-                ''                              : [
-                ] as LinkedHashMap
-        ]
-    }
 
-    jar.doFirst {
+    jar {
         manifest.attributes(
                 'Git-Commit'  : gradleutils.gitInfo.abbreviatedId,
                 'Build-Number': "${subProject.version}",
                 'Automatic-Module-Name' : "fml_${subProject.name.replace("-", "_")}",
-                'FMLModType'  : subProject.name.startsWith("language") ? 'LANGPROVIDER' : subProject.name == "events" ? 'GAMELIBRARY' : 'LIBRARY',
                 'Specification-Title'   : "FML${subProject.name}",
                 'Specification-Vendor'  : 'NeoForged',
                 'Specification-Version' : "${subProject.version.split('\\.')[0]}",
@@ -78,6 +71,10 @@ subprojects { subProject ->
                 'Implementation-Version': "${subProject.version.split('\\.')[0]}.${subProject.version.split('\\.')[1]}",
                 'Implementation-Vendor' : 'NeoForged'
         )
+
+        if (subProject.name != 'junit') {
+            manifest.attributes.putValue('FMLModType', 'FMLModType'  : subProject.name.startsWith("language") ? 'LANGPROVIDER' : subProject.name == "events" ? 'GAMELIBRARY' : 'LIBRARY',)
+        }
     }
 
     tasks.withType(JavaCompile) {
