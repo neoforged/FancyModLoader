@@ -1,8 +1,9 @@
 plugins {
-    id 'java'
+    id 'java-library'
 }
 
 dependencies {
     implementation('org.junit.platform:junit-platform-launcher:1.9.3')
-    implementation('cpw.mods:bootstraplauncher:1.1.8-test')
+    // BSL should not be exposed and the actual version should be provided by the neo dep
+    compileOnly("cpw.mods:bootstraplauncher:${project.bootstraplauncher_version}")
 }

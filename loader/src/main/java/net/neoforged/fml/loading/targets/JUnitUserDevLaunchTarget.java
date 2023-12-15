@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fml.loading.targets;
 
 import net.neoforged.api.distmarker.Dist;
@@ -5,7 +10,7 @@ import net.neoforged.api.distmarker.Dist;
 public class JUnitUserDevLaunchTarget extends ForgeUserdevLaunchHandler {
     @Override
     public Dist getDist() {
-        return Dist.CLIENT;
+        return Dist.DEDICATED_SERVER;
     }
 
     @Override
