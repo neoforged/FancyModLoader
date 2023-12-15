@@ -7,6 +7,9 @@ package net.neoforged.fml.loading.targets;
 
 import net.neoforged.api.distmarker.Dist;
 
+/**
+ * A launch target for bootstrapping a slim Minecraft environment in forgedev, to be used in JUnit tests.
+ */
 public class JUnitDevLaunchTarget extends CommonDevLaunchHandler {
     @Override
     public Dist getDist() {

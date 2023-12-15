@@ -13,6 +13,11 @@ import java.nio.file.Path;
 public class LaunchWrapper {
     private static ClassLoader transformingCL;
 
+    /**
+     * Lazily get the transforming module class loader used by the game at runtime by loading the game when needed.
+     * <p>
+     * Since in a JUnit environment we can't easily get the launch arguments, we will load them from the file specified via the {@code fml.junit.argsfile} system property.
+     */
     public static synchronized ClassLoader getTransformingLoader() {
         if (transformingCL != null) return transformingCL;
         final var oldLoader = Thread.currentThread().getContextClassLoader();
