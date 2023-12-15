@@ -2,7 +2,7 @@ package net.neoforged.fml.loading.targets;
 
 import net.neoforged.api.distmarker.Dist;
 
-public class JUnitLaunchTarget extends CommonDevLaunchHandler {
+public class JUnitDevLaunchTarget extends CommonDevLaunchHandler {
     @Override
     public Dist getDist() {
         return Dist.CLIENT;
@@ -15,6 +15,6 @@ public class JUnitLaunchTarget extends CommonDevLaunchHandler {
 
     @Override
     public String name() {
-        return "junitfml";
+        return "junitfmldev";
     }
 }
