@@ -17,7 +17,7 @@ public class JUnitService implements LauncherSessionListener {
         oldLoader = Thread.currentThread().getContextClassLoader();
 
         try {
-            final String[] args = Files.readAllLines(Path.of("mainargs.txt")).toArray(String[]::new);
+            final String[] args = Files.readAllLines(Path.of(System.getProperty("fml.junit.argsfile", "mainargs.txt"))).toArray(String[]::new);
             BootstrapLauncher.main(args);
         } catch (Exception exception) {
             System.err.println("Failed to start Minecraft: " + exception);
