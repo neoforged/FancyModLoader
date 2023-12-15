@@ -20,6 +20,6 @@ public class JUnitUserDevLaunchTarget extends ForgeUserdevLaunchHandler {
 
     @Override
     public String name() {
-        return "junitfmluserdev";
+        return "forgejunituserdev";
     }
 }

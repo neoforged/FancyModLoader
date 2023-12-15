@@ -20,6 +20,6 @@ public class JUnitDevLaunchTarget extends CommonDevLaunchHandler {
 
     @Override
     public String name() {
-        return "junitfmldev";
+        return "forgejunitdev";
     }
 }
