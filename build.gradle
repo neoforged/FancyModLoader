@@ -73,7 +73,7 @@ subprojects { subProject ->
         )
 
         if (subProject.name != 'junit') {
-            manifest.attributes.putValue('FMLModType', subProject.name.startsWith("language") ? 'LANGPROVIDER' : subProject.name == "events" ? 'GAMELIBRARY' : 'LIBRARY',)
+            manifest.attributes.put('FMLModType', subProject.name.startsWith("language") ? 'LANGPROVIDER' : subProject.name == "events" ? 'GAMELIBRARY' : 'LIBRARY',)
         }
     }
 
