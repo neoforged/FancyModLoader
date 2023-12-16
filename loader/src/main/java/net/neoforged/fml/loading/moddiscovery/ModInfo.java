@@ -6,6 +6,7 @@
 package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.StringSubstitutor;
 import net.neoforged.fml.loading.StringUtils;
 import net.neoforged.neoforgespi.language.IConfigurable;
@@ -20,6 +21,7 @@ import org.slf4j.Logger;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -204,7 +206,8 @@ public class ModInfo implements IModInfo, IConfigurable
         private IModInfo owner;
         private final String modId;
         private final VersionRange versionRange;
-        private final boolean mandatory;
+        private final DependencyType type;
+        private final Optional<String> reason;
         private final Ordering ordering;
         private final DependencySide side;
         private Optional<URL> referralUrl;
@@ -213,8 +216,21 @@ public class ModInfo implements IModInfo, IConfigurable
             this.owner = owner;
             this.modId = config.<String>getConfigElement("modId")
                     .orElseThrow(()->new InvalidModFileException("Missing required field modid in dependency", getOwningFile()));
-            this.mandatory = config.<Boolean>getConfigElement("mandatory")
-                    .orElseThrow(()->new InvalidModFileException("Missing required field mandatory in dependency", getOwningFile()));
+            this.type = config.<String>getConfigElement("type")
+                    .map(str -> str.toUpperCase(Locale.ROOT)).map(DependencyType::valueOf).orElseGet(() -> {
+                        final var mandatory = config.<Boolean>getConfigElement("mandatory");
+                        if (mandatory.isPresent()) {
+                            if (!FMLLoader.isProduction()) {
+                                LOGGER.error("Mod '{}' uses deprecated 'mandatory' field in the dependency declaration for '{}'. Use the 'type' field and 'required'/'optional' instead", owner.getModId(), modId);
+                                throw new InvalidModFileException("Deprecated 'mandatory' field is used in dependency", getOwningFile());
+                            }
+
+                            return mandatory.get() ? DependencyType.REQUIRED : DependencyType.OPTIONAL;
+                        }
+
+                        return DependencyType.REQUIRED;
+                    });
+            this.reason = config.<String>getConfigElement("reason");
             this.versionRange = config.<String>getConfigElement("versionRange")
                     .map(MavenVersionAdapter::createFromVersionSpec)
                     .orElse(UNBOUNDED);
@@ -242,9 +258,13 @@ public class ModInfo implements IModInfo, IConfigurable
         }
 
         @Override
-        public boolean isMandatory()
-        {
-            return mandatory;
+        public DependencyType getType() {
+            return type;
+        }
+
+        @Override
+        public Optional<String> getReason() {
+            return reason;
         }
 
         @Override

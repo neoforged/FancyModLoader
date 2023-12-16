@@ -6,6 +6,7 @@
 package net.neoforged.fml;
 
 import com.google.common.collect.Streams;
+import net.neoforged.fml.loading.EarlyLoadingException;
 import net.neoforged.neoforgespi.language.IModInfo;
 
 import java.util.Arrays;
@@ -42,5 +43,9 @@ public class ModLoadingWarning
 
     public String formatToString() {
         return Bindings.getMessageParser().get().parseMessage(i18nMessage, Streams.concat(Stream.of(modInfo, warningStage), context.stream()).toArray());
+    }
+
+    static Stream<ModLoadingWarning> fromEarlyException(final EarlyLoadingException e) {
+        return e.getAllData().stream().map(ed->new ModLoadingWarning(ed.getModInfo(), ModLoadingStage.VALIDATE, ed.getI18message(), ed.getArgs()));
     }
 }
