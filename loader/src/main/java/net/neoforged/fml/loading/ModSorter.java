@@ -215,7 +215,7 @@ public class ModSorter
                             versionResolution.stream()
                                     .map(mv -> new EarlyLoadingException.ExceptionData(mv.getType() == IModInfo.DependencyType.REQUIRED ? "fml.modloading.missingdependency" : "fml.modloading.missingdependency.optional",
                                             mv.getOwner(), mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
-                                            modVersions.getOrDefault(mv.getModId(), new DefaultArtifactVersion("null")))),
+                                            modVersions.getOrDefault(mv.getModId(), new DefaultArtifactVersion("null")), mv.getReason())),
                             incompatibilities.stream()
                                     .map(mv -> new EarlyLoadingException.ExceptionData("fml.modloading.incompatiblemod",
                                             mv.getOwner(), mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
