@@ -203,8 +203,6 @@ public class ModInfo implements IModInfo, IConfigurable
     }
 
     class ModVersion implements net.neoforged.neoforgespi.language.IModInfo.ModVersion {
-        public static final boolean MANDATORY_DEPRECATION_CRASH = !Boolean.parseBoolean(System.getProperty("fml.disableDependencyMandatoryDeprecation", "false"));
-
         private IModInfo owner;
         private final String modId;
         private final VersionRange versionRange;
@@ -224,7 +222,7 @@ public class ModInfo implements IModInfo, IConfigurable
                         if (mandatory.isPresent()) {
                             if (!FMLLoader.isProduction()) {
                                 LOGGER.error("Mod '{}' uses deprecated 'mandatory' field in the dependency declaration for '{}'. Use the 'type' field and 'required'/'optional' instead", owner.getModId(), modId);
-                                if (MANDATORY_DEPRECATION_CRASH) {
+                                if (owner.getOwningFile().getFile().getProvider() instanceof ExplodedDirectoryLocator) {
                                     throw new InvalidModFileException("Deprecated 'mandatory' field is used in dependency", getOwningFile());
                                 }
                             }
