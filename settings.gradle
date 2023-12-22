@@ -31,7 +31,6 @@ include 'loader'
 include 'core'
 include 'events'
 include 'earlydisplay'
-include 'spi'
 
 includeLanguage 'minecraft'
 includeLanguage 'java'

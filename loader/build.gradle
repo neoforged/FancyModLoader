@@ -4,7 +4,7 @@ dependencies {
     api("org.ow2.asm:asm:${asm_version}")
     api("org.ow2.asm:asm-tree:${asm_version}")
     api("org.ow2.asm:asm-commons:${asm_version}")
-    api(project(':spi'))
+    api("net.neoforged:neoforgespi:${spi_version}")
     api("net.neoforged:mergetool:${mergetool_version}:api")
     api("org.apache.logging.log4j:log4j-api:${log4j_version}")
     api("org.slf4j:slf4j-api:${slf4j_api_version}")

@@ -58,6 +58,12 @@ allprojects {
 
 subprojects { subProject ->
     subProject.version = gradleutils.getTagOffsetVersion()
+    ext {
+        MANIFESTS = [
+                ''                              : [
+                ] as LinkedHashMap
+        ]
+    }
 
     jar.doFirst {
         manifest.attributes(
