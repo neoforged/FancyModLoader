@@ -224,7 +224,7 @@ public class ModInfo implements IModInfo, IConfigurable
                             if (!FMLLoader.isProduction()) {
                                 LOGGER.error("Mod '{}' uses deprecated 'mandatory' field in the dependency declaration for '{}'. Use the 'type' field and 'required'/'optional' instead", owner.getModId(), modId);
                                 // only error the mod being "developed" (i.e. found through the MOD_CLASSES) to prevent dependencies from causing the crash
-                                if (owner.getOwningFile().getFile().getProvider() instanceof ExplodedDirectoryLocator) {
+                                if (owner.getOwningFile().getFile().getProvider() instanceof MinecraftLocator) {
                                     throw new InvalidModFileException("Deprecated 'mandatory' field is used in dependency", getOwningFile());
                                 }
                             }
