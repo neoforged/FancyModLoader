@@ -1,0 +1,130 @@
+plugins {
+    id 'org.ajoberstar.grgit' version '4.1.0'
+    id 'com.github.ben-manes.versions' version '0.39.0'
+    id 'org.javamodularity.moduleplugin' version '1.8.3'
+    id 'net.neoforged.gradleutils' version '3.0.0-alpha.7'
+    id 'maven-publish'
+    id 'java-library'
+}
+
+apply plugin: 'maven-publish'
+apply plugin: 'java-library'
+apply plugin: 'org.javamodularity.moduleplugin'
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+group 'net.neoforged'
+gradleutils {
+    version {
+        branches {
+            suffixBranch()
+        }
+    }
+
+    setupSigning(signAllPublications: true)
+}
+version = gradleutils.version
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'NeoForged'
+        url = 'https://maven.neoforged.net/releases'
+    }
+}
+
+def isNonStable = { String version ->
+    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
+    def regex = /^[0-9,.v-]+(-r)?$/
+    return !stableKeyword && !(version ==~ regex)
+}
+
+dependencyUpdates {
+    rejectVersionIf {
+        isNonStable(it.candidate.version)
+    }
+}
+
+changelog {
+    from '8.0'
+}
+
+jar {
+    manifest {
+        attributes('Automatic-Module-Name': 'net.neoforged.neoforgespi')
+        attributes(['Specification-Title': 'neoforgespi',
+                    'Specification-Vendor': 'neoforged',
+                    'Specification-Version': '5', // Currently version 4 of the forgespi specification
+                    'Implementation-Title': project.name,
+                    'Implementation-Version': "${project.version}+${gradleutils.gitInfo.abbreviatedId}",
+                    'Implementation-Vendor': 'neoforged',
+                    'Git-Commit': gradleutils.gitInfo.abbreviatedId],
+                "net/neoforged/neoforgespi/")
+    }
+}
+
+java.withSourcesJar()
+
+dependencies {
+    implementation('cpw.mods:modlauncher:9.0.7')
+    implementation('org.ow2.asm:asm:9.2')
+    implementation('org.ow2.asm:asm-commons:9.2')
+    implementation('org.ow2.asm:asm-tree:9.2')
+    implementation('org.apache.logging.log4j:log4j-api:2.17.1')
+    implementation('org.apache.maven:maven-artifact:3.8.1')
+    implementation('cpw.mods:securejarhandler:0.9.52')
+    api('net.neoforged:mergetool:2.0.0:api') {
+        transitive false
+    }
+
+
+    testRuntimeOnly('org.apache.logging.log4j:log4j-core:2.17.1')
+    testImplementation('org.junit.jupiter:junit-jupiter-api:5.7.+')
+    testImplementation('org.powermock:powermock-core:2.0.+')
+    testImplementation('org.hamcrest:hamcrest-core:2.2+')
+    testImplementation('org.junit.jupiter:junit-jupiter-engine:5.7.+')
+}
+
+test {
+    useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifactId = "neoforgespi"
+            pom {
+                name = 'NeoForge Service Provider Interface'
+                description = 'API for services which can plug into forge, or which are used by forge in other places'
+                url = 'https://github.com/neoforged/NeoForgeSPI'
+                scm {
+                    url = 'https://github.com/neoforged/NeoForgeSPI'
+                    connection = 'scm:git:git://github.com/neoforged/NeoForgeSPI.git'
+                    developerConnection = 'scm:git:git@github.com:neoforged/NeoForgeSPI.git'
+                }
+                issueManagement {
+                    system = 'github'
+                    url = 'https://github.com/neoforged/NeoForgeSPI/issues'
+                }
+
+                licenses {
+                    license {
+                        name = 'LGPLv2.1'
+                        url = 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'cpw'
+                        name = 'cpw'
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven gradleutils.publishingMaven
+    }
+}
