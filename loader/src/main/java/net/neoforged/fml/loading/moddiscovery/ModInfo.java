@@ -217,11 +217,13 @@ public class ModInfo implements IModInfo, IConfigurable
             this.modId = config.<String>getConfigElement("modId")
                     .orElseThrow(()->new InvalidModFileException("Missing required field modid in dependency", getOwningFile()));
             this.type = config.<String>getConfigElement("type")
+                    // TODO - 1.21: remove the fallback to the mandatory field
                     .map(str -> str.toUpperCase(Locale.ROOT)).map(DependencyType::valueOf).orElseGet(() -> {
                         final var mandatory = config.<Boolean>getConfigElement("mandatory");
                         if (mandatory.isPresent()) {
                             if (!FMLLoader.isProduction()) {
                                 LOGGER.error("Mod '{}' uses deprecated 'mandatory' field in the dependency declaration for '{}'. Use the 'type' field and 'required'/'optional' instead", owner.getModId(), modId);
+                                // only error the mod being "developed" (i.e. found through the MOD_CLASSES) to prevent dependencies from causing the crash
                                 if (owner.getOwningFile().getFile().getProvider() instanceof ExplodedDirectoryLocator) {
                                     throw new InvalidModFileException("Deprecated 'mandatory' field is used in dependency", getOwningFile());
                                 }
