@@ -17,7 +17,7 @@ public class FMLServerLaunchHandler extends CommonServerLaunchHandler {
 
     @Override
     protected void processMCStream(VersionInfo versionInfo, Stream.Builder<Path> mc, Stream.Builder<List<Path>> mods) {
-        var fmlonly = LibraryFinder.findPathForMaven("net.neoforged.fml", "fmlonly", "", "universal", versionInfo.mcAndFmlVersion());
+        var fmlonly = LibraryFinder.findPathForMaven("net.neoforged.fancymodloader", "fmlonly", "", "universal", versionInfo.mcAndFmlVersion());
         mods.add(List.of(fmlonly));
     }
 }
