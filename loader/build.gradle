@@ -19,6 +19,7 @@ dependencies {
     api("com.mojang:logging:${mojang_logging_version}")
     api "net.neoforged:JarJarSelector:${jarjar_version}"
     api "net.neoforged:JarJarMetadata:${jarjar_version}"
+    api("cpw.mods:securejarhandler:${securejarhandler_version}")
 
     implementation("net.sf.jopt-simple:jopt-simple:${jopt_simple_version}")
     implementation("cpw.mods:securejarhandler:${securejarhandler_version}")

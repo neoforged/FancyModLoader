@@ -54,8 +54,9 @@ public class FMLModContainer extends ModContainer
         this.contextExtension = () -> contextExtension;
         try
         {
-            var layer = gameLayer.findModule(info.getOwningFile().moduleName()).orElseThrow();
-            modClass = Class.forName(layer, className);
+            var moduleName = info.getOwningFile().getFile().getSecureJar().moduleDataProvider().descriptor().name();
+            var module = gameLayer.findModule(moduleName).orElseThrow();
+            modClass = Class.forName(module, className);
             LOGGER.trace(LOADING,"Loaded modclass {} with {}", modClass.getName(), modClass.getClassLoader());
         }
         catch (Throwable e)
