@@ -19,7 +19,6 @@
 package cpw.mods.bootstraplauncher;
 
 import cpw.mods.cl.JarModuleFinder;
-import cpw.mods.cl.ModularURLHandler;
 import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.SecureJar;
 
@@ -183,19 +182,17 @@ public class BootstrapLauncher {
 
         if (legacyCpPath != null) {
             var legacyCPFileCandidatePath = Paths.get(legacyCpPath);
-            if (Files.exists(legacyCPFileCandidatePath) && Files.isRegularFile(legacyCPFileCandidatePath)) {
-                try {
-                    return Files.readAllLines(legacyCPFileCandidatePath);
-                }
-                catch (IOException e) {
-                    throw new IllegalStateException("Failed to load the legacy class path from the specified file: " + legacyCpPath, e);
-                }
+            try {
+                return Files.readAllLines(legacyCPFileCandidatePath);
+            }
+            catch (IOException e) {
+                throw new IllegalStateException("Failed to load the legacy class path from the specified file: " + legacyCpPath, e);
             }
         }
 
         var legacyClasspath = System.getProperty("legacyClassPath", System.getProperty("java.class.path"));
         Objects.requireNonNull(legacyClasspath, "Missing legacyClassPath, cannot bootstrap");
-        if (legacyClasspath.length() == 0) {
+        if (legacyClasspath.isEmpty()) {
             return List.of();
         } else {
             return Arrays.asList(legacyClasspath.split(File.pathSeparator));
