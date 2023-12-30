@@ -6,4 +6,5 @@ dependencies {
     api("net.neoforged:bus:${eventbus_version}")
 
     implementation("commons-io:commons-io:${commons_io_version}")
+    implementation("org.slf4j:slf4j-api:${slf4j_api_version}")
 }

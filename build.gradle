@@ -63,7 +63,6 @@ subprojects { subProject ->
         manifest.attributes(
                 'Git-Commit'  : gradleutils.gitInfo.abbreviatedId,
                 'Build-Number': "${subProject.version}",
-                'Automatic-Module-Name' : "fml_${subProject.name.replace("-", "_")}",
                 'FMLModType'  : subProject.name.startsWith("language") ? 'LANGPROVIDER' : subProject.name == "events" ? 'GAMELIBRARY' : 'LIBRARY',
                 'Specification-Title'   : "FML${subProject.name}",
                 'Specification-Vendor'  : 'NeoForged',
