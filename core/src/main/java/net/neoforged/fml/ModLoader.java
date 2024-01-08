@@ -113,7 +113,6 @@ public class ModLoader
         this.stateManager = new ModStateManager();
         CrashReportCallables.registerCrashCallable("ModLauncher", FMLLoader::getLauncherInfo);
         CrashReportCallables.registerCrashCallable("ModLauncher launch target", FMLLoader::launcherHandlerName);
-        CrashReportCallables.registerCrashCallable("ModLauncher naming", FMLLoader::getNaming);
         CrashReportCallables.registerCrashCallable("ModLauncher services", this::computeModLauncherServiceList);
         CrashReportCallables.registerCrashCallable("FML Language Providers", this::computeLanguageList);
     }

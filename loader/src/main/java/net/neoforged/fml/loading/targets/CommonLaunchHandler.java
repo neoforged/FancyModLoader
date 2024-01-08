@@ -39,8 +39,6 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
 
     public abstract Dist getDist();
 
-    public abstract String getNaming();
-
     public boolean isProduction() {
         return false;
     }
