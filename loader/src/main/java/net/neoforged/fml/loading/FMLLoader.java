@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 public class FMLLoader
@@ -38,7 +37,6 @@ public class FMLLoader
     private static ICoreModProvider coreModProvider;
     private static LanguageLoadingProvider languageLoadingProvider;
     private static Dist dist;
-    private static String naming;
     private static LoadingModList loadingModList;
     private static RuntimeDistCleaner runtimeDistCleaner;
     private static Path gamePath;
@@ -138,7 +136,6 @@ public class FMLLoader
         launchHandlerName = launchHandler.get().name();
         gamePath = environment.getProperty(IEnvironment.Keys.GAMEDIR.get()).orElse(Paths.get(".").toAbsolutePath());
 
-        naming = commonLaunchHandler.getNaming();
         dist = commonLaunchHandler.getDist();
         production = commonLaunchHandler.isProduction();
 
@@ -216,14 +213,6 @@ public class FMLLoader
     public static Path getGamePath()
     {
         return gamePath;
-    }
-
-    public static String getNaming() {
-        return naming;
-    }
-
-    public static Optional<BiFunction<INameMappingService.Domain, String, String>> getNameFunction(final String naming) {
-        return Launcher.INSTANCE.environment().findNameMapping(naming);
     }
 
     public static String getLauncherInfo() {

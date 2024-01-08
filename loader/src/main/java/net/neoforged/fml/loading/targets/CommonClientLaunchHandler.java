@@ -16,7 +16,6 @@ import java.util.stream.Stream;
 
 public abstract class CommonClientLaunchHandler extends CommonLaunchHandler {
     @Override public Dist getDist()  { return Dist.CLIENT; }
-    @Override public String getNaming() { return "srg"; }
     @Override public boolean isProduction() { return true; }
 
     @Override
