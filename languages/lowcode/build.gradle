@@ -2,5 +2,4 @@ dependencies {
     compileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
 
     implementation(project(':loader'))
-    implementation(project(':core'))
 }

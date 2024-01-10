@@ -28,8 +28,6 @@ ext.includeLanguage = { name ->
 rootProject.name = 'FancyModLoader'
 
 include 'loader'
-include 'core'
-include 'events'
 include 'earlydisplay'
 include 'spi'
 
