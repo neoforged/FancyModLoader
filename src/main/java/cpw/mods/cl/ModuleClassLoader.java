@@ -172,7 +172,9 @@ public class ModuleClassLoader extends ClassLoader {
         var modroot = this.resolvedRoots.get(ref.descriptor().name());
         ProtectionDomainHelper.tryDefinePackage(this, name, modroot.jar().getManifest(), t->modroot.jar().getManifest().getAttributes(t), this::definePackage); // Packages are dirctories, and can't be signed, so use raw attributes instead of signed.
         var cs = ProtectionDomainHelper.createCodeSource(toURL(ref.location()), modroot.jar().verifyAndGetSigners(cname, bytes));
-        return defineClass(name, bytes, 0, bytes.length, ProtectionDomainHelper.createProtectionDomain(cs, this));
+        var cls = defineClass(name, bytes, 0, bytes.length, ProtectionDomainHelper.createProtectionDomain(cs, this));
+        ProtectionDomainHelper.trySetPackageModule(cls.getPackage(), cls.getModule());
+        return cls;
     }
 
     protected byte[] maybeTransformClassBytes(final byte[] bytes, final String name, final String context) {
