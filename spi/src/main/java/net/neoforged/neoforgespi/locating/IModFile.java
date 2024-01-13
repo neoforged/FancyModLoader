@@ -13,8 +13,10 @@ import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.IModLanguageProvider;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jetbrains.annotations.ApiStatus;
 
+import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -122,17 +124,23 @@ public interface IModFile {
     /**
      * {@return the coremods contained in this file}
      */
-    List<ICoreModFile> getCoreMods();
+    default List<ICoreModFile> getCoreMods() {
+        return List.of();
+    }
 
     /**
      * {@return the names of the Mixin configs of this file}
      */
-    List<String> getMixinConfigs();
+    default List<String> getMixinConfigs() {
+        return List.of();
+    }
 
     /**
      * {@return the paths to the access transformer files contained in this file}
      */
-    List<Path> getAccessTransformers();
+    default List<Path> getAccessTransformers() {
+        return List.of();
+    }
 
     /**
      * {@return the controller of this file}
@@ -147,7 +155,9 @@ public interface IModFile {
      * Usually this is the version in the jar's manifest.
      * @apiNote This version may not be accurate, when possible, use the version of the mods contained in the file.
      */
-    ArtifactVersion getVersion();
+    default ArtifactVersion getVersion() {
+        return new DefaultArtifactVersion(getSecureJar().moduleDataProvider().descriptor().version().map(ModuleDescriptor.Version::toString).orElse("0.0NONE"));
+    }
 
     /**
      * The type of file.
