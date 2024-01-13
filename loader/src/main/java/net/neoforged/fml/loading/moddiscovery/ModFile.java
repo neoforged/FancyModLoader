@@ -10,13 +10,16 @@ import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.SecureJar;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LogMarkers;
+import net.neoforged.neoforgespi.coremod.ICoreModFile;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.IModLanguageProvider;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.IModFile;
+import net.neoforged.neoforgespi.locating.IModFileController;
 import net.neoforged.neoforgespi.locating.IModProvider;
 import net.neoforged.neoforgespi.locating.ModFileFactory;
+import net.neoforged.neoforgespi.locating.ModFileLoadingException;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.slf4j.Logger;
@@ -29,6 +32,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.jar.Attributes;
@@ -50,9 +54,10 @@ public class ModFile implements IModFile {
     private       IModFileInfo modFileInfo;
     private ModFileScanData fileModFileScanData;
     private volatile CompletableFuture<ModFileScanData> futureScanResult;
-    private List<CoreModFile> coreMods;
-    private List<String> mixinConfigs;
-    private List<Path> accessTransformers;
+    private List<ICoreModFile> coreMods = List.of();
+    private List<String> mixinConfigs = List.of();
+    private List<Path> accessTransformers = List.of();
+    private final Controller controller = new Controller();
 
     static final Attributes.Name TYPE = new Attributes.Name("FMLModType");
     private SecureJar.Status securityStatus;
@@ -100,29 +105,7 @@ public class ModFile implements IModFile {
         return accessTransformers;
     }
 
-    public boolean identifyMods() {
-        this.modFileInfo = ModFileParser.readModList(this, this.parser);
-        if (this.modFileInfo == null) return this.getType() != Type.MOD;
-        LOGGER.debug(LogMarkers.LOADING,"Loading mod file {} with languages {}", this.getFilePath(), this.modFileInfo.requiredLanguageLoaders());
-        this.coreMods = ModFileParser.getCoreMods(this);
-        this.coreMods.forEach(mi-> LOGGER.debug(LogMarkers.LOADING,"Found coremod {}", mi.getPath()));
-        this.mixinConfigs = ModFileParser.getMixinConfigs(this.modFileInfo);
-        this.mixinConfigs.forEach(mc -> LOGGER.debug(LogMarkers.LOADING,"Found mixin config {}", mc));
-        this.accessTransformers = ModFileParser.getAccessTransformers(this.modFileInfo)
-                .map(list -> list.stream().map(this::findResource).filter(path -> {
-                    if (Files.notExists(path)) {
-                        LOGGER.error(LogMarkers.LOADING, "Access transformer file {} provided by mod {} does not exist!", path, modFileInfo.moduleName());
-                        return false;
-                    }
-                    return true;
-                }))
-                .orElseGet(() -> Stream.of(findResource("META-INF", "accesstransformer.cfg"))
-                        .filter(Files::exists))
-                .toList();
-        return true;
-    }
-
-    public List<CoreModFile> getCoreMods() {
+    public List<ICoreModFile> getCoreMods() {
         return coreMods;
     }
 
@@ -139,10 +122,6 @@ public class ModFile implements IModFile {
 
     public void scanFile(Consumer<Path> pathConsumer) {
         provider.scanFile(this, pathConsumer);
-    }
-
-    public void setFutureScanResult(CompletableFuture<ModFileScanData> future) {
-        this.futureScanResult = future;
     }
 
     @Override
@@ -185,12 +164,6 @@ public class ModFile implements IModFile {
         return getSecureJar().getPath(String.join("/", path));
     }
 
-    public void identifyLanguage() {
-        this.loaders = this.modFileInfo.requiredLanguageLoaders().stream()
-                .map(spec-> FMLLoader.getLanguageLoadingProvider().findLanguage(this, spec.languageName(), spec.acceptedVersions()))
-                .toList();
-    }
-
     @Override
     public String toString() {
         return "Mod File: " + Objects.toString(this.jar.getPrimaryPath());
@@ -216,7 +189,8 @@ public class ModFile implements IModFile {
         this.securityStatus = status;
     }
 
-    public ArtifactVersion getJarVersion()
+    @Override
+    public ArtifactVersion getVersion()
     {
         return new DefaultArtifactVersion(this.jarVersion);
     }
@@ -225,5 +199,49 @@ public class ModFile implements IModFile {
         final Manifest m = jar.moduleDataProvider().getManifest();
         final Optional<String> value = Optional.ofNullable(m.getMainAttributes().getValue(TYPE));
         return value.orElse("MOD");
+    }
+
+    @Override
+    public IModFileController getController() {
+        return controller;
+    }
+
+    private class Controller implements IModFileController {
+        @Override
+        public void identify() {
+            if (getType() == Type.MOD) {
+                ModFile.this.modFileInfo = ModFileParser.readModList(ModFile.this, ModFile.this.parser);
+                if (ModFile.this.modFileInfo == null) {
+                    throw new ModFileLoadingException("Mod %s is missing metadata".formatted(getFilePath()));
+                }
+                LOGGER.debug(LogMarkers.LOADING, "Loading mod file {} with languages {}", ModFile.this.getFilePath(), ModFile.this.modFileInfo.requiredLanguageLoaders());
+                ModFile.this.coreMods = ModFileParser.getCoreMods(ModFile.this);
+                ModFile.this.coreMods.forEach(mi -> LOGGER.debug(LogMarkers.LOADING, "Found coremod {}", mi.getPath()));
+                ModFile.this.mixinConfigs = ModFileParser.getMixinConfigs(ModFile.this.modFileInfo);
+                ModFile.this.mixinConfigs.forEach(mc -> LOGGER.debug(LogMarkers.LOADING, "Found mixin config {}", mc));
+                ModFile.this.accessTransformers = ModFileParser.getAccessTransformers(ModFile.this.modFileInfo)
+                        .map(list -> list.stream().map(ModFile.this::findResource).filter(path -> {
+                            if (Files.notExists(path)) {
+                                LOGGER.error(LogMarkers.LOADING, "Access transformer file {} provided by mod {} does not exist!", path, modFileInfo.moduleName());
+                                return false;
+                            }
+                            return true;
+                        }))
+                        .orElseGet(() -> Stream.of(findResource("META-INF", "accesstransformer.cfg"))
+                                .filter(Files::exists))
+                        .toList();
+            }
+        }
+
+        @Override
+        public void setLoaders(List<IModLanguageProvider> loaders) {
+            ModFile.this.loaders = loaders;
+        }
+
+        @Override
+        public CompletableFuture<?> submitForScanning(ExecutorService service) {
+            return ModFile.this.futureScanResult = CompletableFuture.supplyAsync(ModFile.this::compileContent, service)
+                    .whenComplete(ModFile.this::setScanResult);
+        }
     }
 }

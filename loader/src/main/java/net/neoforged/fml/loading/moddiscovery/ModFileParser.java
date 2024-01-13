@@ -10,6 +10,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.mojang.logging.LogUtils;
 import net.neoforged.fml.loading.LogMarkers;
+import net.neoforged.neoforgespi.coremod.ICoreModFile;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.ModFileFactory;
@@ -47,7 +48,7 @@ public class ModFileParser {
         return new ModFileInfo(modFile, configWrapper, configWrapper::setFile);
     }
 
-    protected static List<CoreModFile> getCoreMods(final ModFile modFile) {
+    protected static List<ICoreModFile> getCoreMods(final ModFile modFile) {
         Map<String,String> coreModPaths;
         try {
             final Path coremodsjson = modFile.findResource("META-INF", "coremods.json");
@@ -64,7 +65,7 @@ public class ModFileParser {
 
         return coreModPaths.entrySet().stream()
                 .peek(e-> LOGGER.debug(LogMarkers.LOADING,"Found coremod {} with Javascript path {}", e.getKey(), e.getValue()))
-                .map(e -> new CoreModFile(e.getKey(), modFile.findResource(e.getValue()),modFile))
+                .<ICoreModFile>map(e -> new CoreModFile(e.getKey(), modFile.findResource(e.getValue()),modFile))
                 .toList();
     }
 

@@ -21,6 +21,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.targets.CommonLaunchHandler;
 import net.neoforged.neoforgespi.Environment;
 import net.neoforged.neoforgespi.coremod.ICoreModProvider;
+import net.neoforged.neoforgespi.locating.IModFile;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -186,7 +187,7 @@ public class FMLLoader
         return commonLaunchHandler;
     }
 
-    public static void addAccessTransformer(Path atPath, ModFile modName)
+    public static void addAccessTransformer(Path atPath, IModFile modName)
     {
         LOGGER.debug(LogMarkers.SCAN, "Adding Access Transformer in {}", modName.getFilePath());
         try {

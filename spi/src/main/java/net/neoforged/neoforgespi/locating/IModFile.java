@@ -6,12 +6,17 @@
 package net.neoforged.neoforgespi.locating;
 
 import cpw.mods.jarhandling.SecureJar;
+import net.neoforged.neoforgespi.coremod.ICoreModFile;
 import net.neoforged.neoforgespi.language.*;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.IModLanguageProvider;
 import net.neoforged.neoforgespi.language.ModFileScanData;
+import org.apache.maven.artifact.versioning.ArtifactVersion;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import org.jetbrains.annotations.ApiStatus;
 
+import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -28,14 +33,7 @@ import java.util.function.Supplier;
  */
 public interface IModFile {
     /**
-     * The language loaders which are included in this mod file.
-     *
-     * If this method returns any entries then {@link #getType()} has to return {@link Type#LIBRARY},
-     * else this mod file will not be loaded in the proper module layer in 1.17 and above.
-     *
-     * As such, returning entries from this method is mutually exclusive with returning entries from {@link #getModInfos()}.
-     *
-     * @return The mod language providers provided by this mod file. (Also known as the loaders).
+     * {@return the language loaders that will load this mod}
      */
     List<IModLanguageProvider> getLoaders();
 
@@ -92,8 +90,6 @@ public interface IModFile {
      * If this method returns any entries then {@link #getType()} has to return {@link Type#MOD},
      * else this mod file will not be loaded in the proper module layer in 1.17 and above.
      *
-     * As such returning entries from this method is mutually exclusive with {@link #getLoaders()}.
-     *
      * @return The mods in this mod file.
      */
     List<IModInfo> getModInfos();
@@ -124,6 +120,44 @@ public interface IModFile {
      * @return The info for this file.
      */
     IModFileInfo getModFileInfo();
+
+    /**
+     * {@return the coremods contained in this file}
+     */
+    default List<ICoreModFile> getCoreMods() {
+        return List.of();
+    }
+
+    /**
+     * {@return the names of the Mixin configs of this file}
+     */
+    default List<String> getMixinConfigs() {
+        return List.of();
+    }
+
+    /**
+     * {@return the paths to the access transformer files contained in this file}
+     */
+    default List<Path> getAccessTransformers() {
+        return List.of();
+    }
+
+    /**
+     * {@return the controller of this file}
+     * This controller handles validating and computing information about the mods contained by the file. <p>
+     * The controller is mostly internal, for use by FML, and should only be used by implementors.
+     */
+    @ApiStatus.OverrideOnly
+    IModFileController getController();
+
+    /**
+     * {@return the version of this file}
+     * Usually this is the version in the jar's manifest.
+     * @apiNote This version may not be accurate, when possible, use the version of the mods contained in the file.
+     */
+    default ArtifactVersion getVersion() {
+        return new DefaultArtifactVersion(getSecureJar().moduleDataProvider().descriptor().version().map(ModuleDescriptor.Version::toString).orElse("0.0NONE"));
+    }
 
     /**
      * The type of file.

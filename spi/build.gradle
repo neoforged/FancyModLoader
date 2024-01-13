@@ -5,6 +5,7 @@ plugins {
 }
 
 dependencies {
+    compileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
     implementation("cpw.mods:modlauncher:$modlauncher_version")
     implementation("org.ow2.asm:asm:$asm_version")
     implementation("org.ow2.asm:asm-commons:$asm_version")

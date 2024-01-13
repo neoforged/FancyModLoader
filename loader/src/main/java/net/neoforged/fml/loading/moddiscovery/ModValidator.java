@@ -23,14 +23,14 @@ import java.util.stream.Stream;
 
 public class ModValidator {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private final Map<IModFile.Type, List<ModFile>> modFiles;
-    private final List<ModFile> candidatePlugins;
-    private final List<ModFile> candidateMods;
+    private final Map<IModFile.Type, List<IModFile>> modFiles;
+    private final List<IModFile> candidatePlugins;
+    private final List<IModFile> candidateMods;
     private LoadingModList loadingModList;
     private List<IModFile> brokenFiles;
     private final List<EarlyLoadingException.ExceptionData> discoveryErrorData;
 
-    public ModValidator(final Map<IModFile.Type, List<ModFile>> modFiles, final List<IModFileInfo> brokenFiles, final List<EarlyLoadingException.ExceptionData> discoveryErrorData) {
+    public ModValidator(final Map<IModFile.Type, List<IModFile>> modFiles, final List<IModFileInfo> brokenFiles, final List<EarlyLoadingException.ExceptionData> discoveryErrorData) {
         this.modFiles = modFiles;
         this.candidateMods = lst(modFiles.get(IModFile.Type.MOD));
         this.candidateMods.addAll(lst(modFiles.get(IModFile.Type.GAMELIBRARY)));
@@ -40,12 +40,12 @@ public class ModValidator {
         this.brokenFiles = brokenFiles.stream().map(IModFileInfo::getFile).collect(Collectors.toList()); // mutable list
     }
 
-    private static List<ModFile> lst(List<ModFile> files) {
+    private static List<IModFile> lst(List<IModFile> files) {
         return files == null ? new ArrayList<>() : new ArrayList<>(files);
     }
 
     public void stage1Validation() {
-        brokenFiles.addAll(validateFiles(candidateMods));
+        brokenFiles.addAll(validateAndIdentify(candidateMods));
         if (LOGGER.isDebugEnabled(LogMarkers.SCAN)) {
             LOGGER.debug(LogMarkers.SCAN, "Found {} mod files with {} mods", candidateMods.size(), candidateMods.stream().mapToInt(mf -> mf.getModInfos().size()).sum());
         }
@@ -53,15 +53,25 @@ public class ModValidator {
     }
 
     @NotNull
-    private List<ModFile> validateFiles(final List<ModFile> mods) {
-        final List<ModFile> brokenFiles = new ArrayList<>();
-        for (Iterator<ModFile> iterator = mods.iterator(); iterator.hasNext(); )
+    private List<IModFile> validateAndIdentify(final List<IModFile> mods) {
+        final List<IModFile> brokenFiles = new ArrayList<>();
+        for (Iterator<IModFile> iterator = mods.iterator(); iterator.hasNext(); )
         {
-            ModFile modFile = iterator.next();
-            if (!modFile.getProvider().isValid(modFile) || !modFile.identifyMods()) {
+            IModFile modFile = iterator.next();
+            if (modFile.getType() != IModFile.Type.MOD) continue;
+
+            if (!modFile.getProvider().isValid(modFile)) {
                 LOGGER.warn(LogMarkers.SCAN, "File {} has been ignored - it is invalid", modFile.getFilePath());
                 iterator.remove();
                 brokenFiles.add(modFile);
+            } else {
+                try {
+                    modFile.getController().identify();
+                } catch (Exception exception) {
+                    LOGGER.error(LogMarkers.SCAN, "File {} was not identified:", modFile.getFilePath(), exception);
+                    iterator.remove();
+                    brokenFiles.add(modFile);
+                }
             }
         }
         return brokenFiles;
@@ -74,21 +84,25 @@ public class ModValidator {
     public ITransformationService.Resource getModResources() {
         var modFilesToLoad = Stream.concat(
                 // mods
-                this.loadingModList.getModFiles().stream().map(ModFileInfo::getFile),
+                this.loadingModList.getModFiles().stream().map(IModFileInfo::getFile),
                 // game libraries
                 this.modFiles.get(IModFile.Type.GAMELIBRARY).stream());
-        return new ITransformationService.Resource(IModuleLayerManager.Layer.GAME, modFilesToLoad.map(ModFile::getSecureJar).toList());
+        return new ITransformationService.Resource(IModuleLayerManager.Layer.GAME, modFilesToLoad.map(IModFile::getSecureJar).toList());
     }
 
     private List<EarlyLoadingException.ExceptionData> validateLanguages() {
         List<EarlyLoadingException.ExceptionData> errorData = new ArrayList<>();
-        for (Iterator<ModFile> iterator = this.candidateMods.iterator(); iterator.hasNext(); ) {
-            final ModFile modFile = iterator.next();
-            try {
-                modFile.identifyLanguage();
-            } catch (EarlyLoadingException e) {
-                errorData.addAll(e.getAllData());
-                iterator.remove();
+        for (Iterator<IModFile> iterator = this.candidateMods.iterator(); iterator.hasNext(); ) {
+            final IModFile modFile = iterator.next();
+            if (modFile.getType() == IModFile.Type.MOD) {
+                try {
+                    modFile.getController().setLoaders(modFile.getModFileInfo().requiredLanguageLoaders().stream()
+                            .map(spec-> FMLLoader.getLanguageLoadingProvider().findLanguage(modFile, spec.languageName(), spec.acceptedVersions()))
+                            .toList());
+                } catch (EarlyLoadingException e) {
+                    errorData.addAll(e.getAllData());
+                    iterator.remove();
+                }
             }
         }
         return errorData;

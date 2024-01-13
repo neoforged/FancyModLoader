@@ -16,6 +16,7 @@ import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.fml.loading.toposort.CyclePresentException;
 import net.neoforged.fml.loading.toposort.TopologicalSort;
+import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.slf4j.Logger;
@@ -33,17 +34,17 @@ public class ModSorter
 {
     private static final Logger LOGGER = LogUtils.getLogger();
     private final UniqueModListBuilder uniqueModListBuilder;
-    private List<ModFile> modFiles;
-    private List<ModInfo> sortedList;
+    private List<IModFile> modFiles;
+    private List<IModInfo> sortedList;
     private Map<String, IModInfo> modIdNameLookup;
-    private List<ModFile> systemMods;
+    private List<IModFile> systemMods;
 
-    private ModSorter(final List<ModFile> modFiles)
+    private ModSorter(final List<IModFile> modFiles)
     {
         this.uniqueModListBuilder = new UniqueModListBuilder(modFiles);
     }
 
-    public static LoadingModList sort(List<ModFile> mods, final List<EarlyLoadingException.ExceptionData> errors)
+    public static LoadingModList sort(List<IModFile> mods, final List<EarlyLoadingException.ExceptionData> errors)
     {
         final ModSorter ms = new ModSorter(mods);
         try {
@@ -90,13 +91,13 @@ public class ModSorter
         final MutableGraph<ModFileInfo> graph = GraphBuilder.directed().build();
         AtomicInteger counter = new AtomicInteger();
         Map<ModFileInfo, Integer> infos = modFiles.stream()
-                .map(ModFile::getModFileInfo)
+                .map(IModFile::getModFileInfo)
                 .filter(ModFileInfo.class::isInstance)
                 .map(ModFileInfo.class::cast)
                 .collect(toMap(Function.identity(), e -> counter.incrementAndGet()));
         infos.keySet().forEach(graph::addNode);
         modFiles.stream()
-                .map(ModFile::getModInfos)
+                .map(IModFile::getModInfos)
                 .<IModInfo>mapMulti(Iterable::forEach)
                 .map(IModInfo::getDependencies)
                 .<IModInfo.ModVersion>mapMulti(Iterable::forEach)
@@ -163,7 +164,7 @@ public class ModSorter
                   ));
     }
 
-    private void detectSystemMods(final Map<String, List<ModFile>> modFilesByFirstId)
+    private void detectSystemMods(final Map<String, List<IModFile>> modFilesByFirstId)
     {
         // Capture system mods (ex. MC, Forge) here, so we can keep them for later
         final Set<String> systemMods = new HashSet<>();
@@ -172,7 +173,7 @@ public class ModSorter
         // Find mod file from MinecraftLocator to define the system mods
         modFiles.stream()
                 .filter(modFile -> modFile.getProvider().getClass() == MinecraftLocator.class)
-                .map(ModFile::getSecureJar)
+                .map(IModFile::getSecureJar)
                 .map(SecureJar::moduleDataProvider)
                 .map(SecureJar.ModuleDataProvider::getManifest)
                 .map(Manifest::getMainAttributes)
@@ -228,12 +229,12 @@ public class ModSorter
     private DependencyResolutionResult verifyDependencyVersions()
     {
         final var modVersions = modFiles.stream()
-                .map(ModFile::getModInfos)
+                .map(IModFile::getModInfos)
                 .<IModInfo>mapMulti(Iterable::forEach)
                 .collect(toMap(IModInfo::getModId, IModInfo::getVersion));
 
         final var modVersionDependencies = modFiles.stream()
-                .map(ModFile::getModInfos)
+                .map(IModFile::getModInfos)
                 .<IModInfo>mapMulti(Iterable::forEach)
                 .collect(groupingBy(Function.identity(), flatMapping(e -> e.getDependencies().stream(), toList())));
 
