@@ -51,21 +51,20 @@ public class ModList
     private static ModList INSTANCE;
     private final List<IModFileInfo> modFiles;
     private final List<IModInfo> sortedList;
-    private final Map<String, ModFileInfo> fileById;
+    private final Map<String, IModFileInfo> fileById;
     private List<ModContainer> mods;
     private Map<String, ModContainer> indexedMods;
     private List<ModFileScanData> modFileScanData;
     private List<ModContainer> sortedContainers;
 
-    private ModList(final List<ModFile> modFiles, final List<ModInfo> sortedList)
+    private ModList(final List<IModFile> modFiles, final List<IModInfo> sortedList)
     {
-        this.modFiles = modFiles.stream().map(ModFile::getModFileInfo).map(ModFileInfo.class::cast).collect(Collectors.toList());
+        this.modFiles = modFiles.stream().map(IModFile::getModFileInfo).toList();
         this.sortedList = sortedList.stream().
                 map(ModInfo.class::cast).
                 collect(Collectors.toList());
         this.fileById = this.modFiles.stream().map(IModFileInfo::getMods).flatMap(Collection::stream).
-                map(ModInfo.class::cast).
-                collect(Collectors.toMap(ModInfo::getModId, ModInfo::getOwningFile));
+                collect(Collectors.toMap(IModInfo::getModId, IModInfo::getOwningFile));
         CrashReportCallables.registerCrashCallable("Mod List", this::crashReport);
     }
 
@@ -85,7 +84,7 @@ public class ModList
         return "\n"+applyForEachModFile(this::fileToLine).collect(Collectors.joining("\n\t\t", "\t\t", ""));
     }
 
-    public static ModList of(List<ModFile> modFiles, List<ModInfo> sortedList)
+    public static ModList of(List<IModFile> modFiles, List<IModInfo> sortedList)
     {
         INSTANCE = new ModList(modFiles, sortedList);
         return INSTANCE;

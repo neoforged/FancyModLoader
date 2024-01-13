@@ -19,6 +19,7 @@ import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.fml.loading.progress.ProgressMeter;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
+import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.IModLanguageProvider;
 import net.neoforged.neoforgespi.locating.ForgeFeature;
@@ -105,11 +106,6 @@ public class ModLoader
                 .flatMap(ModLoadingWarning::fromEarlyException)
                 .forEach(this.loadingWarnings::add);
 
-        FMLLoader.getLoadingModList().getModFiles().stream()
-                .filter(ModFileInfo::missingLicense)
-                .filter(modFileInfo -> modFileInfo.getMods().stream().noneMatch(thisModInfo -> this.loadingExceptions.stream().map(ModLoadingException::getModInfo).anyMatch(otherInfo -> otherInfo == thisModInfo))) //Ignore files where any other mod already encountered an error
-                .map(modFileInfo -> new ModLoadingException(null, ModLoadingStage.VALIDATE, "fml.modloading.missinglicense", null, modFileInfo.getFile()))
-                .forEach(this.loadingExceptions::add);
         this.stateManager = new ModStateManager();
         CrashReportCallables.registerCrashCallable("ModLauncher", FMLLoader::getLauncherInfo);
         CrashReportCallables.registerCrashCallable("ModLauncher launch target", FMLLoader::launcherHandlerName);
@@ -147,7 +143,7 @@ public class ModLoader
         ForgeFeature.registerFeature("openGLVersion", ForgeFeature.VersionFeatureTest.forVersionString(IModInfo.DependencySide.CLIENT, ImmediateWindowHandler.getGLVersion()));
         loadingStateValid = true;
         FMLLoader.backgroundScanHandler.waitForScanToComplete(periodicTask);
-        final ModList modList = ModList.of(loadingModList.getModFiles().stream().map(ModFileInfo::getFile).toList(),
+        final ModList modList = ModList.of(loadingModList.getModFiles().stream().map(IModFileInfo::getFile).toList(),
                 loadingModList.getMods());
         if (!this.loadingExceptions.isEmpty()) {
             LOGGER.fatal(CORE, "Error during pre-loading phase", loadingExceptions.get(0));
@@ -157,7 +153,7 @@ public class ModLoader
             throw new LoadingFailedException(loadingExceptions);
         }
         List<? extends ForgeFeature.Bound> failedBounds = loadingModList.getMods().stream()
-                .map(ModInfo::getForgeFeatures)
+                .map(IModInfo::getForgeFeatures)
                 .flatMap(Collection::stream)
                 .filter(bound -> !ForgeFeature.testFeature(FMLEnvironment.dist, bound))
                 .toList();
@@ -173,7 +169,7 @@ public class ModLoader
         }
 
         final List<ModContainer> modContainers = loadingModList.getModFiles().stream()
-                .map(ModFileInfo::getFile)
+                .map(IModFileInfo::getFile)
                 .map(this::buildMods)
                 .<ModContainer>mapMulti(Iterable::forEach)
                 .toList();

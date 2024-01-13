@@ -10,7 +10,7 @@ import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
 import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.LogMarkers;
-import net.neoforged.neoforgespi.language.ModFileScanData;
+import net.neoforged.neoforgespi.locating.IModFile;
 import org.slf4j.Logger;
 
 import java.time.Duration;
@@ -33,9 +33,9 @@ public class BackgroundScanHandler
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private final ExecutorService modContentScanner;
-    private final List<ModFile> pendingFiles;
-    private final List<ModFile> scannedFiles;
-    private final List<ModFile> allFiles;
+    private final List<IModFile> pendingFiles;
+    private final List<IModFile> scannedFiles;
+    private final List<IModFile> allFiles;
     private ScanStatus status;
     private LoadingModList loadingModList;
 
@@ -56,7 +56,7 @@ public class BackgroundScanHandler
         status = ScanStatus.NOT_STARTED;
     }
 
-    public void submitForScanning(final ModFile file) {
+    public void submitForScanning(final IModFile file) {
         if (modContentScanner.isShutdown()) {
             status = ScanStatus.ERRORED;
             throw new IllegalStateException("Scanner has shutdown");
@@ -65,13 +65,11 @@ public class BackgroundScanHandler
         ImmediateWindowHandler.updateProgress("Scanning mod candidates");
         allFiles.add(file);
         pendingFiles.add(file);
-        final CompletableFuture<ModFileScanData> future = CompletableFuture.supplyAsync(file::compileContent, modContentScanner)
-                .whenComplete(file::setScanResult)
-                .whenComplete((r,t)-> this.addCompletedFile(file,r,t));
-        file.setFutureScanResult(future);
+        file.getController().submitForScanning(modContentScanner)
+                .whenComplete((r, t)-> this.addCompletedFile(file, t));
     }
 
-    private synchronized void addCompletedFile(final ModFile file, final ModFileScanData modFileScanData, final Throwable throwable) {
+    private synchronized void addCompletedFile(final IModFile file, final Throwable throwable) {
         if (throwable != null) {
             status = ScanStatus.ERRORED;
             LOGGER.error(LogMarkers.SCAN,"An error occurred scanning file {}", file, throwable);

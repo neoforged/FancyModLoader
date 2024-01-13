@@ -63,7 +63,7 @@ public class ModDiscoverer {
 
     public ModValidator discoverMods() {
         LOGGER.debug(LogMarkers.SCAN,"Scanning for mods and other resources to load. We know {} ways to find mods", modLocatorList.size());
-        List<ModFile> loadedFiles = new ArrayList<>();
+        List<IModFile> loadedFiles = new ArrayList<>();
         List<EarlyLoadingException.ExceptionData> discoveryErrorData = new ArrayList<>();
         boolean successfullyLoadedMods = true;
         List<IModFileInfo> brokenFiles = new ArrayList<>();
@@ -100,7 +100,7 @@ public class ModDiscoverer {
         }
 
         //First processing run of the mod list. Any duplicates will cause resolution failure and dependency loading will be skipped.
-        Map<IModFile.Type, List<ModFile>> modFilesMap = Maps.newHashMap();
+        Map<IModFile.Type, List<IModFile>> modFilesMap = Maps.newHashMap();
         try {
             final UniqueModListBuilder modsUniqueListBuilder = new UniqueModListBuilder(loadedFiles);
             final UniqueModListBuilder.UniqueModListData uniqueModsData = modsUniqueListBuilder.buildUniqueList();
@@ -164,12 +164,11 @@ public class ModDiscoverer {
         return validator;
     }
 
-    private void handleLocatedFiles(final List<ModFile> loadedFiles, final List<IModFile> locatedFiles)
+    private void handleLocatedFiles(final List<IModFile> loadedFiles, final List<IModFile> locatedFiles)
     {
-        var locatedModFiles = locatedFiles.stream().filter(ModFile.class::isInstance).map(ModFile.class::cast).toList();
-        for (IModFile mf : locatedModFiles) {
+        for (IModFile mf : locatedFiles) {
             LOGGER.info(LogMarkers.SCAN, "Found mod file \"{}\" of type {} with provider {}", mf.getFileName(), mf.getType(), mf.getProvider());
         }
-        loadedFiles.addAll(locatedModFiles);
+        loadedFiles.addAll(locatedFiles);
     }
 }

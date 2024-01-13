@@ -11,6 +11,8 @@ import net.neoforged.fml.loading.moddiscovery.BackgroundScanHandler;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
+import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 
 import java.net.URL;
@@ -32,32 +34,31 @@ import java.util.stream.Collectors;
 public class LoadingModList
 {
     private static LoadingModList INSTANCE;
-    private final List<ModFileInfo> modFiles;
-    private final List<ModInfo> sortedList;
-    private final Map<String, ModFileInfo> fileById;
+    private final List<IModFileInfo> modFiles;
+    private final List<IModInfo> sortedList;
+    private final Map<String, IModFileInfo> fileById;
     private final List<EarlyLoadingException> preLoadErrors;
     private final List<EarlyLoadingException> preLoadWarnings;
     private List<IModFile> brokenFiles;
 
-    private LoadingModList(final List<ModFile> modFiles, final List<ModInfo> sortedList)
+    private LoadingModList(final List<IModFile> modFiles, final List<IModInfo> sortedList)
     {
         this.modFiles = modFiles.stream()
-                .map(ModFile::getModFileInfo)
+                .map(IModFile::getModFileInfo)
                 .map(ModFileInfo.class::cast)
                 .collect(Collectors.toList());
         this.sortedList = sortedList.stream()
                 .map(ModInfo.class::cast)
                 .collect(Collectors.toList());
-        this.fileById = this.modFiles.stream()
-                .map(ModFileInfo::getMods)
+        this.fileById = modFiles.stream()
+                .map(IModFile::getModInfos)
                 .flatMap(Collection::stream)
-                .map(ModInfo.class::cast)
-                .collect(Collectors.toMap(ModInfo::getModId, ModInfo::getOwningFile));
+                .collect(Collectors.toMap(IModInfo::getModId, IModInfo::getOwningFile));
         this.preLoadErrors = new ArrayList<>();
         this.preLoadWarnings = new ArrayList<>();
     }
 
-    public static LoadingModList of(List<ModFile> modFiles, List<ModInfo> sortedList, final EarlyLoadingException earlyLoadingException)
+    public static LoadingModList of(List<IModFile> modFiles, List<IModInfo> sortedList, final EarlyLoadingException earlyLoadingException)
     {
         INSTANCE = new LoadingModList(modFiles, sortedList);
         if (earlyLoadingException != null)
@@ -73,16 +74,16 @@ public class LoadingModList
     public void addCoreMods()
     {
         modFiles.stream()
-                .map(ModFileInfo::getFile)
-                .map(ModFile::getCoreMods)
+                .map(IModFileInfo::getFile)
+                .map(IModFile::getCoreMods)
                 .flatMap(List::stream)
                 .forEach(FMLLoader.getCoreModProvider()::addCoreMod);
     }
 
     public void addMixinConfigs() {
         modFiles.stream()
-                .map(ModFileInfo::getFile)
-                .map(ModFile::getMixinConfigs)
+                .map(IModFileInfo::getFile)
+                .map(IModFile::getMixinConfigs)
                 .flatMap(List::stream)
                 .forEach(DeferredMixinConfigRegistration::addMixinConfig);
     }
@@ -90,7 +91,7 @@ public class LoadingModList
     public void addAccessTransformers()
     {
         modFiles.stream()
-                .map(ModFileInfo::getFile)
+                .map(IModFileInfo::getFile)
                 .forEach(mod -> mod.getAccessTransformers().forEach(path -> FMLLoader.addAccessTransformer(path, mod)));
     }
 
@@ -98,18 +99,18 @@ public class LoadingModList
     {
         backgroundScanHandler.setLoadingModList(this);
         modFiles.stream()
-                .map(ModFileInfo::getFile)
+                .map(IModFileInfo::getFile)
                 .forEach(backgroundScanHandler::submitForScanning);
     }
 
-    public List<ModFileInfo> getModFiles()
+    public List<IModFileInfo> getModFiles()
     {
         return modFiles;
     }
 
     public Path findResource(final String className)
     {
-        for (ModFileInfo mf : modFiles) {
+        for (var mf : modFiles) {
             final Path resource = mf.getFile().findResource(className);
             if (Files.exists(resource)) return resource;
         }
@@ -125,7 +126,7 @@ public class LoadingModList
             resourceName = resName;
         }
         return new Enumeration<URL>() {
-            private final Iterator<ModFileInfo> modFileIterator = modFiles.iterator();
+            private final Iterator<IModFileInfo> modFileIterator = modFiles.iterator();
             private URL next;
             @Override
             public boolean hasMoreElements() {
@@ -147,7 +148,7 @@ public class LoadingModList
 
             private URL findNextURL() {
                 while (modFileIterator.hasNext()) {
-                    final ModFileInfo next = modFileIterator.next();
+                    final var next = modFileIterator.next();
                     final Path resource = next.getFile().findResource(resourceName);
                     if (Files.exists(resource)) {
                         return LamdbaExceptionUtils.uncheck(()->new URL("modjar://" + next.getMods().get(0).getModId() + "/" + resourceName));
@@ -158,12 +159,12 @@ public class LoadingModList
         };
     }
 
-    public ModFileInfo getModFileById(String modid)
+    public IModFileInfo getModFileById(String modid)
     {
         return this.fileById.get(modid);
     }
 
-    public List<ModInfo> getMods()
+    public List<IModInfo> getMods()
     {
         return this.sortedList;
     }

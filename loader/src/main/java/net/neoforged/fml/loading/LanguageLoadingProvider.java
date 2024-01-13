@@ -12,6 +12,7 @@ import cpw.mods.modlauncher.util.ServiceLoaderUtils;
 import net.neoforged.neoforgespi.language.IModLanguageProvider;
 import net.neoforged.fml.loading.moddiscovery.ExplodedDirectoryLocator;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
+import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
@@ -129,7 +130,7 @@ public class LanguageLoadingProvider
         return languagePaths.stream();
     }
 
-    public IModLanguageProvider findLanguage(ModFile mf, String modLoader, VersionRange modLoaderVersion) {
+    public IModLanguageProvider findLanguage(IModFile mf, String modLoader, VersionRange modLoaderVersion) {
         final String languageFileName = mf.getProvider() instanceof ExplodedDirectoryLocator ? "in-development" : mf.getFileName();
         final ModLanguageWrapper mlw = languageProviderMap.get(modLoader);
         if (mlw == null) {
