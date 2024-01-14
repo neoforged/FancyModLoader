@@ -470,6 +470,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         glfwGetFramebufferSize(window, x, y);
         this.fbWidth = x[0];
         this.fbHeight = y[0];
+        handleLastGLFWError((error, description) -> LOGGER.debug(String.format("Suppressing GLFW get window position error: [0x%X]%s", error, description)));
         glfwPollEvents();
     }
 
