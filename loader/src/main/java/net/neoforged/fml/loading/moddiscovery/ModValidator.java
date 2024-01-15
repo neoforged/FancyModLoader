@@ -12,6 +12,7 @@ import net.neoforged.fml.loading.*;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -40,7 +41,7 @@ public class ModValidator {
         this.brokenFiles = brokenFiles.stream().map(IModFileInfo::getFile).collect(Collectors.toList()); // mutable list
     }
 
-    private static List<ModFile> lst(List<ModFile> files) {
+    private static List<ModFile> lst(@Nullable List<ModFile> files) {
         return files == null ? new ArrayList<>() : new ArrayList<>(files);
     }
 
@@ -76,7 +77,7 @@ public class ModValidator {
                 // mods
                 this.loadingModList.getModFiles().stream().map(ModFileInfo::getFile),
                 // game libraries
-                this.modFiles.get(IModFile.Type.GAMELIBRARY).stream());
+                lst(this.modFiles.get(IModFile.Type.GAMELIBRARY)).stream());
         return new ITransformationService.Resource(IModuleLayerManager.Layer.GAME, modFilesToLoad.map(ModFile::getSecureJar).toList());
     }
 

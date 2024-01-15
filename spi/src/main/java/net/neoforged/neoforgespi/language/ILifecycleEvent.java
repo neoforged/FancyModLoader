@@ -5,6 +5,7 @@
 
 package net.neoforged.neoforgespi.language;
 
+@Deprecated(forRemoval = true, since = "2.0.8")
 public interface ILifecycleEvent<R extends ILifecycleEvent<?>> {
     @SuppressWarnings("unchecked")
     default R concrete() {

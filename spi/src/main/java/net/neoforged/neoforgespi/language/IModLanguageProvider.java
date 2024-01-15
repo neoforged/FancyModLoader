@@ -34,7 +34,12 @@ public interface IModLanguageProvider
 
     Consumer<ModFileScanData> getFileVisitor();
 
-    <R extends ILifecycleEvent<R>> void consumeLifecycleEvent(Supplier<R> consumeEvent);
+    /**
+     * @deprecated Does not do anything.
+     */
+    @Deprecated(forRemoval = true, since = "2.0.8")
+    default <R extends ILifecycleEvent<R>> void consumeLifecycleEvent(Supplier<R> consumeEvent) {
+    }
 
     interface IModLanguageLoader {
         <T> T loadMod(IModInfo info, ModFileScanData modFileScanResults, ModuleLayer layer);
