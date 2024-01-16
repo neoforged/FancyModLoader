@@ -57,6 +57,18 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
     }
 
     protected String[] preLaunch(String[] arguments, ModuleLayer layer) {
+        // do not overwrite the logging configuration if the user explicitly set another one
+        if (System.getProperty("log4j2.configurationFile") == null) {
+            overwriteLoggingConfiguration(layer);
+        }
+
+        return arguments;
+    }
+
+    /**
+     * Forces the log4j2 logging context to use the configuration shipped with fml_loader.
+     */
+    private void overwriteLoggingConfiguration(final ModuleLayer layer) {
         URI uri;
         try (var reader = layer.configuration().findModule("fml_loader").orElseThrow().reference().open()) {
             uri = reader.find("log4j2.xml").orElseThrow();
@@ -64,10 +76,7 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
             throw new RuntimeException(e);
         }
 
-        // Force the log4j2 configuration to be loaded from fmlloader
         Configurator.reconfigure(ConfigurationFactory.getInstance().getConfiguration(LoggerContext.getContext(), ConfigurationSource.fromUri(uri)));
-
-        return arguments;
     }
 
     protected final String[] getLegacyClasspath() {
