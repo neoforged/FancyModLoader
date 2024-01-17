@@ -183,7 +183,7 @@ public abstract class ModContainer
      * Accept an arbitrary event for processing by the mod. Posted to {@link #getEventBus()}.
      * @param e Event to accept
      */
-    protected final <T extends Event & IModBusEvent> void acceptEvent(T e) {
+    public final <T extends Event & IModBusEvent> void acceptEvent(T e) {
         IEventBus bus = getEventBus();
         if (bus == null) return;
 
