@@ -57,8 +57,9 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
     }
 
     protected String[] preLaunch(String[] arguments, ModuleLayer layer) {
-        // do not overwrite the logging configuration if the user explicitly set another one
-        if (System.getProperty("log4j2.configurationFile") == null) {
+        // In dev, do not overwrite the logging configuration if the user explicitly set another one.
+        // In production, always overwrite the vanilla configuration.
+        if (isProduction() || System.getProperty("log4j2.configurationFile") == null) {
             overwriteLoggingConfiguration(layer);
         }
 
