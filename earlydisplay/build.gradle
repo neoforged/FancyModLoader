@@ -15,7 +15,6 @@ switch (OperatingSystem.current()) {
 dependencies {
 
     implementation(project(':loader'))
-    implementation(project(':core'))
     
     compileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
     implementation("org.lwjgl:lwjgl:${lwjgl_version}")

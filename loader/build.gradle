@@ -4,7 +4,7 @@ dependencies {
     api("org.ow2.asm:asm:${asm_version}")
     api("org.ow2.asm:asm-tree:${asm_version}")
     api("org.ow2.asm:asm-commons:${asm_version}")
-    api("net.neoforged:neoforgespi:${spi_version}")
+    api(project(':spi'))
     api("net.neoforged:mergetool:${mergetool_version}:api")
     api("org.apache.logging.log4j:log4j-api:${log4j_version}")
     api("org.slf4j:slf4j-api:${slf4j_api_version}")
@@ -19,6 +19,7 @@ dependencies {
     api("com.mojang:logging:${mojang_logging_version}")
     api "net.neoforged:JarJarSelector:${jarjar_version}"
     api "net.neoforged:JarJarMetadata:${jarjar_version}"
+    api("net.neoforged:bus:${eventbus_version}")
 
     implementation("net.sf.jopt-simple:jopt-simple:${jopt_simple_version}")
     implementation("cpw.mods:securejarhandler:${securejarhandler_version}")
@@ -28,6 +29,7 @@ dependencies {
     }
     implementation("org.spongepowered:mixin:${mixin_version}")
     implementation("net.minecrell:terminalconsoleappender:${terminalconsoleappender_version}")
+    implementation("commons-io:commons-io:${commons_io_version}")
 
     implementation("org.apache.logging.log4j:log4j-core:${log4j_version}")
     annotationProcessor("org.apache.logging.log4j:log4j-core:${log4j_version}")
