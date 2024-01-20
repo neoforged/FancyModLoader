@@ -20,23 +20,53 @@ package cpw.mods.bootstraplauncher;
 
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
+import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.niofs.union.UnionPathFilter;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
-import java.util.function.BiPredicate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class BootstrapLauncher {
     private static final boolean DEBUG = System.getProperties().containsKey("bsl.debug");
 
-    @SuppressWarnings("unchecked")
+    /**
+     * This entrypoint is used by the FML junit integration to launch without classloader isolation.
+     * It should not be used for any other purpose. For the consequences of reducing classloader isolation,
+     * read the documentation on {@link ModuleClassLoader#ModuleClassLoader(String, Configuration, List, ClassLoader)}
+     */
+    @VisibleForTesting
+    public static void unitTestingMain(String... args) {
+        System.err.println("*".repeat(80));
+        System.err.println("Starting in unit testing mode. Misconfiguration may mask bugs that would occur in normal operation.");
+        System.err.println("*".repeat(80));
+        run(false, args);
+    }
+
     public static void main(String... args) {
+        run(true, args);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void run(boolean classloaderIsolation, String... args) {
         var legacyClasspath = loadLegacyClassPath();
         // Ensure backwards compatibility if somebody reads this value later on.
         System.setProperty("legacyClassPath", String.join(File.pathSeparator, legacyClasspath));
@@ -95,8 +125,12 @@ public class BootstrapLauncher {
             var paths = e.getValue();
             if (paths.size() == 1 && Files.notExists(paths.get(0))) return;
             var pathsArray = paths.toArray(Path[]::new);
-            var jar = SecureJar.from(new PackageTracker(Set.copyOf(previousPackages), pathsArray), pathsArray);
-            var packages = jar.getPackages();
+            var jarContents = new JarContentsBuilder()
+                    .paths(pathsArray)
+                    .pathFilter(new PackageTracker(Set.copyOf(previousPackages), pathsArray))
+                    .build();
+            var jar = SecureJar.from(jarContents);
+            var packages = jar.moduleDataProvider().descriptor().packages();
 
             if (DEBUG) {
                 System.out.println("bsl: the following paths are merged together in module " + name);
@@ -126,9 +160,11 @@ public class BootstrapLauncher {
         // And the list of root modules for this configuration (that is, the modules that 'belong' to the configuration) are
         // the above modules from the SecureJars
         var bootstrapConfiguration = bootModuleConfiguration.resolveAndBind(jarModuleFinder, ModuleFinder.ofSystem(), allTargets);
+        // If the classloading should be isolated, we do not configure a parent loader, otherwise we use the context CL
+        ClassLoader parentLoader = classloaderIsolation ? null : Thread.currentThread().getContextClassLoader();
         // Creates the module class loader, which does the loading of classes and resources from the bootstrap module layer/configuration,
         // falling back to the boot layer if not in the bootstrap layer
-        var moduleClassLoader = new ModuleClassLoader("MC-BOOTSTRAP", bootstrapConfiguration, List.of(ModuleLayer.boot()));
+        var moduleClassLoader = new ModuleClassLoader("MC-BOOTSTRAP", bootstrapConfiguration, List.of(ModuleLayer.boot()), parentLoader);
         // Actually create the module layer, using the bootstrap configuration above, the boot layer as the parent layer (as configured),
         // and mapping all modules to the module class loader
         var layer = ModuleLayer.defineModules(bootstrapConfiguration, List.of(ModuleLayer.boot()), m -> moduleClassLoader);
@@ -161,7 +197,7 @@ public class BootstrapLauncher {
         return filenameMap;
     }
 
-    private record PackageTracker(Set<String> packages, Path... paths) implements BiPredicate<String, String> {
+    private record PackageTracker(Set<String> packages, Path... paths) implements UnionPathFilter {
         @Override
         public boolean test(final String path, final String basePath) {
             // This method returns true if the given path is allowed within the JAR (filters out 'bad' paths)
