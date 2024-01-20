@@ -36,5 +36,9 @@ dependencies {
 
     testCompileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
     testRuntimeOnly("cpw.mods:bootstraplauncher:${bootstraplauncher_version}")
+
+    constraints {
+        api(project(':junit'))
+    }
 }
 

@@ -24,7 +24,7 @@ public class LaunchWrapper {
 
         try {
             final String[] args = Files.readAllLines(Path.of(System.getProperty("fml.junit.argsfile", "mainargs.txt"))).toArray(String[]::new);
-            BootstrapLauncher.main(args);
+            BootstrapLauncher.unitTestingMain(args);
 
             transformingCL = Thread.currentThread().getContextClassLoader();
         } catch (Exception exception) {
