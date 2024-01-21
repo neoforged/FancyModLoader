@@ -64,14 +64,6 @@ public class LoadingModList {
         return INSTANCE;
     }
 
-    public void addCoreMods() {
-        modFiles.stream()
-                .map(ModFileInfo::getFile)
-                .map(ModFile::getCoreMods)
-                .flatMap(List::stream)
-                .forEach(FMLLoader.getCoreModEngine()::loadCoreMod);
-    }
-
     public void addMixinConfigs() {
         modFiles.stream()
                 .map(ModFileInfo::getFile)

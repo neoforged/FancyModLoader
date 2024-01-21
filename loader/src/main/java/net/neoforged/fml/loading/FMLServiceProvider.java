@@ -8,14 +8,18 @@ package net.neoforged.fml.loading;
 import static net.neoforged.fml.loading.LogMarkers.CORE;
 
 import com.mojang.logging.LogUtils;
+import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -23,6 +27,7 @@ import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionSpecBuilder;
 import net.neoforged.neoforgespi.Environment;
 import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.coremod.ICoreMod;
 import org.slf4j.Logger;
 
 public class FMLServiceProvider implements ITransformationService {
@@ -116,6 +121,45 @@ public class FMLServiceProvider implements ITransformationService {
     @Override
     public List<? extends ITransformer<?>> transformers() {
         LOGGER.debug(CORE, "Loading coremod transformers");
-        return FMLLoader.getCoreModEngine().initializeCoreMods();
+
+        var result = new ArrayList<>(loadCoreModScripts());
+
+        // Find all Java core mods
+        var pluginLayer = Launcher.INSTANCE.findLayerManager()
+                .flatMap(m -> m.getLayer(IModuleLayerManager.Layer.PLUGIN))
+                .orElseThrow();
+        for (var coreMod : ServiceLoader.load(pluginLayer, ICoreMod.class)) {
+            for (var transformer : coreMod.getTransformers()) {
+                if (transformer == null) {
+                    throw new IllegalStateException("Core mod " + coreMod + " is trying to add null transformer");
+                }
+                LOGGER.debug(CORE, "Adding {} transformer from core-mod {}", transformer.targets(), coreMod);
+                result.add(transformer);
+            }
+        }
+
+        return result;
+    }
+
+    private List<ITransformer<?>> loadCoreModScripts() {
+        var filesWithCoreModScripts = LoadingModList.get().getModFiles()
+                .stream()
+                .filter(mf -> !mf.getFile().getCoreMods().isEmpty())
+                .toList();
+
+        if (filesWithCoreModScripts.isEmpty()) {
+            // Don't even bother starting the scripting engine if no mod contains scripting core mods
+            LOGGER.debug(LogMarkers.CORE, "Not loading coremod script-engine since no mod requested it");
+            return Collections.emptyList();
+        }
+
+        LOGGER.info(LogMarkers.CORE, "Loading coremod script-engine for {}", filesWithCoreModScripts);
+        try {
+            return CoreModScriptLoader.loadCoreModScripts(filesWithCoreModScripts);
+        } catch (NoClassDefFoundError e) {
+            var message = "Could not find the coremod script-engine, but the following mods require it: " + filesWithCoreModScripts;
+            ImmediateWindowHandler.crash(message);
+            throw new IllegalStateException(message, e);
+        }
     }
 }
