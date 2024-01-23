@@ -53,7 +53,7 @@ public abstract class ModContainer
     protected ModLoadingStage modLoadingStage;
     protected Supplier<?> contextExtension;
     protected final Map<ModLoadingStage, Runnable> activityMap = new HashMap<>();
-    protected final Map<Class<? extends IExtensionPoint<?>>, Supplier<?>> extensionPoints = new IdentityHashMap<>();
+    protected final Map<Class<? extends IExtensionPoint>, Supplier<?>> extensionPoints = new IdentityHashMap<>();
     protected final EnumMap<ModConfig.Type, ModConfig> configs = new EnumMap<>(ModConfig.Type.class);
 
     public ModContainer(IModInfo info)
@@ -65,20 +65,20 @@ public abstract class ModContainer
         this.modLoadingStage = ModLoadingStage.CONSTRUCT;
 
         final String displayTestString = info.getConfig().<String>getConfigElement("displayTest").orElse("MATCH_VERSION"); // missing defaults to DEFAULT type
-        Supplier<IExtensionPoint.DisplayTest> displayTestSupplier = switch (displayTestString) {
+        var displayTest = switch (displayTestString) {
             case "MATCH_VERSION" -> // default displaytest checks for version string match
-                    () -> new IExtensionPoint.DisplayTest(() -> this.modInfo.getVersion().toString(),
+                    new IExtensionPoint.DisplayTest(() -> this.modInfo.getVersion().toString(),
                         (incoming, isNetwork) -> Objects.equals(incoming, this.modInfo.getVersion().toString()));
             case "IGNORE_SERVER_VERSION" -> // Ignores any version information coming from the server - use for server only mods
-                    () -> new IExtensionPoint.DisplayTest(() -> IExtensionPoint.DisplayTest.IGNORESERVERONLY, (incoming, isNetwork) -> true);
+                    new IExtensionPoint.DisplayTest(() -> IExtensionPoint.DisplayTest.IGNORESERVERONLY, (incoming, isNetwork) -> true);
             case "IGNORE_ALL_VERSION" -> // Ignores all information and provides no information
-                    () -> new IExtensionPoint.DisplayTest(() -> "", (incoming, isNetwork) -> true);
+                    new IExtensionPoint.DisplayTest(() -> "", (incoming, isNetwork) -> true);
             case "NONE" -> null; // NO display test at all - use this if you're going to do your own display test
             default -> // any other value throws an exception
                     throw new IllegalArgumentException("Invalid displayTest value supplied in mods.toml");
         };
-        if (displayTestSupplier != null)
-            registerExtensionPoint(IExtensionPoint.DisplayTest.class, displayTestSupplier);
+        if (displayTest != null)
+            registerExtensionPoint(IExtensionPoint.DisplayTest.class, displayTest);
         else
             extensionPoints.remove(IExtensionPoint.DisplayTest.class);
     }
@@ -142,12 +142,22 @@ public abstract class ModContainer
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends Record> Optional<T> getCustomExtension(Class<? extends IExtensionPoint<T>> point) {
+    public <T extends IExtensionPoint> Optional<T> getCustomExtension(Class<T> point) {
         return Optional.ofNullable((T)extensionPoints.getOrDefault(point,()-> null).get());
     }
 
-    public <T extends Record & IExtensionPoint<T>> void registerExtensionPoint(Class<? extends IExtensionPoint<T>> point, Supplier<T> extension)
-    {
+    /**
+     * Registers an {@link IExtensionPoint} with the mod container.
+     */
+    public <T extends IExtensionPoint> void registerExtensionPoint(Class<T> point, T extension) {
+        extensionPoints.put(point, () -> extension);
+    }
+
+    /**
+     * Registers an {@link IExtensionPoint} with the mod container.
+     * This overload allows passing a supplier that will only be evaluated when the extension is requested.
+     */
+    public <T extends IExtensionPoint> void registerExtensionPoint(Class<T> point, Supplier<T> extension) {
         extensionPoints.put(point, extension);
     }
 

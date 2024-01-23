@@ -44,7 +44,7 @@ public class ModLoadingContext
      * @param extension An extension operator
      * @param <T> The type signature of the extension operator
      */
-    public <T extends Record & IExtensionPoint<T>> void registerExtensionPoint(Class<? extends IExtensionPoint<T>> point, Supplier<T> extension) {
+    public <T extends IExtensionPoint> void registerExtensionPoint(Class<T> point, Supplier<T> extension) {
         getActiveContainer().registerExtensionPoint(point, extension);
     }
 

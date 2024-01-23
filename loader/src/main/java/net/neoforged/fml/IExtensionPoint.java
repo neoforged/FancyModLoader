@@ -13,19 +13,10 @@ import java.util.function.Supplier;
  *
  * <p>An extension point can be registered for a mod container using {@link ModContainer#registerExtensionPoint(Class, Supplier)}
  * and retrieved (if present) using {@link ModContainer#getCustomExtension(Class)}. An extension point allows a mod to
- * supply an arbitrary value as a record class to another mod or framework through their mod container class, avoiding
+ * supply an arbitrary value to another mod or framework through their mod container class, avoiding
  * the use of {@link InterModComms} or other external frameworks to pass around these values.</p>
- *
- * <p>The usual way to declare an extension point is to implement this interface on a record class, with the type
- * parameter being a reference to the class itself. For example, {@code record MyExtension(...) extends
- * IExtensionPoint<MyExtension>} would declare an extension point which supplies a {@code MyExtension} object. However,
- * there is no hard requirement that an extension point's type parameter must be in reference to itself; the type
- * parameter may reference another record class instead.</p>
- *
- * @param <T> the type of the record which is held by the extension point
  */
-@SuppressWarnings("unused") // Type parameter T
-public interface IExtensionPoint<T extends Record>
+public interface IExtensionPoint
 {
     /**
      * Extension point for the compatibility display test used on the server selection screen.
@@ -93,7 +84,7 @@ public interface IExtensionPoint<T extends Record>
      * @see net.neoforged.client.ForgeHooksClient#processForgeListPingData(net.minecraft.network.protocol.status.ServerStatus, net.minecraft.client.multiplayer.ServerData)
      */
     @SuppressWarnings("JavadocReference") // reference to NetworkConstants, ForgeHooksClient
-    record DisplayTest(Supplier<String> suppliedVersion, BiPredicate<String, Boolean> remoteVersionTest) implements IExtensionPoint<DisplayTest> {
+    record DisplayTest(Supplier<String> suppliedVersion, BiPredicate<String, Boolean> remoteVersionTest) implements IExtensionPoint {
         public static final String IGNORESERVERONLY = "OHNOES\uD83D\uDE31\uD83D\uDE31\uD83D\uDE31\uD83D\uDE31\uD83D\uDE31\uD83D\uDE31\uD83D\uDE31\uD83D\uDE31\uD83D\uDE31\uD83D\uDE31\uD83D\uDE31\uD83D\uDE31\uD83D\uDE31\uD83D\uDE31\uD83D\uDE31\uD83D\uDE31\uD83D\uDE31";
     }
 }
