@@ -37,6 +37,7 @@ dependencies {
     testCompileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
     testRuntimeOnly("cpw.mods:bootstraplauncher:${bootstraplauncher_version}")
 
+    // Provides the JUnit project as a BOM entry
     constraints {
         api(project(':junit'))
     }

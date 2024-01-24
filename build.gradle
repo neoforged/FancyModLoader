@@ -23,7 +23,7 @@ allprojects {
     apply plugin: 'net.neoforged.gradleutils'
 
     group = 'net.neoforged.fancymodloader'
-    version = gradleutils.getTagOffsetVersion()
+    version = (gradleutils.getTagOffsetVersion() + '-junit')
 
     repositories {
         mavenCentral()
@@ -57,7 +57,7 @@ allprojects {
 }
 
 subprojects { subProject ->
-    subProject.version = gradleutils.getTagOffsetVersion()
+    subProject.version = (gradleutils.getTagOffsetVersion() + '-junit')
 
     jar {
         manifest.attributes(
