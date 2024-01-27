@@ -23,10 +23,7 @@ import org.slf4j.Logger;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
@@ -48,6 +45,7 @@ public class ModFile implements IModFile {
     private final Manifest     manifest;
     private final IModProvider provider;
     private       IModFileInfo modFileInfo;
+    private final List<String> jarInJarSource;
     private ModFileScanData fileModFileScanData;
     private volatile CompletableFuture<ModFileScanData> futureScanResult;
     private List<CoreModFile> coreMods;
@@ -70,6 +68,8 @@ public class ModFile implements IModFile {
         modFileType = Type.valueOf(type);
         jarVersion = Optional.ofNullable(manifest.getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION)).orElse("0.0NONE");
         this.modFileInfo = ModFileParser.readModList(this, this.parser);
+
+        jarInJarSource = new ArrayList<>();
     }
 
     @Override
@@ -209,6 +209,16 @@ public class ModFile implements IModFile {
     @Override
     public IModFileInfo getModFileInfo() {
         return modFileInfo;
+    }
+
+    @Override
+    public void markJarInJarSource(String fromJar) {
+        jarInJarSource.add(fromJar);
+    }
+
+    @Override
+    public List<String> getJarInJarSource() {
+        return jarInJarSource;
     }
 
     @Override

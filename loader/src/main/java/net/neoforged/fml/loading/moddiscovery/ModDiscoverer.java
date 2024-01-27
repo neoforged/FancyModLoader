@@ -169,6 +169,10 @@ public class ModDiscoverer {
         var locatedModFiles = locatedFiles.stream().filter(ModFile.class::isInstance).map(ModFile.class::cast).toList();
         for (IModFile mf : locatedModFiles) {
             LOGGER.info(LogMarkers.SCAN, "Found mod file \"{}\" of type {} with provider {}", mf.getFileName(), mf.getType(), mf.getProvider());
+
+            if (!mf.getJarInJarSource().isEmpty()) {
+                LOGGER.info("{} is JarInJar mod, from list of mod: {}", mf.getFileName(), mf.getJarInJarSource().toString());
+            }
         }
         loadedFiles.addAll(locatedModFiles);
     }
