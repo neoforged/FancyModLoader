@@ -164,7 +164,7 @@ public class FMLLoader
         loadingModList = backgroundScanHandler.getLoadingModList();
         if (loadingModList.getErrors().isEmpty()) {
             // Add extra mixin configs
-            extraMixinConfigs.forEach(DeferredMixinConfigRegistration::addMixinConfig);
+            extraMixinConfigs.forEach(DeferredMixinConfigRegistration::addCommandLineMixinConfig);
         }
         return List.of(modValidator.getModResources());
     }
