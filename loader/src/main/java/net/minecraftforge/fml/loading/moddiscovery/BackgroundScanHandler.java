@@ -6,6 +6,7 @@
 package net.minecraftforge.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
+import net.minecraftforge.fml.loading.FMLConfig;
 import net.minecraftforge.fml.loading.ImmediateWindowHandler;
 import net.minecraftforge.fml.loading.LoadingModList;
 import net.minecraftforge.fml.loading.LogMarkers;
@@ -18,6 +19,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class BackgroundScanHandler
 {
@@ -41,10 +43,14 @@ public class BackgroundScanHandler
 
     public BackgroundScanHandler(final List<ModFile> modFiles) {
         this.modFiles = modFiles;
-        modContentScanner = Executors.newSingleThreadExecutor(r -> {
+        int maxThreads = FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.MAX_THREADS);
+        // Leave 1 thread for Minecraft's own bootstrap
+        int poolSize = Math.max(1, maxThreads - 1);
+        AtomicInteger threadCount = new AtomicInteger();
+        modContentScanner = Executors.newFixedThreadPool(poolSize, r -> {
             final Thread thread = Executors.defaultThreadFactory().newThread(r);
             thread.setDaemon(true);
-            thread.setName("Background Scan Handler");
+            thread.setName("background-scan-handler-" + threadCount.getAndIncrement());
             return thread;
         });
         scannedFiles = new ArrayList<>();
@@ -72,7 +78,7 @@ public class BackgroundScanHandler
         file.setFutureScanResult(future);
     }
 
-    private void addCompletedFile(final ModFile file, final ModFileScanData modFileScanData, final Throwable throwable) {
+    private synchronized void addCompletedFile(final ModFile file, final ModFileScanData modFileScanData, final Throwable throwable) {
         if (throwable != null) {
             status = ScanStatus.ERRORED;
             LOGGER.error(LogMarkers.SCAN,"An error occurred scanning file {}", file, throwable);
