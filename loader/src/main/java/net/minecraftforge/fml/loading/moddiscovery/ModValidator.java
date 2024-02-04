@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ModValidator {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -72,7 +73,7 @@ public class ModValidator {
     }
 
     public ITransformationService.Resource getModResources() {
-        Predicate<IModFile> shouldLoadResource;
+        Stream<ModFile> modFileStream = this.candidateMods.stream();
         if (FMLEnvironment.production) {
             // In production, only allow game libraries and/or mods in the loading mod list
             // This prevents custom mixins from loading if there is a dependency error
@@ -81,13 +82,9 @@ public class ModValidator {
             Set<IModFile> validMods = new HashSet<>();
             validMods.addAll(this.loadingModList.getModFiles().stream().map(ModFileInfo::getFile).toList());
             validMods.addAll(this.gameLibraries);
-            shouldLoadResource = validMods::contains;
-        } else {
-            // In dev, allow any candidate mod to be loaded, as otherwise the --mixin.config argument
-            // will throw if there is a dependency error due to the mixin config being filtered.
-            shouldLoadResource = file -> true;
+            modFileStream = modFileStream.filter(validMods::contains);
         }
-        return new ITransformationService.Resource(IModuleLayerManager.Layer.GAME, this.candidateMods.stream().filter(shouldLoadResource).map(IModFile::getSecureJar).toList());
+        return new ITransformationService.Resource(IModuleLayerManager.Layer.GAME, modFileStream.map(IModFile::getSecureJar).toList());
     }
 
     private List<EarlyLoadingException.ExceptionData> validateLanguages() {
