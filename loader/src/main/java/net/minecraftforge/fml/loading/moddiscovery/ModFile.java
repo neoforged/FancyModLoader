@@ -57,7 +57,7 @@ public class ModFile implements IModFile {
     private final IModProvider provider;
     private       IModFileInfo modFileInfo;
     private ModFileScanData fileModFileScanData;
-    private CompletableFuture<ModFileScanData> futureScanResult;
+    private volatile CompletableFuture<ModFileScanData> futureScanResult;
     private List<CoreModFile> coreMods;
     private Path accessTransformer;
 
@@ -152,11 +152,11 @@ public class ModFile implements IModFile {
     }
 
     public void setScanResult(final ModFileScanData modFileScanData, final Throwable throwable) {
-        this.futureScanResult = null;
         this.fileModFileScanData = modFileScanData;
         if (throwable != null) {
             this.scanError = throwable;
         }
+        this.futureScanResult = null;
     }
 
     public void setFileProperties(Map<String, Object> fileProperties) {
