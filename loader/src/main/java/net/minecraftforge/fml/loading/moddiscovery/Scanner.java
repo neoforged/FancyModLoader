@@ -34,7 +34,11 @@ public class Scanner {
         if (loaders != null) {
             loaders.forEach(loader -> {
                 LOGGER.debug(LogMarkers.SCAN, "Scanning {} with language loader {}", fileToScan.getFilePath(), loader.name());
-                loader.getFileVisitor().accept(result);
+                // Since we now scan files concurrently, but language loaders may not have been written with that in mind,
+                // synchronize on the language loader so it only scans one file at a time
+                synchronized (loader) {
+                    loader.getFileVisitor().accept(result);
+                }
             });
         }
         return result;
