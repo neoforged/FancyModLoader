@@ -16,7 +16,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -73,16 +72,18 @@ public class ModValidator {
     }
 
     public ITransformationService.Resource getModResources() {
-        Stream<ModFile> modFileStream = this.candidateMods.stream();
+        Stream<ModFile> modFileStream;
         if (FMLEnvironment.production) {
             // In production, only allow game libraries and/or mods in the loading mod list
             // This prevents custom mixins from loading if there is a dependency error
             // Usually, these mixins will break due to a missing class or AT, and that
             // will prevent our error screen from ever becoming visible.
-            Set<IModFile> validMods = new HashSet<>();
+            Set<ModFile> validMods = new HashSet<>();
             validMods.addAll(this.loadingModList.getModFiles().stream().map(ModFileInfo::getFile).toList());
             validMods.addAll(this.gameLibraries);
-            modFileStream = modFileStream.filter(validMods::contains);
+            modFileStream = validMods.stream();
+        } else {
+            modFileStream = this.candidateMods.stream();
         }
         return new ITransformationService.Resource(IModuleLayerManager.Layer.GAME, modFileStream.map(IModFile::getSecureJar).toList());
     }
