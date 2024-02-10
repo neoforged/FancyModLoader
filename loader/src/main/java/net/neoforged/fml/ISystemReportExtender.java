@@ -5,14 +5,39 @@
 
 package net.neoforged.fml;
 
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.function.Supplier;
 
-public interface ISystemReportExtender extends Supplier<String>
-{
-    String getLabel();
+@ApiStatus.OverrideOnly
+public interface ISystemReportExtender extends Supplier<String> {
+    /**
+     * {@return the label of the crash report value to add}
+     */
+    @Nullable
+    default String getLabel() {
+        return null;
+    }
 
-    default boolean isActive()
-    {
+    /**
+     * {@return the value to add to the crash report}
+     */
+    @Nullable
+    @Override
+    default String get() {
+        return null;
+    }
+
+    /**
+     * {@return a header to add to the crash report}
+     */
+    @Nullable
+    default String getHeader() {
+        return null;
+    }
+
+    default boolean isActive() {
         return true;
     }
 }
