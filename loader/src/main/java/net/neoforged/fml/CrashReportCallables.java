@@ -19,7 +19,7 @@ public class CrashReportCallables
 {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final List<ISystemReportExtender> crashCallables = Collections.synchronizedList(new ArrayList<>());
-    private static final List<Supplier<String>> HEADERS = Collections.synchronizedList(new ArrayList<>());
+    private static final List<ICrashReportHeader> HEADERS = Collections.synchronizedList(new ArrayList<>());
 
     /**
      * Register a custom {@link ISystemReportExtender}
@@ -97,7 +97,7 @@ public class CrashReportCallables
      *
      * @param header the header
      */
-    public static void registerHeader(Supplier<String> header) {
+    public static void registerHeader(ICrashReportHeader header) {
         HEADERS.add(header);
     }
 
@@ -107,6 +107,6 @@ public class CrashReportCallables
     }
 
     public static Stream<String> getHeaders() {
-        return HEADERS.stream().map(Supplier::get);
+        return HEADERS.stream().map(ICrashReportHeader::getHeader);
     }
 }
