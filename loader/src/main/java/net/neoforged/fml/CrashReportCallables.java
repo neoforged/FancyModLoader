@@ -13,11 +13,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 public class CrashReportCallables
 {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final List<ISystemReportExtender> crashCallables = Collections.synchronizedList(new ArrayList<>());
+    private static final List<Supplier<String>> HEADERS = Collections.synchronizedList(new ArrayList<>());
 
     /**
      * Register a custom {@link ISystemReportExtender}
@@ -90,8 +92,21 @@ public class CrashReportCallables
         });
     }
 
+    /**
+     * Registers a header to be added to the top of crash reports.
+     *
+     * @param header the header
+     */
+    public static void registerHeader(Supplier<String> header) {
+        HEADERS.add(header);
+    }
+
     public static List<ISystemReportExtender> allCrashCallables()
     {
         return List.copyOf(crashCallables);
+    }
+
+    public static Stream<String> getHeaders() {
+        return HEADERS.stream().map(Supplier::get);
     }
 }
