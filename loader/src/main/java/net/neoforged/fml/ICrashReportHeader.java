@@ -5,16 +5,17 @@
 
 package net.neoforged.fml;
 
-import java.util.function.Supplier;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Supplies a header to add to crash reports.
- * @see CrashReportCallables#registerHeader(Supplier)
+ * @see CrashReportCallables#registerHeader(ICrashReportHeader)
  */
 @FunctionalInterface
 public interface ICrashReportHeader {
     /**
-     * {@return the header to be displayed at the top of the crash report}
+     * {@return the header to be displayed at the top of the crash report, or {@code null} if the header shouldn't be added}
      */
+    @Nullable
     String getHeader();
 }

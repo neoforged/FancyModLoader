@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -107,6 +108,6 @@ public class CrashReportCallables
     }
 
     public static Stream<String> getHeaders() {
-        return HEADERS.stream().map(ICrashReportHeader::getHeader);
+        return HEADERS.stream().map(ICrashReportHeader::getHeader).filter(Objects::nonNull);
     }
 }
