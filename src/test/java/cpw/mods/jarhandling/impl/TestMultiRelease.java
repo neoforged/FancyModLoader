@@ -28,6 +28,13 @@ public class TestMultiRelease {
         Assertions.assertNotEquals("too new", bContents.strip());
     }
 
+    @Test
+    public void testMultiReleaseNoVersions() {
+        Path rootDir = Paths.get("src", "test", "resources", "multirelease-noversions");
+        // Jars marked with Multi-Release but don't actually have a versions folder should not throw
+        Assertions.assertDoesNotThrow(() -> SecureJar.from(rootDir));
+    }
+
     private static String readString(SecureJar jar, String file) {
         // Note: we must read the jar through the module data provider for version-specific files to be used
         try (var is = jar.moduleDataProvider().open(file).get()) {

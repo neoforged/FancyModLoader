@@ -115,6 +115,8 @@ public class JarContentsImpl implements JarContents {
         }
 
         var vers = filesystem.getRoot().resolve("META-INF/versions");
+        if (!Files.isDirectory(vers)) return Map.of();
+
         try (var walk = Files.walk(vers)) {
             Map<Path, Integer> pathToJavaVersion = new HashMap<>();
             walk
