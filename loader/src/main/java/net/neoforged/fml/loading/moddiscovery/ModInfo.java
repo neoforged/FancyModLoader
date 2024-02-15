@@ -6,6 +6,8 @@
 package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
+import net.neoforged.fml.Bindings;
+import net.neoforged.fml.I18NParser;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.StringSubstitutor;
 import net.neoforged.fml.loading.StringUtils;
@@ -19,11 +21,7 @@ import org.apache.maven.artifact.versioning.VersionRange;
 import org.slf4j.Logger;
 
 import java.net.URL;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class ModInfo implements IModInfo, IConfigurable
@@ -127,9 +125,25 @@ public class ModInfo implements IModInfo, IConfigurable
     }
 
     @Override
+    public String getDisplayNameTranslated()
+    {
+        String i18n = "fml.menu.mods.info.name." + this.getModId();
+        String name = Bindings.getMessageParser().get().parseMessage(i18n);
+        return Objects.equals(i18n, name) ? this.getDisplayName() : name;
+    }
+
+    @Override
     public String getDescription()
     {
         return this.description;
+    }
+
+    @Override
+    public String getDescriptionTranslated()
+    {
+        String i18n = "fml.menu.mods.info.description." + this.getModId();
+        String description = Bindings.getMessageParser().get().parseMessage(i18n);
+        return Objects.equals(i18n, description) ? this.getDescription() : description;
     }
 
     @Override

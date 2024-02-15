@@ -28,7 +28,11 @@ public interface IModInfo
 
     String getDisplayName();
 
+    String getDisplayNameTranslated();
+
     String getDescription();
+
+    String getDescriptionTranslated();
 
     ArtifactVersion getVersion();
 
