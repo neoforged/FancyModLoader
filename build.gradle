@@ -38,8 +38,16 @@ allprojects {
             url = 'https://libraries.minecraft.net'
         }
 
-        // TODO remove
         mavenLocal()
+    }
+
+    dependencies {
+        testRuntimeOnly("org.apache.logging.log4j:log4j-core:$log4j_version")
+        testImplementation(platform("org.junit:junit-bom:$jupiter_version"))
+        testImplementation("org.junit.jupiter:junit-jupiter")
+        testImplementation("org.mockito:mockito-core:$mockito_version")
+        testImplementation("org.mockito:mockito-junit-jupiter:$mockito_version")
+        testImplementation("org.hamcrest:hamcrest-core:2.2+")
     }
 
     dependencyUpdates.rejectVersionIf { isNonStable(it.candidate.version) }
