@@ -14,7 +14,7 @@ import java.util.ServiceLoader;
 import java.util.function.Supplier;
 
 public class Bindings {
-    private static final Bindings INSTANCE = new Bindings();
+    private static Bindings instance;
 
     private final IBindingsProvider provider;
 
@@ -26,15 +26,23 @@ public class Bindings {
         this.provider = providers.get(0);
     }
 
+    private static Bindings getInstance() {
+        if (instance == null) {
+            instance = new Bindings();
+        }
+        return instance;
+    }
+
+
     public static Supplier<IEventBus> getForgeBus() {
-        return INSTANCE.provider.getForgeBusSupplier();
+        return getInstance().provider.getForgeBusSupplier();
     }
 
     public static Supplier<I18NParser> getMessageParser() {
-        return INSTANCE.provider.getMessageParser();
+        return getInstance().provider.getMessageParser();
     }
 
     public static Supplier<IConfigEvent.ConfigConfig> getConfigConfiguration() {
-        return INSTANCE.provider.getConfigConfiguration();
+        return getInstance().provider.getConfigConfiguration();
     }
 }
