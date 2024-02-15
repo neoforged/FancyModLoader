@@ -5,7 +5,6 @@
 
 package net.neoforged.fml;
 
-
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,14 +16,13 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class InterModComms
-{
+public class InterModComms {
     public record IMCMessage(String senderModId, String modId, String method, Supplier<?> messageSupplier) {
-
         /**
          * Deprecated: use {@link #senderModId()}
+         * 
          * @return The modid of the sender. This is supplied by the caller, or by the active mod container context.
-         * Consider it unreliable.
+         *         Consider it unreliable.
          */
         @Deprecated
         public final String getSenderModId() {
@@ -33,6 +31,7 @@ public class InterModComms
 
         /**
          * Deprecated: use {@link #modId()}
+         * 
          * @return The modid being sent to.
          */
         @Deprecated
@@ -42,6 +41,7 @@ public class InterModComms
 
         /**
          * Deprecated: use {@link #method()}
+         * 
          * @return The method being sent to.
          */
         @Deprecated
@@ -52,7 +52,7 @@ public class InterModComms
         /**
          * @param <T> The type of the message.
          * @return A {@link Supplier} of the message.
-         * Use {@link #messageSupplier()}
+         *         Use {@link #messageSupplier()}
          */
         @SuppressWarnings("unchecked")
         @Deprecated
@@ -66,14 +66,14 @@ public class InterModComms
     /**
      * Send IMC to remote. Sender will default to the active modcontainer, or minecraft if not.
      *
-     * @param modId the mod id to send to
+     * @param modId  the mod id to send to
      * @param method the method name to send
-     * @param thing the thing associated with the method name
+     * @param thing  the thing associated with the method name
      * @return true if the message was enqueued for sending (the target modid is loaded)
      */
     public static boolean sendTo(final String modId, final String method, final Supplier<?> thing) {
         if (!ModList.get().isLoaded(modId)) return false;
-        containerQueues.computeIfAbsent(modId, k->new ConcurrentLinkedQueue<>()).add(new IMCMessage(ModLoadingContext.get().getActiveContainer().getModId(), modId, method, thing));
+        containerQueues.computeIfAbsent(modId, k -> new ConcurrentLinkedQueue<>()).add(new IMCMessage(ModLoadingContext.get().getActiveContainer().getModId(), modId, method, thing));
         return true;
     }
 
@@ -81,21 +81,21 @@ public class InterModComms
      * Send IMC to remote.
      *
      * @param senderModId the mod id you are sending from
-     * @param modId the mod id to send to
-     * @param method the method name to send
-     * @param thing the thing associated with the method name
+     * @param modId       the mod id to send to
+     * @param method      the method name to send
+     * @param thing       the thing associated with the method name
      * @return true if the message was enqueued for sending (the target modid is loaded)
      */
     public static boolean sendTo(final String senderModId, final String modId, final String method, final Supplier<?> thing) {
         if (!ModList.get().isLoaded(modId)) return false;
-        containerQueues.computeIfAbsent(modId, k->new ConcurrentLinkedQueue<>()).add(new IMCMessage(senderModId, modId, method, thing));
+        containerQueues.computeIfAbsent(modId, k -> new ConcurrentLinkedQueue<>()).add(new IMCMessage(senderModId, modId, method, thing));
         return true;
     }
 
     /**
      * Retrieve pending messages for your modid. Use the predicate to filter the method name.
      *
-     * @param modId the modid you are querying for
+     * @param modId         the modid you are querying for
      * @param methodMatcher a predicate for the method you are interested in
      * @return All messages passing the supplied method predicate
      */
@@ -112,11 +112,10 @@ public class InterModComms
      * @return All messages
      */
     public static Stream<IMCMessage> getMessages(final String modId) {
-        return getMessages(modId, s->Boolean.TRUE);
+        return getMessages(modId, s -> Boolean.TRUE);
     }
 
-    private static class QueueFilteringSpliterator implements Spliterator<IMCMessage>
-    {
+    private static class QueueFilteringSpliterator implements Spliterator<IMCMessage> {
         private final ConcurrentLinkedQueue<IMCMessage> queue;
         private final Predicate<String> methodFilter;
         private final Iterator<IMCMessage> iterator;
@@ -138,18 +137,14 @@ public class InterModComms
         }
 
         @Override
-        public boolean tryAdvance(final Consumer<? super IMCMessage> action)
-        {
+        public boolean tryAdvance(final Consumer<? super IMCMessage> action) {
             IMCMessage next;
-            do
-            {
-                if (!iterator.hasNext())
-                {
+            do {
+                if (!iterator.hasNext()) {
                     return false;
                 }
                 next = this.iterator.next();
-            }
-            while (!methodFilter.test(next.method));
+            } while (!methodFilter.test(next.method));
             action.accept(next);
             this.iterator.remove();
             return true;
@@ -159,6 +154,5 @@ public class InterModComms
         public Spliterator<IMCMessage> trySplit() {
             return null;
         }
-
     }
 }

@@ -5,20 +5,17 @@
 
 package net.neoforged.fml.util.thread;
 
+import java.util.concurrent.ThreadFactory;
 import net.neoforged.fml.LogicalSide;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.concurrent.ThreadFactory;
 
 /**
  * A thread group and factory combination which belongs to a {@link LogicalSide}.
  */
-public final class SidedThreadGroup extends ThreadGroup implements ThreadFactory
-{
+public final class SidedThreadGroup extends ThreadGroup implements ThreadFactory {
     private final LogicalSide side;
 
-    SidedThreadGroup(final LogicalSide side)
-    {
+    SidedThreadGroup(final LogicalSide side) {
         super(side.name());
         this.side = side;
     }
@@ -28,14 +25,12 @@ public final class SidedThreadGroup extends ThreadGroup implements ThreadFactory
      *
      * @return the side
      */
-    public LogicalSide getSide()
-    {
+    public LogicalSide getSide() {
         return this.side;
     }
 
     @Override
-    public Thread newThread(@NotNull final Runnable runnable)
-    {
+    public Thread newThread(@NotNull final Runnable runnable) {
         return new Thread(this, runnable);
     }
 }

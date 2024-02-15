@@ -9,14 +9,6 @@ import com.electronwill.nightconfig.core.Config;
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
-import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.LogMarkers;
-import net.neoforged.neoforgespi.language.IModFileInfo;
-import net.neoforged.neoforgespi.locating.IModFile;
-import net.neoforged.neoforgespi.locating.IModLocator;
-import net.neoforged.neoforgespi.locating.ModFileFactory;
-import org.slf4j.Logger;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,9 +18,15 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.LogMarkers;
+import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.locating.IModFile;
+import net.neoforged.neoforgespi.locating.IModLocator;
+import net.neoforged.neoforgespi.locating.ModFileFactory;
+import org.slf4j.Logger;
 
-public class MinecraftLocator extends AbstractModProvider implements IModLocator
-{
+public class MinecraftLocator extends AbstractModProvider implements IModLocator {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     @Override
@@ -63,12 +61,11 @@ public class MinecraftLocator extends AbstractModProvider implements IModLocator
             LOGGER.fatal(LOADING, "Mod file {} is missing minecraftmod.toml file", modFile.getFilePath());
             return null;
         }
-
+        
         final FileConfig mcmodstomlfile = FileConfig.builder(mcmodtoml).build();
         mcmodstomlfile.load();
         mcmodstomlfile.close();
         */
-
 
         // We haven't changed this in years, and I can't be asked right now to special case this one file in the path.
         final var conf = Config.inMemory();
@@ -86,7 +83,7 @@ public class MinecraftLocator extends AbstractModProvider implements IModLocator
         conf.set("mods", List.of(mods));
         /*
         conf.putAll(mcmodstomlfile);
-
+        
         final var extralangs = Stream.<IModFileInfo.LanguageSpec>builder();
         final Path forgemodtoml = modFile.findResource("META-INF", "mods.toml");
         if (Files.notExists(forgemodtoml)) {
@@ -100,7 +97,6 @@ public class MinecraftLocator extends AbstractModProvider implements IModLocator
             extralangs.add(new IModFileInfo.LanguageSpec(mcmodstomlfile.get("modLoader"), MavenVersionAdapter.createFromVersionSpec(mcmodstomlfile.get("loaderVersion"))));
         }
         */
-
 
         final NightConfigWrapper configWrapper = new NightConfigWrapper(conf);
         //final ModFileInfo modFileInfo = new ModFileInfo(modFile, configWrapper, extralangs.build().toList());

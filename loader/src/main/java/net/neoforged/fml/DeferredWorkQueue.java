@@ -7,6 +7,7 @@ package net.neoforged.fml;
 
 import static net.neoforged.fml.Logging.LOADING;
 
+import com.google.common.base.Stopwatch;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -17,8 +18,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import com.google.common.base.Stopwatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,8 +32,7 @@ import org.apache.logging.log4j.Logger;
  * Exceptions from tasks will be handled gracefully, causing a mod loading
  * error. Tasks that take egregiously long times to run will be logged.
  */
-public class DeferredWorkQueue
-{
+public class DeferredWorkQueue {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final Map<ModLoadingStage, DeferredWorkQueue> workQueues = new HashMap<>();
@@ -64,8 +62,7 @@ public class DeferredWorkQueue
                     LOADING,
                     "Synchronous work queue completed exceptionally in {}, see suppressed exceptions for details:",
                     timer,
-                    aggregate
-            );
+                    aggregate);
             throw aggregate;
         } else {
             LOGGER.debug(LOADING, "Synchronous work queue completed in {}", timer);

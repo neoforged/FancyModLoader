@@ -7,8 +7,7 @@ package net.neoforged.fml.util.thread;
 
 import net.neoforged.fml.LogicalSide;
 
-public class EffectiveSide
-{
+public class EffectiveSide {
     public static LogicalSide get() {
         final ThreadGroup group = Thread.currentThread().getThreadGroup();
         return group instanceof SidedThreadGroup ? ((SidedThreadGroup) group).getSide() : LogicalSide.CLIENT;

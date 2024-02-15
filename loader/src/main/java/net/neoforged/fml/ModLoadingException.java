@@ -6,18 +6,16 @@
 package net.neoforged.fml;
 
 import com.google.common.collect.Streams;
-import net.neoforged.fml.loading.EarlyLoadingException;
-import net.neoforged.neoforgespi.language.IModInfo;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import net.neoforged.fml.loading.EarlyLoadingException;
+import net.neoforged.neoforgespi.language.IModInfo;
 
 /**
  * General purpose mod loading error message
  */
-public class ModLoadingException extends RuntimeException
-{
+public class ModLoadingException extends RuntimeException {
     private static final long serialVersionUID = 2048947398536935507L;
     /**
      * Mod Info for mod with issue
@@ -47,7 +45,7 @@ public class ModLoadingException extends RuntimeException
     }
 
     static Stream<ModLoadingException> fromEarlyException(final EarlyLoadingException e) {
-        return e.getAllData().stream().map(ed->new ModLoadingException(ed.getModInfo(), ModLoadingStage.VALIDATE, ed.getI18message(), e.getCause(), ed.getArgs()));
+        return e.getAllData().stream().map(ed -> new ModLoadingException(ed.getModInfo(), ModLoadingStage.VALIDATE, ed.getI18message(), e.getCause(), ed.getArgs()));
     }
 
     public String getI18NMessage() {
@@ -70,6 +68,7 @@ public class ModLoadingException extends RuntimeException
     public IModInfo getModInfo() {
         return modInfo;
     }
+
     public String getCleanMessage() {
         return Bindings.getMessageParser().get().stripControlCodes(formatToString());
     }

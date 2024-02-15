@@ -5,9 +5,8 @@
 
 package net.neoforged.fml.loading;
 
-import net.neoforged.neoforgespi.language.IModInfo;
-
 import java.util.List;
+import net.neoforged.neoforgespi.language.IModInfo;
 
 /**
  * Thrown during early loading phase, and collected by the LoadingModList for handoff to the client
@@ -41,6 +40,7 @@ public class EarlyLoadingException extends RuntimeException {
             return modInfo;
         }
     }
+
     private final List<ExceptionData> errorMessages;
 
     public List<ExceptionData> getAllData() {
@@ -51,6 +51,4 @@ public class EarlyLoadingException extends RuntimeException {
         super(message, originalException);
         this.errorMessages = errorMessages;
     }
-
-
 }

@@ -9,10 +9,14 @@ import net.neoforged.api.distmarker.Dist;
 
 public class FMLClientUserdevLaunchHandler extends FMLUserdevLaunchHandler {
     @Override
-    public String name() { return "fmlclientuserdev"; }
+    public String name() {
+        return "fmlclientuserdev";
+    }
 
     @Override
-    public Dist getDist() { return Dist.CLIENT; }
+    public Dist getDist() {
+        return Dist.CLIENT;
+    }
 
     @Override
     protected void runService(String[] arguments, ModuleLayer layer) throws Throwable {

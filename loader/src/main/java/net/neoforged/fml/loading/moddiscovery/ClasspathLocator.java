@@ -5,11 +5,7 @@
 
 package net.neoforged.fml.loading.moddiscovery;
 
-import net.neoforged.fml.loading.ClasspathLocatorUtils;
 import com.mojang.logging.LogUtils;
-import net.neoforged.fml.loading.LogMarkers;
-import org.slf4j.Logger;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -22,9 +18,11 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import net.neoforged.fml.loading.ClasspathLocatorUtils;
+import net.neoforged.fml.loading.LogMarkers;
+import org.slf4j.Logger;
 
-public class ClasspathLocator extends AbstractJarFileModLocator
-{
+public class ClasspathLocator extends AbstractJarFileModLocator {
     private static final Logger LOGGER = LogUtils.getLogger();
     private final List<Path> legacyClasspath = AbstractJarFileModLocator.getLegacyClasspath();
     private boolean enabled = false;
@@ -80,13 +78,13 @@ public class ClasspathLocator extends AbstractJarFileModLocator
                 int lastExcl = uri.getRawSchemeSpecificPart().lastIndexOf("!/");
                 path = Paths.get(new URI(uri.getRawSchemeSpecificPart().substring(0, lastExcl)));
             } else {
-                path = Paths.get(new URI("file://"+uri.getRawSchemeSpecificPart().substring(0, uri.getRawSchemeSpecificPart().length()-resourceName.length())));
+                path = Paths.get(new URI("file://" + uri.getRawSchemeSpecificPart().substring(0, uri.getRawSchemeSpecificPart().length() - resourceName.length())));
             }
             //LOGGER.debug(CORE, "Found JAR {} at path {}", jarName, path.toString());
             return path;
         } catch (NullPointerException | URISyntaxException e) {
             LOGGER.error(LogMarkers.SCAN, "Failed to find JAR for class {} - {}", resourceName, jarName);
-            throw new RuntimeException("Unable to locate "+resourceName+" - "+jarName, e);
+            throw new RuntimeException("Unable to locate " + resourceName + " - " + jarName, e);
         }
     }
 }

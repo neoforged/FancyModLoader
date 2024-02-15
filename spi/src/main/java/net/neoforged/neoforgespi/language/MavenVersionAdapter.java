@@ -12,6 +12,7 @@ import org.apache.maven.artifact.versioning.VersionRange;
 
 public final class MavenVersionAdapter {
     private static final Logger LOGGER = LogManager.getLogger();
+
     private MavenVersionAdapter() {}
 
     public static VersionRange createFromVersionSpec(final String spec) {
@@ -22,5 +23,4 @@ public final class MavenVersionAdapter {
             throw new RuntimeException("Failed to parse spec", e);
         }
     }
-
 }

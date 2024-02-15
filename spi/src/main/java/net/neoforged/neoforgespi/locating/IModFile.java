@@ -6,16 +6,15 @@
 package net.neoforged.neoforgespi.locating;
 
 import cpw.mods.jarhandling.SecureJar;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 import net.neoforged.neoforgespi.language.*;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.IModLanguageProvider;
 import net.neoforged.neoforgespi.language.ModFileScanData;
-
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * Represents a single "mod" file in the runtime.
@@ -55,7 +54,7 @@ public interface IModFile {
      *
      * @return The string substitution map used during metadata load.
      */
-    Supplier<Map<String,Object>> getSubstitutionMap();
+    Supplier<Map<String, Object>> getSubstitutionMap();
 
     /**
      * The type of the mod jar.
@@ -67,6 +66,7 @@ public interface IModFile {
 
     /**
      * The path to the underlying mod file.
+     * 
      * @return The path to the mod file.
      */
     Path getFilePath();
@@ -107,6 +107,7 @@ public interface IModFile {
 
     /**
      * The raw file name of this file.
+     * 
      * @return The raw file name.
      */
     String getFileName();
@@ -121,6 +122,7 @@ public interface IModFile {
 
     /**
      * The metadata info related to this particular file.
+     * 
      * @return The info for this file.
      */
     IModFileInfo getModFileInfo();

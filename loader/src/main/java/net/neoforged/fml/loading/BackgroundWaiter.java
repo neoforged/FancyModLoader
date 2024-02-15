@@ -20,8 +20,7 @@ public class BackgroundWaiter {
             tick.run();
             try {
                 Thread.sleep(50);
-            } catch (InterruptedException ignored) {
-            }
+            } catch (InterruptedException ignored) {}
         } while (!work.isDone());
         try {
             runner.shutdown();

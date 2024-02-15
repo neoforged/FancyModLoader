@@ -8,10 +8,9 @@ package net.neoforged.fml.loading.moddiscovery;
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.LazyJarMetadata;
-import net.neoforged.neoforgespi.locating.IModFile;
-
 import java.lang.module.ModuleDescriptor;
 import java.util.Objects;
+import net.neoforged.neoforgespi.locating.IModFile;
 
 public final class ModJarMetadata extends LazyJarMetadata implements JarMetadata {
     private final JarContents jarContents;
@@ -66,6 +65,6 @@ public final class ModJarMetadata extends LazyJarMetadata implements JarMetadata
 
     @Override
     public String toString() {
-        return "ModJarMetadata[" +"modFile=" + modFile + ']';
+        return "ModJarMetadata[" + "modFile=" + modFile + ']';
     }
 }

@@ -8,8 +8,15 @@ package net.neoforged.fml.loading.targets;
 import net.neoforged.api.distmarker.Dist;
 
 public class FMLServerUserdevLaunchHandler extends FMLUserdevLaunchHandler {
-    @Override public String name() { return "fmlserveruserdev"; }
-    @Override public Dist getDist() { return Dist.DEDICATED_SERVER; }
+    @Override
+    public String name() {
+        return "fmlserveruserdev";
+    }
+
+    @Override
+    public Dist getDist() {
+        return Dist.DEDICATED_SERVER;
+    }
 
     @Override
     public void runService(String[] arguments, ModuleLayer layer) throws Throwable {

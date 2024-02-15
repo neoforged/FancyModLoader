@@ -5,19 +5,16 @@
 
 package net.neoforged.fml.loading.moddiscovery;
 
-import net.neoforged.neoforgespi.locating.IModLocator;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import net.neoforged.neoforgespi.locating.IModLocator;
 
-public abstract class AbstractJarFileModLocator extends AbstractJarFileModProvider implements IModLocator
-{
+public abstract class AbstractJarFileModLocator extends AbstractJarFileModProvider implements IModLocator {
     @Override
-    public List<IModLocator.ModFileOrException> scanMods()
-    {
+    public List<IModLocator.ModFileOrException> scanMods() {
         return scanCandidates().map(this::createMod).toList();
     }
 

@@ -5,9 +5,8 @@
 
 package net.neoforged.neoforgespi.locating;
 
-import net.neoforged.neoforgespi.Environment;
-
 import java.nio.file.Path;
+import net.neoforged.neoforgespi.Environment;
 
 /**
  * Functional interface for generating a custom {@link IModLocator} from a directory, with a specific name.

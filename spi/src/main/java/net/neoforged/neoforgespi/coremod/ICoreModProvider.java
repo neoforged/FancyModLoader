@@ -6,7 +6,6 @@
 package net.neoforged.neoforgespi.coremod;
 
 import cpw.mods.modlauncher.api.*;
-
 import java.util.*;
 
 /**
@@ -17,12 +16,14 @@ import java.util.*;
 public interface ICoreModProvider {
     /**
      * Add a coremod file to the list of coremods
+     * 
      * @param file the file to add
      */
     void addCoreMod(ICoreModFile file);
 
     /**
      * Return the completed list of transformers for all coremods
+     * 
      * @return all coremod transformers
      */
     List<ITransformer<?>> getCoreModTransformers();

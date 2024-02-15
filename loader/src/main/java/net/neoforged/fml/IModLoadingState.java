@@ -5,16 +5,15 @@
 
 package net.neoforged.fml;
 
-import net.neoforged.bus.api.Event;
-import net.neoforged.fml.event.IModBusEvent;
-import net.neoforged.fml.loading.progress.ProgressMeter;
-
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
+import net.neoforged.bus.api.Event;
+import net.neoforged.fml.event.IModBusEvent;
+import net.neoforged.fml.loading.progress.ProgressMeter;
 
 /**
  * A mod loading state. During mod loading, the mod loader transitions between states in a defined sorted list of states,
@@ -48,12 +47,13 @@ public interface IModLoadingState {
 
     /**
      * @return a function that computes the size of this transition based on the size of the modlist.
-     * Used to compute progress.
+     *         Used to compute progress.
      */
     ToIntFunction<ModList> size();
 
     /**
      * {@return an optional runnable, which runs before starting the transition from this state to the next}
+     * 
      * @see #buildTransition(Executor, Executor, ProgressMeter, Function, Function)
      */
     Optional<Consumer<ModList>> inlineRunnable();
@@ -68,10 +68,9 @@ public interface IModLoadingState {
      * @return a transition task for this state
      * @see #buildTransition(Executor, Executor, ProgressMeter, Function, Function)
      */
-    default <T extends Event & IModBusEvent>
-    Optional<CompletableFuture<Void>> buildTransition(final Executor syncExecutor,
-                                                      final Executor parallelExecutor,
-                                                      final ProgressMeter progressBar) {
+    default <T extends Event & IModBusEvent> Optional<CompletableFuture<Void>> buildTransition(final Executor syncExecutor,
+            final Executor parallelExecutor,
+            final ProgressMeter progressBar) {
         return buildTransition(syncExecutor, parallelExecutor, progressBar,
                 e -> CompletableFuture.runAsync(() -> {}, e),
                 e -> CompletableFuture.runAsync(() -> {}, e));
@@ -89,10 +88,9 @@ public interface IModLoadingState {
      * @param postSyncTask     a function which returns a task to run after event post-dispatch hook
      * @return a transition task for this state
      */
-    <T extends Event & IModBusEvent>
-    Optional<CompletableFuture<Void>> buildTransition(final Executor syncExecutor,
-                                                      final Executor parallelExecutor,
-                                                      final ProgressMeter progressBar,
-                                                      final Function<Executor, CompletableFuture<Void>> preSyncTask,
-                                                      final Function<Executor, CompletableFuture<Void>> postSyncTask);
+    <T extends Event & IModBusEvent> Optional<CompletableFuture<Void>> buildTransition(final Executor syncExecutor,
+            final Executor parallelExecutor,
+            final ProgressMeter progressBar,
+            final Function<Executor, CompletableFuture<Void>> preSyncTask,
+            final Function<Executor, CompletableFuture<Void>> postSyncTask);
 }

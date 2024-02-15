@@ -6,39 +6,31 @@
 package net.neoforged.fml.loading;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import org.apache.commons.lang3.text.StrLookup;
 import org.apache.commons.lang3.text.StrSubstitutor;
 
-import java.util.Map;
-
 @SuppressWarnings("deprecation")
-public class StringSubstitutor
-{
-    private static final Map<String,String> globals = ImmutableMap.of(
+public class StringSubstitutor {
+    private static final Map<String, String> globals = ImmutableMap.of(
             "mcVersion", FMLLoader.versionInfo().mcVersion(),
-            "neoForgeVersion", FMLLoader.versionInfo().neoForgeVersion()
-    );
+            "neoForgeVersion", FMLLoader.versionInfo().neoForgeVersion());
 
     public static String replace(final String in, final ModFile file) {
         return new StrSubstitutor(getStringLookup(file)).replace(in);
     }
 
     private static StrLookup<String> getStringLookup(final ModFile file) {
-        return new StrLookup<String>()
-        {
+        return new StrLookup<String>() {
             @Override
-            public String lookup(String key)
-            {
+            public String lookup(String key) {
                 final String[] parts = key.split("\\.");
                 if (parts.length == 1) return key;
                 final String pfx = parts[0];
-                if ("global".equals(pfx))
-                {
+                if ("global".equals(pfx)) {
                     return globals.get(parts[1]);
-                }
-                else if ("file".equals(pfx) && file != null)
-                {
+                } else if ("file".equals(pfx) && file != null) {
                     return String.valueOf(file.getSubstitutionMap().get().get(parts[1]));
                 }
                 return key;

@@ -5,11 +5,6 @@
 
 package net.neoforged.fml;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLEnvironment;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.Serializable;
 import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.InvocationTargetException;
@@ -17,6 +12,10 @@ import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Use to execute code conditionally based on sidedness.
@@ -29,9 +28,9 @@ import java.util.function.Supplier;
  * @deprecated Check for {@link FMLEnvironment#dist} instead.
  */
 @Deprecated(forRemoval = true)
-public final class DistExecutor
-{
+public final class DistExecutor {
     private static final Logger LOGGER = LogManager.getLogger();
+
     private DistExecutor() {}
 
     /**
@@ -43,9 +42,9 @@ public final class DistExecutor
      *
      * Use {@link #safeCallWhenOn(Dist, Supplier)} where possible.
      *
-     * @param dist The dist to run on
+     * @param dist  The dist to run on
      * @param toRun A supplier of the callable to run (Supplier wrapper to ensure classloading only on the appropriate dist)
-     * @param <T> The return type from the callable
+     * @param <T>   The return type from the callable
      * @return The callable's result
      * @deprecated use {@link #safeCallWhenOn(Dist, Supplier)} instead. This remains for advanced use cases.
      */
@@ -56,12 +55,9 @@ public final class DistExecutor
 
     public static <T> T unsafeCallWhenOn(Dist dist, Supplier<Callable<T>> toRun) {
         if (dist == FMLEnvironment.dist) {
-            try
-            {
+            try {
                 return toRun.get().call();
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
@@ -73,9 +69,10 @@ public final class DistExecutor
      *
      * <strong>The lambda supplied here is required to be a method reference to a method defined in
      * another class, otherwise an invalid SafeReferent error will be thrown</strong>
-     * @param dist the dist which this will run on
+     * 
+     * @param dist  the dist which this will run on
      * @param toRun the SafeCallable to run and return the result from
-     * @param <T> The type of the SafeCallable
+     * @param <T>   The type of the SafeCallable
      * @return the result of the SafeCallable or null if on the wrong side
      */
     public static <T> T safeCallWhenOn(Dist dist, Supplier<SafeCallable<T>> toRun) {
@@ -89,7 +86,7 @@ public final class DistExecutor
      * This method can cause unexpected ClassNotFound exceptions.
      *
      * @see #callWhenOn(Dist, Supplier)
-     * @param dist Dist to run this code on
+     * @param dist  Dist to run this code on
      * @param toRun The code to run
      * @deprecated use {@link #safeRunWhenOn(Dist, Supplier)} where possible. Advanced uses only.
      */
@@ -97,6 +94,7 @@ public final class DistExecutor
     public static void runWhenOn(Dist dist, Supplier<Runnable> toRun) {
         unsafeRunWhenOn(dist, toRun);
     }
+
     /**
      * Runs the supplied Runnable on the speicified side. Same warnings apply as {@link #unsafeCallWhenOn(Dist, Supplier)}.
      *
@@ -106,7 +104,7 @@ public final class DistExecutor
      * Use {@link #safeRunWhenOn(Dist, Supplier)} if you can.
      *
      * @see #unsafeCallWhenOn(Dist, Supplier)
-     * @param dist Dist to run this code on
+     * @param dist  Dist to run this code on
      * @param toRun The code to run
      */
     public static void unsafeRunWhenOn(Dist dist, Supplier<Runnable> toRun) {
@@ -117,27 +115,29 @@ public final class DistExecutor
 
     /**
      * Call the supplied SafeRunnable when on the correct Dist.
-     * @param dist The dist to run on
+     * 
+     * @param dist  The dist to run on
      * @param toRun The code to run
      */
     public static void safeRunWhenOn(Dist dist, Supplier<SafeRunnable> toRun) {
         validateSafeReferent(toRun);
-        if (dist == FMLEnvironment.dist)  {
+        if (dist == FMLEnvironment.dist) {
             toRun.get().run();
         }
     }
+
     /**
      * Executes one of the two suppliers, based on which side is active.
      *
      * <p>
-     *     Example (replacement for old SidedProxy):<br/>
+     * Example (replacement for old SidedProxy):<br/>
      * {@code Proxy p = DistExecutor.runForDist(()->ClientProxy::new, ()->ServerProxy::new);}
      *
      * NOTE: the double supplier is required to avoid classloading the secondary target.
      *
      * @param clientTarget The supplier supplier to run when on the {@link Dist#CLIENT}
      * @param serverTarget The supplier supplier to run when on the {@link Dist#DEDICATED_SERVER}
-     * @param <T> The common type to return
+     * @param <T>          The common type to return
      * @return The returned instance
      * @deprecated Use {@link #safeRunForDist(Supplier, Supplier)}
      */
@@ -153,12 +153,11 @@ public final class DistExecutor
      *
      * @param clientTarget The supplier supplier to run when on the {@link Dist#CLIENT}
      * @param serverTarget The supplier supplier to run when on the {@link Dist#DEDICATED_SERVER}
-     * @param <T> The common type to return
+     * @param <T>          The common type to return
      * @return The returned instance
      */
     public static <T> T unsafeRunForDist(Supplier<Supplier<T>> clientTarget, Supplier<Supplier<T>> serverTarget) {
-        switch (FMLEnvironment.dist)
-        {
+        switch (FMLEnvironment.dist) {
             case CLIENT:
                 return clientTarget.get().get();
             case DEDICATED_SERVER:
@@ -167,25 +166,25 @@ public final class DistExecutor
                 throw new IllegalArgumentException("UNSIDED?");
         }
     }
+
     /**
      * Executes one of the two suppliers, based on which side is active.
      *
      * <p>
-     *     Example (replacement for old SidedProxy):<br/>
+     * Example (replacement for old SidedProxy):<br/>
      * {@code Proxy p = DistExecutor.safeRunForDist(()->ClientProxy::new, ()->ServerProxy::new);}
      *
      * NOTE: the double supplier is required to avoid classloading the secondary target.
      *
      * @param clientTarget The supplier supplier to run when on the {@link Dist#CLIENT}
      * @param serverTarget The supplier supplier to run when on the {@link Dist#DEDICATED_SERVER}
-     * @param <T> The common type to return
+     * @param <T>          The common type to return
      * @return The returned instance
      */
     public static <T> T safeRunForDist(Supplier<SafeSupplier<T>> clientTarget, Supplier<SafeSupplier<T>> serverTarget) {
         validateSafeReferent(clientTarget);
         validateSafeReferent(serverTarget);
-        switch (FMLEnvironment.dist)
-        {
+        switch (FMLEnvironment.dist) {
             case CLIENT:
                 return clientTarget.get().get();
             case DEDICATED_SERVER:
@@ -218,6 +217,7 @@ public final class DistExecutor
 
     /**
      * SafeCallable version of {@link SafeReferent}.
+     * 
      * @see SafeReferent
      * @param <T> The return type of the Callable
      */
@@ -225,6 +225,7 @@ public final class DistExecutor
 
     /**
      * SafeSupplier version of {@link SafeReferent}
+     * 
      * @param <T> The return type of the Supplier
      */
     public interface SafeSupplier<T> extends SafeReferent, Supplier<T>, Serializable {}
@@ -253,11 +254,10 @@ public final class DistExecutor
                     break;// custom interface implementation
                 SerializedLambda l = (SerializedLambda) replacement;
                 if (Objects.equals(l.getCapturingClass(), l.getImplClass())) {
-                    LOGGER.fatal("Detected unsafe referent usage, please view the code at {}",Thread.currentThread().getStackTrace()[3]);
+                    LOGGER.fatal("Detected unsafe referent usage, please view the code at {}", Thread.currentThread().getStackTrace()[3]);
                     throw new RuntimeException("Unsafe Referent usage found in safe referent method");
                 }
-            } catch (NoSuchMethodException e) {
-            } catch (IllegalAccessException | InvocationTargetException e) {
+            } catch (NoSuchMethodException e) {} catch (IllegalAccessException | InvocationTargetException e) {
                 break;
             }
         }

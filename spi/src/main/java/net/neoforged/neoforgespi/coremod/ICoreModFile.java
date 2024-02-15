@@ -14,7 +14,10 @@ import java.nio.file.*;
  */
 public interface ICoreModFile {
     String getOwnerId();
+
     Reader readCoreMod() throws IOException;
+
     Path getPath();
+
     Reader getAdditionalFile(final String fileName) throws IOException;
 }

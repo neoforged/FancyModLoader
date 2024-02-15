@@ -5,6 +5,8 @@
 
 package net.neoforged.fml.lowcodemod;
 
+import static net.neoforged.fml.loading.LogMarkers.LOADING;
+
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.IExtensionPoint;
@@ -14,16 +16,12 @@ import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
-import static net.neoforged.fml.loading.LogMarkers.LOADING;
-
-public class LowCodeModContainer extends ModContainer
-{
+public class LowCodeModContainer extends ModContainer {
     private static final Logger LOGGER = LogUtils.getLogger();
     private final ModFileScanData scanResults;
     private Object modInstance;
 
-    public LowCodeModContainer(IModInfo info, ModFileScanData modFileScanResults, ModuleLayer gameLayer)
-    {
+    public LowCodeModContainer(IModInfo info, ModFileScanData modFileScanResults, ModuleLayer gameLayer) {
         super(info);
         LOGGER.debug(LOADING, "Creating LowCodeModContainer for {}", info.getModId());
         this.scanResults = modFileScanResults;
@@ -33,14 +31,12 @@ public class LowCodeModContainer extends ModContainer
     }
 
     @Override
-    public boolean matches(Object mod)
-    {
+    public boolean matches(Object mod) {
         return mod == modInstance;
     }
 
     @Override
-    public Object getMod()
-    {
+    public Object getMod() {
         return modInstance;
     }
 

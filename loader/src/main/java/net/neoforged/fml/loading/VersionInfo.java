@@ -13,7 +13,7 @@ public record VersionInfo(String neoForgeVersion, String fmlVersion, String mcVe
     }
 
     public String mcAndFmlVersion() {
-        return mcVersion+"-"+ fmlVersion;
+        return mcVersion + "-" + fmlVersion;
     }
 
     public String mcAndNeoFormVersion() {

@@ -5,11 +5,11 @@
 
 package net.neoforged.fml.common.asm;
 
+import com.mojang.logging.LogUtils;
+import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import com.mojang.logging.LogUtils;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -17,18 +17,13 @@ import org.objectweb.asm.commons.InstructionAdapter;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
-
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import org.slf4j.Logger;
-import org.slf4j.Marker;
-import org.slf4j.MarkerFactory;
 
 /**
  * Modifies specified enums to allow runtime extension by making the $VALUES field non-final and
  * injecting constructor calls which are not valid in normal java code.
  */
 public class RuntimeEnumExtender implements ILaunchPluginService {
-
     private static final Logger LOGGER = LogUtils.getLogger();
     private final Type STRING = Type.getType(String.class);
     private final Type ENUM = Type.getType(Enum.class);
@@ -49,14 +44,12 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     private static final EnumSet<Phase> NAY = EnumSet.noneOf(Phase.class);
 
     @Override
-    public EnumSet<Phase> handlesClass(Type classType, boolean isEmpty)
-    {
+    public EnumSet<Phase> handlesClass(Type classType, boolean isEmpty) {
         return isEmpty ? NAY : YAY;
     }
 
     @Override
-    public int processClassWithFlags(final Phase phase, final ClassNode classNode, final Type classType, final String reason)
-    {
+    public int processClassWithFlags(final Phase phase, final ClassNode classNode, final Type classType, final String reason) {
         if ((classNode.access & Opcodes.ACC_ENUM) == 0)
             return ComputeFlags.NO_REWRITE;
 
@@ -78,12 +71,10 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
             throw new IllegalStateException("IExtensibleEnum has no candidate factory methods: " + classType.getClassName());
         }
 
-        candidates.forEach(mtd ->
-        {
+        candidates.forEach(mtd -> {
             Type[] args = Type.getArgumentTypes(mtd.desc);
             if (args.length == 0 || !args[0].equals(STRING)) {
-                if (LOGGER.isErrorEnabled(LogUtils.FATAL_MARKER))
-                {
+                if (LOGGER.isErrorEnabled(LogUtils.FATAL_MARKER)) {
                     StringBuilder sb = new StringBuilder();
                     sb.append("Enum has create method without String as first parameter:\n");
                     sb.append("  Enum: ").append(classType.getDescriptor()).append("\n");
@@ -95,8 +86,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
 
             Type ret = Type.getReturnType(mtd.desc);
             if (!ret.equals(classType)) {
-                if (LOGGER.isErrorEnabled(LogUtils.FATAL_MARKER))
-                {
+                if (LOGGER.isErrorEnabled(LogUtils.FATAL_MARKER)) {
                     StringBuilder sb = new StringBuilder();
                     sb.append("Enum has create method with incorrect return type:\n");
                     sb.append("  Enum: ").append(classType.getDescriptor()).append("\n");
@@ -116,10 +106,8 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
             String desc = Type.getMethodDescriptor(Type.VOID_TYPE, ctrArgs);
 
             MethodNode ctr = classNode.methods.stream().filter(m -> m.name.equals("<init>") && m.desc.equals(desc)).findFirst().orElse(null);
-            if (ctr == null)
-            {
-                if (LOGGER.isErrorEnabled(LogUtils.FATAL_MARKER))
-                {
+            if (ctr == null) {
+                if (LOGGER.isErrorEnabled(LogUtils.FATAL_MARKER)) {
                     StringBuilder sb = new StringBuilder();
                     sb.append("Enum has create method with no matching constructor:\n");
                     sb.append("  Enum: ").append(classType.getDescriptor()).append("\n");
@@ -131,14 +119,11 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                 throw new IllegalStateException("Enum has create method with no matching constructor: " + desc);
             }
 
-            if (values == null)
-            {
-                if (LOGGER.isErrorEnabled(LogUtils.FATAL_MARKER))
-                {
+            if (values == null) {
+                if (LOGGER.isErrorEnabled(LogUtils.FATAL_MARKER)) {
                     StringBuilder sb = new StringBuilder();
                     sb.append("Enum has create method but we could not find $VALUES. Found:\n");
-                    classNode.fields.stream().filter(f -> (f.access & Opcodes.ACC_STATIC) != 0).
-                            forEach(m -> sb.append("  ").append(m.name).append(" ").append(m.desc).append("\n"));
+                    classNode.fields.stream().filter(f -> (f.access & Opcodes.ACC_STATIC) != 0).forEach(m -> sb.append("  ").append(m.name).append(" ").append(m.desc).append("\n"));
                     LOGGER.error(LogUtils.FATAL_MARKER, sb.toString());
                 }
                 throw new IllegalStateException("Enum has create method but we could not find $VALUES");
@@ -149,16 +134,13 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
             mtd.access |= Opcodes.ACC_SYNCHRONIZED;
             mtd.instructions.clear();
             mtd.localVariables.clear();
-            if (mtd.tryCatchBlocks != null)
-            {
+            if (mtd.tryCatchBlocks != null) {
                 mtd.tryCatchBlocks.clear();
             }
-            if (mtd.visibleLocalVariableAnnotations != null)
-            {
+            if (mtd.visibleLocalVariableAnnotations != null) {
                 mtd.visibleLocalVariableAnnotations.clear();
             }
-            if (mtd.invisibleLocalVariableAnnotations != null)
-            {
+            if (mtd.invisibleLocalVariableAnnotations != null) {
                 mtd.invisibleLocalVariableAnnotations.clear();
             }
             InstructionAdapter ins = new InstructionAdapter(mtd);
@@ -210,8 +192,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                 ins.getstatic(classType.getInternalName(), values.name, values.desc);
                 ins.arraylength();
                 int idx = 1;
-                for (int x = 1; x < args.length; x++)
-                {
+                for (int x = 1; x < args.length; x++) {
                     ins.load(idx, args[x]);
                     idx += args[x].getSize();
                 }
@@ -236,5 +217,4 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         });
         return ComputeFlags.COMPUTE_FRAMES;
     }
-
 }

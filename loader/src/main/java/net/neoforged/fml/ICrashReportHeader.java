@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Supplies a header to add to crash reports.
+ * 
  * @see CrashReportCallables#registerHeader(ICrashReportHeader)
  */
 @FunctionalInterface

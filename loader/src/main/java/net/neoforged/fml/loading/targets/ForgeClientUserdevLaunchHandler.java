@@ -9,10 +9,14 @@ import net.neoforged.api.distmarker.Dist;
 
 public class ForgeClientUserdevLaunchHandler extends ForgeUserdevLaunchHandler {
     @Override
-    public String name() { return "forgeclientuserdev"; }
+    public String name() {
+        return "forgeclientuserdev";
+    }
 
     @Override
-    public Dist getDist() { return Dist.CLIENT; }
+    public Dist getDist() {
+        return Dist.CLIENT;
+    }
 
     @Override
     public void runService(String[] arguments, ModuleLayer layer) throws Throwable {

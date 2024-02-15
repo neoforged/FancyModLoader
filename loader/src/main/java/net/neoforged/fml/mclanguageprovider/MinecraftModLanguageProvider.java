@@ -5,12 +5,11 @@
 
 package net.neoforged.fml.mclanguageprovider;
 
+import java.util.Map;
+import java.util.function.Consumer;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.IModLanguageProvider;
 import net.neoforged.neoforgespi.language.ModFileScanData;
-
-import java.util.Map;
-import java.util.function.Consumer;
 
 public class MinecraftModLanguageProvider implements IModLanguageProvider {
     @Override
@@ -20,7 +19,7 @@ public class MinecraftModLanguageProvider implements IModLanguageProvider {
 
     @Override
     public Consumer<ModFileScanData> getFileVisitor() {
-        return (sd)->sd.addLanguageLoader(Map.of("minecraft", new MinecraftModTarget()));
+        return (sd) -> sd.addLanguageLoader(Map.of("minecraft", new MinecraftModTarget()));
     }
 
     public static class MinecraftModTarget implements IModLanguageLoader {

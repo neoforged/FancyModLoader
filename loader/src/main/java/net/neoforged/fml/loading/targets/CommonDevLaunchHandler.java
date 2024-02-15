@@ -8,8 +8,6 @@ package net.neoforged.fml.loading.targets;
 import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.niofs.union.UnionPathFilter;
-import net.neoforged.fml.loading.FileUtils;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -18,10 +16,18 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import net.neoforged.fml.loading.FileUtils;
 
 public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
-    @Override public String getNaming() { return "mcp"; }
-    @Override public boolean isProduction() { return false; }
+    @Override
+    public String getNaming() {
+        return "mcp";
+    }
+
+    @Override
+    public boolean isProduction() {
+        return false;
+    }
 
     @Override
     public LocatedPaths getMinecraftPaths() {
@@ -77,16 +83,16 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
 
         return args.getArguments();
     }
-    
+
     protected static Optional<Path> searchJarOnClasspath(String[] classpath, String match) {
         return Arrays.stream(classpath)
-                       .filter(e -> FileUtils.matchFileName(e, false, match))
-                       .findFirst().map(Paths::get);
+                .filter(e -> FileUtils.matchFileName(e, false, match))
+                .findFirst().map(Paths::get);
     }
 
     protected static Path findJarOnClasspath(String[] classpath, String match) {
         return searchJarOnClasspath(classpath, match)
-                       .orElseThrow(() -> new IllegalStateException("Could not find " + match + " in classpath"));
+                .orElseThrow(() -> new IllegalStateException("Could not find " + match + " in classpath"));
     }
 
     protected UnionPathFilter getMcFilter(Path extra, List<Path> minecraft, Stream.Builder<List<Path>> mods) {
@@ -96,7 +102,8 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
         // We serve everything, except for things in the forge packages.
         UnionPathFilter mcFilter = (path, base) -> {
             if (base.equals(extraPath) ||
-                    path.endsWith("/")) return true;
+                    path.endsWith("/"))
+                return true;
             for (var pkg : packages)
                 if (path.startsWith(pkg)) return false;
             return true;
@@ -119,7 +126,7 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
     }
 
     protected String[] getExcludedPrefixes() {
-        return new String[]{ "net/neoforged/neoforge/", "META-INF/services/", "META-INF/coremods.json", "META-INF/mods.toml" };
+        return new String[] { "net/neoforged/neoforge/", "META-INF/services/", "META-INF/coremods.json", "META-INF/mods.toml" };
     }
 
     private static String getRandomNumbers(int length) {

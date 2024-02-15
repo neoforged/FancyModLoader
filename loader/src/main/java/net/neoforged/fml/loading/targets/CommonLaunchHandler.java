@@ -10,16 +10,6 @@ import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.ITransformingClassLoaderBuilder;
 import cpw.mods.modlauncher.api.ServiceRunner;
 import cpw.mods.niofs.union.UnionPathFilter;
-import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.FileUtils;
-import net.neoforged.fml.loading.LogMarkers;
-import net.neoforged.api.distmarker.Dist;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.ConfigurationFactory;
-import org.apache.logging.log4j.core.config.ConfigurationSource;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.slf4j.Logger;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -31,6 +21,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FileUtils;
+import net.neoforged.fml.loading.LogMarkers;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.ConfigurationFactory;
+import org.apache.logging.log4j.core.config.ConfigurationSource;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.slf4j.Logger;
 
 public abstract class CommonLaunchHandler implements ILaunchHandlerService {
     public record LocatedPaths(List<Path> minecraftPaths, UnionPathFilter minecraftFilter, List<List<Path>> otherModPaths, List<Path> otherArtifacts) {}
@@ -52,9 +51,7 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
     public abstract LocatedPaths getMinecraftPaths();
 
     @Override
-    public void configureTransformationClassLoader(final ITransformingClassLoaderBuilder builder) {
-
-    }
+    public void configureTransformationClassLoader(final ITransformingClassLoaderBuilder builder) {}
 
     protected String[] preLaunch(String[] arguments, ModuleLayer layer) {
         // In dev, do not overwrite the logging configuration if the user explicitly set another one.
@@ -87,9 +84,9 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
     protected final List<Path> getFmlPaths(String[] classpath) {
         String[] fmlLibraries = System.getProperty("fml.pluginLayerLibraries").split(",");
         return Arrays.stream(classpath)
-            .filter(e -> FileUtils.matchFileName(e, true, fmlLibraries))
-            .map(Paths::get)
-            .toList();
+                .filter(e -> FileUtils.matchFileName(e, true, fmlLibraries))
+                .map(Paths::get)
+                .toList();
     }
 
     protected final Map<String, List<Path>> getModClasses() {
@@ -133,6 +130,6 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
     }
 
     protected void runTarget(final String target, final String[] arguments, final ModuleLayer layer) throws Throwable {
-        Class.forName(layer.findModule("minecraft").orElseThrow(),target).getMethod("main", String[].class).invoke(null, (Object)arguments);
+        Class.forName(layer.findModule("minecraft").orElseThrow(), target).getMethod("main", String[].class).invoke(null, (Object) arguments);
     }
 }

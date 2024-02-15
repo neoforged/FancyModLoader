@@ -5,7 +5,6 @@
 
 package net.neoforged.fml.earlydisplay;
 
-
 import static org.lwjgl.opengl.GL32C.*;
 
 public class ElementShader {
@@ -20,36 +19,36 @@ public class ElementShader {
 
         // Bind the source of our shaders to the ones created above
         glShaderSource(fragmentShader, """
-                 #version 150 core
-                 uniform sampler2D tex;
-                 uniform int rendertype;
-                 in vec2 fTex;
-                 in vec4 fColour;
-                 out vec4 fragColor;
-                 
-                 void main() {
-                     if (rendertype == 0)
-                            fragColor = vec4(1,1,1,texture(tex, fTex).r) * fColour;
-                     if (rendertype == 1)
-                            fragColor = texture(tex, fTex) * fColour;
-                     if (rendertype == 2)
-                            fragColor = fColour;
-                 }
-        """);
+                         #version 150 core
+                         uniform sampler2D tex;
+                         uniform int rendertype;
+                         in vec2 fTex;
+                         in vec4 fColour;
+                         out vec4 fragColor;
+
+                         void main() {
+                             if (rendertype == 0)
+                                    fragColor = vec4(1,1,1,texture(tex, fTex).r) * fColour;
+                             if (rendertype == 1)
+                                    fragColor = texture(tex, fTex) * fColour;
+                             if (rendertype == 2)
+                                    fragColor = fColour;
+                         }
+                """);
         glShaderSource(vertexShader, """
-                 #version 150 core
-                 in vec2 position;
-                 in vec2 tex;
-                 in vec4 colour;
-                 uniform vec2 screenSize;
-                 out vec2 fTex;
-                 out vec4 fColour;
-                 void main() {
-                     fTex = tex;
-                     fColour = colour;
-                     gl_Position = vec4((position/screenSize) * 2 - 1, 0.0, 1.0);
-                 }
-        """);
+                         #version 150 core
+                         in vec2 position;
+                         in vec2 tex;
+                         in vec4 colour;
+                         uniform vec2 screenSize;
+                         out vec2 fTex;
+                         out vec4 fColour;
+                         void main() {
+                             fTex = tex;
+                             fColour = colour;
+                             gl_Position = vec4((position/screenSize) * 2 - 1, 0.0, 1.0);
+                         }
+                """);
 
         // Compile the vertex and fragment elementShader so that we can use them
         glCompileShader(vertexShader);
@@ -87,6 +86,7 @@ public class ElementShader {
     public void activate() {
         glUseProgram(program);
     }
+
     public void updateTextureUniform(int textureNumber) {
         glUniform1i(textureUniform, textureNumber);
     }

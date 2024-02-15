@@ -41,7 +41,7 @@ public class Message {
         private final float[] colour;
 
         MessageType(final float r, final float g, final float b) {
-            colour = new float[] {r,g,b};
+            colour = new float[] { r, g, b };
         }
 
         public float[] colour() {

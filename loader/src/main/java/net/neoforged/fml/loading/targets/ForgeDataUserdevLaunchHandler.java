@@ -9,13 +9,19 @@ import net.neoforged.api.distmarker.Dist;
 
 public class ForgeDataUserdevLaunchHandler extends ForgeUserdevLaunchHandler {
     @Override
-    public String name() { return "forgedatauserdev"; }
+    public String name() {
+        return "forgedatauserdev";
+    }
 
     @Override
-    public Dist getDist() { return Dist.CLIENT; }
+    public Dist getDist() {
+        return Dist.CLIENT;
+    }
 
     @Override
-    public boolean isData() { return true; }
+    public boolean isData() {
+        return true;
+    }
 
     @Override
     public void runService(String[] arguments, ModuleLayer layer) throws Throwable {

@@ -5,12 +5,11 @@
 
 package net.neoforged.fml.loading.mixin;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.spongepowered.asm.launch.GlobalProperties;
 import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.Mixins;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class DeferredMixinConfigRegistration {
     private static boolean added = false;

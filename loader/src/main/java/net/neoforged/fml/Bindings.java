@@ -6,12 +6,11 @@
 package net.neoforged.fml;
 
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
+import java.util.ServiceLoader;
+import java.util.function.Supplier;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.config.IConfigEvent;
 import net.neoforged.fml.loading.FMLLoader;
-
-import java.util.ServiceLoader;
-import java.util.function.Supplier;
 
 public class Bindings {
     private static final Bindings INSTANCE = new Bindings();
@@ -19,7 +18,7 @@ public class Bindings {
     private final IBindingsProvider provider;
 
     private Bindings() {
-        final var providers = ServiceLoaderUtils.streamServiceLoader(()->ServiceLoader.load(FMLLoader.getGameLayer(), IBindingsProvider.class), sce->{}).toList();
+        final var providers = ServiceLoaderUtils.streamServiceLoader(() -> ServiceLoader.load(FMLLoader.getGameLayer(), IBindingsProvider.class), sce -> {}).toList();
         if (providers.size() != 1) {
             throw new IllegalStateException("Could not find bindings provider");
         }

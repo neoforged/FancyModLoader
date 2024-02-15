@@ -5,26 +5,24 @@
 
 package net.neoforged.fml.loading.moddiscovery;
 
+import static cpw.mods.modlauncher.api.LamdbaExceptionUtils.uncheck;
+
 import com.mojang.logging.LogUtils;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.stream.Stream;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.ModDirTransformerDiscoverer;
 import net.neoforged.fml.loading.StringUtils;
 import org.slf4j.Logger;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.stream.Stream;
-
-import static cpw.mods.modlauncher.api.LamdbaExceptionUtils.uncheck;
-
 /**
  * Support loading mods located in JAR files in the mods folder
  */
-public class ModsFolderLocator extends AbstractJarFileModLocator
-{
+public class ModsFolderLocator extends AbstractJarFileModLocator {
     private static final String SUFFIX = ".jar";
     private static final Logger LOGGER = LogUtils.getLogger();
     private final Path modFolder;
@@ -45,12 +43,12 @@ public class ModsFolderLocator extends AbstractJarFileModLocator
 
     @Override
     public Stream<Path> scanCandidates() {
-        LOGGER.debug(LogMarkers.SCAN,"Scanning mods dir {} for mods", this.modFolder);
+        LOGGER.debug(LogMarkers.SCAN, "Scanning mods dir {} for mods", this.modFolder);
         var excluded = ModDirTransformerDiscoverer.allExcluded();
 
-        return uncheck(()-> Files.list(this.modFolder))
-                .filter(p-> !excluded.contains(p) && StringUtils.toLowerCase(p.getFileName().toString()).endsWith(SUFFIX))
-                .sorted(Comparator.comparing(path-> StringUtils.toLowerCase(path.getFileName().toString())));
+        return uncheck(() -> Files.list(this.modFolder))
+                .filter(p -> !excluded.contains(p) && StringUtils.toLowerCase(p.getFileName().toString()).endsWith(SUFFIX))
+                .sorted(Comparator.comparing(path -> StringUtils.toLowerCase(path.getFileName().toString())));
     }
 
     @Override
@@ -60,10 +58,9 @@ public class ModsFolderLocator extends AbstractJarFileModLocator
 
     @Override
     public String toString() {
-        return "{"+customName+" locator at "+this.modFolder+"}";
+        return "{" + customName + " locator at " + this.modFolder + "}";
     }
 
     @Override
-    public void initArguments(final Map<String, ?> arguments) {
-    }
+    public void initArguments(final Map<String, ?> arguments) {}
 }

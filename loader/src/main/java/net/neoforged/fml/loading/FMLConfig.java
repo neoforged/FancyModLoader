@@ -12,16 +12,14 @@ import com.electronwill.nightconfig.core.file.FileNotFoundAction;
 import com.electronwill.nightconfig.core.io.ParsingException;
 import com.electronwill.nightconfig.core.io.WritingMode;
 import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import org.slf4j.Logger;
 
-public class FMLConfig
-{
+public class FMLConfig {
     public enum ConfigValue {
         DISABLE_CONFIG_WATCHER("disableConfigWatcher", Boolean.FALSE, "Disables File Watcher. Used to automatically update config if its file has been modified."),
         EARLY_WINDOW_CONTROL("earlyWindowControl", Boolean.TRUE, "Should we control the window. Disabling this disables new GL features and can be bad for mods that rely on them."),
@@ -35,8 +33,7 @@ public class FMLConfig
         EARLY_WINDOW_FBSCALE("earlyWindowFBScale", 1, "Early window framebuffer scale"),
         EARLY_WINDOW_MAXIMIZED("earlyWindowMaximized", Boolean.FALSE, "Early window starts maximized"),
         EARLY_WINDOW_SKIP_GL_VERSIONS("earlyWindowSkipGLVersions", List.of(), "Skip specific GL versions, may help with buggy graphics card drivers"),
-        EARLY_WINDOW_SQUIR("earlyWindowSquir", Boolean.FALSE, "Squir?")
-        ;
+        EARLY_WINDOW_SQUIR("earlyWindowSquir", Boolean.FALSE, "Squir?");
 
         private final String entry;
         private final Object defaultValue;
@@ -47,6 +44,7 @@ public class FMLConfig
         ConfigValue(final String entry, final Object defaultValue, final String comment) {
             this(entry, defaultValue, comment, Function.identity());
         }
+
         ConfigValue(final String entry, final Object defaultValue, final String comment, Function<Object, Object> entryFunction) {
             this.entry = entry;
             this.defaultValue = defaultValue;
@@ -64,6 +62,7 @@ public class FMLConfig
             commentedConfig.add(this.entry, this.defaultValue);
             commentedConfig.setComment(this.entry, this.comment);
         }
+
         @SuppressWarnings("unchecked")
         private <T> T getConfigValue(CommentedFileConfig config) {
             return (T) this.entryFunction.apply(config != null ? config.get(this.entry) : this.defaultValue);
@@ -75,7 +74,7 @@ public class FMLConfig
     }
 
     private static Object maxThreads(final Object value) {
-        int val = (Integer)value;
+        int val = (Integer) value;
         if (val <= 0) return Runtime.getRuntime().availableProcessors();
         else return val;
     }
@@ -85,44 +84,37 @@ public class FMLConfig
     private static final ConfigSpec configSpec = new ConfigSpec();
     private static final CommentedConfig configComments = CommentedConfig.inMemory();
     static {
-        for (ConfigValue cv: ConfigValue.values()) {
+        for (ConfigValue cv : ConfigValue.values()) {
             cv.buildConfigEntry(configSpec, configComments);
         }
     }
 
     private CommentedFileConfig configData;
 
-    private void loadFrom(final Path configFile)
-    {
+    private void loadFrom(final Path configFile) {
         configData = CommentedFileConfig.builder(configFile).sync()
                 .onFileNotFound(FileNotFoundAction.copyData(Objects.requireNonNull(getClass().getResourceAsStream("/META-INF/defaultfmlconfig.toml"))))
                 .writingMode(WritingMode.REPLACE)
                 .build();
-        try
-        {
+        try {
             configData.load();
-        }
-        catch (ParsingException e)
-        {
+        } catch (ParsingException e) {
             throw new RuntimeException("Failed to load FML config from " + configFile, e);
         }
         if (!configSpec.isCorrect(configData)) {
             LOGGER.warn(LogMarkers.CORE, "Configuration file {} is not correct. Correcting", configFile);
-            configSpec.correct(configData, (action, path, incorrectValue, correctedValue) ->
-                    LOGGER.info(LogMarkers.CORE, "Incorrect key {} was corrected from {} to {}", path, incorrectValue, correctedValue));
+            configSpec.correct(configData, (action, path, incorrectValue, correctedValue) -> LOGGER.info(LogMarkers.CORE, "Incorrect key {} was corrected from {} to {}", path, incorrectValue, correctedValue));
         }
         configData.putAllComments(configComments);
         configData.save();
     }
 
-    public static void load()
-    {
+    public static void load() {
         final Path configFile = FMLPaths.FMLCONFIG.get();
         INSTANCE.loadFrom(configFile);
-        if (LOGGER.isTraceEnabled(LogMarkers.CORE))
-        {
+        if (LOGGER.isTraceEnabled(LogMarkers.CORE)) {
             LOGGER.trace(LogMarkers.CORE, "Loaded FML config from {}", FMLPaths.FMLCONFIG.get());
-            for (ConfigValue cv: ConfigValue.values()) {
+            for (ConfigValue cv : ConfigValue.values()) {
                 LOGGER.trace(LogMarkers.CORE, "FMLConfig {} is {}", cv.entry, cv.getConfigValue(INSTANCE.configData));
             }
         }
@@ -144,6 +136,7 @@ public class FMLConfig
     public static <A> List<A> getListConfigValue(ConfigValue v) {
         return v.getConfigValue(INSTANCE.configData);
     }
+
     public static <T> void updateConfig(ConfigValue v, T value) {
         if (INSTANCE.configData != null) {
             v.updateValue(INSTANCE.configData, value);

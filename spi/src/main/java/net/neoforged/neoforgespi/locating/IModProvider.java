@@ -12,8 +12,7 @@ import java.util.function.Consumer;
 /**
  * Describes objects which can provide mods (or related jars) to the loading runtime.
  */
-public interface IModProvider
-{
+public interface IModProvider {
     /**
      * The name of the provider.
      * Has to be unique between all providers loaded into the runtime.
@@ -25,7 +24,7 @@ public interface IModProvider
     /**
      * Invoked to scan a particular {@link IModFile} for metadata.
      *
-     * @param modFile The mod file to scan.
+     * @param modFile      The mod file to scan.
      * @param pathConsumer A consumer which extracts metadata from the path given.
      */
     void scanFile(IModFile modFile, Consumer<Path> pathConsumer);
