@@ -5,13 +5,12 @@
 
 package net.neoforged.fml.event.lifecycle;
 
-import net.neoforged.fml.DeferredWorkQueue;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.ModLoadingStage;
-
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+import net.neoforged.fml.DeferredWorkQueue;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModLoadingStage;
 
 public abstract class ParallelDispatchEvent extends ModLifecycleEvent {
     private final ModLoadingStage modLoadingStage;
@@ -26,10 +25,10 @@ public abstract class ParallelDispatchEvent extends ModLifecycleEvent {
     }
 
     public CompletableFuture<Void> enqueueWork(Runnable work) {
-        return getQueue().map(q->q.enqueueWork(getContainer(), work)).orElseThrow(()->new RuntimeException("No work queue found!"));
+        return getQueue().map(q -> q.enqueueWork(getContainer(), work)).orElseThrow(() -> new RuntimeException("No work queue found!"));
     }
 
     public <T> CompletableFuture<T> enqueueWork(Supplier<T> work) {
-        return getQueue().map(q->q.enqueueWork(getContainer(), work)).orElseThrow(()->new RuntimeException("No work queue found!"));
+        return getQueue().map(q -> q.enqueueWork(getContainer(), work)).orElseThrow(() -> new RuntimeException("No work queue found!"));
     }
 }

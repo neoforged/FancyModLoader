@@ -25,8 +25,7 @@ import java.util.function.Supplier;
  * @param <T> the type of the record which is held by the extension point
  */
 @SuppressWarnings("unused") // Type parameter T
-public interface IExtensionPoint<T extends Record>
-{
+public interface IExtensionPoint<T extends Record> {
     /**
      * Extension point for the compatibility display test used on the server selection screen.
      *
@@ -53,40 +52,37 @@ public interface IExtensionPoint<T extends Record>
      *
      * <p>An example declaration of a display test extension registration for a regular mod (requires to be present on
      * server and client) is as follows:</p>
+     * 
      * <pre>{@code
      * String compatibilityVersion = "1"; // Could be linked with a network channel version or mod version
      * ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class,
      *         () -> new IExtensionPoint.DisplayTest(
      *                 () -> compatibilityVersion,
-     *                 (remoteVersion, isFromServer) -> remoteVersion.equals(compatibilityVersion)
-     *         )
-     * );
+     *                 (remoteVersion, isFromServer) -> remoteVersion.equals(compatibilityVersion)));
      * }</pre>
      *
      * <p>An example declaration of a display test extension registration for a <em>server-side-only</em> mod (does not
      * require to be present on the client) is as follows:</p>
+     * 
      * <pre>{@code
      * ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class,
      *         () -> new IExtensionPoint.DisplayTest(
      *                 // Ignore this mod if not present on the client
      *                 () -> NetworkConstants.IGNORESERVERONLY,
      *                 // If present on the client, accept any version if from a server
-     *                 (remoteVersion, isFromServer) -> isFromServer
-     *         )
-     * );
+     *                 (remoteVersion, isFromServer) -> isFromServer));
      * }</pre>
      *
      * <p>An example declaration of a display test extension registration for a <em>client-side-only</em> mod (does not
      * require to be present on the server) is as follows:</p>
+     * 
      * <pre>{@code
      * ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class,
      *         () -> new IExtensionPoint.DisplayTest(
      *                 // Send any version from server to client, since we will be accepting any version as well
      *                 () -> "dQw4w9WgXcQ",
      *                 // Accept any version on the client, from server or from save
-     *                 (remoteVersion, isFromServer) -> true
-     *         )
-     * );
+     *                 (remoteVersion, isFromServer) -> true));
      * }</pre>
      *
      * @see net.neoforged.network.ServerStatusPing

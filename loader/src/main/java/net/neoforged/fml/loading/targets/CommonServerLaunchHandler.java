@@ -7,19 +7,29 @@ package net.neoforged.fml.loading.targets;
 
 import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
-import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.LibraryFinder;
-import net.neoforged.fml.loading.VersionInfo;
-import net.neoforged.api.distmarker.Dist;
-
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.LibraryFinder;
+import net.neoforged.fml.loading.VersionInfo;
 
 public abstract class CommonServerLaunchHandler extends CommonLaunchHandler {
-    @Override public Dist getDist()  { return Dist.DEDICATED_SERVER; }
-    @Override public String getNaming() { return "srg"; }
-    @Override public boolean isProduction() { return true; }
+    @Override
+    public Dist getDist() {
+        return Dist.DEDICATED_SERVER;
+    }
+
+    @Override
+    public String getNaming() {
+        return "srg";
+    }
+
+    @Override
+    public boolean isProduction() {
+        return true;
+    }
 
     @Override
     protected void runService(String[] arguments, ModuleLayer gameLayer) throws Throwable {
@@ -35,8 +45,8 @@ public abstract class CommonServerLaunchHandler extends CommonLaunchHandler {
                 // We only want it for its resources. So filter everything else out.
                 .pathFilter((path, base) -> {
                     return path.equals("META-INF/versions/") || // This is required because it bypasses our filter for the manifest, and it's a multi-release jar.
-                         (!path.endsWith(".class") &&
-                          !path.startsWith("META-INF/"));
+                            (!path.endsWith(".class") &&
+                                    !path.startsWith("META-INF/"));
                 })
                 .paths(mcextra)
                 .build());

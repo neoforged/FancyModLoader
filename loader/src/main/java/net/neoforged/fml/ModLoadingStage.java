@@ -12,8 +12,7 @@ package net.neoforged.fml;
  * <p>Each mod loading stage has a global {@link DeferredWorkQueue}, which is populated during the execution of the state
  * associated with this stage and emptied at the end of the state's execution.</p>
  */
-public enum ModLoadingStage
-{
+public enum ModLoadingStage {
     /**
      * Special stage for exceptional situations and error handling.
      */
@@ -66,7 +65,7 @@ public enum ModLoadingStage
      * @param exception the exception that occurred during this stage, may be {@code null}
      */
     ModLoadingStage nextState(Throwable exception) {
-        return exception != null ? ERROR : values()[this.ordinal()+1];
+        return exception != null ? ERROR : values()[this.ordinal() + 1];
     }
 
     /**

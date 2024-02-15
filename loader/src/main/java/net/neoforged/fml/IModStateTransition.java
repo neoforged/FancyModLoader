@@ -5,10 +5,6 @@
 
 package net.neoforged.fml;
 
-import net.neoforged.bus.api.Event;
-import net.neoforged.fml.event.IModBusEvent;
-import net.neoforged.fml.loading.progress.ProgressMeter;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -17,6 +13,9 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import net.neoforged.bus.api.Event;
+import net.neoforged.fml.event.IModBusEvent;
+import net.neoforged.fml.loading.progress.ProgressMeter;
 
 @SuppressWarnings("unchecked")
 public interface IModStateTransition {
@@ -24,13 +23,12 @@ public interface IModStateTransition {
         return new NoopTransition();
     }
 
-    default <T extends Event & IModBusEvent>
-    CompletableFuture<Void> build(final String name,
-                                  final Executor syncExecutor,
-                                  final Executor parallelExecutor,
-                                  final ProgressMeter progressBar,
-                                  final Function<Executor, CompletableFuture<Void>> preSyncTask,
-                                  final Function<Executor, CompletableFuture<Void>> postSyncTask) {
+    default <T extends Event & IModBusEvent> CompletableFuture<Void> build(final String name,
+            final Executor syncExecutor,
+            final Executor parallelExecutor,
+            final ProgressMeter progressBar,
+            final Function<Executor, CompletableFuture<Void>> preSyncTask,
+            final Function<Executor, CompletableFuture<Void>> postSyncTask) {
         List<CompletableFuture<Void>> futures = new ArrayList<>();
 
         this.eventFunctionStream().get()
@@ -42,7 +40,7 @@ public interface IModStateTransition {
         final CompletableFuture<Void> eventDispatchCF = ModList.gather(futures).thenCompose(ModList::completableFutureFromExceptionList);
         final CompletableFuture<Void> postEventDispatchCF = preSyncTaskCF
                 .thenApplyAsync(n -> {
-                    progressBar.label(progressBar.name() + ": dispatching "+name);
+                    progressBar.label(progressBar.name() + ": dispatching " + name);
                     return null;
                 }, parallelExecutor)
                 .thenComposeAsync(n -> eventDispatchCF, parallelExecutor)
@@ -57,14 +55,13 @@ public interface IModStateTransition {
         return ModLoadingStage::nextState;
     }
 
-    private <T extends Event & IModBusEvent>
-    EventGenerator<T> addCompletableFutureTaskForModDispatch(final Executor syncExecutor,
-                                                             final Executor parallelExecutor,
-                                                             final List<CompletableFuture<Void>> completableFutures,
-                                                             final ProgressMeter progressBar,
-                                                             final EventGenerator<T> eventGenerator,
-                                                             final BiFunction<ModLoadingStage, Throwable, ModLoadingStage> nextState,
-                                                             final EventGenerator<T> nextGenerator) {
+    private <T extends Event & IModBusEvent> EventGenerator<T> addCompletableFutureTaskForModDispatch(final Executor syncExecutor,
+            final Executor parallelExecutor,
+            final List<CompletableFuture<Void>> completableFutures,
+            final ProgressMeter progressBar,
+            final EventGenerator<T> eventGenerator,
+            final BiFunction<ModLoadingStage, Throwable, ModLoadingStage> nextState,
+            final EventGenerator<T> nextGenerator) {
         final Executor selectedExecutor = threadSelector().apply(syncExecutor, parallelExecutor);
 
         var preDispatchHook = (BiFunction<Executor, EventGenerator<T>, CompletableFuture<Void>>) preDispatchHook();
@@ -79,9 +76,13 @@ public interface IModStateTransition {
     }
 
     Supplier<Stream<EventGenerator<?>>> eventFunctionStream();
+
     ThreadSelector threadSelector();
+
     BiFunction<Executor, CompletableFuture<Void>, CompletableFuture<Void>> finalActivityGenerator();
+
     BiFunction<Executor, ? extends EventGenerator<?>, CompletableFuture<Void>> preDispatchHook();
+
     BiFunction<Executor, ? extends EventGenerator<?>, CompletableFuture<Void>> postDispatchHook();
 
     interface EventGenerator<T extends Event & IModBusEvent> extends Function<ModContainer, T> {
@@ -92,7 +93,6 @@ public interface IModStateTransition {
 }
 
 record NoopTransition() implements IModStateTransition {
-
     @Override
     public Supplier<Stream<EventGenerator<?>>> eventFunctionStream() {
         return Stream::of;
@@ -110,11 +110,11 @@ record NoopTransition() implements IModStateTransition {
 
     @Override
     public BiFunction<Executor, ? extends EventGenerator<?>, CompletableFuture<Void>> preDispatchHook() {
-        return (t, f)-> CompletableFuture.completedFuture(null);
+        return (t, f) -> CompletableFuture.completedFuture(null);
     }
 
     @Override
     public BiFunction<Executor, ? extends EventGenerator<?>, CompletableFuture<Void>> postDispatchHook() {
-        return (t, f)-> CompletableFuture.completedFuture(null);
+        return (t, f) -> CompletableFuture.completedFuture(null);
     }
 }

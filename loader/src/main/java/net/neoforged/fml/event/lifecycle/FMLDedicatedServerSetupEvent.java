@@ -26,10 +26,8 @@ import net.neoforged.fml.ModLoadingStage;
  *
  * This is a parallel dispatch event.
  */
-public class FMLDedicatedServerSetupEvent extends ParallelDispatchEvent
-{
-    public FMLDedicatedServerSetupEvent(ModContainer container, ModLoadingStage stage)
-    {
+public class FMLDedicatedServerSetupEvent extends ParallelDispatchEvent {
+    public FMLDedicatedServerSetupEvent(ModContainer container, ModLoadingStage stage) {
         super(container, stage);
     }
 }

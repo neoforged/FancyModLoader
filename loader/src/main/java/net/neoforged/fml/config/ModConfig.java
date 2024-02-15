@@ -8,15 +8,13 @@ package net.neoforged.fml.config;
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.file.FileConfig;
 import com.electronwill.nightconfig.toml.TomlFormat;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.loading.StringUtils;
-
 import java.io.ByteArrayInputStream;
 import java.nio.file.Path;
 import java.util.Locale;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.loading.StringUtils;
 
-public class ModConfig
-{
+public class ModConfig {
     private final Type type;
     private final IConfigSpec<?> spec;
     private final String fileName;
@@ -67,11 +65,11 @@ public class ModConfig
     }
 
     public void save() {
-        ((FileConfig)this.configData).save();
+        ((FileConfig) this.configData).save();
     }
 
     public Path getFullPath() {
-        return ((FileConfig)this.configData).getNioPath();
+        return ((FileConfig) this.configData).getNioPath();
     }
 
     public void acceptSyncedConfig(byte[] bytes) {

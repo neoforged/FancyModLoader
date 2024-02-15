@@ -5,19 +5,29 @@
 
 package net.neoforged.fml.loading.targets;
 
-import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.LibraryFinder;
-import net.neoforged.fml.loading.VersionInfo;
-import net.neoforged.api.distmarker.Dist;
-
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.LibraryFinder;
+import net.neoforged.fml.loading.VersionInfo;
 
 public abstract class CommonClientLaunchHandler extends CommonLaunchHandler {
-    @Override public Dist getDist()  { return Dist.CLIENT; }
-    @Override public String getNaming() { return "srg"; }
-    @Override public boolean isProduction() { return true; }
+    @Override
+    public Dist getDist() {
+        return Dist.CLIENT;
+    }
+
+    @Override
+    public String getNaming() {
+        return "srg";
+    }
+
+    @Override
+    public boolean isProduction() {
+        return true;
+    }
 
     @Override
     protected void runService(String[] arguments, ModuleLayer gameLayer) throws Throwable {

@@ -7,12 +7,11 @@ package net.neoforged.fml;
 
 import com.google.common.graph.GraphBuilder;
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
-import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.toposort.TopologicalSort;
-
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.toposort.TopologicalSort;
 
 @SuppressWarnings("UnstableApiUsage")
 public class ModStateManager {
@@ -22,10 +21,10 @@ public class ModStateManager {
     public ModStateManager() {
         INSTANCE = this;
         final var sp = ServiceLoader.load(FMLLoader.getGameLayer(), IModStateProvider.class);
-        this.stateMap = ServiceLoaderUtils.streamWithErrorHandling(sp, sce->{})
+        this.stateMap = ServiceLoaderUtils.streamWithErrorHandling(sp, sce -> {})
                 .map(IModStateProvider::getAllStates)
                 .<IModLoadingState>mapMulti(Iterable::forEach)
-                .collect(Collectors.groupingBy(IModLoadingState::phase, ()->new EnumMap<>(ModLoadingPhase.class), Collectors.toUnmodifiableList()));
+                .collect(Collectors.groupingBy(IModLoadingState::phase, () -> new EnumMap<>(ModLoadingPhase.class), Collectors.toUnmodifiableList()));
     }
 
     public List<IModLoadingState> getStates(final ModLoadingPhase phase) {
@@ -36,8 +35,8 @@ public class ModStateManager {
         var dummy = ModLoadingState.empty("", "", phase);
         nodes.forEach(graph::addNode);
         graph.addNode(dummy);
-        nodes.forEach(n->graph.putEdge(lookup.getOrDefault(n.previous(), dummy), n));
-        return TopologicalSort.topologicalSort(graph, Comparator.comparingInt(nodes::indexOf)).stream().filter(st->st!=dummy).toList();
+        nodes.forEach(n -> graph.putEdge(lookup.getOrDefault(n.previous(), dummy), n));
+        return TopologicalSort.topologicalSort(graph, Comparator.comparingInt(nodes::indexOf)).stream().filter(st -> st != dummy).toList();
     }
 
     public IModLoadingState findState(final String stateName) {

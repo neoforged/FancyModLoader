@@ -5,20 +5,21 @@
 
 package net.neoforged.fml;
 
+import static net.neoforged.fml.Logging.LOADING;
+
+import java.util.concurrent.*;
+import java.util.concurrent.locks.LockSupport;
 import net.neoforged.fml.loading.FMLConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.concurrent.*;
-import java.util.concurrent.locks.LockSupport;
-
-import static net.neoforged.fml.Logging.LOADING;
-
 public class ModWorkManager {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final long PARK_TIME = TimeUnit.MILLISECONDS.toNanos(1);
+
     public interface DrivenExecutor extends Executor {
         boolean selfDriven();
+
         boolean driveOne();
 
         default void drive(Runnable ticker) {
@@ -30,12 +31,13 @@ public class ModWorkManager {
                     ranOne = true;
                 }
             }
-            if(!ranOne) {
+            if (!ranOne) {
                 // park for a bit so other threads can schedule
                 LockSupport.parkNanos(PARK_TIME);
             }
         }
     }
+
     private static class SyncExecutor implements DrivenExecutor {
         private ConcurrentLinkedDeque<Runnable> tasks = new ConcurrentLinkedDeque<>();
 
@@ -95,6 +97,7 @@ public class ModWorkManager {
     }
 
     private static ForkJoinPool parallelThreadPool;
+
     public static Executor parallelExecutor() {
         if (parallelThreadPool == null) {
             final int loadingThreadCount = FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.MAX_THREADS);
@@ -111,5 +114,4 @@ public class ModWorkManager {
         thread.setContextClassLoader(Thread.currentThread().getContextClassLoader());
         return thread;
     }
-
 }

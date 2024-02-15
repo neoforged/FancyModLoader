@@ -5,21 +5,19 @@
 
 package net.neoforged.fml.loading;
 
+import static net.neoforged.fml.loading.LogMarkers.CORE;
+
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.IEnvironment;
-import org.slf4j.Logger;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import org.slf4j.Logger;
 
-import static net.neoforged.fml.loading.LogMarkers.CORE;
-
-public enum FMLPaths
-{
+public enum FMLPaths {
     GAMEDIR(),
     MODSDIR("mods"),
     CONFIGDIR("config"),
@@ -44,8 +42,7 @@ public enum FMLPaths
         this.isDirectory = isDir;
     }
 
-    private Path computePath(String... path)
-    {
+    private Path computePath(String... path) {
         return Paths.get(path[0], Arrays.copyOfRange(path, 1, path.length));
     }
 
@@ -55,21 +52,17 @@ public enum FMLPaths
         loadAbsolutePaths(rootPath);
     }
 
-    public static void loadAbsolutePaths(Path rootPath)
-    {
-        for (FMLPaths path : FMLPaths.values())
-        {
+    public static void loadAbsolutePaths(Path rootPath) {
+        for (FMLPaths path : FMLPaths.values()) {
             path.absolutePath = rootPath.resolve(path.relativePath).toAbsolutePath().normalize();
-            if (path.isDirectory && !Files.isDirectory(path.absolutePath))
-            {
+            if (path.isDirectory && !Files.isDirectory(path.absolutePath)) {
                 try {
-                   Files.createDirectories(path.absolutePath);
+                    Files.createDirectories(path.absolutePath);
                 } catch (IOException ioe) {
                     throw new UncheckedIOException(ioe);
                 }
             }
-            if (LOGGER.isDebugEnabled(CORE))
-            {
+            if (LOGGER.isDebugEnabled(CORE)) {
                 LOGGER.debug(CORE, "Path {} is {}", path, path.absolutePath);
             }
         }

@@ -5,12 +5,11 @@
 
 package net.neoforged.fml.mclanguageprovider;
 
+import java.util.Objects;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforgespi.language.IModInfo;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
 
 public class MinecraftModContainer extends ModContainer {
     private static final String MCMODINSTANCE = "minecraft, the mod";

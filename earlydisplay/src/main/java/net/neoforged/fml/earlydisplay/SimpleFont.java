@@ -5,6 +5,12 @@
 
 package net.neoforged.fml.earlydisplay;
 
+import static org.lwjgl.opengl.GL32C.*;
+import static org.lwjgl.stb.STBTruetype.*;
+import static org.lwjgl.system.MemoryUtil.NULL;
+
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.stb.STBTTAlignedQuad;
 import org.lwjgl.stb.STBTTFontinfo;
@@ -12,18 +18,11 @@ import org.lwjgl.stb.STBTTPackContext;
 import org.lwjgl.stb.STBTTPackRange;
 import org.lwjgl.stb.STBTTPackedchar;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-
-import static org.lwjgl.opengl.GL32C.*;
-import static org.lwjgl.stb.STBTruetype.*;
-import static org.lwjgl.system.MemoryUtil.NULL;
-
 public class SimpleFont {
     private final int textureNumber;
     private final int lineSpacing;
     private final int descent;
-    private final int GLYPH_COUNT = 127-32;
+    private final int GLYPH_COUNT = 127 - 32;
     private Glyph[] glyphs;
 
     private record Glyph(char c, int charwidth, int[] pos, float[] uv) {
@@ -36,7 +35,7 @@ public class SimpleFont {
             bb.pos(x1, y0).tex(uv()[2], uv()[1]).colour(colour).endVertex();
             bb.pos(x0, y1).tex(uv()[0], uv()[3]).colour(colour).endVertex();
             bb.pos(x1, y1).tex(uv()[2], uv()[3]).colour(colour).endVertex();
-            return new Pos(pos.x()+charwidth(), pos.y(), pos.minx());
+            return new Pos(pos.x() + charwidth(), pos.y(), pos.minx());
         }
     }
 
@@ -55,10 +54,10 @@ public class SimpleFont {
         var lineGap = new float[1];
         int fontSize = 24;
         stbtt_GetScaledFontVMetrics(buf, 0, fontSize, ascent, descent, lineGap);
-        this.lineSpacing = (int)(ascent[0] - descent[0] + lineGap[0]);
-        this.descent = (int)Math.floor(descent[0]);
+        this.lineSpacing = (int) (ascent[0] - descent[0] + lineGap[0]);
+        this.descent = (int) Math.floor(descent[0]);
         int fontTextureId = glGenTextures();
-        glActiveTexture(GL_TEXTURE0+textureNumber);
+        glActiveTexture(GL_TEXTURE0 + textureNumber);
         this.textureNumber = textureNumber;
         glBindTexture(GL_TEXTURE_2D, fontTextureId);
         try (var packedchars = STBTTPackedchar.malloc(GLYPH_COUNT)) {
@@ -94,7 +93,7 @@ public class SimpleFont {
                     x[0] = 0f;
                     y[0] = fontSize;
                     stbtt_GetPackedQuad(packedchars, texwidth, texheight, i, x, y, q, true);
-                    glyphs[i] = new Glyph((char) (i + 32), (int) (x[0] - 0f), new int[]{(int) q.x0(), (int) q.y0(), (int) q.x1(), (int) q.y1()}, new float[]{q.s0(), q.t0(), q.s1(), q.t1()});
+                    glyphs[i] = new Glyph((char) (i + 32), (int) (x[0] - 0f), new int[] { (int) q.x0(), (int) q.y0(), (int) q.x1(), (int) q.y1() }, new float[] { q.s0(), q.t0(), q.s1(), q.t1() });
                 }
             }
         }
@@ -131,6 +130,7 @@ public class SimpleFont {
         }
         return len;
     }
+
     private record Pos(int x, int y, int minx) {}
 
     /**
@@ -148,11 +148,11 @@ public class SimpleFont {
             for (int i = 0; i < asBytes().length; i++) {
                 byte c = asBytes()[i];
                 pos = switch (c) {
-                    case '\n' -> new Pos(pos.minx(), pos.y()+font.lineSpacing(), pos.minx());
-                    case '\t' -> new Pos(pos.x()+font.glyphs[0].charwidth() * 4, pos.y(), pos.minx());
-                    case ' ' -> new Pos(pos.x()+font.glyphs[0].charwidth(), pos.y(), pos.minx());
+                    case '\n' -> new Pos(pos.minx(), pos.y() + font.lineSpacing(), pos.minx());
+                    case '\t' -> new Pos(pos.x() + font.glyphs[0].charwidth() * 4, pos.y(), pos.minx());
+                    case ' ' -> new Pos(pos.x() + font.glyphs[0].charwidth(), pos.y(), pos.minx());
                     default -> {
-                        if (c-32 < font.GLYPH_COUNT && c > 32) {
+                        if (c - 32 < font.GLYPH_COUNT && c > 32) {
                             pos = font.glyphs[c - 32].loadQuad(pos, colour(), bb);
                         }
                         yield pos;
@@ -165,8 +165,9 @@ public class SimpleFont {
 
     /**
      * Generate vertices for a set of display texts
-     * @param x The starting screen x coordinate
-     * @param y The starting screen y coordinate
+     * 
+     * @param x     The starting screen x coordinate
+     * @param y     The starting screen y coordinate
      * @param texts Some {@link DisplayText} to display
      * @return a {@link SimpleBufferBuilder} that can draw the texts
      */
@@ -177,5 +178,4 @@ public class SimpleFont {
         }
         return textBB;
     }
-
 }

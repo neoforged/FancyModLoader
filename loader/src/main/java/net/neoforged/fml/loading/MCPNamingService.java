@@ -7,9 +7,6 @@ package net.neoforged.fml.loading;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.INameMappingService;
-import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -18,6 +15,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
 
 public class MCPNamingService implements INameMappingService {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -58,7 +57,7 @@ public class MCPNamingService implements INameMappingService {
 
     private String findMethodMapping(final String origin) {
         if (methods == null) {
-            HashMap<String,String> tmpmethods = new HashMap<>(1000);
+            HashMap<String, String> tmpmethods = new HashMap<>(1000);
             loadMappings("methods.csv", tmpmethods::put);
             methods = tmpmethods;
             LOGGER.debug(LogMarkers.CORE, "Loaded {} method mappings from methods.csv", methods.size());
@@ -68,7 +67,7 @@ public class MCPNamingService implements INameMappingService {
 
     private String findFieldMapping(final String origin) {
         if (fields == null) {
-            HashMap<String,String> tmpfields = new HashMap<>(1000);
+            HashMap<String, String> tmpfields = new HashMap<>(1000);
             loadMappings("fields.csv", tmpfields::put);
             fields = tmpfields;
             LOGGER.debug(LogMarkers.CORE, "Loaded {} field mappings from fields.csv", fields.size());

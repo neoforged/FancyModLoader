@@ -7,17 +7,15 @@ package net.neoforged.fml.loading;
 
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
-import org.apache.logging.log4j.LogManager;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import org.apache.logging.log4j.LogManager;
 
 public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryService {
-
     private final List<Path> legacyClasspath = Arrays.stream(System.getProperty("legacyClassPath", "").split(File.pathSeparator)).map(Path::of).toList();
 
     @Override
@@ -36,9 +34,9 @@ public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryServ
     private final static List<NamedPath> found = new ArrayList<>();
 
     public static List<Path> allExcluded() {
-        return found.stream().map(np->np.paths()[0]).toList();
+        return found.stream().map(np -> np.paths()[0]).toList();
     }
-    
+
     private void scan(final Path gameDirectory) {
         try {
             locateTransformers("META-INF/services/cpw.mods.modlauncher.api.ITransformationService");

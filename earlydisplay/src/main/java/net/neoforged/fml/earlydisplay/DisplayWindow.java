@@ -5,23 +5,9 @@
 
 package net.neoforged.fml.earlydisplay;
 
-import joptsimple.OptionParser;
-import net.neoforged.fml.loading.FMLConfig;
-import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.FMLPaths;
-import net.neoforged.fml.loading.ImmediateWindowHandler;
-import net.neoforged.fml.loading.ImmediateWindowProvider;
-import net.neoforged.fml.loading.progress.StartupNotificationManager;
-import org.jetbrains.annotations.Nullable;
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.glfw.GLFWImage;
-import org.lwjgl.glfw.GLFWVidMode;
-import org.lwjgl.stb.STBImage;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.opengl.GL.createCapabilities;
+import static org.lwjgl.opengl.GL32C.*;
 
 import java.awt.Desktop;
 import java.io.BufferedReader;
@@ -51,10 +37,23 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
-
-import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL.createCapabilities;
-import static org.lwjgl.opengl.GL32C.*;
+import joptsimple.OptionParser;
+import net.neoforged.fml.loading.FMLConfig;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.fml.loading.ImmediateWindowHandler;
+import net.neoforged.fml.loading.ImmediateWindowProvider;
+import net.neoforged.fml.loading.progress.StartupNotificationManager;
+import org.jetbrains.annotations.Nullable;
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.glfw.GLFWImage;
+import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.stb.STBImage;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.util.tinyfd.TinyFileDialogs;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The Loading Window that is opened Immediately after Forge starts.
@@ -70,7 +69,7 @@ import static org.lwjgl.opengl.GL32C.*;
  * Based on the prior ClientVisualization, with some personal touches.
  */
 public class DisplayWindow implements ImmediateWindowProvider {
-    private static final int[][] GL_VERSIONS = new int[][] {{4,6}, {4,5}, {4,4}, {4,3}, {4,2}, {4,1}, {4,0}, {3,3}, {3,2}};
+    private static final int[][] GL_VERSIONS = new int[][] { { 4, 6 }, { 4, 5 }, { 4, 4 }, { 4, 3 }, { 4, 2 }, { 4, 1 }, { 4, 0 }, { 3, 3 }, { 3, 2 } };
     private static final Logger LOGGER = LoggerFactory.getLogger("EARLYDISPLAY");
     private final AtomicBoolean animationTimerTrigger = new AtomicBoolean(true);
 
@@ -102,12 +101,13 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private boolean maximized;
     private String glVersion;
     private SimpleFont font;
-    private Runnable repaintTick = ()->{};
+    private Runnable repaintTick = () -> {};
 
     @Override
     public String name() {
         return "fmlearlywindow";
     }
+
     @Override
     public Runnable initialize(String[] arguments) {
         final OptionParser parser = new OptionParser();
@@ -127,7 +127,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_WIDTH, winWidth);
         FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_HEIGHT, winHeight);
         fbScale = FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_FBSCALE);
-        if (System.getenv("FML_EARLY_WINDOW_DARK")!= null) {
+        if (System.getenv("FML_EARLY_WINDOW_DARK") != null) {
             this.colourScheme = ColourScheme.BLACK;
         } else {
             try {
@@ -143,13 +143,14 @@ public class DisplayWindow implements ImmediateWindowProvider {
         this.maximized = parsed.has(maximizedopt) || FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_MAXIMIZED);
 
         var forgeVersion = parsed.valueOf(forgeversionopt);
-        StartupNotificationManager.modLoaderConsumer().ifPresent(c->c.accept("NeoForge loading "+ forgeVersion));
+        StartupNotificationManager.modLoaderConsumer().ifPresent(c -> c.accept("NeoForge loading " + forgeVersion));
         performanceInfo = new PerformanceInfo();
         return start(parsed.valueOf(mcversionopt), forgeVersion);
     }
 
     private static final long MINFRAMETIME = TimeUnit.MILLISECONDS.toNanos(10); // This is the FPS cap on the window - note animation is capped at 20FPS via the tickTimer
     private long nextFrameTime = 0;
+
     /**
      * The main render loop.
      * renderThread executes this.
@@ -200,7 +201,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         // Wait for one frame to be complete before swapping; enable vsync in other words.
         glfwSwapInterval(1);
         createCapabilities();
-        LOGGER.info("GL info: "+ glGetString(GL_RENDERER) + " GL version " + glGetString(GL_VERSION) + ", " + glGetString(GL_VENDOR));
+        LOGGER.info("GL info: " + glGetString(GL_RENDERER) + " GL version " + glGetString(GL_VERSION) + ", " + glGetString(GL_VENDOR));
 
         elementShader = new ElementShader();
         try {
@@ -220,16 +221,14 @@ public class DisplayWindow implements ImmediateWindowProvider {
             this.font = new SimpleFont("Monocraft.ttf", fbScale, 200000, 1 + RenderElement.INDEX_TEXTURE_OFFSET);
         } catch (Throwable t) {
             LOGGER.error("Crash during font initialization", t);
-            crashElegantly("An error occurred initializing a font for rendering. "+t.getMessage());
+            crashElegantly("An error occurred initializing a font for rendering. " + t.getMessage());
         }
         this.elements = new ArrayList<>(Arrays.asList(
                 RenderElement.fox(font),
                 RenderElement.logMessageOverlay(font),
-                RenderElement.forgeVersionOverlay(font, mcVersion+"-"+forgeVersion.split("-")[0]),
+                RenderElement.forgeVersionOverlay(font, mcVersion + "-" + forgeVersion.split("-")[0]),
                 RenderElement.performanceBar(font),
-                RenderElement.progressBars(font)
-        ));
-
+                RenderElement.progressBars(font)));
 
         var date = Calendar.getInstance();
         if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_SQUIR) || (date.get(Calendar.MONTH) == Calendar.APRIL && date.get(Calendar.DAY_OF_MONTH) == 1))
@@ -241,7 +240,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         this.windowTick = renderScheduler.scheduleAtFixedRate(this::renderThreadFunc, 50, 50, TimeUnit.MILLISECONDS);
         this.performanceTick = renderScheduler.scheduleAtFixedRate(performanceInfo::update, 0, 500, TimeUnit.MILLISECONDS);
         // schedule a 50 ms ticker to try and smooth out the rendering
-        renderScheduler.scheduleAtFixedRate(()-> animationTimerTrigger.set(true), 1, 50, TimeUnit.MILLISECONDS);
+        renderScheduler.scheduleAtFixedRate(() -> animationTimerTrigger.set(true), 1, 50, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -258,7 +257,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
             framecount++;
     }
 
-
     public void render(int alpha) {
         var currentVAO = glGetInteger(GL_VERTEX_ARRAY_BINDING);
         var currentFB = glGetInteger(GL_READ_FRAMEBUFFER_BINDING);
@@ -274,6 +272,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         glBindVertexArray(currentVAO);
         glBindFramebuffer(GL_FRAMEBUFFER, currentFB);
     }
+
     /**
      * Start the window and Render Thread; we're ready to go.
      */
@@ -289,6 +288,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     private static final String ERROR_URL = "https://links.neoforged.net/early-display-errors";
+
     @Override
     public String getGLVersion() {
         return this.glVersion;
@@ -309,9 +309,9 @@ public class DisplayWindow implements ImmediateWindowProvider {
         msgBuilder.append(errorDetails);
         msgBuilder.append("\n\n");
         msgBuilder.append("If you click yes, we will try and open " + ERROR_URL + " in your default browser");
-        LOGGER.error("ERROR DISPLAY\n"+msgBuilder);
+        LOGGER.error("ERROR DISPLAY\n" + msgBuilder);
         // we show the display on a new dedicated thread
-        Executors.newSingleThreadExecutor().submit(()-> {
+        Executors.newSingleThreadExecutor().submit(() -> {
             var res = TinyFileDialogs.tinyfd_messageBox("Minecraft: NeoForge", msgBuilder.toString(), "yesno", "error", false);
             if (res) {
                 try {
@@ -323,6 +323,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
             System.exit(1);
         });
     }
+
     /**
      * Called to initialize the window when preparing for the Render Thread.
      *
@@ -381,16 +382,16 @@ public class DisplayWindow implements ImmediateWindowProvider {
         }
         long window = 0;
         var successfulWindow = new AtomicBoolean(false);
-        var windowFailFuture = renderScheduler.schedule(()->{
+        var windowFailFuture = renderScheduler.schedule(() -> {
             if (!successfulWindow.get()) crashElegantly("Timed out trying to setup the Game Window.");
         }, 10, TimeUnit.SECONDS);
         int versidx = 0;
         var skipVersions = FMLConfig.<String>getListConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_SKIP_GL_VERSIONS);
-        final String[] lastGLError=new String[GL_VERSIONS.length];
+        final String[] lastGLError = new String[GL_VERSIONS.length];
         do {
             final var glVersionToTry = GL_VERSIONS[versidx][0] + "." + GL_VERSIONS[versidx][1];
             if (skipVersions.contains(glVersionToTry)) {
-                LOGGER.info("Skipping GL version "+ glVersionToTry+" because of configuration");
+                LOGGER.info("Skipping GL version " + glVersionToTry + " because of configuration");
                 versidx++;
                 continue;
             }
@@ -408,22 +409,23 @@ public class DisplayWindow implements ImmediateWindowProvider {
             versidx++;
         } while (window == 0 && versidx < GL_VERSIONS.length);
 //        LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(12));
-        if (versidx== GL_VERSIONS.length && window == 0) {
-            LOGGER.error("Failed to find any valid GLFW profile. "+lastGLError[0]);
+        if (versidx == GL_VERSIONS.length && window == 0) {
+            LOGGER.error("Failed to find any valid GLFW profile. " + lastGLError[0]);
 
-            crashElegantly("Failed to find a valid GLFW profile.\nWe tried "+
-                    Arrays.stream(GL_VERSIONS).map(p->p[0]+"."+p[1]).filter(o -> !skipVersions.contains(o))
-                            .collect(Collector.of(()->new StringJoiner(", ").setEmptyValue("no versions"), StringJoiner::add, StringJoiner::merge, StringJoiner::toString))+
-                    " but none of them worked.\n"+ Arrays.stream(lastGLError).filter(Objects::nonNull).collect(Collectors.joining("\n")));
+            crashElegantly("Failed to find a valid GLFW profile.\nWe tried " +
+                    Arrays.stream(GL_VERSIONS).map(p -> p[0] + "." + p[1]).filter(o -> !skipVersions.contains(o))
+                            .collect(Collector.of(() -> new StringJoiner(", ").setEmptyValue("no versions"), StringJoiner::add, StringJoiner::merge, StringJoiner::toString))
+                    +
+                    " but none of them worked.\n" + Arrays.stream(lastGLError).filter(Objects::nonNull).collect(Collectors.joining("\n")));
             throw new IllegalStateException("Failed to create a GLFW window with any profile");
         }
         successfulWindow.set(true);
         if (!windowFailFuture.cancel(true)) throw new IllegalStateException("We died but didn't somehow?");
-        var requestedVersion = GL_VERSIONS[versidx-1][0]+"."+GL_VERSIONS[versidx-1][1];
+        var requestedVersion = GL_VERSIONS[versidx - 1][0] + "." + GL_VERSIONS[versidx - 1][1];
         var maj = glfwGetWindowAttrib(window, GLFW_CONTEXT_VERSION_MAJOR);
         var min = glfwGetWindowAttrib(window, GLFW_CONTEXT_VERSION_MINOR);
-        var gotVersion = maj+"."+min;
-        LOGGER.info("Requested GL version "+requestedVersion+" got version "+gotVersion);
+        var gotVersion = maj + "." + min;
+        LOGGER.info("Requested GL version " + requestedVersion + " got version " + gotVersion);
         this.glVersion = gotVersion;
         this.window = window;
 
@@ -474,7 +476,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     private void badWindowHandler(final int code, final long desc) {
-        LOGGER.error("Got error from GLFW window init: "+code+ " "+MemoryUtil.memUTF8(desc));
+        LOGGER.error("Got error from GLFW window init: " + code + " " + MemoryUtil.memUTF8(desc));
     }
 
     private void winResize(long window, int width, int height) {
@@ -483,6 +485,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
             this.winHeight = height;
         }
     }
+
     private void fbResize(long window, int width, int height) {
         if (window == this.window && width != 0 && height != 0) {
             this.fbWidth = width;
@@ -496,6 +499,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
             this.winY = y;
         }
     }
+
     private void handleLastGLFWError(BiConsumer<Integer, String> handler) {
         try (MemoryStack memorystack = MemoryStack.stackPush()) {
             PointerBuffer pointerbuffer = memorystack.mallocPointer(1);
@@ -518,9 +522,9 @@ public class DisplayWindow implements ImmediateWindowProvider {
         // wait for the window to actually be initialized
         try {
             this.initializationFuture.get(30, TimeUnit.SECONDS);
-        } catch(InterruptedException | ExecutionException e) {
+        } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
-        } catch(TimeoutException e) {
+        } catch (TimeoutException e) {
             Thread.dumpStack();
             crashElegantly("We seem to be having trouble initializing the window, waited for 30 seconds");
         }
@@ -533,11 +537,11 @@ public class DisplayWindow implements ImmediateWindowProvider {
         var renderlockticket = false;
         do {
             try {
-                    renderlockticket = renderLock.tryAcquire(100, TimeUnit.MILLISECONDS);
-                    if (++tries > 9) {
-                        Thread.dumpStack();
-                        crashElegantly("We seem to be having trouble handing off the window, tried for 1 second");
-                    }
+                renderlockticket = renderLock.tryAcquire(100, TimeUnit.MILLISECONDS);
+                if (++tries > 9) {
+                    Thread.dumpStack();
+                    crashElegantly("We seem to be having trouble handing off the window, tried for 1 second");
+                }
             } catch (InterruptedException e) {
                 Thread.interrupted();
             }
@@ -579,7 +583,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     @Override
     public <T> Supplier<T> loadingOverlay(final Supplier<?> mc, final Supplier<?> ri, final Consumer<Optional<Throwable>> ex, final boolean fade) {
         try {
-            return (Supplier<T>)loadingOverlay.invoke(null, mc, ri, ex, this);
+            return (Supplier<T>) loadingOverlay.invoke(null, mc, ri, ex, this);
         } catch (Throwable e) {
             throw new IllegalStateException("How did you get here?", e);
         }
@@ -589,8 +593,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
     public void updateModuleReads(final ModuleLayer layer) {
         var fm = layer.findModule("neoforge").orElseThrow();
         getClass().getModule().addReads(fm);
-        var clz = FMLLoader.getGameLayer().findModule("neoforge").map(l->Class.forName(l, "net.neoforged.neoforge.client.loading.NeoForgeLoadingOverlay")).orElseThrow();
-        var methods = Arrays.stream(clz.getMethods()).filter(m-> Modifier.isStatic(m.getModifiers())).collect(Collectors.toMap(Method::getName, Function.identity()));
+        var clz = FMLLoader.getGameLayer().findModule("neoforge").map(l -> Class.forName(l, "net.neoforged.neoforge.client.loading.NeoForgeLoadingOverlay")).orElseThrow();
+        var methods = Arrays.stream(clz.getMethods()).filter(m -> Modifier.isStatic(m.getModifiers())).collect(Collectors.toMap(Method::getName, Function.identity()));
         loadingOverlay = methods.get("newInstance");
     }
 

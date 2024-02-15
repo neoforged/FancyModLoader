@@ -8,12 +8,14 @@ package net.neoforged.fml.loading.targets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
-
 import net.neoforged.fml.loading.LibraryFinder;
 import net.neoforged.fml.loading.VersionInfo;
 
 public class ForgeClientLaunchHandler extends CommonClientLaunchHandler {
-    @Override public String name() { return "forgeclient"; }
+    @Override
+    public String name() {
+        return "forgeclient";
+    }
 
     @Override
     protected void processMCStream(VersionInfo versionInfo, Stream.Builder<Path> mc, Stream.Builder<List<Path>> mods) {

@@ -7,10 +7,9 @@ package net.neoforged.fml.loading.log4j;
 
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
+import java.util.EnumSet;
 import org.objectweb.asm.Type;
 import org.slf4j.LoggerFactory;
-
-import java.util.EnumSet;
 
 public class SLF4JFixerLaunchPluginService implements ILaunchPluginService {
     private static final EnumSet<Phase> NO_PHASES = EnumSet.noneOf(Phase.class);

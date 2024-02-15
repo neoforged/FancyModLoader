@@ -6,13 +6,11 @@
 package net.neoforged.fml.earlydisplay;
 
 import com.sun.management.OperatingSystemMXBean;
-
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
 
 public class PerformanceInfo {
-
     private final OperatingSystemMXBean osBean;
     private final MemoryMXBean memoryBean;
     float memory;
