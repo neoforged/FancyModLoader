@@ -81,9 +81,7 @@ public class JarInJarDependencyLocator extends AbstractJarFileDependencyLocator
             final Map<String, ?> outerFsArgs = ImmutableMap.of("packagePath", pathInModFile);
             final FileSystem zipFS = FileSystems.newFileSystem(filePathUri, outerFsArgs);
             final Path pathInFS = zipFS.getPath("/");
-            Optional<IModFile> result = Optional.of(createMod(pathInFS).file());
-            result.ifPresent(mf -> mf.markJarInJarSource(file.getFileName()));
-            return result;
+            return Optional.of(createMod(pathInFS).file());
         }
         catch (Exception e)
         {

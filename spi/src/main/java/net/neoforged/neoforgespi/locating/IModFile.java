@@ -126,17 +126,6 @@ public interface IModFile {
     IModFileInfo getModFileInfo();
 
     /**
-     * This method marks the IModFile, indicating that it contains or depends on another embedded JAR file.
-     * @param fromJar The name of the embedded JAR file. This parameter specifies the JAR file to be loaded as a Jij.
-     */
-    void markJarInJarSource(String fromJar);
-
-    /**
-     * @return source of the IModFile
-     */
-    List<String> getJarInJarSource();
-
-    /**
      * The type of file.
      * Determines into which module layer the data is loaded and how metadata is loaded and processed.
      */
