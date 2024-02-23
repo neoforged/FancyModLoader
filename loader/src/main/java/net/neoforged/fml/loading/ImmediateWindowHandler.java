@@ -5,6 +5,8 @@
 
 package net.neoforged.fml.loading;
 
+import cpw.mods.modlauncher.Launcher;
+import cpw.mods.modlauncher.api.IModuleLayerManager.Layer;
 import net.neoforged.fml.loading.progress.ProgressMeter;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import org.apache.logging.log4j.LogManager;
@@ -32,7 +34,10 @@ public class ImmediateWindowHandler {
         } else {
             final var providername = FMLConfig.getConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER);
             LOGGER.info("Loading ImmediateWindowProvider {}", providername);
-            final var maybeProvider = ServiceLoader.load(ImmediateWindowProvider.class)
+            final var layer = Launcher.INSTANCE.findLayerManager()
+                    .flatMap(manager -> manager.getLayer(Layer.SERVICE))
+                    .orElse(ImmediateWindowHandler.class.getModule().getLayer()); // This will likely be the BOOT layer, but is a sensible fallback.
+            final var maybeProvider = ServiceLoader.load(layer, ImmediateWindowProvider.class)
                     .stream()
                     .map(ServiceLoader.Provider::get)
                     .filter(p -> Objects.equals(p.name(), providername))
