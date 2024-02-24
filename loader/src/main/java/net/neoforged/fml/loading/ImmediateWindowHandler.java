@@ -36,7 +36,7 @@ public class ImmediateWindowHandler {
             LOGGER.info("Loading ImmediateWindowProvider {}", providername);
             final var layer = Launcher.INSTANCE.findLayerManager()
                     .flatMap(manager -> manager.getLayer(Layer.SERVICE))
-                    .orElse(ImmediateWindowHandler.class.getModule().getLayer()); // This will likely be the BOOT layer, but is a sensible fallback.
+                    .orElseThrow(() -> new IllegalStateException("Couldn't find SERVICE layer to load immediate window handler"));
             final var maybeProvider = ServiceLoader.load(layer, ImmediateWindowProvider.class)
                     .stream()
                     .map(ServiceLoader.Provider::get)
