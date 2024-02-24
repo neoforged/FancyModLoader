@@ -26,6 +26,7 @@ public class TransformerDiscovererConstants {
         "net.neoforged.neoforgespi.locating.IModLocator",
         "net.neoforged.neoforgespi.locating.IDependencyLocator",
         "net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper",
-        "net.neoforged.fml.loading.ImmediateWindowProvider"
+        "net.neoforged.fml.loading.ImmediateWindowProvider", // FIXME: remove this when removing the legacy ImmediateWindowProvider
+        "net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider"
     );
 }

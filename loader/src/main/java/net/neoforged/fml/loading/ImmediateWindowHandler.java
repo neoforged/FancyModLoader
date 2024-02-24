@@ -10,6 +10,7 @@ import cpw.mods.modlauncher.api.IModuleLayerManager.Layer;
 import net.neoforged.fml.loading.progress.ProgressMeter;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
+import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
