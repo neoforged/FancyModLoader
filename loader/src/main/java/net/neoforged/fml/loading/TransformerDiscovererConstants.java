@@ -1,5 +1,9 @@
-package net.neoforged.fml.loading;
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
 
+package net.neoforged.fml.loading;
 
 import cpw.mods.modlauncher.api.IModuleLayerManager.Layer;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
