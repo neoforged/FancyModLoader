@@ -9,6 +9,7 @@ import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.api.IModuleLayerManager.Layer;
 import net.neoforged.fml.loading.progress.ProgressMeter;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
+import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,6 +26,16 @@ public class ImmediateWindowHandler {
 
     private static ProgressMeter earlyProgress;
     public static void load(final String launchTarget, final String[] arguments) {
+        final var layer = Launcher.INSTANCE.findLayerManager()
+                .flatMap(manager -> manager.getLayer(Layer.SERVICE))
+                .orElseThrow(() -> new IllegalStateException("Couldn't find SERVICE layer"));
+        ServiceLoader.load(layer, GraphicsBootstrapper.class)
+                .stream()
+                .map(ServiceLoader.Provider::get)
+                .forEach(bootstrap -> {
+                    LOGGER.debug("Invoking bootstrap method {}", bootstrap.name());
+                    bootstrap.bootstrap(arguments);
+                });
         if (!List.of("forgeclient", "forgeclientuserdev", "forgeclientdev").contains(launchTarget)) {
             provider = new DummyProvider();
             LOGGER.info("ImmediateWindowProvider not loading because launch target is {}", launchTarget);
@@ -34,9 +45,6 @@ public class ImmediateWindowHandler {
         } else {
             final var providername = FMLConfig.getConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER);
             LOGGER.info("Loading ImmediateWindowProvider {}", providername);
-            final var layer = Launcher.INSTANCE.findLayerManager()
-                    .flatMap(manager -> manager.getLayer(Layer.SERVICE))
-                    .orElseThrow(() -> new IllegalStateException("Couldn't find SERVICE layer to load immediate window handler"));
             final var maybeProvider = ServiceLoader.load(layer, ImmediateWindowProvider.class)
                     .stream()
                     .map(ServiceLoader.Provider::get)

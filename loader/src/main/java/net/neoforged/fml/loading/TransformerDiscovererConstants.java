@@ -25,6 +25,7 @@ public class TransformerDiscovererConstants {
         "cpw.mods.modlauncher.api.ITransformationService",
         "net.neoforged.neoforgespi.locating.IModLocator",
         "net.neoforged.neoforgespi.locating.IDependencyLocator",
+        "net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper",
         "net.neoforged.fml.loading.ImmediateWindowProvider"
     );
 }
