@@ -5,19 +5,28 @@
 
 package net.neoforged.fml.loading;
 
+import com.mojang.logging.LogUtils;
+import cpw.mods.jarhandling.JarContentsBuilder;
+import cpw.mods.jarhandling.JarMetadata;
+import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
 import org.apache.logging.log4j.LogManager;
+import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryService {
 
+    protected static final Logger LOGGER = LogUtils.getLogger();
     private final List<Path> legacyClasspath = Arrays.stream(System.getProperty("legacyClassPath", "").split(File.pathSeparator)).map(Path::of).toList();
 
     @Override
@@ -44,6 +53,8 @@ public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryServ
             for (final String serviceClass : TransformerDiscovererConstants.SERVICES) {
                 locateTransformers("META-INF/services/" + serviceClass);
             }
+
+            scanModClasses();
         } catch (IOException e) {
             LogManager.getLogger().error("Error during discovery of transform services from the classpath", e);
         }
@@ -58,5 +69,39 @@ public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryServ
                 continue;
             found.add(new NamedPath(path.toUri().toString(), path));
         }
+    }
+
+    private void scanModClasses() {
+        final Map<String, List<Path>> modClassPaths = getModClasses();
+        modClassPaths.forEach((modid, paths) -> {
+            if (shouldLoadInServiceLayer(paths)) {
+                found.add(new NamedPath(modid, paths.toArray(Path[]::new)));
+            }
+        });
+    }
+
+    private Map<String, List<Path>> getModClasses() {
+        final String modClasses = Optional.ofNullable(System.getenv("MOD_CLASSES")).orElse("");
+        LOGGER.debug(LogMarkers.CORE, "Got mod coordinates {} from env", modClasses);
+
+        record ExplodedModPath(String modid, Path path) {}
+        // "a/b/;c/d/;" -> "modid%%c:\fish\pepper;modid%%c:\fish2\pepper2\;modid2%%c:\fishy\bums;modid2%%c:\hmm"
+        final var modClassPaths = Arrays.stream(modClasses.split(File.pathSeparator))
+                .map(inp -> inp.split("%%", 2))
+                .map(splitString -> new ExplodedModPath(splitString.length == 1 ? "defaultmodid" : splitString[0], Paths.get(splitString[splitString.length - 1])))
+                .collect(Collectors.groupingBy(ExplodedModPath::modid, Collectors.mapping(ExplodedModPath::path, Collectors.toList())));
+
+        LOGGER.debug(LogMarkers.CORE, "Found supplied mod coordinates [{}]", modClassPaths);
+
+        //final var explodedTargets = ((Map<String, List<ExplodedDirectoryLocator.ExplodedMod>>)arguments).computeIfAbsent("explodedTargets", a -> new ArrayList<>());
+        //modClassPaths.forEach((modlabel,paths) -> explodedTargets.add(new ExplodedDirectoryLocator.ExplodedMod(modlabel, paths)));
+        return modClassPaths;
+    }
+
+    private static boolean shouldLoadInServiceLayer(List<Path> path) {
+        JarMetadata metadata = JarMetadata.from(new JarContentsBuilder().paths(path.toArray(Path[]::new)).build());
+        return metadata.providers().stream()
+                .map(SecureJar.Provider::serviceName)
+                .anyMatch(TransformerDiscovererConstants.SERVICES::contains);
     }
 }
