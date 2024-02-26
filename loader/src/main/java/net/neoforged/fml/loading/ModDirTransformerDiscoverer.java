@@ -93,9 +93,6 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
         if (!path.toString().endsWith(".jar")) return false;
         if (LamdbaExceptionUtils.uncheck(() -> Files.size(path)) == 0) return false;
 
-        JarMetadata metadata = JarMetadata.from(new JarContentsBuilder().paths(path).build());
-        return metadata.providers().stream()
-            .map(SecureJar.Provider::serviceName)
-            .anyMatch(TransformerDiscovererConstants.SERVICES::contains);
+        return TransformerDiscovererUtils.shouldLoadInServiceLayer(path);
     }
 }

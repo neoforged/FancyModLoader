@@ -12,6 +12,7 @@ import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
+import net.neoforged.fml.loading.targets.CommonLaunchHandler;
 import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
 
@@ -23,6 +24,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static net.neoforged.fml.loading.TransformerDiscovererUtils.shouldLoadInServiceLayer;
 
 public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryService {
 
@@ -72,36 +75,12 @@ public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryServ
     }
 
     private void scanModClasses() {
-        final Map<String, List<Path>> modClassPaths = getModClasses();
+        final Map<String, List<Path>> modClassPaths = CommonLaunchHandler.getModClasses();
         modClassPaths.forEach((modid, paths) -> {
-            if (shouldLoadInServiceLayer(paths)) {
+            if (shouldLoadInServiceLayer(paths.toArray(Path[]::new))) {
                 found.add(new NamedPath(modid, paths.toArray(Path[]::new)));
             }
         });
     }
 
-    private Map<String, List<Path>> getModClasses() {
-        final String modClasses = Optional.ofNullable(System.getenv("MOD_CLASSES")).orElse("");
-        LOGGER.debug(LogMarkers.CORE, "Got mod coordinates {} from env", modClasses);
-
-        record ExplodedModPath(String modid, Path path) {}
-        // "a/b/;c/d/;" -> "modid%%c:\fish\pepper;modid%%c:\fish2\pepper2\;modid2%%c:\fishy\bums;modid2%%c:\hmm"
-        final var modClassPaths = Arrays.stream(modClasses.split(File.pathSeparator))
-                .map(inp -> inp.split("%%", 2))
-                .map(splitString -> new ExplodedModPath(splitString.length == 1 ? "defaultmodid" : splitString[0], Paths.get(splitString[splitString.length - 1])))
-                .collect(Collectors.groupingBy(ExplodedModPath::modid, Collectors.mapping(ExplodedModPath::path, Collectors.toList())));
-
-        LOGGER.debug(LogMarkers.CORE, "Found supplied mod coordinates [{}]", modClassPaths);
-
-        //final var explodedTargets = ((Map<String, List<ExplodedDirectoryLocator.ExplodedMod>>)arguments).computeIfAbsent("explodedTargets", a -> new ArrayList<>());
-        //modClassPaths.forEach((modlabel,paths) -> explodedTargets.add(new ExplodedDirectoryLocator.ExplodedMod(modlabel, paths)));
-        return modClassPaths;
-    }
-
-    private static boolean shouldLoadInServiceLayer(List<Path> path) {
-        JarMetadata metadata = JarMetadata.from(new JarContentsBuilder().paths(path.toArray(Path[]::new)).build());
-        return metadata.providers().stream()
-                .map(SecureJar.Provider::serviceName)
-                .anyMatch(TransformerDiscovererConstants.SERVICES::contains);
-    }
 }
