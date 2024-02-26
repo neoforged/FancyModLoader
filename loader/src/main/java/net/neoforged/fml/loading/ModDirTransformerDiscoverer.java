@@ -22,15 +22,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final Set<String> SERVICES = Set.of(
-        "cpw.mods.modlauncher.api.ITransformationService",
-        "net.neoforged.neoforgespi.locating.IModLocator",
-        "net.neoforged.neoforgespi.locating.IDependencyLocator"
-    );
     private UncheckedIOException alreadyFailed;
 
     @Override
@@ -102,6 +96,6 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
         JarMetadata metadata = JarMetadata.from(new JarContentsBuilder().paths(path).build());
         return metadata.providers().stream()
             .map(SecureJar.Provider::serviceName)
-            .anyMatch(SERVICES::contains);
+            .anyMatch(TransformerDiscovererConstants.SERVICES::contains);
     }
 }
