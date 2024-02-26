@@ -67,7 +67,7 @@ public class JarInJarDependencyLocator extends AbstractJarFileDependencyLocator
     @Override
     protected String getDefaultJarModType()
     {
-        return IModFile.Type.GAMELIBRARY.name();
+        return IModFile.Type.LIBRARY.name();
     }
 
     @SuppressWarnings("resource")
