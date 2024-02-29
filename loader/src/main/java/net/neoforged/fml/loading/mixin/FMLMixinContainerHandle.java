@@ -16,6 +16,16 @@ import java.util.List;
  */
 public class FMLMixinContainerHandle implements IContainerHandle {
     @Override
+    public String getId() {
+        return "fml";
+    }
+
+    @Override
+    public String getDescription() {
+        return "FMLMixinContainerHandle, a dummy source used by FML to inject mixin configs from mods at the right time.";
+    }
+
+    @Override
     public String getAttribute(String name) {
         return null;
     }

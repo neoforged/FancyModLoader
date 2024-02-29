@@ -80,11 +80,11 @@ public class LoadingModList
     }
 
     public void addMixinConfigs() {
-        modFiles.stream()
-                .map(ModFileInfo::getFile)
-                .map(ModFile::getMixinConfigs)
-                .flatMap(List::stream)
-                .forEach(DeferredMixinConfigRegistration::addMixinConfig);
+        for (var fileInfo : modFiles) {
+            for (var config : fileInfo.getFile().getMixinConfigs()) {
+                DeferredMixinConfigRegistration.addModMixinConfig(config, fileInfo.getFile());
+            }
+        }
     }
 
     public void addAccessTransformers()
