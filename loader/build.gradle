@@ -27,7 +27,7 @@ dependencies {
     implementation("net.neoforged.accesstransformers:at-modlauncher:${accesstransformers_version}") {
         exclude module: 'modlauncher'
     }
-    implementation("org.spongepowered:mixin:${mixin_version}")
+    implementation("net.fabricmc:sponge-mixin:${mixin_version}")
     implementation("net.minecrell:terminalconsoleappender:${terminalconsoleappender_version}")
     implementation("commons-io:commons-io:${commons_io_version}")
 
