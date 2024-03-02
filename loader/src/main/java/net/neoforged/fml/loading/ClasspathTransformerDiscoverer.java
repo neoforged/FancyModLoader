@@ -5,31 +5,22 @@
 
 package net.neoforged.fml.loading;
 
-import com.mojang.logging.LogUtils;
-import cpw.mods.jarhandling.JarContentsBuilder;
-import cpw.mods.jarhandling.JarMetadata;
-import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
 import net.neoforged.fml.loading.targets.CommonLaunchHandler;
 import org.apache.logging.log4j.LogManager;
-import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
-import static net.neoforged.fml.loading.TransformerDiscovererUtils.shouldLoadInServiceLayer;
+import static net.neoforged.fml.loading.TransformerDiscovererConstants.shouldLoadInServiceLayer;
 
 public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryService {
 
-    protected static final Logger LOGGER = LogUtils.getLogger();
     private final List<Path> legacyClasspath = Arrays.stream(System.getProperty("legacyClassPath", "").split(File.pathSeparator)).map(Path::of).toList();
 
     @Override

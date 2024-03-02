@@ -5,16 +5,20 @@
 
 package net.neoforged.fml.loading;
 
+import cpw.mods.jarhandling.JarContentsBuilder;
+import cpw.mods.jarhandling.JarMetadata;
+import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.IModuleLayerManager.Layer;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
 
+import java.nio.file.Path;
 import java.util.Set;
 
 /**
  * Defines a class containing constants which implementations of {@link ITransformerDiscoveryService}
  * may use.
  */
-public class TransformerDiscovererConstants {
+public final class TransformerDiscovererConstants {
     private TransformerDiscovererConstants() { }
 
     /**
@@ -29,4 +33,11 @@ public class TransformerDiscovererConstants {
         "net.neoforged.fml.loading.ImmediateWindowProvider", // FIXME: remove this when removing the legacy ImmediateWindowProvider
         "net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider"
     );
+
+    public static boolean shouldLoadInServiceLayer(Path... path) {
+        JarMetadata metadata = JarMetadata.from(new JarContentsBuilder().paths(path).build());
+        return metadata.providers().stream()
+                .map(SecureJar.Provider::serviceName)
+                .anyMatch(SERVICES::contains);
+    }
 }
