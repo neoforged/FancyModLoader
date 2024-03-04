@@ -45,14 +45,13 @@ public class Scanner {
     }
 
     private void fileVisitor(final Path path, final ModFileScanData result) {
-        LOGGER.debug(LogMarkers.SCAN,"Scanning {} path {}", fileToScan, path);
         try (InputStream in = Files.newInputStream(path)){
             ModClassVisitor mcv = new ModClassVisitor();
             ClassReader cr = new ClassReader(in);
             cr.accept(mcv, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG);
             mcv.buildData(result.getClasses(), result.getAnnotations());
         } catch (IOException | IllegalArgumentException e) {
-            // mark path bad
+            LOGGER.error(LogMarkers.SCAN,"Exception scanning {} path {}", fileToScan, path, e);
         }
     }
 }
