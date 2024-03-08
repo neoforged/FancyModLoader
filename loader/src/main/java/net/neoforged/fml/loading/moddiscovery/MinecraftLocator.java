@@ -50,7 +50,7 @@ public class MinecraftLocator extends AbstractModProvider implements IModLocator
                 .collect(Collectors.<IModFile>toList());
         var otherModsExcluded = ClasspathTransformerDiscoverer.allExcluded();
         var othermods = baseMC.otherModPaths().stream()
-                .filter(p -> p.stream().noneMatch(otherModsExcluded::contains)) //We can no load MOD_CLASSES from the classpath if they are loaded on the SERVICE layer.
+                .filter(p -> p.stream().noneMatch(otherModsExcluded::contains)) //We cannot load MOD_CLASSES from the classpath if they are loaded on the SERVICE layer.
                 .map(p -> createMod(p.toArray(Path[]::new)))
                 .filter(Objects::nonNull);
         artifacts.add(mcjar);
