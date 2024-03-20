@@ -56,7 +56,7 @@ public class ModLoadingContext
             return;
         }
 
-        getActiveContainer().addConfig(new ModConfig(type, spec, getActiveContainer()));
+        getActiveContainer().registerConfig(type, spec);
     }
 
     public void registerConfig(ModConfig.Type type, IConfigSpec<?> spec, String fileName) {
@@ -67,7 +67,7 @@ public class ModLoadingContext
             return;
         }
 
-        getActiveContainer().addConfig(new ModConfig(type, spec, getActiveContainer(), fileName));
+        getActiveContainer().registerConfig(type, spec, fileName);
     }
 
 

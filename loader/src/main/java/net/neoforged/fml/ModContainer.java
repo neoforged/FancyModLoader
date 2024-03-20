@@ -160,6 +160,10 @@ public abstract class ModContainer
         addConfig(new ModConfig(type, configSpec, this));
     }
 
+    public void registerConfig(ModConfig.Type type, IConfigSpec<?> configSpec, String fileName) {
+        addConfig(new ModConfig(type, configSpec, this, fileName));
+    }
+
     /**
      * Does this mod match the supplied mod?
      *
