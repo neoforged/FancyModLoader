@@ -9,6 +9,7 @@ import net.neoforged.bus.api.BusBuilder;
 import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.config.IConfigSpec;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.loading.progress.ProgressMeter;
@@ -153,6 +154,10 @@ public abstract class ModContainer
 
     public void addConfig(final ModConfig modConfig) {
        configs.put(modConfig.getType(), modConfig);
+    }
+
+    public void registerConfig(ModConfig.Type type, IConfigSpec<?> configSpec) {
+        addConfig(new ModConfig(type, configSpec, this));
     }
 
     /**
