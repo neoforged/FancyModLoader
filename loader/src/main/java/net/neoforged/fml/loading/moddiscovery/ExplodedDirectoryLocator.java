@@ -41,7 +41,7 @@ public class ExplodedDirectoryLocator implements IModLocator {
                 mjm.setModFile(mf);
                 mods.put(explodedMod, mf);
             } else {
-                LOGGER.warn(LogMarkers.LOADING, "Failed to find exploded resource mods.toml in directory {}", explodedMod.paths().get(0).toString());
+                LOGGER.warn(LogMarkers.LOADING, "Failed to find exploded resource {} in directory {}", AbstractModProvider.MODS_TOML, explodedMod.paths().get(0).toString());
             }
         });
         return mods.values().stream().map(mf->new IModLocator.ModFileOrException(mf, null)).toList();
