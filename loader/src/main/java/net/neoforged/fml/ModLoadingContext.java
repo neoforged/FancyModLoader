@@ -48,25 +48,19 @@ public class ModLoadingContext
         getActiveContainer().registerExtensionPoint(point, extension);
     }
 
+    /**
+     * @deprecated Use the corresponding method {@link ModContainer#registerConfig(ModConfig.Type, IConfigSpec)}
+     */
+    @Deprecated(forRemoval = true)
     public void registerConfig(ModConfig.Type type, IConfigSpec<?> spec) {
-        if (spec.isEmpty())
-        {
-            // This handles the case where a mod tries to register a config, without any options configured inside it.
-            LOGGER.debug("Attempted to register an empty config for type {} on mod {}", type, getActiveContainer().getModId());
-            return;
-        }
-
         getActiveContainer().registerConfig(type, spec);
     }
 
+    /**
+     * @deprecated Use the corresponding method {@link ModContainer#registerConfig(ModConfig.Type, IConfigSpec, String)}
+     */
+    @Deprecated(forRemoval = true)
     public void registerConfig(ModConfig.Type type, IConfigSpec<?> spec, String fileName) {
-        if (spec.isEmpty())
-        {
-            // This handles the case where a mod tries to register a config, without any options configured inside it.
-            LOGGER.debug("Attempted to register an empty config for type {} on mod {} using file name {}", type, getActiveContainer().getModId(), fileName);
-            return;
-        }
-
         getActiveContainer().registerConfig(type, spec, fileName);
     }
 
