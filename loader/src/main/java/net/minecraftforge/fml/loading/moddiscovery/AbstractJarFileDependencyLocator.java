@@ -27,7 +27,7 @@ public abstract class AbstractJarFileDependencyLocator extends AbstractJarFileMo
             return Optional.of(Files.newInputStream(modFile.findResource(path.toString())));
         }
         catch (final FileNotFoundException | NoSuchFileException e) {
-            LOGGER.debug("Failed to load resource {} from {}, it does not contain dependency information.", path, modFile.getFileName());
+            LOGGER.trace("Failed to load resource {} from {}, it does not contain dependency information.", path, modFile.getFileName());
             return Optional.empty();
         }
         catch (final Exception e) {
