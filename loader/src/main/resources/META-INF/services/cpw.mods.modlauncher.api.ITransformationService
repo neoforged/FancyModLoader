@@ -1,1 +1,2 @@
 net.neoforged.fml.loading.FMLServiceProvider
+net.neoforged.fml.loading.MixinSyntheticPackageProvider
