@@ -29,7 +29,7 @@ import java.util.function.Function;
 public abstract class AbstractModProvider implements IModProvider
 {
     private static final   Logger LOGGER    = LogUtils.getLogger();
-    protected static final String MODS_TOML = "META-INF/mods.toml";
+    public static final String MODS_TOML = "META-INF/neoforge.mods.toml";
     protected static final String MANIFEST = "META-INF/MANIFEST.MF";
 
     protected IModLocator.ModFileOrException createMod(Path... path) {

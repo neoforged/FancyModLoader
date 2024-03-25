@@ -9,6 +9,7 @@ import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.niofs.union.UnionPathFilter;
 import net.neoforged.fml.loading.FileUtils;
+import net.neoforged.fml.loading.moddiscovery.AbstractModProvider;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -119,7 +120,7 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
     }
 
     protected String[] getExcludedPrefixes() {
-        return new String[]{ "net/neoforged/neoforge/", "META-INF/services/", "META-INF/coremods.json", "META-INF/mods.toml" };
+        return new String[]{ "net/neoforged/neoforge/", "META-INF/services/", "META-INF/coremods.json", AbstractModProvider.MODS_TOML};
     }
 
     private static String getRandomNumbers(int length) {

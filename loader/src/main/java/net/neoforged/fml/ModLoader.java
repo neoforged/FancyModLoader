@@ -14,6 +14,7 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
 import net.neoforged.fml.loading.LoadingModList;
+import net.neoforged.fml.loading.moddiscovery.AbstractModProvider;
 import net.neoforged.fml.loading.moddiscovery.InvalidModIdentifier;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
@@ -277,7 +278,7 @@ public class ModLoader
 
             var missingClasses = new ArrayList<>(modIds);
             missingClasses.removeAll(containerIds);
-            LOGGER.fatal(LOADING, "The following classes are missing, but are reported in the mods.toml: {}", missingClasses);
+            LOGGER.fatal(LOADING, "The following classes are missing, but are reported in the {}: {}", AbstractModProvider.MODS_TOML, missingClasses);
 
             var missingMods = new ArrayList<>(containerIds);
             missingMods.removeAll(modIds);
