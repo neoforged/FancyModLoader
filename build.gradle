@@ -2,14 +2,20 @@ plugins {
     id 'com.github.ben-manes.versions' version '0.39.0'
     id 'org.javamodularity.moduleplugin' version '1.8.7'
     id 'net.neoforged.licenser' version '0.7.2' apply false
-    id 'net.neoforged.gradleutils' version '[2.0.18,3)'
+    id 'net.neoforged.gradleutils' version '3.0.0-alpha.10'
 }
 
 changelog {
     disableAutomaticPublicationRegistration()
 }
 
-logger.lifecycle("FML version {}", gradleutils.getTagOffsetVersion())
+gradleutils.version {
+    branches {
+        suffixBranch()
+    }
+}
+
+println "Version: ${project.version = gradleutils.version}"
 
 allprojects {
     apply plugin: 'java-library'
@@ -22,8 +28,12 @@ allprojects {
     apply plugin: 'net.neoforged.licenser'
     apply plugin: 'net.neoforged.gradleutils'
 
+    gradleutils {
+        setupSigning(signAllPublications: true)
+    }
+
     group = 'net.neoforged.fancymodloader'
-    version = gradleutils.getTagOffsetVersion()
+    version = rootProject.version
 
     repositories {
         mavenCentral()
@@ -57,7 +67,7 @@ allprojects {
 }
 
 subprojects { subProject ->
-    subProject.version = gradleutils.getTagOffsetVersion()
+    subProject.version = rootProject.version
 
     jar.doFirst {
         manifest.attributes(
@@ -67,9 +77,9 @@ subprojects { subProject ->
                 'FMLModType'  : subProject.name.startsWith("language") ? 'LANGPROVIDER' : subProject.name == "events" ? 'GAMELIBRARY' : 'LIBRARY',
                 'Specification-Title'   : "FML${subProject.name}",
                 'Specification-Vendor'  : 'NeoForged',
-                'Specification-Version' : "${subProject.version.split('\\.')[0]}",
+                'Specification-Version' : "${subProject.version.toString().split('\\.')[0]}",
                 'Implementation-Title'  : "FML $subProject.name",
-                'Implementation-Version': "${subProject.version.split('\\.')[0]}.${subProject.version.split('\\.')[1]}",
+                'Implementation-Version': "${subProject.version.toString().split('\\.')[0]}.${subProject.version.toString().split('\\.')[1]}",
                 'Implementation-Vendor' : 'NeoForged'
         )
     }
@@ -98,20 +108,11 @@ subprojects { subProject ->
         }
 
         repositories {
-            maven gradleutils.getPublishingForgeMaven()
-        }
-    }
-
-    if (System.getenv('GPG_PRIVATE_KEY')) {
-        signing {
-            final signingKey = System.getenv('GPG_PRIVATE_KEY') ?: ''
-            final signingPassword = System.getenv('GPG_KEY_PASSWORD') ?: ''
-            useInMemoryPgpKeys(signingKey, signingPassword)
-            sign publishing.publications.maven
+            maven gradleutils.publishingMaven
         }
     }
 
     changelog {
-        fromTag "1.0"
+        from "1.0"
     }
 }

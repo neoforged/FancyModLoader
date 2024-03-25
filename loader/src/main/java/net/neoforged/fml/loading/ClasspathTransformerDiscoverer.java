@@ -7,6 +7,7 @@ package net.neoforged.fml.loading;
 
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
+import net.neoforged.fml.loading.targets.CommonLaunchHandler;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.File;
@@ -15,6 +16,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+
+import static net.neoforged.fml.loading.TransformerDiscovererConstants.shouldLoadInServiceLayer;
 
 public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryService {
 
@@ -41,8 +44,11 @@ public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryServ
     
     private void scan(final Path gameDirectory) {
         try {
-            locateTransformers("META-INF/services/cpw.mods.modlauncher.api.ITransformationService");
-            locateTransformers("META-INF/services/net.neoforged.neoforgespi.locating.IModLocator");
+            for (final String serviceClass : TransformerDiscovererConstants.SERVICES) {
+                locateTransformers("META-INF/services/" + serviceClass);
+            }
+
+            scanModClasses();
         } catch (IOException e) {
             LogManager.getLogger().error("Error during discovery of transform services from the classpath", e);
         }
@@ -58,4 +64,14 @@ public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryServ
             found.add(new NamedPath(path.toUri().toString(), path));
         }
     }
+
+    private void scanModClasses() {
+        final Map<String, List<Path>> modClassPaths = CommonLaunchHandler.getModClasses();
+        modClassPaths.forEach((modid, paths) -> {
+            if (shouldLoadInServiceLayer(paths.toArray(Path[]::new))) {
+                found.add(new NamedPath(modid, paths.toArray(Path[]::new)));
+            }
+        });
+    }
+
 }

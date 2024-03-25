@@ -10,8 +10,8 @@ import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
-import net.neoforged.fml.loading.ImmediateWindowProvider;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
+import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFWImage;
@@ -465,6 +465,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         // Show the window
         glfwShowWindow(window);
         glfwGetWindowPos(window, x, y);
+        handleLastGLFWError((error, description) -> LOGGER.debug(String.format("Suppressing GLFW get window position error: [0x%X]%s", error, description)));
         this.winX = x[0];
         this.winY = y[0];
         glfwGetFramebufferSize(window, x, y);
