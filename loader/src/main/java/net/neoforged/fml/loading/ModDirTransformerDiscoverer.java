@@ -6,9 +6,6 @@
 package net.neoforged.fml.loading;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.jarhandling.JarContentsBuilder;
-import cpw.mods.jarhandling.JarMetadata;
-import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
@@ -93,9 +90,6 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
         if (!path.toString().endsWith(".jar")) return false;
         if (LamdbaExceptionUtils.uncheck(() -> Files.size(path)) == 0) return false;
 
-        JarMetadata metadata = JarMetadata.from(new JarContentsBuilder().paths(path).build());
-        return metadata.providers().stream()
-            .map(SecureJar.Provider::serviceName)
-            .anyMatch(TransformerDiscovererConstants.SERVICES::contains);
+        return TransformerDiscovererConstants.shouldLoadInServiceLayer(path);
     }
 }

@@ -92,7 +92,7 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
             .toList();
     }
 
-    protected final Map<String, List<Path>> getModClasses() {
+    public static Map<String, List<Path>> getModClasses() {
         final String modClasses = Optional.ofNullable(System.getenv("MOD_CLASSES")).orElse("");
         LOGGER.debug(LogMarkers.CORE, "Got mod coordinates {} from env", modClasses);
 

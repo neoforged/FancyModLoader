@@ -9,6 +9,7 @@ import com.electronwill.nightconfig.core.Config;
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
+import net.neoforged.fml.loading.ClasspathTransformerDiscoverer;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.neoforgespi.language.IModFileInfo;
@@ -47,7 +48,9 @@ public class MinecraftLocator extends AbstractModProvider implements IModLocator
                 .map(SecureJar::from)
                 .map(sj -> new ModFile(sj, this, ModFileParser::modsTomlParser))
                 .collect(Collectors.<IModFile>toList());
+        var otherModsExcluded = ClasspathTransformerDiscoverer.allExcluded();
         var othermods = baseMC.otherModPaths().stream()
+                .filter(p -> p.stream().noneMatch(otherModsExcluded::contains)) //We cannot load MOD_CLASSES from the classpath if they are loaded on the SERVICE layer.
                 .map(p -> createMod(p.toArray(Path[]::new)))
                 .filter(Objects::nonNull);
         artifacts.add(mcjar);
