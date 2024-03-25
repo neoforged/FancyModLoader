@@ -5,7 +5,7 @@ name: Release
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "1.20.4" ]
 
 permissions:
   contents: read
@@ -25,4 +25,3 @@ jobs:
       GPG_SUBKEY: ${{ secrets.GPG_SUBKEY }}
       GPG_SUBKEY_ID: ${{ secrets.GPG_SUBKEY_ID }}
       GPG_SUBKEY_PASSWORD: ${{ secrets.GPG_SUBKEY_PASSWORD }}
-      
