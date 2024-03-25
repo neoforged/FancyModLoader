@@ -9,6 +9,7 @@ import net.neoforged.bus.api.BusBuilder;
 import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.config.IConfigSpec;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.loading.progress.ProgressMeter;
@@ -153,6 +154,40 @@ public abstract class ModContainer
 
     public void addConfig(final ModConfig modConfig) {
        configs.put(modConfig.getType(), modConfig);
+    }
+
+    /**
+     * Adds a {@link ModConfig} with the given type and spec. An empty config spec will be ignored and a debug line will
+     * be logged.
+     * @param type The type of config
+     * @param configSpec A config spec
+     */
+    public void registerConfig(ModConfig.Type type, IConfigSpec<?> configSpec) {
+        if (configSpec.isEmpty())
+        {
+            // This handles the case where a mod tries to register a config, without any options configured inside it.
+            LOGGER.debug("Attempted to register an empty config for type {} on mod {}", type, modId);
+            return;
+        }
+
+        addConfig(new ModConfig(type, configSpec, this));
+    }
+
+    /**
+     * Adds a {@link ModConfig} with the given type, spec, and overridden file name. An empty config spec will be
+     * ignored and a debug line will be logged.
+     * @param type The type of config
+     * @param configSpec A config spec
+     */
+    public void registerConfig(ModConfig.Type type, IConfigSpec<?> configSpec, String fileName) {
+        if (configSpec.isEmpty())
+        {
+            // This handles the case where a mod tries to register a config, without any options configured inside it.
+            LOGGER.debug("Attempted to register an empty config for type {} on mod {} using file name {}", type, modId, fileName);
+            return;
+        }
+
+        addConfig(new ModConfig(type, configSpec, this, fileName));
     }
 
     /**
