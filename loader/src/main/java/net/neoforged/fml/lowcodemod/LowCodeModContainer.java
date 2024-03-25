@@ -7,7 +7,6 @@ package net.neoforged.fml.lowcodemod;
 
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.IExtensionPoint;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.ModFileScanData;
@@ -29,7 +28,6 @@ public class LowCodeModContainer extends ModContainer
         this.scanResults = modFileScanResults;
         this.modInstance = new Object();
         this.contextExtension = () -> null;
-        this.extensionPoints.remove(IExtensionPoint.DisplayTest.class);
     }
 
     @Override
