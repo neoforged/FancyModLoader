@@ -134,7 +134,7 @@ public class FMLServiceProvider implements ITransformationService
     public @NotNull List<ITransformer> transformers()
     {
         LOGGER.debug(CORE, "Loading coremod transformers");
-        return new ArrayList<>(FMLLoader.getCoreModProvider().getCoreModTransformers());
+        return (List) FMLLoader.getCoreModEngine().initializeCoreMods();
     }
 
 }
