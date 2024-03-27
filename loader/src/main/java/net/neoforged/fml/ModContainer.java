@@ -22,7 +22,6 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -64,24 +63,6 @@ public abstract class ModContainer
         this.namespace = this.modId;
         this.modInfo = info;
         this.modLoadingStage = ModLoadingStage.CONSTRUCT;
-
-        final String displayTestString = info.getConfig().<String>getConfigElement("displayTest").orElse("MATCH_VERSION"); // missing defaults to DEFAULT type
-        var displayTest = switch (displayTestString) {
-            case "MATCH_VERSION" -> // default displaytest checks for version string match
-                    new IExtensionPoint.DisplayTest(() -> this.modInfo.getVersion().toString(),
-                        (incoming, isNetwork) -> Objects.equals(incoming, this.modInfo.getVersion().toString()));
-            case "IGNORE_SERVER_VERSION" -> // Ignores any version information coming from the server - use for server only mods
-                    new IExtensionPoint.DisplayTest(() -> IExtensionPoint.DisplayTest.IGNORESERVERONLY, (incoming, isNetwork) -> true);
-            case "IGNORE_ALL_VERSION" -> // Ignores all information and provides no information
-                    new IExtensionPoint.DisplayTest(() -> "", (incoming, isNetwork) -> true);
-            case "NONE" -> null; // NO display test at all - use this if you're going to do your own display test
-            default -> // any other value throws an exception
-                    throw new IllegalArgumentException("Invalid displayTest value supplied in mods.toml");
-        };
-        if (displayTest != null)
-            registerExtensionPoint(IExtensionPoint.DisplayTest.class, displayTest);
-        else
-            extensionPoints.remove(IExtensionPoint.DisplayTest.class);
     }
 
     /**
