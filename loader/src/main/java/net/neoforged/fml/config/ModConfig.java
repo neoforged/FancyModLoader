@@ -9,11 +9,13 @@ import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.file.FileConfig;
 import com.electronwill.nightconfig.toml.TomlFormat;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.loading.StringUtils;
 
 import java.io.ByteArrayInputStream;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.function.Function;
 
 public class ModConfig
 {
@@ -76,7 +78,11 @@ public class ModConfig
 
     public void acceptSyncedConfig(byte[] bytes) {
         setConfigData(TomlFormat.instance().createParser().parse(new ByteArrayInputStream(bytes)));
-        IConfigEvent.reloading(this).post();
+        postConfigEvent(ModConfigEvent.Reloading::new);
+    }
+
+    void postConfigEvent(Function<ModConfig, ? extends ModConfigEvent> constructor) {
+        container.acceptEvent(constructor.apply(this));
     }
 
     public enum Type {
