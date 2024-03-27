@@ -34,6 +34,7 @@ public class JarContentsImpl implements JarContents {
             .filter(fsp->fsp.getScheme().equals("union"))
             .findFirst()
             .orElseThrow(()->new IllegalStateException("Couldn't find UnionFileSystemProvider"));
+    private static final Set<String> NAUGHTY_SERVICE_FILES = Set.of("org.codehaus.groovy.runtime.ExtensionModule");
 
     final UnionFileSystem filesystem;
     // Code signing data
@@ -202,8 +203,9 @@ public class JarContentsImpl implements JarContents {
         if (this.providers == null) {
             final var services = this.filesystem.getRoot().resolve("META-INF/services/");
             if (Files.exists(services)) {
-                try (var walk = Files.walk(services)) {
+                try (var walk = Files.walk(services, 1)) {
                     this.providers = walk.filter(path->!Files.isDirectory(path))
+                            .filter(path -> !NAUGHTY_SERVICE_FILES.contains(path.getFileName().toString()))
                             .map((Path path1) -> SecureJar.Provider.fromPath(path1, filesystem.getFilesystemFilter()))
                             .toList();
                 } catch (IOException e) {
