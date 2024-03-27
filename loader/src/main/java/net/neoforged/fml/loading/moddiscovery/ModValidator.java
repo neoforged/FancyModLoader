@@ -35,8 +35,7 @@ public class ModValidator {
         this.modFiles = modFiles;
         this.candidateMods = lst(modFiles.get(IModFile.Type.MOD));
         this.candidateMods.addAll(lst(modFiles.get(IModFile.Type.GAMELIBRARY)));
-        this.candidatePlugins = lst(modFiles.get(IModFile.Type.LANGPROVIDER));
-        this.candidatePlugins.addAll(lst(modFiles.get(IModFile.Type.LIBRARY)));
+        this.candidatePlugins = lst(modFiles.get(IModFile.Type.LIBRARY));
         this.discoveryErrorData = discoveryErrorData;
         this.brokenFiles = brokenFiles.stream().map(IModFileInfo::getFile).collect(Collectors.toList()); // mutable list
     }

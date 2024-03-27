@@ -131,19 +131,16 @@ public interface IModFile {
      */
     enum Type {
         /**
-         * A mod file holds mod code and loads in the game module layer
+         * A mod file holds mod code and loads in the game module layer.
          */
         MOD,
         /**
-         * A library can reference lang providers in the plugin module layer
+         * A library can provide lang providers in the plugin module layer,
+         * and/or provides code that is not mod- or Minecraft- related.
          */
         LIBRARY,
         /**
-         * A language provider provides a custom way to load mods in the plugin module layer
-         */
-        LANGPROVIDER,
-        /**
-         * A game library can reference MC code and loads in the game module layer
+         * A game library can reference MC code and loads in the game module layer.
          */
         GAMELIBRARY
     }

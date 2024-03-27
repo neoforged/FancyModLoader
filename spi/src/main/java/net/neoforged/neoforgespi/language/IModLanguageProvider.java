@@ -19,14 +19,17 @@
 
 package net.neoforged.neoforgespi.language;
 
+import net.neoforged.neoforgespi.locating.IModFile;
+
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * Loaded as a ServiceLoader, from the classpath. ExtensionPoint are loaded from
- * the mods directory, with the FMLType META-INF of LANGPROVIDER.
+ * Loaded as a ServiceLoader, from the plugin layer.
+ * Jars in the mods directory must have an {@code FMLModType} of {@link IModFile.Type#LIBRARY}
+ * to be loaded on the plugin layer.
  *
- * Version data is read from the manifest's implementation version.
+ * <p>Version data is read from the manifest's implementation version.
  */
 public interface IModLanguageProvider
 {
