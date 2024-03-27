@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class AbstractModProvider implements IModProvider
 {
@@ -43,10 +45,15 @@ public abstract class AbstractModProvider implements IModProvider
             type = getDefaultJarModType();
         }
         if (jarContents.findFile(MODS_TOML).isPresent()) {
-            LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MODS_TOML, type, path);
-            var mjm = new ModJarMetadata(jarContents);
-            mod = new ModFile(SecureJar.from(jarContents, mjm), this, ModFileParser::modsTomlParser);
-            mjm.setModFile(mod);
+            try {
+                LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MODS_TOML, type, path);
+                var mjm = new ModJarMetadata(jarContents);
+                mod = new ModFile(SecureJar.from(jarContents, mjm), this, ModFileParser::modsTomlParser);
+                mjm.setModFile(mod);
+            } catch (InvalidModFileException invalidModException) {
+                LOGGER.error("Mod at [{}] has an invalid mod file: ", Stream.of(path).map(p -> p.toAbsolutePath().toString()).collect(Collectors.joining(", ")), invalidModException);
+                return new IModLocator.ModFileOrException(null, invalidModException);
+            }
         } else if (type != null) {
             LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MANIFEST, type, path);
             mod = new ModFile(SecureJar.from(jarContents), this, this::manifestParser, type);

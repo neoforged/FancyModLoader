@@ -43,14 +43,19 @@ public class ModSorter
         this.uniqueModListBuilder = new UniqueModListBuilder(modFiles);
     }
 
-    public static LoadingModList sort(List<ModFile> mods, final List<EarlyLoadingException.ExceptionData> errors)
+    public static LoadingModList sort(List<ModFile> mods, final List<EarlyLoadingException.ExceptionData> discoveryError)
     {
         final ModSorter ms = new ModSorter(mods);
+        // If a discovery error was encountered, abort
+        if (!discoveryError.isEmpty()) {
+            return ms.buildSystemMods(new EarlyLoadingException("encountered discovery error", null, discoveryError));
+        }
+
         try {
             ms.buildUniqueList();
         } catch (EarlyLoadingException e) {
             // We cannot build any list with duped mods. We have to abort immediately and report it
-            return LoadingModList.of(ms.systemMods, ms.systemMods.stream().map(mf->(ModInfo)mf.getModInfos().get(0)).collect(toList()), e);
+            return ms.buildSystemMods(e);
         }
 
         // try and validate dependencies
@@ -60,7 +65,7 @@ public class ModSorter
 
         // if we miss a dependency or detect an incompatibility, we abort now
         if (!resolutionResult.versionResolution.isEmpty() || !resolutionResult.incompatibilities.isEmpty()) {
-            list = LoadingModList.of(ms.systemMods, ms.systemMods.stream().map(mf->(ModInfo)mf.getModInfos().get(0)).collect(toList()), new EarlyLoadingException("failure to validate mod list", null, resolutionResult.buildErrorMessages()));
+            list = ms.buildSystemMods(new EarlyLoadingException("failure to validate mod list", null, resolutionResult.buildErrorMessages()));
         } else {
             // Otherwise, lets try and sort the modlist and proceed
             EarlyLoadingException earlyLoadingException = null;
@@ -81,6 +86,10 @@ public class ModSorter
             ));
         }
         return list;
+    }
+
+    public LoadingModList buildSystemMods(EarlyLoadingException exception) {
+        return LoadingModList.of(systemMods, systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).toList(), exception);
     }
 
     @SuppressWarnings("UnstableApiUsage")
