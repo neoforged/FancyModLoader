@@ -6,11 +6,13 @@
 package net.neoforged.fml.loading;
 
 import com.mojang.logging.LogUtils;
+import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.api.*;
 import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionSpecBuilder;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.neoforgespi.Environment;
+import net.neoforged.neoforgespi.coremod.ICoreMod;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
@@ -20,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.BiFunction;
 import static net.neoforged.fml.loading.LogMarkers.CORE;
@@ -134,7 +137,23 @@ public class FMLServiceProvider implements ITransformationService
     public @NotNull List<ITransformer> transformers()
     {
         LOGGER.debug(CORE, "Loading coremod transformers");
-        return new ArrayList<>(FMLLoader.getCoreModProvider().getCoreModTransformers());
+        var result = new ArrayList<ITransformer>(FMLLoader.getCoreModProvider().getCoreModTransformers());
+
+        // Find all Java core mods
+        var pluginLayer = Launcher.INSTANCE.findLayerManager()
+                .flatMap(m -> m.getLayer(IModuleLayerManager.Layer.PLUGIN))
+                .orElseThrow();
+        for (var coreMod : ServiceLoader.load(pluginLayer, ICoreMod.class)) {
+            for (var transformer : coreMod.getTransformers()) {
+                if (transformer == null) {
+                    throw new IllegalStateException("Core mod " +  coreMod +  " is trying to add null transformer");
+                }
+                LOGGER.debug("Adding {} transformer from core-mod {}", transformer.targets(), coreMod);
+                result.add(transformer);
+            }
+        }
+
+        return result;
     }
 
 }
