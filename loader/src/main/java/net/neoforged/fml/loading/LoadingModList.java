@@ -76,7 +76,7 @@ public class LoadingModList
                 .map(ModFileInfo::getFile)
                 .map(ModFile::getCoreMods)
                 .flatMap(List::stream)
-                .forEach(FMLLoader.getCoreModProvider()::addCoreMod);
+                .forEach(FMLLoader.getCoreModEngine()::loadCoreMod);
     }
 
     public void addMixinConfigs() {

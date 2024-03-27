@@ -5,7 +5,7 @@
 
 package net.neoforged.fml.loading.moddiscovery;
 
-import net.neoforged.neoforgespi.coremod.ICoreModFile;
+import net.neoforged.coremod.ICoreModFile;
 
 import java.io.IOException;
 import java.io.Reader;
