@@ -453,7 +453,8 @@ public class UnionFileSystem extends FileSystem {
         var sPath = path.toString();
         if (path.getFileSystem() == basePath.getFileSystem()) // Directories, zips will be different file systems.
             sPath = basePath.relativize(path).toString().replace('\\', '/');
-        if (Files.isDirectory(path))
+        var attrs = getFileAttributes(path);
+        if (attrs.isPresent() && attrs.get().isDirectory())
             sPath += '/';
         if (sPath.length() > 1 && sPath.startsWith("/"))
             sPath = sPath.substring(1);
