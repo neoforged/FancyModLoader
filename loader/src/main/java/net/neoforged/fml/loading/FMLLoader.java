@@ -11,7 +11,7 @@ import cpw.mods.modlauncher.api.*;
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.accesstransformer.ml.AccessTransformerService;
-import net.neoforged.coremod.CoreModEngine;
+import net.neoforged.coremod.CoreModScriptingEngine;
 import net.neoforged.fml.common.asm.RuntimeDistCleaner;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.BackgroundScanHandler;
@@ -35,10 +35,9 @@ public class FMLLoader
     private static final Logger LOGGER = LogUtils.getLogger();
     private static AccessTransformerEngine accessTransformer;
     private static ModDiscoverer modDiscoverer;
-    private static CoreModEngine coreModEngine;
+    private static CoreModScriptingEngine coreModEngine;
     private static LanguageLoadingProvider languageLoadingProvider;
     private static Dist dist;
-    private static String naming;
     private static LoadingModList loadingModList;
     private static RuntimeDistCleaner runtimeDistCleaner;
     private static Path gamePath;
@@ -88,7 +87,7 @@ public class FMLLoader
         });
         LOGGER.debug(LogMarkers.CORE, "Found Runtime Dist Cleaner");
 
-        coreModEngine = new CoreModEngine();
+        coreModEngine = new CoreModScriptingEngine();
         LOGGER.debug(LogMarkers.CORE, "FML found CoreMods version : {}", coreModEngine.getClass().getPackage().getImplementationVersion());
 
         LOGGER.debug(LogMarkers.CORE, "Found ForgeSPI package implementation version {}", Environment.class.getPackage().getImplementationVersion());
@@ -126,7 +125,6 @@ public class FMLLoader
         launchHandlerName = launchHandler.get().name();
         gamePath = environment.getProperty(IEnvironment.Keys.GAMEDIR.get()).orElse(Paths.get(".").toAbsolutePath());
 
-        naming = commonLaunchHandler.getNaming();
         dist = commonLaunchHandler.getDist();
         production = commonLaunchHandler.isProduction();
 
@@ -157,7 +155,7 @@ public class FMLLoader
         return List.of(modValidator.getModResources());
     }
 
-    static CoreModEngine getCoreModEngine() {
+    static CoreModScriptingEngine getCoreModEngine() {
         return coreModEngine;
     }
 
@@ -204,14 +202,6 @@ public class FMLLoader
     public static Path getGamePath()
     {
         return gamePath;
-    }
-
-    public static String getNaming() {
-        return naming;
-    }
-
-    public static Optional<BiFunction<INameMappingService.Domain, String, String>> getNameFunction(final String naming) {
-        return Launcher.INSTANCE.environment().findNameMapping(naming);
     }
 
     public static String getLauncherInfo() {

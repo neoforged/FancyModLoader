@@ -7,7 +7,6 @@ package net.neoforged.fml.loading.targets;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.ILaunchHandlerService;
-import cpw.mods.modlauncher.api.ITransformingClassLoaderBuilder;
 import cpw.mods.modlauncher.api.ServiceRunner;
 import cpw.mods.niofs.union.UnionPathFilter;
 import net.neoforged.fml.loading.FMLLoader;
@@ -39,8 +38,6 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
 
     public abstract Dist getDist();
 
-    public abstract String getNaming();
-
     public boolean isProduction() {
         return false;
     }
@@ -50,11 +47,6 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
     }
 
     public abstract LocatedPaths getMinecraftPaths();
-
-    @Override
-    public void configureTransformationClassLoader(final ITransformingClassLoaderBuilder builder) {
-
-    }
 
     protected String[] preLaunch(String[] arguments, ModuleLayer layer) {
         // In dev, do not overwrite the logging configuration if the user explicitly set another one.

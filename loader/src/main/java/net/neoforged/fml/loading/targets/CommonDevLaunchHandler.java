@@ -21,7 +21,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
-    @Override public String getNaming() { return "mcp"; }
     @Override public boolean isProduction() { return false; }
 
     @Override

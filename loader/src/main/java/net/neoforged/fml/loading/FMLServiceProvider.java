@@ -131,10 +131,10 @@ public class FMLServiceProvider implements ITransformationService
     }
 
     @Override
-    public @NotNull List<ITransformer> transformers()
+    public @NotNull List<? extends ITransformer<?>> transformers()
     {
         LOGGER.debug(CORE, "Loading coremod transformers");
-        return (List) FMLLoader.getCoreModEngine().initializeCoreMods();
+        return FMLLoader.getCoreModEngine().initializeCoreMods();
     }
 
 }

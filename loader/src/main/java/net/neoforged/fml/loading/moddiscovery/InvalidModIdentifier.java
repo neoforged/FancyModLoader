@@ -5,7 +5,7 @@
 
 package net.neoforged.fml.loading.moddiscovery;
 
-import cpw.mods.modlauncher.api.LamdbaExceptionUtils.Supplier_WithExceptions;
+import cpw.mods.modlauncher.api.LambdaExceptionUtils;
 import net.neoforged.fml.loading.StringUtils;
 
 import java.nio.file.Path;
@@ -13,8 +13,6 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.zip.ZipFile;
-
-import static cpw.mods.modlauncher.api.LamdbaExceptionUtils.*;
 
 public enum InvalidModIdentifier {
 
@@ -39,12 +37,12 @@ public enum InvalidModIdentifier {
 
     public static Optional<String> identifyJarProblem(Path path)
     {
-        Optional<ZipFile> zfo = optionalFromException(() -> new ZipFile(path.toFile()));
+        Optional<ZipFile> zfo = tryOpenFile(path);
         Optional<String> result = Arrays.stream(values()).
                                          filter(i -> i.ident.test(path, zfo)).
                                          map(InvalidModIdentifier::getReason).
                                          findAny();
-        zfo.ifPresent(rethrowConsumer(ZipFile::close));
+        zfo.ifPresent(LambdaExceptionUtils.rethrowConsumer(ZipFile::close));
         return result;
     }
 
@@ -53,14 +51,10 @@ public enum InvalidModIdentifier {
         return (f, zfo) -> zfo.map(zf -> zf.getEntry(filename) != null).orElse(false);
     }
 
-    private static <T> Optional<T> optionalFromException(Supplier_WithExceptions<T, ? extends Exception> supp)
-    {
-        try
-        {
-            return Optional.of(supp.get());
-        }
-        catch (Exception e)
-        {
+    private static Optional<ZipFile> tryOpenFile(Path path) {
+        try {
+            return Optional.of(new ZipFile(path.toFile()));
+        } catch (Exception ignored) {
             return Optional.empty();
         }
     }

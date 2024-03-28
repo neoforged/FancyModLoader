@@ -6,7 +6,7 @@
 package net.neoforged.fml.loading;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
+import cpw.mods.modlauncher.api.LambdaExceptionUtils;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
 import org.slf4j.Logger;
@@ -88,7 +88,7 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
     private static boolean shouldLoadInServiceLayer(Path path) {
         if (!Files.isRegularFile(path)) return false;
         if (!path.toString().endsWith(".jar")) return false;
-        if (LamdbaExceptionUtils.uncheck(() -> Files.size(path)) == 0) return false;
+        if (LambdaExceptionUtils.uncheck(() -> Files.size(path)) == 0) return false;
 
         return TransformerDiscovererConstants.shouldLoadInServiceLayer(path);
     }

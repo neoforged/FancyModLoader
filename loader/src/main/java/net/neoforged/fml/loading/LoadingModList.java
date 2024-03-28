@@ -5,7 +5,7 @@
 
 package net.neoforged.fml.loading;
 
-import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
+import cpw.mods.modlauncher.api.LambdaExceptionUtils;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.BackgroundScanHandler;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
@@ -151,7 +151,7 @@ public class LoadingModList
                     final ModFileInfo next = modFileIterator.next();
                     final Path resource = next.getFile().findResource(resourceName);
                     if (Files.exists(resource)) {
-                        return LamdbaExceptionUtils.uncheck(()->new URL("modjar://" + next.getMods().get(0).getModId() + "/" + resourceName));
+                        return LambdaExceptionUtils.uncheck(()->new URL("modjar://" + next.getMods().get(0).getModId() + "/" + resourceName));
                     }
                 }
                 return null;

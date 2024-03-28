@@ -6,7 +6,7 @@
 package net.neoforged.fml.loading;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
+import cpw.mods.modlauncher.api.LambdaExceptionUtils;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -84,7 +84,7 @@ public class ModJarURLHandler extends URLStreamHandler
         // Used to cache protectiondomains by "top level object" aka the modid
         @Override
         public URL getURL() {
-            return LamdbaExceptionUtils.uncheck(()->new URL("modjar://"+modid));
+            return LambdaExceptionUtils.uncheck(()->new URL("modjar://"+modid));
         }
 
         public Optional<Manifest> getManifest() {
