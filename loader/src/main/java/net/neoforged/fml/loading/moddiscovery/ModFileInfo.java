@@ -7,7 +7,7 @@ package net.neoforged.fml.loading.moddiscovery;
 
 import com.google.common.base.Strings;
 import com.mojang.logging.LogUtils;
-import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
+import cpw.mods.modlauncher.api.LambdaExceptionUtils;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.StringUtils;
 import net.neoforged.neoforgespi.language.IConfigurable;
@@ -173,8 +173,8 @@ public class ModFileInfo implements IModFileInfo, IConfigurable
         return (signers == null ? Stream.<CodeSigner>of() : Arrays.stream(signers))
                 .flatMap(csa->csa.getSignerCertPath().getCertificates().stream())
                 .findFirst()
-                .map(LamdbaExceptionUtils.rethrowFunction(Certificate::getEncoded))
-                .map(bytes->LamdbaExceptionUtils.uncheck(()->MessageDigest.getInstance("SHA-256")).digest(bytes))
+                .map(LambdaExceptionUtils.rethrowFunction(Certificate::getEncoded))
+                .map(bytes->LambdaExceptionUtils.uncheck(()->MessageDigest.getInstance("SHA-256")).digest(bytes))
                 .map(StringUtils::binToHex)
                 .map(str-> String.join(":", str.split("(?<=\\G.{2})")));
     }

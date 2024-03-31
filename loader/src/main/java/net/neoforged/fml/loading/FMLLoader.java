@@ -11,6 +11,7 @@ import cpw.mods.modlauncher.api.*;
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.accesstransformer.ml.AccessTransformerService;
+import net.neoforged.coremod.CoreModScriptingEngine;
 import net.neoforged.fml.common.asm.RuntimeDistCleaner;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.BackgroundScanHandler;
@@ -20,7 +21,6 @@ import net.neoforged.fml.loading.moddiscovery.ModValidator;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.targets.CommonLaunchHandler;
 import net.neoforged.neoforgespi.Environment;
-import net.neoforged.neoforgespi.coremod.ICoreModProvider;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -35,10 +35,9 @@ public class FMLLoader
     private static final Logger LOGGER = LogUtils.getLogger();
     private static AccessTransformerEngine accessTransformer;
     private static ModDiscoverer modDiscoverer;
-    private static ICoreModProvider coreModProvider;
+    private static CoreModScriptingEngine coreModEngine;
     private static LanguageLoadingProvider languageLoadingProvider;
     private static Dist dist;
-    private static String naming;
     private static LoadingModList loadingModList;
     private static RuntimeDistCleaner runtimeDistCleaner;
     private static Path gamePath;
@@ -88,20 +87,8 @@ public class FMLLoader
         });
         LOGGER.debug(LogMarkers.CORE, "Found Runtime Dist Cleaner");
 
-        var coreModProviders = ServiceLoaderUtils.streamWithErrorHandling(ServiceLoader.load(FMLLoader.class.getModule().getLayer(), ICoreModProvider.class), sce -> LOGGER.error(LogMarkers.CORE, "Failed to load a coremod library, expect problems", sce)).toList();
-
-        if (coreModProviders.isEmpty()) {
-            LOGGER.error(LogMarkers.CORE, "Found no coremod provider. Cannot run");
-            throw new IncompatibleEnvironmentException("No coremod library found");
-        } else if (coreModProviders.size() > 1) {
-            LOGGER.error(LogMarkers.CORE, "Found multiple coremod providers : {}. Cannot run", coreModProviders.stream().map(p -> p.getClass().getName()).collect(Collectors.toList()));
-            throw new IncompatibleEnvironmentException("Multiple coremod libraries found");
-        }
-
-        coreModProvider = coreModProviders.get(0);
-        final Package coremodPackage = coreModProvider.getClass().getPackage();
-        LOGGER.debug(LogMarkers.CORE,"FML found CoreMod version : {}", coremodPackage.getImplementationVersion());
-
+        coreModEngine = new CoreModScriptingEngine();
+        LOGGER.debug(LogMarkers.CORE, "FML found CoreMods version : {}", coreModEngine.getClass().getPackage().getImplementationVersion());
 
         LOGGER.debug(LogMarkers.CORE, "Found ForgeSPI package implementation version {}", Environment.class.getPackage().getImplementationVersion());
         LOGGER.debug(LogMarkers.CORE, "Found ForgeSPI package specification {}", Environment.class.getPackage().getSpecificationVersion());
@@ -138,7 +125,6 @@ public class FMLLoader
         launchHandlerName = launchHandler.get().name();
         gamePath = environment.getProperty(IEnvironment.Keys.GAMEDIR.get()).orElse(Paths.get(".").toAbsolutePath());
 
-        naming = commonLaunchHandler.getNaming();
         dist = commonLaunchHandler.getDist();
         production = commonLaunchHandler.isProduction();
 
@@ -169,8 +155,8 @@ public class FMLLoader
         return List.of(modValidator.getModResources());
     }
 
-    public static ICoreModProvider getCoreModProvider() {
-        return coreModProvider;
+    static CoreModScriptingEngine getCoreModEngine() {
+        return coreModEngine;
     }
 
     public static LanguageLoadingProvider getLanguageLoadingProvider()
@@ -216,14 +202,6 @@ public class FMLLoader
     public static Path getGamePath()
     {
         return gamePath;
-    }
-
-    public static String getNaming() {
-        return naming;
-    }
-
-    public static Optional<BiFunction<INameMappingService.Domain, String, String>> getNameFunction(final String naming) {
-        return Launcher.INSTANCE.environment().findNameMapping(naming);
     }
 
     public static String getLauncherInfo() {

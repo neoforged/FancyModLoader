@@ -5,7 +5,7 @@
 
 package net.neoforged.fml.core;
 
-import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
+import cpw.mods.modlauncher.api.LambdaExceptionUtils;
 import net.neoforged.fml.IModStateTransition;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoadingStage;
@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 record ParallelTransition(ModLoadingStage stage, Class<? extends ParallelDispatchEvent> event) implements IModStateTransition {
     @Override
     public Supplier<Stream<EventGenerator<?>>> eventFunctionStream() {
-        return () -> Stream.of(IModStateTransition.EventGenerator.fromFunction(LamdbaExceptionUtils.rethrowFunction((ModContainer mc) -> event.getConstructor(ModContainer.class, ModLoadingStage.class).newInstance(mc, stage))));
+        return () -> Stream.of(IModStateTransition.EventGenerator.fromFunction(LambdaExceptionUtils.rethrowFunction((ModContainer mc) -> event.getConstructor(ModContainer.class, ModLoadingStage.class).newInstance(mc, stage))));
     }
 
     @Override

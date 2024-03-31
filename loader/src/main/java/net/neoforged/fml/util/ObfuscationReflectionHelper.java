@@ -9,7 +9,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.StringJoiner;
 
-import cpw.mods.modlauncher.api.INameMappingService;
 import net.neoforged.fml.loading.FMLLoader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,18 +37,6 @@ public class ObfuscationReflectionHelper
     private static final Marker REFLECTION = MarkerManager.getMarker("REFLECTION");
 
     /**
-     * Remaps a name using the SRG naming function
-     * @param domain The {@link INameMappingService.Domain} to use to remap the name.
-     * @param name   The name to try and remap.
-     * @return The remapped name, or the original name if it couldn't be remapped.
-     */
-    @NotNull
-    public static String remapName(INameMappingService.Domain domain, String name)
-    {
-        return FMLLoader.getNameFunction("srg").map(f->f.apply(domain, name)).orElse(name);
-    }
-
-    /**
      * Gets the value a field with the specified name in the given class.
      * Note: For performance, use {@link #findField(Class, String)} if you are getting the value more than once.
      * <p>
@@ -73,12 +60,12 @@ public class ObfuscationReflectionHelper
         }
         catch (UnableToFindFieldException e)
         {
-            LOGGER.error(REFLECTION,"Unable to locate field {} ({}) on type {}", fieldName, remapName(INameMappingService.Domain.FIELD, fieldName), classToAccess.getName(), e);
+            LOGGER.error(REFLECTION,"Unable to locate field {} ({}) on type {}", fieldName, fieldName, classToAccess.getName(), e);
             throw e;
         }
         catch (IllegalAccessException e)
         {
-            LOGGER.error(REFLECTION,"Unable to access field {} ({}) on type {}", fieldName, remapName(INameMappingService.Domain.FIELD, fieldName), classToAccess.getName(), e);
+            LOGGER.error(REFLECTION,"Unable to access field {} ({}) on type {}", fieldName, fieldName, classToAccess.getName(), e);
             throw new UnableToAccessFieldException(e);
         }
     }
@@ -142,7 +129,7 @@ public class ObfuscationReflectionHelper
 
         try
         {
-            Method m = clazz.getDeclaredMethod(remapName(INameMappingService.Domain.METHOD, methodName), parameterTypes);
+            Method m = clazz.getDeclaredMethod(methodName, parameterTypes);
             m.setAccessible(true);
             return m;
         }
@@ -218,7 +205,7 @@ public class ObfuscationReflectionHelper
 
         try
         {
-            Field f = clazz.getDeclaredField(remapName(INameMappingService.Domain.FIELD, fieldName));
+            Field f = clazz.getDeclaredField(fieldName);
             f.setAccessible(true);
             return f;
         }

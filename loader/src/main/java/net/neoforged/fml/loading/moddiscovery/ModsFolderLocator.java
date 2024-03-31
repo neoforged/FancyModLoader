@@ -6,6 +6,7 @@
 package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
+import cpw.mods.modlauncher.api.LambdaExceptionUtils;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.ModDirTransformerDiscoverer;
@@ -17,8 +18,6 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.stream.Stream;
-
-import static cpw.mods.modlauncher.api.LamdbaExceptionUtils.uncheck;
 
 /**
  * Support loading mods located in JAR files in the mods folder
@@ -48,7 +47,7 @@ public class ModsFolderLocator extends AbstractJarFileModLocator
         LOGGER.debug(LogMarkers.SCAN,"Scanning mods dir {} for mods", this.modFolder);
         var excluded = ModDirTransformerDiscoverer.allExcluded();
 
-        return uncheck(()-> Files.list(this.modFolder))
+        return LambdaExceptionUtils.uncheck(()-> Files.list(this.modFolder))
                 .filter(p-> !excluded.contains(p) && StringUtils.toLowerCase(p.getFileName().toString()).endsWith(SUFFIX))
                 .sorted(Comparator.comparing(path-> StringUtils.toLowerCase(path.getFileName().toString())));
     }
