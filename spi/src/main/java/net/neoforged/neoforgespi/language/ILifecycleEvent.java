@@ -12,4 +12,3 @@ public interface ILifecycleEvent<R extends ILifecycleEvent<?>> {
         return (R) this;
     }
 }
-

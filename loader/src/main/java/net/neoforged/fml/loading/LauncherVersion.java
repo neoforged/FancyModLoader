@@ -5,10 +5,10 @@
 
 package net.neoforged.fml.loading;
 
+import static net.neoforged.fml.loading.LogMarkers.CORE;
+
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
-
-import static net.neoforged.fml.loading.LogMarkers.CORE;
 
 public class LauncherVersion {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -21,8 +21,7 @@ public class LauncherVersion {
         LOGGER.debug(CORE, "Found FMLLauncher version {}", launcherVersion);
     }
 
-    public static String getVersion()
-    {
+    public static String getVersion() {
         return launcherVersion;
     }
 }

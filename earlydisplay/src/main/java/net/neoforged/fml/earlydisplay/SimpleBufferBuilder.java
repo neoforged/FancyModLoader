@@ -5,13 +5,12 @@
 
 package net.neoforged.fml.earlydisplay;
 
-import org.lwjgl.system.MemoryUtil;
+import static org.lwjgl.opengl.GL32C.*;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-
-import static org.lwjgl.opengl.GL32C.*;
+import org.lwjgl.system.MemoryUtil;
 
 /**
  * A very simple, Mojang inspired BufferBuilder.
@@ -35,24 +34,23 @@ import static org.lwjgl.opengl.GL32C.*;
  * @author covers1624
  */
 public class SimpleBufferBuilder implements Closeable {
-    
     private static final MemoryUtil.MemoryAllocator ALLOCATOR = MemoryUtil.getAllocator(false);
-    
+
     private static final int[] VERTEX_ARRAYS = new int[Format.values().length];
     private static final int[] VERTEX_BUFFERS = new int[Format.values().length];
     private static final int[] VERTEX_BUFFER_LENGTHS = new int[Format.values().length];
     private static int elementBuffer = 0;
     private static int elementBufferVertexLength = 0;
-    
+
     static {
         Arrays.fill(VERTEX_ARRAYS, 0);
         Arrays.fill(VERTEX_BUFFERS, 0);
         Arrays.fill(VERTEX_BUFFER_LENGTHS, 0);
     }
-    
+
     private long bufferAddr;   // Pointer to the backing buffer.
     private ByteBuffer buffer; // ByteBuffer view of the backing buffer.
-    
+
     private Format format;     // The current format we are buffering.
     private Mode mode;         // The current mode we are buffering.
     private boolean building;  // If we are building the buffer.
@@ -74,32 +72,32 @@ public class SimpleBufferBuilder implements Closeable {
         bufferAddr = ALLOCATOR.malloc(capacity);
         buffer = MemoryUtil.memByteBuffer(bufferAddr, capacity);
     }
-    
+
     public static void destroy() {
         glDeleteBuffers(VERTEX_BUFFERS);
         glDeleteBuffers(elementBuffer);
         glDeleteVertexArrays(VERTEX_ARRAYS);
     }
-    
+
     private static void ensureElementBufferLength(int vertices) {
         if (elementBufferVertexLength >= vertices) {
             return;
         }
-        
+
         // treating it as immutable storage, even though it's not
         final var newElementBuffer = glGenBuffers();
         var newElementBufferVertexLength = Math.max(1024, elementBufferVertexLength);
         while (newElementBufferVertexLength < vertices) {
             newElementBufferVertexLength *= 2;
         }
-        
+
         final var oldIndexCount = elementBufferVertexLength + elementBufferVertexLength / 2;
         final var newIndexCount = newElementBufferVertexLength + newElementBufferVertexLength / 2;
-        
+
         // allocate new buffer
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, newElementBuffer);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, newIndexCount * 4L, GL_STATIC_DRAW);
-        
+
         // mapping avoids creating additional CPU copies of the data
         // unsynchronized is fine because this is a brand-new buffer, and the old contents will be copied in afterward
         // also can invalidate the whole buffer too, similarly because brand new, don't care what was there before
@@ -107,10 +105,10 @@ public class SimpleBufferBuilder implements Closeable {
         final var mappingSize = (newIndexCount - oldIndexCount) * 4;
         final var mappedBuffer = glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, mappingOffset, mappingSize, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
-        if(mappedBuffer == null){
+        if (mappedBuffer == null) {
             throw new NullPointerException("OpenGL buffer mapping failed");
         }
-        
+
         final int quads = newElementBufferVertexLength / 4;
         final int oldQuads = elementBufferVertexLength / 4;
         // generate indices for the extension to the buffer
@@ -130,12 +128,12 @@ public class SimpleBufferBuilder implements Closeable {
             glBindBuffer(GL_COPY_READ_BUFFER, 0);
         }
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        
+
         glDeleteBuffers(elementBuffer);
         elementBuffer = newElementBuffer;
         elementBufferVertexLength = newElementBufferVertexLength;
     }
-    
+
     /**
      * Start building a new set of vertex data in the
      * given format and mode.
@@ -241,6 +239,7 @@ public class SimpleBufferBuilder implements Closeable {
         elementIndex++;
         return this;
     }
+
     /**
      * Buffer a color element.
      *
@@ -325,7 +324,7 @@ public class SimpleBufferBuilder implements Closeable {
             // Reset position to 0, limit the buffer to our index.
             buffer.position(0);
             buffer.limit(index);
-            
+
             // Upload the raw vertex data in dynamic mode.
             final int vbo = VERTEX_BUFFERS[format.ordinal()];
             final int vboSize = VERTEX_BUFFER_LENGTHS[format.ordinal()];
@@ -333,7 +332,7 @@ public class SimpleBufferBuilder implements Closeable {
             if (vboSize < index) {
                 // expand buffer, it's not big enough
                 var newVBOSize = Math.max(1024, vboSize);
-                while (newVBOSize < index){
+                while (newVBOSize < index) {
                     newVBOSize *= 2;
                 }
                 // because everything is overwritten anyway, we can do an in-place reallocation
@@ -341,17 +340,17 @@ public class SimpleBufferBuilder implements Closeable {
                 VERTEX_BUFFER_LENGTHS[format.ordinal()] = newVBOSize;
             }
             glBufferSubData(GL_ARRAY_BUFFER, 0, buffer);
-            
+
             // The number of indices for triangles is equal to our vertex count, as that is
             // what we operate in. However, for Quads, we have exactly vertices + vertices / 2
             // vertices once we convert the quads to triangles.
             indices = mode == Mode.TRIANGLES ? vertices : vertices + vertices / 2;
-            
+
             if (mode == Mode.QUADS) {
                 ensureElementBufferLength(vertices);
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
             }
-            
+
             return indices;
         } finally {
             // Reset builder state for next begin call.
@@ -382,11 +381,11 @@ public class SimpleBufferBuilder implements Closeable {
             // Make new vertex array and buffers!
             vao = glGenVertexArrays();
             vbo = glGenBuffers();
-            
+
             // Cache the vertex array and buffers for future re-use.
             VERTEX_ARRAYS[format.ordinal()] = vao;
             VERTEX_BUFFERS[format.ordinal()] = vbo;
-            
+
             // Ask our Format to set up its data layout for the vertex array.
             // but only once, the VAO saves this state
             glBindVertexArray(vao);
@@ -396,16 +395,16 @@ public class SimpleBufferBuilder implements Closeable {
         }
         // Bind the vertex array and buffers!
         glBindVertexArray(vao);
-        
+
         // Upload the data.
         int indices = finishAndUpload();
-        
+
         if (mode == Mode.QUADS) {
             glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_INT, 0);
         } else {
             glDrawArrays(GL_TRIANGLES, 0, indices);
         }
-        
+
         // Unbind the vertex array.
         glBindVertexArray(0);
     }

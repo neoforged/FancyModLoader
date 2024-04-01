@@ -5,15 +5,14 @@
 
 package net.neoforged.fml.earlydisplay;
 
-import net.neoforged.fml.loading.progress.Message;
-import net.neoforged.fml.loading.progress.ProgressMeter;
-import net.neoforged.fml.loading.progress.StartupNotificationManager;
+import static org.lwjgl.opengl.GL32C.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-
-import static org.lwjgl.opengl.GL32C.*;
+import net.neoforged.fml.loading.progress.Message;
+import net.neoforged.fml.loading.progress.ProgressMeter;
+import net.neoforged.fml.loading.progress.StartupNotificationManager;
 
 public class RenderElement {
     static final int INDEX_TEXTURE_OFFSET = 5;
@@ -23,7 +22,6 @@ public class RenderElement {
     private int retireCount;
 
     interface Renderer {
-
         void accept(SimpleBufferBuilder bb, DisplayContext context, int frame);
 
         default Renderer then(Renderer r) {
@@ -34,9 +32,11 @@ public class RenderElement {
             };
         }
     }
+
     interface TextureRenderer {
         void accept(SimpleBufferBuilder bb, DisplayContext context, int[] size, int frame);
     }
+
     interface Initializer extends Supplier<Renderer> {}
 
     interface TextGenerator {
@@ -72,28 +72,28 @@ public class RenderElement {
         List<SimpleFont.DisplayText> texts = new ArrayList<>();
         for (int i = messages.size() - 1; i >= 0; i--) {
             final StartupNotificationManager.AgeMessage pair = messages.get(i);
-            final float fade = clamp((4000.0f - (float) pair.age() - ( i - 4 ) * 1000.0f) / 5000.0f, 0.0f, 1.0f);
-            if (fade <0.01f) continue;
+            final float fade = clamp((4000.0f - (float) pair.age() - (i - 4) * 1000.0f) / 5000.0f, 0.0f, 1.0f);
+            if (fade < 0.01f) continue;
             Message msg = pair.message();
-            int colour = Math.min((int)(fade * 255f), globalAlpha) << 24 | 0xFFFFFF;
-            texts.add(new SimpleFont.DisplayText(msg.getText()+"\n", colour));
+            int colour = Math.min((int) (fade * 255f), globalAlpha) << 24 | 0xFFFFFF;
+            texts.add(new SimpleFont.DisplayText(msg.getText() + "\n", colour));
         }
 
-        font.generateVerticesForTexts(10, context.scaledHeight() -  texts.size() * font.lineSpacing() + font.descent() - 10, bb, texts.toArray(SimpleFont.DisplayText[]::new));
+        font.generateVerticesForTexts(10, context.scaledHeight() - texts.size() * font.lineSpacing() + font.descent() - 10, bb, texts.toArray(SimpleFont.DisplayText[]::new));
     }
+
     public static RenderElement monag() {
         return new RenderElement(RenderElement.initializeTexture("monagstudios.png", 45000, 4, (bb, ctx, sz, frame) -> {
             var size = 256;
             var x0 = (ctx.width() - 2 * size) / 2;
             var y0 = 64;
-            QuadHelper.loadQuad(bb, x0, x0+size, y0, y0+size/2f, 0f, 1f, 0f, 0.5f, 0xFFFFFFFF);
-            QuadHelper.loadQuad(bb, x0+size, x0+2*size, y0, y0+size/2f, 0f, 1f, 0.5f, 1f, 0xFFFFFFFF);
+            QuadHelper.loadQuad(bb, x0, x0 + size, y0, y0 + size / 2f, 0f, 1f, 0f, 0.5f, 0xFFFFFFFF);
+            QuadHelper.loadQuad(bb, x0 + size, x0 + 2 * size, y0, y0 + size / 2f, 0f, 1f, 0.5f, 1f, 0xFFFFFFFF);
         }));
-
     }
 
     public static RenderElement mojang(final int textureId, final int frameStart) {
-        return new RenderElement(()->(bb, ctx, frame) -> {
+        return new RenderElement(() -> (bb, ctx, frame) -> {
             var size = 256 * ctx.scale();
             var x0 = (ctx.scaledWidth() - 2 * size) / 2;
             var y0 = 64 * ctx.scale() + 32;
@@ -102,22 +102,23 @@ public class RenderElement {
             var fade = Math.min((frame - frameStart) * 10, 255);
             glBindTexture(GL_TEXTURE_2D, textureId);
             bb.begin(SimpleBufferBuilder.Format.POS_TEX_COLOR, SimpleBufferBuilder.Mode.QUADS);
-            QuadHelper.loadQuad(bb, x0, x0+size, y0, y0+size/2f, 0f, 1f, 0f, 0.5f, (fade << 24) | 0xFFFFFF);
-            QuadHelper.loadQuad(bb, x0+size, x0+2*size, y0, y0+size/2f, 0f, 1f, 0.5f, 1f, (fade << 24) | 0xFFFFFF);
+            QuadHelper.loadQuad(bb, x0, x0 + size, y0, y0 + size / 2f, 0f, 1f, 0f, 0.5f, (fade << 24) | 0xFFFFFF);
+            QuadHelper.loadQuad(bb, x0 + size, x0 + 2 * size, y0, y0 + size / 2f, 0f, 1f, 0.5f, 1f, (fade << 24) | 0xFFFFFF);
             bb.draw();
             glBindTexture(GL_TEXTURE_2D, 0);
         });
     }
+
     public static RenderElement logMessageOverlay(SimpleFont font) {
         return new RenderElement(RenderElement.initializeText(font, RenderElement::startupLogMessages));
     }
 
     public static RenderElement forgeVersionOverlay(SimpleFont font, String version) {
-        return new RenderElement(RenderElement.initializeText(font, (bb, fnt, ctx)->
-                font.generateVerticesForTexts(ctx.scaledWidth() - font.stringWidth(version) - 10,
-                        ctx.scaledHeight() - font.lineSpacing() + font.descent() - 10, bb,
-                        new SimpleFont.DisplayText(version, ctx.colourScheme.foreground().packedint(RenderElement.globalAlpha)))));
+        return new RenderElement(RenderElement.initializeText(font, (bb, fnt, ctx) -> font.generateVerticesForTexts(ctx.scaledWidth() - font.stringWidth(version) - 10,
+                ctx.scaledHeight() - font.lineSpacing() + font.descent() - 10, bb,
+                new SimpleFont.DisplayText(version, ctx.colourScheme.foreground().packedint(RenderElement.globalAlpha)))));
     }
+
     public static RenderElement squir() {
         return new RenderElement(RenderElement.initializeTexture("squirrel.png", 45000, 3, (bb, context, size, frame) -> {
             var inset = 5f;
@@ -135,7 +136,7 @@ public class RenderElement {
     public static RenderElement fox(SimpleFont font) {
         return new RenderElement(RenderElement.initializeTexture("fox_running.png", 128000, 2, (bb, context, size, frame) -> {
             int framecount = 28;
-            float aspect = size[0] * (float)framecount / size[1];
+            float aspect = size[0] * (float) framecount / size[1];
             int outsize = size[0];
             int offset = outsize / 6;
             var x0 = context.scaledWidth() - outsize * context.scale() + offset;
@@ -143,11 +144,12 @@ public class RenderElement {
             var y0 = context.scaledHeight() - outsize * context.scale() / aspect - font.descent() - font.lineSpacing();
             var y1 = context.scaledHeight() - font.descent() - font.lineSpacing();
             int frameidx = frame % framecount;
-            float framesize = 1 / (float)framecount;
+            float framesize = 1 / (float) framecount;
             float framepos = frameidx * framesize;
-            QuadHelper.loadQuad(bb, x0, x1, y0, y1, 0f, 1f, framepos, framepos+framesize, globalAlpha << 24 | 0xFFFFFF);
+            QuadHelper.loadQuad(bb, x0, x1, y0, y1, 0f, 1f, framepos, framepos + framesize, globalAlpha << 24 | 0xFFFFFF);
         }));
     }
+
     public static RenderElement progressBars(SimpleFont font) {
         return new RenderElement(() -> (bb, ctx, frame) -> RenderElement.startupProgressBars(font, bb, ctx, frame));
     }
@@ -171,35 +173,38 @@ public class RenderElement {
         if (acc != null)
             acc.accept(buffer, context, frameNumber);
     }
+
     private static final int BAR_HEIGHT = 20;
     private static final int BAR_WIDTH = 400;
+
     private static Renderer barRenderer(int cnt, int alpha, SimpleFont font, ProgressMeter pm, DisplayContext context) {
         var barSpacing = font.lineSpacing() - font.descent() + BAR_HEIGHT;
         var y = 250 * context.scale() + cnt * barSpacing;
         var colour = (alpha << 24) | 0xFFFFFF;
         Renderer bar;
         if (pm.steps() == 0) {
-            bar = progressBar(ctx->new int[] {(ctx.scaledWidth() - BAR_WIDTH * ctx.scale()) / 2, y + font.lineSpacing() - font.descent(), BAR_WIDTH * ctx.scale()}, f->colour, frame -> indeterminateBar(frame, cnt == 0));
+            bar = progressBar(ctx -> new int[] { (ctx.scaledWidth() - BAR_WIDTH * ctx.scale()) / 2, y + font.lineSpacing() - font.descent(), BAR_WIDTH * ctx.scale() }, f -> colour, frame -> indeterminateBar(frame, cnt == 0));
         } else {
-            bar = progressBar(ctx -> new int[]{(ctx.scaledWidth() - BAR_WIDTH * ctx.scale()) / 2, y + font.lineSpacing() - font.descent(), BAR_WIDTH * ctx.scale()}, f -> colour, f -> new float[]{0f, pm.progress()});
+            bar = progressBar(ctx -> new int[] { (ctx.scaledWidth() - BAR_WIDTH * ctx.scale()) / 2, y + font.lineSpacing() - font.descent(), BAR_WIDTH * ctx.scale() }, f -> colour, f -> new float[] { 0f, pm.progress() });
         }
         Renderer label = (bb, ctx, frame) -> renderText(font, text((ctx.scaledWidth() - BAR_WIDTH * ctx.scale()) / 2, y, pm.label().getText(), colour), bb, ctx);
         return bar.then(label);
     }
+
     private static float[] indeterminateBar(int frame, boolean isActive) {
         if (RenderElement.globalAlpha != 0xFF || !isActive) {
-            return new float[] {0f,1f};
+            return new float[] { 0f, 1f };
         } else {
             var progress = frame % 100;
-            return new float[]{clamp((progress - 2) / 100f, 0f, 1f), clamp((progress + 2) / 100f, 0f, 1f)};
+            return new float[] { clamp((progress - 2) / 100f, 0f, 1f), clamp((progress + 2) / 100f, 0f, 1f) };
         }
     }
 
     private static void memoryInfo(SimpleFont font, final SimpleBufferBuilder buffer, final DisplayContext context, final int frameNumber) {
         var y = 10 * context.scale();
         PerformanceInfo pi = context.performance();
-        final int colour = hsvToRGB((1.0f - (float)Math.pow(pi.memory(), 1.5f)) / 3f, 1.0f, 0.5f);
-        var bar = progressBar(ctx -> new int[]{(ctx.scaledWidth() - BAR_WIDTH * ctx.scale()) / 2, y, BAR_WIDTH * ctx.scale()}, f -> colour, f -> new float[]{0f, pi.memory()});
+        final int colour = hsvToRGB((1.0f - (float) Math.pow(pi.memory(), 1.5f)) / 3f, 1.0f, 0.5f);
+        var bar = progressBar(ctx -> new int[] { (ctx.scaledWidth() - BAR_WIDTH * ctx.scale()) / 2, y, BAR_WIDTH * ctx.scale() }, f -> colour, f -> new float[] { 0f, pi.memory() });
         var width = font.stringWidth(pi.text());
         Renderer label = (bb, ctx, frame) -> renderText(font, text(ctx.scaledWidth() / 2 - width / 2, y + 18, pi.text(), context.colourScheme.foreground().packedint(globalAlpha)), bb, ctx);
         bar.then(label).accept(buffer, context, frameNumber);
@@ -216,6 +221,7 @@ public class RenderElement {
     interface BarPosition {
         int[] location(DisplayContext context);
     }
+
     public static Renderer progressBar(BarPosition position, ColourFunction colourFunction, ProgressDisplay progressDisplay) {
         return (bb, context, frame) -> {
             var colour = colourFunction.colour(frame);
@@ -238,7 +244,7 @@ public class RenderElement {
             y1 -= inset;
             QuadHelper.loadQuad(bb, x0, x1, y0, y1, 0f, 0f, 0f, 0f, context.colourScheme().background().packedint(RenderElement.globalAlpha));
 
-            x1 = x0 + inset + (int)(progress[1] * pos[2]);
+            x1 = x0 + inset + (int) (progress[1] * pos[2]);
             x0 += inset + progress[0] * pos[2];
             y0 += inset;
             y1 -= inset;
@@ -262,8 +268,9 @@ public class RenderElement {
     private static TextGenerator text(int x, int y, String text, int colour) {
         return (bb, font, context) -> font.generateVerticesForTexts(x, y, bb, new SimpleFont.DisplayText(text, colour));
     }
+
     private static Initializer initializeTexture(final String textureFileName, int size, int textureNumber, TextureRenderer positionAndColour) {
-        return ()->{
+        return () -> {
             int[] imgSize = STBHelper.loadTextureFromClasspath(textureFileName, size, GL_TEXTURE0 + textureNumber + INDEX_TEXTURE_OFFSET);
             return (bb, ctx, frame) -> {
                 ctx.elementShader().updateTextureUniform(textureNumber + INDEX_TEXTURE_OFFSET);
@@ -278,7 +285,6 @@ public class RenderElement {
         positionAndColour.accept(bb, context, size, frame);
         bb.draw();
     }
-
 
     public static float clamp(float num, float min, float max) {
         if (num < min) {
@@ -297,15 +303,15 @@ public class RenderElement {
     }
 
     public static int hsvToRGB(float hue, float saturation, float value) {
-        int i = (int)(hue * 6.0F) % 6;
-        float f = hue * 6.0F - (float)i;
+        int i = (int) (hue * 6.0F) % 6;
+        float f = hue * 6.0F - (float) i;
         float f1 = value * (1.0F - saturation);
         float f2 = value * (1.0F - f * saturation);
         float f3 = value * (1.0F - (1.0F - f) * saturation);
         float f4;
         float f5;
         float f6;
-        switch(i) {
+        switch (i) {
             case 0:
                 f4 = value;
                 f5 = f3;
@@ -340,9 +346,9 @@ public class RenderElement {
                 throw new RuntimeException("Something went wrong when converting from HSV to RGB. Input was " + hue + ", " + saturation + ", " + value);
         }
 
-        int j = clamp((int)(f4 * 255.0F), 0, 255);
-        int k = clamp((int)(f5 * 255.0F), 0, 255);
-        int l = clamp((int)(f6 * 255.0F), 0, 255);
+        int j = clamp((int) (f4 * 255.0F), 0, 255);
+        int k = clamp((int) (f5 * 255.0F), 0, 255);
+        int l = clamp((int) (f6 * 255.0F), 0, 255);
         return 0xFF << 24 | j << 16 | k << 8 | l;
     }
 }

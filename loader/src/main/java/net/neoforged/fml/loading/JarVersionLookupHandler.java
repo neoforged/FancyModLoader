@@ -35,7 +35,6 @@ public class JarVersionLookupHandler {
         return Optional.ofNullable(pkgVersion);
     }
 
-
     public static Optional<String> getSpecificationVersion(final Class<?> clazz) {
         // With java 9 we'll use the module's version if it exists in preference.
         final String pkgVersion = clazz.getPackage().getSpecificationVersion();

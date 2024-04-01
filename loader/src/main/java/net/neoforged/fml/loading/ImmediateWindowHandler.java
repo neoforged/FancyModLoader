@@ -7,6 +7,20 @@ package net.neoforged.fml.loading;
 
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.api.IModuleLayerManager.Layer;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.ServiceLoader;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.IntConsumer;
+import java.util.function.IntSupplier;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import net.neoforged.fml.loading.progress.ProgressMeter;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
@@ -14,18 +28,13 @@ import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.*;
-import java.util.function.*;
-import java.util.stream.Collectors;
-
 public class ImmediateWindowHandler {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static ImmediateWindowProvider provider;
 
     private static ProgressMeter earlyProgress;
+
     public static void load(final String launchTarget, final String[] arguments) {
         final var layer = Launcher.INSTANCE.findLayerManager()
                 .flatMap(manager -> manager.getLayer(Layer.SERVICE))
@@ -68,7 +77,7 @@ public class ImmediateWindowHandler {
         return provider.setupMinecraftWindow(width, height, title, monitor);
     }
 
-    public static boolean positionWindow(Optional<Object> monitor,IntConsumer widthSetter, IntConsumer heightSetter, IntConsumer xSetter, IntConsumer ySetter) {
+    public static boolean positionWindow(Optional<Object> monitor, IntConsumer widthSetter, IntConsumer heightSetter, IntConsumer xSetter, IntConsumer ySetter) {
         return provider.positionWindow(monitor, widthSetter, heightSetter, xSetter, ySetter);
     }
 
@@ -92,6 +101,7 @@ public class ImmediateWindowHandler {
     public static String getGLVersion() {
         return provider.getGLVersion();
     }
+
     public static void updateProgress(final String message) {
         earlyProgress.label(message);
     }
@@ -117,13 +127,12 @@ public class ImmediateWindowHandler {
         }
 
         @Override
-        public void updateFramebufferSize(final IntConsumer width, final IntConsumer height) {
-        }
+        public void updateFramebufferSize(final IntConsumer width, final IntConsumer height) {}
 
         @Override
         public long setupMinecraftWindow(final IntSupplier width, final IntSupplier height, final Supplier<String> title, final LongSupplier monitor) {
             try {
-                var longsupplier = (LongSupplier)NV_HANDOFF.invoke(null, width, height, title, monitor);
+                var longsupplier = (LongSupplier) NV_HANDOFF.invoke(null, width, height, title, monitor);
                 return longsupplier.getAsLong();
             } catch (Throwable e) {
                 throw new IllegalStateException("How did you get here?", e);
@@ -132,11 +141,12 @@ public class ImmediateWindowHandler {
 
         public boolean positionWindow(Optional<Object> monitor, IntConsumer widthSetter, IntConsumer heightSetter, IntConsumer xSetter, IntConsumer ySetter) {
             try {
-                return (boolean)NV_POSITION.invoke(null, monitor, widthSetter, heightSetter, xSetter, ySetter);
+                return (boolean) NV_POSITION.invoke(null, monitor, widthSetter, heightSetter, xSetter, ySetter);
             } catch (Throwable e) {
                 throw new IllegalStateException("How did you get here?", e);
             }
         }
+
         @SuppressWarnings("unchecked")
         public <T> Supplier<T> loadingOverlay(Supplier<?> mc, Supplier<?> ri, Consumer<Optional<Throwable>> ex, boolean fade) {
             try {

@@ -11,28 +11,22 @@ import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
-import org.jetbrains.annotations.NotNull;
-import org.spongepowered.asm.util.Constants;
-
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
+import org.spongepowered.asm.util.Constants;
 
 public class MixinSyntheticPackageProvider implements ITransformationService {
     @Override
-    public @NotNull String name() {
+    public String name() {
         return "mixin-synthetic-package";
     }
 
     @Override
-    public void initialize(IEnvironment environment) {
-
-    }
+    public void initialize(IEnvironment environment) {}
 
     @Override
-    public void onLoad(IEnvironment env, Set<String> otherServices) throws IncompatibleEnvironmentException {
-
-    }
+    public void onLoad(IEnvironment env, Set<String> otherServices) throws IncompatibleEnvironmentException {}
 
     @Override
     public List<Resource> beginScanning(IEnvironment environment) {
@@ -40,16 +34,14 @@ public class MixinSyntheticPackageProvider implements ITransformationService {
             return List.of(
                     new Resource(IModuleLayerManager.Layer.GAME, List.of(
                             new VirtualJar("mixinsynthetic", Path.of(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI()),
-                                    Constants.SYNTHETIC_PACKAGE, Constants.SYNTHETIC_PACKAGE + ".args")
-                    ))
-            );
+                                    Constants.SYNTHETIC_PACKAGE, Constants.SYNTHETIC_PACKAGE + ".args"))));
         } catch (Exception exception) {
             throw new RuntimeException("Failed to intialise synthetic Mixin virtual jar", exception);
         }
     }
 
     @Override
-    public @NotNull List<? extends ITransformer<?>> transformers() {
+    public List<? extends ITransformer<?>> transformers() {
         return List.of();
     }
 }

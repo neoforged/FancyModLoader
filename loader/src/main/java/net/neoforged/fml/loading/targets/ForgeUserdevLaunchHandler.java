@@ -5,11 +5,10 @@
 
 package net.neoforged.fml.loading.targets;
 
-import net.neoforged.fml.loading.VersionInfo;
-
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
+import net.neoforged.fml.loading.VersionInfo;
 
 public abstract class ForgeUserdevLaunchHandler extends CommonUserdevLaunchHandler {
     @Override

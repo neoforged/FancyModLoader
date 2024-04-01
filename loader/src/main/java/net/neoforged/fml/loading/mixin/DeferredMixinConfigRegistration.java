@@ -5,8 +5,9 @@
 
 package net.neoforged.fml.loading.mixin;
 
-import net.neoforged.fml.loading.FMLLoader;
-import org.apache.logging.log4j.LogManager;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,15 +17,13 @@ import org.spongepowered.asm.mixin.FabricUtil;
 import org.spongepowered.asm.mixin.Mixins;
 import org.spongepowered.asm.mixin.transformer.Config;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 public class DeferredMixinConfigRegistration {
     private static final Logger LOG = LoggerFactory.getLogger("fml-mixin-setup");
 
     private static boolean added = false;
+
     record ConfigInfo(String fileName, @Nullable String modId) {}
+
     private static final List<ConfigInfo> mixinConfigs = new ArrayList<>();
 
     static {
@@ -51,8 +50,7 @@ public class DeferredMixinConfigRegistration {
         added = true;
         mixinConfigs.forEach(cfg -> Mixins.addConfiguration(cfg.fileName()));
         final var configMap = Mixins.getConfigs().stream().collect(
-                Collectors.toMap(Config::getName, Config::getConfig)
-        );
+                Collectors.toMap(Config::getName, Config::getConfig));
         mixinConfigs.forEach(cfg -> {
             if (cfg.modId() == null) return;
 

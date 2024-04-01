@@ -13,5 +13,4 @@ package net.neoforged.fml.loading;
  *             instead.
  */
 @Deprecated(since = "2.0.16", forRemoval = true)
-public interface ImmediateWindowProvider extends net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider
-{ }
+public interface ImmediateWindowProvider extends net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider {}

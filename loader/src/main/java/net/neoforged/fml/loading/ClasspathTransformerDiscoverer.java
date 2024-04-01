@@ -5,22 +5,25 @@
 
 package net.neoforged.fml.loading;
 
+import static net.neoforged.fml.loading.TransformerDiscovererConstants.shouldLoadInServiceLayer;
+
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
-import net.neoforged.fml.loading.targets.CommonLaunchHandler;
-import org.apache.logging.log4j.LogManager;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
-
-import static net.neoforged.fml.loading.TransformerDiscovererConstants.shouldLoadInServiceLayer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Map;
+import net.neoforged.fml.loading.targets.CommonLaunchHandler;
+import org.apache.logging.log4j.LogManager;
 
 public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryService {
-
     private final List<Path> legacyClasspath = Arrays.stream(System.getProperty("legacyClassPath", "").split(File.pathSeparator)).map(Path::of).toList();
 
     @Override
@@ -39,9 +42,9 @@ public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryServ
     private final static List<NamedPath> found = new ArrayList<>();
 
     public static List<Path> allExcluded() {
-        return found.stream().map(np->np.paths()[0]).toList();
+        return found.stream().map(np -> np.paths()[0]).toList();
     }
-    
+
     private void scan(final Path gameDirectory) {
         try {
             for (final String serviceClass : TransformerDiscovererConstants.SERVICES) {
@@ -73,5 +76,4 @@ public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryServ
             }
         });
     }
-
 }

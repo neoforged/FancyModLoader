@@ -10,7 +10,6 @@ import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.IModuleLayerManager.Layer;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
-
 import java.nio.file.Path;
 import java.util.Set;
 
@@ -19,20 +18,19 @@ import java.util.Set;
  * may use.
  */
 public final class TransformerDiscovererConstants {
-    private TransformerDiscovererConstants() { }
+    private TransformerDiscovererConstants() {}
 
     /**
      * Defines the set of FML service types which should be loaded on the
      * {@link Layer#SERVICE} module layer.
      */
     public static final Set<String> SERVICES = Set.of(
-        "cpw.mods.modlauncher.api.ITransformationService",
-        "net.neoforged.neoforgespi.locating.IModLocator",
-        "net.neoforged.neoforgespi.locating.IDependencyLocator",
-        "net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper",
-        "net.neoforged.fml.loading.ImmediateWindowProvider", // FIXME: remove this when removing the legacy ImmediateWindowProvider
-        "net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider"
-    );
+            "cpw.mods.modlauncher.api.ITransformationService",
+            "net.neoforged.neoforgespi.locating.IModLocator",
+            "net.neoforged.neoforgespi.locating.IDependencyLocator",
+            "net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper",
+            "net.neoforged.fml.loading.ImmediateWindowProvider", // FIXME: remove this when removing the legacy ImmediateWindowProvider
+            "net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider");
 
     public static boolean shouldLoadInServiceLayer(Path... path) {
         JarMetadata metadata = JarMetadata.from(new JarContentsBuilder().paths(path).build());

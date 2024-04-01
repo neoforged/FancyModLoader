@@ -5,6 +5,10 @@
 
 package net.neoforged.fml.loading.log4j;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import net.minecrell.terminalconsole.HighlightErrorConverter;
 import net.minecrell.terminalconsole.TerminalConsoleAppender;
 import org.apache.logging.log4j.Logger;
@@ -16,11 +20,6 @@ import org.apache.logging.log4j.core.pattern.PatternConverter;
 import org.apache.logging.log4j.status.StatusLogger;
 import org.apache.logging.log4j.util.PerformanceSensitive;
 import org.jetbrains.annotations.Nullable;
-
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * A wrapper for {@link HighlightConverter} that auto-disables ANSI when the terminal doesn't support it.
@@ -36,7 +35,7 @@ public class ForgeHighlight {
      * Gets a new instance of the {@link HighlightErrorConverter} with the
      * specified options.
      *
-     * @param config The current configuration
+     * @param config  The current configuration
      * @param options The pattern options
      * @return The new instance
      */

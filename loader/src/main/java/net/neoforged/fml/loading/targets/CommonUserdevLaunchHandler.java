@@ -5,15 +5,14 @@
 
 package net.neoforged.fml.loading.targets;
 
-import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.VersionInfo;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.VersionInfo;
 
 public abstract class CommonUserdevLaunchHandler extends CommonDevLaunchHandler {
     @Override

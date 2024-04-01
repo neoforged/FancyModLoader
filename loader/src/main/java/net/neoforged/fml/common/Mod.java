@@ -10,7 +10,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.function.Supplier;
-
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.Bindings;
@@ -25,8 +24,7 @@ import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface Mod
-{
+public @interface Mod {
     /**
      * The unique mod identifier for this mod.
      * <b>Required to be lowercased in the english locale for compatibility. Will be truncated to 64 characters long.</b>
@@ -57,6 +55,7 @@ public @interface Mod
         /**
          * Optional value, only necessary if this annotation is not on the same class that has a @Mod annotation.
          * Needed to prevent early classloading of classes not owned by your mod.
+         * 
          * @return a modid
          */
         String modid() default "";
@@ -77,9 +76,10 @@ public @interface Mod
             FORGE(Bindings.getForgeBus()),
             /**
              * The mod specific Event bus.
+             * 
              * @see ModContainer#getEventBus()
              */
-            MOD(()-> FMLJavaModLoadingContext.get().getModEventBus());
+            MOD(() -> FMLJavaModLoadingContext.get().getModEventBus());
 
             private final Supplier<IEventBus> busSupplier;
 

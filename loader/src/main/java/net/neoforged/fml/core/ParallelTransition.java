@@ -6,17 +6,16 @@
 package net.neoforged.fml.core;
 
 import cpw.mods.modlauncher.api.LambdaExceptionUtils;
-import net.neoforged.fml.IModStateTransition;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.ModLoadingStage;
-import net.neoforged.fml.ThreadSelector;
-import net.neoforged.fml.event.lifecycle.ParallelDispatchEvent;
-
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import net.neoforged.fml.IModStateTransition;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModLoadingStage;
+import net.neoforged.fml.ThreadSelector;
+import net.neoforged.fml.event.lifecycle.ParallelDispatchEvent;
 
 record ParallelTransition(ModLoadingStage stage, Class<? extends ParallelDispatchEvent> event) implements IModStateTransition {
     @Override

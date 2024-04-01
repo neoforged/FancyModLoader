@@ -8,8 +8,15 @@ package net.neoforged.fml.loading.targets;
 import net.neoforged.api.distmarker.Dist;
 
 public class ForgeServerDevLaunchHandler extends CommonDevLaunchHandler {
-    @Override public String name() { return "forgeserverdev"; }
-    @Override public Dist getDist() { return Dist.DEDICATED_SERVER; }
+    @Override
+    public String name() {
+        return "forgeserverdev";
+    }
+
+    @Override
+    public Dist getDist() {
+        return Dist.DEDICATED_SERVER;
+    }
 
     @Override
     public void runService(String[] arguments, ModuleLayer layer) throws Throwable {

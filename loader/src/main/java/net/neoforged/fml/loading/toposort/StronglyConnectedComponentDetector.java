@@ -6,7 +6,6 @@
 package net.neoforged.fml.loading.toposort;
 
 import com.google.common.graph.Graph;
-
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -105,5 +104,4 @@ public class StronglyConnectedComponentDetector<T> {
             components.add(component);
         }
     }
-
 }

@@ -6,13 +6,6 @@
 package net.neoforged.fml.loading;
 
 import cpw.mods.modlauncher.api.LambdaExceptionUtils;
-import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
-import net.neoforged.fml.loading.moddiscovery.BackgroundScanHandler;
-import net.neoforged.fml.loading.moddiscovery.ModFile;
-import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
-import net.neoforged.fml.loading.moddiscovery.ModInfo;
-import net.neoforged.neoforgespi.locating.IModFile;
-
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,13 +17,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
+import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
+import net.neoforged.fml.loading.moddiscovery.BackgroundScanHandler;
+import net.neoforged.fml.loading.moddiscovery.ModFile;
+import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
+import net.neoforged.fml.loading.moddiscovery.ModInfo;
+import net.neoforged.neoforgespi.locating.IModFile;
 
 /**
  * Master list of all mods <em>in the loading context. This class cannot refer outside the
  * loading package</em>
  */
-public class LoadingModList
-{
+public class LoadingModList {
     private static LoadingModList INSTANCE;
     private final List<ModFileInfo> modFiles;
     private final List<ModInfo> sortedList;
@@ -39,8 +37,7 @@ public class LoadingModList
     private final List<EarlyLoadingException> preLoadWarnings;
     private List<IModFile> brokenFiles;
 
-    private LoadingModList(final List<ModFile> modFiles, final List<ModInfo> sortedList)
-    {
+    private LoadingModList(final List<ModFile> modFiles, final List<ModInfo> sortedList) {
         this.modFiles = modFiles.stream()
                 .map(ModFile::getModFileInfo)
                 .map(ModFileInfo.class::cast)
@@ -57,11 +54,9 @@ public class LoadingModList
         this.preLoadWarnings = new ArrayList<>();
     }
 
-    public static LoadingModList of(List<ModFile> modFiles, List<ModInfo> sortedList, final EarlyLoadingException earlyLoadingException)
-    {
+    public static LoadingModList of(List<ModFile> modFiles, List<ModInfo> sortedList, final EarlyLoadingException earlyLoadingException) {
         INSTANCE = new LoadingModList(modFiles, sortedList);
-        if (earlyLoadingException != null)
-        {
+        if (earlyLoadingException != null) {
             INSTANCE.preLoadErrors.add(earlyLoadingException);
         }
         return INSTANCE;
@@ -70,8 +65,8 @@ public class LoadingModList
     public static LoadingModList get() {
         return INSTANCE;
     }
-    public void addCoreMods()
-    {
+
+    public void addCoreMods() {
         modFiles.stream()
                 .map(ModFileInfo::getFile)
                 .map(ModFile::getCoreMods)
@@ -88,28 +83,24 @@ public class LoadingModList
                 });
     }
 
-    public void addAccessTransformers()
-    {
+    public void addAccessTransformers() {
         modFiles.stream()
                 .map(ModFileInfo::getFile)
                 .forEach(mod -> mod.getAccessTransformers().forEach(path -> FMLLoader.addAccessTransformer(path, mod)));
     }
 
-    public void addForScanning(BackgroundScanHandler backgroundScanHandler)
-    {
+    public void addForScanning(BackgroundScanHandler backgroundScanHandler) {
         backgroundScanHandler.setLoadingModList(this);
         modFiles.stream()
                 .map(ModFileInfo::getFile)
                 .forEach(backgroundScanHandler::submitForScanning);
     }
 
-    public List<ModFileInfo> getModFiles()
-    {
+    public List<ModFileInfo> getModFiles() {
         return modFiles;
     }
 
-    public Path findResource(final String className)
-    {
+    public Path findResource(final String className) {
         for (ModFileInfo mf : modFiles) {
             final Path resource = mf.getFile().findResource(className);
             if (Files.exists(resource)) return resource;
@@ -128,9 +119,10 @@ public class LoadingModList
         return new Enumeration<URL>() {
             private final Iterator<ModFileInfo> modFileIterator = modFiles.iterator();
             private URL next;
+
             @Override
             public boolean hasMoreElements() {
-                if (next!=null) return true;
+                if (next != null) return true;
                 next = findNextURL();
                 return next != null;
             }
@@ -151,7 +143,7 @@ public class LoadingModList
                     final ModFileInfo next = modFileIterator.next();
                     final Path resource = next.getFile().findResource(resourceName);
                     if (Files.exists(resource)) {
-                        return LambdaExceptionUtils.uncheck(()->new URL("modjar://" + next.getMods().get(0).getModId() + "/" + resourceName));
+                        return LambdaExceptionUtils.uncheck(() -> new URL("modjar://" + next.getMods().get(0).getModId() + "/" + resourceName));
                     }
                 }
                 return null;
@@ -159,13 +151,11 @@ public class LoadingModList
         };
     }
 
-    public ModFileInfo getModFileById(String modid)
-    {
+    public ModFileInfo getModFileById(String modid) {
         return this.fileById.get(modid);
     }
 
-    public List<ModInfo> getMods()
-    {
+    public List<ModInfo> getMods() {
         return this.sortedList;
     }
 
