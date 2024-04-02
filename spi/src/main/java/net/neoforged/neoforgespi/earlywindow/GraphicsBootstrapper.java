@@ -9,8 +9,7 @@ package net.neoforged.neoforgespi.earlywindow;
  * Defines a type which can be used to perform any bootstrap operations before
  * creating a window during the early loading window process.
  */
-public interface GraphicsBootstrapper
-{
+public interface GraphicsBootstrapper {
     /**
      * The name of this bootstrapper. This is used for logging purposes.
      *

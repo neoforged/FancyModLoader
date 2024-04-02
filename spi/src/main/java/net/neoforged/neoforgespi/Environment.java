@@ -8,16 +8,15 @@ package net.neoforged.neoforgespi;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.TypesafeMap;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.neoforgespi.locating.IModDirectoryLocatorFactory;
-import net.neoforged.neoforgespi.locating.IModLocator;
-import net.neoforged.neoforgespi.locating.IModFile;
-import net.neoforged.neoforgespi.locating.ModFileFactory;
-
 import java.nio.file.Path;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforgespi.locating.IModDirectoryLocatorFactory;
+import net.neoforged.neoforgespi.locating.IModFile;
+import net.neoforged.neoforgespi.locating.IModLocator;
+import net.neoforged.neoforgespi.locating.ModFileFactory;
 
 /**
  * Global environment variables - allows discoverability with other systems without full forge
@@ -25,7 +24,6 @@ import java.util.function.Supplier;
  */
 public class Environment {
     public static final class Keys {
-
         /**
          * The @{@link Dist} which is running.
          * Populated by forge during {@link ITransformationService#initialize(IEnvironment)}
@@ -36,7 +34,7 @@ public class Environment {
          * Use {@link #MODDIRECTORYFACTORY} instead.
          */
         @Deprecated
-        public static final Supplier<TypesafeMap.Key<Function<Path,IModLocator>>> MODFOLDERFACTORY = IEnvironment.buildKey("MODFOLDERFACTORY", Function.class);
+        public static final Supplier<TypesafeMap.Key<Function<Path, IModLocator>>> MODFOLDERFACTORY = IEnvironment.buildKey("MODFOLDERFACTORY", Function.class);
         /**
          * Build a custom modlocator based on a supplied directory, with custom name
          */
@@ -51,6 +49,7 @@ public class Environment {
          */
         public static final Supplier<TypesafeMap.Key<Consumer<String>>> PROGRESSMESSAGE = IEnvironment.buildKey("PROGRESSMESSAGE", Consumer.class);
     }
+
     private static Environment INSTANCE;
 
     public static void build(IEnvironment environment) {
@@ -62,7 +61,6 @@ public class Environment {
         return INSTANCE;
     }
 
-
     private final IEnvironment environment;
 
     private final Dist dist;
@@ -70,13 +68,14 @@ public class Environment {
 
     private Environment(IEnvironment setup) {
         this.environment = setup;
-        this.dist = setup.getProperty(Keys.DIST.get()).orElseThrow(()->new RuntimeException("Missing DIST in environment!"));
-        this.modFileFactory = setup.getProperty(Keys.MODFILEFACTORY.get()).orElseThrow(()->new RuntimeException("Missing MODFILEFACTORY in environment!"));
+        this.dist = setup.getProperty(Keys.DIST.get()).orElseThrow(() -> new RuntimeException("Missing DIST in environment!"));
+        this.modFileFactory = setup.getProperty(Keys.MODFILEFACTORY.get()).orElseThrow(() -> new RuntimeException("Missing MODFILEFACTORY in environment!"));
     }
 
     public Dist getDist() {
         return this.dist;
     }
+
     public ModFileFactory getModFileFactory() {
         return this.modFileFactory;
     }

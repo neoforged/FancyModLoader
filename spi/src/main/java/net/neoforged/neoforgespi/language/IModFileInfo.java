@@ -5,14 +5,12 @@
 
 package net.neoforged.neoforgespi.language;
 
+import java.util.List;
+import java.util.Map;
 import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.maven.artifact.versioning.VersionRange;
 
-import java.util.List;
-import java.util.Map;
-
-public interface IModFileInfo
-{
+public interface IModFileInfo {
     List<IModInfo> getMods();
 
     record LanguageSpec(String languageName, VersionRange acceptedVersions) {}
@@ -23,7 +21,7 @@ public interface IModFileInfo
 
     boolean showAsDataPack();
 
-    Map<String,Object> getFileProperties();
+    Map<String, Object> getFileProperties();
 
     String getLicense();
 

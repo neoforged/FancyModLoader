@@ -27,13 +27,15 @@ public enum ColourScheme {
 
     public record Colour(int red, int green, int blue) {
         public float redf() {
-            return ((float)red)/255f;
+            return ((float) red) / 255f;
         }
+
         public float greenf() {
-            return ((float)green)/255f;
+            return ((float) green) / 255f;
         }
+
         public float bluef() {
-            return ((float)blue)/255f;
+            return ((float) blue) / 255f;
         }
 
         public int packedint(int a) {

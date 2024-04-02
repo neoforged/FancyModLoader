@@ -5,11 +5,10 @@
 
 package net.neoforged.fml;
 
-import net.neoforged.fml.loading.progress.ProgressMeter;
-import net.neoforged.fml.loading.progress.StartupNotificationManager;
-
 import java.util.Optional;
 import java.util.function.Consumer;
+import net.neoforged.fml.loading.progress.ProgressMeter;
+import net.neoforged.fml.loading.progress.StartupNotificationManager;
 
 public class StartupMessageManager {
     public static void addModMessage(final String message) {

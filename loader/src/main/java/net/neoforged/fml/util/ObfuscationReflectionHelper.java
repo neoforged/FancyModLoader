@@ -4,19 +4,16 @@
  */
 
 package net.neoforged.fml.util;
+
+import com.google.common.base.Preconditions;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.StringJoiner;
-
-import net.neoforged.fml.loading.FMLLoader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
-
-import com.google.common.base.Preconditions;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -30,9 +27,8 @@ import org.jetbrains.annotations.Nullable;
  * All field and method names should be passed in as SRG names, and this will automatically resolve if MCP mappings are detected.
  *
  */
-@SuppressWarnings({"serial", "unchecked", "unused", "WeakerAccess"})
-public class ObfuscationReflectionHelper
-{
+@SuppressWarnings({ "serial", "unchecked", "unused", "WeakerAccess" })
+public class ObfuscationReflectionHelper {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Marker REFLECTION = MarkerManager.getMarker("REFLECTION");
 
@@ -52,20 +48,14 @@ public class ObfuscationReflectionHelper
      * @throws UnableToAccessFieldException If there was a problem getting the value.
      */
     @Nullable
-    public static <T, E> T getPrivateValue(Class<? super E> classToAccess, E instance, String fieldName)
-    {
-        try
-        {
+    public static <T, E> T getPrivateValue(Class<? super E> classToAccess, E instance, String fieldName) {
+        try {
             return (T) findField(classToAccess, fieldName).get(instance);
-        }
-        catch (UnableToFindFieldException e)
-        {
-            LOGGER.error(REFLECTION,"Unable to locate field {} ({}) on type {}", fieldName, fieldName, classToAccess.getName(), e);
+        } catch (UnableToFindFieldException e) {
+            LOGGER.error(REFLECTION, "Unable to locate field {} ({}) on type {}", fieldName, fieldName, classToAccess.getName(), e);
             throw e;
-        }
-        catch (IllegalAccessException e)
-        {
-            LOGGER.error(REFLECTION,"Unable to access field {} ({}) on type {}", fieldName, fieldName, classToAccess.getName(), e);
+        } catch (IllegalAccessException e) {
+            LOGGER.error(REFLECTION, "Unable to access field {} ({}) on type {}", fieldName, fieldName, classToAccess.getName(), e);
             throw new UnableToAccessFieldException(e);
         }
     }
@@ -85,19 +75,13 @@ public class ObfuscationReflectionHelper
      * @throws UnableToFindFieldException   If there was a problem getting the field.
      * @throws UnableToAccessFieldException If there was a problem setting the value of the field.
      */
-    public static <T, E> void setPrivateValue(@NotNull final Class<? super T> classToAccess, @NotNull final T instance, @Nullable final E value, @NotNull final String fieldName)
-    {
-        try
-        {
+    public static <T, E> void setPrivateValue(final Class<? super T> classToAccess, final T instance, @Nullable final E value, final String fieldName) {
+        try {
             findField(classToAccess, fieldName).set(instance, value);
-        }
-        catch (UnableToFindFieldException e)
-        {
+        } catch (UnableToFindFieldException e) {
             LOGGER.error("Unable to locate any field {} on type {}", fieldName, classToAccess.getName(), e);
             throw e;
-        }
-        catch (IllegalAccessException e)
-        {
+        } catch (IllegalAccessException e) {
             LOGGER.error("Unable to set any field {} on type {}", fieldName, classToAccess.getName(), e);
             throw new UnableToAccessFieldException(e);
         }
@@ -119,22 +103,17 @@ public class ObfuscationReflectionHelper
      * @throws NullPointerException        If {@code parameterTypes} is null.
      * @throws UnableToFindMethodException If the method could not be found.
      */
-    @NotNull
-    public static Method findMethod(@NotNull final Class<?> clazz, @NotNull final String methodName, @NotNull final Class<?>... parameterTypes)
-    {
+    public static Method findMethod(final Class<?> clazz, final String methodName, final Class<?>... parameterTypes) {
         Preconditions.checkNotNull(clazz, "Class to find method on cannot be null.");
         Preconditions.checkNotNull(methodName, "Name of method to find cannot be null.");
         Preconditions.checkArgument(!methodName.isEmpty(), "Name of method to find cannot be empty.");
         Preconditions.checkNotNull(parameterTypes, "Parameter types of method to find cannot be null.");
 
-        try
-        {
+        try {
             Method m = clazz.getDeclaredMethod(methodName, parameterTypes);
             m.setAccessible(true);
             return m;
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             throw new UnableToFindMethodException(e);
         }
     }
@@ -153,26 +132,20 @@ public class ObfuscationReflectionHelper
      * @throws NullPointerException        If {@code parameterTypes} is null.
      * @throws UnknownConstructorException If the constructor could not be found.
      */
-    @NotNull
-    public static <T> Constructor<T> findConstructor(@NotNull final Class<T> clazz, @NotNull final Class<?>... parameterTypes)
-    {
+    public static <T> Constructor<T> findConstructor(final Class<T> clazz, final Class<?>... parameterTypes) {
         Preconditions.checkNotNull(clazz, "Class to find constructor on cannot be null.");
         Preconditions.checkNotNull(parameterTypes, "Parameter types of constructor to find cannot be null.");
 
-        try
-        {
+        try {
             Constructor<T> constructor = clazz.getDeclaredConstructor(parameterTypes);
             constructor.setAccessible(true);
             return constructor;
-        }
-        catch (final NoSuchMethodException e)
-        {
+        } catch (final NoSuchMethodException e) {
             final StringBuilder desc = new StringBuilder();
             desc.append(clazz.getSimpleName());
 
             StringJoiner joiner = new StringJoiner(", ", "(", ")");
-            for (Class<?> type : parameterTypes)
-            {
+            for (Class<?> type : parameterTypes) {
                 joiner.add(type.getSimpleName());
             }
             desc.append(joiner);
@@ -196,53 +169,40 @@ public class ObfuscationReflectionHelper
      * @throws IllegalArgumentException   If {@code fieldName} is empty.
      * @throws UnableToFindFieldException If the field could not be found.
      */
-    @NotNull
-    public static <T> Field findField(@NotNull final Class<? super T> clazz, @NotNull final String fieldName)
-    {
+    public static <T> Field findField(final Class<? super T> clazz, final String fieldName) {
         Preconditions.checkNotNull(clazz, "Class to find field on cannot be null.");
         Preconditions.checkNotNull(fieldName, "Name of field to find cannot be null.");
         Preconditions.checkArgument(!fieldName.isEmpty(), "Name of field to find cannot be empty.");
 
-        try
-        {
+        try {
             Field f = clazz.getDeclaredField(fieldName);
             f.setAccessible(true);
             return f;
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             throw new UnableToFindFieldException(e);
         }
     }
 
-    public static class UnableToAccessFieldException extends RuntimeException
-    {
-        private UnableToAccessFieldException(Exception e)
-        {
+    public static class UnableToAccessFieldException extends RuntimeException {
+        private UnableToAccessFieldException(Exception e) {
             super(e);
         }
     }
 
-    public static class UnableToFindFieldException extends RuntimeException
-    {
-        private UnableToFindFieldException(Exception e)
-        {
+    public static class UnableToFindFieldException extends RuntimeException {
+        private UnableToFindFieldException(Exception e) {
             super(e);
         }
     }
 
-    public static class UnableToFindMethodException extends RuntimeException
-    {
-        public UnableToFindMethodException(Throwable failed)
-        {
+    public static class UnableToFindMethodException extends RuntimeException {
+        public UnableToFindMethodException(Throwable failed) {
             super(failed);
         }
     }
 
-    public static class UnknownConstructorException extends RuntimeException
-    {
-        public UnknownConstructorException(final String message)
-        {
+    public static class UnknownConstructorException extends RuntimeException {
+        public UnknownConstructorException(final String message) {
             super(message);
         }
     }

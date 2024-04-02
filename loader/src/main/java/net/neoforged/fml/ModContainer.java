@@ -5,6 +5,17 @@
 
 package net.neoforged.fml;
 
+import static net.neoforged.fml.Logging.LOADING;
+
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
 import net.neoforged.bus.api.BusBuilder;
 import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.EventPriority;
@@ -17,18 +28,6 @@ import net.neoforged.neoforgespi.language.IModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
-
-import static net.neoforged.fml.Logging.LOADING;
 
 /**
  * The container that wraps around mods in the system.
@@ -43,8 +42,7 @@ import static net.neoforged.fml.Logging.LOADING;
  *
  */
 
-public abstract class ModContainer
-{
+public abstract class ModContainer {
     private static final Logger LOGGER = LogManager.getLogger();
 
     protected final String modId;
@@ -56,8 +54,7 @@ public abstract class ModContainer
     protected final Map<Class<? extends IExtensionPoint>, Supplier<?>> extensionPoints = new IdentityHashMap<>();
     protected final EnumMap<ModConfig.Type, ModConfig> configs = new EnumMap<>(ModConfig.Type.class);
 
-    public ModContainer(IModInfo info)
-    {
+    public ModContainer(IModInfo info) {
         this.modId = info.getModId();
         // TODO: Currently not reading namespace from configuration..
         this.namespace = this.modId;
@@ -68,34 +65,31 @@ public abstract class ModContainer
     /**
      * Errored container state, used for filtering. Does nothing.
      */
-    ModContainer()
-    {
+    ModContainer() {
         this.modLoadingStage = ModLoadingStage.ERROR;
         modId = "BROKEN";
         namespace = "BROKEN";
         modInfo = null;
     }
+
     /**
      * @return the modid for this mod
      */
-    public final String getModId()
-    {
+    public final String getModId() {
         return modId;
     }
 
     /**
      * @return the resource prefix for the mod
      */
-    public final String getNamespace()
-    {
+    public final String getNamespace() {
         return namespace;
     }
 
     /**
      * @return The current loading stage for this mod
      */
-    public ModLoadingStage getCurrentState()
-    {
+    public ModLoadingStage getCurrentState() {
         return modLoadingStage;
     }
 
@@ -108,7 +102,7 @@ public abstract class ModContainer
         return CompletableFuture
                 .runAsync(() -> {
                     ModLoadingContext.get().setActiveContainer(target);
-                    target.activityMap.getOrDefault(target.modLoadingStage, ()->{}).run();
+                    target.activityMap.getOrDefault(target.modLoadingStage, () -> {}).run();
                     target.acceptEvent(eventGenerator.apply(target));
                 }, executor)
                 .whenComplete((mc, exception) -> {
@@ -118,14 +112,13 @@ public abstract class ModContainer
                 });
     }
 
-    public IModInfo getModInfo()
-    {
+    public IModInfo getModInfo() {
         return modInfo;
     }
 
     @SuppressWarnings("unchecked")
     public <T extends IExtensionPoint> Optional<T> getCustomExtension(Class<T> point) {
-        return Optional.ofNullable((T)extensionPoints.getOrDefault(point,()-> null).get());
+        return Optional.ofNullable((T) extensionPoints.getOrDefault(point, () -> null).get());
     }
 
     /**
@@ -144,18 +137,18 @@ public abstract class ModContainer
     }
 
     public void addConfig(final ModConfig modConfig) {
-       configs.put(modConfig.getType(), modConfig);
+        configs.put(modConfig.getType(), modConfig);
     }
 
     /**
      * Adds a {@link ModConfig} with the given type and spec. An empty config spec will be ignored and a debug line will
      * be logged.
-     * @param type The type of config
+     * 
+     * @param type       The type of config
      * @param configSpec A config spec
      */
     public void registerConfig(ModConfig.Type type, IConfigSpec<?> configSpec) {
-        if (configSpec.isEmpty())
-        {
+        if (configSpec.isEmpty()) {
             // This handles the case where a mod tries to register a config, without any options configured inside it.
             LOGGER.debug("Attempted to register an empty config for type {} on mod {}", type, modId);
             return;
@@ -167,12 +160,12 @@ public abstract class ModContainer
     /**
      * Adds a {@link ModConfig} with the given type, spec, and overridden file name. An empty config spec will be
      * ignored and a debug line will be logged.
-     * @param type The type of config
+     * 
+     * @param type       The type of config
      * @param configSpec A config spec
      */
     public void registerConfig(ModConfig.Type type, IConfigSpec<?> configSpec, String fileName) {
-        if (configSpec.isEmpty())
-        {
+        if (configSpec.isEmpty()) {
             // This handles the case where a mod tries to register a config, without any options configured inside it.
             LOGGER.debug("Attempted to register an empty config for type {} on mod {} using file name {}", type, modId, fileName);
             return;
@@ -200,13 +193,14 @@ public abstract class ModContainer
      * <p>Not all mods have an event bus!
      *
      * @implNote For custom mod container implementations, the event bus must be built with
-     * {@link BusBuilder#allowPerPhasePost()} or posting via {@link #acceptEvent(EventPriority, Event)} will throw!
+     *           {@link BusBuilder#allowPerPhasePost()} or posting via {@link #acceptEvent(EventPriority, Event)} will throw!
      */
     @Nullable
     public abstract IEventBus getEventBus();
 
     /**
      * Accept an arbitrary event for processing by the mod. Posted to {@link #getEventBus()}.
+     * 
      * @param e Event to accept
      */
     protected final <T extends Event & IModBusEvent> void acceptEvent(T e) {
@@ -218,13 +212,14 @@ public abstract class ModContainer
             bus.post(e);
             LOGGER.trace(LOADING, "Fired event for modid {} : {}", this.getModId(), e);
         } catch (Throwable t) {
-            LOGGER.error(LOADING,"Caught exception during event {} dispatch for modid {}", e, this.getModId(), t);
+            LOGGER.error(LOADING, "Caught exception during event {} dispatch for modid {}", e, this.getModId(), t);
             throw new ModLoadingException(modInfo, modLoadingStage, "fml.modloading.errorduringevent", t);
         }
     }
 
     /**
      * Accept an arbitrary event for processing by the mod. Posted to {@link #getEventBus()}.
+     * 
      * @param e Event to accept
      */
     protected final <T extends Event & IModBusEvent> void acceptEvent(EventPriority phase, T e) {
@@ -236,7 +231,7 @@ public abstract class ModContainer
             bus.post(phase, e);
             LOGGER.trace(LOADING, "Fired event for phase {} for modid {} : {}", phase, this.getModId(), e);
         } catch (Throwable t) {
-            LOGGER.error(LOADING,"Caught exception during event {} dispatch for modid {}", e, this.getModId(), t);
+            LOGGER.error(LOADING, "Caught exception during event {} dispatch for modid {}", e, this.getModId(), t);
             throw new ModLoadingException(modInfo, modLoadingStage, "fml.modloading.errorduringevent", t);
         }
     }

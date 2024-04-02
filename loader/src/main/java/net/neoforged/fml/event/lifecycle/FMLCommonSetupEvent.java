@@ -5,16 +5,15 @@
 
 package net.neoforged.fml.event.lifecycle;
 
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.DeferredWorkQueue;
-import net.neoforged.fml.ModLoadingStage;
-
 import java.util.function.Consumer;
+import net.neoforged.fml.DeferredWorkQueue;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModLoadingStage;
 
 /**
  * This is the first of four commonly called events during mod initialization.
  *
- * Called after {@link net.neoforged.registries.RegisterEvent} events have been fired and before 
+ * Called after {@link net.neoforged.registries.RegisterEvent} events have been fired and before
  * {@link FMLClientSetupEvent} or {@link FMLDedicatedServerSetupEvent} during mod startup.
  *
  * Either register your listener using {@link net.neoforged.fml.javafmlmod.AutomaticEventSubscriber} and
@@ -25,12 +24,10 @@ import java.util.function.Consumer;
  * interact with game state in this event.
  *
  * @see DeferredWorkQueue to enqueue work to run on the main game thread after this event has
- * completed dispatch
+ *      completed dispatch
  */
-public class FMLCommonSetupEvent extends ParallelDispatchEvent
-{
-    public FMLCommonSetupEvent(final ModContainer container, final ModLoadingStage stage)
-    {
+public class FMLCommonSetupEvent extends ParallelDispatchEvent {
+    public FMLCommonSetupEvent(final ModContainer container, final ModLoadingStage stage) {
         super(container, stage);
     }
 }

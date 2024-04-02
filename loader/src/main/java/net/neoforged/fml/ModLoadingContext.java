@@ -6,14 +6,12 @@
 package net.neoforged.fml;
 
 import com.mojang.logging.LogUtils;
+import java.util.function.Supplier;
 import net.neoforged.fml.config.IConfigSpec;
 import net.neoforged.fml.config.ModConfig;
 import org.slf4j.Logger;
 
-import java.util.function.Supplier;
-
-public class ModLoadingContext
-{
+public class ModLoadingContext {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final ThreadLocal<ModLoadingContext> context = ThreadLocal.withInitial(ModLoadingContext::new);
     private Object languageExtension;
@@ -31,7 +29,7 @@ public class ModLoadingContext
     }
 
     public ModContainer getActiveContainer() {
-        return activeContainer == null ? ModList.get().getModContainerById("minecraft").orElseThrow(()->new RuntimeException("Where is minecraft???!")) : activeContainer;
+        return activeContainer == null ? ModList.get().getModContainerById("minecraft").orElseThrow(() -> new RuntimeException("Where is minecraft???!")) : activeContainer;
     }
 
     public String getActiveNamespace() {
@@ -40,9 +38,10 @@ public class ModLoadingContext
 
     /**
      * Register an {@link IExtensionPoint} with the mod container.
-     * @param point The extension point to register
+     * 
+     * @param point     The extension point to register
      * @param extension An extension operator
-     * @param <T> The type signature of the extension operator
+     * @param <T>       The type signature of the extension operator
      */
     public <T extends IExtensionPoint> void registerExtensionPoint(Class<T> point, Supplier<T> extension) {
         getActiveContainer().registerExtensionPoint(point, extension);
@@ -64,9 +63,8 @@ public class ModLoadingContext
         getActiveContainer().registerConfig(type, spec, fileName);
     }
 
-
     @SuppressWarnings("unchecked")
     public <T> T extension() {
-        return (T)languageExtension;
+        return (T) languageExtension;
     }
 }

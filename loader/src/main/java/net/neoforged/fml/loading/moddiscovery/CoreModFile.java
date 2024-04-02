@@ -5,12 +5,11 @@
 
 package net.neoforged.fml.loading.moddiscovery;
 
-import net.neoforged.coremod.ICoreModScriptSource;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import net.neoforged.coremod.ICoreModScriptSource;
 
 public class CoreModFile implements ICoreModScriptSource {
     private final Path internalPath;

@@ -5,6 +5,7 @@
 
 package net.neoforged.fml.core;
 
+import java.util.List;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.IModLoadingState;
 import net.neoforged.fml.IModStateProvider;
@@ -23,8 +24,6 @@ import net.neoforged.fml.event.lifecycle.InterModEnqueueEvent;
 import net.neoforged.fml.event.lifecycle.InterModProcessEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLPaths;
-
-import java.util.List;
 
 /**
  * Provider for the core FML mod loading states.

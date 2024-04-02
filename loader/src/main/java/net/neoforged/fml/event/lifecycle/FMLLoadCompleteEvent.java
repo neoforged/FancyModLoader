@@ -14,10 +14,8 @@ import net.neoforged.fml.ModLoadingStage;
  *
  * @author cpw
  */
-public class FMLLoadCompleteEvent extends ParallelDispatchEvent
-{
-    public FMLLoadCompleteEvent(final ModContainer container, final ModLoadingStage stage)
-    {
+public class FMLLoadCompleteEvent extends ParallelDispatchEvent {
+    public FMLLoadCompleteEvent(final ModContainer container, final ModLoadingStage stage) {
         super(container, stage);
     }
 }

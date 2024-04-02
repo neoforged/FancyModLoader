@@ -9,8 +9,6 @@ import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.LambdaExceptionUtils;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
-import org.slf4j.Logger;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AccessDeniedException;
@@ -19,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
 
 public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -41,14 +40,14 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
     @Override
     public void earlyInitialization(final String launchTarget, final String[] arguments) {
         ImmediateWindowHandler.load(launchTarget, arguments);
-        if (this.alreadyFailed!=null) {
+        if (this.alreadyFailed != null) {
             String errorCause;
             if (this.alreadyFailed.getCause() instanceof FileAlreadyExistsException faee) {
                 errorCause = "File already exists: " + faee.getFile() + "\nYou need to move this out of the way, so we can put a directory there.";
             } else if (this.alreadyFailed.getCause() instanceof AccessDeniedException ade) {
-                errorCause = "Access denied trying to create a file or directory "+ade.getMessage() +"\nThe game directory is probably read-only. Check the write permission on it.";
+                errorCause = "Access denied trying to create a file or directory " + ade.getMessage() + "\nThe game directory is probably read-only. Check the write permission on it.";
             } else {
-                errorCause = "An unexpected IO error occurred trying to setup the game directory\n"+this.alreadyFailed.getCause().getMessage();
+                errorCause = "An unexpected IO error occurred trying to setup the game directory\n" + this.alreadyFailed.getCause().getMessage();
             }
             ImmediateWindowHandler.crash(errorCause);
             throw this.alreadyFailed;
@@ -64,7 +63,7 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
     private final static List<NamedPath> found = new ArrayList<>();
 
     public static List<Path> allExcluded() {
-        return found.stream().map(np->np.paths()[0]).toList();
+        return found.stream().map(np -> np.paths()[0]).toList();
     }
 
     private static void scan(final Path gameDirectory) {

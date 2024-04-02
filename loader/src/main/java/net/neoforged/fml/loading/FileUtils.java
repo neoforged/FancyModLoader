@@ -7,14 +7,12 @@ package net.neoforged.fml.loading;
 
 import java.nio.file.Path;
 
-public class FileUtils
-{
-
+public class FileUtils {
     public static String fileExtension(final Path path) {
         String fileName = path.getFileName().toString();
         int idx = fileName.lastIndexOf('.');
         if (idx > -1) {
-            return fileName.substring(idx+1);
+            return fileName.substring(idx + 1);
         } else {
             return "";
         }

@@ -6,6 +6,15 @@
 package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
 import net.neoforged.fml.loading.LoadingModList;
@@ -13,15 +22,7 @@ import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.slf4j.Logger;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-
-public class BackgroundScanHandler
-{
+public class BackgroundScanHandler {
     private enum ScanStatus {
         NOT_STARTED,
         RUNNING,
@@ -67,26 +68,24 @@ public class BackgroundScanHandler
         pendingFiles.add(file);
         final CompletableFuture<ModFileScanData> future = CompletableFuture.supplyAsync(file::compileContent, modContentScanner)
                 .whenComplete(file::setScanResult)
-                .whenComplete((r,t)-> this.addCompletedFile(file,r,t));
+                .whenComplete((r, t) -> this.addCompletedFile(file, r, t));
         file.setFutureScanResult(future);
     }
 
     private synchronized void addCompletedFile(final ModFile file, final ModFileScanData modFileScanData, final Throwable throwable) {
         if (throwable != null) {
             status = ScanStatus.ERRORED;
-            LOGGER.error(LogMarkers.SCAN,"An error occurred scanning file {}", file, throwable);
+            LOGGER.error(LogMarkers.SCAN, "An error occurred scanning file {}", file, throwable);
         }
         pendingFiles.remove(file);
         scannedFiles.add(file);
     }
 
-    public void setLoadingModList(LoadingModList loadingModList)
-    {
+    public void setLoadingModList(LoadingModList loadingModList) {
         this.loadingModList = loadingModList;
     }
 
-    public LoadingModList getLoadingModList()
-    {
+    public LoadingModList getLoadingModList() {
         return loadingModList;
     }
 

@@ -7,8 +7,6 @@ package net.neoforged.fml.loading;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.LambdaExceptionUtils;
-import org.slf4j.Logger;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -19,10 +17,11 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.jar.Manifest;
+import org.slf4j.Logger;
 
-public class ModJarURLHandler extends URLStreamHandler
-{
+public class ModJarURLHandler extends URLStreamHandler {
     private static final Logger LOGGER = LogUtils.getLogger();
+
     // modjar://modid/path/to/file
     @Override
     protected URLConnection openConnection(URL url) {
@@ -52,8 +51,7 @@ public class ModJarURLHandler extends URLStreamHandler
         }
 
         @Override
-        public void connect()
-        {
+        public void connect() {
 //            if (resource == null) {
 //                modid = url.getHost();
 //                // trim first char
@@ -64,8 +62,7 @@ public class ModJarURLHandler extends URLStreamHandler
         }
 
         @Override
-        public InputStream getInputStream() throws IOException
-        {
+        public InputStream getInputStream() throws IOException {
             connect();
             LOGGER.trace(LogMarkers.CORE, "Loading modjar URL {} got resource {} {}", url, resource, resource != null ? Files.exists(resource) : "missing");
             return Files.newInputStream(resource);
@@ -84,7 +81,7 @@ public class ModJarURLHandler extends URLStreamHandler
         // Used to cache protectiondomains by "top level object" aka the modid
         @Override
         public URL getURL() {
-            return LambdaExceptionUtils.uncheck(()->new URL("modjar://"+modid));
+            return LambdaExceptionUtils.uncheck(() -> new URL("modjar://" + modid));
         }
 
         public Optional<Manifest> getManifest() {

@@ -8,19 +8,6 @@ package net.neoforged.fml.loading.moddiscovery;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.SecureJar;
-import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.LogMarkers;
-import net.neoforged.neoforgespi.language.IModFileInfo;
-import net.neoforged.neoforgespi.language.IModInfo;
-import net.neoforged.neoforgespi.language.IModLanguageProvider;
-import net.neoforged.neoforgespi.language.ModFileScanData;
-import net.neoforged.neoforgespi.locating.IModFile;
-import net.neoforged.neoforgespi.locating.IModProvider;
-import net.neoforged.neoforgespi.locating.ModFileFactory;
-import org.apache.maven.artifact.versioning.ArtifactVersion;
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
-import org.slf4j.Logger;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -34,6 +21,18 @@ import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.LogMarkers;
+import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.IModLanguageProvider;
+import net.neoforged.neoforgespi.language.ModFileScanData;
+import net.neoforged.neoforgespi.locating.IModFile;
+import net.neoforged.neoforgespi.locating.IModProvider;
+import net.neoforged.neoforgespi.locating.ModFileFactory;
+import org.apache.maven.artifact.versioning.ArtifactVersion;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import org.slf4j.Logger;
 
 public class ModFile implements IModFile {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -45,9 +44,9 @@ public class ModFile implements IModFile {
     private Throwable scanError;
     private final SecureJar jar;
     private final Type modFileType;
-    private final Manifest     manifest;
+    private final Manifest manifest;
     private final IModProvider provider;
-    private       IModFileInfo modFileInfo;
+    private IModFileInfo modFileInfo;
     private ModFileScanData fileModFileScanData;
     private volatile CompletableFuture<ModFileScanData> futureScanResult;
     private List<CoreModFile> coreMods;
@@ -73,9 +72,10 @@ public class ModFile implements IModFile {
     }
 
     @Override
-    public Supplier<Map<String,Object>> getSubstitutionMap() {
-        return () -> ImmutableMap.<String,Object>builder().put("jarVersion", jarVersion).putAll(fileProperties).build();
+    public Supplier<Map<String, Object>> getSubstitutionMap() {
+        return () -> ImmutableMap.<String, Object>builder().put("jarVersion", jarVersion).putAll(fileProperties).build();
     }
+
     @Override
     public Type getType() {
         return modFileType;
@@ -103,11 +103,11 @@ public class ModFile implements IModFile {
     public boolean identifyMods() {
         this.modFileInfo = ModFileParser.readModList(this, this.parser);
         if (this.modFileInfo == null) return this.getType() != Type.MOD;
-        LOGGER.debug(LogMarkers.LOADING,"Loading mod file {} with languages {}", this.getFilePath(), this.modFileInfo.requiredLanguageLoaders());
+        LOGGER.debug(LogMarkers.LOADING, "Loading mod file {} with languages {}", this.getFilePath(), this.modFileInfo.requiredLanguageLoaders());
         this.coreMods = ModFileParser.getCoreMods(this);
-        this.coreMods.forEach(mi-> LOGGER.debug(LogMarkers.LOADING,"Found coremod {}", mi.getDebugSource()));
+        this.coreMods.forEach(mi -> LOGGER.debug(LogMarkers.LOADING, "Found coremod {}", mi.getDebugSource()));
         this.mixinConfigs = ModFileParser.getMixinConfigs(this.modFileInfo);
-        this.mixinConfigs.forEach(mc -> LOGGER.debug(LogMarkers.LOADING,"Found mixin config {}", mc));
+        this.mixinConfigs.forEach(mc -> LOGGER.debug(LogMarkers.LOADING, "Found mixin config {}", mc));
         this.accessTransformers = ModFileParser.getAccessTransformers(this.modFileInfo)
                 .map(list -> list.stream().map(this::findResource).filter(path -> {
                     if (Files.notExists(path)) {
@@ -187,7 +187,7 @@ public class ModFile implements IModFile {
 
     public void identifyLanguage() {
         this.loaders = this.modFileInfo.requiredLanguageLoaders().stream()
-                .map(spec-> FMLLoader.getLanguageLoadingProvider().findLanguage(this, spec.languageName(), spec.acceptedVersions()))
+                .map(spec -> FMLLoader.getLanguageLoadingProvider().findLanguage(this, spec.languageName(), spec.acceptedVersions()))
                 .toList();
     }
 
@@ -216,8 +216,7 @@ public class ModFile implements IModFile {
         this.securityStatus = status;
     }
 
-    public ArtifactVersion getJarVersion()
-    {
+    public ArtifactVersion getJarVersion() {
         return new DefaultArtifactVersion(this.jarVersion);
     }
 

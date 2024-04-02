@@ -5,7 +5,6 @@
 
 package net.neoforged.fml;
 
-import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
 /**
@@ -16,6 +15,4 @@ import java.util.function.Supplier;
  * supply an arbitrary value to another mod or framework through their mod container class, avoiding
  * the use of {@link InterModComms} or other external frameworks to pass around these values.</p>
  */
-public interface IExtensionPoint
-{
-}
+public interface IExtensionPoint {}
