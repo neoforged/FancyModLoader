@@ -7,7 +7,6 @@ package net.neoforged.fml;
 
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.config.IConfigEvent;
 import net.neoforged.fml.loading.FMLLoader;
 
 import java.util.ServiceLoader;
@@ -32,9 +31,5 @@ public class Bindings {
 
     public static Supplier<I18NParser> getMessageParser() {
         return INSTANCE.provider.getMessageParser();
-    }
-
-    public static Supplier<IConfigEvent.ConfigConfig> getConfigConfiguration() {
-        return INSTANCE.provider.getConfigConfiguration();
     }
 }
