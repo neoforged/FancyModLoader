@@ -5,8 +5,8 @@
 
 package net.neoforged.fml.event.lifecycle;
 
+import net.neoforged.fml.DeferredWorkQueue;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.ModLoadingStage;
 
 /**
  * This is the second of four commonly called events during mod lifecycle startup.
@@ -23,7 +23,7 @@ import net.neoforged.fml.ModLoadingStage;
  * This is a parallel dispatch event.
  */
 public class FMLClientSetupEvent extends ParallelDispatchEvent {
-    public FMLClientSetupEvent(ModContainer container, ModLoadingStage stage) {
-        super(container, stage);
+    public FMLClientSetupEvent(ModContainer container, DeferredWorkQueue deferredWorkQueue) {
+        super(container, deferredWorkQueue);
     }
 }

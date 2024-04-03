@@ -18,21 +18,16 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import net.neoforged.bus.api.Event;
-import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
-import net.neoforged.fml.loading.progress.ProgressMeter;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.ModFileScanData;
@@ -62,16 +57,11 @@ public class ModList {
         CrashReportCallables.registerCrashCallable("Mod List", this::crashReport);
     }
 
-    private String getModContainerState(String modId) {
-        return getModContainerById(modId).map(ModContainer::getCurrentState).map(Object::toString).orElse("NONE");
-    }
-
     private String fileToLine(IModFile mf) {
-        return String.format(Locale.ENGLISH, "%-50.50s|%-30.30s|%-30.30s|%-20.20s|%-10.10s|Manifest: %s", mf.getFileName(),
+        return String.format(Locale.ENGLISH, "%-50.50s|%-30.30s|%-30.30s|%-20.20s|Manifest: %s", mf.getFileName(),
                 mf.getModInfos().get(0).getDisplayName(),
                 mf.getModInfos().get(0).getModId(),
                 mf.getModInfos().get(0).getVersion(),
-                getModContainerState(mf.getModInfos().get(0).getModId()),
                 ((ModFileInfo) mf.getModFileInfo()).getCodeSigningFingerprint().orElse("NOSIGNATURE"));
     }
 
@@ -102,17 +92,6 @@ public class ModList {
 
     public IModFileInfo getModFileById(String modid) {
         return this.fileById.get(modid);
-    }
-
-    <T extends Event & IModBusEvent> Function<Executor, CompletableFuture<Void>> futureVisitor(
-            final IModStateTransition.EventGenerator<T> eventGenerator,
-            final ProgressMeter progressBar,
-            final BiFunction<ModLoadingStage, Throwable, ModLoadingStage> stateChange) {
-        return executor -> gather(
-                this.mods.stream()
-                        .map(mod -> ModContainer.buildTransitionHandler(mod, eventGenerator, progressBar, stateChange, executor))
-                        .collect(Collectors.toList()))
-                                .thenComposeAsync(ModList::completableFutureFromExceptionList, executor);
     }
 
     static CompletionStage<Void> completableFutureFromExceptionList(List<? extends Map.Entry<?, Throwable>> t) {
@@ -208,11 +187,5 @@ public class ModList {
 
     public <T> Stream<T> applyForEachModContainer(Function<ModContainer, T> function) {
         return indexedMods.values().stream().map(function);
-    }
-
-    private static class UncaughtModLoadingException extends ModLoadingException {
-        public UncaughtModLoadingException(ModLoadingStage stage, Throwable originalException) {
-            super(null, stage, "fml.modloading.uncaughterror", originalException);
-        }
     }
 }

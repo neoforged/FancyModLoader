@@ -5,8 +5,8 @@
 
 package net.neoforged.fml.event.lifecycle;
 
+import net.neoforged.fml.DeferredWorkQueue;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.ModLoadingStage;
 
 /**
  * This is a mostly internal event fired to mod containers that indicates that loading is complete. Mods should not
@@ -15,7 +15,7 @@ import net.neoforged.fml.ModLoadingStage;
  * @author cpw
  */
 public class FMLLoadCompleteEvent extends ParallelDispatchEvent {
-    public FMLLoadCompleteEvent(final ModContainer container, final ModLoadingStage stage) {
-        super(container, stage);
+    public FMLLoadCompleteEvent(ModContainer container, DeferredWorkQueue deferredWorkQueue) {
+        super(container, deferredWorkQueue);
     }
 }
