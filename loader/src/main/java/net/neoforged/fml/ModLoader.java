@@ -59,7 +59,7 @@ import org.jetbrains.annotations.Nullable;
  * <dd>Constructs the mod instance. Mods can typically setup basic environment such as Event listeners
  * and Configuration specifications here.</dd>
  * <dt>Automated dispatches</dt>
- * <dd>Dispatches automated elements : {@code net.neoforged.fml.common.Mod.EventBusSubscriber},
+ * <dd>Dispatches automated elements : {@code net.neoforged.fml.javafmlmod.Mod.EventBusSubscriber},
  * {@code net.neoforged.event.RegistryEvent}, {@code net.neoforged.common.capabilities.CapabilityInject}
  * and others</dd>
  * <dt>CONFIG_LOAD</dt>
