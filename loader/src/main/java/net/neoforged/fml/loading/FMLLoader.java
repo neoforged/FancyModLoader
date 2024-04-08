@@ -31,7 +31,6 @@ import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModValidator;
 import net.neoforged.fml.loading.targets.CommonLaunchHandler;
-import net.neoforged.neoforgespi.Environment;
 import org.slf4j.Logger;
 
 public class FMLLoader {
@@ -91,13 +90,6 @@ public class FMLLoader {
 
         coreModEngine = new CoreModScriptingEngine();
         LOGGER.debug(LogMarkers.CORE, "FML found CoreMods version : {}", coreModEngine.getClass().getPackage().getImplementationVersion());
-
-        LOGGER.debug(LogMarkers.CORE, "Found ForgeSPI package implementation version {}", Environment.class.getPackage().getImplementationVersion());
-        LOGGER.debug(LogMarkers.CORE, "Found ForgeSPI package specification {}", Environment.class.getPackage().getSpecificationVersion());
-        if (Integer.parseInt(Environment.class.getPackage().getSpecificationVersion()) < 2) {
-            LOGGER.error(LogMarkers.CORE, "Found an out of date ForgeSPI implementation: {}, loading cannot continue", Environment.class.getPackage().getSpecificationVersion());
-            throw new IncompatibleEnvironmentException("ForgeSPI is out of date, we cannot continue");
-        }
 
         try {
             Class.forName("com.electronwill.nightconfig.core.Config", false, environment.getClass().getClassLoader());
