@@ -29,10 +29,12 @@ import java.util.function.Function;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import net.neoforged.fml.loading.moddiscovery.MinecraftLocator;
+import net.neoforged.fml.ModLoadingException;
+import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
+import net.neoforged.fml.loading.moddiscovery.providers.ISystemModSource;
 import net.neoforged.fml.loading.toposort.CyclePresentException;
 import net.neoforged.fml.loading.toposort.TopologicalSort;
 import net.neoforged.neoforgespi.language.IModInfo;
@@ -52,13 +54,13 @@ public class ModSorter {
         this.uniqueModListBuilder = new UniqueModListBuilder(modFiles);
     }
 
-    public static LoadingModList sort(List<ModFile> mods, final List<EarlyLoadingException.ExceptionData> errors) {
+    public static LoadingModList sort(List<ModFile> mods, final List<ModLoadingIssue> issues) {
         final ModSorter ms = new ModSorter(mods);
         try {
             ms.buildUniqueList();
-        } catch (EarlyLoadingException e) {
+        } catch (ModLoadingException e) {
             // We cannot build any list with duped mods. We have to abort immediately and report it
-            return LoadingModList.of(ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), e);
+            return LoadingModList.of(ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), e.getIssues());
         }
 
         // try and validate dependencies
@@ -68,26 +70,38 @@ public class ModSorter {
 
         // if we miss a dependency or detect an incompatibility, we abort now
         if (!resolutionResult.versionResolution.isEmpty() || !resolutionResult.incompatibilities.isEmpty()) {
-            list = LoadingModList.of(ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), new EarlyLoadingException("failure to validate mod list", null, resolutionResult.buildErrorMessages()));
+            list = LoadingModList.of(ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), concat(issues, resolutionResult.buildErrorMessages()));
         } else {
             // Otherwise, lets try and sort the modlist and proceed
-            EarlyLoadingException earlyLoadingException = null;
+            ModLoadingException modLoadingException = null;
             try {
                 ms.sort();
-            } catch (EarlyLoadingException e) {
-                earlyLoadingException = e;
+            } catch (ModLoadingException e) {
+                modLoadingException = e;
             }
-            list = LoadingModList.of(ms.modFiles, ms.sortedList, earlyLoadingException);
+            if (modLoadingException == null) {
+                list = LoadingModList.of(ms.modFiles, ms.sortedList, issues);
+            } else {
+                list = LoadingModList.of(ms.modFiles, ms.sortedList, concat(issues, modLoadingException.getIssues()));
+            }
         }
 
         // If we have conflicts those are considered warnings
         if (!resolutionResult.discouraged.isEmpty()) {
-            list.getWarnings().add(new EarlyLoadingException(
+            list.getModLoadingIssues().add(ModLoadingIssue.warning(
                     "found mod conflicts",
-                    null,
                     resolutionResult.buildWarningMessages()));
         }
         return list;
+    }
+
+    @SafeVarargs
+    private static <T> List<T> concat(List<T>... lists) {
+        var lst = new ArrayList<T>();
+        for (List<T> list : lists) {
+            lst.addAll(list);
+        }
+        return lst;
     }
 
     @SuppressWarnings("UnstableApiUsage")
@@ -119,9 +133,9 @@ public class ModSorter {
                     .<ModFileInfo>mapMulti(Iterable::forEach)
                     .<IModInfo>mapMulti((mf, c) -> mf.getMods().forEach(c))
                     .map(IModInfo::getModId)
-                    .map(list -> new EarlyLoadingException.ExceptionData("fml.modloading.cycle", list))
+                    .map(list -> ModLoadingIssue.error("fml.modloading.cycle", list).withCause(e))
                     .toList();
-            throw new EarlyLoadingException("Sorting error", e, dataList);
+            throw new ModLoadingException(dataList);
         }
         this.sortedList = sorted.stream()
                 .map(ModFileInfo::getMods)
@@ -168,7 +182,7 @@ public class ModSorter {
         systemMods.add("minecraft");
         // Find mod file from MinecraftLocator to define the system mods
         modFiles.stream()
-                .filter(modFile -> modFile.getProvider().getClass() == MinecraftLocator.class)
+                .filter(modFile -> modFile.getSource() instanceof ISystemModSource)
                 .map(ModFile::getSecureJar)
                 .map(SecureJar::moduleDataProvider)
                 .map(SecureJar.ModuleDataProvider::getManifest)
@@ -184,9 +198,7 @@ public class ModSorter {
             var container = modFilesByFirstId.get(systemMod);
             if (container != null && !container.isEmpty()) {
                 LOGGER.debug("Found system mod: {}", systemMod);
-                this.systemMods.add((ModFile) container.get(0));
-            } else {
-                throw new IllegalStateException("Failed to find system mod: " + systemMod);
+                this.systemMods.add(container.getFirst());
             }
         }
     }
@@ -196,26 +208,26 @@ public class ModSorter {
             Collection<IModInfo.ModVersion> discouraged,
             Collection<IModInfo.ModVersion> versionResolution,
             Map<String, ArtifactVersion> modVersions) {
-        public List<EarlyLoadingException.ExceptionData> buildWarningMessages() {
+        public List<ModLoadingIssue> buildWarningMessages() {
             return Stream.concat(discouraged.stream()
-                    .map(mv -> new EarlyLoadingException.ExceptionData("fml.modloading.discouragedmod",
-                            mv.getOwner(), mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
-                            modVersions.get(mv.getModId()), mv.getReason().orElse("fml.modloading.discouragedmod.noreason"))),
+                    .map(mv -> ModLoadingIssue.warning("fml.modloading.discouragedmod",
+                            mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
+                            modVersions.get(mv.getModId()), mv.getReason().orElse("fml.modloading.discouragedmod.noreason")).withAffectedMod(mv.getOwner())),
 
-                    Stream.of(new EarlyLoadingException.ExceptionData("fml.modloading.discouragedmod.proceed")))
+                    Stream.of(ModLoadingIssue.warning("fml.modloading.discouragedmod.proceed")))
                     .toList();
         }
 
-        public List<EarlyLoadingException.ExceptionData> buildErrorMessages() {
+        public List<ModLoadingIssue> buildErrorMessages() {
             return Stream.concat(
                     versionResolution.stream()
-                            .map(mv -> new EarlyLoadingException.ExceptionData(mv.getType() == IModInfo.DependencyType.REQUIRED ? "fml.modloading.missingdependency" : "fml.modloading.missingdependency.optional",
-                                    mv.getOwner(), mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
-                                    modVersions.getOrDefault(mv.getModId(), new DefaultArtifactVersion("null")), mv.getReason())),
+                            .map(mv -> ModLoadingIssue.error(mv.getType() == IModInfo.DependencyType.REQUIRED ? "fml.modloading.missingdependency" : "fml.modloading.missingdependency.optional",
+                                    mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
+                                    modVersions.getOrDefault(mv.getModId(), new DefaultArtifactVersion("null")), mv.getReason()).withAffectedMod(mv.getOwner())),
                     incompatibilities.stream()
-                            .map(mv -> new EarlyLoadingException.ExceptionData("fml.modloading.incompatiblemod",
-                                    mv.getOwner(), mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
-                                    modVersions.get(mv.getModId()), mv.getReason().orElse("fml.modloading.incompatiblemod.noreason"))))
+                            .map(mv -> ModLoadingIssue.error("fml.modloading.incompatiblemod",
+                                    mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
+                                    modVersions.get(mv.getModId()), mv.getReason().orElse("fml.modloading.incompatiblemod.noreason")).withAffectedMod(mv.getOwner())))
                     .toList();
         }
     }

@@ -9,7 +9,6 @@ import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ILaunchHandlerService;
-import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
 import java.io.IOException;
@@ -19,26 +18,26 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.accesstransformer.ml.AccessTransformerService;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.coremod.CoreModScriptingEngine;
 import net.neoforged.fml.common.asm.RuntimeDistCleaner;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
-import net.neoforged.fml.loading.moddiscovery.BackgroundScanHandler;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModValidator;
+import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.fml.loading.targets.CommonLaunchHandler;
+import net.neoforged.neoforgespi.ILaunchContext;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 public class FMLLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static AccessTransformerEngine accessTransformer;
-    private static ModDiscoverer modDiscoverer;
     private static CoreModScriptingEngine coreModEngine;
-    private static LanguageLoadingProvider languageLoadingProvider;
+    private static LanguageProviderLoader languageProviderLoader;
     private static Dist dist;
     private static LoadingModList loadingModList;
     private static RuntimeDistCleaner runtimeDistCleaner;
@@ -50,9 +49,10 @@ public class FMLLoader {
     private static ModValidator modValidator;
     public static BackgroundScanHandler backgroundScanHandler;
     private static boolean production;
-    private static IModuleLayerManager moduleLayerManager;
+    @Nullable
+    private static ModuleLayer gameLayer;
 
-    static void onInitialLoad(IEnvironment environment, Set<String> otherServices) throws IncompatibleEnvironmentException {
+    static void onInitialLoad(IEnvironment environment) throws IncompatibleEnvironmentException {
         final String version = LauncherVersion.getVersion();
         LOGGER.debug(LogMarkers.CORE, "FML {} loading", version);
         final Package modLauncherPackage = ITransformationService.class.getPackage();
@@ -100,9 +100,8 @@ public class FMLLoader {
         }
     }
 
-    static void setupLaunchHandler(final IEnvironment environment, final Map<String, Object> arguments) {
-        final String launchTarget = environment.getProperty(IEnvironment.Keys.LAUNCHTARGET.get()).orElse("MISSING");
-        arguments.put("launchTarget", launchTarget);
+    static void setupLaunchHandler(IEnvironment environment, VersionInfo versionInfo) {
+        var launchTarget = environment.getProperty(IEnvironment.Keys.LAUNCHTARGET.get()).orElse("MISSING");
         final Optional<ILaunchHandlerService> launchHandler = environment.findLaunchHandler(launchTarget);
         LOGGER.debug(LogMarkers.CORE, "Using {} as launch service", launchTarget);
         if (launchHandler.isEmpty()) {
@@ -117,31 +116,29 @@ public class FMLLoader {
         commonLaunchHandler = (CommonLaunchHandler) launchHandler.get();
         launchHandlerName = launchHandler.get().name();
         gamePath = environment.getProperty(IEnvironment.Keys.GAMEDIR.get()).orElse(Paths.get(".").toAbsolutePath());
+        FMLLoader.versionInfo = versionInfo;
 
         dist = commonLaunchHandler.getDist();
         production = commonLaunchHandler.isProduction();
 
-        versionInfo = new VersionInfo(arguments);
-
-        LOGGER.debug(LogMarkers.CORE, "Received command line version data  : {}", versionInfo);
-
         runtimeDistCleaner.getExtension().accept(dist);
     }
 
-    public static List<ITransformationService.Resource> beginModScan(final Map<String, ?> arguments) {
-        LOGGER.debug(LogMarkers.SCAN, "Scanning for Mod Locators");
-        modDiscoverer = new ModDiscoverer(arguments);
+    public static List<ITransformationService.Resource> beginModScan(ILaunchContext launchContext) {
+        var modDiscoverer = new ModDiscoverer(
+                launchContext,
+                commonLaunchHandler.getAdditionalModFileLocators(versionInfo),
+                commonLaunchHandler.getAdditionalModFileProviders(versionInfo));
         modValidator = modDiscoverer.discoverMods();
         var pluginResources = modValidator.getPluginResources();
         return List.of(pluginResources);
     }
 
-    public static List<ITransformationService.Resource> completeScan(IModuleLayerManager layerManager, List<String> extraMixinConfigs) {
-        moduleLayerManager = layerManager;
-        languageLoadingProvider = new LanguageLoadingProvider();
+    public static List<ITransformationService.Resource> completeScan(ILaunchContext launchContext, List<String> extraMixinConfigs) {
+        languageProviderLoader = new LanguageProviderLoader(launchContext);
         backgroundScanHandler = modValidator.stage2Validation();
         loadingModList = backgroundScanHandler.getLoadingModList();
-        if (loadingModList.getErrors().isEmpty()) {
+        if (!loadingModList.hasErrors()) {
             // Add extra mixin configs
             extraMixinConfigs.forEach(DeferredMixinConfigRegistration::addMixinConfig);
         }
@@ -152,16 +149,8 @@ public class FMLLoader {
         return coreModEngine;
     }
 
-    public static LanguageLoadingProvider getLanguageLoadingProvider() {
-        return languageLoadingProvider;
-    }
-
-    static ModDiscoverer getModDiscoverer() {
-        return modDiscoverer;
-    }
-
-    public static CommonLaunchHandler getLaunchHandler() {
-        return commonLaunchHandler;
+    public static LanguageProviderLoader getLanguageLoadingProvider() {
+        return languageProviderLoader;
     }
 
     public static void addAccessTransformer(Path atPath, ModFile modName) {
@@ -178,6 +167,7 @@ public class FMLLoader {
     }
 
     public static void beforeStart(ModuleLayer gameLayer) {
+        FMLLoader.gameLayer = gameLayer;
         ImmediateWindowHandler.acceptGameLayer(gameLayer);
         ImmediateWindowHandler.updateProgress("Launching minecraft");
         progressWindowTick.run();
@@ -207,12 +197,11 @@ public class FMLLoader {
         return production;
     }
 
-    public static boolean isSecureJarEnabled() {
-        return true;
-    }
-
     public static ModuleLayer getGameLayer() {
-        return moduleLayerManager.getLayer(IModuleLayerManager.Layer.GAME).orElseThrow();
+        if (gameLayer == null) {
+            throw new IllegalStateException("This can only be called after mod discovery is completed");
+        }
+        return gameLayer;
     }
 
     public static VersionInfo versionInfo() {

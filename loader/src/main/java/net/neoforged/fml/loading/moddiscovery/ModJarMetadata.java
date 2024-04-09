@@ -16,7 +16,7 @@ public final class ModJarMetadata extends LazyJarMetadata implements JarMetadata
     private final JarContents jarContents;
     private IModFile modFile;
 
-    ModJarMetadata(JarContents jarContents) {
+    public ModJarMetadata(JarContents jarContents) {
         this.jarContents = jarContents;
     }
 

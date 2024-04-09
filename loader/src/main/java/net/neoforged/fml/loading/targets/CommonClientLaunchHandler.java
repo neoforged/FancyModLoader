@@ -5,14 +5,16 @@
 
 package net.neoforged.fml.loading.targets;
 
-import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Stream;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.LibraryFinder;
+import net.neoforged.fml.loading.MavenCoordinate;
 import net.neoforged.fml.loading.VersionInfo;
+import net.neoforged.fml.loading.moddiscovery.providers.ProductionClientProvider;
+import net.neoforged.neoforgespi.locating.IModFileProvider;
 
+/**
+ * For production client environments (i.e. vanilla launcher).
+ */
 public abstract class CommonClientLaunchHandler extends CommonLaunchHandler {
     @Override
     public Dist getDist() {
@@ -29,18 +31,16 @@ public abstract class CommonClientLaunchHandler extends CommonLaunchHandler {
         clientService(arguments, gameLayer);
     }
 
-    @Override
-    public LocatedPaths getMinecraftPaths() {
-        final var vers = FMLLoader.versionInfo();
-        var mc = LibraryFinder.findPathForMaven("net.minecraft", "client", "", "srg", vers.mcAndNeoFormVersion());
-        var mcextra = LibraryFinder.findPathForMaven("net.minecraft", "client", "", "extra", vers.mcAndNeoFormVersion());
-        var mcstream = Stream.<Path>builder().add(mc).add(mcextra);
-        var modstream = Stream.<List<Path>>builder();
-
-        processMCStream(vers, mcstream, modstream);
-
-        return new LocatedPaths(mcstream.build().toList(), null, modstream.build().toList(), this.getFmlPaths(this.getLegacyClasspath()));
+    /**
+     * @return Additional artifacts from the Games libraries folder that should be layered on top of the Minecraft jar content.
+     */
+    protected List<MavenCoordinate> getAdditionalMinecraftJarContent(VersionInfo versionInfo) {
+        return List.of();
     }
 
-    protected abstract void processMCStream(VersionInfo versionInfo, Stream.Builder<Path> mc, Stream.Builder<List<Path>> mods);
+    @Override
+    public List<IModFileProvider> getAdditionalModFileProviders(VersionInfo versionInfo) {
+        var additionalContent = getAdditionalMinecraftJarContent(versionInfo);
+        return List.of(new ProductionClientProvider(additionalContent));
+    }
 }

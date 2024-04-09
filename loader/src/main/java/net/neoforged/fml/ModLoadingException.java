@@ -5,67 +5,27 @@
 
 package net.neoforged.fml;
 
-import com.google.common.collect.Streams;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
-import net.neoforged.fml.loading.EarlyLoadingException;
-import net.neoforged.neoforgespi.language.IModInfo;
+import java.util.stream.Collectors;
 
-/**
- * General purpose mod loading error message
- */
 public class ModLoadingException extends RuntimeException {
-    private static final long serialVersionUID = 2048947398536935507L;
-    /**
-     * Mod Info for mod with issue
-     */
-    private final IModInfo modInfo;
+    private final List<ModLoadingIssue> issues;
 
-    /**
-     * I18N message to use for display
-     */
-    private final String i18nMessage;
-
-    /**
-     * Context for message display
-     */
-    private final List<Object> context;
-
-    public ModLoadingException(final IModInfo modInfo, final String i18nMessage, final Throwable originalException, Object... context) {
-        super("Mod Loading Exception", originalException);
-        this.modInfo = modInfo;
-        this.i18nMessage = i18nMessage;
-        this.context = Arrays.asList(context);
+    public ModLoadingException(ModLoadingIssue issue) {
+        this(List.of(issue));
     }
 
-    static Stream<ModLoadingException> fromEarlyException(final EarlyLoadingException e) {
-        return e.getAllData().stream().map(ed -> new ModLoadingException(ed.getModInfo(), ed.getI18message(), e.getCause(), ed.getArgs()));
+    public ModLoadingException(List<ModLoadingIssue> issues) {
+        this.issues = issues;
     }
 
-    public String getI18NMessage() {
-        return i18nMessage;
-    }
-
-    public Object[] getContext() {
-        return context.toArray();
-    }
-
-    public String formatToString() {
-        // TODO: cleanup null here - this requires moving all indices in the translations
-        return Bindings.parseMessage(i18nMessage, Streams.concat(Stream.of(modInfo, null, getCause()), context.stream()).toArray());
+    public List<ModLoadingIssue> getIssues() {
+        return this.issues;
     }
 
     @Override
     public String getMessage() {
-        return formatToString();
-    }
-
-    public IModInfo getModInfo() {
-        return modInfo;
-    }
-
-    public String getCleanMessage() {
-        return Bindings.stripControlCodes(formatToString());
+        return "Loading errors encountered: " + this.issues.stream().map(ModLoadingIssue::getTranslatedMessage)
+                .collect(Collectors.joining(",\n\t", "[\n\t", "\n]"));
     }
 }

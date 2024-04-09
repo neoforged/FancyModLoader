@@ -26,6 +26,8 @@ import org.apache.logging.log4j.LogManager;
 public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryService {
     private final List<Path> legacyClasspath = Arrays.stream(System.getProperty("legacyClassPath", "").split(File.pathSeparator)).map(Path::of).toList();
 
+    private final static List<NamedPath> found = new ArrayList<>();
+
     @Override
     public List<NamedPath> candidates(Path gameDirectory) {
         return Collections.emptyList();
@@ -34,26 +36,25 @@ public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryServ
     @Override
     public List<NamedPath> candidates(final Path gameDirectory, final String launchTarget) {
         if (launchTarget != null && launchTarget.contains("dev")) {
-            this.scan(gameDirectory);
+            return scan();
         }
-        return List.copyOf(found);
+        return List.of();
     }
-
-    private final static List<NamedPath> found = new ArrayList<>();
 
     public static List<Path> allExcluded() {
         return found.stream().map(np -> np.paths()[0]).toList();
     }
 
-    private void scan(final Path gameDirectory) {
+    private List<NamedPath> scan() {
         try {
-            for (final String serviceClass : TransformerDiscovererConstants.SERVICES) {
+            for (var serviceClass : TransformerDiscovererConstants.SERVICES) {
                 locateTransformers("META-INF/services/" + serviceClass);
             }
 
-            scanModClasses();
+            return scanModClasses();
         } catch (IOException e) {
             LogManager.getLogger().error("Error during discovery of transform services from the classpath", e);
+            return List.of();
         }
     }
 
@@ -68,12 +69,15 @@ public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryServ
         }
     }
 
-    private void scanModClasses() {
+    private List<NamedPath> scanModClasses() {
         final Map<String, List<Path>> modClassPaths = CommonLaunchHandler.getModClasses();
-        modClassPaths.forEach((modid, paths) -> {
-            if (shouldLoadInServiceLayer(paths.toArray(Path[]::new))) {
+        for (var entry : modClassPaths.entrySet()) {
+            String modid = entry.getKey();
+            List<Path> paths = entry.getValue();
+            if (shouldLoadInServiceLayer(paths)) {
                 found.add(new NamedPath(modid, paths.toArray(Path[]::new)));
             }
-        });
+        }
+        return found;
     }
 }

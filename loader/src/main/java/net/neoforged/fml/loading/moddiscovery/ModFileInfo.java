@@ -5,7 +5,6 @@
 
 package net.neoforged.fml.loading.moddiscovery;
 
-import com.google.common.base.Strings;
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.LambdaExceptionUtils;
 import java.net.URL;
@@ -35,6 +34,8 @@ import net.neoforged.neoforgespi.language.IConfigurable;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.MavenVersionAdapter;
+import net.neoforged.neoforgespi.locating.InvalidModFileException;
+import org.jetbrains.annotations.ApiStatus;
 import org.slf4j.Logger;
 
 public class ModFileInfo implements IModFileInfo, IConfigurable {
@@ -50,7 +51,8 @@ public class ModFileInfo implements IModFileInfo, IConfigurable {
     private final String license;
     private final List<String> usesServices;
 
-    ModFileInfo(final ModFile modFile, final IConfigurable config, Consumer<IModFileInfo> configFileConsumer) {
+    @ApiStatus.Internal
+    public ModFileInfo(final ModFile modFile, final IConfigurable config, Consumer<IModFileInfo> configFileConsumer) {
         this.modFile = modFile;
         this.config = config;
         configFileConsumer.accept(this);
@@ -65,6 +67,10 @@ public class ModFileInfo implements IModFileInfo, IConfigurable {
         // the remaining properties are optional with sensible defaults
         this.license = config.<String>getConfigElement("license")
                 .orElse("");
+        // Validate the license is set. Only apply this validation to mods.
+        if (this.license.isBlank()) {
+            throw new InvalidModFileException("fml.modloading.missinglicense", this);
+        }
         this.showAsResourcePack = config.<Boolean>getConfigElement("showAsResourcePack")
                 .orElse(false);
         this.showAsDataPack = config.<Boolean>getConfigElement("showAsDataPack")
@@ -150,10 +156,6 @@ public class ModFileInfo implements IModFileInfo, IConfigurable {
         return issueURL;
     }
 
-    public boolean missingLicense() {
-        return Strings.isNullOrEmpty(license);
-    }
-
     public Optional<String> getCodeSigningFingerprint() {
         var signers = this.modFile.getSecureJar().getManifestSigners();
         return (signers == null ? Stream.<CodeSigner>of() : Arrays.stream(signers))
@@ -203,5 +205,10 @@ public class ModFileInfo implements IModFileInfo, IConfigurable {
     @Override
     public List<String> usesServices() {
         return usesServices;
+    }
+
+    @Override
+    public String toString() {
+        return moduleName();
     }
 }

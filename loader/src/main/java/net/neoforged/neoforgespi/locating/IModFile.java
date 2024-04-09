@@ -10,10 +10,13 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.IModLanguageProvider;
 import net.neoforged.neoforgespi.language.ModFileScanData;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a single "mod" file in the runtime.
@@ -24,7 +27,35 @@ import net.neoforged.neoforgespi.language.ModFileScanData;
  * or code which does not interact with minecraft at all and is just a utility for any of the other mod
  * files.
  */
+@ApiStatus.NonExtendable
 public interface IModFile {
+    /**
+     * Builds a new mod file instance depending on the current runtime.
+     *
+     * @param jar    The secure jar to load the mod file from.
+     * @param source The provider which is offering the mod file for loading-
+     * @param parser The parser which is responsible for parsing the metadata of the file itself.
+     * @param type   the type of the mod
+     * @param parent the logical parent mod-file for this new mod-file
+     * @return The mod file.
+     */
+    static IModFile create(SecureJar jar, IModFileSource source, ModFileInfoParser parser, IModFile.Type type, @Nullable IModFile parent) throws InvalidModFileException {
+        return new ModFile(jar, source, parser, type, parent);
+    }
+
+    /**
+     * Builds a new mod file instance depending on the current runtime.
+     *
+     * @param jar    The secure jar to load the mod file from.
+     * @param source The provider which is offering the mod file for loading-
+     * @param parser The parser which is responsible for parsing the metadata of the file itself.
+     * @param parent the logical parent mod-file for this new mod-file
+     * @return The mod file.
+     */
+    static IModFile create(SecureJar jar, IModFileSource source, ModFileInfoParser parser, @Nullable IModFile parent) throws InvalidModFileException {
+        return new ModFile(jar, source, parser, parent);
+    }
+
     /**
      * The language loaders which are included in this mod file.
      *
@@ -112,12 +143,20 @@ public interface IModFile {
     String getFileName();
 
     /**
-     * The provider who provided the runtime with this jar.
-     * Implicitly indicates what caused the load of the PR. (Mod in mods directory, mod in dev environment, etc)
+     * The source of this mod file. (Mod in mods directory, mod in dev environment, etc)
      *
-     * @return The provider of this file.
+     * @return The source of this file.
      */
-    IModProvider getProvider();
+    IModFileSource getSource();
+
+    /**
+     * Gets the logical parent of this mod-file, which may indicate for example where Jar-in-Jar dependencies
+     * have ultimately been loaded from.
+     *
+     * @return The mod-file that is the parent of this mod-file.
+     */
+    @Nullable
+    IModFile getParent();
 
     /**
      * The metadata info related to this particular file.

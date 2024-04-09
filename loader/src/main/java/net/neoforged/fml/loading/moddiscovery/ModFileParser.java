@@ -18,24 +18,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import net.neoforged.fml.loading.LogMarkers;
+import net.neoforged.fml.loading.moddiscovery.locators.JarModsDotTomlModFileReader;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
-import net.neoforged.neoforgespi.locating.ModFileFactory;
+import net.neoforged.neoforgespi.locating.InvalidModFileException;
+import net.neoforged.neoforgespi.locating.ModFileInfoParser;
 import org.slf4j.Logger;
 
 public class ModFileParser {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public static IModFileInfo readModList(final ModFile modFile, final ModFileFactory.ModFileInfoParser parser) {
+    public static IModFileInfo readModList(final ModFile modFile, final ModFileInfoParser parser) {
         return parser.build(modFile);
     }
 
     public static IModFileInfo modsTomlParser(final IModFile imodFile) {
         ModFile modFile = (ModFile) imodFile;
         LOGGER.debug(LogMarkers.LOADING, "Considering mod file candidate {}", modFile.getFilePath());
-        final Path modsjson = modFile.findResource(AbstractModProvider.MODS_TOML);
+        final Path modsjson = modFile.findResource(JarModsDotTomlModFileReader.MODS_TOML);
         if (!Files.exists(modsjson)) {
-            LOGGER.warn(LogMarkers.LOADING, "Mod file {} is missing {} file", modFile.getFilePath(), AbstractModProvider.MODS_TOML);
+            LOGGER.warn(LogMarkers.LOADING, "Mod file {} is missing {} file", modFile.getFilePath(), JarModsDotTomlModFileReader.MODS_TOML);
             return null;
         }
 

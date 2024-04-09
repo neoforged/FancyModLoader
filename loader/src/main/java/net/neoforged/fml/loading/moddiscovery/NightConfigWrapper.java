@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import net.neoforged.neoforgespi.language.IConfigurable;
 import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.locating.InvalidModFileException;
 
 public class NightConfigWrapper implements IConfigurable {
     private final UnmodifiableConfig config;
@@ -24,7 +25,7 @@ public class NightConfigWrapper implements IConfigurable {
         this.config = config;
     }
 
-    NightConfigWrapper setFile(IModFileInfo file) {
+    public NightConfigWrapper setFile(IModFileInfo file) {
         this.file = file;
         return this;
     }

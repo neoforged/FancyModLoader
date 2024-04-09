@@ -1,6 +1,0 @@
-net.neoforged.fml.loading.moddiscovery.ModsFolderLocator
-net.neoforged.fml.loading.moddiscovery.MavenDirectoryLocator
-net.neoforged.fml.loading.moddiscovery.ExplodedDirectoryLocator
-net.neoforged.fml.loading.moddiscovery.MinecraftLocator
-net.neoforged.fml.loading.moddiscovery.ClasspathLocator
-net.neoforged.fml.loading.moddiscovery.BuiltinGameLibraryLocator

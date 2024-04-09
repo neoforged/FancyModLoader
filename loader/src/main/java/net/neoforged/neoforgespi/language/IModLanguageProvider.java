@@ -17,7 +17,6 @@
 package net.neoforged.neoforgespi.language;
 
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import net.neoforged.neoforgespi.locating.IModFile;
 
 /**
@@ -31,12 +30,6 @@ public interface IModLanguageProvider {
     String name();
 
     Consumer<ModFileScanData> getFileVisitor();
-
-    /**
-     * @deprecated Does not do anything.
-     */
-    @Deprecated(forRemoval = true, since = "2.0.8")
-    default <R extends ILifecycleEvent<R>> void consumeLifecycleEvent(Supplier<R> consumeEvent) {}
 
     interface IModLanguageLoader {
         <T> T loadMod(IModInfo info, ModFileScanData modFileScanResults, ModuleLayer layer);

@@ -11,7 +11,12 @@ import java.util.List;
  * Loaded as a ServiceLoader. Takes mechanisms for locating candidate "mod-dependencies".
  * and transforms them into {@link IModFile} objects.
  */
-public interface IDependencyLocator extends IModProvider {
+public interface IDependencyLocator {
+    /**
+     * {@return the name of this dependency locator}
+     */
+    String name();
+
     /**
      * Invoked to find all mod dependencies that this dependency locator can find.
      * It is not guaranteed that all these are loaded into the runtime,
@@ -19,5 +24,5 @@ public interface IDependencyLocator extends IModProvider {
      *
      * @return All found, or discovered, mod files which function as dependencies.
      */
-    List<IModFile> scanMods(final Iterable<IModFile> loadedMods);
+    List<IModFile> scanMods(List<IModFile> loadedMods, IModFileReaderFacade providersFacade);
 }

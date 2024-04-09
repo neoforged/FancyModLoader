@@ -17,12 +17,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
+import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
-import net.neoforged.fml.loading.moddiscovery.BackgroundScanHandler;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
-import net.neoforged.neoforgespi.locating.IModFile;
+import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 
 /**
  * Master list of all mods <em>in the loading context. This class cannot refer outside the
@@ -33,9 +33,7 @@ public class LoadingModList {
     private final List<ModFileInfo> modFiles;
     private final List<ModInfo> sortedList;
     private final Map<String, ModFileInfo> fileById;
-    private final List<EarlyLoadingException> preLoadErrors;
-    private final List<EarlyLoadingException> preLoadWarnings;
-    private List<IModFile> brokenFiles;
+    private final List<ModLoadingIssue> modLoadingIssues;
 
     private LoadingModList(final List<ModFile> modFiles, final List<ModInfo> sortedList) {
         this.modFiles = modFiles.stream()
@@ -50,15 +48,12 @@ public class LoadingModList {
                 .flatMap(Collection::stream)
                 .map(ModInfo.class::cast)
                 .collect(Collectors.toMap(ModInfo::getModId, ModInfo::getOwningFile));
-        this.preLoadErrors = new ArrayList<>();
-        this.preLoadWarnings = new ArrayList<>();
+        this.modLoadingIssues = new ArrayList<>();
     }
 
-    public static LoadingModList of(List<ModFile> modFiles, List<ModInfo> sortedList, final EarlyLoadingException earlyLoadingException) {
+    public static LoadingModList of(List<ModFile> modFiles, List<ModInfo> sortedList, List<ModLoadingIssue> issues) {
         INSTANCE = new LoadingModList(modFiles, sortedList);
-        if (earlyLoadingException != null) {
-            INSTANCE.preLoadErrors.add(earlyLoadingException);
-        }
+        INSTANCE.modLoadingIssues.addAll(issues);
         return INSTANCE;
     }
 
@@ -159,19 +154,11 @@ public class LoadingModList {
         return this.sortedList;
     }
 
-    public List<EarlyLoadingException> getErrors() {
-        return preLoadErrors;
+    public boolean hasErrors() {
+        return modLoadingIssues.stream().noneMatch(issue -> issue.severity() == ModLoadingIssue.Severity.ERROR);
     }
 
-    public List<EarlyLoadingException> getWarnings() {
-        return preLoadWarnings;
-    }
-
-    public void setBrokenFiles(final List<IModFile> brokenFiles) {
-        this.brokenFiles = brokenFiles;
-    }
-
-    public List<IModFile> getBrokenFiles() {
-        return this.brokenFiles;
+    public List<ModLoadingIssue> getModLoadingIssues() {
+        return modLoadingIssues;
     }
 }
