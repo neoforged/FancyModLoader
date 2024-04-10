@@ -4,6 +4,7 @@ import org.jetbrains.annotations.ApiStatus;
 
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -52,4 +53,20 @@ public interface JarContents {
      * Parses the {@code META-INF/services} files in the jar, and returns the list of service providers.
      */
     List<SecureJar.Provider> getMetaInfServices();
+
+    /**
+     * Create plain jar contents from a single jar file or folder.
+     * For more advanced use-cases see {@link JarContentsBuilder}.
+     */
+    static JarContents of(Path fileOrFolder) {
+        return new JarContentsBuilder().paths(fileOrFolder).build();
+    }
+
+    /**
+     * Create a virtual jar that consists of the contents of the given jar-files and folders.
+     * For more advanced use-cases see {@link JarContentsBuilder}.
+     */
+    static JarContents of(Collection<Path> filesOrFolders) {
+        return new JarContentsBuilder().paths(filesOrFolders.toArray(new Path[0])).build();
+    }
 }
