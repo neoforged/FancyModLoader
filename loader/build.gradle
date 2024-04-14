@@ -4,7 +4,6 @@ dependencies {
     api("org.ow2.asm:asm:${asm_version}")
     api("org.ow2.asm:asm-tree:${asm_version}")
     api("org.ow2.asm:asm-commons:${asm_version}")
-    api(project(':spi'))
     api("net.neoforged:mergetool:${mergetool_version}:api")
     api("org.apache.logging.log4j:log4j-api:${log4j_version}")
     api("org.slf4j:slf4j-api:${slf4j_api_version}")
@@ -36,6 +35,11 @@ dependencies {
 
     testCompileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
     testRuntimeOnly("cpw.mods:bootstraplauncher:${bootstraplauncher_version}")
+    testRuntimeOnly("org.apache.logging.log4j:log4j-core:$log4j_version")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:$jupiter_version")
+    testImplementation("org.powermock:powermock-core:$powermock_version")
+    testImplementation("org.hamcrest:hamcrest-core:2.2+")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:$jupiter_version")
 }
 
 spotless {
@@ -55,4 +59,8 @@ spotless {
         }
         bumpThisNumberIfACustomStepChanges(1)
     }
+}
+
+test {
+    useJUnitPlatform()
 }

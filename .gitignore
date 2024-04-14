@@ -27,5 +27,5 @@ changelog.txt
 *.7z
 /logs/
 
-# SPI tests produce this...
-/spi/logs/
+# Our tests produce this...
+/loader/logs/

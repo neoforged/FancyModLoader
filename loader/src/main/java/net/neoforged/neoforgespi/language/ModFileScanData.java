@@ -6,7 +6,12 @@
 package net.neoforged.neoforgespi.language;
 
 import java.lang.annotation.ElementType;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.objectweb.asm.Type;
 

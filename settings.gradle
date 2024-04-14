@@ -24,4 +24,3 @@ rootProject.name = 'FancyModLoader'
 
 include 'loader'
 include 'earlydisplay'
-include 'spi'
