@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
@@ -188,6 +189,12 @@ public class ModLoader {
         }
         modList.setLoadedMods(modContainers);
         this.modList = modList;
+
+        runInitTask("Mod Initialization Callbacks", syncExecutor, periodicTask, () -> {
+            for (var callback : ServiceLoader.load(FMLLoader.getGameLayer(), IModListReadyCallback.class)) {
+                callback.onModListReady(modList);
+            }
+        });
 
         constructMods(syncExecutor, parallelExecutor, periodicTask);
     }
