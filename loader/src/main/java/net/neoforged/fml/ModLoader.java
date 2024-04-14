@@ -19,8 +19,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -145,7 +146,7 @@ public class ModLoader {
      * @param parallelExecutor An executor to run tasks on a parallel loading thread pool
      * @param periodicTask     Optional periodic task to perform on the main thread while other activities run
      */
-    public void gatherAndInitializeMods(final ModWorkManager.DrivenExecutor syncExecutor, final Executor parallelExecutor, final Runnable periodicTask) {
+    public void gatherAndInitializeMods(final Executor syncExecutor, final Executor parallelExecutor, final Runnable periodicTask) {
         ForgeFeature.registerFeature("javaVersion", ForgeFeature.VersionFeatureTest.forVersionString(IModInfo.DependencySide.BOTH, System.getProperty("java.version")));
         ForgeFeature.registerFeature("openGLVersion", ForgeFeature.VersionFeatureTest.forVersionString(IModInfo.DependencySide.CLIENT, ImmediateWindowHandler.getGLVersion()));
         loadingStateValid = true;
@@ -199,51 +200,41 @@ public class ModLoader {
         constructMods(syncExecutor, parallelExecutor, periodicTask);
     }
 
-    private void constructMods(ModWorkManager.DrivenExecutor syncExecutor, Executor parallelExecutor, Runnable periodicTask) {
+    private void constructMods(Executor syncExecutor, Executor parallelExecutor, Runnable periodicTask) {
         var workQueue = new DeferredWorkQueue("Mod Construction");
-        dispatchParallelTask("Mod Construction", syncExecutor, parallelExecutor, periodicTask, modContainer -> {
+        dispatchParallelTask("Mod Construction", parallelExecutor, periodicTask, modContainer -> {
             modContainer.constructMod();
             modContainer.acceptEvent(new FMLConstructModEvent(modContainer, workQueue));
         });
-        waitForTask("Mod Construction: Deferred Queue", syncExecutor, periodicTask, CompletableFuture.runAsync(workQueue::runTasks, syncExecutor));
+        waitForTask("Mod Construction: Deferred Queue", periodicTask, CompletableFuture.runAsync(workQueue::runTasks, syncExecutor));
     }
 
-    public void runInitTask(String name, ModWorkManager.DrivenExecutor syncExecutor, Runnable periodicTask, Runnable initTask) {
-        try {
-            var progress = StartupMessageManager.addProgressBar("Initializing registries", 0);
-            try {
-                syncExecutor.drive(periodicTask);
-                initTask.run();
-            } finally {
-                progress.complete();
-            }
-        } catch (ModLoadingException modLoadingException) {
-            loadingStateValid = false;
-            LOGGER.fatal(LOADING, "Failed to run init task {}", name, modLoadingException);
-            statusConsumer.ifPresent(c -> c.accept("ERROR DURING MOD LOADING"));
-            throw new LoadingFailedException(List.of(modLoadingException));
-        }
+    /**
+     * Runs a single task on the {@code syncExecutor}, while ticking the loading screen.
+     */
+    public void runInitTask(String name, Executor syncExecutor, Runnable periodicTask, Runnable initTask) {
+        waitForTask(name, periodicTask, CompletableFuture.runAsync(initTask, syncExecutor));
     }
 
     /**
      * Dispatches a parallel event across all mod containers, with progress displayed on the loading screen.
      */
-    public void dispatchParallelEvent(String name, ModWorkManager.DrivenExecutor syncExecutor, Executor parallelExecutor, Runnable periodicTask, BiFunction<ModContainer, DeferredWorkQueue, ParallelDispatchEvent> eventConstructor) {
+    public void dispatchParallelEvent(String name, Executor syncExecutor, Executor parallelExecutor, Runnable periodicTask, BiFunction<ModContainer, DeferredWorkQueue, ParallelDispatchEvent> eventConstructor) {
         var workQueue = new DeferredWorkQueue(name);
-        dispatchParallelTask(name, syncExecutor, parallelExecutor, periodicTask, modContainer -> {
+        dispatchParallelTask(name, parallelExecutor, periodicTask, modContainer -> {
             modContainer.acceptEvent(eventConstructor.apply(modContainer, workQueue));
         });
-        waitForTask(name + ": Deferred Queue", syncExecutor, periodicTask, CompletableFuture.runAsync(workQueue::runTasks, syncExecutor));
+        runInitTask(name + ": Deferred Queue", syncExecutor, periodicTask, workQueue::runTasks);
     }
 
     /**
      * Waits for a task to complete, displaying the name of the task on the loading screen.
      */
-    public void waitForTask(String name, ModWorkManager.DrivenExecutor syncExecutor, Runnable periodicTask, CompletableFuture<?> future) {
+    public void waitForTask(String name, Runnable periodicTask, CompletableFuture<?> future) {
         var progress = StartupMessageManager.addProgressBar(name, 0);
         try {
-            syncExecutor.drive(periodicTask);
-            waitForFuture(name, syncExecutor, periodicTask, future);
+            periodicTask.run();
+            waitForFuture(name, periodicTask, future);
         } finally {
             progress.complete();
         }
@@ -252,10 +243,10 @@ public class ModLoader {
     /**
      * Dispatches a task across all mod containers in parallel, with progress displayed on the loading screen.
      */
-    public void dispatchParallelTask(String name, ModWorkManager.DrivenExecutor syncExecutor, Executor parallelExecutor, Runnable periodicTask, Consumer<ModContainer> task) {
+    public void dispatchParallelTask(String name, Executor parallelExecutor, Runnable periodicTask, Consumer<ModContainer> task) {
         var progress = StartupMessageManager.addProgressBar(name, modList.size());
         try {
-            syncExecutor.drive(periodicTask);
+            periodicTask.run();
             var futureList = modList.getSortedMods().stream()
                     .map(modContainer -> {
                         return CompletableFuture.runAsync(() -> {
@@ -269,37 +260,38 @@ public class ModLoader {
                     .toList();
             var singleFuture = ModList.gather(futureList)
                     .thenCompose(ModList::completableFutureFromExceptionList);
-            waitForFuture(name, syncExecutor, periodicTask, singleFuture);
+            waitForFuture(name, periodicTask, singleFuture);
         } finally {
             progress.complete();
         }
     }
 
-    private void waitForFuture(String name, ModWorkManager.DrivenExecutor syncExecutor, Runnable ticker, CompletableFuture<?> future) {
-        while (!future.isDone()) {
-            syncExecutor.drive(ticker);
-        }
-        try {
-            future.join();
-        } catch (CompletionException e) {
-            loadingStateValid = false;
-            Throwable t = e.getCause();
-            final List<Throwable> notModLoading = Arrays.stream(t.getSuppressed())
-                    .filter(obj -> !(obj instanceof ModLoadingException))
-                    .collect(Collectors.toList());
-            if (!notModLoading.isEmpty()) {
-                LOGGER.fatal("Encountered non-modloading exceptions!", e);
-                statusConsumer.ifPresent(c -> c.accept("ERROR DURING MOD LOADING"));
-                throw e;
-            }
+    private void waitForFuture(String name, Runnable ticker, CompletableFuture<?> future) {
+        while (true) {
+            ticker.run();
+            try {
+                future.get(50, TimeUnit.MILLISECONDS);
+                return;
+            } catch (ExecutionException e) {
+                loadingStateValid = false;
+                Throwable t = e.getCause();
+                final List<Throwable> notModLoading = Arrays.stream(t.getSuppressed())
+                        .filter(obj -> !(obj instanceof ModLoadingException))
+                        .collect(Collectors.toList());
+                if (!notModLoading.isEmpty()) {
+                    LOGGER.fatal("Encountered non-modloading exceptions!", e);
+                    statusConsumer.ifPresent(c -> c.accept("ERROR DURING MOD LOADING"));
+                    throw new RuntimeException("Encountered non-modloading in future " + name, e);
+                }
 
-            final List<ModLoadingException> modLoadingExceptions = Arrays.stream(t.getSuppressed())
-                    .filter(ModLoadingException.class::isInstance)
-                    .map(ModLoadingException.class::cast)
-                    .collect(Collectors.toList());
-            LOGGER.fatal(LOADING, "Failed to wait for future {}, {} errors found", name, modLoadingExceptions.size());
-            statusConsumer.ifPresent(c -> c.accept("ERROR DURING MOD LOADING"));
-            throw new LoadingFailedException(modLoadingExceptions);
+                final List<ModLoadingException> modLoadingExceptions = Arrays.stream(t.getSuppressed())
+                        .filter(ModLoadingException.class::isInstance)
+                        .map(ModLoadingException.class::cast)
+                        .collect(Collectors.toList());
+                LOGGER.fatal(LOADING, "Failed to wait for future {}, {} errors found", name, modLoadingExceptions.size());
+                statusConsumer.ifPresent(c -> c.accept("ERROR DURING MOD LOADING"));
+                throw new LoadingFailedException(modLoadingExceptions);
+            } catch (Exception ignored) {}
         }
     }
 

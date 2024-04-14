@@ -168,7 +168,6 @@ public class RenderElement {
             final ProgressMeter pm = currentProgress.get(i);
             Renderer barRenderer = barRenderer(i, alpha, font, pm, context);
             acc = barRenderer.then(acc);
-            alpha >>= 1;
         }
         if (acc != null)
             acc.accept(buffer, context, frameNumber);

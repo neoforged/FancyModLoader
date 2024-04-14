@@ -31,7 +31,7 @@ public class StartupNotificationManager {
     public static ProgressMeter prependProgressBar(final String barName, final int count) {
         var pm = new ProgressMeter(barName, count, 0, new Message(barName, Message.MessageType.ML));
         synchronized (progressMeters) {
-            progressMeters.addLast(pm);
+            progressMeters.addFirst(pm);
         }
         return pm;
     }
@@ -39,14 +39,14 @@ public class StartupNotificationManager {
     public static ProgressMeter addProgressBar(final String barName, final int count) {
         var pm = new ProgressMeter(barName, count, 0, new Message(barName, Message.MessageType.ML));
         synchronized (progressMeters) {
-            progressMeters.push(pm);
+            progressMeters.addLast(pm);
         }
         return pm;
     }
 
     public static void popBar(final ProgressMeter progressMeter) {
         synchronized (progressMeters) {
-            progressMeters.remove(progressMeter);
+            progressMeters.removeLastOccurrence(progressMeter);
         }
     }
 
