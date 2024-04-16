@@ -226,7 +226,6 @@ public class ModLoader {
     public void waitForTask(String name, Runnable periodicTask, CompletableFuture<?> future) {
         var progress = StartupMessageManager.addProgressBar(name, 0);
         try {
-            periodicTask.run();
             waitForFuture(name, periodicTask, future);
         } finally {
             progress.complete();
@@ -259,9 +258,9 @@ public class ModLoader {
         }
     }
 
-    private void waitForFuture(String name, Runnable ticker, CompletableFuture<?> future) {
+    private void waitForFuture(String name, Runnable periodicTask, CompletableFuture<?> future) {
         while (true) {
-            ticker.run();
+            periodicTask.run();
             try {
                 future.get(50, TimeUnit.MILLISECONDS);
                 return;
@@ -274,7 +273,7 @@ public class ModLoader {
                 if (!notModLoading.isEmpty()) {
                     LOGGER.fatal("Encountered non-modloading exceptions!", e);
                     statusConsumer.ifPresent(c -> c.accept("ERROR DURING MOD LOADING"));
-                    throw new RuntimeException("Encountered non-modloading in future " + name, e);
+                    throw new RuntimeException("Encountered non-modloading exception in future " + name, e);
                 }
 
                 final List<ModLoadingException> modLoadingExceptions = Arrays.stream(t.getSuppressed())
