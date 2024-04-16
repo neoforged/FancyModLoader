@@ -8,9 +8,6 @@ package net.neoforged.fml;
 import static net.neoforged.fml.Logging.LOADING;
 
 import com.google.common.base.Stopwatch;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -35,24 +32,16 @@ import org.apache.logging.log4j.Logger;
 public class DeferredWorkQueue {
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final Map<ModLoadingStage, DeferredWorkQueue> workQueues = new HashMap<>();
-
     private final ConcurrentLinkedDeque<TaskInfo> tasks = new ConcurrentLinkedDeque<>();
-    private final ModLoadingStage modLoadingStage;
+    private final String name;
 
-    public DeferredWorkQueue(ModLoadingStage modLoadingStage) {
-        this.modLoadingStage = modLoadingStage;
-        workQueues.put(modLoadingStage, this);
-    }
-
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    public static Optional<DeferredWorkQueue> lookup(Optional<ModLoadingStage> parallelClass) {
-        return Optional.ofNullable(workQueues.get(parallelClass.orElse(null)));
+    public DeferredWorkQueue(String name) {
+        this.name = name;
     }
 
     public void runTasks() {
         if (tasks.isEmpty()) return;
-        LOGGER.debug(LOADING, "Dispatching synchronous work for work queue {}: {} jobs", modLoadingStage, tasks.size());
+        LOGGER.debug(LOADING, "Dispatching synchronous work for work queue {}: {} jobs", name, tasks.size());
         RuntimeException aggregate = new RuntimeException();
         Stopwatch timer = Stopwatch.createStarted();
         tasks.forEach(t -> makeRunnable(t, Runnable::run, aggregate));

@@ -17,10 +17,6 @@ public class ModLoadingWarning {
      * Mod Info for mod with warning
      */
     private final IModInfo modInfo;
-    /**
-     * The stage where this warning was encountered
-     */
-    private final ModLoadingStage warningStage;
 
     /**
      * I18N message to use for display
@@ -32,18 +28,18 @@ public class ModLoadingWarning {
      */
     private final List<Object> context;
 
-    public ModLoadingWarning(final IModInfo modInfo, final ModLoadingStage warningStage, final String i18nMessage, Object... context) {
+    public ModLoadingWarning(final IModInfo modInfo, final String i18nMessage, Object... context) {
         this.modInfo = modInfo;
-        this.warningStage = warningStage;
         this.i18nMessage = i18nMessage;
         this.context = Arrays.asList(context);
     }
 
     public String formatToString() {
-        return Bindings.getMessageParser().get().parseMessage(i18nMessage, Streams.concat(Stream.of(modInfo, warningStage), context.stream()).toArray());
+        // TODO: cleanup null here - this requires moving all indices in the translations
+        return Bindings.getMessageParser().get().parseMessage(i18nMessage, Streams.concat(Stream.of(modInfo, null), context.stream()).toArray());
     }
 
     static Stream<ModLoadingWarning> fromEarlyException(final EarlyLoadingException e) {
-        return e.getAllData().stream().map(ed -> new ModLoadingWarning(ed.getModInfo(), ModLoadingStage.VALIDATE, ed.getI18message(), ed.getArgs()));
+        return e.getAllData().stream().map(ed -> new ModLoadingWarning(ed.getModInfo(), ed.getI18message(), ed.getArgs()));
     }
 }

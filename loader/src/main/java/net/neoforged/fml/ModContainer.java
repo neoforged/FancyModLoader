@@ -8,13 +8,9 @@ package net.neoforged.fml;
 import static net.neoforged.fml.Logging.LOADING;
 
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import net.neoforged.bus.api.BusBuilder;
 import net.neoforged.bus.api.Event;
@@ -23,7 +19,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.config.IConfigSpec;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.IModBusEvent;
-import net.neoforged.fml.loading.progress.ProgressMeter;
+import net.neoforged.fml.event.lifecycle.FMLConstructModEvent;
 import net.neoforged.neoforgespi.language.IModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,9 +44,7 @@ public abstract class ModContainer {
     protected final String modId;
     protected final String namespace;
     protected final IModInfo modInfo;
-    protected ModLoadingStage modLoadingStage;
     protected Supplier<?> contextExtension;
-    protected final Map<ModLoadingStage, Runnable> activityMap = new HashMap<>();
     protected final Map<Class<? extends IExtensionPoint>, Supplier<?>> extensionPoints = new IdentityHashMap<>();
     protected final EnumMap<ModConfig.Type, ModConfig> configs = new EnumMap<>(ModConfig.Type.class);
 
@@ -59,14 +53,12 @@ public abstract class ModContainer {
         // TODO: Currently not reading namespace from configuration..
         this.namespace = this.modId;
         this.modInfo = info;
-        this.modLoadingStage = ModLoadingStage.CONSTRUCT;
     }
 
     /**
      * Errored container state, used for filtering. Does nothing.
      */
     ModContainer() {
-        this.modLoadingStage = ModLoadingStage.ERROR;
         modId = "BROKEN";
         namespace = "BROKEN";
         modInfo = null;
@@ -84,32 +76,6 @@ public abstract class ModContainer {
      */
     public final String getNamespace() {
         return namespace;
-    }
-
-    /**
-     * @return The current loading stage for this mod
-     */
-    public ModLoadingStage getCurrentState() {
-        return modLoadingStage;
-    }
-
-    public static <T extends Event & IModBusEvent> CompletableFuture<Void> buildTransitionHandler(
-            final ModContainer target,
-            final IModStateTransition.EventGenerator<T> eventGenerator,
-            final ProgressMeter progressBar,
-            final BiFunction<ModLoadingStage, Throwable, ModLoadingStage> stateChangeHandler,
-            final Executor executor) {
-        return CompletableFuture
-                .runAsync(() -> {
-                    ModLoadingContext.get().setActiveContainer(target);
-                    target.activityMap.getOrDefault(target.modLoadingStage, () -> {}).run();
-                    target.acceptEvent(eventGenerator.apply(target));
-                }, executor)
-                .whenComplete((mc, exception) -> {
-                    target.modLoadingStage = stateChangeHandler.apply(target.modLoadingStage, exception);
-                    progressBar.increment();
-                    ModLoadingContext.get().setActiveContainer(null);
-                });
     }
 
     public IModInfo getModInfo() {
@@ -175,6 +141,12 @@ public abstract class ModContainer {
     }
 
     /**
+     * Function invoked by FML to construct the mod,
+     * right before the dispatch of {@link FMLConstructModEvent}.
+     */
+    protected void constructMod() {}
+
+    /**
      * Does this mod match the supplied mod?
      *
      * @param mod to compare
@@ -203,7 +175,7 @@ public abstract class ModContainer {
      * 
      * @param e Event to accept
      */
-    protected final <T extends Event & IModBusEvent> void acceptEvent(T e) {
+    public final <T extends Event & IModBusEvent> void acceptEvent(T e) {
         IEventBus bus = getEventBus();
         if (bus == null) return;
 
@@ -213,7 +185,7 @@ public abstract class ModContainer {
             LOGGER.trace(LOADING, "Fired event for modid {} : {}", this.getModId(), e);
         } catch (Throwable t) {
             LOGGER.error(LOADING, "Caught exception during event {} dispatch for modid {}", e, this.getModId(), t);
-            throw new ModLoadingException(modInfo, modLoadingStage, "fml.modloading.errorduringevent", t);
+            throw new ModLoadingException(modInfo, "fml.modloading.errorduringevent", t, e.getClass().getName());
         }
     }
 
@@ -222,7 +194,7 @@ public abstract class ModContainer {
      * 
      * @param e Event to accept
      */
-    protected final <T extends Event & IModBusEvent> void acceptEvent(EventPriority phase, T e) {
+    public final <T extends Event & IModBusEvent> void acceptEvent(EventPriority phase, T e) {
         IEventBus bus = getEventBus();
         if (bus == null) return;
 
@@ -232,7 +204,7 @@ public abstract class ModContainer {
             LOGGER.trace(LOADING, "Fired event for phase {} for modid {} : {}", phase, this.getModId(), e);
         } catch (Throwable t) {
             LOGGER.error(LOADING, "Caught exception during event {} dispatch for modid {}", e, this.getModId(), t);
-            throw new ModLoadingException(modInfo, modLoadingStage, "fml.modloading.errorduringevent", t);
+            throw new ModLoadingException(modInfo, "fml.modloading.errorduringevent", t, e.getClass().getName());
         }
     }
 }

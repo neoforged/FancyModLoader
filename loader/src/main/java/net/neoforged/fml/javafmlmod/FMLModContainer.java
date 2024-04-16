@@ -18,7 +18,6 @@ import net.neoforged.bus.api.EventListener;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoadingException;
-import net.neoforged.fml.ModLoadingStage;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforgespi.language.IModInfo;
@@ -40,7 +39,6 @@ public class FMLModContainer extends ModContainer {
         super(info);
         LOGGER.debug(LOADING, "Creating FMLModContainer instance for {}", className);
         this.scanResults = modFileScanResults;
-        activityMap.put(ModLoadingStage.CONSTRUCT, this::constructMod);
         this.eventBus = BusBuilder.builder()
                 .setExceptionHandler(this::onEventFailed)
                 .markerType(IModBusEvent.class)
@@ -54,7 +52,7 @@ public class FMLModContainer extends ModContainer {
             LOGGER.trace(LOADING, "Loaded modclass {} with {}", modClass.getName(), modClass.getClassLoader());
         } catch (Throwable e) {
             LOGGER.error(LOADING, "Failed to load class {}", className, e);
-            throw new ModLoadingException(info, ModLoadingStage.CONSTRUCT, "fml.modloading.failedtoloadmodclass", e);
+            throw new ModLoadingException(info, "fml.modloading.failedtoloadmodclass", e);
         }
     }
 
@@ -62,7 +60,8 @@ public class FMLModContainer extends ModContainer {
         LOGGER.error(new EventBusErrorMessage(event, i, iEventListeners, throwable));
     }
 
-    private void constructMod() {
+    @Override
+    protected void constructMod() {
         try {
             LOGGER.trace(LOADING, "Loading mod instance {} of type {}", getModId(), modClass.getName());
 
@@ -105,7 +104,7 @@ public class FMLModContainer extends ModContainer {
         } catch (Throwable e) {
             if (e instanceof InvocationTargetException) e = e.getCause(); // exceptions thrown when a reflected method call throws are wrapped in an InvocationTargetException. However, this isn't useful for the end user who has to dig through the logs to find the actual cause.
             LOGGER.error(LOADING, "Failed to create mod instance. ModID: {}, class {}", getModId(), modClass.getName(), e);
-            throw new ModLoadingException(modInfo, ModLoadingStage.CONSTRUCT, "fml.modloading.failedtoloadmod", e, modClass);
+            throw new ModLoadingException(modInfo, "fml.modloading.failedtoloadmod", e, modClass);
         }
         try {
             LOGGER.trace(LOADING, "Injecting Automatic event subscribers for {}", getModId());
@@ -113,7 +112,7 @@ public class FMLModContainer extends ModContainer {
             LOGGER.trace(LOADING, "Completed Automatic event subscribers for {}", getModId());
         } catch (Throwable e) {
             LOGGER.error(LOADING, "Failed to register automatic subscribers. ModID: {}, class {}", getModId(), modClass.getName(), e);
-            throw new ModLoadingException(modInfo, ModLoadingStage.CONSTRUCT, "fml.modloading.failedtoloadmod", e, modClass);
+            throw new ModLoadingException(modInfo, "fml.modloading.failedtoloadmod", e, modClass);
         }
     }
 

@@ -15,7 +15,6 @@ public class ModLoadingContext {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final ThreadLocal<ModLoadingContext> context = ThreadLocal.withInitial(ModLoadingContext::new);
     private Object languageExtension;
-    private ModLoadingStage stage;
 
     public static ModLoadingContext get() {
         return context.get();

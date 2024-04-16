@@ -21,10 +21,6 @@ public class ModLoadingException extends RuntimeException {
      * Mod Info for mod with issue
      */
     private final IModInfo modInfo;
-    /**
-     * The stage where this error was encountered
-     */
-    private final ModLoadingStage errorStage;
 
     /**
      * I18N message to use for display
@@ -36,16 +32,15 @@ public class ModLoadingException extends RuntimeException {
      */
     private final List<Object> context;
 
-    public ModLoadingException(final IModInfo modInfo, final ModLoadingStage errorStage, final String i18nMessage, final Throwable originalException, Object... context) {
+    public ModLoadingException(final IModInfo modInfo, final String i18nMessage, final Throwable originalException, Object... context) {
         super("Mod Loading Exception", originalException);
         this.modInfo = modInfo;
-        this.errorStage = errorStage;
         this.i18nMessage = i18nMessage;
         this.context = Arrays.asList(context);
     }
 
     static Stream<ModLoadingException> fromEarlyException(final EarlyLoadingException e) {
-        return e.getAllData().stream().map(ed -> new ModLoadingException(ed.getModInfo(), ModLoadingStage.VALIDATE, ed.getI18message(), e.getCause(), ed.getArgs()));
+        return e.getAllData().stream().map(ed -> new ModLoadingException(ed.getModInfo(), ed.getI18message(), e.getCause(), ed.getArgs()));
     }
 
     public String getI18NMessage() {
@@ -57,7 +52,8 @@ public class ModLoadingException extends RuntimeException {
     }
 
     public String formatToString() {
-        return Bindings.getMessageParser().get().parseMessage(i18nMessage, Streams.concat(Stream.of(modInfo, errorStage, getCause()), context.stream()).toArray());
+        // TODO: cleanup null here - this requires moving all indices in the translations
+        return Bindings.getMessageParser().get().parseMessage(i18nMessage, Streams.concat(Stream.of(modInfo, null, getCause()), context.stream()).toArray());
     }
 
     @Override

@@ -8,7 +8,6 @@ package net.neoforged.fml.event.lifecycle;
 import java.util.function.Consumer;
 import net.neoforged.fml.DeferredWorkQueue;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.ModLoadingStage;
 
 /**
  * This is the first of four commonly called events during mod initialization.
@@ -27,7 +26,7 @@ import net.neoforged.fml.ModLoadingStage;
  *      completed dispatch
  */
 public class FMLCommonSetupEvent extends ParallelDispatchEvent {
-    public FMLCommonSetupEvent(final ModContainer container, final ModLoadingStage stage) {
-        super(container, stage);
+    public FMLCommonSetupEvent(ModContainer container, DeferredWorkQueue deferredWorkQueue) {
+        super(container, deferredWorkQueue);
     }
 }
