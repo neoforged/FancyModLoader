@@ -36,6 +36,7 @@ public class FMLServiceProvider implements ITransformationService
     private ArgumentAcceptingOptionSpec<String> mcOption;
     private ArgumentAcceptingOptionSpec<String> mcpOption;
     private ArgumentAcceptingOptionSpec<String> mappingsOption;
+    private ArgumentAcceptingOptionSpec<String> groupOption;
     private List<String> modsArgumentList;
     private List<String> modListsArgumentList;
     private List<String> mavenRootsArgumentList;
@@ -45,6 +46,7 @@ public class FMLServiceProvider implements ITransformationService
     private String targetMcVersion;
     private String targetMcpVersion;
     private String targetMcpMappings;
+    private String neoForgeGroup;
     private Map<String, Object> arguments;
 
     public FMLServiceProvider()
@@ -76,6 +78,7 @@ public class FMLServiceProvider implements ITransformationService
         arguments.put("mcVersion", targetMcVersion);
         arguments.put("neoFormVersion", targetMcpVersion);
         arguments.put("mcpMappings", targetMcpMappings);
+        arguments.put("neoForgeGroup", neoForgeGroup);
         LOGGER.debug(CORE, "Preparing launch handler");
         FMLLoader.setupLaunchHandler(environment, arguments);
         FMLEnvironment.setupInteropEnvironment(environment);
@@ -110,6 +113,7 @@ public class FMLServiceProvider implements ITransformationService
         mcOption = argumentBuilder.apply("mcVersion", "Minecraft Version number").withRequiredArg().ofType(String.class).required();
         mcpOption = argumentBuilder.apply("neoFormVersion", "MCP Version number").withRequiredArg().ofType(String.class).required();
         mappingsOption = argumentBuilder.apply("mcpMappings", "MCP Mappings Channel and Version").withRequiredArg().ofType(String.class);
+        groupOption = argumentBuilder.apply("neoForgeGroup", "NeoForge artifact group").withRequiredArg().ofType(String.class).required();
         modsOption = argumentBuilder.apply("mods", "List of mods to add").withRequiredArg().ofType(String.class).withValuesSeparatedBy(",");
         modListsOption = argumentBuilder.apply("modLists", "JSON modlists").withRequiredArg().ofType(String.class).withValuesSeparatedBy(",");
         mavenRootsOption = argumentBuilder.apply("mavenRoots", "Maven root directories").withRequiredArg().ofType(String.class).withValuesSeparatedBy(",");
@@ -128,6 +132,7 @@ public class FMLServiceProvider implements ITransformationService
         targetMcVersion = option.value(mcOption);
         targetMcpVersion = option.value(mcpOption);
         targetMcpMappings = option.value(mappingsOption);
+        neoForgeGroup = option.value(groupOption);
     }
 
     @Override
