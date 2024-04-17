@@ -59,7 +59,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ModLoader {
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final LoadingModList loadingModList = FMLLoader.getLoadingModList();
 
     private static final List<ModLoadingException> loadingExceptions = new ArrayList<>();
     private static final List<ModLoadingWarning> loadingWarnings = new ArrayList<>();
@@ -118,6 +117,7 @@ public class ModLoader {
         ForgeFeature.registerFeature("openGLVersion", ForgeFeature.VersionFeatureTest.forVersionString(IModInfo.DependencySide.CLIENT, ImmediateWindowHandler.getGLVersion()));
         loadingStateValid = true;
         FMLLoader.backgroundScanHandler.waitForScanToComplete(periodicTask);
+        LoadingModList loadingModList = FMLLoader.getLoadingModList();
         final ModList modList = ModList.of(loadingModList.getModFiles().stream().map(ModFileInfo::getFile).toList(),
                 loadingModList.getMods());
         if (!loadingExceptions.isEmpty()) {
