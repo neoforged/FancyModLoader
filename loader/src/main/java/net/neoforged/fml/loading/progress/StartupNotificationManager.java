@@ -83,6 +83,10 @@ public class StartupNotificationManager {
         addMessage(Message.MessageType.MOD, safeMessage, 20);
     }
 
+    public static void modLoaderMessage(String message) {
+        addMessage(Message.MessageType.ML, message, -1);
+    }
+
     public static Optional<Consumer<String>> modLoaderConsumer() {
         return Optional.of(s -> addMessage(Message.MessageType.ML, s, -1));
     }
