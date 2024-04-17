@@ -72,19 +72,19 @@ public class ModLoader {
         CrashReportCallables.registerCrashCallable("FML Language Providers", ModLoader::computeLanguageList);
     }
 
-    private static void collectLoadingErrors() {
-        FMLLoader.getLoadingModList().getErrors().stream()
+    private static void collectLoadingErrors(LoadingModList loadingModList) {
+        loadingModList.getErrors().stream()
                 .flatMap(ModLoadingException::fromEarlyException)
                 .forEach(loadingExceptions::add);
-        FMLLoader.getLoadingModList().getBrokenFiles().stream()
+        loadingModList.getBrokenFiles().stream()
                 .map(file -> new ModLoadingWarning(null, InvalidModIdentifier.identifyJarProblem(file.getFilePath()).orElse("fml.modloading.brokenfile"), file.getFileName()))
                 .forEach(loadingWarnings::add);
 
-        FMLLoader.getLoadingModList().getWarnings().stream()
+        loadingModList.getWarnings().stream()
                 .flatMap(ModLoadingWarning::fromEarlyException)
                 .forEach(loadingWarnings::add);
 
-        FMLLoader.getLoadingModList().getModFiles().stream()
+        loadingModList.getModFiles().stream()
                 .filter(ModFileInfo::missingLicense)
                 .filter(modFileInfo -> modFileInfo.getMods().stream().noneMatch(thisModInfo -> loadingExceptions.stream().map(ModLoadingException::getModInfo).anyMatch(otherInfo -> otherInfo == thisModInfo))) //Ignore files where any other mod already encountered an error
                 .map(modFileInfo -> new ModLoadingException(null, "fml.modloading.missinglicense", null, modFileInfo.getFile()))
@@ -111,13 +111,13 @@ public class ModLoader {
      * @param periodicTask     Optional periodic task to perform on the main thread while other activities run
      */
     public static void gatherAndInitializeMods(final Executor syncExecutor, final Executor parallelExecutor, final Runnable periodicTask) {
-        collectLoadingErrors();
+        LoadingModList loadingModList = FMLLoader.getLoadingModList();
+        collectLoadingErrors(loadingModList);
 
         ForgeFeature.registerFeature("javaVersion", ForgeFeature.VersionFeatureTest.forVersionString(IModInfo.DependencySide.BOTH, System.getProperty("java.version")));
         ForgeFeature.registerFeature("openGLVersion", ForgeFeature.VersionFeatureTest.forVersionString(IModInfo.DependencySide.CLIENT, ImmediateWindowHandler.getGLVersion()));
         loadingStateValid = true;
         FMLLoader.backgroundScanHandler.waitForScanToComplete(periodicTask);
-        LoadingModList loadingModList = FMLLoader.getLoadingModList();
         final ModList modList = ModList.of(loadingModList.getModFiles().stream().map(ModFileInfo::getFile).toList(),
                 loadingModList.getMods());
         if (!loadingExceptions.isEmpty()) {
