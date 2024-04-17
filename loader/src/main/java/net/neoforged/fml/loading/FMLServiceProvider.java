@@ -46,7 +46,7 @@ public class FMLServiceProvider implements ITransformationService
     private String targetMcVersion;
     private String targetMcpVersion;
     private String targetMcpMappings;
-    private String neoForgeGroup;
+    private String targetForgeGroup;
     private Map<String, Object> arguments;
 
     public FMLServiceProvider()
@@ -78,7 +78,7 @@ public class FMLServiceProvider implements ITransformationService
         arguments.put("mcVersion", targetMcVersion);
         arguments.put("neoFormVersion", targetMcpVersion);
         arguments.put("mcpMappings", targetMcpMappings);
-        arguments.put("neoForgeGroup", neoForgeGroup);
+        arguments.put("neoForgeGroup", targetForgeGroup);
         LOGGER.debug(CORE, "Preparing launch handler");
         FMLLoader.setupLaunchHandler(environment, arguments);
         FMLEnvironment.setupInteropEnvironment(environment);
@@ -132,7 +132,7 @@ public class FMLServiceProvider implements ITransformationService
         targetMcVersion = option.value(mcOption);
         targetMcpVersion = option.value(mcpOption);
         targetMcpMappings = option.value(mappingsOption);
-        neoForgeGroup = option.value(groupOption);
+        targetForgeGroup = option.value(groupOption);
     }
 
     @Override
