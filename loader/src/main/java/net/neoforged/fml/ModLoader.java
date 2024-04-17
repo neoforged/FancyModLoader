@@ -57,7 +57,9 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>For mod bus event dispatch, see {@link #postEvent(Event)} and related methods.
  */
-public class ModLoader {
+public final class ModLoader {
+    private ModLoader() {}
+
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final List<ModLoadingException> loadingExceptions = new ArrayList<>();
