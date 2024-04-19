@@ -18,7 +18,11 @@ import org.apache.logging.log4j.Logger;
 public class ModWorkManager {
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final Executor syncWorkExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "modloading-sync-worker"));
+    private static final Executor syncWorkExecutor = Executors.newSingleThreadExecutor(r -> {
+        var thread = new Thread(r, "modloading-sync-worker");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     /**
      * Executor that runs tasks on a single thread in the order they are submitted.
