@@ -11,7 +11,7 @@ import org.jetbrains.annotations.ApiStatus;
 
 @ApiStatus.Internal
 public interface IBindingsProvider {
-    IEventBus getNeoForgeBus();
+    IEventBus getGameBus();
 
     String parseMessage(String i18nMessage, Object... args);
 

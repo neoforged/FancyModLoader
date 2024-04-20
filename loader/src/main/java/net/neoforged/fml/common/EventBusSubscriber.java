@@ -39,17 +39,17 @@ public @interface EventBusSubscriber {
      *
      * @return the bus you wish to listen to
      */
-    Bus bus() default Bus.FORGE;
+    Bus bus() default Bus.GAME;
 
     enum Bus {
         /**
-         * The main NeoForge Event Bus.
+         * The main NeoForge Event Bus, used after the game has started up.
          *
          * <p>See {@code NeoForge#EVENT_BUS}</p>
          */
-        FORGE,
+        GAME,
         /**
-         * The mod specific Event bus.
+         * The mod-specific Event bus, used during startup.
          *
          * @see ModContainer#getEventBus()
          */

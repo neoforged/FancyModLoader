@@ -52,7 +52,7 @@ public class AutomaticEventSubscriber {
             if (Objects.equals(mod.getModId(), modId) && sides.contains(FMLEnvironment.dist)) {
                 try {
                     IEventBus bus = switch (busTarget) {
-                        case FORGE -> Bindings.getNeoForgeBus();
+                        case GAME -> Bindings.getGameBus();
                         case MOD -> mod.getEventBus();
                     };
 

@@ -24,8 +24,8 @@ public class Bindings {
         provider = providers.get(0).get();
     }
 
-    public static IEventBus getNeoForgeBus() {
-        return provider.getNeoForgeBus();
+    public static IEventBus getGameBus() {
+        return provider.getGameBus();
     }
 
     public static String parseMessage(String i18nMessage, Object... args) {
