@@ -1,3 +1,11 @@
+plugins {
+    id 'net.neoforged.jarcompatibilitychecker' version '0.1.3'
+}
+
+checkJarCompatibility {
+    isBinary = true
+}
+
 dependencies {
     compileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
 
