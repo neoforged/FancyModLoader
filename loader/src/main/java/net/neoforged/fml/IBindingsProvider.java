@@ -5,14 +5,13 @@
 
 package net.neoforged.fml;
 
-import java.util.function.Supplier;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.config.IConfigEvent;
 
 public interface IBindingsProvider {
-    Supplier<IEventBus> getForgeBusSupplier();
+    IEventBus getNeoForgeBus();
 
-    Supplier<I18NParser> getMessageParser();
+    I18NParser getMessageParser();
 
-    Supplier<IConfigEvent.ConfigConfig> getConfigConfiguration();
+    IConfigEvent.ConfigConfig getConfigConfiguration();
 }
