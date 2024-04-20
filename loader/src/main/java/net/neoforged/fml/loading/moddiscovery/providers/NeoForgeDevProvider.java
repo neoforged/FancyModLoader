@@ -17,6 +17,7 @@ import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileProvider;
 import net.neoforged.neoforgespi.locating.LoadResult;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Provides the Minecraft and Neoforge mods in a Neoforge dev environment.
@@ -32,7 +33,7 @@ public class NeoForgeDevProvider implements IModFileProvider, ISystemModSource {
     public List<LoadResult<IModFile>> provideModFiles(ILaunchContext launchContext) {
         var minecraftResourcesRoot = DevEnvUtils.findFileSystemRootOfFileOnClasspath("assets/.mcassetsroot");
         var packages = getNeoforgeSpecificPathPrefixes();
-        var minecraftResourcesPrefix = minecraftResourcesRoot.toString().replace('\\', '/');
+        var minecraftResourcesPrefix = normalizePrefix(minecraftResourcesRoot);
 
         var mcJarContents = new JarContentsBuilder()
                 .paths(Streams.concat(paths.stream(), Stream.of(minecraftResourcesRoot)).toArray(Path[]::new))
@@ -74,6 +75,15 @@ public class NeoForgeDevProvider implements IModFileProvider, ISystemModSource {
                 new LoadResult.Success<>(minecraftModFile),
                 // TODO insufficient error handling
                 JarModsDotTomlModFileReader.createModFile(neoforgeJarContents, this, null));
+    }
+
+    private static String normalizePrefix(Path minecraftResourcesRoot) {
+        var minecraftResourcesPrefix = minecraftResourcesRoot.toString().replace('\\', '/');
+        // This is how SJH normalizes the base-path.
+        if (minecraftResourcesPrefix.length() > 1 && minecraftResourcesPrefix.startsWith("/")) {
+            minecraftResourcesPrefix = minecraftResourcesPrefix.substring(1);
+        }
+        return minecraftResourcesPrefix;
     }
 
     private static String[] getNeoforgeSpecificPathPrefixes() {

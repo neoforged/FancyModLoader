@@ -20,5 +20,6 @@ jobs:
     uses: neoforged/actions/.github/workflows/build-prs.yml@main
     with:
       java: 21
-      gradle_tasks: test --info
+      # --info allows seeing STDOUT of tests
+      gradle_tasks: check --info
       jar_compatibility: true
