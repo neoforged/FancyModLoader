@@ -26,8 +26,12 @@ public class Bindings {
         return provider.getNeoForgeBus();
     }
 
-    public static I18NParser getMessageParser() {
-        return provider.getMessageParser();
+    public static String parseMessage(String i18nMessage, Object... args) {
+        return provider.parseMessage(i18nMessage, args);
+    }
+
+    public static String stripControlCodes(String toStrip) {
+        return provider.stripControlCodes(toStrip);
     }
 
     public static IConfigEvent.ConfigConfig getConfigConfiguration() {

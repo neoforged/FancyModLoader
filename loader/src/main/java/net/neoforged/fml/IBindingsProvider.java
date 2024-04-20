@@ -11,7 +11,9 @@ import net.neoforged.fml.config.IConfigEvent;
 public interface IBindingsProvider {
     IEventBus getNeoForgeBus();
 
-    I18NParser getMessageParser();
+    String parseMessage(String i18nMessage, Object... args);
+
+    String stripControlCodes(String toStrip);
 
     IConfigEvent.ConfigConfig getConfigConfiguration();
 }

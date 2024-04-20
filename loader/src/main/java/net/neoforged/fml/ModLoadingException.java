@@ -53,7 +53,7 @@ public class ModLoadingException extends RuntimeException {
 
     public String formatToString() {
         // TODO: cleanup null here - this requires moving all indices in the translations
-        return Bindings.getMessageParser().parseMessage(i18nMessage, Streams.concat(Stream.of(modInfo, null, getCause()), context.stream()).toArray());
+        return Bindings.parseMessage(i18nMessage, Streams.concat(Stream.of(modInfo, null, getCause()), context.stream()).toArray());
     }
 
     @Override
@@ -66,6 +66,6 @@ public class ModLoadingException extends RuntimeException {
     }
 
     public String getCleanMessage() {
-        return Bindings.getMessageParser().stripControlCodes(formatToString());
+        return Bindings.stripControlCodes(formatToString());
     }
 }
