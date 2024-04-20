@@ -91,8 +91,6 @@ class FMLLoaderTest {
 
         @Test
         void testNeoForgeDevServerDiscovery() throws Exception {
-            installation.setupNeoforgeDevProject();
-
             var result = launchInNeoforgeDevEnvironment("forgeserverdev");
             assertThat(result.issues()).isEmpty();
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
@@ -105,8 +103,6 @@ class FMLLoaderTest {
 
         @Test
         void testNeoForgeDevDataDiscovery() throws Exception {
-            installation.setupNeoforgeDevProject();
-
             var result = launchInNeoforgeDevEnvironment("forgedatadev");
             assertThat(result.issues()).isEmpty();
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
@@ -119,8 +115,6 @@ class FMLLoaderTest {
 
         @Test
         void testNeoForgeDevClientDiscovery() throws Exception {
-            installation.setupNeoforgeDevProject();
-
             var result = launchInNeoforgeDevEnvironment("forgeclientdev");
             assertThat(result.issues()).isEmpty();
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");

@@ -8,12 +8,4 @@ package net.neoforged.neoforgespi.locating;
 /**
  * Used to identify the source of a {@link IModFile}.
  */
-public interface IModFileSource {
-    /**
-     * The name of the provider.
-     * Has to be unique between all providers loaded into the runtime.
-     *
-     * @return The name.
-     */
-    String name();
-}
+public sealed interface IModFileSource permits IModFileReader, IModFileProvider {}

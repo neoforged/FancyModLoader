@@ -32,11 +32,6 @@ public class ProductionServerProvider implements IModFileProvider, ISystemModSou
     }
 
     @Override
-    public String name() {
-        return "minecraft server (production)";
-    }
-
-    @Override
     public List<LoadResult<IModFile>> provideModFiles(ILaunchContext launchContext) {
         var vers = FMLLoader.versionInfo();
 
@@ -73,5 +68,14 @@ public class ProductionServerProvider implements IModFileProvider, ISystemModSou
             // TODO Translation
             return List.of(new LoadResult.Error<>(ModLoadingIssue.error("corrupted_file", e.toString())));
         }
+    }
+
+    @Override
+    public String toString() {
+        var result = new StringBuilder("production server provider");
+        for (var mavenCoordinate : additionalContent) {
+            result.append(" +").append(mavenCoordinate);
+        }
+        return result.toString();
     }
 }

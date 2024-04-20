@@ -20,11 +20,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class NestedLibraryModProvider implements IModFileReader {
     @Override
-    public String name() {
-        return "library mod provider";
-    }
-
-    @Override
     public @Nullable LoadResult<IModFile> read(JarContents jar, @Nullable IModFile parent) {
         // We only consider jars that are contained in the context of another mod valid library targets,
         // since we assume those have been included deliberately. Loose jar files in the mods directory
@@ -43,5 +38,10 @@ public class NestedLibraryModProvider implements IModFileReader {
         }
 
         return null;
+    }
+
+    @Override
+    public String toString() {
+        return "nested library mod provider";
     }
 }

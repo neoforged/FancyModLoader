@@ -33,11 +33,6 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
     public static final String MODS_TOML = "META-INF/neoforge.mods.toml";
     protected static final String MANIFEST = "META-INF/MANIFEST.MF";
 
-    @Override
-    public String name() {
-        return "modsdottoml";
-    }
-
     public static LoadResult<IModFile> createModFile(JarContents contents, IModFileSource source, @Nullable IModFile parent) {
         var type = getModType(contents);
         try {
@@ -163,5 +158,10 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
         public String toString() {
             return "IModFileInfo(" + mod.getFilePath() + ")";
         }
+    }
+
+    @Override
+    public String toString() {
+        return "mod manifest";
     }
 }

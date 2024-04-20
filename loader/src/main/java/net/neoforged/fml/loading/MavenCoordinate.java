@@ -7,11 +7,24 @@ package net.neoforged.fml.loading;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 /**
  * Models the Maven coordinates for an artifact.
  */
 public record MavenCoordinate(String groupId, String artifactId, String extension, String classifier, String version) {
+    public MavenCoordinate {
+        Objects.requireNonNull(groupId);
+        Objects.requireNonNull(artifactId);
+        Objects.requireNonNull(version);
+        if (extension == null) {
+            extension = "";
+        }
+        if (classifier == null) {
+            classifier = "";
+        }
+    }
+
     /**
      * Valid forms:
      * <ul>
@@ -30,7 +43,7 @@ public record MavenCoordinate(String groupId, String artifactId, String extensio
 
         var groupId = parts[0];
         var artifactId = parts[1];
-        var classifier = parts.length == 3 ? parts[2] : "";
+        var classifier = parts.length == 4 ? parts[2] : "";
         var versext = parts[parts.length - 1].split("@");
         if (versext.length > 2) {
             throw new IllegalArgumentException("Malformed Maven coordinate: " + coordinate);
@@ -56,5 +69,19 @@ public record MavenCoordinate(String groupId, String artifactId, String extensio
         }
 
         return result.resolve(artifactId).resolve(version).resolve(fileName);
+    }
+
+    @Override
+    public String toString() {
+        var result = new StringBuilder();
+        result.append(groupId).append(":").append(artifactId);
+        if (!classifier.isEmpty()) {
+            result.append(":").append(classifier);
+        }
+        result.append(":").append(version);
+        if (!extension.isEmpty()) {
+            result.append("@").append(extension);
+        }
+        return result.toString();
     }
 }

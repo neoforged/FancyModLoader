@@ -34,7 +34,7 @@ public class UserdevMinecraftProvider implements IModFileProvider, ISystemModSou
     }
 
     @Override
-    public String name() {
-        return "minecraft (userdev)";
+    public String toString() {
+        return "userdev minecraft provider";
     }
 }

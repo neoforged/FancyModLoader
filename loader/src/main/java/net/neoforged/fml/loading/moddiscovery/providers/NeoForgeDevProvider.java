@@ -90,7 +90,7 @@ public class NeoForgeDevProvider implements IModFileProvider, ISystemModSource {
     }
 
     @Override
-    public String name() {
-        return "neoforge devenv";
+    public String toString() {
+        return "neoforge devenv provider (" + paths + ")";
     }
 }

@@ -11,7 +11,7 @@ import net.neoforged.neoforgespi.ILaunchContext;
 /**
  * Picked up via ServiceLoader
  */
-public interface IModFileProvider extends IModFileSource {
+public non-sealed interface IModFileProvider extends IModFileSource {
     /**
      * {@return a list of implicit mods that this provider can provide without being found by a locator}
      */
