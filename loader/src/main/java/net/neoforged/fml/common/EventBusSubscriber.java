@@ -10,13 +10,34 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 
+// @formatter:off - spotless doesn't like @
 /**
  * Annotate a class which will be subscribed to an Event Bus at mod construction time. Defaults to subscribing the current modid to the {@code NeoForge#EVENT_BUS} on both sides.
  *
+ * <p>Annotated classes will be scanned for <b>static</b> methods that have the {@link SubscribeEvent} annotation.
+ * For example:
+ *
+ * {@snippet :
+ * @EventBusSubscriber
+ * public class MyEventHandler {
+ *     @SubscribeEvent
+ *     private static void onSomeEvent(SomeEvent event) {
+ *         // SomeEvent handler here
+ *     }
+ *
+ *     @SubscribeEvent
+ *     private static void onAnotherEvent(AnotherEvent event) {
+ *         // AnotherEvent handler here
+ *     }
+ * }
+ * }
+ *
  * @see Bus
  */
+// @formatter:on
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface EventBusSubscriber {
