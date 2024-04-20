@@ -9,7 +9,9 @@ import java.util.ServiceLoader;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.config.IConfigEvent;
 import net.neoforged.fml.loading.FMLLoader;
+import org.jetbrains.annotations.ApiStatus;
 
+@ApiStatus.Internal
 public class Bindings {
     private static final IBindingsProvider provider;
 
