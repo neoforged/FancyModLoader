@@ -21,3 +21,4 @@ jobs:
     with:
       java: 21
       gradle_tasks: test
+      jar_compatibility: true
