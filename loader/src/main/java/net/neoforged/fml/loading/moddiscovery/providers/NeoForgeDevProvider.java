@@ -17,7 +17,6 @@ import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileProvider;
 import net.neoforged.neoforgespi.locating.LoadResult;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Provides the Minecraft and Neoforge mods in a Neoforge dev environment.
