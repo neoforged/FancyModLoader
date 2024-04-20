@@ -6,8 +6,8 @@ The mod loader used by [NeoForge](https://github.com/neoforged/NeoForge).
 
 ### Mod File Candidate Locators
 
-Responsible for locating potential mod files. Represents candiates as `JarContents`
-from [SJH](https://github.com/McModLauncher/securejarhandler).
+Responsible for locating potential mod files. Represents candidates as `JarContents`
+from [SJH](https://github.com/McModLauncher/securejarhandler). This allows locators to also return joined directories (i.e. mod classes and resources in userdev).
 
 Interface: `net.neoforged.neoforgespi.locating.IModFileCandidateLocator`
 
@@ -34,7 +34,7 @@ Mod file instances can be created using the static methods on `IModFile`.
 
 Responsible for supplying `IModFile` that are not based on candidates resolved through locators.
 
-Interface: `net.neoforged.neoforgespi.locating.IModFileReader`
+Interface: `net.neoforged.neoforgespi.locating.IModFileProvider`
 
 Resolved via Java ServiceLoader.
 

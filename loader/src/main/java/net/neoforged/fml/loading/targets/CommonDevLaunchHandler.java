@@ -25,7 +25,7 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
 
     @Override
     public List<IModFileProvider> getAdditionalModFileProviders(VersionInfo versionInfo) {
-        var minecraftFolders = getModClasses().get("minecraft");
+        var minecraftFolders = getGroupedModFolders().get("minecraft");
         if (minecraftFolders == null) {
             throw new IllegalStateException("Expected paths to minecraft classes to be passed via environment");
         }

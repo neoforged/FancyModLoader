@@ -70,7 +70,7 @@ public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryServ
     }
 
     private List<NamedPath> scanModClasses() {
-        final Map<String, List<Path>> modClassPaths = CommonLaunchHandler.getModClasses();
+        final Map<String, List<Path>> modClassPaths = CommonLaunchHandler.getGroupedModFolders();
         for (var entry : modClassPaths.entrySet()) {
             String modid = entry.getKey();
             List<Path> paths = entry.getValue();

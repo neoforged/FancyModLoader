@@ -19,7 +19,7 @@ import net.neoforged.neoforgespi.ILaunchContext;
  */
 public interface IModFileCandidateLocator {
     /**
-     * Creates a IModFileCandidateLocator that searches for mod jar-files in the given filesystem location.
+     * Creates an IModFileCandidateLocator that searches for mod jar-files in the given filesystem location.
      */
     static IModFileCandidateLocator forFolder(File folder, String identifier) {
         return new ModsFolderLocator(folder.toPath(), identifier);

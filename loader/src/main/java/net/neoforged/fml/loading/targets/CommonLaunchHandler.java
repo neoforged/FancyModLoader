@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.stream.Collectors;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLLoader;
@@ -81,28 +82,31 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
         Configurator.reconfigure(ConfigurationFactory.getInstance().getConfiguration(LoggerContext.getContext(), ConfigurationSource.fromUri(uri)));
     }
 
-    public static Map<String, List<Path>> getModClasses() {
-        record ExplodedModPath(String modId, Path path) {}
-
+    public static Map<String, List<Path>> getGroupedModFolders() {
         Map<String, List<Path>> result;
 
-        var modClasses = Optional.ofNullable(System.getenv("MOD_CLASSES"))
+        var modFolders = Optional.ofNullable(System.getenv("MOD_CLASSES"))
                 .orElse(System.getProperty("fml.modFolders", ""));
-        var modClassesFile = System.getProperty("fml.modFoldersFile", "");
-        if (!modClassesFile.isEmpty()) {
-            try {
-                result = Files.readAllLines(Paths.get(modClassesFile))
-                        .stream()
-                        .map(inp -> inp.split("%%", 2))
-                        .map(splitString -> new ExplodedModPath(splitString.length == 1 ? "defaultmodid" : splitString[0], Paths.get(splitString[splitString.length - 1])))
-                        .collect(Collectors.groupingBy(ExplodedModPath::modId, Collectors.mapping(ExplodedModPath::path, Collectors.toList())));
+        var modFoldersFile = System.getProperty("fml.modFoldersFile", "");
+        if (!modFoldersFile.isEmpty()) {
+            LOGGER.debug(LogMarkers.CORE, "Reading additional mod folders from file {}", modFoldersFile);
+            var p = new Properties();
+            try (var in = Files.newBufferedReader(Paths.get(modFoldersFile))) {
+                p.load(in);
             } catch (IOException e) {
-                throw new UncheckedIOException("Failed to read mod classes list from " + modClassesFile, e);
+                throw new UncheckedIOException("Failed to read mod classes list from " + modFoldersFile, e);
             }
-        } else if (!modClasses.isEmpty()) {
-            LOGGER.debug(LogMarkers.CORE, "Got mod coordinates {} from env", modClasses);
+
+            result = p.stringPropertyNames()
+                    .stream()
+                    .collect(Collectors.toMap(
+                            modId -> modId,
+                            modId -> Arrays.stream(p.getProperty(modId).split(File.pathSeparator)).map(Paths::get).toList()));
+        } else if (!modFolders.isEmpty()) {
+            LOGGER.debug(LogMarkers.CORE, "Got mod coordinates {} from env", modFolders);
+            record ExplodedModPath(String modId, Path path) {}
             // "a/b/;c/d/;" -> "modid%%c:\fish\pepper;modid%%c:\fish2\pepper2\;modid2%%c:\fishy\bums;modid2%%c:\hmm"
-            result = Arrays.stream(modClasses.split(File.pathSeparator))
+            result = Arrays.stream(modFolders.split(File.pathSeparator))
                     .map(inp -> inp.split("%%", 2))
                     .map(splitString -> new ExplodedModPath(splitString.length == 1 ? "defaultmodid" : splitString[0], Paths.get(splitString[splitString.length - 1])))
                     .collect(Collectors.groupingBy(ExplodedModPath::modId, Collectors.mapping(ExplodedModPath::path, Collectors.toList())));
