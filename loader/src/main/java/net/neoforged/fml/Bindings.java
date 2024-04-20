@@ -5,35 +5,38 @@
 
 package net.neoforged.fml;
 
-import cpw.mods.modlauncher.util.ServiceLoaderUtils;
 import java.util.ServiceLoader;
-import java.util.function.Supplier;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.config.IConfigEvent;
 import net.neoforged.fml.loading.FMLLoader;
+import org.jetbrains.annotations.ApiStatus;
 
+@ApiStatus.Internal
 public class Bindings {
-    private static final Bindings INSTANCE = new Bindings();
+    private static final IBindingsProvider provider;
 
-    private final IBindingsProvider provider;
-
-    private Bindings() {
-        final var providers = ServiceLoaderUtils.streamServiceLoader(() -> ServiceLoader.load(FMLLoader.getGameLayer(), IBindingsProvider.class), sce -> {}).toList();
+    static {
+        var providers = ServiceLoader.load(FMLLoader.getGameLayer(), IBindingsProvider.class)
+                .stream().toList();
         if (providers.size() != 1) {
             throw new IllegalStateException("Could not find bindings provider");
         }
-        this.provider = providers.get(0);
+        provider = providers.get(0).get();
     }
 
-    public static Supplier<IEventBus> getForgeBus() {
-        return INSTANCE.provider.getForgeBusSupplier();
+    public static IEventBus getGameBus() {
+        return provider.getGameBus();
     }
 
-    public static Supplier<I18NParser> getMessageParser() {
-        return INSTANCE.provider.getMessageParser();
+    public static String parseMessage(String i18nMessage, Object... args) {
+        return provider.parseMessage(i18nMessage, args);
     }
 
-    public static Supplier<IConfigEvent.ConfigConfig> getConfigConfiguration() {
-        return INSTANCE.provider.getConfigConfiguration();
+    public static String stripControlCodes(String toStrip) {
+        return provider.stripControlCodes(toStrip);
+    }
+
+    public static IConfigEvent.ConfigConfig getConfigConfiguration() {
+        return provider.getConfigConfiguration();
     }
 }

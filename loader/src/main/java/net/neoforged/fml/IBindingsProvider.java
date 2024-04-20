@@ -5,14 +5,17 @@
 
 package net.neoforged.fml;
 
-import java.util.function.Supplier;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.config.IConfigEvent;
+import org.jetbrains.annotations.ApiStatus;
 
+@ApiStatus.Internal
 public interface IBindingsProvider {
-    Supplier<IEventBus> getForgeBusSupplier();
+    IEventBus getGameBus();
 
-    Supplier<I18NParser> getMessageParser();
+    String parseMessage(String i18nMessage, Object... args);
 
-    Supplier<IConfigEvent.ConfigConfig> getConfigConfiguration();
+    String stripControlCodes(String toStrip);
+
+    IConfigEvent.ConfigConfig getConfigConfiguration();
 }

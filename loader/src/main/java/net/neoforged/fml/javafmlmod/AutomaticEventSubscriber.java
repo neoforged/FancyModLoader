@@ -17,6 +17,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.Bindings;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.moddiscovery.ModAnnotation;
@@ -26,13 +27,13 @@ import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.Type;
 
 /**
- * Automatic eventbus subscriber - reads {@link Mod.EventBusSubscriber}
- * annotations and passes the class instances to the {@link Mod.EventBusSubscriber.Bus}
+ * Automatic eventbus subscriber - reads {@link EventBusSubscriber}
+ * annotations and passes the class instances to the {@link EventBusSubscriber.Bus}
  * defined by the annotation. Defaults to {@code NeoForge#EVENT_BUS}
  */
 public class AutomaticEventSubscriber {
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final Type AUTO_SUBSCRIBER = Type.getType(Mod.EventBusSubscriber.class);
+    private static final Type AUTO_SUBSCRIBER = Type.getType(EventBusSubscriber.class);
     private static final Type MOD_TYPE = Type.getType(Mod.class);
 
     public static void inject(final ModContainer mod, final ModFileScanData scanData, final ClassLoader loader) {
@@ -47,11 +48,11 @@ public class AutomaticEventSubscriber {
             final EnumSet<Dist> sides = sidesValue.stream().map(eh -> Dist.valueOf(eh.getValue())).collect(Collectors.toCollection(() -> EnumSet.noneOf(Dist.class)));
             final String modId = (String) ad.annotationData().getOrDefault("modid", modids.getOrDefault(ad.clazz().getClassName(), mod.getModId()));
             final ModAnnotation.EnumHolder busTargetHolder = (ModAnnotation.EnumHolder) ad.annotationData().getOrDefault("bus", new ModAnnotation.EnumHolder(null, "FORGE"));
-            final Mod.EventBusSubscriber.Bus busTarget = Mod.EventBusSubscriber.Bus.valueOf(busTargetHolder.getValue());
+            final EventBusSubscriber.Bus busTarget = EventBusSubscriber.Bus.valueOf(busTargetHolder.getValue());
             if (Objects.equals(mod.getModId(), modId) && sides.contains(FMLEnvironment.dist)) {
                 try {
                     IEventBus bus = switch (busTarget) {
-                        case FORGE -> Bindings.getForgeBus().get();
+                        case GAME -> Bindings.getGameBus();
                         case MOD -> mod.getEventBus();
                     };
 

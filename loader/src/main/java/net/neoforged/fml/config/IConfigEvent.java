@@ -14,7 +14,7 @@ import org.jetbrains.annotations.Nullable;
 public interface IConfigEvent {
     record ConfigConfig(Function<ModConfig, IConfigEvent> loading, Function<ModConfig, IConfigEvent> reloading, @Nullable Function<ModConfig, IConfigEvent> unloading) {}
 
-    ConfigConfig CONFIGCONFIG = Bindings.getConfigConfiguration().get();
+    ConfigConfig CONFIGCONFIG = Bindings.getConfigConfiguration();
 
     static IConfigEvent reloading(ModConfig modConfig) {
         return CONFIGCONFIG.reloading().apply(modConfig);

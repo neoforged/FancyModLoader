@@ -36,7 +36,7 @@ public class ModLoadingWarning {
 
     public String formatToString() {
         // TODO: cleanup null here - this requires moving all indices in the translations
-        return Bindings.getMessageParser().get().parseMessage(i18nMessage, Streams.concat(Stream.of(modInfo, null), context.stream()).toArray());
+        return Bindings.parseMessage(i18nMessage, Streams.concat(Stream.of(modInfo, null), context.stream()).toArray());
     }
 
     static Stream<ModLoadingWarning> fromEarlyException(final EarlyLoadingException e) {
