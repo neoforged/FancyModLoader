@@ -365,8 +365,8 @@ public final class ModLoader {
         return List.copyOf(loadingIssues);
     }
 
-    public void addIssue(ModLoadingIssue issue) {
-        this.loadingIssues.add(issue);
+    public static void addLoadingIssue(ModLoadingIssue issue) {
+        loadingIssues.add(issue);
     }
 
     private static boolean runningDataGen = false;
