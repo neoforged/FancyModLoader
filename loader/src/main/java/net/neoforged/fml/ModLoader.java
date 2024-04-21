@@ -142,7 +142,7 @@ public final class ModLoader {
         constructMods(syncExecutor, parallelExecutor, periodicTask);
     }
 
-    private static List<ModLoadingIssue> getLoadingErrors() {
+    public static List<ModLoadingIssue> getLoadingErrors() {
         return loadingIssues.stream().filter(issue -> issue.severity() == ModLoadingIssue.Severity.ERROR).toList();
     }
 
@@ -359,6 +359,10 @@ public final class ModLoader {
                 post.accept(mc, e);
             });
         }
+    }
+
+    public static List<ModLoadingIssue> getLoadingIssues() {
+        return List.copyOf(loadingIssues);
     }
 
     public void addIssue(ModLoadingIssue issue) {
