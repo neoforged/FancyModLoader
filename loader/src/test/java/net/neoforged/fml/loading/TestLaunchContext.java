@@ -6,15 +6,20 @@
 package net.neoforged.fml.loading;
 
 import cpw.mods.modlauncher.api.IEnvironment;
+import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.Set;
 import net.neoforged.neoforgespi.ILaunchContext;
 
 class TestLaunchContext implements ILaunchContext {
-    private IEnvironment environment;
+    private final IEnvironment environment;
+    private final Set<Path> locatedPaths;
 
-    public TestLaunchContext(IEnvironment environment) {
+    public TestLaunchContext(IEnvironment environment, Set<Path> locatedPaths) {
         this.environment = environment;
+        this.locatedPaths = new HashSet<>(locatedPaths);
     }
 
     @Override
@@ -26,9 +31,6 @@ class TestLaunchContext implements ILaunchContext {
     public <T> ServiceLoader<T> createServiceLoader(Class<T> serviceClass) {
         return ServiceLoader.load(serviceClass);
     }
-
-    @Override
-    public void reportWarning() {}
 
     @Override
     public List<String> modLists() {
@@ -43,5 +45,15 @@ class TestLaunchContext implements ILaunchContext {
     @Override
     public List<String> mavenRoots() {
         return List.of();
+    }
+
+    @Override
+    public boolean isLocated(Path path) {
+        return locatedPaths.contains(path);
+    }
+
+    @Override
+    public boolean addLocated(Path path) {
+        return locatedPaths.add(path);
     }
 }

@@ -6,6 +6,7 @@
 package net.neoforged.neoforgespi;
 
 import cpw.mods.modlauncher.api.IEnvironment;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.ServiceLoader;
 import org.slf4j.Logger;
@@ -24,15 +25,19 @@ public interface ILaunchContext {
 
     <T> ServiceLoader<T> createServiceLoader(Class<T> serviceClass);
 
-    /**
-     * Report a warning that does not prevent the launch from completing successfully but will be presented
-     * to the player.
-     */
-    void reportWarning(); // TODO: Flesh out
-
     List<String> modLists();
 
     List<String> mods();
 
     List<String> mavenRoots();
+
+    /**
+     * Checks if a given path was already found by a previous locator, or may be already loaded.
+     */
+    boolean isLocated(Path path);
+
+    /**
+     * Marks a path as being located and returns true if it was not previously located.
+     */
+    boolean addLocated(Path path);
 }

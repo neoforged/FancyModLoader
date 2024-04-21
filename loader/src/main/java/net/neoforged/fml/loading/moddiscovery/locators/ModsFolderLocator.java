@@ -15,7 +15,6 @@ import java.util.Objects;
 import java.util.stream.Stream;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.LogMarkers;
-import net.neoforged.fml.loading.ModDirTransformerDiscoverer;
 import net.neoforged.fml.loading.StringUtils;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
@@ -47,10 +46,9 @@ public class ModsFolderLocator implements IModFileCandidateLocator {
     @Override
     public Stream<LoadResult<JarContents>> findCandidates(ILaunchContext context) {
         LOGGER.debug(LogMarkers.SCAN, "Scanning mods dir {} for mods", this.modFolder);
-        var excluded = ModDirTransformerDiscoverer.allExcluded();
 
         return LambdaExceptionUtils.uncheck(() -> Files.list(this.modFolder))
-                .filter(p -> !excluded.contains(p) && StringUtils.toLowerCase(p.getFileName().toString()).endsWith(SUFFIX))
+                .filter(p -> StringUtils.toLowerCase(p.getFileName().toString()).endsWith(SUFFIX))
                 .sorted(Comparator.comparing(path -> StringUtils.toLowerCase(path.getFileName().toString())))
                 .map(IModFileCandidateLocator::result);
     }

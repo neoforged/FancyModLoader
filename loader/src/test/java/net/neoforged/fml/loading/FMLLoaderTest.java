@@ -18,8 +18,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoadingIssue;
@@ -48,6 +50,11 @@ class FMLLoaderTest {
     TestEnvironment environment = new TestEnvironment(moduleLayerManager);
 
     SimulatedInstallation installation;
+
+    // can be used to mark paths as already being located before, i.e. if they were loaded
+    // by the two early ModLoader discovery interfaces ClasspathTransformerDiscoverer
+    // and
+    Set<Path> locatedPaths = new HashSet<>();
 
     @BeforeEach
     void setUp() throws IOException {
@@ -288,6 +295,30 @@ class FMLLoaderTest {
             assertThat(result.loadedMods()).doesNotContainKey("mod");
             installation.assertSecureJarContent(result.pluginLayerModules().get("mod"), List.of(entrypointClass, modManifest));
         }
+
+        /**
+         * Check that a ModLauncher service does not end up being loaded twice.
+         */
+        @Test
+        void testUserdevWithModLauncherServiceProject() throws Exception {
+            var additionalClasspath = installation.setupUserdevProject();
+
+            var entrypointClass = SimulatedInstallation.generateClass("MOD_SERVICE", "mod/SomeService.class");
+            var modManifest = SimulatedInstallation.createManifest("mod", Map.of("Automatic-Module-Name", "mod", "FMLModType", "LIBRARY"));
+
+            var mainModule = installation.setupGradleModule(entrypointClass, modManifest);
+            additionalClasspath.addAll(mainModule);
+
+            // Tell FML that the classes and resources directory belong together, this would also be read
+            // by the Classpath ML locator
+            SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
+            locatedPaths.add(mainModule.getFirst()); // Mark the primary path as located by ML so it gets skipped by FML
+
+            var result = launchWithAdditionalClasspath("forgeclientuserdev", additionalClasspath);
+            assertThat(result.pluginLayerModules()).doesNotContainKey("mod");
+            assertThat(result.gameLayerModules()).doesNotContainKey("mod");
+            assertThat(result.loadedMods()).doesNotContainKey("mod");
+        }
     }
 
     private LaunchResult launchInNeoforgeDevEnvironment(String launchTarget) throws Exception {
@@ -331,7 +362,7 @@ class FMLLoaderTest {
         FMLEnvironment.setupInteropEnvironment(environment);
         Environment.build(environment);
 
-        var launchContext = new TestLaunchContext(environment);
+        var launchContext = new TestLaunchContext(environment, locatedPaths);
         var pluginResources = FMLLoader.beginModScan(launchContext);
         // In this phase, FML should only return plugin libraries
         assertThat(pluginResources).extracting(ITransformationService.Resource::target).containsOnly(IModuleLayerManager.Layer.PLUGIN);
