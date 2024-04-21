@@ -175,7 +175,7 @@ public class ModDiscoverer {
                     switch (candidate) {
                         case LoadResult.Success<JarContents>(var jarContents) -> {
                             if (!launchContext.addLocated(jarContents.getPrimaryPath())) {
-                                LOGGER.info("Skipping {} because it was already located earlier", jarContents);
+                                LOGGER.info("Skipping {} because it was already located earlier", jarContents.getPrimaryPath());
                                 continue;
                             }
 

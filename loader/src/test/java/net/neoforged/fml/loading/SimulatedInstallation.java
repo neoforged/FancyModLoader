@@ -445,7 +445,9 @@ class SimulatedInstallation implements AutoCloseable {
 
         // Build typical single-module gradle output directories
         var classesDir = moduleRoot.resolve("build/classes/java/main");
+        Files.createDirectories(classesDir);
         var resourcesDir = moduleRoot.resolve("build/resources/main");
+        Files.createDirectories(resourcesDir);
         for (IdentifiableContent identifiableContent : buildOutput) {
             if (identifiableContent.relativePath().endsWith(".class")) {
                 writeFiles(classesDir, identifiableContent);

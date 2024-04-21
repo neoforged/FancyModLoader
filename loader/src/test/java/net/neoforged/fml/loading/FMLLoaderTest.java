@@ -276,6 +276,29 @@ class FMLLoaderTest {
             installation.assertModContent(result, "mod", List.of(entrypointClass, modManifest));
         }
 
+        /**
+         * Special test-case that checks we can add additional candidates via the modFolders system property,
+         * even if they are not on the classpath.
+         */
+        @Test
+        void testUserdevWithModProjectNotOnClasspath() throws Exception {
+            var additionalClasspath = installation.setupUserdevProject();
+
+            var entrypointClass = SimulatedInstallation.generateClass("MOD_ENTRYPOINT", "mod/Entrypoint.class");
+            var modManifest = SimulatedInstallation.createModsToml("mod", "1.0.0");
+
+            var mainModule = installation.setupGradleModule(entrypointClass, modManifest);
+            // NOTE: mainModule is not added to the classpath here
+
+            // Tell FML that the classes and resources directory belong together
+            SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
+
+            var result = launchWithAdditionalClasspath("forgeclientuserdev", additionalClasspath);
+            assertThat(result.pluginLayerModules()).doesNotContainKey("mod");
+            assertThat(result.gameLayerModules()).containsKey("mod");
+            installation.assertModContent(result, "mod", List.of(entrypointClass, modManifest));
+        }
+
         @Test
         void testUserdevWithServiceProject() throws Exception {
             var additionalClasspath = installation.setupUserdevProject();

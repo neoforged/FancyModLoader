@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.neoforged.fml.loading.VersionInfo;
-import net.neoforged.fml.loading.moddiscovery.locators.UserdevClasspathLocator;
+import net.neoforged.fml.loading.moddiscovery.locators.UserdevLocator;
 import net.neoforged.fml.loading.moddiscovery.providers.NeoForgeDevProvider;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.IModFileProvider;
@@ -35,7 +35,7 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
 
     @Override
     public List<IModFileCandidateLocator> getAdditionalModFileLocators(VersionInfo versionInfo) {
-        return List.of(new UserdevClasspathLocator(getGroupedModFolders()));
+        return List.of(new UserdevLocator(getGroupedModFolders()));
     }
 
     @Override

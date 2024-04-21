@@ -7,12 +7,14 @@ package net.neoforged.fml.loading.moddiscovery.providers;
 
 import cpw.mods.jarhandling.JarContents;
 import java.util.stream.Stream;
+import net.neoforged.fml.loading.moddiscovery.locators.UserdevLocator;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.LoadResult;
 
 /**
  * Finds the Neoforge jar on the classpath and provides it as a mod.
+ * TODO: This may be pointless since it would be picked up as a normal mod by {@link UserdevLocator}
  */
 public class NeoForgeUserDevLocator implements IModFileCandidateLocator, ISystemModSource {
     @Override
