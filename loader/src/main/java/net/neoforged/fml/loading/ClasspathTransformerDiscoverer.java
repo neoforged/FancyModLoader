@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Map;
 import net.neoforged.fml.loading.targets.CommonLaunchHandler;
 import org.apache.logging.log4j.LogManager;
 
@@ -70,7 +69,7 @@ public class ClasspathTransformerDiscoverer implements ITransformerDiscoveryServ
     }
 
     private List<NamedPath> scanModClasses() {
-        final Map<String, List<Path>> modClassPaths = CommonLaunchHandler.getGroupedModFolders();
+        var modClassPaths = CommonLaunchHandler.getGroupedModFolders();
         for (var entry : modClassPaths.entrySet()) {
             String modid = entry.getKey();
             List<Path> paths = entry.getValue();

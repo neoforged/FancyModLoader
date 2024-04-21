@@ -35,7 +35,7 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
 
     @Override
     public List<IModFileCandidateLocator> getAdditionalModFileLocators(VersionInfo versionInfo) {
-        return List.of(new UserdevClasspathLocator());
+        return List.of(new UserdevClasspathLocator(getGroupedModFolders()));
     }
 
     @Override

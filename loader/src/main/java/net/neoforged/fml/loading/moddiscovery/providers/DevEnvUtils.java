@@ -12,52 +12,66 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import org.jetbrains.annotations.ApiStatus;
 
 @ApiStatus.Internal
 public final class DevEnvUtils {
     private DevEnvUtils() {}
 
-    static Path findFileSystemRootOfFileOnClasspath(String relativePath) {
-        // Find the directory that contains the Minecraft classes via the system classpath
+    public static List<Path> findFileSystemRootsOfFileOnClasspath(String relativePath) {
+        var classLoader = Thread.currentThread().getContextClassLoader();
 
-        var resourceUrls = new ArrayList<URL>();
+        // Find the directory that contains the Minecraft classes via the system classpath
+        Iterator<URL> resourceIt;
         try {
-            Thread.currentThread().getContextClassLoader().getResources(relativePath)
-                    .asIterator().forEachRemaining(resourceUrls::add);
+            resourceIt = classLoader.getResources(relativePath).asIterator();
         } catch (IOException e) {
             throw new IllegalArgumentException("Failed to enumerate classpath locations of " + relativePath);
         }
 
-        if (resourceUrls.isEmpty()) {
-            throw new IllegalArgumentException("Resource not found on classpath: " + relativePath); // TODO
-        } else if (resourceUrls.size() > 1) {
-            throw new IllegalArgumentException("Classpath contains multiple copies of " + relativePath + ": " + resourceUrls); // TODO
-        }
+        List<Path> result = new ArrayList<>();
+        while (resourceIt.hasNext()) {
+            var resourceUrl = resourceIt.next();
 
-        var resourceUrl = resourceUrls.getFirst();
-        Path result;
-        try {
             if ("jar".equals(resourceUrl.getProtocol())) {
                 var fileUri = URI.create(resourceUrl.toString().split("!")[0].substring("jar:".length()));
-                return Paths.get(fileUri);
+                result.add(Paths.get(fileUri));
             } else {
-                result = Paths.get(resourceUrl.toURI());
-            }
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("Failed to convert " + resourceUrl + " to URI");
-        }
+                Path resourcePath;
+                try {
+                    resourcePath = Paths.get(resourceUrl.toURI());
+                } catch (URISyntaxException e) {
+                    throw new IllegalArgumentException("Failed to convert " + resourceUrl + " to URI");
+                }
 
-        // Walk back from the resource path up to the content root that contained it
-        var current = Paths.get(relativePath);
-        while (current != null) {
-            current = current.getParent();
-            result = result.getParent();
-            if (result == null) {
-                throw new IllegalArgumentException("Resource " + resourceUrl + " did not have same nesting depth as " + relativePath);
+                // Walk back from the resource path up to the content root that contained it
+                var current = Paths.get(relativePath);
+                while (current != null) {
+                    current = current.getParent();
+                    resourcePath = resourcePath.getParent();
+                    if (resourcePath == null) {
+                        throw new IllegalArgumentException("Resource " + resourceUrl + " did not have same nesting depth as " + relativePath);
+                    }
+                }
+
+                result.add(resourcePath);
             }
         }
 
         return result;
+    }
+
+    public static Path findFileSystemRootOfFileOnClasspath(String relativePath) {
+        var paths = findFileSystemRootsOfFileOnClasspath(relativePath);
+
+        if (paths.isEmpty()) {
+            throw new IllegalArgumentException("Resource not found on classpath: " + relativePath); // TODO
+        } else if (paths.size() > 1) {
+            throw new IllegalArgumentException("Classpath contains multiple copies of " + relativePath + ": " + paths); // TODO
+        }
+
+        return paths.getFirst();
     }
 }

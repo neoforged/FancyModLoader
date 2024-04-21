@@ -249,6 +249,45 @@ class FMLLoaderTest {
             assertNotNull(loadedMod);
             assertEquals("12.0", loadedMod.versionString());
         }
+
+        @Test
+        void testUserdevWithModProject() throws Exception {
+            var additionalClasspath = installation.setupUserdevProject();
+
+            var entrypointClass = SimulatedInstallation.generateClass("MOD_ENTRYPOINT", "mod/Entrypoint.class");
+            var modManifest = SimulatedInstallation.createModsToml("mod", "1.0.0");
+
+            var mainModule = installation.setupGradleModule(entrypointClass, modManifest);
+            additionalClasspath.addAll(mainModule);
+
+            // Tell FML that the classes and resources directory belong together
+            SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
+
+            var result = launchWithAdditionalClasspath("forgeclientuserdev", additionalClasspath);
+            assertThat(result.pluginLayerModules()).doesNotContainKey("mod");
+            assertThat(result.gameLayerModules()).containsKey("mod");
+            installation.assertModContent(result, "mod", List.of(entrypointClass, modManifest));
+        }
+
+        @Test
+        void testUserdevWithServiceProject() throws Exception {
+            var additionalClasspath = installation.setupUserdevProject();
+
+            var entrypointClass = SimulatedInstallation.generateClass("MOD_SERVICE", "mod/SomeService.class");
+            var modManifest = SimulatedInstallation.createManifest("mod", Map.of("Automatic-Module-Name", "mod", "FMLModType", "LIBRARY"));
+
+            var mainModule = installation.setupGradleModule(entrypointClass, modManifest);
+            additionalClasspath.addAll(mainModule);
+
+            // Tell FML that the classes and resources directory belong together
+            SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
+
+            var result = launchWithAdditionalClasspath("forgeclientuserdev", additionalClasspath);
+            assertThat(result.pluginLayerModules()).containsKey("mod");
+            assertThat(result.gameLayerModules()).doesNotContainKey("mod");
+            assertThat(result.loadedMods()).doesNotContainKey("mod");
+            installation.assertSecureJarContent(result.pluginLayerModules().get("mod"), List.of(entrypointClass, modManifest));
+        }
     }
 
     private LaunchResult launchInNeoforgeDevEnvironment(String launchTarget) throws Exception {

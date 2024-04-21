@@ -7,16 +7,13 @@ package net.neoforged.fml.loading.moddiscovery.locators;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.JarContents;
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import net.neoforged.fml.loading.ClasspathLocatorUtils;
-import net.neoforged.fml.loading.LogMarkers;
+import net.neoforged.fml.loading.moddiscovery.providers.DevEnvUtils;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.LoadResult;
@@ -24,7 +21,18 @@ import org.slf4j.Logger;
 
 public class UserdevClasspathLocator implements IModFileCandidateLocator {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private final List<Path> legacyClasspath = JarLocatorUtils.getLegacyClasspath();
+
+    record PathGroup(String name, List<Path> paths) {}
+
+    // Maps a Path to the group of paths it belongs to.
+    private final Map<Path, PathGroup> pathGrouping;
+
+    public UserdevClasspathLocator(Map<String, List<Path>> modFolders) {
+        this.pathGrouping = modFolders.entrySet().stream()
+                .map(entry -> new PathGroup(entry.getKey(), entry.getValue()))
+                .flatMap(group -> group.paths().stream().map(path -> Map.entry(path, group)))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
 
     @Override
     public String name() {
@@ -33,30 +41,20 @@ public class UserdevClasspathLocator implements IModFileCandidateLocator {
 
     @Override
     public Stream<LoadResult<JarContents>> findCandidates(ILaunchContext context) {
-        try {
-            var claimed = new ArrayList<>(legacyClasspath);
-            var paths = Stream.<Path>builder();
+        // Find all declared mods on the classpath
+        var potentialPaths = new HashSet<Path>();
+        potentialPaths.addAll(DevEnvUtils.findFileSystemRootsOfFileOnClasspath(JarModsDotTomlModFileReader.MODS_TOML));
+        potentialPaths.addAll(DevEnvUtils.findFileSystemRootsOfFileOnClasspath(JarModsDotTomlModFileReader.MANIFEST));
 
-            findPaths(claimed, JarModsDotTomlModFileReader.MODS_TOML).forEach(paths::add);
-            findPaths(claimed, JarModsDotTomlModFileReader.MANIFEST).forEach(paths::add);
-
-            return paths.build().map(IModFileCandidateLocator::result);
-        } catch (IOException e) {
-            LOGGER.error(LogMarkers.SCAN, "Error trying to find resources", e);
-            throw new RuntimeException(e);
-        }
-    }
-
-    private List<Path> findPaths(List<Path> claimed, String resource) throws IOException {
-        var ret = new ArrayList<Path>();
-        final Enumeration<URL> resources = ClassLoader.getSystemClassLoader().getResources(resource);
-        while (resources.hasMoreElements()) {
-            URL url = resources.nextElement();
-            Path path = ClasspathLocatorUtils.findJarPathFor(resource, resource, url);
-            if (claimed.stream().anyMatch(path::equals) || !Files.exists(path) || Files.isDirectory(path))
-                continue;
-            ret.add(path);
-        }
-        return ret;
+        // Of all the potential paths, group them by their path-grouping (or use an anonymous group if nothing was defined)
+        // And replace each by the set of paths in the group.
+        // This causes a resources directory that contains a mods TOML file to be picked up alongside its classes directory.
+        return potentialPaths.stream()
+                .collect(Collectors.groupingBy(
+                        path -> pathGrouping.getOrDefault(path, new PathGroup("ungrouped", List.of(path)))))
+                .keySet()
+                .stream()
+                .map(PathGroup::paths)
+                .map(IModFileCandidateLocator::result);
     }
 }

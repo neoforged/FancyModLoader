@@ -201,7 +201,7 @@ class SimulatedInstallation implements AutoCloseable {
         return additionalClasspath;
     }
 
-    private static void setModFoldersProperty(Map<String, List<Path>> modFolders) {
+    public static void setModFoldersProperty(Map<String, List<Path>> modFolders) {
         var modFolderList = modFolders.entrySet()
                 .stream()
                 .flatMap(entry -> entry.getValue().stream().map(path -> entry.getKey() + "%%" + path))
@@ -214,11 +214,15 @@ class SimulatedInstallation implements AutoCloseable {
         return gameDir;
     }
 
+    public Path getProjectRoot() {
+        return projectRoot;
+    }
+
     /**
      * Dynamically generates a class. This is not 100% correct, but should be sufficient for the
      * background scanner to read it.
      */
-    private static IdentifiableContent generateClass(String id, String relativePath) {
+    public static IdentifiableContent generateClass(String id, String relativePath) {
         var className = relativePath.replace(".class", "");
         var classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
         classWriter.visitAnnotation("Lfake/ClassAnnotation;", true);
@@ -331,7 +335,7 @@ class SimulatedInstallation implements AutoCloseable {
         }
     }
 
-    private void writeFiles(Path folder, IdentifiableContent... content) throws IOException {
+    public void writeFiles(Path folder, IdentifiableContent... content) throws IOException {
         for (var identifiableContent : content) {
             var path = folder.resolve(identifiableContent.relativePath());
             Files.createDirectories(path.getParent());
@@ -368,11 +372,17 @@ class SimulatedInstallation implements AutoCloseable {
         assertModContent(launchResult, "neoforge", expectedContent);
     }
 
-    private void assertModContent(LaunchResult launchResult, String modId, Collection<IdentifiableContent> content) throws IOException {
+    public void assertModContent(LaunchResult launchResult, String modId, Collection<IdentifiableContent> content) throws IOException {
+        assertThat(launchResult.loadedMods()).containsKey(modId);
+
         var modFileInfo = launchResult.loadedMods().get(modId);
         assertNotNull(modFileInfo, "mod " + modId + " is missing");
 
-        var paths = listFilesRecursively(modFileInfo.getFile().getSecureJar());
+        assertSecureJarContent(modFileInfo.getFile().getSecureJar(), content);
+    }
+
+    public void assertSecureJarContent(SecureJar jar, Collection<IdentifiableContent> content) throws IOException {
+        var paths = listFilesRecursively(jar);
 
         assertThat(paths.keySet()).containsOnly(content.stream().map(IdentifiableContent::relativePath).toArray(String[]::new));
 
@@ -421,5 +431,29 @@ class SimulatedInstallation implements AutoCloseable {
         }
 
         return new IdentifiableContent("JIJ_METADATA", Constants.CONTAINED_JARS_METADATA_PATH, content);
+    }
+
+    public List<Path> setupGradleModule(IdentifiableContent... buildOutput) throws IOException {
+        return setupGradleModule(null, buildOutput);
+    }
+
+    public List<Path> setupGradleModule(@Nullable String subfolder, IdentifiableContent... buildOutput) throws IOException {
+        Path moduleRoot = projectRoot;
+        if (subfolder != null) {
+            moduleRoot = moduleRoot.resolve(subfolder);
+        }
+
+        // Build typical single-module gradle output directories
+        var classesDir = moduleRoot.resolve("build/classes/java/main");
+        var resourcesDir = moduleRoot.resolve("build/resources/main");
+        for (IdentifiableContent identifiableContent : buildOutput) {
+            if (identifiableContent.relativePath().endsWith(".class")) {
+                writeFiles(classesDir, identifiableContent);
+            } else {
+                writeFiles(resourcesDir, identifiableContent);
+            }
+        }
+
+        return List.of(classesDir, resourcesDir);
     }
 }

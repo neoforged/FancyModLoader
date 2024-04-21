@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLLoader;
@@ -100,7 +101,7 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
             result = p.stringPropertyNames()
                     .stream()
                     .collect(Collectors.toMap(
-                            modId -> modId,
+                            Function.identity(),
                             modId -> Arrays.stream(p.getProperty(modId).split(File.pathSeparator)).map(Paths::get).toList()));
         } else if (!modFolders.isEmpty()) {
             LOGGER.debug(LogMarkers.CORE, "Got mod coordinates {} from env", modFolders);
