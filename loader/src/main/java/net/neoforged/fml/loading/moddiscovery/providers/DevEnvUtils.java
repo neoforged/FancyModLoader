@@ -21,7 +21,11 @@ public final class DevEnvUtils {
     private DevEnvUtils() {}
 
     public static List<Path> findFileSystemRootsOfFileOnClasspath(String relativePath) {
+        // If we're loaded through a module, it means the original classpath is inaccessible through the context CL
         var classLoader = Thread.currentThread().getContextClassLoader();
+        if (DevEnvUtils.class.getModule().isNamed()) {
+            classLoader = ClassLoader.getPlatformClassLoader();
+        }
 
         // Find the directory that contains the Minecraft classes via the system classpath
         Iterator<URL> resourceIt;
