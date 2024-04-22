@@ -8,7 +8,9 @@ package net.neoforged.fml.loading.moddiscovery.providers;
 import com.google.common.collect.Streams;
 import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
+import java.io.File;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
@@ -30,7 +32,23 @@ public class NeoForgeDevProvider implements IModFileProvider, ISystemModSource {
 
     @Override
     public List<LoadResult<IModFile>> provideModFiles(ILaunchContext launchContext) {
-        var minecraftResourcesRoot = DevEnvUtils.findFileSystemRootOfFileOnClasspath("assets/.mcassetsroot");
+        Path minecraftResourcesRoot = null;
+
+        // try finding client-extra jar explicitly first
+        var legacyClassPath = System.getProperty("legacyClassPath");
+        if (legacyClassPath != null) {
+            minecraftResourcesRoot = Arrays.stream(legacyClassPath.split(File.pathSeparator))
+                    .map(Path::of)
+                    .filter(path -> !launchContext.isLocated(path))
+                    .filter(path -> path.getFileName().toString().contains("client-extra"))
+                    .findFirst()
+                    .orElse(null);
+        }
+        // then fall back to finding it on the current classpath
+        if (minecraftResourcesRoot == null) {
+            minecraftResourcesRoot = DevEnvUtils.findFileSystemRootOfFileOnClasspath("assets/.mcassetsroot");
+        }
+
         var packages = getNeoforgeSpecificPathPrefixes();
         var minecraftResourcesPrefix = normalizePrefix(minecraftResourcesRoot);
 
