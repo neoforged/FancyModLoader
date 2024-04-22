@@ -5,12 +5,10 @@
 
 package net.neoforged.fml.loading.targets;
 
-import java.util.ArrayList;
 import java.util.List;
 import net.neoforged.fml.loading.VersionInfo;
-import net.neoforged.fml.loading.moddiscovery.providers.NeoForgeUserDevLocator;
-import net.neoforged.fml.loading.moddiscovery.providers.UserdevMinecraftProvider;
-import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
+import net.neoforged.fml.loading.moddiscovery.providers.DevEnvUtils;
+import net.neoforged.fml.loading.moddiscovery.providers.NeoForgeDevProvider;
 import net.neoforged.neoforgespi.locating.IModFileProvider;
 
 /**
@@ -19,13 +17,10 @@ import net.neoforged.neoforgespi.locating.IModFileProvider;
 public abstract class CommonUserdevLaunchHandler extends CommonDevLaunchHandler {
     @Override
     public List<IModFileProvider> getAdditionalModFileProviders(VersionInfo versionInfo) {
-        return List.of(new UserdevMinecraftProvider());
-    }
+        // Userdev is similar to neoforge dev with the only real difference being that the combined
+        // output of the neoforge and patched mincraft sources are combined into a jar file
+        var classesRoot = DevEnvUtils.findFileSystemRootOfFileOnClasspath("net/minecraft/client/Minecraft.class");
 
-    @Override
-    public List<IModFileCandidateLocator> getAdditionalModFileLocators(VersionInfo versionInfo) {
-        var locators = new ArrayList<>(super.getAdditionalModFileLocators(versionInfo));
-        locators.add(new NeoForgeUserDevLocator());
-        return locators;
+        return List.of(new NeoForgeDevProvider(List.of(classesRoot)));
     }
 }

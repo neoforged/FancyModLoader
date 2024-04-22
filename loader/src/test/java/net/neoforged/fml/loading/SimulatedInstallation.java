@@ -31,6 +31,7 @@ import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.Metadata;
 import net.neoforged.jarjar.metadata.MetadataIOHandler;
@@ -175,24 +176,15 @@ class SimulatedInstallation implements AutoCloseable {
     }
 
     /**
-     * In userdev, the gradle tooling recompiles a joined Minecraft jar and uses the Neoforge universal jar
-     * as a compile-time dependency. The Minecraft and Neoforge classes are split into two separate jars
-     * in userdev.
-     * <p/>
-     * Unlike production, the client jar will contain *patched* classes only.
-     * <p/>
-     * Even though it's actually not necessary, the Minecraft resources are still split off into an extra jar.
+     * In userdev, the Gradle tooling recompiles a joined Minecraft jar and injects the Neoforge classes and resources.
+     * Original Minecraft assets are split off into a client-extra.jar similar to neodev.
      */
     public List<Path> setupUserdevProject() throws IOException {
         var additionalClasspath = new ArrayList<Path>();
 
-        var neoforgeJar = projectRoot.resolve("neoforge-userdev.jar");
+        var neoforgeJar = projectRoot.resolve("neoforge-joined.jar");
         additionalClasspath.add(neoforgeJar);
-        writeJarFile(neoforgeJar, NEOFORGE_UNIVERSAL_JAR_CONTENT);
-
-        var clientJar = projectRoot.resolve("client.jar");
-        additionalClasspath.add(clientJar);
-        writeJarFile(clientJar, USERDEV_CLIENT_JAR_CONTENT);
+        writeJarFile(neoforgeJar, Stream.concat(Stream.of(USERDEV_CLIENT_JAR_CONTENT), Stream.of(NEOFORGE_UNIVERSAL_JAR_CONTENT)).toArray(IdentifiableContent[]::new));
 
         var clientExtraJar = projectRoot.resolve("client-extra.jar");
         additionalClasspath.add(clientExtraJar);
