@@ -343,8 +343,8 @@ public final class ModLoader {
 
     /**
      * @return If the errors occurred during mod loading. Use if you interact with vanilla systems directly during loading
-     *         and don't want to cause extraneous crashes due to trying to do things that aren't possible if mods are only
-     *         half-loaded (i.e. mixin configs will not be loaded).
+     *         and don't want to cause extraneous crashes due to trying to do things that aren't possible.
+     *         If you are running in a Mixin before mod loading has actually started, check {@link LoadingModList#hasErrors()} instead.
      */
     public static boolean hasErrors() {
         return loadingIssues.stream().anyMatch(issue -> issue.severity() == ModLoadingIssue.Severity.ERROR);

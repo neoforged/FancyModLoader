@@ -7,6 +7,7 @@ package net.neoforged.fml.loading;
 
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
+import cpw.mods.niofs.union.UnionFileSystem;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
@@ -44,13 +45,20 @@ final class LaunchContext implements ILaunchContext {
                 for (var resolvedModule : layer.configuration().modules()) {
                     resolvedModule.reference().location().ifPresent(moduleUri -> {
                         try {
-                            locatedPaths.add(Paths.get(moduleUri));
+                            locatedPaths.add(unpackPath(Paths.get(moduleUri)));
                         } catch (Exception ignored) {}
                     });
                 }
             });
         }
         LOG.debug(LogMarkers.SCAN, "Located paths when launch context was created: {}", locatedPaths);
+    }
+
+    private Path unpackPath(Path path) {
+        if (path.getFileSystem() instanceof UnionFileSystem unionFileSystem) {
+            return unionFileSystem.getPrimaryPath();
+        }
+        return path;
     }
 
     @Override
@@ -61,11 +69,11 @@ final class LaunchContext implements ILaunchContext {
 
     @Override
     public boolean isLocated(Path path) {
-        return locatedPaths.contains(path);
+        return locatedPaths.contains(unpackPath(path));
     }
 
     public boolean addLocated(Path path) {
-        return locatedPaths.add(path);
+        return locatedPaths.add(unpackPath(path));
     }
 
     @Override
