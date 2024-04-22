@@ -6,8 +6,10 @@
 package net.neoforged.fml.loading.moddiscovery.locators;
 
 import cpw.mods.jarhandling.JarContents;
+import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +38,12 @@ public class UserdevLocator implements IModFileCandidateLocator {
 
         var result = Stream.<List<Path>>builder();
         modFolders.values().forEach(result::add);
+
+        Arrays.stream(System.getProperty("legacyClassPath", "").split(File.pathSeparator))
+                .map(Path::of)
+                .filter(path -> !context.isLocated(path))
+                .map(List::of)
+                .forEach(result::add);
 
         var fromClasspath = new ArrayList<Path>();
         fromClasspath.addAll(DevEnvUtils.findFileSystemRootsOfFileOnClasspath(JarModsDotTomlModFileReader.MODS_TOML));
