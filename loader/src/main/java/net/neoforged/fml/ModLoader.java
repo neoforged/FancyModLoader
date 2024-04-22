@@ -9,7 +9,6 @@ import static net.neoforged.fml.Logging.CORE;
 import static net.neoforged.fml.Logging.LOADING;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -45,6 +44,7 @@ import net.neoforged.neoforgespi.locating.ForgeFeature;
 import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -61,7 +61,6 @@ public final class ModLoader {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final List<ModLoadingIssue> loadingIssues = new ArrayList<>();
-    private static boolean loadingStateValid;
     private static ModList modList;
 
     static {
@@ -97,7 +96,6 @@ public final class ModLoader {
 
         ForgeFeature.registerFeature("javaVersion", ForgeFeature.VersionFeatureTest.forVersionString(IModInfo.DependencySide.BOTH, System.getProperty("java.version")));
         ForgeFeature.registerFeature("openGLVersion", ForgeFeature.VersionFeatureTest.forVersionString(IModInfo.DependencySide.CLIENT, ImmediateWindowHandler.getGLVersion()));
-        loadingStateValid = true;
         FMLLoader.backgroundScanHandler.waitForScanToComplete(periodicTask);
         final ModList modList = ModList.of(loadingModList.getModFiles().stream().map(ModFileInfo::getFile).toList(),
                 loadingModList.getMods());
@@ -118,10 +116,11 @@ public final class ModLoader {
 
         if (!failedBounds.isEmpty()) {
             LOGGER.fatal(CORE, "Failed to validate feature bounds for mods: {}", failedBounds);
+            for (var fb : failedBounds) {
+                loadingIssues.add(ModLoadingIssue.error("fml.modloading.feature.missing", null, fb, ForgeFeature.featureValue(fb)).withAffectedMod(fb.modInfo()));
+            }
             cancelLoading(modList);
-            throw new ModLoadingException(failedBounds.stream()
-                    .map(fb -> ModLoadingIssue.error("fml.modloading.feature.missing", null, fb, ForgeFeature.featureValue(fb)).withAffectedMod(fb.modInfo()))
-                    .toList());
+            throw new ModLoadingException(loadingIssues);
         }
 
         var modContainers = loadingModList.getModFiles().stream()
@@ -142,18 +141,14 @@ public final class ModLoader {
         constructMods(syncExecutor, parallelExecutor, periodicTask);
     }
 
-    public static List<ModLoadingIssue> getLoadingErrors() {
-        return loadingIssues.stream().filter(issue -> issue.severity() == ModLoadingIssue.Severity.ERROR).toList();
-    }
-
     private static void cancelLoading(ModList modList) {
         StartupNotificationManager.modLoaderMessage("ERROR DURING MOD LOADING");
         modList.setLoadedMods(Collections.emptyList());
-        loadingStateValid = false;
     }
 
-    private static boolean hasErrors() {
-        return loadingIssues.stream().anyMatch(issue -> issue.severity() == ModLoadingIssue.Severity.ERROR);
+    @Deprecated(forRemoval = true, since = "20.5")
+    public static boolean isLoadingStateValid() {
+        return !hasErrors();
     }
 
     private static void constructMods(Executor syncExecutor, Executor parallelExecutor, Runnable periodicTask) {
@@ -228,26 +223,19 @@ public final class ModLoader {
                 future.get(50, TimeUnit.MILLISECONDS);
                 return;
             } catch (ExecutionException e) {
-                loadingStateValid = false;
-                Throwable t = e.getCause();
-                final List<Throwable> notModLoading = Arrays.stream(t.getSuppressed())
-                        .filter(obj -> !(obj instanceof ModLoadingException))
-                        .toList();
-                if (!notModLoading.isEmpty()) {
-                    LOGGER.fatal("Encountered non-modloading exceptions!", e);
-                    StartupNotificationManager.modLoaderMessage("ERROR DURING MOD LOADING");
-                    throw new RuntimeException("Encountered non-modloading exception in future " + name, e);
+                // Merge all potential modloading issues
+                var errorCount = 0;
+                for (var error : e.getCause().getSuppressed()) {
+                    if (error instanceof ModLoadingException modLoadingException) {
+                        loadingIssues.addAll(modLoadingException.getIssues());
+                    } else {
+                        loadingIssues.add(ModLoadingIssue.error("fml.modloading.uncaughterror", name).withCause(e));
+                    }
+                    errorCount++;
                 }
-
-                // Merger all potential modloading issues
-                var issues = Arrays.stream(t.getSuppressed())
-                        .filter(ModLoadingException.class::isInstance)
-                        .map(ModLoadingException.class::cast)
-                        .flatMap(ex -> ex.getIssues().stream())
-                        .collect(Collectors.toList());
-                LOGGER.fatal(LOADING, "Failed to wait for future {}, {} errors found", name, issues.size());
-                StartupNotificationManager.modLoaderMessage("ERROR DURING MOD LOADING");
-                throw new ModLoadingException(issues);
+                LOGGER.fatal(LOADING, "Failed to wait for future {}, {} errors found", name, errorCount);
+                cancelLoading(modList);
+                throw new ModLoadingException(loadingIssues);
             } catch (Exception ignored) {}
         }
     }
@@ -301,16 +289,8 @@ public final class ModLoader {
         }
     }
 
-    /**
-     * @return If the current mod loading state is valid. Use if you interact with vanilla systems directly during loading
-     *         and don't want to cause extraneous crashes due to trying to do things that aren't possible in a "broken load"
-     */
-    public static boolean isLoadingStateValid() {
-        return loadingStateValid;
-    }
-
     public static <T extends Event & IModBusEvent> void runEventGenerator(Function<ModContainer, T> generator) {
-        if (!loadingStateValid) {
+        if (hasErrors()) {
             LOGGER.error("Cowardly refusing to send event generator to a broken mod state");
             return;
         }
@@ -329,7 +309,7 @@ public final class ModLoader {
     }
 
     public static <T extends Event & IModBusEvent> void postEvent(T e) {
-        if (!loadingStateValid) {
+        if (hasErrors()) {
             LOGGER.error("Cowardly refusing to send event {} to a broken mod state", e.getClass().getName());
             return;
         }
@@ -348,7 +328,7 @@ public final class ModLoader {
     }
 
     public static <T extends Event & IModBusEvent> void postEventWithWrapInModOrder(T e, BiConsumer<ModContainer, T> pre, BiConsumer<ModContainer, T> post) {
-        if (!loadingStateValid) {
+        if (hasErrors()) {
             LOGGER.error("Cowardly refusing to send event {} to a broken mod state", e.getClass().getName());
             return;
         }
@@ -361,18 +341,33 @@ public final class ModLoader {
         }
     }
 
+    /**
+     * @return If the errors occurred during mod loading. Use if you interact with vanilla systems directly during loading
+     *         and don't want to cause extraneous crashes due to trying to do things that aren't possible if mods are only
+     *         half-loaded (i.e. mixin configs will not be loaded).
+     */
+    public static boolean hasErrors() {
+        return loadingIssues.stream().anyMatch(issue -> issue.severity() == ModLoadingIssue.Severity.ERROR);
+    }
+
+    @ApiStatus.Internal
+    public static List<ModLoadingIssue> getLoadingErrors() {
+        return loadingIssues.stream().filter(issue -> issue.severity() == ModLoadingIssue.Severity.ERROR).toList();
+    }
+
+    @ApiStatus.Internal
+    public static List<ModLoadingIssue> getLoadingWarnings() {
+        return loadingIssues.stream().filter(issue -> issue.severity() == ModLoadingIssue.Severity.WARNING).toList();
+    }
+
+    @ApiStatus.Internal
     public static List<ModLoadingIssue> getLoadingIssues() {
         return List.copyOf(loadingIssues);
     }
 
+    @ApiStatus.Internal
     public static void addLoadingIssue(ModLoadingIssue issue) {
         loadingIssues.add(issue);
-    }
-
-    private static boolean runningDataGen = false;
-
-    public static boolean isDataGenRunning() {
-        return runningDataGen;
     }
 
     private static class ErroredModContainer extends ModContainer {
