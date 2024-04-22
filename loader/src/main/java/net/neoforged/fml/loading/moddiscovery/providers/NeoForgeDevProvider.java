@@ -39,7 +39,6 @@ public class NeoForgeDevProvider implements IModFileProvider, ISystemModSource {
         if (legacyClassPath != null) {
             minecraftResourcesRoot = Arrays.stream(legacyClassPath.split(File.pathSeparator))
                     .map(Path::of)
-                    .filter(path -> !launchContext.isLocated(path))
                     .filter(path -> path.getFileName().toString().contains("client-extra"))
                     .findFirst()
                     .orElse(null);
