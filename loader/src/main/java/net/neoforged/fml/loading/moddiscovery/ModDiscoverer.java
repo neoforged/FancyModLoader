@@ -183,6 +183,8 @@ public class ModDiscoverer {
 
         @Override
         public Optional<IModFile> addJarContent(JarContents jarContents, ModFileDiscoveryAttributes attributes, IncompatibleFileReporting reporting) {
+            attributes = defaultAttributes.merge(attributes);
+
             for (var reader : modFileReaders) {
                 try {
                     var provided = reader.read(jarContents, attributes);

@@ -41,6 +41,15 @@ public record ModFileDiscoveryAttributes(@Nullable IModFile parent,
         return new ModFileDiscoveryAttributes(parent, reader, locator, dependencyLocator, systemModFile);
     }
 
+    public ModFileDiscoveryAttributes merge(ModFileDiscoveryAttributes attributes) {
+        return new ModFileDiscoveryAttributes(
+                attributes.parent != null ? attributes.parent : parent,
+                attributes.reader != null ? attributes.reader : reader,
+                attributes.locator != null ? attributes.locator : locator,
+                attributes.dependencyLocator != null ? attributes.dependencyLocator : dependencyLocator,
+                attributes.systemModFile || systemModFile);
+    }
+
     @Override
     public String toString() {
         var result = new StringBuilder();
