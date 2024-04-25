@@ -168,7 +168,17 @@ public class ModDiscoverer {
 
         @Override
         public @Nullable IModFile readModFile(JarContents jarContents, ModFileDiscoveryAttributes attributes) {
-            return null;
+            for (var reader : modFileReaders) {
+                var provided = reader.read(jarContents, attributes);
+                if (provided != null) {
+                    if (addModFile(provided)) {
+                        return provided;
+                    }
+                    return null;
+                }
+            }
+
+            throw new RuntimeException("No mod reader felt responsible for " + jarContents.getPrimaryPath());
         }
 
         @Override
@@ -184,7 +194,7 @@ public class ModDiscoverer {
                     }
                 } catch (Exception e) {
                     // TODO Translation key
-                    addIssue(ModLoadingIssue.error("TECHNICAL_ERROR", reader).withAffectedPath(jarContents.getPrimaryPath()));
+                    addIssue(ModLoadingIssue.error("TECHNICAL_ERROR", reader).withAffectedPath(jarContents.getPrimaryPath()).withCause(e));
                     return Optional.empty();
                 }
             }
@@ -216,11 +226,7 @@ public class ModDiscoverer {
             }
 
             var discoveryAttributes = mf.getDiscoveryAttributes();
-            if (discoveryAttributes.parent() != null) {
-                LOGGER.info(LogMarkers.SCAN, "Found mod file \"{}\" of type {} with provider {} contained in {}", mf.getFileName(), mf.getType(), discoveryAttributes, discoveryAttributes.parent().getFileName());
-            } else {
-                LOGGER.info(LogMarkers.SCAN, "Found mod file \"{}\" of type {} with provider {}", mf.getFileName(), mf.getType(), discoveryAttributes);
-            }
+            LOGGER.info(LogMarkers.SCAN, "Found mod file \"{}\" of type {} {}", mf.getFileName(), mf.getType(), discoveryAttributes);
 
             loadedFiles.add(modFile);
             successCount++;

@@ -36,11 +36,6 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     @Override
-    public String name() {
-        return "jarinjar";
-    }
-
-    @Override
     public void scanMods(List<IModFile> loadedMods, IDiscoveryPipeline pipeline) {
         List<IModFile> dependenciesToLoad = JarSelector.detectAndSelect(
                 loadedMods,
@@ -131,5 +126,10 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
             LOGGER.error("Failed to load resource {} from mod {}, cause {}", path, modFile.getFileName(), e);
             return Optional.empty();
         }
+    }
+
+    @Override
+    public String toString() {
+        return "jarinjar";
     }
 }

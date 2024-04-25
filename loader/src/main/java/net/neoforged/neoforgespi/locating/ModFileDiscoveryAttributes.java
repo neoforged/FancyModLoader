@@ -40,4 +40,43 @@ public record ModFileDiscoveryAttributes(@Nullable IModFile parent,
     public ModFileDiscoveryAttributes withDependencyLocator(IDependencyLocator dependencyLocator) {
         return new ModFileDiscoveryAttributes(parent, reader, locator, dependencyLocator, systemModFile);
     }
+
+    @Override
+    public String toString() {
+        var result = new StringBuilder();
+        result.append("[");
+        if (parent != null) {
+            result.append("parent: ");
+            result.append(parent.getFilePath().getFileName());
+        }
+        if (locator != null) {
+            if (result.length() > 1) {
+                result.append(", ");
+            }
+            result.append("locator: ");
+            result.append(locator);
+        }
+        if (dependencyLocator != null) {
+            if (result.length() > 1) {
+                result.append(", ");
+            }
+            result.append("locator: ");
+            result.append(dependencyLocator);
+        }
+        if (reader != null) {
+            if (result.length() > 1) {
+                result.append(", ");
+            }
+            result.append("reader: ");
+            result.append(reader);
+        }
+        if (systemModFile) {
+            if (result.length() > 1) {
+                result.append(", ");
+            }
+            result.append("system");
+        }
+        result.append("]");
+        return result.toString();
+    }
 }

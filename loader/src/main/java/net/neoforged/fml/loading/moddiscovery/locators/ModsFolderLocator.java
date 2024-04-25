@@ -22,6 +22,7 @@ import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.IncompatibleFileReporting;
+import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.slf4j.Logger;
 
 /**
@@ -62,7 +63,7 @@ public class ModsFolderLocator implements IModFileCandidateLocator {
         }
 
         for (var file : directoryContent) {
-            pipeline.addPath(file, null, IncompatibleFileReporting.WARN_ON_KNOWN_INCOMPATIBILITY);
+            pipeline.addPath(file, ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.WARN_ALWAYS);
         }
     }
 

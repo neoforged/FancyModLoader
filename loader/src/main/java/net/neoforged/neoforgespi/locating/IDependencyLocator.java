@@ -13,11 +13,6 @@ import java.util.List;
  */
 public interface IDependencyLocator {
     /**
-     * {@return the name of this dependency locator}
-     */
-    String name();
-
-    /**
      * Invoked to find all mod dependencies that this dependency locator can find.
      * It is not guaranteed that all these are loaded into the runtime,
      * as such the result of this method should be seen as a list of candidates to load.
