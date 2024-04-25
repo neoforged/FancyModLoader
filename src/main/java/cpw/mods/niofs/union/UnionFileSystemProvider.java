@@ -7,10 +7,28 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.*;
-import java.nio.file.attribute.*;
+import java.nio.file.AccessMode;
+import java.nio.file.CopyOption;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileStore;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.LinkOption;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.FileAttributeView;
+import java.nio.file.attribute.FileTime;
 import java.nio.file.spi.FileSystemProvider;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.stream.Stream;
 
@@ -227,6 +245,22 @@ public class UnionFileSystemProvider extends FileSystemProvider {
 
     @Override
     public void setAttribute(final Path path, final String attribute, final Object value, final LinkOption... options) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <A extends BasicFileAttributes> A readAttributesIfExists(final Path path, final Class<A> type, final LinkOption... options) throws IOException {
+        if (path instanceof UnionPath p) {
+            return p.getFileSystem().readAttributesIfExists(p, type);
+        }
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean exists(Path path, LinkOption... options) {
+        if (path instanceof UnionPath p) {
+            return p.getFileSystem().exists(p);
+        }
         throw new UnsupportedOperationException();
     }
 

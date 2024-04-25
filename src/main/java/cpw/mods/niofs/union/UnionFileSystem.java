@@ -2,14 +2,14 @@ package cpw.mods.niofs.union;
 
 import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Method;
-import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
-import java.nio.channels.InterruptibleChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.AccessMode;
 import java.nio.file.DirectoryStream;
@@ -27,13 +27,10 @@ import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -42,7 +39,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class UnionFileSystem extends FileSystem {
-    private static final MethodHandle ZIPFS_EXISTS;
     private static final MethodHandle ZIPFS_CH;
     private static final MethodHandle FCI_UNINTERUPTIBLE;
     static final String SEP_STRING = "/";
@@ -54,10 +50,7 @@ public class UnionFileSystem extends FileSystem {
             hackfield.setAccessible(true);
             MethodHandles.Lookup hack = (MethodHandles.Lookup) hackfield.get(null);
 
-            var clz = Class.forName("jdk.nio.zipfs.ZipPath");
-            ZIPFS_EXISTS = hack.findSpecial(clz, "exists", MethodType.methodType(boolean.class), clz);
-
-            clz = Class.forName("jdk.nio.zipfs.ZipFileSystem");
+            var clz = Class.forName("jdk.nio.zipfs.ZipFileSystem");
             ZIPFS_CH = hack.findGetter(clz, "ch", SeekableByteChannel.class);
 
             clz = Class.forName("sun.nio.ch.FileChannelImpl");
@@ -233,11 +226,11 @@ public class UnionFileSystem extends FileSystem {
 
     private Optional<BasicFileAttributes> getFileAttributes(final Path path) {
         try {
-            Boolean fastCheck = tryFastPathExists(this, path);
+            Boolean fastCheck = tryFastPathExists(path);
             if (fastCheck != null && !fastCheck) {
                 return Optional.empty();
             } else {
-                return Optional.of(path.getFileSystem().provider().readAttributes(path, BasicFileAttributes.class));
+                return Optional.ofNullable(path.getFileSystem().provider().readAttributesIfExists(path, BasicFileAttributes.class));
             }
         } catch (IOException e) {
             return Optional.empty();
@@ -248,8 +241,8 @@ public class UnionFileSystem extends FileSystem {
      * Checks if a path exists using optimized filesystem-specific code.
      * (With a fallback to the regular {@link Files#exists(Path, LinkOption...)}).
      */
-    private static boolean fastPathExists(UnionFileSystem ufs, Path path) {
-        Boolean result = tryFastPathExists(ufs, path);
+    private static boolean fastPathExists(Path path) {
+        Boolean result = tryFastPathExists(path);
         return result != null ? result : Files.exists(path);
     }
 
@@ -258,24 +251,12 @@ public class UnionFileSystem extends FileSystem {
      * or returns {@code null} if there is no optimized code for that particular filesystem.
      */
     @Nullable
-    private static Boolean tryFastPathExists(UnionFileSystem ufs, Path path) {
+    private static Boolean tryFastPathExists(Path path) {
         if (path.getFileSystem() == FileSystems.getDefault()) {
             return path.toFile().exists();
-        } else if (path.getFileSystem().provider().getScheme().equals("jar")) {
-            return zipFsExists(ufs, path);
         }
 
         return null;
-    }
-
-    private static boolean zipFsExists(UnionFileSystem ufs, Path path) {
-        try {
-            if (Optional.ofNullable(ufs.embeddedFileSystems.get(path.getFileSystem())).filter(efs -> !efs.fsCh.isOpen()).isPresent())
-                throw new IllegalStateException("The zip file has closed!");
-            return (boolean) ZIPFS_EXISTS.invoke(path);
-        } catch (Throwable t) {
-            throw new IllegalStateException(t);
-        }
     }
 
     /**
@@ -292,8 +273,8 @@ public class UnionFileSystem extends FileSystem {
             final Path p = this.basepaths.get(i);
             final Path realPath = toRealPath(p, unionPath);
             // Test if the real path exists and matches the filter of this file system
-            if (testFilter(realPath, p)) {
-                if (fastPathExists(this, realPath)) {
+            if (testFilter(realPath, p, null)) {
+                if (fastPathExists(realPath)) {
                     return Optional.of(realPath);
                 }
             }
@@ -304,7 +285,7 @@ public class UnionFileSystem extends FileSystem {
             final Path last = basepaths.get(lastElementIndex);
             final Path realPath = toRealPath(last, unionPath);
             // We still care about the FS filter, but not about the existence of the real path
-            if (testFilter(realPath, last)) {
+            if (testFilter(realPath, last, null)) {
                 return Optional.of(realPath);
             }
         }
@@ -312,19 +293,28 @@ public class UnionFileSystem extends FileSystem {
         return Optional.empty();
     }
 
-    @SuppressWarnings("unchecked")
     public <A extends BasicFileAttributes> A readAttributes(final UnionPath path, final Class<A> type, final LinkOption... options) throws IOException {
+        final A attrs = readAttributesIfExists(path, type, options);
+        if (attrs == null) {
+            throw new NoSuchFileException(path.toString());
+        }
+        return attrs;
+    }
+
+    @Nullable
+    @SuppressWarnings("unchecked")
+    public <A extends BasicFileAttributes> A readAttributesIfExists(final UnionPath path, final Class<A> type, final LinkOption... options) throws IOException {
         if (type == BasicFileAttributes.class) {
             // We need to run the test on the actual path,
             for (Path base : this.basepaths) {
                 // We need to know the full path for the filter
                 final Path realPath = toRealPath(base, path);
                 final Optional<BasicFileAttributes> fileAttributes = this.getFileAttributes(realPath);
-                if (fileAttributes.isPresent() && testFilter(realPath, base)) {
+                if (fileAttributes.isPresent() && testFilter(realPath, base, fileAttributes.get())) {
                     return (A) fileAttributes.get();
                 }
             }
-            throw new NoSuchFileException(path.toString());
+            return null;
         } else {
             throw new UnsupportedOperationException();
         }
@@ -335,7 +325,7 @@ public class UnionFileSystem extends FileSystem {
             findFirstFiltered(p).ifPresentOrElse(path -> {
                 try {
                     if (modes.length == 0) {
-                        if (!fastPathExists(this, path)) {
+                        if (!fastPathExists(path)) {
                             throw new UncheckedIOException(new NoSuchFileException(p.toString()));
                         }
                     } else {
@@ -350,6 +340,10 @@ public class UnionFileSystem extends FileSystem {
         } catch (UncheckedIOException e) {
             throw e.getCause();
         }
+    }
+
+    public boolean exists(final UnionPath p) {
+        return findFirstFiltered(p).map(UnionFileSystem::fastPathExists).orElse(false);
     }
 
     private Path toRealPath(final Path basePath, final UnionPath path) {
@@ -389,14 +383,14 @@ public class UnionFileSystem extends FileSystem {
         Stream<Path> stream = Stream.empty();
         for (final var bp : basepaths) {
             final var dir = toRealPath(bp, path);
-            if (!fastPathExists(this, dir)) {
+            if (!fastPathExists(dir)) {
                 continue;
             }
             final var isSimple = embeddedFileSystems.containsKey(bp);
             final var ds = Files.newDirectoryStream(dir, filter);
             closeables.add(ds);
             final var currentPaths = StreamSupport.stream(ds.spliterator(), false)
-                    .filter(p -> testFilter(p, bp))
+                    .filter(p -> testFilter(p, bp, null))
                     .map(other -> fastPath(isSimple ? other : bp.relativize(other)));
             stream = Stream.concat(stream, currentPaths);
         }
@@ -447,14 +441,16 @@ public class UnionFileSystem extends FileSystem {
      * Directories end with /
      * Remove leading / for absolute paths
      */
-    private boolean testFilter(final Path path, final Path basePath) {
+    private boolean testFilter(final Path path, final Path basePath, @Nullable BasicFileAttributes attrs) {
         if (pathFilter == null) return true;
 
         var sPath = path.toString();
         if (path.getFileSystem() == basePath.getFileSystem()) // Directories, zips will be different file systems.
             sPath = basePath.relativize(path).toString().replace('\\', '/');
-        var attrs = getFileAttributes(path);
-        if (attrs.isPresent() && attrs.get().isDirectory())
+        if (attrs == null) {
+            attrs = getFileAttributes(path).orElse(null);
+        }
+        if (attrs != null && attrs.isDirectory())
             sPath += '/';
         if (sPath.length() > 1 && sPath.startsWith("/"))
             sPath = sPath.substring(1);

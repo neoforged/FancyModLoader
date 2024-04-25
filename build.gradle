@@ -20,7 +20,7 @@ allprojects {
 
     group 'cpw.mods'
     java {
-        toolchain.languageVersion = JavaLanguageVersion.of(17)
+        toolchain.languageVersion = JavaLanguageVersion.of(project.java_version)
         modularity.inferModulePath.set(true)
     }
     version = gradleutils.version

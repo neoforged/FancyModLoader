@@ -21,7 +21,7 @@ dependencies {
 
 task jmh(type: JavaExec, dependsOn: sourceSets.main.output) {
     javaLauncher = javaToolchains.launcherFor {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(project.java_version)
     }
     jvmArgs= [
         '-p', sourceSets.main.runtimeClasspath.asPath,
