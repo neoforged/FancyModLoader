@@ -21,8 +21,6 @@ public interface IDependencyLocator {
      * Invoked to find all mod dependencies that this dependency locator can find.
      * It is not guaranteed that all these are loaded into the runtime,
      * as such the result of this method should be seen as a list of candidates to load.
-     *
-     * @return All found, or discovered, mod files which function as dependencies.
      */
-    List<IModFile> scanMods(List<IModFile> loadedMods, IModFileReaderFacade providersFacade);
+    void scanMods(List<IModFile> loadedMods, IDiscoveryPipeline pipeline);
 }

@@ -5,12 +5,13 @@
 
 package net.neoforged.fml.loading.targets;
 
+import java.util.ArrayList;
 import java.util.List;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.MavenCoordinate;
 import net.neoforged.fml.loading.VersionInfo;
 import net.neoforged.fml.loading.moddiscovery.providers.ProductionClientProvider;
-import net.neoforged.neoforgespi.locating.IModFileProvider;
+import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 
 /**
  * For production client environments (i.e. vanilla launcher).
@@ -39,8 +40,10 @@ public abstract class CommonClientLaunchHandler extends CommonLaunchHandler {
     }
 
     @Override
-    public List<IModFileProvider> getAdditionalModFileProviders(VersionInfo versionInfo) {
+    public List<IModFileCandidateLocator> getAdditionalModFileLocators(VersionInfo versionInfo) {
+        var result = new ArrayList<>(super.getAdditionalModFileLocators(versionInfo));
         var additionalContent = getAdditionalMinecraftJarContent(versionInfo);
-        return List.of(new ProductionClientProvider(additionalContent));
+        result.add(new ProductionClientProvider(additionalContent));
+        return result;
     }
 }

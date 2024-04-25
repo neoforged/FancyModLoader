@@ -16,9 +16,10 @@ import net.neoforged.fml.loading.LibraryFinder;
 import net.neoforged.fml.loading.MavenCoordinate;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFile;
-import net.neoforged.neoforgespi.locating.IModFileProvider;
-import net.neoforged.neoforgespi.locating.LoadResult;
+import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
+import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 
 /**
  * Locates the Minecraft client files in a production environment.
@@ -27,7 +28,7 @@ import net.neoforged.neoforgespi.locating.LoadResult;
  * been renamed to Mojangs official names using their mappings, and another containing only the Minecraft resource
  * files ("extra"), and searches for these artifacts in the library directory.
  */
-public class ProductionClientProvider implements IModFileProvider, ISystemModSource {
+public class ProductionClientProvider implements IModFileCandidateLocator, ISystemModSource {
     private final List<MavenCoordinate> additionalContent;
 
     public ProductionClientProvider(List<MavenCoordinate> additionalContent) {
@@ -35,7 +36,7 @@ public class ProductionClientProvider implements IModFileProvider, ISystemModSou
     }
 
     @Override
-    public List<LoadResult<IModFile>> provideModFiles(ILaunchContext launchContext) {
+    public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {
         var vers = FMLLoader.versionInfo();
 
         try {
@@ -50,12 +51,13 @@ public class ProductionClientProvider implements IModFileProvider, ISystemModSou
 
             var mcJarMetadata = new ModJarMetadata(mcJarContents);
             var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);
-            var mcjar = IModFile.create(mcSecureJar, this, MinecraftModInfo::buildMinecraftModInfo, null);
+            var mcjar = IModFile.create(mcSecureJar, MinecraftModInfo::buildMinecraftModInfo, ModFileDiscoveryAttributes.DEFAULT.withSystemModFile(true));
             mcJarMetadata.setModFile(mcjar);
 
-            return List.of(new LoadResult.Success<>(mcjar));
+            pipeline.addModFile(mcjar);
         } catch (Exception e) {
-            return List.of(new LoadResult.Error<>(ModLoadingIssue.error("corrupted_file", e.getMessage())));
+            // TODO translation
+            pipeline.addIssue(ModLoadingIssue.error("corrupted_files").withCause(e));
         }
     }
 

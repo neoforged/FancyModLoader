@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -31,11 +32,10 @@ import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.IModLanguageProvider;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.IModFile;
-import net.neoforged.neoforgespi.locating.IModFileSource;
+import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import net.neoforged.neoforgespi.locating.ModFileInfoParser;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 public class ModFile implements IModFile {
@@ -43,15 +43,13 @@ public class ModFile implements IModFile {
 
     private final String jarVersion;
     private final ModFileInfoParser parser;
-    @Nullable
-    private final IModFile parent;
+    private final ModFileDiscoveryAttributes discoveryAttributes;
     private Map<String, Object> fileProperties;
     private List<IModLanguageProvider> loaders;
     private Throwable scanError;
     private final SecureJar jar;
     private final Type modFileType;
     private final Manifest manifest;
-    private final IModFileSource source;
     private IModFileInfo modFileInfo;
     private ModFileScanData fileModFileScanData;
     private volatile CompletableFuture<ModFileScanData> futureScanResult;
@@ -62,18 +60,17 @@ public class ModFile implements IModFile {
     public static final Attributes.Name TYPE = new Attributes.Name("FMLModType");
     private SecureJar.Status securityStatus;
 
-    public ModFile(SecureJar jar, IModFileSource source, final ModFileInfoParser parser, @Nullable IModFile parent) {
-        this(jar, source, parser, parseType(jar), parent);
+    public ModFile(SecureJar jar, final ModFileInfoParser parser, ModFileDiscoveryAttributes attributes) {
+        this(jar, parser, parseType(jar), attributes);
     }
 
-    public ModFile(SecureJar jar, IModFileSource source, ModFileInfoParser parser, Type type, @Nullable IModFile parent) {
-        this.source = source;
-        this.jar = jar;
-        this.parser = parser;
-        this.parent = parent;
+    public ModFile(SecureJar jar, ModFileInfoParser parser, Type type, ModFileDiscoveryAttributes discoveryAttributes) {
+        this.jar = Objects.requireNonNull(jar, "jar");
+        this.parser = Objects.requireNonNull(parser, "parser");
+        this.discoveryAttributes = Objects.requireNonNull(discoveryAttributes, "discoveryAttributes");
 
         manifest = this.jar.moduleDataProvider().getManifest();
-        modFileType = type;
+        modFileType = Objects.requireNonNull(type, "type");
         jarVersion = Optional.ofNullable(manifest.getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION)).orElse("0.0NONE");
         this.modFileInfo = ModFileParser.readModList(this, this.parser);
     }
@@ -209,8 +206,8 @@ public class ModFile implements IModFile {
 
     @Override
     public String toString() {
-        if (parent != null) {
-            return "Nested Mod File " + this.jar.getPrimaryPath() + " in " + parent;
+        if (discoveryAttributes.parent() != null) {
+            return "Nested Mod File " + this.jar.getPrimaryPath() + " in " + discoveryAttributes.parent();
         } else {
             return "Mod File: " + this.jar.getPrimaryPath();
         }
@@ -222,14 +219,8 @@ public class ModFile implements IModFile {
     }
 
     @Override
-    public IModFileSource getSource() {
-        return source;
-    }
-
-    @Nullable
-    @Override
-    public IModFile getParent() {
-        return parent;
+    public ModFileDiscoveryAttributes getDiscoveryAttributes() {
+        return discoveryAttributes;
     }
 
     @Override

@@ -16,14 +16,15 @@ import java.util.stream.Stream;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.locators.JarModsDotTomlModFileReader;
 import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFile;
-import net.neoforged.neoforgespi.locating.IModFileProvider;
-import net.neoforged.neoforgespi.locating.LoadResult;
+import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
+import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 
 /**
  * Provides the Minecraft and Neoforge mods in a Neoforge dev environment.
  */
-public class NeoForgeDevProvider implements IModFileProvider, ISystemModSource {
+public class NeoForgeDevProvider implements IModFileCandidateLocator, ISystemModSource {
     private final List<Path> paths;
 
     public NeoForgeDevProvider(List<Path> paths) {
@@ -31,7 +32,7 @@ public class NeoForgeDevProvider implements IModFileProvider, ISystemModSource {
     }
 
     @Override
-    public List<LoadResult<IModFile>> provideModFiles(ILaunchContext launchContext) {
+    public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {
         Path minecraftResourcesRoot = null;
 
         // try finding client-extra jar explicitly first
@@ -73,8 +74,9 @@ public class NeoForgeDevProvider implements IModFileProvider, ISystemModSource {
 
         var mcJarMetadata = new ModJarMetadata(mcJarContents);
         var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);
-        var minecraftModFile = IModFile.create(mcSecureJar, this, MinecraftModInfo::buildMinecraftModInfo, null);
+        var minecraftModFile = IModFile.create(mcSecureJar, MinecraftModInfo::buildMinecraftModInfo, ModFileDiscoveryAttributes.DEFAULT);
         mcJarMetadata.setModFile(minecraftModFile);
+        pipeline.addModFile(minecraftModFile);
 
         // We need to separate out our resources/code so that we can show up as a different data pack.
         var neoforgeJarContents = new JarContentsBuilder()
@@ -86,11 +88,8 @@ public class NeoForgeDevProvider implements IModFileProvider, ISystemModSource {
                     return false;
                 })
                 .build();
-
-        return List.of(
-                new LoadResult.Success<>(minecraftModFile),
-                // TODO insufficient error handling
-                JarModsDotTomlModFileReader.createModFile(neoforgeJarContents, this, null));
+        // TODO error handling
+        pipeline.addModFile(JarModsDotTomlModFileReader.createModFile(neoforgeJarContents, ModFileDiscoveryAttributes.DEFAULT));
     }
 
     private static String normalizePrefix(Path minecraftResourcesRoot) {

@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileParser;
@@ -23,8 +22,7 @@ import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileReader;
-import net.neoforged.neoforgespi.locating.IModFileSource;
-import net.neoforged.neoforgespi.locating.LoadResult;
+import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -33,28 +31,22 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
     public static final String MODS_TOML = "META-INF/neoforge.mods.toml";
     protected static final String MANIFEST = "META-INF/MANIFEST.MF";
 
-    public static LoadResult<IModFile> createModFile(JarContents contents, IModFileSource source, @Nullable IModFile parent) {
+    public static IModFile createModFile(JarContents contents, ModFileDiscoveryAttributes discoveryAttributes) {
         var type = getModType(contents);
-        try {
-            IModFile mod;
-            if (contents.findFile(MODS_TOML).isPresent()) {
-                LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MODS_TOML, type, contents.getPrimaryPath());
-                var mjm = new ModJarMetadata(contents);
-                mod = new ModFile(SecureJar.from(contents, mjm), source, ModFileParser::modsTomlParser, parent);
-                mjm.setModFile(mod);
-            } else if (type != null) {
-                LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MANIFEST, type, contents.getPrimaryPath());
-                mod = new ModFile(SecureJar.from(contents), source, JarModsDotTomlModFileReader::manifestParser, type, parent);
-            } else {
-                return null;
-            }
-
-            return new LoadResult.Success<>(mod);
-        } catch (Exception exception) {
-            return new LoadResult.Error<>(ModLoadingIssue.error(
-                    // TODO
-                    "failed_reading_mod_file", contents.getPrimaryPath()).withAffectedModFile(parent).withAffectedPath(contents.getPrimaryPath()).withCause(exception));
+        IModFile mod;
+        if (contents.findFile(MODS_TOML).isPresent()) {
+            LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MODS_TOML, type, contents.getPrimaryPath());
+            var mjm = new ModJarMetadata(contents);
+            mod = new ModFile(SecureJar.from(contents, mjm), ModFileParser::modsTomlParser, discoveryAttributes);
+            mjm.setModFile(mod);
+        } else if (type != null) {
+            LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MANIFEST, type, contents.getPrimaryPath());
+            mod = new ModFile(SecureJar.from(contents), JarModsDotTomlModFileReader::manifestParser, type, discoveryAttributes);
+        } else {
+            return null;
         }
+
+        return mod;
     }
 
     @Nullable
@@ -82,8 +74,8 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
     }
 
     @Override
-    public @Nullable LoadResult<IModFile> read(JarContents jar, @Nullable IModFile parent) {
-        return createModFile(jar, this, parent);
+    public @Nullable IModFile read(JarContents jar, ModFileDiscoveryAttributes discoveryAttributes) {
+        return createModFile(jar, discoveryAttributes.withReader(this));
     }
 
     private record DefaultModFileInfo(IModFile mod, String license,

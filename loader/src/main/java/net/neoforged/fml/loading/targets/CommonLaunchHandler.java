@@ -27,7 +27,6 @@ import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.VersionInfo;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
-import net.neoforged.neoforgespi.locating.IModFileProvider;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.ConfigurationFactory;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
@@ -49,13 +48,6 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
      * @return Additional mod locators that are active for this launch handler.
      */
     public List<IModFileCandidateLocator> getAdditionalModFileLocators(VersionInfo versionInfo) {
-        return List.of();
-    }
-
-    /**
-     * @return Additional mod file providers that are active for this launch handler.
-     */
-    public List<IModFileProvider> getAdditionalModFileProviders(VersionInfo versionInfo) {
         return List.of();
     }
 

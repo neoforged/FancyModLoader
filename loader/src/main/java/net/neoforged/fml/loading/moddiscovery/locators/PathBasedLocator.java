@@ -5,14 +5,13 @@
 
 package net.neoforged.fml.loading.moddiscovery.locators;
 
-import cpw.mods.jarhandling.JarContents;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Stream;
-import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
-import net.neoforged.neoforgespi.locating.LoadResult;
+import net.neoforged.neoforgespi.locating.IncompatibleFileReporting;
+import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 
 /**
  * "Locates" mods from a fixed set of paths.
@@ -23,14 +22,9 @@ public record PathBasedLocator(String name, List<Path> paths) implements IModFil
     }
 
     @Override
-    public Stream<LoadResult<JarContents>> findCandidates(ILaunchContext context) {
-        return paths.stream().map(path -> {
-            try {
-                return new LoadResult.Success<>(JarContents.of(path));
-            } catch (Exception e) {
-                // TODO translation
-                return new LoadResult.Error<>(ModLoadingIssue.error("corrupted_file", e));
-            }
-        });
+    public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {
+        for (var path : paths) {
+            pipeline.addPath(path, ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.ERROR);
+        }
     }
 }

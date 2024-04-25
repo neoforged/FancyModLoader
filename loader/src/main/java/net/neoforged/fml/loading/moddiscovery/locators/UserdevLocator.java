@@ -5,18 +5,18 @@
 
 package net.neoforged.fml.loading.moddiscovery.locators;
 
-import cpw.mods.jarhandling.JarContents;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import net.neoforged.fml.loading.moddiscovery.providers.DevEnvUtils;
 import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
-import net.neoforged.neoforgespi.locating.LoadResult;
+import net.neoforged.neoforgespi.locating.IncompatibleFileReporting;
+import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 
 public class UserdevLocator implements IModFileCandidateLocator {
     private final Map<String, List<Path>> modFolders;
@@ -26,26 +26,25 @@ public class UserdevLocator implements IModFileCandidateLocator {
     }
 
     @Override
-    public String name() {
-        return "userdev mods and services";
-    }
-
-    @Override
-    public Stream<LoadResult<JarContents>> findCandidates(ILaunchContext context) {
+    public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {
         var claimed = modFolders.values().stream().flatMap(List::stream).collect(Collectors.toCollection(HashSet::new));
 
-        var result = Stream.<List<Path>>builder();
-        modFolders.values().forEach(result::add);
+        for (var modFolderGroup : modFolders.values()) {
+            pipeline.addPath(modFolderGroup, ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.ERROR);
+        }
 
         var fromClasspath = new ArrayList<Path>();
         fromClasspath.addAll(DevEnvUtils.findFileSystemRootsOfFileOnClasspath(JarModsDotTomlModFileReader.MODS_TOML));
         fromClasspath.addAll(DevEnvUtils.findFileSystemRootsOfFileOnClasspath(JarModsDotTomlModFileReader.MANIFEST));
         for (var path : fromClasspath) {
             if (claimed.add(path)) {
-                result.add(List.of(path));
+                pipeline.addPath(List.of(path), ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.WARN_ON_KNOWN_INCOMPATIBILITY);
             }
         }
+    }
 
-        return result.build().map(IModFileCandidateLocator::result);
+    @Override
+    public String toString() {
+        return "userdev mods and services";
     }
 }

@@ -5,6 +5,7 @@
 
 package net.neoforged.fml.loading.targets;
 
+import java.util.ArrayList;
 import java.util.List;
 import net.neoforged.fml.loading.LibraryFinder;
 import net.neoforged.fml.loading.MavenCoordinate;
@@ -28,7 +29,9 @@ public class NeoForgeClientLaunchHandler extends CommonClientLaunchHandler {
 
     @Override
     public List<IModFileCandidateLocator> getAdditionalModFileLocators(VersionInfo versionInfo) {
+        var result = new ArrayList<>(super.getAdditionalModFileLocators(versionInfo));
         var nfJar = LibraryFinder.findPathForMaven("net.neoforged", "neoforge", "", "universal", versionInfo.neoForgeVersion());
-        return List.of(new PathBasedLocator("neoforge", nfJar));
+        result.add(new PathBasedLocator("neoforge", nfJar));
+        return result;
     }
 }

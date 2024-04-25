@@ -127,8 +127,7 @@ public class FMLLoader {
     public static List<ITransformationService.Resource> beginModScan(ILaunchContext launchContext) {
         var modDiscoverer = new ModDiscoverer(
                 launchContext,
-                commonLaunchHandler.getAdditionalModFileLocators(versionInfo),
-                commonLaunchHandler.getAdditionalModFileProviders(versionInfo));
+                commonLaunchHandler.getAdditionalModFileLocators(versionInfo));
         modValidator = modDiscoverer.discoverMods();
         var pluginResources = modValidator.getPluginResources();
         return List.of(pluginResources);

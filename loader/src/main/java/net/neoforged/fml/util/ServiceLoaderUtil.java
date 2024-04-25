@@ -41,7 +41,7 @@ public final class ServiceLoaderUtil {
             }
         }).filter(Objects::nonNull);
 
-        var services = Streams.concat(serviceLoaderServices, additionalServices.stream()).distinct().toList();
+        var services = Streams.concat(additionalServices.stream(), serviceLoaderServices).distinct().toList();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(LogMarkers.CORE, "Found {} implementations of {}:", services.size(), serviceClass.getSimpleName());
             for (T service : services) {

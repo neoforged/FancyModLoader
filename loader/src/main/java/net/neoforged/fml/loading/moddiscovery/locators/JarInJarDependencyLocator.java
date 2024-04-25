@@ -15,7 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -25,9 +24,9 @@ import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.jarjar.selection.JarSelector;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IDependencyLocator;
+import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFile;
-import net.neoforged.neoforgespi.locating.IModFileReaderFacade;
-import net.neoforged.neoforgespi.locating.LoadResult;
+import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import net.neoforged.neoforgespi.locating.ModFileLoadingException;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
@@ -42,38 +41,31 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
     }
 
     @Override
-    public List<IModFile> scanMods(List<IModFile> loadedMods, IModFileReaderFacade providersFacade) {
+    public void scanMods(List<IModFile> loadedMods, IDiscoveryPipeline pipeline) {
         List<IModFile> dependenciesToLoad = JarSelector.detectAndSelect(
                 loadedMods,
                 this::loadResourceFromModFile,
-                (file, path) -> loadModFileFrom(file, path, providersFacade),
+                (file, path) -> loadModFileFrom(file, path, pipeline),
                 this::identifyMod,
                 this::exception);
 
         if (dependenciesToLoad.isEmpty()) {
             LOGGER.info("No dependencies to load found. Skipping!");
-            return Collections.emptyList();
+        } else {
+            LOGGER.info("Found {} dependencies adding them to mods collection", dependenciesToLoad.size());
         }
-
-        LOGGER.info("Found {} dependencies adding them to mods collection", dependenciesToLoad.size());
-        return dependenciesToLoad;
     }
 
     @SuppressWarnings("resource")
-    protected Optional<IModFile> loadModFileFrom(IModFile file, final Path path, IModFileReaderFacade modFileFactory) {
+    protected Optional<IModFile> loadModFileFrom(IModFile file, final Path path, IDiscoveryPipeline pipeline) {
         try {
             var pathInModFile = file.findResource(path.toString());
             var filePathUri = new URI("jij:" + (pathInModFile.toAbsolutePath().toUri().getRawSchemeSpecificPart())).normalize();
             var outerFsArgs = ImmutableMap.of("packagePath", pathInModFile);
             var zipFS = FileSystems.newFileSystem(filePathUri, outerFsArgs);
             var jar = JarContents.of(zipFS.getPath("/"));
-            var providerResult = modFileFactory.readModFile(jar, file);
-            return switch (providerResult) {
-                case null -> Optional.empty();
-                case LoadResult.Success(var modFile) -> Optional.of(modFile);
-                // Rethrow provider errors immediately, to be handled below
-                case LoadResult.Error(var error) -> throw new ModLoadingException(error);
-            };
+            var providerResult = pipeline.readModFile(jar, ModFileDiscoveryAttributes.DEFAULT.withParent(file));
+            return Optional.ofNullable(providerResult);
         } catch (Exception e) {
             LOGGER.error("Failed to load mod file {} from {}", path, file.getFileName());
             final RuntimeException exception = new ModFileLoadingException("Failed to load mod file " + file.getFileName());

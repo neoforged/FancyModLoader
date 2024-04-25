@@ -13,14 +13,15 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Picked up via ServiceLoader.
  */
-public non-sealed interface IModFileReader extends IModFileSource {
+public interface IModFileReader {
     /**
-     * Provides a mod from the given {@code jar}.
+     * Provides a mod from the given {@code jar}. Any thrown exception will be reported in relationship to the given
+     * jar contents.
      *
-     * @param jar    the mod jar contents
-     * @param parent The mod-file that is the logical parent of {@code jar}. This may be null if there is no parent.
+     * @param jar        the mod jar contents
+     * @param attributes The attributes relating to this mod files discovery.
      * @return {@code null} if this provider can't handle the given jar, otherwise a result indicating success or failure.
      */
     @Nullable
-    LoadResult<IModFile> read(JarContents jar, @Nullable IModFile parent);
+    IModFile read(JarContents jar, ModFileDiscoveryAttributes attributes);
 }

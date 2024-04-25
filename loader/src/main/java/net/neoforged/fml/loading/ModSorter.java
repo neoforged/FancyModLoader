@@ -34,7 +34,6 @@ import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
-import net.neoforged.fml.loading.moddiscovery.providers.ISystemModSource;
 import net.neoforged.fml.loading.toposort.CyclePresentException;
 import net.neoforged.fml.loading.toposort.TopologicalSort;
 import net.neoforged.neoforgespi.language.IModInfo;
@@ -180,9 +179,9 @@ public class ModSorter {
         final Set<String> systemMods = new HashSet<>();
         // The minecraft mod is always a system mod
         systemMods.add("minecraft");
-        // Find mod file from MinecraftLocator to define the system mods
+        // Find system mod files and scan them for system mods
         modFiles.stream()
-                .filter(modFile -> modFile.getSource() instanceof ISystemModSource)
+                .filter(modFile -> modFile.getDiscoveryAttributes().systemModFile())
                 .map(ModFile::getSecureJar)
                 .map(SecureJar::moduleDataProvider)
                 .map(SecureJar.ModuleDataProvider::getManifest)

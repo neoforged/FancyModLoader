@@ -9,7 +9,6 @@ import cpw.mods.jarhandling.JarContents;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Stream;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.moddiscovery.locators.ModsFolderLocator;
 import net.neoforged.neoforgespi.ILaunchContext;
@@ -51,12 +50,7 @@ public interface IModFileCandidateLocator {
     }
 
     /**
-     * {@return the name of this locator}
-     */
-    String name();
-
-    /**
      * {@return all mod paths that this mod locator can find. the stream must be closed by the caller}
      */
-    Stream<LoadResult<JarContents>> findCandidates(ILaunchContext context);
+    void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline);
 }

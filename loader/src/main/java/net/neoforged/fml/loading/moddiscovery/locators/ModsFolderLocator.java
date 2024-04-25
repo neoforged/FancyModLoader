@@ -6,19 +6,22 @@
 package net.neoforged.fml.loading.moddiscovery.locators;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.jarhandling.JarContents;
-import cpw.mods.modlauncher.api.LambdaExceptionUtils;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
+import net.neoforged.fml.ModLoadingException;
+import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.StringUtils;
 import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
-import net.neoforged.neoforgespi.locating.LoadResult;
+import net.neoforged.neoforgespi.locating.IncompatibleFileReporting;
 import org.slf4j.Logger;
 
 /**
@@ -44,18 +47,23 @@ public class ModsFolderLocator implements IModFileCandidateLocator {
     }
 
     @Override
-    public Stream<LoadResult<JarContents>> findCandidates(ILaunchContext context) {
+    public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {
         LOGGER.debug(LogMarkers.SCAN, "Scanning mods dir {} for mods", this.modFolder);
 
-        return LambdaExceptionUtils.uncheck(() -> Files.list(this.modFolder))
-                .filter(p -> StringUtils.toLowerCase(p.getFileName().toString()).endsWith(SUFFIX))
-                .sorted(Comparator.comparing(path -> StringUtils.toLowerCase(path.getFileName().toString())))
-                .map(IModFileCandidateLocator::result);
-    }
+        List<Path> directoryContent;
+        try (var files = Files.list(this.modFolder)) {
+            directoryContent = files
+                    .filter(p -> StringUtils.toLowerCase(p.getFileName().toString()).endsWith(SUFFIX))
+                    .sorted(Comparator.comparing(path -> StringUtils.toLowerCase(path.getFileName().toString())))
+                    .toList();
+        } catch (UncheckedIOException | IOException e) {
+            // TODO: translation key
+            throw new ModLoadingException(ModLoadingIssue.error("Failed to list all mods in " + this.modFolder).withCause(e));
+        }
 
-    @Override
-    public String name() {
-        return customName;
+        for (var file : directoryContent) {
+            pipeline.addPath(file, null, IncompatibleFileReporting.WARN_ON_KNOWN_INCOMPATIBILITY);
+        }
     }
 
     @Override
