@@ -36,14 +36,16 @@ import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import net.neoforged.neoforgespi.locating.ModFileInfoParser;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import org.jetbrains.annotations.ApiStatus;
 import org.slf4j.Logger;
 
+@ApiStatus.Internal
 public class ModFile implements IModFile {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private final String jarVersion;
     private final ModFileInfoParser parser;
-    private final ModFileDiscoveryAttributes discoveryAttributes;
+    private ModFileDiscoveryAttributes discoveryAttributes;
     private Map<String, Object> fileProperties;
     private List<IModLanguageProvider> loaders;
     private Throwable scanError;
@@ -221,6 +223,10 @@ public class ModFile implements IModFile {
     @Override
     public ModFileDiscoveryAttributes getDiscoveryAttributes() {
         return discoveryAttributes;
+    }
+
+    public void setDiscoveryAttributes(ModFileDiscoveryAttributes discoveryAttributes) {
+        this.discoveryAttributes = discoveryAttributes;
     }
 
     @Override

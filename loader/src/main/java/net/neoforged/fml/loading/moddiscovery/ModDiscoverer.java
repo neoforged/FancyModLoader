@@ -227,6 +227,8 @@ public class ModDiscoverer {
                 return false;
             }
 
+            modFile.setDiscoveryAttributes(defaultAttributes.merge(mf.getDiscoveryAttributes()));
+
             var discoveryAttributes = mf.getDiscoveryAttributes();
             LOGGER.info(LogMarkers.SCAN, "Found mod file \"{}\" of type {} {}", mf.getFileName(), mf.getType(), discoveryAttributes);
 
