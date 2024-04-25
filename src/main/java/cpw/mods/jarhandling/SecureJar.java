@@ -140,7 +140,7 @@ public interface SecureJar {
             try {
                 var entries = Files.readAllLines(path).stream()
                         .map(String::trim)
-                        .filter(l->l.length() > 0 && !l.startsWith("#")) // We support comments :)
+                        .filter(l-> !l.isEmpty() && !l.startsWith("#")) // We support comments :)
                         .filter(p-> pkgFilter == null || pkgFilter.test(p.replace('.','/'), ""))
                         .toList();
                 return new Provider(sname, entries);
@@ -152,63 +152,5 @@ public interface SecureJar {
 
     enum Status {
         NONE, INVALID, UNVERIFIED, VERIFIED
-    }
-
-    /**
-     * @deprecated Obtain via the {@link ModuleDescriptor} of the jar if you really need this.
-     */
-    @Deprecated(forRemoval = true, since = "2.1.16")
-    default Set<String> getPackages() {
-        return moduleDataProvider().descriptor().packages();
-    }
-
-    /**
-     * @deprecated Obtain via the {@link ModuleDescriptor} of the jar if you really need this.
-     */
-    @Deprecated(forRemoval = true, since = "2.1.16")
-    default List<Provider> getProviders() {
-        return moduleDataProvider().descriptor().provides().stream()
-                .map(p -> new Provider(p.service(), p.providers()))
-                .toList();
-    }
-
-    /**
-     * @deprecated Use {@link JarContentsBuilder} and {@link #from(JarContents)} instead.
-     */
-    @Deprecated(forRemoval = true, since = "2.1.16")
-    static SecureJar from(BiPredicate<String, String> filter, final Path... paths) {
-        return from(jar->JarMetadata.from(jar, paths), filter, paths);
-    }
-
-    /**
-     * @deprecated Use {@link JarContentsBuilder} and {@link #from(JarContents)} instead.
-     */
-    @Deprecated(forRemoval = true, since = "2.1.16")
-    static SecureJar from(Function<SecureJar, JarMetadata> metadataSupplier, final Path... paths) {
-        return from(Manifest::new, metadataSupplier, paths);
-    }
-
-    /**
-     * @deprecated Use {@link JarContentsBuilder} and {@link #from(JarContents)} instead.
-     */
-    @Deprecated(forRemoval = true, since = "2.1.16")
-    static SecureJar from(Function<SecureJar, JarMetadata> metadataSupplier, BiPredicate<String, String> filter, final Path... paths) {
-        return from(Manifest::new, metadataSupplier, filter, paths);
-    }
-
-    /**
-     * @deprecated Use {@link JarContentsBuilder} and {@link #from(JarContents)} instead.
-     */
-    @Deprecated(forRemoval = true, since = "2.1.16")
-    static SecureJar from(Supplier<Manifest> defaultManifest, Function<SecureJar, JarMetadata> metadataSupplier, final Path... paths) {
-        return from(defaultManifest, metadataSupplier, null, paths);
-    }
-
-    /**
-     * @deprecated Use {@link JarContentsBuilder} and {@link #from(JarContents)} instead.
-     */
-    @Deprecated(forRemoval = true, since = "2.1.16")
-    static SecureJar from(Supplier<Manifest> defaultManifest, Function<SecureJar, JarMetadata> metadataSupplier, BiPredicate<String, String> filter, final Path... paths) {
-        return new Jar(defaultManifest, metadataSupplier, filter, paths);
     }
 }

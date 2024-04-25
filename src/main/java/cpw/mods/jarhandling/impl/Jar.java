@@ -13,10 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.CodeSigner;
-import java.util.*;
-import java.util.function.BiPredicate;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.Optional;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
@@ -29,17 +26,6 @@ public class Jar implements SecureJar {
     private final JarModuleDataProvider moduleDataProvider;
 
     private final JarMetadata metadata;
-
-    @Deprecated(forRemoval = true, since = "2.1.16")
-    public Jar(final Supplier<Manifest> defaultManifest, final Function<SecureJar, JarMetadata> metadataFunction, final BiPredicate<String, String> pathfilter, final Path... paths) {
-        this.contents = new JarContentsImpl(paths, defaultManifest, pathfilter);
-        this.manifest = contents.getManifest();
-        this.signingData = contents.signingData;
-        this.filesystem = contents.filesystem;
-
-        this.moduleDataProvider = new JarModuleDataProvider(this);
-        this.metadata = metadataFunction.apply(this);
-    }
 
     public Jar(JarContentsImpl contents, JarMetadata metadata) {
         this.contents = contents;
@@ -105,16 +91,6 @@ public class Jar implements SecureJar {
     @Override
     public String name() {
         return metadata.name();
-    }
-
-    @Override
-    public Set<String> getPackages() {
-        return contents.getPackages();
-    }
-
-    @Override
-    public List<Provider> getProviders() {
-        return contents.getMetaInfServices();
     }
 
     @Override
