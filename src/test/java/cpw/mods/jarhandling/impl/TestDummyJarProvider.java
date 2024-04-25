@@ -120,6 +120,16 @@ public class TestDummyJarProvider {
         }
 
         @Override
+        public Set<String> getPackages() {
+            return null;
+        }
+
+        @Override
+        public List<Provider> getProviders() {
+            return null;
+        }
+
+        @Override
         public String name() {
             return null;
         }

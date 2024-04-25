@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 public interface JarMetadata {
@@ -155,5 +156,36 @@ public interface JarMetadata {
         mn = KEYWORD_PARTS.matcher(mn).replaceAll("_$1");
 
         return mn;
+    }
+
+    /**
+     * @deprecated Build from jar contents directly using {@link #from(JarContents)}.
+     */
+    @Deprecated(forRemoval = true, since = "2.1.23")
+    static SimpleJarMetadata fromFileName(final Path path, final Set<String> pkgs, final List<SecureJar.Provider> providers) {
+        var nav = computeNameAndVersion(path);
+        return new SimpleJarMetadata(nav.name(), nav.version(), () -> pkgs, providers);
+    }
+
+    /**
+     * @deprecated Use {@link #from(JarContents)} instead.
+     */
+    @Deprecated(forRemoval = true, since = "2.1.16")
+    static JarMetadata from(final SecureJar jar, final Path... path) {
+        if (path.length==0) throw new IllegalArgumentException("Need at least one path");
+        final var pkgs = jar.getPackages();
+        var mi = jar.moduleDataProvider().findFile("module-info.class");
+        if (mi.isPresent()) {
+            return new ModuleJarMetadata(mi.get(), jar::getPackages);
+        } else {
+            var providers = jar.getProviders();
+            var fileCandidate = fromFileName(path[0], pkgs, providers);
+            var aname = jar.moduleDataProvider().getManifest().getMainAttributes().getValue("Automatic-Module-Name");
+            if (aname != null) {
+                return new SimpleJarMetadata(aname, fileCandidate.version(), () -> pkgs, providers);
+            } else {
+                return fileCandidate;
+            }
+        }
     }
 }
