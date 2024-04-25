@@ -4,6 +4,7 @@ import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.niofs.union.UnionFileSystem;
 import cpw.mods.niofs.union.UnionFileSystemProvider;
+import cpw.mods.niofs.union.UnionPathFilter;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -49,7 +50,7 @@ public class JarContentsImpl implements JarContents {
     // Cache for repeated getMetaInfServices calls
     private List<SecureJar.Provider> providers;
 
-    public JarContentsImpl(Path[] paths, Supplier<Manifest> defaultManifest, @Nullable BiPredicate<String, String> pathFilter) {
+    public JarContentsImpl(Path[] paths, Supplier<Manifest> defaultManifest, @Nullable UnionPathFilter pathFilter) {
         var validPaths = Arrays.stream(paths).filter(Files::exists).toArray(Path[]::new);
         if (validPaths.length == 0)
             throw new UncheckedIOException(new IOException("Invalid paths argument, contained no existing paths: " + Arrays.toString(paths)));

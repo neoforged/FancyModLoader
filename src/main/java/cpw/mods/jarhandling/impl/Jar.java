@@ -3,6 +3,7 @@ package cpw.mods.jarhandling.impl;
 import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.niofs.union.UnionFileSystem;
+import cpw.mods.niofs.union.UnionPathFilter;
 import cpw.mods.util.LambdaExceptionUtils;
 import org.jetbrains.annotations.Nullable;
 

@@ -65,7 +65,7 @@ public class UnionFileSystemProvider extends FileSystemProvider {
 
     /**
      * Invoked by FileSystems.newFileSystem, Only returns a value if env contains one of more of:
-     *   "filter": BiPredicate<String, String> - A filter to apply to the opened path
+     *   "filter": UnionPathFilter - A filter to apply to the opened path
      *   "additional": List<Path> - Additional paths to join together
      * If none specified, throws IllegalArgumentException
      * If uri.getScheme() is not "union" throws IllegalArgumentException
@@ -76,7 +76,7 @@ public class UnionFileSystemProvider extends FileSystemProvider {
         @SuppressWarnings("unchecked")
         var additional = ((Map<String, List<Path>>)env).getOrDefault("additional", List.<Path>of());
         @SuppressWarnings("unchecked")
-        var filter = ((Map<String, BiPredicate<String, String>>)env).getOrDefault("filter", null);
+        var filter = ((Map<String, UnionPathFilter>)env).getOrDefault("filter", null);
 
         if (filter == null && additional.isEmpty())
             throw new IllegalArgumentException("Missing additional and/or filter");
@@ -95,7 +95,7 @@ public class UnionFileSystemProvider extends FileSystemProvider {
 
     /**
      * Invoked by FileSystems.newFileSystem, Only returns a value if env contains one of more of:
-     *   "filter": BiPredicate<String, String> - A filter to apply to the opened path
+     *   "filter": UnionPathFilter - A filter to apply to the opened path
      *   "additional": List<Path> - Additional paths to join together
      * If none specified, throws UnsupportedOperationException instead of IllegalArgumentException
      *   so that FileSystems.newFileSystem will search for the next provider.
@@ -106,7 +106,7 @@ public class UnionFileSystemProvider extends FileSystemProvider {
         @SuppressWarnings("unchecked")
         var additional = ((Map<String, List<Path>>)env).getOrDefault("additional", List.<Path>of());
         @SuppressWarnings("unchecked")
-        var filter = ((Map<String, BiPredicate<String, String>>)env).getOrDefault("filter", null);
+        var filter = ((Map<String, UnionPathFilter>)env).getOrDefault("filter", null);
 
         if (filter == null && additional.isEmpty())
             throw new UnsupportedOperationException("Missing additional and/or filter");
@@ -119,13 +119,13 @@ public class UnionFileSystemProvider extends FileSystemProvider {
         }
     }
 
-    public UnionFileSystem newFileSystem(@Nullable BiPredicate<String, String> pathfilter, final Path... paths) {
+    public UnionFileSystem newFileSystem(@Nullable UnionPathFilter pathfilter, final Path... paths) {
         if (paths.length == 0) throw new IllegalArgumentException("Need at least one path");
         var key = makeKey(paths[0]);
         return newFileSystemInternal(key, pathfilter, paths);
     }
 
-    private UnionFileSystem newFileSystemInternal(final String key, @Nullable BiPredicate<String, String> pathfilter, final Path... paths) {
+    private UnionFileSystem newFileSystemInternal(final String key, @Nullable UnionPathFilter pathfilter, final Path... paths) {
         var normpaths = Arrays.stream(paths)
                 .map(Path::toAbsolutePath)
                 .map(Path::normalize)
