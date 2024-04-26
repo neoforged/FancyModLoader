@@ -48,6 +48,9 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
             LOGGER.info("No dependencies to load found. Skipping!");
         } else {
             LOGGER.info("Found {} dependencies adding them to mods collection", dependenciesToLoad.size());
+            for (var modFile : dependenciesToLoad) {
+                pipeline.addModFile(modFile);
+            }
         }
     }
 

@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -171,10 +172,7 @@ public class ModDiscoverer {
             for (var reader : modFileReaders) {
                 var provided = reader.read(jarContents, attributes);
                 if (provided != null) {
-                    if (addModFile(provided)) {
-                        return provided;
-                    }
-                    return null;
+                    return provided;
                 }
             }
 
@@ -230,7 +228,7 @@ public class ModDiscoverer {
             modFile.setDiscoveryAttributes(defaultAttributes.merge(mf.getDiscoveryAttributes()));
 
             var discoveryAttributes = mf.getDiscoveryAttributes();
-            LOGGER.info(LogMarkers.SCAN, "Found mod file \"{}\" of type {} {}", mf.getFileName(), mf.getType(), discoveryAttributes);
+            LOGGER.info(LogMarkers.SCAN, "Found {} file \"{}\" {}", mf.getType().name().toLowerCase(Locale.ROOT), mf.getFileName(), discoveryAttributes);
 
             loadedFiles.add(modFile);
             successCount++;
