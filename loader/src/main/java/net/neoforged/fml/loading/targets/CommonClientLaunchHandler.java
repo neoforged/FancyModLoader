@@ -5,8 +5,8 @@
 
 package net.neoforged.fml.loading.targets;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.MavenCoordinate;
 import net.neoforged.fml.loading.VersionInfo;
@@ -40,10 +40,10 @@ public abstract class CommonClientLaunchHandler extends CommonLaunchHandler {
     }
 
     @Override
-    public List<IModFileCandidateLocator> getAdditionalModFileLocators(VersionInfo versionInfo) {
-        var result = new ArrayList<>(super.getAdditionalModFileLocators(versionInfo));
+    public void collectAdditionalModFileLocators(VersionInfo versionInfo, Consumer<IModFileCandidateLocator> output) {
+        super.collectAdditionalModFileLocators(versionInfo, output);
+
         var additionalContent = getAdditionalMinecraftJarContent(versionInfo);
-        result.add(new ProductionClientProvider(additionalContent));
-        return result;
+        output.accept(new ProductionClientProvider(additionalContent));
     }
 }

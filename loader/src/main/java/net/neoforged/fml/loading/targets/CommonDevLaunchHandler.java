@@ -5,8 +5,7 @@
 
 package net.neoforged.fml.loading.targets;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.neoforged.fml.loading.VersionInfo;
@@ -24,18 +23,17 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
     }
 
     @Override
-    public List<IModFileCandidateLocator> getAdditionalModFileLocators(VersionInfo versionInfo) {
-        var result = new ArrayList<>(super.getAdditionalModFileLocators(versionInfo));
+    public void collectAdditionalModFileLocators(VersionInfo versionInfo, Consumer<IModFileCandidateLocator> output) {
+        super.collectAdditionalModFileLocators(versionInfo, output);
+
         var groupedModFolders = getGroupedModFolders();
         var minecraftFolders = groupedModFolders.get("minecraft");
         if (minecraftFolders == null) {
             throw new IllegalStateException("Expected paths to minecraft classes to be passed via environment");
         }
 
-        result.add(new NeoForgeDevProvider(minecraftFolders));
-        result.add(new UserdevLocator(groupedModFolders));
-
-        return result;
+        output.accept(new NeoForgeDevProvider(minecraftFolders));
+        output.accept(new UserdevLocator(groupedModFolders));
     }
 
     @Override

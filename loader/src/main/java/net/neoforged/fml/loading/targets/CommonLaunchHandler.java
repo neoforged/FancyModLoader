@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.neoforged.api.distmarker.Dist;
@@ -45,11 +46,9 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
     }
 
     /**
-     * @return Additional mod locators that are active for this launch handler.
+     * Return additional locators to be used for locating mods when this launch handler is used.
      */
-    public List<IModFileCandidateLocator> getAdditionalModFileLocators(VersionInfo versionInfo) {
-        return List.of();
-    }
+    public void collectAdditionalModFileLocators(VersionInfo versionInfo, Consumer<IModFileCandidateLocator> output) {}
 
     protected String[] preLaunch(String[] arguments, ModuleLayer layer) {
         // In dev, do not overwrite the logging configuration if the user explicitly set another one.

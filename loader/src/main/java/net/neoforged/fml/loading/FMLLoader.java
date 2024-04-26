@@ -14,6 +14,7 @@ import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ import net.neoforged.fml.loading.moddiscovery.ModValidator;
 import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.fml.loading.targets.CommonLaunchHandler;
 import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -125,9 +127,10 @@ public class FMLLoader {
     }
 
     public static List<ITransformationService.Resource> beginModScan(ILaunchContext launchContext) {
-        var modDiscoverer = new ModDiscoverer(
-                launchContext,
-                commonLaunchHandler.getAdditionalModFileLocators(versionInfo));
+        var additionalLocators = new ArrayList<IModFileCandidateLocator>();
+        commonLaunchHandler.collectAdditionalModFileLocators(versionInfo, additionalLocators::add);
+
+        var modDiscoverer = new ModDiscoverer(launchContext, additionalLocators);
         modValidator = modDiscoverer.discoverMods();
         var pluginResources = modValidator.getPluginResources();
         return List.of(pluginResources);
