@@ -10,7 +10,7 @@ import net.neoforged.neoforgespi.Environment;
 
 /**
  * Functional interface for generating a custom {@link IModLocator} from a directory, with a specific name.
- *
+ * <p>
  * FML provides this factory at {@link Environment.Keys#MODDIRECTORYFACTORY} during
  * locator construction.
  */

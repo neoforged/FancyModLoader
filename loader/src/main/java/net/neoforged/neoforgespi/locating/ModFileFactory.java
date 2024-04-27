@@ -33,7 +33,7 @@ public interface ModFileFactory {
      */
     interface ModFileInfoParser {
         /**
-         * Invoked to get the freshly build mod files metadata.
+         * Invoked to get the freshly built mod files metadata.
          *
          * @param file The file to parse the metadata for.
          * @return The mod file metadata info.

@@ -18,7 +18,6 @@ import org.apache.maven.artifact.versioning.VersionRange;
 /**
  * ForgeFeature is a simple test for mods for the presence of specific features
  * such as OpenGL of a specific version or better or whatever.
- *
  * {@snippet :
  * ForgeFeature.registerFeature("openGLVersion", VersionFeatureTest.forVersionString(IModInfo.DependencySide.CLIENT, "3.2"));
  * }

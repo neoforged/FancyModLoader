@@ -22,10 +22,11 @@ import net.neoforged.neoforgespi.locating.IModFile;
 
 /**
  * Loaded as a ServiceLoader, from the plugin layer.
+ * <p>
  * Jars in the mods directory must have an {@code FMLModType} of {@link IModFile.Type#LIBRARY}
  * to be loaded on the plugin layer.
- *
- * <p>Version data is read from the manifest's implementation version.
+ * <p>
+ * Version data is read from the manifest's implementation version.
  */
 public interface IModLanguageProvider {
     String name();
@@ -36,6 +37,7 @@ public interface IModLanguageProvider {
      * @deprecated Does not do anything.
      */
     @Deprecated(forRemoval = true, since = "2.0.8")
+    @SuppressWarnings("removal")
     default <R extends ILifecycleEvent<R>> void consumeLifecycleEvent(Supplier<R> consumeEvent) {}
 
     interface IModLanguageLoader {

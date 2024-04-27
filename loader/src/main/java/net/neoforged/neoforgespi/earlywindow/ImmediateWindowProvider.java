@@ -14,15 +14,15 @@ import java.util.function.Supplier;
 
 /**
  * This is for allowing the plugging in of alternative early display implementations.
- *
+ * <p>
  * They can be selected through the config value "earlyWindowProvider" which defaults to "fmlearlywindow".
- *
+ * <p>
  * There are a few key things to keep in mind if following through on implementation. You cannot access the game state as it
  * literally DOES NOT EXIST at the time this object is constructed. You have to be very careful about managing the handoff
  * to mojang, be sure that if you're trying to tick your window in a background thread (a nice idea!) that you properly
  * transition to the main thread before handoff is complete. Do note that in general, you should construct your GL objects
- * on the MAIN thread before starting your ticker, to ensure MacOS compatibility.
- *
+ * on the MAIN thread before starting your ticker, to ensure macOS compatibility.
+ * <p>
  * No doubt many more things can be said here.
  */
 public interface ImmediateWindowProvider {
@@ -33,7 +33,7 @@ public interface ImmediateWindowProvider {
 
     /**
      * This is called very early on to initialize ourselves. Use this to initialize the window and other GL core resources.
-     *
+     * <p>
      * One thing we want to ensure is that we try and create the highest GL_PROFILE we can accomplish.
      * GLFW_CONTEXT_VERSION_MAJOR,GLFW_CONTEXT_VERSION_MINOR should be as high as possible on the created window,
      * and it should have all the typical profile settings.
