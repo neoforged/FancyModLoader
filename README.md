@@ -6,8 +6,8 @@ The mod loader used by [NeoForge](https://github.com/neoforged/NeoForge).
 
 ### Mod File Candidate Locators
 
-Responsible for locating potential mod files. Represents candidates as `JarContents`
-from [SJH](https://github.com/McModLauncher/securejarhandler). This allows locators to also return joined directories (i.e. mod classes and resources in userdev).
+Responsible for locating potential mod files. Filesystem locations, virtual jars or even full mod-files can be reported to the discovery pipeline for inclusion in the mod loading process.
+The pipeline also offers a way for locators to add issues (warnings & errors) that will later be shown to the user when mod loading concludes.
 
 Interface: `net.neoforged.neoforgespi.locating.IModFileCandidateLocator`
 
@@ -25,16 +25,6 @@ The default implementation will resolve the type of the mod file by inspecting t
 file (`neoforge.mods.toml`) and return an `IModFile` instance if this succeeds.
 
 Interface: `net.neoforged.neoforgespi.locating.IModFileReader`
-
-Resolved via Java ServiceLoader.
-
-Mod file instances can be created using the static methods on `IModFile`.
-
-### Mod File Provider
-
-Responsible for supplying `IModFile` that are not based on candidates resolved through locators.
-
-Interface: `net.neoforged.neoforgespi.locating.IModFileProvider`
 
 Resolved via Java ServiceLoader.
 
