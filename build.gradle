@@ -76,21 +76,26 @@ subprojects { subProject ->
     subProject.version = rootProject.version
 
     jar.doFirst {
+        var subName = subProject.name
+        var subVersion = subProject.version.toString()
+        var subVersionData = subVersion.split("\\.")
+        var subVersionMajor = subVersionData[0]
+        var subVersionMinor = subVersionData[1]
         manifest.attributes(
-                'Git-Commit'  : gradleutils.gitInfo.abbreviatedId,
-                'Build-Number': "${subProject.version}",
+                'Git-Commit'            : gradleutils.gitInfo.abbreviatedId,
+                'Build-Number'          : subVersion,
                 'Automatic-Module-Name' : "fml_${subProject.name.replace("-", "_")}",
-                'FMLModType'  : 'LIBRARY',
-                'Specification-Title'   : "FML${subProject.name}",
+                'FMLModType'            : 'LIBRARY',
+                'Specification-Title'   : "FML${subName}",
                 'Specification-Vendor'  : 'NeoForged',
-                'Specification-Version' : "${subProject.version.toString().split('\\.')[0]}",
-                'Implementation-Title'  : "FML $subProject.name",
-                'Implementation-Version': "${subProject.version.toString().split('\\.')[0]}.${subProject.version.toString().split('\\.')[1]}",
+                'Specification-Version' : subVersionMajor,
+                'Implementation-Title'  : "FML ${subName}",
+                'Implementation-Version': "${subVersionMajor}.${subVersionMinor}",
                 'Implementation-Vendor' : 'NeoForged'
         )
     }
 
-    tasks.withType(JavaCompile) {
+    tasks.withType(JavaCompile).configureEach {
         options.compilerArgs << '-Xlint:unchecked'
     }
 
