@@ -14,6 +14,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import net.neoforged.fml.ModLoadingException;
+import net.neoforged.fml.ModLoadingIssue;
 import org.jetbrains.annotations.ApiStatus;
 
 @ApiStatus.Internal
@@ -71,9 +73,9 @@ public final class DevEnvUtils {
         var paths = findFileSystemRootsOfFileOnClasspath(relativePath);
 
         if (paths.isEmpty()) {
-            throw new IllegalArgumentException("Resource not found on classpath: " + relativePath); // TODO
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failed_to_find_on_classpath", relativePath));
         } else if (paths.size() > 1) {
-            throw new IllegalArgumentException("Classpath contains multiple copies of " + relativePath + ": " + paths); // TODO
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.multiple_copies_on_classpath", relativePath, paths));
         }
 
         return paths.getFirst();

@@ -88,7 +88,6 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator, ISystemMod
                     return false;
                 })
                 .build();
-        // TODO error handling
         pipeline.addModFile(JarModsDotTomlModFileReader.createModFile(neoforgeJarContents, ModFileDiscoveryAttributes.DEFAULT.withSystemModFile(true)));
     }
 

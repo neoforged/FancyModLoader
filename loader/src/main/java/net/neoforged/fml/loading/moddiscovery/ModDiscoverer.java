@@ -71,6 +71,8 @@ public class ModDiscoverer {
                 locator.findCandidates(launchContext, pipeline);
             } catch (ModLoadingException e) {
                 discoveryIssues.addAll(e.getIssues());
+            } catch (Exception e) {
+                discoveryIssues.add(ModLoadingIssue.error("fml.modloading.technical_error", locator.toString() + "failed").withCause(e));
             }
 
             LOGGER.debug(LogMarkers.SCAN, "Locator {} found {} mods, {} warnings, {} errors and skipped {} candidates", locator,
@@ -202,8 +204,7 @@ public class ModDiscoverer {
                         return Optional.empty();
                     }
                 } catch (Exception e) {
-                    // TODO Translation key
-                    addIssue(ModLoadingIssue.error("TECHNICAL_ERROR", reader).withAffectedPath(jarContents.getPrimaryPath()).withCause(e));
+                    addIssue(ModLoadingIssue.error("fml.modloading.brokenfile", jarContents.getPrimaryPath()).withAffectedPath(jarContents.getPrimaryPath()).withCause(e));
                     return Optional.empty();
                 }
             }
@@ -212,7 +213,7 @@ public class ModDiscoverer {
             // it might be an incompatible mod type. We do not perform this validation for jars that we
             // found on the classpath or other locations since these are usually not under user control.
             if (reporting == IncompatibleFileReporting.ERROR) {
-                addIssue(ModLoadingIssue.error("TECHNICAL_ERROR", jarContents.getPrimaryPath()));
+                addIssue(ModLoadingIssue.error("fml.modloading.brokenfile", jarContents.getPrimaryPath()));
             } else if (reporting == IncompatibleFileReporting.WARN_ON_KNOWN_INCOMPATIBILITY || reporting == IncompatibleFileReporting.WARN_ALWAYS) {
                 var reason = IncompatibleModReason.detect(jarContents);
                 if (reason.isPresent()) {
@@ -229,8 +230,8 @@ public class ModDiscoverer {
         @Override
         public boolean addModFile(IModFile mf) {
             if (!(mf instanceof ModFile modFile)) {
-                // TODO: Translation
-                addIssue(ModLoadingIssue.error("locator returned custom implementation of ModFile", defaultAttributes, mf.getClass()));
+                String detail = "Unexpected IModFile subclass: " + mf.getClass();
+                addIssue(ModLoadingIssue.error("fml.modloading.technical_error", detail).withAffectedModFile(mf));
                 return false;
             }
 

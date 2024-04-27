@@ -58,8 +58,7 @@ public class ModsFolderLocator implements IModFileCandidateLocator {
                     .sorted(Comparator.comparing(path -> StringUtils.toLowerCase(path.getFileName().toString())))
                     .toList();
         } catch (UncheckedIOException | IOException e) {
-            // TODO: translation key
-            throw new ModLoadingException(ModLoadingIssue.error("Failed to list all mods in " + this.modFolder).withCause(e));
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failed_to_list_folder_content").withAffectedPath(this.modFolder).withCause(e));
         }
 
         for (var file : directoryContent) {

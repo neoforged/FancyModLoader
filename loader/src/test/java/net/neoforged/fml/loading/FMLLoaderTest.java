@@ -383,6 +383,35 @@ class FMLLoaderTest {
             assertThat(result.issues()).extracting(issue -> issue.withCause(null)).containsOnly(
                     ModLoadingIssue.error("fml.modloading.brokenfile.invalidzip", path).withAffectedPath(path));
         }
+
+        /**
+         * Tests that an unknown FMLModType is recorded as an error for that file.
+         */
+        @Test
+        void testJarFileWithInvalidFmlModType() throws Exception {
+            installation.setupProductionClient();
+
+            var path = installation.writeModJar("test.jar", new IdentifiableContent("INVALID_MANIFEST", "META-INF/MANIFEST.MF", "Manifest-Version: 1.0\nFMLModType: XXX\n".getBytes()));
+
+            var result = launch("forgeclient");
+            // Clear the cause, otherwise equality will fail
+            assertThat(result.issues()).extracting(issue -> issue.withCause(null)).containsOnly(
+                    ModLoadingIssue.error("fml.modloading.brokenfile", path).withAffectedPath(path));
+        }
+
+        /**
+         * Test that a locator or reader returning a custom subclass of IModFile is reported.
+         */
+        @Test
+        void testInvalidSubclassOfModFile() throws Exception {
+            installation.setupProductionClient();
+
+            installation.writeModJar("test.jar", CustomSubclassModFileReader.TRIGGER);
+
+            var result = launch("forgeclient");
+            assertThat(result.issues()).extracting(ModLoadingIssue::toString).allMatch(
+                    msg -> msg.startsWith("ERROR: fml.modloading.technical_error, Unexpected IModFile subclass:"));
+        }
     }
 
     @Nested
@@ -395,6 +424,16 @@ class FMLLoaderTest {
             var result = launch("forgeclient");
             assertThat(result.issues()).containsOnly(
                     ModLoadingIssue.warning("fml.modloading.brokenfile.minecraft_forge", path).withAffectedPath(path));
+        }
+
+        @Test
+        void testFabricMod() throws Exception {
+            installation.setupProductionClient();
+            var path = installation.writeModJar("mod.jar", new IdentifiableContent("FABRIC_MOD_JSON", "fabric.mod.json"));
+
+            var result = launch("forgeclient");
+            assertThat(result.issues()).containsOnly(
+                    ModLoadingIssue.warning("fml.modloading.brokenfile.fabric", path).withAffectedPath(path));
         }
 
         @Test

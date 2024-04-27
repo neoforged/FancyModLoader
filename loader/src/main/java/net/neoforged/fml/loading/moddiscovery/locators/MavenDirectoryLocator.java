@@ -34,8 +34,7 @@ public class MavenDirectoryLocator implements IModFileCandidateLocator {
             try {
                 relativePath = MavenCoordinate.parse(modCoordinate).toRelativeRepositoryPath();
             } catch (Exception e) {
-                // TODO translation key
-                pipeline.addIssue(ModLoadingIssue.error("invalid maven mod coordinate", modCoordinate).withCause(e));
+                pipeline.addIssue(ModLoadingIssue.error("fml.modloading.invalid_maven_coordinate", modCoordinate).withCause(e));
                 continue;
             }
 
@@ -43,8 +42,7 @@ public class MavenDirectoryLocator implements IModFileCandidateLocator {
             if (path.isPresent()) {
                 pipeline.addPath(path.get(), ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.ERROR);
             } else {
-                // TODO Translation key
-                pipeline.addIssue(ModLoadingIssue.error("maven mod coord not found", modCoordinate));
+                pipeline.addIssue(ModLoadingIssue.error("fml.modloading.maven_coordinate_not_found", modCoordinate, mavenRootPaths));
             }
         }
     }
