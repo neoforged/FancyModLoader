@@ -24,8 +24,8 @@ dependencies {
     api("cpw.mods:modlauncher:${modlauncher_version}")
     api("net.neoforged:coremods:${coremods_version}")
     api("com.mojang:logging:${mojang_logging_version}")
-    api "net.neoforged:JarJarSelector:${jarjar_version}"
-    api "net.neoforged:JarJarMetadata:${jarjar_version}"
+    api("net.neoforged:JarJarSelector:${jarjar_version}")
+    api("net.neoforged:JarJarMetadata:${jarjar_version}")
     api("net.neoforged:bus:${eventbus_version}")
 
     implementation("net.sf.jopt-simple:jopt-simple:${jopt_simple_version}")
@@ -58,13 +58,13 @@ spotless {
             if (fileContents.contains('*;\n')) {
                 throw new GradleException('No wildcard imports are allowed!')
             }
-        }
+        } as Closure<String>
 
         custom 'noNotNull', { String fileContents ->
             if (fileContents.contains('@NotNull') || fileContents.contains('@Nonnull')) {
                 throw new GradleException('@NotNull and @Nonnull are disallowed.')
             }
-        }
+        } as Closure<String>
         bumpThisNumberIfACustomStepChanges(1)
     }
 }
