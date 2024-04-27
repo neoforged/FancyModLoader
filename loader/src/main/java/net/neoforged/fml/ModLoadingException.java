@@ -25,7 +25,7 @@ public class ModLoadingException extends RuntimeException {
 
     @Override
     public String getMessage() {
-        return "Loading errors encountered: " + this.issues.stream().map(ModLoadingIssue::getTranslatedMessage)
+        return "Loading errors encountered: " + this.issues.stream().map(ModLoadingIssue::translationKey)
                 .collect(Collectors.joining(",\n\t", "[\n\t", "\n]"));
     }
 }

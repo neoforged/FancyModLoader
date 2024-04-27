@@ -5,25 +5,10 @@
 
 package net.neoforged.fml.loading;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
@@ -38,6 +23,23 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoSettings;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @MockitoSettings
 class FMLLoaderTest {
@@ -341,6 +343,76 @@ class FMLLoaderTest {
             assertThat(result.pluginLayerModules()).doesNotContainKey("mod");
             assertThat(result.gameLayerModules()).doesNotContainKey("mod");
             assertThat(result.loadedMods()).doesNotContainKey("mod");
+        }
+    }
+
+    @Nested
+    class Errors {
+        @Test
+        void testCorruptedServerInstallation() throws Exception {
+            installation.setupProductionServer();
+
+            var serverPath = installation.getLibrariesDir().resolve("net/minecraft/server/1.20.4-202401020304/server-1.20.4-202401020304-srg.jar");
+            Files.delete(serverPath);
+
+            var result = launch("forgeserver");
+            assertThat(result.issues()).containsOnly(
+                    ModLoadingIssue.error("fml.modloading.corrupted_installation").withAffectedPath(serverPath)
+            );
+        }
+
+        @Test
+        void testCorruptedClientInstallation() throws Exception {
+            installation.setupProductionClient();
+
+            var clientPath = installation.getLibrariesDir().resolve("net/minecraft/client/1.20.4-202401020304/client-1.20.4-202401020304-srg.jar");
+            Files.delete(clientPath);
+
+            var result = launch("forgeclient");
+            assertThat(result.issues()).containsOnly(
+                    ModLoadingIssue.error("fml.modloading.corrupted_installation").withAffectedPath(clientPath)
+            );
+        }
+
+        @Test
+        void testInvalidJarFile() throws Exception {
+            installation.setupProductionClient();
+
+            var path = installation.getModsFolder().resolve("mod.jar");
+            Files.write(path, new byte[]{1, 2, 3});
+
+            var result = launch("forgeclient");
+            // Clear the cause, otherwise equality will fail
+            assertThat(result.issues()).extracting(issue -> issue.withCause(null)).containsOnly(
+                    ModLoadingIssue.error("fml.modloading.brokenfile.invalidzip", path).withAffectedPath(path)
+            );
+        }
+    }
+
+    @Nested
+    class Warnings {
+        @Test
+        void testIncompatibleModsToml() throws Exception {
+            installation.setupProductionClient();
+            var path = installation.writeModJar("mod.jar", new IdentifiableContent("MOD_TOML", "META-INF/mods.toml"));
+
+            var result = launch("forgeclient");
+            assertThat(result.issues()).containsOnly(
+                    ModLoadingIssue.warning("fml.modloading.brokenfile.minecraft_forge", path).withAffectedPath(path)
+            );
+        }
+
+        @Test
+        void testFileIsDirectory() throws Exception {
+            installation.setupProductionClient();
+
+            var path = installation.getModsFolder().resolve("mod.jar");
+            Files.createDirectories(path);
+
+            var result = launch("forgeclient");
+            assertThat(result.issues()).containsOnly(
+                    ModLoadingIssue.warning("fml.modloading.brokenfile", path).withAffectedPath(path)
+            );
         }
     }
 

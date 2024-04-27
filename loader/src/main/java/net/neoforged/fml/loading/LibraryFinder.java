@@ -5,6 +5,8 @@
 
 package net.neoforged.fml.loading;
 
+import net.neoforged.fml.ModLoadingException;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 

@@ -7,15 +7,6 @@ package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.JarContents;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
@@ -33,6 +24,17 @@ import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.zip.ZipException;
+
 public class ModDiscoverer {
     private static final Logger LOGGER = LogUtils.getLogger();
     private final List<IModFileCandidateLocator> modFileLocators;
@@ -45,7 +47,7 @@ public class ModDiscoverer {
     }
 
     public ModDiscoverer(ILaunchContext launchContext,
-            Collection<IModFileCandidateLocator> additionalModFileLocators) {
+                         Collection<IModFileCandidateLocator> additionalModFileLocators) {
         this.launchContext = launchContext;
 
         modFileLocators = ServiceLoaderUtil.loadServices(launchContext, IModFileCandidateLocator.class, additionalModFileLocators);
@@ -66,7 +68,11 @@ public class ModDiscoverer {
 
             var defaultAttributes = ModFileDiscoveryAttributes.DEFAULT.withLocator(locator);
             var pipeline = new DiscoveryPipeline(defaultAttributes, loadedFiles, discoveryIssues);
-            locator.findCandidates(launchContext, pipeline);
+            try {
+                locator.findCandidates(launchContext, pipeline);
+            } catch (ModLoadingException e) {
+                discoveryIssues.addAll(e.getIssues());
+            }
 
             LOGGER.debug(LogMarkers.SCAN, "Locator {} found {} mods, {} warnings, {} errors and skipped {} candidates", locator,
                     pipeline.successCount, pipeline.warningCount, pipeline.errorCount, pipeline.skipCount);
@@ -139,8 +145,8 @@ public class ModDiscoverer {
         private int skipCount;
 
         public DiscoveryPipeline(ModFileDiscoveryAttributes defaultAttributes,
-                List<ModFile> loadedFiles,
-                List<ModLoadingIssue> issues) {
+                                 List<ModFile> loadedFiles,
+                                 List<ModLoadingIssue> issues) {
             this.defaultAttributes = defaultAttributes;
             this.loadedFiles = loadedFiles;
             this.issues = issues;
@@ -160,7 +166,11 @@ public class ModDiscoverer {
             try {
                 jarContents = JarContents.of(groupedPaths);
             } catch (Exception e) {
-                addIssue(ModLoadingIssue.error("corrupted_file", groupedPaths).withAffectedPath(primaryPath).withCause(e));
+                if (causeChainContains(e, ZipException.class)) {
+                    addIssue(ModLoadingIssue.error("fml.modloading.brokenfile.invalidzip", primaryPath).withAffectedPath(primaryPath).withCause(e));
+                } else {
+                    addIssue(ModLoadingIssue.error("fml.modloading.brokenfile", primaryPath).withAffectedPath(primaryPath).withCause(e));
+                }
                 return Optional.empty();
             }
 
@@ -243,5 +253,14 @@ public class ModDiscoverer {
                 case ERROR -> errorCount++;
             }
         }
+    }
+
+    private static boolean causeChainContains(Throwable e, Class<?> exceptionClass) {
+        for (; e != null; e = e.getCause()) {
+            if (exceptionClass.isInstance(e)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -7,9 +7,7 @@ package net.neoforged.fml.loading.moddiscovery.providers;
 
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.SecureJar;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LibraryFinder;
@@ -20,6 +18,11 @@ import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Locates the Minecraft client files in a production environment.
@@ -39,14 +42,14 @@ public class ProductionClientProvider implements IModFileCandidateLocator, ISyst
     public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {
         var vers = FMLLoader.versionInfo();
 
-        try {
-            var content = new ArrayList<Path>();
-            content.add(LibraryFinder.findPathForMaven("net.minecraft", "client", "", "srg", vers.mcAndNeoFormVersion()));
-            content.add(LibraryFinder.findPathForMaven("net.minecraft", "client", "", "extra", vers.mcAndNeoFormVersion()));
-            for (var artifact : additionalContent) {
-                content.add(LibraryFinder.findPathForMaven(artifact));
-            }
+        var content = new ArrayList<Path>();
+        addRequiredLibrary(new MavenCoordinate("net.minecraft", "client", "", "srg", vers.mcAndNeoFormVersion()), content);
+        addRequiredLibrary(new MavenCoordinate("net.minecraft", "client", "", "extra", vers.mcAndNeoFormVersion()), content);
+        for (var artifact : additionalContent) {
+            addRequiredLibrary(artifact, content);
+        }
 
+        try {
             var mcJarContents = JarContents.of(content);
 
             var mcJarMetadata = new ModJarMetadata(mcJarContents);
@@ -56,8 +59,16 @@ public class ProductionClientProvider implements IModFileCandidateLocator, ISyst
 
             pipeline.addModFile(mcjar);
         } catch (Exception e) {
-            // TODO translation
-            pipeline.addIssue(ModLoadingIssue.error("corrupted_files").withCause(e));
+            pipeline.addIssue(ModLoadingIssue.error("fml.modloading.corrupted_installation").withCause(e));
+        }
+    }
+
+    private static void addRequiredLibrary(MavenCoordinate coordinate, List<Path> content) {
+        var path = LibraryFinder.findPathForMaven(coordinate);
+        if (!Files.exists(path)) {
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.corrupted_installation").withAffectedPath(path));
+        } else {
+            content.add(path);
         }
     }
 

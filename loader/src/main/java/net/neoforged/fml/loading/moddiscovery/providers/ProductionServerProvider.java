@@ -8,6 +8,8 @@ package net.neoforged.fml.loading.moddiscovery.providers;
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
+
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +40,15 @@ public class ProductionServerProvider implements IModFileCandidateLocator, ISyst
 
         try {
             var mc = LibraryFinder.findPathForMaven("net.minecraft", "server", "", "srg", vers.mcAndNeoFormVersion());
+            if (!Files.exists(mc)) {
+                pipeline.addIssue(ModLoadingIssue.error("fml.modloading.corrupted_installation").withAffectedPath(mc));
+                return;
+            }
             var mcextra = LibraryFinder.findPathForMaven("net.minecraft", "server", "", "extra", vers.mcAndNeoFormVersion());
+            if (!Files.exists(mcextra)) {
+                pipeline.addIssue(ModLoadingIssue.error("fml.modloading.corrupted_installation").withAffectedPath(mc));
+                return;
+            }
 
             var mcextra_filtered = SecureJar.from(new JarContentsBuilder()
                     // We only want it for its resources. So filter everything else out.
@@ -54,7 +64,12 @@ public class ProductionServerProvider implements IModFileCandidateLocator, ISyst
             content.add(mc);
             content.add(mcextra_filtered.getRootPath());
             for (var artifact : additionalContent) {
-                content.add(LibraryFinder.findPathForMaven(artifact));
+                var extraPath = LibraryFinder.findPathForMaven(artifact);
+                if (!Files.exists(extraPath)) {
+                    pipeline.addIssue(ModLoadingIssue.error("fml.modloading.corrupted_installation").withAffectedPath(extraPath));
+                    return;
+                }
+                content.add(extraPath);
             }
 
             var mcJarContents = JarContents.of(content);
@@ -66,8 +81,7 @@ public class ProductionServerProvider implements IModFileCandidateLocator, ISyst
 
             pipeline.addModFile(mcjar);
         } catch (Exception e) {
-            // TODO Translation
-            pipeline.addIssue(ModLoadingIssue.error("corrupted_file", e.toString()).withCause(e));
+            pipeline.addIssue(ModLoadingIssue.error("fml.modloading.corrupted_installation").withCause(e));
         }
     }
 

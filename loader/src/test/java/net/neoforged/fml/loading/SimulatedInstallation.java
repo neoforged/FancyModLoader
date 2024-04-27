@@ -202,6 +202,10 @@ class SimulatedInstallation implements AutoCloseable {
         System.setProperty(MOD_FOLDERS_PROPERTIES, modFolderList);
     }
 
+    public Path getLibrariesDir() {
+        return librariesDir;
+    }
+
     public Path getGameDir() {
         return gameDir;
     }
