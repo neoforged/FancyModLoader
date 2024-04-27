@@ -5,10 +5,26 @@
 
 package net.neoforged.fml.loading;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
@@ -23,23 +39,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoSettings;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @MockitoSettings
 class FMLLoaderTest {
@@ -357,8 +356,7 @@ class FMLLoaderTest {
 
             var result = launch("forgeserver");
             assertThat(result.issues()).containsOnly(
-                    ModLoadingIssue.error("fml.modloading.corrupted_installation").withAffectedPath(serverPath)
-            );
+                    ModLoadingIssue.error("fml.modloading.corrupted_installation").withAffectedPath(serverPath));
         }
 
         @Test
@@ -370,8 +368,7 @@ class FMLLoaderTest {
 
             var result = launch("forgeclient");
             assertThat(result.issues()).containsOnly(
-                    ModLoadingIssue.error("fml.modloading.corrupted_installation").withAffectedPath(clientPath)
-            );
+                    ModLoadingIssue.error("fml.modloading.corrupted_installation").withAffectedPath(clientPath));
         }
 
         @Test
@@ -379,13 +376,12 @@ class FMLLoaderTest {
             installation.setupProductionClient();
 
             var path = installation.getModsFolder().resolve("mod.jar");
-            Files.write(path, new byte[]{1, 2, 3});
+            Files.write(path, new byte[] { 1, 2, 3 });
 
             var result = launch("forgeclient");
             // Clear the cause, otherwise equality will fail
             assertThat(result.issues()).extracting(issue -> issue.withCause(null)).containsOnly(
-                    ModLoadingIssue.error("fml.modloading.brokenfile.invalidzip", path).withAffectedPath(path)
-            );
+                    ModLoadingIssue.error("fml.modloading.brokenfile.invalidzip", path).withAffectedPath(path));
         }
     }
 
@@ -398,8 +394,7 @@ class FMLLoaderTest {
 
             var result = launch("forgeclient");
             assertThat(result.issues()).containsOnly(
-                    ModLoadingIssue.warning("fml.modloading.brokenfile.minecraft_forge", path).withAffectedPath(path)
-            );
+                    ModLoadingIssue.warning("fml.modloading.brokenfile.minecraft_forge", path).withAffectedPath(path));
         }
 
         @Test
@@ -411,8 +406,7 @@ class FMLLoaderTest {
 
             var result = launch("forgeclient");
             assertThat(result.issues()).containsOnly(
-                    ModLoadingIssue.warning("fml.modloading.brokenfile", path).withAffectedPath(path)
-            );
+                    ModLoadingIssue.warning("fml.modloading.brokenfile", path).withAffectedPath(path));
         }
     }
 

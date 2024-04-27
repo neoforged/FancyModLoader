@@ -8,7 +8,6 @@ package net.neoforged.fml.loading.moddiscovery.providers;
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;

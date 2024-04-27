@@ -7,6 +7,10 @@ package net.neoforged.fml.loading.moddiscovery.providers;
 
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.SecureJar;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.FMLLoader;
@@ -18,11 +22,6 @@ import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Locates the Minecraft client files in a production environment.
