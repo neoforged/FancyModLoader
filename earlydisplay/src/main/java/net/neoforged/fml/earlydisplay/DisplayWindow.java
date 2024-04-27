@@ -65,13 +65,13 @@ import org.slf4j.LoggerFactory;
  * The Loading Window that is opened Immediately after Forge starts.
  * It is called from the ModDirTransformerDiscoverer, the soonest method that ModLauncher calls into Forge code.
  * In this way, we can be sure that this will not run before any transformer or injection.
- *
+ * <p>
  * The window itself is spun off into a secondary thread, and is handed off to the main game by Forge.
- *
+ * <p>
  * Because it is created so early, this thread will "absorb" the context from OpenGL.
  * Therefore, it is of utmost importance that the Context is made Current for the main thread before handoff,
  * otherwise OS X will crash out.
- *
+ * <p>
  * Based on the prior ClientVisualization, with some personal touches.
  */
 public class DisplayWindow implements ImmediateWindowProvider {
@@ -198,7 +198,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     /**
      * Render initialization methods called by the Render Thread.
      * It compiles the fragment and vertex shaders for rendering text with STB, and sets up basic render framework.
-     *
+     * <p>
      * Nothing fancy, we just want to draw and render text.
      */
     private void initRender(final @Nullable String mcVersion, final String forgeVersion) {
@@ -207,7 +207,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         // Wait for one frame to be complete before swapping; enable vsync in other words.
         glfwSwapInterval(1);
         createCapabilities();
-        LOGGER.info("GL info: " + glGetString(GL_RENDERER) + " GL version " + glGetString(GL_VERSION) + ", " + glGetString(GL_VENDOR));
+        LOGGER.info("GL info: {} GL version {}, {}", glGetString(GL_RENDERER), glGetString(GL_VERSION), glGetString(GL_VENDOR));
 
         elementShader = new ElementShader();
         try {
@@ -315,7 +315,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         msgBuilder.append(errorDetails);
         msgBuilder.append("\n\n");
         msgBuilder.append("If you click yes, we will try and open " + ERROR_URL + " in your default browser");
-        LOGGER.error("ERROR DISPLAY\n" + msgBuilder);
+        LOGGER.error("ERROR DISPLAY\n{}", msgBuilder);
         // we show the display on a new dedicated thread
         Executors.newSingleThreadExecutor().submit(() -> {
             var res = TinyFileDialogs.tinyfd_messageBox("Minecraft: NeoForge", msgBuilder.toString(), "yesno", "error", false);
@@ -332,15 +332,14 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     /**
      * Called to initialize the window when preparing for the Render Thread.
-     *
+     * <p>
      * The act of calling glfwInit here creates a concurrency issue; GL doesn't know whether we're gonna call any
      * GL functions from the secondary thread and the main thread at the same time.
-     *
+     * <p>
      * It's then our job to make sure this doesn't happen, only calling GL functions where the Context is Current.
      * As long as we can verify that, then GL (and things like OS X) have no complaints with doing this.
      *
      * @param mcVersion Minecraft Version
-     * @return The selected GL profile as an integer pair
      */
     public void initWindow(@Nullable String mcVersion) {
         // Initialize GLFW with a time guard, in case something goes wrong
@@ -397,11 +396,11 @@ public class DisplayWindow implements ImmediateWindowProvider {
         do {
             final var glVersionToTry = GL_VERSIONS[versidx][0] + "." + GL_VERSIONS[versidx][1];
             if (skipVersions.contains(glVersionToTry)) {
-                LOGGER.info("Skipping GL version " + glVersionToTry + " because of configuration");
+                LOGGER.info("Skipping GL version {} because of configuration", glVersionToTry);
                 versidx++;
                 continue;
             }
-            LOGGER.info("Trying GL version " + glVersionToTry);
+            LOGGER.info("Trying GL version {}", glVersionToTry);
             glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GL_VERSIONS[versidx][0]); // we try our versions one at a time
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GL_VERSIONS[versidx][1]);
             glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -416,7 +415,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         } while (window == 0 && versidx < GL_VERSIONS.length);
 //        LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(12));
         if (versidx == GL_VERSIONS.length && window == 0) {
-            LOGGER.error("Failed to find any valid GLFW profile. " + lastGLError[0]);
+            LOGGER.error("Failed to find any valid GLFW profile. {}", lastGLError[0]);
 
             crashElegantly("Failed to find a valid GLFW profile.\nWe tried " +
                     Arrays.stream(GL_VERSIONS).map(p -> p[0] + "." + p[1]).filter(o -> !skipVersions.contains(o))
@@ -431,7 +430,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         var maj = glfwGetWindowAttrib(window, GLFW_CONTEXT_VERSION_MAJOR);
         var min = glfwGetWindowAttrib(window, GLFW_CONTEXT_VERSION_MINOR);
         var gotVersion = maj + "." + min;
-        LOGGER.info("Requested GL version " + requestedVersion + " got version " + gotVersion);
+        LOGGER.info("Requested GL version: {}, got version: {}", requestedVersion, gotVersion);
         this.glVersion = gotVersion;
         this.window = window;
 
@@ -483,7 +482,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     private void badWindowHandler(final int code, final long desc) {
-        LOGGER.error("Got error from GLFW window init: " + code + " " + MemoryUtil.memUTF8(desc));
+        LOGGER.error("Got error from GLFW window init ({}): {}", code, MemoryUtil.memUTF8(desc));
     }
 
     private void winResize(long window, int width, int height) {

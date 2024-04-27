@@ -244,7 +244,7 @@ public class RenderElement {
             QuadHelper.loadQuad(bb, x0, x1, y0, y1, 0f, 0f, 0f, 0f, context.colourScheme().background().packedint(RenderElement.globalAlpha));
 
             x1 = x0 + inset + (int) (progress[1] * pos[2]);
-            x0 += inset + progress[0] * pos[2];
+            x0 += inset + (int) (progress[0] * pos[2]);
             y0 += inset;
             y1 -= inset;
             QuadHelper.loadQuad(bb, x0, x1, y0, y1, 0f, 0f, 0f, 0f, colour);
