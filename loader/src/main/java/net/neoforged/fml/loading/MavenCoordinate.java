@@ -35,21 +35,24 @@ public record MavenCoordinate(String groupId, String artifactId, String extensio
      * </ul>
      */
     public static MavenCoordinate parse(String coordinate) {
-        var parts = coordinate.split(":");
+        var coordinateAndExt = coordinate.split("@");
+        String extension = "";
+        if (coordinateAndExt.length > 2) {
+            throw new IllegalArgumentException("Malformed Maven coordinate: " + coordinate);
+        } else if (coordinateAndExt.length == 2) {
+            extension = coordinateAndExt[1];
+            coordinate = coordinateAndExt[0];
+        }
 
+        var parts = coordinate.split(":");
         if (parts.length != 3 && parts.length != 4) {
             throw new IllegalArgumentException("Malformed Maven coordinate: " + coordinate);
         }
 
         var groupId = parts[0];
         var artifactId = parts[1];
-        var classifier = parts.length == 4 ? parts[2] : "";
-        var versext = parts[parts.length - 1].split("@");
-        if (versext.length > 2) {
-            throw new IllegalArgumentException("Malformed Maven coordinate: " + coordinate);
-        }
-        var version = versext[0];
-        var extension = versext.length > 1 ? versext[1] : "";
+        var version = parts[2];
+        var classifier = parts.length == 4 ? parts[3] : "";
         return new MavenCoordinate(groupId, artifactId, extension, classifier, version);
     }
 
@@ -74,11 +77,10 @@ public record MavenCoordinate(String groupId, String artifactId, String extensio
     @Override
     public String toString() {
         var result = new StringBuilder();
-        result.append(groupId).append(":").append(artifactId);
+        result.append(groupId).append(":").append(artifactId).append(":").append(version);
         if (!classifier.isEmpty()) {
             result.append(":").append(classifier);
         }
-        result.append(":").append(version);
         if (!extension.isEmpty()) {
             result.append("@").append(extension);
         }

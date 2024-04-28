@@ -17,9 +17,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 class MavenCoordinateTest {
     @ParameterizedTest
     @ValueSource(strings = { "g:a:v",
-            "g:a:classifier:v",
+            "g:a:v:classifier",
             "g:a:v@zip",
-            "g:a:classifier:v@zip" })
+            "g:a:v:classifier@zip" })
     void testParseToStringRoundtrip(String compactForm) {
         assertEquals(compactForm, MavenCoordinate.parse(compactForm).toString());
     }
@@ -49,7 +49,7 @@ class MavenCoordinateTest {
 
     @Test
     void testParseGAVWithClassifier() {
-        assertEquals(new MavenCoordinate("g", "a", "", "classifier", "v"), MavenCoordinate.parse("g:a:classifier:v"));
+        assertEquals(new MavenCoordinate("g", "a", "", "classifier", "v"), MavenCoordinate.parse("g:a:v:classifier"));
     }
 
     @Test
@@ -59,16 +59,17 @@ class MavenCoordinateTest {
 
     @Test
     void testParseGAVWithClassifierAndExtension() {
-        assertEquals(new MavenCoordinate("g", "a", "zip", "classifier", "v"), MavenCoordinate.parse("g:a:classifier:v@zip"));
+        assertEquals(new MavenCoordinate("g", "a", "zip", "classifier", "v"), MavenCoordinate.parse("g:a:v:classifier@zip"));
     }
 
     @ParameterizedTest
     @CsvSource(textBlock = """
             g:a:v, g/a/v/a-v.jar
             g.h.j:a:v, g/h/j/a/v/a-v.jar
-            g:a:c:v, g/a/v/a-v-c.jar
+            g:a:v:c, g/a/v/a-v-c.jar
+            g.h.j:a:v:c, g/h/j/a/v/a-v-c.jar
             g:a:v@zip, g/a/v/a-v.zip
-            g:a:c:v@zip, g/a/v/a-v-c.zip
+            g:a:v:c@zip, g/a/v/a-v-c.zip
             """)
     void testToRelativeRepositoryPath(String compactForm, String expectedPath) {
         assertEquals(Paths.get(expectedPath), MavenCoordinate.parse(compactForm).toRelativeRepositoryPath());
