@@ -26,7 +26,7 @@ import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 /**
  * Locates the Minecraft server files in a production environment.
  */
-public class ProductionServerProvider implements IModFileCandidateLocator, ISystemModSource {
+public class ProductionServerProvider implements IModFileCandidateLocator {
     private final List<MavenCoordinate> additionalContent;
 
     public ProductionServerProvider(List<MavenCoordinate> additionalContent) {

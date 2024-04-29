@@ -25,7 +25,7 @@ import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 /**
  * Provides the Minecraft and Neoforge mods in a Neoforge dev environment.
  */
-public class NeoForgeDevProvider implements IModFileCandidateLocator, ISystemModSource {
+public class NeoForgeDevProvider implements IModFileCandidateLocator {
     private final List<Path> paths;
 
     public NeoForgeDevProvider(List<Path> paths) {

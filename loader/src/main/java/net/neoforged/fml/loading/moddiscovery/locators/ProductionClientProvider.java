@@ -30,7 +30,7 @@ import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
  * been renamed to Mojangs official names using their mappings, and another containing only the Minecraft resource
  * files ("extra"), and searches for these artifacts in the library directory.
  */
-public class ProductionClientProvider implements IModFileCandidateLocator, ISystemModSource {
+public class ProductionClientProvider implements IModFileCandidateLocator {
     private final List<MavenCoordinate> additionalContent;
 
     public ProductionClientProvider(List<MavenCoordinate> additionalContent) {
