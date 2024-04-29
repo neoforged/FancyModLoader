@@ -181,7 +181,6 @@ public class ModSorter {
         systemMods.add("minecraft");
         // Find system mod files and scan them for system mods
         modFiles.stream()
-                .filter(modFile -> modFile.getDiscoveryAttributes().systemModFile())
                 .map(ModFile::getSecureJar)
                 .map(SecureJar::moduleDataProvider)
                 .map(SecureJar.ModuleDataProvider::getManifest)

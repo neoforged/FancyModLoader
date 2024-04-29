@@ -75,7 +75,7 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
 
         var mcJarMetadata = new ModJarMetadata(mcJarContents);
         var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);
-        var minecraftModFile = IModFile.create(mcSecureJar, MinecraftModInfo::buildMinecraftModInfo, ModFileDiscoveryAttributes.DEFAULT.withSystemModFile(true));
+        var minecraftModFile = IModFile.create(mcSecureJar, MinecraftModInfo::buildMinecraftModInfo);
         mcJarMetadata.setModFile(minecraftModFile);
         pipeline.addModFile(minecraftModFile);
 
@@ -89,7 +89,7 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
                     return false;
                 })
                 .build();
-        pipeline.addModFile(JarModsDotTomlModFileReader.createModFile(neoforgeJarContents, ModFileDiscoveryAttributes.DEFAULT.withSystemModFile(true)));
+        pipeline.addModFile(JarModsDotTomlModFileReader.createModFile(neoforgeJarContents, ModFileDiscoveryAttributes.DEFAULT));
     }
 
     private static String normalizePrefix(Path minecraftResourcesRoot) {

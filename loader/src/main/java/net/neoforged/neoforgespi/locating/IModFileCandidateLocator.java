@@ -21,7 +21,9 @@ public interface IModFileCandidateLocator extends IOrderedProvider {
     }
 
     /**
-     * {@return all mod paths that this mod locator can find. the stream must be closed by the caller}
+     * Discovers potential mods to be loaded by FML.
+     *
+     * @param pipeline Adds discovered mods and issues to this pipeline.
      */
     void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline);
 }

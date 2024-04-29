@@ -15,12 +15,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface IModFileReader extends IOrderedProvider {
     /**
-     * Provides a mod from the given {@code jar}. Any thrown exception will be reported in relationship to the given
-     * jar contents.
+     * Provides a mod from the given {@code jar}.
+     * Any thrown exception will be reported in relationship to the given jar contents.
      *
      * @param jar        the mod jar contents
      * @param attributes The attributes relating to this mod files discovery.
-     * @return {@code null} if this provider can't handle the given jar, otherwise a result indicating success or failure.
+     * @return {@code null} if this provider can't handle the given jar,
+     *         otherwise the mod-file created from the given contents and attributes.
      */
     @Nullable
     IModFile read(JarContents jar, ModFileDiscoveryAttributes attributes);

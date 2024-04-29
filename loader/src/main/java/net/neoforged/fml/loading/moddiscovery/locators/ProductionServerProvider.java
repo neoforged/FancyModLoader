@@ -21,7 +21,6 @@ import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
-import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 
 /**
  * Locates the Minecraft server files in a production environment.
@@ -75,7 +74,7 @@ public class ProductionServerProvider implements IModFileCandidateLocator {
 
             var mcJarMetadata = new ModJarMetadata(mcJarContents);
             var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);
-            var mcjar = IModFile.create(mcSecureJar, MinecraftModInfo::buildMinecraftModInfo, ModFileDiscoveryAttributes.DEFAULT.withSystemModFile(true));
+            var mcjar = IModFile.create(mcSecureJar, MinecraftModInfo::buildMinecraftModInfo);
             mcJarMetadata.setModFile(mcjar);
 
             pipeline.addModFile(mcjar);

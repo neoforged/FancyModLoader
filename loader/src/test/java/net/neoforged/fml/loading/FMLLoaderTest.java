@@ -54,7 +54,7 @@ class FMLLoaderTest {
 
     // can be used to mark paths as already being located before, i.e. if they were loaded
     // by the two early ModLoader discovery interfaces ClasspathTransformerDiscoverer
-    // and
+    // and ModDirTransformerDiscoverer, which pick up files like mixin.
     Set<Path> locatedPaths = new HashSet<>();
 
     @BeforeEach
