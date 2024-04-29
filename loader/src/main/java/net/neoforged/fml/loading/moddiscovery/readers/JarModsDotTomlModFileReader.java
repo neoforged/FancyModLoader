@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.loading.moddiscovery.locators;
+package net.neoforged.fml.loading.moddiscovery.readers;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.JarContents;
@@ -26,10 +26,13 @@ import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
+/**
+ * Responsible for handling mod files that are explicitly marked as mods or libraries via metadata files.
+ */
 public class JarModsDotTomlModFileReader implements IModFileReader {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final String MODS_TOML = "META-INF/neoforge.mods.toml";
-    protected static final String MANIFEST = "META-INF/MANIFEST.MF";
+    public static final String MANIFEST = "META-INF/MANIFEST.MF";
 
     public static IModFile createModFile(JarContents contents, ModFileDiscoveryAttributes discoveryAttributes) {
         var type = getModType(contents);

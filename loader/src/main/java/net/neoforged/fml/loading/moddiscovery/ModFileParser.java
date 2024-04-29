@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import net.neoforged.fml.loading.LogMarkers;
-import net.neoforged.fml.loading.moddiscovery.locators.JarModsDotTomlModFileReader;
+import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.InvalidModFileException;

@@ -9,8 +9,8 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.neoforged.fml.loading.VersionInfo;
+import net.neoforged.fml.loading.moddiscovery.locators.NeoForgeDevProvider;
 import net.neoforged.fml.loading.moddiscovery.locators.UserdevLocator;
-import net.neoforged.fml.loading.moddiscovery.providers.NeoForgeDevProvider;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 
 /**

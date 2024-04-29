@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.MavenCoordinate;
 import net.neoforged.fml.loading.VersionInfo;
-import net.neoforged.fml.loading.moddiscovery.providers.ProductionClientProvider;
+import net.neoforged.fml.loading.moddiscovery.locators.ProductionClientProvider;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 
 /**

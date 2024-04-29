@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.loading.moddiscovery.providers;
+package net.neoforged.fml.util;
 
 import java.io.IOException;
 import java.net.URI;

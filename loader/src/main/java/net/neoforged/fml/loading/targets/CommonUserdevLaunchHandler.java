@@ -8,9 +8,9 @@ package net.neoforged.fml.loading.targets;
 import java.util.List;
 import java.util.function.Consumer;
 import net.neoforged.fml.loading.VersionInfo;
+import net.neoforged.fml.loading.moddiscovery.locators.NeoForgeDevProvider;
 import net.neoforged.fml.loading.moddiscovery.locators.UserdevLocator;
-import net.neoforged.fml.loading.moddiscovery.providers.DevEnvUtils;
-import net.neoforged.fml.loading.moddiscovery.providers.NeoForgeDevProvider;
+import net.neoforged.fml.util.DevEnvUtils;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 
 /**

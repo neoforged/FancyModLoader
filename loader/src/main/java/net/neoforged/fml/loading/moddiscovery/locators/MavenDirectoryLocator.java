@@ -19,6 +19,10 @@ import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.IncompatibleFileReporting;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 
+/**
+ * Locates mod-file candidates from Maven repository folder-structures.
+ * Maven coordinates for mods must be provided via the FML command line.
+ */
 public class MavenDirectoryLocator implements IModFileCandidateLocator {
     @Override
     public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {

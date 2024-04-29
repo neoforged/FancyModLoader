@@ -1,2 +1,2 @@
-net.neoforged.fml.loading.moddiscovery.locators.JarModsDotTomlModFileReader
-net.neoforged.fml.loading.moddiscovery.providers.NestedLibraryModProvider
+net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader
+net.neoforged.fml.loading.moddiscovery.readers.NestedLibraryModReader

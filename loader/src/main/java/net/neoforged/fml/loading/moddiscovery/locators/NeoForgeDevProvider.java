@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.loading.moddiscovery.providers;
+package net.neoforged.fml.loading.moddiscovery.locators;
 
 import com.google.common.collect.Streams;
 import cpw.mods.jarhandling.JarContentsBuilder;
@@ -14,7 +14,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
-import net.neoforged.fml.loading.moddiscovery.locators.JarModsDotTomlModFileReader;
+import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
+import net.neoforged.fml.util.DevEnvUtils;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFile;

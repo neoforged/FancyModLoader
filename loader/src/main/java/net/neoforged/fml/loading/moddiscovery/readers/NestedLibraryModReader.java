@@ -3,20 +3,24 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.loading.moddiscovery.providers;
+package net.neoforged.fml.loading.moddiscovery.readers;
 
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.SecureJar;
-import net.neoforged.fml.loading.moddiscovery.locators.JarModsDotTomlModFileReader;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileReader;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Provides simple libraries that are embedded in other mods.
+ * This reader will essentially handle <strong>all</strong> files as plain Java libraries,
+ * but will only do so for candidates that are embedded in recognized mod files.
+ * <p/>
+ * If a plain jar-file (that is not a mod or markes as a library) is present on the classpath
+ * or in the mods folder, this is usually a mistake.
+ * However, if such a file is embedded in a mod jar, it is usually a deliberate decision by the modder.
  */
-public class NestedLibraryModProvider implements IModFileReader {
+public class NestedLibraryModReader implements IModFileReader {
     @Override
     public @Nullable IModFile read(JarContents jar, ModFileDiscoveryAttributes discoveryAttributes) {
         // We only consider jars that are contained in the context of another mod valid library targets,

@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 import net.neoforged.fml.loading.MavenCoordinate;
+import net.neoforged.fml.loading.moddiscovery.locators.ProductionClientProvider;
 import org.junit.jupiter.api.Test;
 
 class ProductionClientProviderTest {
