@@ -13,7 +13,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Picked up via ServiceLoader.
  */
-public interface IModFileReader {
+public interface IModFileReader extends IOrderedProvider {
     /**
      * Provides a mod from the given {@code jar}. Any thrown exception will be reported in relationship to the given
      * jar contents.

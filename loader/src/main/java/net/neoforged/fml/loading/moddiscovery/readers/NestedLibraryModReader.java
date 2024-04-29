@@ -37,4 +37,10 @@ public class NestedLibraryModReader implements IModFileReader {
     public String toString() {
         return "nested library mod provider";
     }
+
+    @Override
+    public int getPriority() {
+        // Since this will capture *any* nested jar as a library it should always run last
+        return LOWEST_SYSTEM_PRIORITY;
+    }
 }

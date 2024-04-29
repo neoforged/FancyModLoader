@@ -12,7 +12,7 @@ import net.neoforged.neoforgespi.ILaunchContext;
 /**
  * Loaded as a ServiceLoader. Takes mechanisms for locating candidate "mod" JARs.
  */
-public interface IModFileCandidateLocator {
+public interface IModFileCandidateLocator extends IOrderedProvider {
     /**
      * Creates an IModFileCandidateLocator that searches for mod jar-files in the given filesystem location.
      */

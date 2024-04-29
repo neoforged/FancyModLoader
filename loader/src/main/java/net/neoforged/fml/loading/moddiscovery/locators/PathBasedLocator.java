@@ -27,4 +27,10 @@ public record PathBasedLocator(String name, List<Path> paths) implements IModFil
             pipeline.addPath(path, ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.ERROR);
         }
     }
+
+    @Override
+    public int getPriority() {
+        // Since this locator uses explicitly specified paths, they should not be handled by other locators first
+        return HIGHEST_SYSTEM_PRIORITY;
+    }
 }

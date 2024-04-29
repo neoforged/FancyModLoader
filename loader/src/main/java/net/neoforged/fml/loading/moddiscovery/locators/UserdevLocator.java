@@ -48,4 +48,9 @@ public class UserdevLocator implements IModFileCandidateLocator {
     public String toString() {
         return "userdev mods and services";
     }
+
+    @Override
+    public int getPriority() {
+        return LOWEST_SYSTEM_PRIORITY;
+    }
 }

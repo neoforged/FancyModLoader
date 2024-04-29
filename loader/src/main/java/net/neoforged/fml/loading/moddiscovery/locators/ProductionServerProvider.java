@@ -92,4 +92,9 @@ public class ProductionServerProvider implements IModFileCandidateLocator, ISyst
         }
         return result.toString();
     }
+
+    @Override
+    public int getPriority() {
+        return HIGHEST_SYSTEM_PRIORITY;
+    }
 }

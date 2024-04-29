@@ -24,7 +24,7 @@ public class NeoForgeClientLaunchHandler extends CommonClientLaunchHandler {
      */
     @Override
     protected List<MavenCoordinate> getAdditionalMinecraftJarContent(VersionInfo versionInfo) {
-        return List.of(MavenCoordinate.parse("net.neoforged:neoforge:client:" + versionInfo.neoForgeVersion()));
+        return List.of(new MavenCoordinate("net.neoforged", "neoforge", "", "client", versionInfo.neoForgeVersion()));
     }
 
     @Override
