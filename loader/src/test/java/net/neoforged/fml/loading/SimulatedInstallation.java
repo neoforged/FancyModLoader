@@ -52,7 +52,7 @@ class SimulatedInstallation implements AutoCloseable {
     private static final IdentifiableContent RENAMED_SHARED = generateClass("RENAMED_SHARED", "net/minecraft/server/MinecraftServer.class");
     /**
      * A class that is contained in both client and dedicated server distribution, renamed to official mappings,
-     * and containing Neoforge patches.
+     * and containing NeoForge patches.
      */
     private static final IdentifiableContent PATCHED_SHARED = generateClass("PATCHED_SHARED", "net/minecraft/server/MinecraftServer.class");
     /**
@@ -61,12 +61,12 @@ class SimulatedInstallation implements AutoCloseable {
     private static final IdentifiableContent RENAMED_CLIENT = generateClass("RENAMED_CLIENT", "net/minecraft/client/Minecraft.class");
     /**
      * A class that is contained in both client and dedicated server distribution, renamed to official mappings,
-     * and containing Neoforge patches.
+     * and containing NeoForge patches.
      */
     private static final IdentifiableContent PATCHED_CLIENT = generateClass("PATCHED_CLIENT", "net/minecraft/client/Minecraft.class");
     private static final IdentifiableContent NEOFORGE_CLASSES = generateClass("NEOFORGE_CLASSES", "net/neoforged/neoforge/common/NeoForgeMod.class");
-    private static final IdentifiableContent NEOFORGE_MODS_TOML = new IdentifiableContent("NEOFORGE_MODS_TOML", "META-INF/neoforge.mods.toml", writeNeoforgeModsToml());
-    private static final IdentifiableContent NEOFORGE_MANIFEST = new IdentifiableContent("NEOFORGE_MANIFEST", JarFile.MANIFEST_NAME, writeNeoforgeManifest());
+    private static final IdentifiableContent NEOFORGE_MODS_TOML = new IdentifiableContent("NEOFORGE_MODS_TOML", "META-INF/neoforge.mods.toml", writeNeoForgeModsToml());
+    private static final IdentifiableContent NEOFORGE_MANIFEST = new IdentifiableContent("NEOFORGE_MANIFEST", JarFile.MANIFEST_NAME, writeNeoForgeManifest());
     private static final IdentifiableContent NEOFORGE_ASSETS = new IdentifiableContent("NEOFORGE_ASSETS", "neoforged_logo.png");
 
     public static final String LIBRARIES_DIRECTORY_PROPERTY = "libraryDirectory";
@@ -150,10 +150,10 @@ class SimulatedInstallation implements AutoCloseable {
         writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "universal", NEOFORGE_UNIVERSAL_JAR_CONTENT);
     }
 
-    // The classes directory in a Neoforge development environment will contain both the Minecraft
-    // and the Neoforge classes. This is due to both calling each other and having to be compiled in
+    // The classes directory in a NeoForge development environment will contain both the Minecraft
+    // and the NeoForge classes. This is due to both calling each other and having to be compiled in
     // the same javac compilation as a result.
-    public ArrayList<Path> setupNeoforgeDevProject() throws IOException {
+    public ArrayList<Path> setupNeoForgeDevProject() throws IOException {
         var additionalClasspath = new ArrayList<Path>();
 
         // Emulate the layout of a NeoForge development environment
@@ -176,7 +176,7 @@ class SimulatedInstallation implements AutoCloseable {
     }
 
     /**
-     * In userdev, the Gradle tooling recompiles a joined Minecraft jar and injects the Neoforge classes and resources.
+     * In userdev, the Gradle tooling recompiles a joined Minecraft jar and injects the NeoForge classes and resources.
      * Original Minecraft assets are split off into a client-extra.jar similar to neodev.
      */
     public List<Path> setupUserdevProject() throws IOException {
@@ -226,11 +226,11 @@ class SimulatedInstallation implements AutoCloseable {
         return new IdentifiableContent(id, relativePath, classWriter.toByteArray());
     }
 
-    private static byte[] writeNeoforgeManifest() {
+    private static byte[] writeNeoForgeManifest() {
         return "FML-System-Mods: neoforge\n".getBytes();
     }
 
-    private static byte[] writeNeoforgeModsToml() {
+    private static byte[] writeNeoForgeModsToml() {
         return """
                 modLoader = "javafml"
                 loaderVersion = "[3,]"
@@ -358,7 +358,7 @@ class SimulatedInstallation implements AutoCloseable {
         assertModContent(launchResult, "minecraft", expectedContent);
     }
 
-    public void assertNeoforgeJar(LaunchResult launchResult) throws IOException {
+    public void assertNeoForgeJar(LaunchResult launchResult) throws IOException {
         var expectedContent = List.of(
                 NEOFORGE_ASSETS,
                 NEOFORGE_CLASSES,

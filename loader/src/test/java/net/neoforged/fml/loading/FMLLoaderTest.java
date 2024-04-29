@@ -80,7 +80,7 @@ class FMLLoaderTest {
             assertThat(result.pluginLayerModules()).isEmpty();
 
             installation.assertMinecraftClientJar(result);
-            installation.assertNeoforgeJar(result);
+            installation.assertNeoForgeJar(result);
         }
 
         @Test
@@ -94,43 +94,43 @@ class FMLLoaderTest {
             assertThat(result.pluginLayerModules()).isEmpty();
 
             installation.assertMinecraftServerJar(result);
-            installation.assertNeoforgeJar(result);
+            installation.assertNeoForgeJar(result);
         }
 
         @Test
         void testNeoForgeDevServerDiscovery() throws Exception {
-            var result = launchInNeoforgeDevEnvironment("forgeserverdev");
+            var result = launchInNeoForgeDevEnvironment("forgeserverdev");
             assertThat(result.issues()).isEmpty();
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
             installation.assertMinecraftClientJar(result);
-            installation.assertNeoforgeJar(result);
+            installation.assertNeoForgeJar(result);
         }
 
         @Test
         void testNeoForgeDevDataDiscovery() throws Exception {
-            var result = launchInNeoforgeDevEnvironment("forgedatadev");
+            var result = launchInNeoForgeDevEnvironment("forgedatadev");
             assertThat(result.issues()).isEmpty();
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
             installation.assertMinecraftClientJar(result);
-            installation.assertNeoforgeJar(result);
+            installation.assertNeoForgeJar(result);
         }
 
         @Test
         void testNeoForgeDevClientDiscovery() throws Exception {
-            var result = launchInNeoforgeDevEnvironment("forgeclientdev");
+            var result = launchInNeoForgeDevEnvironment("forgeclientdev");
             assertThat(result.issues()).isEmpty();
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
             installation.assertMinecraftClientJar(result);
-            installation.assertNeoforgeJar(result);
+            installation.assertNeoForgeJar(result);
         }
 
         @Test
@@ -144,7 +144,7 @@ class FMLLoaderTest {
             assertThat(result.pluginLayerModules()).isEmpty();
 
             installation.assertMinecraftClientJar(result);
-            installation.assertNeoforgeJar(result);
+            installation.assertNeoForgeJar(result);
         }
 
         @Test
@@ -158,7 +158,7 @@ class FMLLoaderTest {
             assertThat(result.pluginLayerModules()).isEmpty();
 
             installation.assertMinecraftClientJar(result);
-            installation.assertNeoforgeJar(result);
+            installation.assertNeoForgeJar(result);
         }
 
         @Test
@@ -172,7 +172,7 @@ class FMLLoaderTest {
             assertThat(result.pluginLayerModules()).isEmpty();
 
             installation.assertMinecraftClientJar(result);
-            installation.assertNeoforgeJar(result);
+            installation.assertNeoForgeJar(result);
         }
     }
 
@@ -191,7 +191,7 @@ class FMLLoaderTest {
             assertThat(result.pluginLayerModules()).isEmpty();
 
             installation.assertMinecraftClientJar(result);
-            installation.assertNeoforgeJar(result);
+            installation.assertNeoForgeJar(result);
         }
 
         /**
@@ -449,8 +449,8 @@ class FMLLoaderTest {
         }
     }
 
-    private LaunchResult launchInNeoforgeDevEnvironment(String launchTarget) throws Exception {
-        var additionalClasspath = installation.setupNeoforgeDevProject();
+    private LaunchResult launchInNeoForgeDevEnvironment(String launchTarget) throws Exception {
+        var additionalClasspath = installation.setupNeoForgeDevProject();
 
         return launchWithAdditionalClasspath(launchTarget, additionalClasspath);
     }

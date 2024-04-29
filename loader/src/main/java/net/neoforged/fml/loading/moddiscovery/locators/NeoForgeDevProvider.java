@@ -23,7 +23,7 @@ import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 
 /**
- * Provides the Minecraft and Neoforge mods in a Neoforge dev environment.
+ * Provides the Minecraft and NeoForge mods in a NeoForge dev environment.
  */
 public class NeoForgeDevProvider implements IModFileCandidateLocator {
     private final List<Path> paths;
@@ -50,7 +50,7 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
             minecraftResourcesRoot = DevEnvUtils.findFileSystemRootOfFileOnClasspath("assets/.mcassetsroot");
         }
 
-        var packages = getNeoforgeSpecificPathPrefixes();
+        var packages = getNeoForgeSpecificPathPrefixes();
         var minecraftResourcesPrefix = normalizePrefix(minecraftResourcesRoot);
 
         var mcJarContents = new JarContentsBuilder()
@@ -101,7 +101,7 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
         return minecraftResourcesPrefix;
     }
 
-    private static String[] getNeoforgeSpecificPathPrefixes() {
+    private static String[] getNeoForgeSpecificPathPrefixes() {
         return new String[] { "net/neoforged/neoforge/", "META-INF/services/", "META-INF/coremods.json", JarModsDotTomlModFileReader.MODS_TOML };
     }
 

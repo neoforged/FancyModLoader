@@ -89,7 +89,7 @@ public class FMLServiceProvider implements ITransformationService {
 
     @Override
     public void arguments(BiFunction<String, String, OptionSpecBuilder> argumentBuilder) {
-        forgeOption = argumentBuilder.apply("neoForgeVersion", "Neoforge Version number").withRequiredArg().ofType(String.class).required();
+        forgeOption = argumentBuilder.apply("neoForgeVersion", "NeoForge Version number").withRequiredArg().ofType(String.class).required();
         fmlOption = argumentBuilder.apply("fmlVersion", "FML Version number").withRequiredArg().ofType(String.class).required();
         mcOption = argumentBuilder.apply("mcVersion", "Minecraft Version number").withRequiredArg().ofType(String.class).required();
         mcpOption = argumentBuilder.apply("neoFormVersion", "Neoform Version number").withRequiredArg().ofType(String.class).required();
