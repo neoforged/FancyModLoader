@@ -37,12 +37,6 @@ changelog {
 jar {
     manifest {
         attributes(
-                'Specification-Title': 'bootstraplauncher',
-                'Specification-Vendor': 'mcmodlauncher',
-                'Specification-Version': '1', // We are version 1 of ourselves
-                'Implementation-Title': project.name,
-                'Implementation-Version': "${project.version}+${gradleutils.gitInfo.branch}.${gradleutils.gitInfo.abbreviatedId}",
-                'Implementation-Vendor':'mcmodlauncher',
                 'Git-Commit': gradleutils.gitInfo.abbreviatedId,
                 'Git-Branch': gradleutils.gitInfo.branch,
                 'Main-Class': 'cpw.mods.bootstraplauncher.BootstrapLauncher'
