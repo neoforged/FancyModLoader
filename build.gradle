@@ -22,7 +22,7 @@ repositories {
 
 dependencies {
     compileOnly('org.jetbrains:annotations:24.0.1')
-    implementation('cpw.mods:securejarhandler:2.1.27')
+    implementation('cpw.mods:securejarhandler:3.0.4')
 }
 
 java {

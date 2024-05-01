@@ -199,7 +199,7 @@ public class BootstrapLauncher {
 
     private record PackageTracker(Set<String> packages, Path... paths) implements UnionPathFilter {
         @Override
-        public boolean test(final String path, final String basePath) {
+        public boolean test(final String path, final Path basePath) {
             // This method returns true if the given path is allowed within the JAR (filters out 'bad' paths)
 
             if (packages.isEmpty() || // This is the first jar, nothing is claimed yet, so allow everything
