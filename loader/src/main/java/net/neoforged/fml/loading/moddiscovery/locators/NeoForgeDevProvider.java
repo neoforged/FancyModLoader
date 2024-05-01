@@ -51,7 +51,7 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
         }
 
         var packages = getNeoForgeSpecificPathPrefixes();
-        var minecraftResourcesPrefix = normalizePrefix(minecraftResourcesRoot);
+        var minecraftResourcesPrefix = minecraftResourcesRoot;
 
         var mcJarContents = new JarContentsBuilder()
                 .paths(Streams.concat(paths.stream(), Stream.of(minecraftResourcesRoot)).toArray(Path[]::new))
@@ -90,15 +90,6 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
                 })
                 .build();
         pipeline.addModFile(JarModsDotTomlModFileReader.createModFile(neoforgeJarContents, ModFileDiscoveryAttributes.DEFAULT));
-    }
-
-    private static String normalizePrefix(Path minecraftResourcesRoot) {
-        var minecraftResourcesPrefix = minecraftResourcesRoot.toString().replace('\\', '/');
-        // This is how SJH normalizes the base-path.
-        if (minecraftResourcesPrefix.length() > 1 && minecraftResourcesPrefix.startsWith("/")) {
-            minecraftResourcesPrefix = minecraftResourcesPrefix.substring(1);
-        }
-        return minecraftResourcesPrefix;
     }
 
     private static String[] getNeoForgeSpecificPathPrefixes() {
