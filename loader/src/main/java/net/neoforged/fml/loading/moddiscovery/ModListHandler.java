@@ -33,9 +33,9 @@ public class ModListHandler {
      * @return list of found mod coordinates
      */
     public static List<String> processModLists(final List<String> modListPaths, final List<Path> mavenRootPaths) {
-        final List<String> modCoordinates = modListPaths.stream().map(ModListHandler::transformPathToList).flatMap(Collection::stream).collect(Collectors.toList());
+        final List<String> modCoordinates = modListPaths.stream().map(ModListHandler::transformPathToList).flatMap(Collection::stream).toList();
 
-        List<Pair<Path, String>> localModCoords = modCoordinates.stream().map(mc -> Pair.of(MavenCoordinateResolver.get(mc), mc)).collect(Collectors.toList());
+        List<Pair<Path, String>> localModCoords = modCoordinates.stream().map(mc -> Pair.of(MavenCoordinateResolver.get(mc), mc)).toList();
         final List<Pair<Path, String>> foundCoordinates = localModCoords.stream().map(mc -> mavenRootPaths.stream().map(root -> Pair.of(root.resolve(mc.getLeft()), mc.getRight())).filter(path -> Files.exists(path.getLeft())).findFirst().orElseGet(() -> {
             LOGGER.warn(LogMarkers.CORE, "Failed to find coordinate {}", mc);
             return null;

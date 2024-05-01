@@ -185,7 +185,7 @@ public abstract class ModContainer {
             LOGGER.trace(LOADING, "Fired event for modid {} : {}", this.getModId(), e);
         } catch (Throwable t) {
             LOGGER.error(LOADING, "Caught exception during event {} dispatch for modid {}", e, this.getModId(), t);
-            throw new ModLoadingException(modInfo, "fml.modloading.errorduringevent", t, e.getClass().getName());
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.errorduringevent", e.getClass().getName()).withAffectedMod(modInfo).withCause(t));
         }
     }
 
@@ -204,7 +204,7 @@ public abstract class ModContainer {
             LOGGER.trace(LOADING, "Fired event for phase {} for modid {} : {}", phase, this.getModId(), e);
         } catch (Throwable t) {
             LOGGER.error(LOADING, "Caught exception during event {} dispatch for modid {}", e, this.getModId(), t);
-            throw new ModLoadingException(modInfo, "fml.modloading.errorduringevent", t, e.getClass().getName());
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.errorduringevent", e.getClass().getName()).withAffectedMod(modInfo).withCause(t));
         }
     }
 }

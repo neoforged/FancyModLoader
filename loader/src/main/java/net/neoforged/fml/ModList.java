@@ -18,8 +18,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -32,15 +30,12 @@ import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.IModFile;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Master list of all mods - game-side version. This is classloaded in the game scope and
  * can dispatch game level events as a result.
  */
 public class ModList {
-    private static Logger LOGGER = LogManager.getLogger();
     private static ModList INSTANCE;
     private final List<IModFileInfo> modFiles;
     private final List<IModInfo> sortedList;
@@ -58,10 +53,11 @@ public class ModList {
     }
 
     private String fileToLine(IModFile mf) {
+        var mainMod = mf.getModInfos().getFirst();
         return String.format(Locale.ENGLISH, "%-50.50s|%-30.30s|%-30.30s|%-20.20s|Manifest: %s", mf.getFileName(),
-                mf.getModInfos().get(0).getDisplayName(),
-                mf.getModInfos().get(0).getModId(),
-                mf.getModInfos().get(0).getVersion(),
+                mainMod.getDisplayName(),
+                mainMod.getModId(),
+                mainMod.getVersion(),
                 ((ModFileInfo) mf.getModFileInfo()).getCodeSigningFingerprint().orElse("NOSIGNATURE"));
     }
 
@@ -76,14 +72,6 @@ public class ModList {
 
     public static ModList get() {
         return INSTANCE;
-    }
-
-    private static ForkJoinWorkerThread newForkJoinWorkerThread(ForkJoinPool pool) {
-        ForkJoinWorkerThread thread = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
-        thread.setName("modloading-worker-" + thread.getPoolIndex());
-        // The default sets it to the SystemClassloader, so copy the current one.
-        thread.setContextClassLoader(Thread.currentThread().getContextClassLoader());
-        return thread;
     }
 
     public List<IModFileInfo> getModFiles() {

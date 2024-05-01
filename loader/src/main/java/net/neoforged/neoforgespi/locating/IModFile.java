@@ -10,27 +10,66 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.IModLanguageProvider;
 import net.neoforged.neoforgespi.language.ModFileScanData;
+import org.jetbrains.annotations.ApiStatus;
 
 /**
  * Represents a single "mod" file in the runtime.
- *
+ * <p>
  * Although these are known as "Mod"-Files, they do not always represent mods.
  * However, they should be more treated as an extension or modification of minecraft.
  * And as such can contain any number of things, like language loaders, dependencies of other mods
  * or code which does not interact with minecraft at all and is just a utility for any of the other mod
  * files.
  */
+@ApiStatus.NonExtendable
 public interface IModFile {
     /**
-     * The language loaders which are included in this mod file.
+     * Builds a new mod file instance depending on the current runtime.
      *
+     * @param jar    The secure jar to load the mod file from.
+     * @param parser The parser which is responsible for parsing the metadata of the file itself.
+     * @return The mod file.
+     */
+    static IModFile create(SecureJar jar, ModFileInfoParser parser) throws InvalidModFileException {
+        return new ModFile(jar, parser, ModFileDiscoveryAttributes.DEFAULT);
+    }
+
+    /**
+     * Builds a new mod file instance depending on the current runtime.
+     *
+     * @param jar        The secure jar to load the mod file from.
+     * @param parser     The parser which is responsible for parsing the metadata of the file itself.
+     * @param attributes Additional attributes of the modfile.
+     * @return The mod file.
+     */
+    static IModFile create(SecureJar jar, ModFileInfoParser parser, ModFileDiscoveryAttributes attributes) throws InvalidModFileException {
+        return new ModFile(jar, parser, attributes);
+    }
+
+    /**
+     * Builds a new mod file instance depending on the current runtime.
+     *
+     * @param jar        The secure jar to load the mod file from.
+     * @param parser     The parser which is responsible for parsing the metadata of the file itself.
+     * @param type       the type of the mod
+     * @param attributes Additional attributes of the modfile.
+     * @return The mod file.
+     */
+    static IModFile create(SecureJar jar, ModFileInfoParser parser, IModFile.Type type, ModFileDiscoveryAttributes attributes) throws InvalidModFileException {
+        return new ModFile(jar, parser, type, attributes);
+    }
+
+    /**
+     * The language loaders which are included in this mod file.
+     * <p>
      * If this method returns any entries then {@link #getType()} has to return {@link Type#LIBRARY},
      * else this mod file will not be loaded in the proper module layer in 1.17 and above.
-     *
+     * <p>
      * As such, returning entries from this method is mutually exclusive with returning entries from {@link #getModInfos()}.
      *
      * @return The mod language providers provided by this mod file. (Also known as the loaders).
@@ -65,7 +104,7 @@ public interface IModFile {
 
     /**
      * The path to the underlying mod file.
-     * 
+     *
      * @return The path to the mod file.
      */
     Path getFilePath();
@@ -87,10 +126,10 @@ public interface IModFile {
 
     /**
      * Returns a list of all mods located inside this jar.
-     *
+     * <p>
      * If this method returns any entries then {@link #getType()} has to return {@link Type#MOD},
      * else this mod file will not be loaded in the proper module layer in 1.17 and above.
-     *
+     * <p>
      * As such returning entries from this method is mutually exclusive with {@link #getLoaders()}.
      *
      * @return The mods in this mod file.
@@ -106,22 +145,19 @@ public interface IModFile {
 
     /**
      * The raw file name of this file.
-     * 
+     *
      * @return The raw file name.
      */
     String getFileName();
 
     /**
-     * The provider who provided the runtime with this jar.
-     * Implicitly indicates what caused the load of the PR. (Mod in mods directory, mod in dev environment, etc)
-     *
-     * @return The provider of this file.
+     * Get attributes about how this mod file was discovered.
      */
-    IModProvider getProvider();
+    ModFileDiscoveryAttributes getDiscoveryAttributes();
 
     /**
      * The metadata info related to this particular file.
-     * 
+     *
      * @return The info for this file.
      */
     IModFileInfo getModFileInfo();

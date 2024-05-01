@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import net.neoforged.fml.ModLoadingException;
+import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.neoforgespi.language.IModInfo;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
@@ -79,10 +81,8 @@ public class UniqueModListBuilder {
                 .toList();
 
         if (!dupedModErrors.isEmpty()) {
-            LOGGER.error(LOADING, "Found duplicate mods:\n{}", dupedModErrors.stream().collect(joining("\n")));
-            throw new EarlyLoadingException("Duplicate mods found", null, dupedModErrors.stream()
-                    .map(s -> new EarlyLoadingException.ExceptionData(s))
-                    .toList());
+            LOGGER.error(LOADING, "Found duplicate mods:\n{}", String.join("\n", dupedModErrors));
+            throw new ModLoadingException(dupedModErrors.stream().map(ModLoadingIssue::error).toList());
         }
 
         final List<String> dupedLibErrors = versionedLibIds.values().stream()
@@ -94,10 +94,8 @@ public class UniqueModListBuilder {
                 .toList();
 
         if (!dupedLibErrors.isEmpty()) {
-            LOGGER.error(LOADING, "Found duplicate plugins or libraries:\n{}", dupedLibErrors.stream().collect(joining("\n")));
-            throw new EarlyLoadingException("Duplicate plugins or libraries found", null, dupedLibErrors.stream()
-                    .map(s -> new EarlyLoadingException.ExceptionData(s))
-                    .toList());
+            LOGGER.error(LOADING, "Found duplicate plugins or libraries:\n{}", String.join("\n", dupedLibErrors));
+            throw new ModLoadingException(dupedLibErrors.stream().map(ModLoadingIssue::error).toList());
         }
 
         // Collect unique mod files by module name. This will be used for deduping purposes

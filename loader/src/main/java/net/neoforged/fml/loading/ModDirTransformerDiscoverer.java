@@ -56,7 +56,7 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
 
     @Override
     public List<NamedPath> candidates(final Path gameDirectory) {
-        ModDirTransformerDiscoverer.scan(gameDirectory);
+        scan(gameDirectory);
         return List.copyOf(found);
     }
 

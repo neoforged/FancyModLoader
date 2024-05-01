@@ -45,7 +45,6 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import joptsimple.OptionParser;
 import net.neoforged.fml.loading.FMLConfig;
-import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
@@ -600,7 +599,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     public void updateModuleReads(final ModuleLayer layer) {
         var fm = layer.findModule("neoforge").orElseThrow();
         getClass().getModule().addReads(fm);
-        var clz = FMLLoader.getGameLayer().findModule("neoforge").map(l -> Class.forName(l, "net.neoforged.neoforge.client.loading.NeoForgeLoadingOverlay")).orElseThrow();
+        var clz = Class.forName(fm, "net.neoforged.neoforge.client.loading.NeoForgeLoadingOverlay");
         var methods = Arrays.stream(clz.getMethods()).filter(m -> Modifier.isStatic(m.getModifiers())).collect(Collectors.toMap(Method::getName, Function.identity()));
         loadingOverlay = methods.get("newInstance");
     }
