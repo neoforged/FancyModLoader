@@ -83,6 +83,10 @@ public class UnionFileSystem extends FileSystem {
         public UncheckedIOException(final IOException cause) {
             super(cause);
         }
+        
+        public UncheckedIOException(final String message, final IOException cause) {
+            super(message, cause);
+        }
 
         @Override
         public synchronized Throwable fillInStackTrace() {
@@ -139,9 +143,9 @@ public class UnionFileSystem extends FileSystem {
             }
             return Optional.of(new EmbeddedFileSystemMetadata(path, zfs, fci));
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new UncheckedIOException("Failed to open file system from path " + path, e);
         } catch (Throwable t) {
-            throw new IllegalStateException(t);
+            throw new IllegalStateException("Failed to open file system from path " + path, t);
         }
     }
 
