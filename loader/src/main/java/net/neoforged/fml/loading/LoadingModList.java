@@ -157,6 +157,13 @@ public class LoadingModList {
         return this.sortedList;
     }
 
+    /**
+     * Returns all direct loading dependencies of the given mod.
+     *
+     * <p>This means: all the mods that are directly specified to be loaded before the given mod,
+     * either because the given mod has an {@link IModInfo.Ordering#AFTER} constraint on the dependency,
+     * or because the dependency has a {@link IModInfo.Ordering#BEFORE} constraint on the given mod.
+     */
     public List<ModInfo> getDependencies(IModInfo mod) {
         return this.modDependencies.getOrDefault(mod, List.of());
     }

@@ -204,7 +204,7 @@ public final class ModLoader {
         var progress = StartupNotificationManager.addProgressBar(name, modList.size());
         try {
             periodicTask.run();
-            Map<IModInfo, CompletableFuture<Void>> modFutures = new IdentityHashMap<>();
+            Map<IModInfo, CompletableFuture<Void>> modFutures = new IdentityHashMap<>(modList.size());
             var futureList = modList.getSortedMods().stream()
                     .map(modContainer -> {
                         // Collect futures for all dependencies first
