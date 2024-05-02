@@ -208,16 +208,16 @@ public final class ModLoader {
             var futureList = modList.getSortedMods().stream()
                     .map(modContainer -> {
                         // Collect futures for all dependencies first
-                        var deps = LoadingModList.get().getDependencies(modContainer.getModInfo());
-                        @SuppressWarnings("unchecked")
-                        CompletableFuture<Void>[] depFutures = new CompletableFuture[deps.size()];
-                        for (int i = 0; i < deps.size(); ++i) {
-                            depFutures[i] = modFutures.get(deps.get(i));
-                            if (depFutures[i] == null) {
-                                throw new IllegalStateException("Dependency future for mod %s which is a dependency of %s not found!".formatted(
-                                        deps.get(i).getModId(), modContainer.getModId()));
-                            }
-                        }
+                        var depFutures = LoadingModList.get().getDependencies(modContainer.getModInfo()).stream()
+                                .map(modInfo -> {
+                                    var future = modFutures.get(modInfo);
+                                    if (future == null) {
+                                        throw new IllegalStateException("Dependency future for mod %s which is a dependency of %s not found!".formatted(
+                                                modInfo.getModId(), modContainer.getModId()));
+                                    }
+                                    return future;
+                                })
+                                .toArray(CompletableFuture[]::new);
 
                         // Build the future for this container
                         var future = CompletableFuture.allOf(depFutures)
