@@ -23,6 +23,7 @@ import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
+import net.neoforged.neoforgespi.language.IModInfo;
 
 /**
  * Master list of all mods <em>in the loading context. This class cannot refer outside the
@@ -32,10 +33,11 @@ public class LoadingModList {
     private static LoadingModList INSTANCE;
     private final List<ModFileInfo> modFiles;
     private final List<ModInfo> sortedList;
+    private final Map<ModInfo, List<ModInfo>> modDependencies;
     private final Map<String, ModFileInfo> fileById;
     private final List<ModLoadingIssue> modLoadingIssues;
 
-    private LoadingModList(final List<ModFile> modFiles, final List<ModInfo> sortedList) {
+    private LoadingModList(final List<ModFile> modFiles, final List<ModInfo> sortedList, Map<ModInfo, List<ModInfo>> modDependencies) {
         this.modFiles = modFiles.stream()
                 .map(ModFile::getModFileInfo)
                 .map(ModFileInfo.class::cast)
@@ -43,6 +45,7 @@ public class LoadingModList {
         this.sortedList = sortedList.stream()
                 .map(ModInfo.class::cast)
                 .collect(Collectors.toList());
+        this.modDependencies = modDependencies;
         this.fileById = this.modFiles.stream()
                 .map(ModFileInfo::getMods)
                 .flatMap(Collection::stream)
@@ -51,8 +54,8 @@ public class LoadingModList {
         this.modLoadingIssues = new ArrayList<>();
     }
 
-    public static LoadingModList of(List<ModFile> modFiles, List<ModInfo> sortedList, List<ModLoadingIssue> issues) {
-        INSTANCE = new LoadingModList(modFiles, sortedList);
+    public static LoadingModList of(List<ModFile> modFiles, List<ModInfo> sortedList, List<ModLoadingIssue> issues, Map<ModInfo, List<ModInfo>> modDependencies) {
+        INSTANCE = new LoadingModList(modFiles, sortedList, modDependencies);
         INSTANCE.modLoadingIssues.addAll(issues);
         return INSTANCE;
     }
@@ -152,6 +155,10 @@ public class LoadingModList {
 
     public List<ModInfo> getMods() {
         return this.sortedList;
+    }
+
+    public List<ModInfo> getDependencies(IModInfo mod) {
+        return this.modDependencies.getOrDefault(mod, List.of());
     }
 
     public boolean hasErrors() {
