@@ -225,7 +225,7 @@ public final class ModLoader {
                                     if (exception != null) {
                                         // If there was any exception, short circuit.
                                         // The exception will already be handled by `waitForFuture` since it comes from another mod.
-                                        LOGGER.error("Skipping {} future for mod {} because a dependency threw an exception.", name, modContainer.getModId());
+                                        LOGGER.debug("Skipping {} task for mod {} because a dependency threw an exception.", name, modContainer.getModId());
                                         progress.increment();
                                         // Throw a marker exception to make sure that dependencies of *this* task don't get executed.
                                         throw new DependentFutureFailedException();
