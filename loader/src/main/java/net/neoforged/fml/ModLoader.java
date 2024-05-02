@@ -207,7 +207,7 @@ public final class ModLoader {
             Map<IModInfo, CompletableFuture<Void>> modFutures = new IdentityHashMap<>();
             var futureList = modList.getSortedMods().stream()
                     .map(modContainer -> {
-                        // Build future for all dependencies first
+                        // Collect futures for all dependencies first
                         var deps = LoadingModList.get().getDependencies(modContainer.getModInfo());
                         @SuppressWarnings("unchecked")
                         CompletableFuture<Void>[] depFutures = new CompletableFuture[deps.size()];
@@ -219,28 +219,27 @@ public final class ModLoader {
                             }
                         }
 
-                        var combinedFuture = depFutures.length == 0 ? CompletableFuture.completedFuture(null) : CompletableFuture.allOf(depFutures);
-
                         // Build the future for this container
-                        var future = combinedFuture.<Void>handleAsync((void_, exception) -> {
-                            if (exception != null) {
-                                // If there was any exception, short circuit.
-                                // The exception will already be handled by `waitForFuture` since it comes from another mod.
-                                LOGGER.error("Skipping {} future for mod {} because a dependency threw an exception.", name, modContainer.getModId());
-                                progress.increment();
-                                // Throw a marker exception to make sure that dependencies of *this* task don't get executed.
-                                throw new DependentFutureFailedException();
-                            }
+                        var future = CompletableFuture.allOf(depFutures)
+                                .<Void>handleAsync((void_, exception) -> {
+                                    if (exception != null) {
+                                        // If there was any exception, short circuit.
+                                        // The exception will already be handled by `waitForFuture` since it comes from another mod.
+                                        LOGGER.error("Skipping {} future for mod {} because a dependency threw an exception.", name, modContainer.getModId());
+                                        progress.increment();
+                                        // Throw a marker exception to make sure that dependencies of *this* task don't get executed.
+                                        throw new DependentFutureFailedException();
+                                    }
 
-                            try {
-                                ModLoadingContext.get().setActiveContainer(modContainer);
-                                task.accept(modContainer);
-                            } finally {
-                                progress.increment();
-                                ModLoadingContext.get().setActiveContainer(null);
-                            }
-                            return null;
-                        }, parallelExecutor);
+                                    try {
+                                        ModLoadingContext.get().setActiveContainer(modContainer);
+                                        task.accept(modContainer);
+                                    } finally {
+                                        progress.increment();
+                                        ModLoadingContext.get().setActiveContainer(null);
+                                    }
+                                    return null;
+                                }, parallelExecutor);
                         modFutures.put(modContainer.getModInfo(), future);
                         return future;
                     })
