@@ -3,7 +3,7 @@ plugins {
 }
 
 checkJarCompatibility {
-    isBinary = true
+    isAPI = true
 }
 
 dependencies {
