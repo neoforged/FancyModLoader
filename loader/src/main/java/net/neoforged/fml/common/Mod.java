@@ -13,9 +13,10 @@ import net.neoforged.api.distmarker.Dist;
 
 /**
  * This defines a Mod to FML.
- * Any class found with this annotation applied will be loaded as a Mod. The instance that is loaded will
- * represent the mod to other Mods in the system. It will be sent various subclasses of {@code ModLifecycleEvent}
- * at pre-defined times during the loading of the game.
+ * <p>
+ * Any class found with this annotation applied will be loaded as a mod entrypoint for the mod with the given {@linkplain #value() ID}. <br>
+ * A mod loaded with the {@code javafml} language loader may have multiple entrypoints, but it must have <strong>at least one</strong>.
+ * However, a mod can have entrypoints for only one {@linkplain #dist() side}.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
@@ -23,7 +24,7 @@ public @interface Mod {
     /**
      * The unique mod identifier for this mod.
      * <b>Required to be lowercased in the english locale for compatibility. Will be truncated to 64 characters long.</b>
-     *
+     * <p>
      * This will be used to identify your mod for third parties (other mods), it will be used to identify your mod for registries such as block and item registries.
      * By default, you will have a resource domain that matches the modid. All these uses require that constraints are imposed on the format of the modid.
      */

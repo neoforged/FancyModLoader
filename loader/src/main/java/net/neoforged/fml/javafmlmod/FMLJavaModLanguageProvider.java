@@ -26,7 +26,7 @@ public class FMLJavaModLanguageProvider implements IModLanguageLoader {
                 .filter(data -> data.annotationData().get("value").equals(info.getModId()))
                 .toList();
         if (modClasses.isEmpty()) {
-            throw new ModLoadingException(ModLoadingIssue.error("Missing mod entrypoint class annotated with @Mod for mod {}", info.getModId()));
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.javafml.missing_entrypoint").withAffectedMod(info));
         }
         return new FMLModContainer(info, modClasses
                 .stream().filter(ad -> AutomaticEventSubscriber.getSides(ad.annotationData().get("dist")).contains(FMLLoader.getDist()))
