@@ -240,14 +240,12 @@ public final class ModLoader {
 
     private static List<ModContainer> buildMods(final IModFile modFile) {
         LOGGER.trace(LOADING, "ModContainer is {}", ModContainer.class.getClassLoader());
-        final List<ModContainer> containers = modFile.getModFileInfo()
+        return modFile.getModFileInfo()
                 .getMods()
                 .stream()
                 .map(info -> buildModContainerFromTOML(info, modFile.getScanResult()))
-                .filter(Objects::nonNull)
+                .filter(o -> o != null && !(o instanceof ErroredModContainer))
                 .toList();
-        // remove errored mod containers
-        return containers.stream().filter(mc -> !(mc instanceof ErroredModContainer)).collect(Collectors.toList());
     }
 
     private static ModContainer buildModContainerFromTOML(final IModInfo modInfo, final ModFileScanData scanData) {

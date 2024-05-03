@@ -23,6 +23,7 @@ import net.neoforged.fml.event.lifecycle.FMLConstructModEvent;
 import net.neoforged.neoforgespi.language.IModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -144,6 +145,7 @@ public abstract class ModContainer {
      * Function invoked by FML to construct the mod,
      * right before the dispatch of {@link FMLConstructModEvent}.
      */
+    @ApiStatus.OverrideOnly
     protected void constructMod() {}
 
     /**

@@ -21,10 +21,6 @@ public class ModFileScanData {
     private final Set<ClassData> classes = new LinkedHashSet<>();
     private final List<IModFileInfo> modFiles = new ArrayList<>();
 
-    public static Predicate<Type> interestingAnnotations() {
-        return t -> true;
-    }
-
     public Set<ClassData> getClasses() {
         return classes;
     }
