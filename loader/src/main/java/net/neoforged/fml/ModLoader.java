@@ -238,7 +238,6 @@ public final class ModLoader {
     }
 
     private static List<ModContainer> buildMods(final IModFile modFile) {
-        LOGGER.trace(LOADING, "ModContainer is {}", ModContainer.class.getClassLoader());
         return modFile.getModFileInfo()
                 .getMods()
                 .stream()
