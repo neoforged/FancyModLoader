@@ -11,6 +11,7 @@ import static net.neoforged.fml.Logging.LOADING;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -187,21 +188,56 @@ public final class ModLoader {
     }
 
     /**
+     * Exception that is fired when a mod loading future cannot be executed because a dependent future failed.
+     * It is only used for control flow and easy filtering out, but never logged or propagated further.
+     */
+    private static class DependentFutureFailedException extends RuntimeException {}
+
+    /**
      * Dispatches a task across all mod containers in parallel, with progress displayed on the loading screen.
      */
     public static void dispatchParallelTask(String name, Executor parallelExecutor, Runnable periodicTask, Consumer<ModContainer> task) {
         var progress = StartupNotificationManager.addProgressBar(name, modList.size());
         try {
             periodicTask.run();
+            Map<IModInfo, CompletableFuture<Void>> modFutures = new IdentityHashMap<>(modList.size());
             var futureList = modList.getSortedMods().stream()
                     .map(modContainer -> {
-                        return CompletableFuture.runAsync(() -> {
-                            ModLoadingContext.get().setActiveContainer(modContainer);
-                            task.accept(modContainer);
-                        }, parallelExecutor).whenComplete((result, exception) -> {
-                            progress.increment();
-                            ModLoadingContext.get().setActiveContainer(null);
-                        });
+                        // Collect futures for all dependencies first
+                        var depFutures = LoadingModList.get().getDependencies(modContainer.getModInfo()).stream()
+                                .map(modInfo -> {
+                                    var future = modFutures.get(modInfo);
+                                    if (future == null) {
+                                        throw new IllegalStateException("Dependency future for mod %s which is a dependency of %s not found!".formatted(
+                                                modInfo.getModId(), modContainer.getModId()));
+                                    }
+                                    return future;
+                                })
+                                .toArray(CompletableFuture[]::new);
+
+                        // Build the future for this container
+                        var future = CompletableFuture.allOf(depFutures)
+                                .<Void>handleAsync((void_, exception) -> {
+                                    if (exception != null) {
+                                        // If there was any exception, short circuit.
+                                        // The exception will already be handled by `waitForFuture` since it comes from another mod.
+                                        LOGGER.debug("Skipping {} task for mod {} because a dependency threw an exception.", name, modContainer.getModId());
+                                        progress.increment();
+                                        // Throw a marker exception to make sure that dependencies of *this* task don't get executed.
+                                        throw new DependentFutureFailedException();
+                                    }
+
+                                    try {
+                                        ModLoadingContext.get().setActiveContainer(modContainer);
+                                        task.accept(modContainer);
+                                    } finally {
+                                        progress.increment();
+                                        ModLoadingContext.get().setActiveContainer(null);
+                                    }
+                                    return null;
+                                }, parallelExecutor);
+                        modFutures.put(modContainer.getModInfo(), future);
+                        return future;
                     })
                     .toList();
             var singleFuture = ModList.gather(futureList)
@@ -222,7 +258,9 @@ public final class ModLoader {
                 // Merge all potential modloading issues
                 var errorCount = 0;
                 for (var error : e.getCause().getSuppressed()) {
-                    if (error instanceof ModLoadingException modLoadingException) {
+                    if (error instanceof DependentFutureFailedException) {
+                        continue;
+                    } else if (error instanceof ModLoadingException modLoadingException) {
                         loadingIssues.addAll(modLoadingException.getIssues());
                     } else {
                         loadingIssues.add(ModLoadingIssue.error("fml.modloading.uncaughterror", name).withCause(e));
