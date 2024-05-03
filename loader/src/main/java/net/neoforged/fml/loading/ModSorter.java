@@ -46,6 +46,7 @@ public class ModSorter {
     private final UniqueModListBuilder uniqueModListBuilder;
     private List<ModFile> modFiles;
     private List<ModInfo> sortedList;
+    private Map<ModInfo, List<ModInfo>> modDependencies;
     private Map<String, IModInfo> modIdNameLookup;
     private List<ModFile> systemMods;
 
@@ -59,7 +60,7 @@ public class ModSorter {
             ms.buildUniqueList();
         } catch (ModLoadingException e) {
             // We cannot build any list with duped mods. We have to abort immediately and report it
-            return LoadingModList.of(ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), e.getIssues());
+            return LoadingModList.of(ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), e.getIssues(), Map.of());
         }
 
         // try and validate dependencies
@@ -69,7 +70,7 @@ public class ModSorter {
 
         // if we miss a dependency or detect an incompatibility, we abort now
         if (!resolutionResult.versionResolution.isEmpty() || !resolutionResult.incompatibilities.isEmpty()) {
-            list = LoadingModList.of(ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), concat(issues, resolutionResult.buildErrorMessages()));
+            list = LoadingModList.of(ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), concat(issues, resolutionResult.buildErrorMessages()), Map.of());
         } else {
             // Otherwise, lets try and sort the modlist and proceed
             ModLoadingException modLoadingException = null;
@@ -79,9 +80,9 @@ public class ModSorter {
                 modLoadingException = e;
             }
             if (modLoadingException == null) {
-                list = LoadingModList.of(ms.modFiles, ms.sortedList, issues);
+                list = LoadingModList.of(ms.modFiles, ms.sortedList, issues, ms.modDependencies);
             } else {
-                list = LoadingModList.of(ms.modFiles, ms.sortedList, concat(issues, modLoadingException.getIssues()));
+                list = LoadingModList.of(ms.modFiles, ms.sortedList, concat(issues, modLoadingException.getIssues()), Map.of());
             }
         }
 
@@ -106,12 +107,11 @@ public class ModSorter {
     @SuppressWarnings("UnstableApiUsage")
     private void sort() {
         // lambdas are identity based, so sorting them is impossible unless you hold reference to them
-        final MutableGraph<ModFileInfo> graph = GraphBuilder.directed().build();
+        final MutableGraph<ModInfo> graph = GraphBuilder.directed().build();
         AtomicInteger counter = new AtomicInteger();
-        Map<ModFileInfo, Integer> infos = modFiles.stream()
-                .map(ModFile::getModFileInfo)
-                .filter(ModFileInfo.class::isInstance)
-                .map(ModFileInfo.class::cast)
+        Map<ModInfo, Integer> infos = modFiles.stream()
+                .flatMap(mf -> mf.getModInfos().stream())
+                .map(ModInfo.class::cast)
                 .collect(toMap(Function.identity(), e -> counter.incrementAndGet()));
         infos.keySet().forEach(graph::addNode);
         modFiles.stream()
@@ -120,7 +120,7 @@ public class ModSorter {
                 .map(IModInfo::getDependencies).<IModInfo.ModVersion>mapMulti(Iterable::forEach)
                 .forEach(dep -> addDependency(graph, dep));
 
-        final List<ModFileInfo> sorted;
+        final List<ModInfo> sorted;
         try {
             sorted = TopologicalSort.topologicalSort(graph, Comparator.comparing(infos::get));
         } catch (CyclePresentException e) {
@@ -136,22 +136,21 @@ public class ModSorter {
                     .toList();
             throw new ModLoadingException(dataList);
         }
-        this.sortedList = sorted.stream()
-                .map(ModFileInfo::getMods)
-                .<IModInfo>mapMulti(Iterable::forEach)
-                .map(ModInfo.class::cast)
-                .collect(toList());
+        this.sortedList = List.copyOf(sorted);
+        this.modDependencies = sorted.stream()
+                .collect(Collectors.toMap(modInfo -> modInfo, modInfo -> List.copyOf(graph.predecessors(modInfo))));
         this.modFiles = sorted.stream()
-                .map(ModFileInfo::getFile)
-                .collect(toList());
+                .map(mi -> mi.getOwningFile().getFile())
+                .distinct()
+                .toList();
     }
 
     @SuppressWarnings("UnstableApiUsage")
-    private void addDependency(MutableGraph<ModFileInfo> topoGraph, IModInfo.ModVersion dep) {
-        final ModFileInfo self = (ModFileInfo) dep.getOwner().getOwningFile();
+    private void addDependency(MutableGraph<ModInfo> topoGraph, IModInfo.ModVersion dep) {
+        final ModInfo self = (ModInfo) dep.getOwner();
         final IModInfo targetModInfo = modIdNameLookup.get(dep.getModId());
         // soft dep that doesn't exist. Just return. No edge required.
-        if (targetModInfo == null || !(targetModInfo.getOwningFile() instanceof final ModFileInfo target)) return;
+        if (!(targetModInfo instanceof ModInfo target)) return;
         if (self == target)
             return; // in case a jar has two mods that have dependencies between
         switch (dep.getOrdering()) {
@@ -167,11 +166,9 @@ public class ModSorter {
 
         detectSystemMods(uniqueModListData.modFilesByFirstId());
 
-        modIdNameLookup = uniqueModListData.modFilesByFirstId().entrySet().stream()
-                .filter(e -> !e.getValue().get(0).getModInfos().isEmpty())
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e -> e.getValue().get(0).getModInfos().get(0)));
+        modIdNameLookup = uniqueModListData.modFiles().stream()
+                .flatMap(mf -> mf.getModInfos().stream())
+                .collect(Collectors.toMap(IModInfo::getModId, mi -> mi));
     }
 
     private void detectSystemMods(final Map<String, List<ModFile>> modFilesByFirstId) {
