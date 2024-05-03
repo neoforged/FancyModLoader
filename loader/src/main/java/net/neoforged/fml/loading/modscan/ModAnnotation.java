@@ -19,23 +19,7 @@ public class ModAnnotation {
         return new ModFileScanData.AnnotationData(annotation.asmType, annotation.type, clazz, annotation.member, annotation.values);
     }
 
-    public static class EnumHolder {
-        private final String desc;
-        private final String value;
-
-        public EnumHolder(String desc, String value) {
-            this.desc = desc;
-            this.value = value;
-        }
-
-        public String getDesc() {
-            return desc;
-        }
-
-        public String getValue() {
-            return value;
-        }
-    }
+    public record EnumHolder(String desc, String value) {}
 
     private final ElementType type;
     private final Type asmType;

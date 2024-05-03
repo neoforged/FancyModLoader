@@ -46,7 +46,7 @@ public class AutomaticEventSubscriber {
             final EnumSet<Dist> sides = getSides(ad.annotationData().get("value"));
             final String modId = (String) ad.annotationData().getOrDefault("modid", modids.getOrDefault(ad.clazz().getClassName(), mod.getModId()));
             final ModAnnotation.EnumHolder busTargetHolder = (ModAnnotation.EnumHolder) ad.annotationData().getOrDefault("bus", new ModAnnotation.EnumHolder(null, EventBusSubscriber.Bus.GAME.name()));
-            final EventBusSubscriber.Bus busTarget = EventBusSubscriber.Bus.valueOf(busTargetHolder.getValue());
+            final EventBusSubscriber.Bus busTarget = EventBusSubscriber.Bus.valueOf(busTargetHolder.value());
             if (Objects.equals(mod.getModId(), modId) && sides.contains(FMLEnvironment.dist)) {
                 try {
                     IEventBus bus = switch (busTarget) {
@@ -71,7 +71,7 @@ public class AutomaticEventSubscriber {
         if (data == null) {
             return EnumSet.allOf(Dist.class);
         } else {
-            return ((List<ModAnnotation.EnumHolder>) data).stream().map(eh -> Dist.valueOf(eh.getValue())).collect(Collectors.toCollection(() -> EnumSet.noneOf(Dist.class)));
+            return ((List<ModAnnotation.EnumHolder>) data).stream().map(eh -> Dist.valueOf(eh.value())).collect(Collectors.toCollection(() -> EnumSet.noneOf(Dist.class)));
         }
     }
 }

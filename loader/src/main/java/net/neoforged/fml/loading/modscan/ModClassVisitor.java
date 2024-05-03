@@ -7,7 +7,6 @@ package net.neoforged.fml.loading.modscan;
 
 import java.lang.annotation.ElementType;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
