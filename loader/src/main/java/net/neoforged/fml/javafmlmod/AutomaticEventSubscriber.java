@@ -7,7 +7,6 @@ package net.neoforged.fml.javafmlmod;
 
 import static net.neoforged.fml.Logging.LOADING;
 
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +35,7 @@ public class AutomaticEventSubscriber {
     private static final Type AUTO_SUBSCRIBER = Type.getType(EventBusSubscriber.class);
     private static final Type MOD_TYPE = Type.getType(Mod.class);
 
-    public static void inject(final ModContainer mod, final ModFileScanData scanData, final ClassLoader loader) {
+    public static void inject(final ModContainer mod, final ModFileScanData scanData, final Module layer) {
         if (scanData == null) return;
         LOGGER.debug(LOADING, "Attempting to inject @EventBusSubscriber classes into the eventbus for {}", mod.getModId());
         List<ModFileScanData.AnnotationData> ebsTargets = scanData.getAnnotations().stream().filter(annotationData -> AUTO_SUBSCRIBER.equals(annotationData.annotationType())).collect(Collectors.toList());
@@ -44,8 +43,7 @@ public class AutomaticEventSubscriber {
 
         ebsTargets.forEach(ad -> {
             @SuppressWarnings("unchecked")
-            final List<ModAnnotation.EnumHolder> sidesValue = (List<ModAnnotation.EnumHolder>) ad.annotationData().getOrDefault("value", Arrays.asList(new ModAnnotation.EnumHolder(null, "CLIENT"), new ModAnnotation.EnumHolder(null, "DEDICATED_SERVER")));
-            final EnumSet<Dist> sides = sidesValue.stream().map(eh -> Dist.valueOf(eh.getValue())).collect(Collectors.toCollection(() -> EnumSet.noneOf(Dist.class)));
+            final EnumSet<Dist> sides = getSides(ad.annotationData().get("value"));
             final String modId = (String) ad.annotationData().getOrDefault("modid", modids.getOrDefault(ad.clazz().getClassName(), mod.getModId()));
             final ModAnnotation.EnumHolder busTargetHolder = (ModAnnotation.EnumHolder) ad.annotationData().getOrDefault("bus", new ModAnnotation.EnumHolder(null, EventBusSubscriber.Bus.GAME.name()));
             final EventBusSubscriber.Bus busTarget = EventBusSubscriber.Bus.valueOf(busTargetHolder.getValue());
@@ -59,7 +57,7 @@ public class AutomaticEventSubscriber {
                     if (bus != null) {
                         LOGGER.debug(LOADING, "Auto-subscribing {} to {}", ad.clazz().getClassName(), busTarget);
 
-                        bus.register(Class.forName(ad.clazz().getClassName(), true, loader));
+                        bus.register(Class.forName(ad.clazz().getClassName(), true, layer.getClassLoader()));
                     }
                 } catch (ClassNotFoundException e) {
                     LOGGER.fatal(LOADING, "Failed to load mod class {} for @EventBusSubscriber annotation", ad.clazz(), e);
@@ -67,5 +65,13 @@ public class AutomaticEventSubscriber {
                 }
             }
         });
+    }
+
+    public static EnumSet<Dist> getSides(Object data) {
+        if (data == null) {
+            return EnumSet.allOf(Dist.class);
+        } else {
+            return ((List<ModAnnotation.EnumHolder>) data).stream().map(eh -> Dist.valueOf(eh.getValue())).collect(Collectors.toCollection(() -> EnumSet.noneOf(Dist.class)));
+        }
     }
 }

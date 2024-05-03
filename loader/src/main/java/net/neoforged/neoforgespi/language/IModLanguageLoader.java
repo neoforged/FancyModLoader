@@ -16,7 +16,7 @@
 
 package net.neoforged.neoforgespi.language;
 
-import java.util.function.Consumer;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforgespi.locating.IModFile;
 
 /**
@@ -26,12 +26,8 @@ import net.neoforged.neoforgespi.locating.IModFile;
  *
  * <p>Version data is read from the manifest's implementation version.
  */
-public interface IModLanguageProvider {
+public interface IModLanguageLoader {
     String name();
 
-    Consumer<ModFileScanData> getFileVisitor();
-
-    interface IModLanguageLoader {
-        <T> T loadMod(IModInfo info, ModFileScanData modFileScanResults, ModuleLayer layer);
-    }
+    ModContainer loadMod(IModInfo info, ModFileScanData modFileScanResults, ModuleLayer layer);
 }

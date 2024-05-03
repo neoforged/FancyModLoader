@@ -147,19 +147,6 @@ public abstract class ModContainer {
     protected void constructMod() {}
 
     /**
-     * Does this mod match the supplied mod?
-     *
-     * @param mod to compare
-     * @return if the mod matches
-     */
-    public abstract boolean matches(Object mod);
-
-    /**
-     * @return the mod object instance
-     */
-    public abstract Object getMod();
-
-    /**
      * {@return the event bus for this mod, if available}
      *
      * <p>Not all mods have an event bus!

@@ -14,7 +14,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -36,10 +35,9 @@ import net.neoforged.fml.loading.ImmediateWindowHandler;
 import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
-import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import net.neoforged.neoforgespi.language.IModInfo;
-import net.neoforged.neoforgespi.language.IModLanguageProvider;
+import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.ForgeFeature;
 import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.logging.log4j.LogManager;
@@ -241,46 +239,20 @@ public final class ModLoader {
     }
 
     private static List<ModContainer> buildMods(final IModFile modFile) {
-        final Map<String, IModInfo> modInfoMap = modFile.getModFileInfo().getMods().stream().collect(Collectors.toMap(IModInfo::getModId, Function.identity()));
-
         LOGGER.trace(LOADING, "ModContainer is {}", ModContainer.class.getClassLoader());
-        final List<ModContainer> containers = modFile.getScanResult().getTargets()
-                .entrySet()
+        final List<ModContainer> containers = modFile.getModFileInfo()
+                .getMods()
                 .stream()
-                .map(e -> buildModContainerFromTOML(modFile, modInfoMap, e))
+                .map(info -> buildModContainerFromTOML(info, modFile.getScanResult()))
                 .filter(Objects::nonNull)
                 .toList();
-        if (containers.size() != modInfoMap.size()) {
-            var modIds = modInfoMap.values().stream().map(IModInfo::getModId).sorted().collect(Collectors.toList());
-            var containerIds = containers.stream().map(c -> c != null ? c.getModId() : "(null)").sorted().collect(Collectors.toList());
-
-            LOGGER.fatal(LOADING, "File {} constructed {} mods: {}, but had {} mods specified: {}",
-                    modFile.getFilePath(),
-                    containers.size(), containerIds,
-                    modInfoMap.size(), modIds);
-
-            var missingClasses = new ArrayList<>(modIds);
-            missingClasses.removeAll(containerIds);
-            LOGGER.fatal(LOADING, "The following classes are missing, but are reported in the {}: {}", JarModsDotTomlModFileReader.MODS_TOML, missingClasses);
-
-            var missingMods = new ArrayList<>(containerIds);
-            missingMods.removeAll(modIds);
-            LOGGER.fatal(LOADING, "The following mods are missing, but have classes in the jar: {}", missingMods);
-
-            loadingIssues.add(ModLoadingIssue.error("fml.modloading.missingclasses", modFile.getFilePath()).withAffectedModFile(modFile));
-        }
         // remove errored mod containers
         return containers.stream().filter(mc -> !(mc instanceof ErroredModContainer)).collect(Collectors.toList());
     }
 
-    private static ModContainer buildModContainerFromTOML(final IModFile modFile, final Map<String, IModInfo> modInfoMap, final Map.Entry<String, ? extends IModLanguageProvider.IModLanguageLoader> idToProviderEntry) {
+    private static ModContainer buildModContainerFromTOML(final IModInfo modInfo, final ModFileScanData scanData) {
         try {
-            final String modId = idToProviderEntry.getKey();
-            final IModLanguageProvider.IModLanguageLoader languageLoader = idToProviderEntry.getValue();
-            IModInfo info = Optional.ofNullable(modInfoMap.get(modId)).
-            // throw a missing metadata error if there is no matching modid in the modInfoMap from the mods.toml file
-                    orElseThrow(() -> new ModLoadingException(ModLoadingIssue.error("fml.modloading.missingmetadata", modId)));
-            return languageLoader.loadMod(info, modFile.getScanResult(), FMLLoader.getGameLayer());
+            return modInfo.getLoader().loadMod(modInfo, scanData, FMLLoader.getGameLayer());
         } catch (ModLoadingException mle) {
             // exceptions are caught and added to the error list for later handling
             loadingIssues.addAll(mle.getIssues());
@@ -373,16 +345,6 @@ public final class ModLoader {
     private static class ErroredModContainer extends ModContainer {
         public ErroredModContainer() {
             super();
-        }
-
-        @Override
-        public boolean matches(final Object mod) {
-            return false;
-        }
-
-        @Override
-        public Object getMod() {
-            return null;
         }
 
         @Override

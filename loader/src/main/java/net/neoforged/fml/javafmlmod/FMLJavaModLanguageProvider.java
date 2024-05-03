@@ -5,59 +5,32 @@
 
 package net.neoforged.fml.javafmlmod;
 
-import static net.neoforged.fml.Logging.SCAN;
-
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.lang.annotation.ElementType;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModLoadingException;
+import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforgespi.language.IModInfo;
-import net.neoforged.neoforgespi.language.IModLanguageProvider;
+import net.neoforged.neoforgespi.language.IModLanguageLoader;
 import net.neoforged.neoforgespi.language.ModFileScanData;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.objectweb.asm.Type;
 
-public class FMLJavaModLanguageProvider implements IModLanguageProvider {
-    private static final Logger LOGGER = LogManager.getLogger();
-
-    private static class FMLModTarget implements IModLanguageProvider.IModLanguageLoader {
-        private static final Logger LOGGER = FMLJavaModLanguageProvider.LOGGER;
-        private final String className;
-        private final String modId;
-
-        private FMLModTarget(String className, String modId) {
-            this.className = className;
-            this.modId = modId;
-        }
-
-        public String getModId() {
-            return modId;
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public <T> T loadMod(final IModInfo info, final ModFileScanData modFileScanResults, ModuleLayer gameLayer) {
-            return (T) new FMLModContainer(info, className, modFileScanResults, gameLayer);
-        }
-    }
-
-    public static final Type MODANNOTATION = Type.getType("Lnet/neoforged/fml/common/Mod;");
-
-    @Override
+public class FMLJavaModLanguageProvider implements IModLanguageLoader {
     public String name() {
         return "javafml";
     }
 
     @Override
-    public Consumer<ModFileScanData> getFileVisitor() {
-        return scanResult -> {
-            final Map<String, FMLModTarget> modTargetMap = scanResult.getAnnotations().stream()
-                    .filter(ad -> ad.annotationType().equals(MODANNOTATION))
-                    .peek(ad -> LOGGER.debug(SCAN, "Found @Mod class {} with id {}", ad.clazz().getClassName(), ad.annotationData().get("value")))
-                    .map(ad -> new FMLModTarget(ad.clazz().getClassName(), (String) ad.annotationData().get("value")))
-                    .collect(Collectors.toMap(FMLModTarget::getModId, Function.identity(), (a, b) -> a));
-            scanResult.addLanguageLoader(modTargetMap);
-        };
+    public ModContainer loadMod(IModInfo info, ModFileScanData modFileScanResults, ModuleLayer layer) {
+        final var modClasses = modFileScanResults.getAnnotatedBy(Mod.class, ElementType.TYPE)
+                .filter(data -> data.annotationData().get("value").equals(info.getModId()))
+                .toList();
+        if (modClasses.isEmpty()) {
+            throw new ModLoadingException(ModLoadingIssue.error("Missing mod entrypoint class annotated with @Mod for mod {}", info.getModId()));
+        }
+        return new FMLModContainer(info, modClasses
+                .stream().filter(ad -> AutomaticEventSubscriber.getSides(ad.annotationData().get("dist")).contains(FMLLoader.getDist()))
+                .map(ad -> ad.clazz().getClassName())
+                .toList(), modFileScanResults, layer);
     }
 }

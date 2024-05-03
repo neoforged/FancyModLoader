@@ -5,20 +5,20 @@
 
 package net.neoforged.neoforgespi.language;
 
+import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.objectweb.asm.Type;
 
 public class ModFileScanData {
     private final Set<AnnotationData> annotations = new LinkedHashSet<>();
     private final Set<ClassData> classes = new LinkedHashSet<>();
-    private final Map<String, IModLanguageProvider.IModLanguageLoader> modTargets = new HashMap<>();
     private final List<IModFileInfo> modFiles = new ArrayList<>();
 
     public static Predicate<Type> interestingAnnotations() {
@@ -33,16 +33,14 @@ public class ModFileScanData {
         return annotations;
     }
 
-    public void addLanguageLoader(final Map<String, ? extends IModLanguageProvider.IModLanguageLoader> modTargetMap) {
-        modTargets.putAll(modTargetMap);
+    public Stream<AnnotationData> getAnnotatedBy(Class<? extends Annotation> type, ElementType elementType) {
+        final var anType = Type.getType(type);
+        return getAnnotations().stream()
+                .filter(ad -> ad.targetType == elementType && ad.annotationType.equals(anType));
     }
 
     public void addModFileInfo(IModFileInfo info) {
         this.modFiles.add(info);
-    }
-
-    public Map<String, ? extends IModLanguageProvider.IModLanguageLoader> getTargets() {
-        return modTargets;
     }
 
     public List<IModFileInfo> getIModInfoData() {

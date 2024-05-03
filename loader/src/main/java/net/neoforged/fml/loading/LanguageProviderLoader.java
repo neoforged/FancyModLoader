@@ -22,7 +22,7 @@ import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.ILaunchContext;
-import net.neoforged.neoforgespi.language.IModLanguageProvider;
+import net.neoforged.neoforgespi.language.IModLanguageLoader;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
@@ -30,21 +30,21 @@ import org.slf4j.Logger;
 
 public class LanguageProviderLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private final List<IModLanguageProvider> languageProviders;
+    private final List<IModLanguageLoader> languageProviders;
     private final Map<String, ModLanguageWrapper> languageProviderMap = new HashMap<>();
 
-    public void forEach(final Consumer<IModLanguageProvider> consumer) {
+    public void forEach(final Consumer<IModLanguageLoader> consumer) {
         languageProviders.forEach(consumer);
     }
 
-    public <T> Stream<T> applyForEach(final Function<IModLanguageProvider, T> function) {
+    public <T> Stream<T> applyForEach(final Function<IModLanguageLoader, T> function) {
         return languageProviders.stream().map(function);
     }
 
-    private record ModLanguageWrapper(IModLanguageProvider modLanguageProvider, ArtifactVersion version) {}
+    private record ModLanguageWrapper(IModLanguageLoader modLanguageProvider, ArtifactVersion version) {}
 
     LanguageProviderLoader(ILaunchContext launchContext) {
-        languageProviders = ServiceLoaderUtil.loadServices(launchContext, IModLanguageProvider.class);
+        languageProviders = ServiceLoaderUtil.loadServices(launchContext, IModLanguageLoader.class);
         ImmediateWindowHandler.updateProgress("Loading language providers");
         languageProviders.forEach(lp -> {
             final Path lpPath;
@@ -65,7 +65,7 @@ public class LanguageProviderLoader {
         });
     }
 
-    public IModLanguageProvider findLanguage(ModFile mf, String modLoader, VersionRange modLoaderVersion) {
+    public IModLanguageLoader findLanguage(ModFile mf, String modLoader, VersionRange modLoaderVersion) {
         final String languageFileName = mf.getFileName();
         final ModLanguageWrapper mlw = languageProviderMap.get(modLoader);
         if (mlw == null) {
