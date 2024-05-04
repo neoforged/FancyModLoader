@@ -17,6 +17,7 @@ import net.neoforged.fml.loading.StringSubstitutor;
 import net.neoforged.fml.loading.StringUtils;
 import net.neoforged.neoforgespi.language.IConfigurable;
 import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.IModLanguageLoader;
 import net.neoforged.neoforgespi.language.MavenVersionAdapter;
 import net.neoforged.neoforgespi.locating.ForgeFeature;
 import net.neoforged.neoforgespi.locating.InvalidModFileException;
@@ -105,6 +106,11 @@ public class ModInfo implements IModInfo, IConfigurable {
                 .toList();
         this.properties = ownFile.flatMap(mfi -> mfi.<Map<String, Object>>getConfigElement("modproperties", this.modId))
                 .orElse(Collections.emptyMap());
+    }
+
+    @Override
+    public IModLanguageLoader getLoader() {
+        return owningFile.getFile().getLoaders().getFirst();
     }
 
     @Override

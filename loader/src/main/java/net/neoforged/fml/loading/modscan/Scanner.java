@@ -28,13 +28,6 @@ public class Scanner {
         ModFileScanData result = new ModFileScanData();
         result.addModFileInfo(fileToScan.getModFileInfo());
         fileToScan.scanFile(p -> fileVisitor(p, result));
-        var loaders = fileToScan.getLoaders();
-        if (loaders != null) {
-            for (var loader : loaders) {
-                LOGGER.debug(LogMarkers.SCAN, "Scanning {} with language loader {}", fileToScan.getFilePath(), loader.name());
-                loader.getFileVisitor().accept(result);
-            }
-        }
         return result;
     }
 

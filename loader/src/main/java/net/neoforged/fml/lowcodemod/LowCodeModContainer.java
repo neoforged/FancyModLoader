@@ -17,25 +17,11 @@ import org.slf4j.Logger;
 
 public class LowCodeModContainer extends ModContainer {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private final ModFileScanData scanResults;
-    private Object modInstance;
 
     public LowCodeModContainer(IModInfo info, ModFileScanData modFileScanResults, ModuleLayer gameLayer) {
         super(info);
         LOGGER.debug(LOADING, "Creating LowCodeModContainer for {}", info.getModId());
-        this.scanResults = modFileScanResults;
-        this.modInstance = new Object();
         this.contextExtension = () -> null;
-    }
-
-    @Override
-    public boolean matches(Object mod) {
-        return mod == modInstance;
-    }
-
-    @Override
-    public Object getMod() {
-        return modInstance;
     }
 
     @Override

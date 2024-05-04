@@ -16,7 +16,8 @@
 
 package net.neoforged.neoforgespi.language;
 
-import java.util.function.Consumer;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModLoadingException;
 import net.neoforged.neoforgespi.locating.IModFile;
 
 /**
@@ -26,12 +27,20 @@ import net.neoforged.neoforgespi.locating.IModFile;
  *
  * <p>Version data is read from the manifest's implementation version.
  */
-public interface IModLanguageProvider {
+public interface IModLanguageLoader {
+    /**
+     * {@return the name of this loader, used to decide what loader should load a mod}
+     */
     String name();
 
-    Consumer<ModFileScanData> getFileVisitor();
-
-    interface IModLanguageLoader {
-        <T> T loadMod(IModInfo info, ModFileScanData modFileScanResults, ModuleLayer layer);
-    }
+    /**
+     * Load and build a container from the given mod information.
+     *
+     * @param info               the mod information
+     * @param modFileScanResults the mod scan data
+     * @param layer              the module layer of the mod
+     * @return the built mod container
+     * @throws ModLoadingException if loading encountered an exception
+     */
+    ModContainer loadMod(IModInfo info, ModFileScanData modFileScanResults, ModuleLayer layer) throws ModLoadingException;
 }

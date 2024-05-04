@@ -29,7 +29,7 @@ import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.modscan.Scanner;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
-import net.neoforged.neoforgespi.language.IModLanguageProvider;
+import net.neoforged.neoforgespi.language.IModLanguageLoader;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
@@ -47,7 +47,7 @@ public class ModFile implements IModFile {
     private final ModFileInfoParser parser;
     private ModFileDiscoveryAttributes discoveryAttributes;
     private Map<String, Object> fileProperties;
-    private List<IModLanguageProvider> loaders;
+    private List<IModLanguageLoader> loaders;
     private Throwable scanError;
     private final SecureJar jar;
     private final Type modFileType;
@@ -80,6 +80,10 @@ public class ModFile implements IModFile {
     @Override
     public Supplier<Map<String, Object>> getSubstitutionMap() {
         return () -> ImmutableMap.<String, Object>builder().put("jarVersion", jarVersion).putAll(fileProperties).build();
+    }
+
+    public List<IModLanguageLoader> getLoaders() {
+        return loaders;
     }
 
     @Override
@@ -182,14 +186,6 @@ public class ModFile implements IModFile {
 
     public void setFileProperties(Map<String, Object> fileProperties) {
         this.fileProperties = fileProperties;
-    }
-
-    @Override
-    public List<IModLanguageProvider> getLoaders() {
-        if (loaders == null) {
-            throw new IllegalStateException("Language loaders have not yet been identified");
-        }
-        return loaders;
     }
 
     @Override

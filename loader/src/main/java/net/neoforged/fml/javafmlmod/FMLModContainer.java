@@ -6,7 +6,9 @@
 package net.neoforged.fml.javafmlmod;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,27 +35,33 @@ public class FMLModContainer extends ModContainer {
     private static final Marker LOADING = MarkerManager.getMarker("LOADING");
     private final ModFileScanData scanResults;
     private final IEventBus eventBus;
-    private Object modInstance;
-    private final Class<?> modClass;
+    private final List<Class<?>> modClasses;
+    private final Module layer;
 
-    public FMLModContainer(IModInfo info, String className, ModFileScanData modFileScanResults, ModuleLayer gameLayer) {
+    public FMLModContainer(IModInfo info, List<String> entrypoints, ModFileScanData modFileScanResults, ModuleLayer gameLayer) {
         super(info);
-        LOGGER.debug(LOADING, "Creating FMLModContainer instance for {}", className);
+        LOGGER.debug(LOADING, "Creating FMLModContainer instance for {}", entrypoints);
         this.scanResults = modFileScanResults;
         this.eventBus = BusBuilder.builder()
                 .setExceptionHandler(this::onEventFailed)
                 .markerType(IModBusEvent.class)
                 .allowPerPhasePost()
                 .build();
+        this.layer = gameLayer.findModule(info.getOwningFile().moduleName()).orElseThrow();
+
         final FMLJavaModLoadingContext contextExtension = new FMLJavaModLoadingContext(this);
         this.contextExtension = () -> contextExtension;
-        try {
-            var layer = gameLayer.findModule(info.getOwningFile().moduleName()).orElseThrow();
-            modClass = Class.forName(layer, className);
-            LOGGER.trace(LOADING, "Loaded modclass {} with {}", modClass.getName(), modClass.getClassLoader());
-        } catch (Throwable e) {
-            LOGGER.error(LOADING, "Failed to load class {}", className, e);
-            throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failedtoloadmodclass").withCause(e).withAffectedMod(info));
+        modClasses = new ArrayList<>();
+
+        for (var entrypoint : entrypoints) {
+            try {
+                var cls = Class.forName(layer, entrypoint);
+                modClasses.add(cls);
+                LOGGER.trace(LOADING, "Loaded modclass {} with {}", cls.getName(), cls.getClassLoader());
+            } catch (Throwable e) {
+                LOGGER.error(LOADING, "Failed to load class {}", entrypoint, e);
+                throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failedtoloadmodclass").withCause(e).withAffectedMod(info));
+            }
         }
     }
 
@@ -63,68 +71,58 @@ public class FMLModContainer extends ModContainer {
 
     @Override
     protected void constructMod() {
-        try {
-            LOGGER.trace(LOADING, "Loading mod instance {} of type {}", getModId(), modClass.getName());
+        for (var modClass : modClasses) {
+            try {
+                var constructors = modClass.getConstructors();
+                if (constructors.length != 1) {
+                    throw new RuntimeException("Mod class " + modClass + " must have exactly 1 public constructor, found " + constructors.length);
+                }
+                var constructor = constructors[0];
 
-            var constructors = modClass.getConstructors();
-            if (constructors.length != 1) {
-                throw new RuntimeException("Mod class must have exactly 1 public constructor, found " + constructors.length);
-            }
-            var constructor = constructors[0];
+                // Allowed arguments for injection via constructor
+                Map<Class<?>, Object> allowedConstructorArgs = Map.of(
+                        IEventBus.class, eventBus,
+                        ModContainer.class, this,
+                        FMLModContainer.class, this,
+                        Dist.class, FMLLoader.getDist());
 
-            // Allowed arguments for injection via constructor
-            Map<Class<?>, Object> allowedConstructorArgs = Map.of(
-                    IEventBus.class, eventBus,
-                    ModContainer.class, this,
-                    FMLModContainer.class, this,
-                    Dist.class, FMLLoader.getDist());
+                var parameterTypes = constructor.getParameterTypes();
+                Object[] constructorArgs = new Object[parameterTypes.length];
+                Set<Class<?>> foundArgs = new HashSet<>();
 
-            var parameterTypes = constructor.getParameterTypes();
-            Object[] constructorArgs = new Object[parameterTypes.length];
-            Set<Class<?>> foundArgs = new HashSet<>();
+                for (int i = 0; i < parameterTypes.length; i++) {
+                    Object argInstance = allowedConstructorArgs.get(parameterTypes[i]);
+                    if (argInstance == null) {
+                        throw new RuntimeException("Mod constructor has unsupported argument " + parameterTypes[i] + ". Allowed optional argument classes: " +
+                                allowedConstructorArgs.keySet().stream().map(Class::getSimpleName).collect(Collectors.joining(", ")));
+                    }
 
-            for (int i = 0; i < parameterTypes.length; i++) {
-                Object argInstance = allowedConstructorArgs.get(parameterTypes[i]);
-                if (argInstance == null) {
-                    throw new RuntimeException("Mod constructor has unsupported argument " + parameterTypes[i] + ". Allowed optional argument classes: " +
-                            allowedConstructorArgs.keySet().stream().map(Class::getSimpleName).collect(Collectors.joining(", ")));
+                    if (foundArgs.contains(parameterTypes[i])) {
+                        throw new RuntimeException("Duplicate mod constructor argument type: " + parameterTypes[i]);
+                    }
+
+                    foundArgs.add(parameterTypes[i]);
+                    constructorArgs[i] = argInstance;
                 }
 
-                if (foundArgs.contains(parameterTypes[i])) {
-                    throw new RuntimeException("Duplicate mod constructor argument type: " + parameterTypes[i]);
-                }
+                // All arguments are found
+                constructor.newInstance(constructorArgs);
 
-                foundArgs.add(parameterTypes[i]);
-                constructorArgs[i] = argInstance;
+                LOGGER.trace(LOADING, "Loaded mod instance {} of type {}", getModId(), modClass.getName());
+            } catch (Throwable e) {
+                if (e instanceof InvocationTargetException) e = e.getCause(); // exceptions thrown when a reflected method call throws are wrapped in an InvocationTargetException. However, this isn't useful for the end user who has to dig through the logs to find the actual cause.
+                LOGGER.error(LOADING, "Failed to create mod instance. ModID: {}, class {}", getModId(), modClass.getName(), e);
+                throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failedtoloadmod", e, modClass).withCause(e).withAffectedMod(modInfo));
             }
-
-            // All arguments are found
-            this.modInstance = constructor.newInstance(constructorArgs);
-
-            LOGGER.trace(LOADING, "Loaded mod instance {} of type {}", getModId(), modClass.getName());
-        } catch (Throwable e) {
-            if (e instanceof InvocationTargetException) e = e.getCause(); // exceptions thrown when a reflected method call throws are wrapped in an InvocationTargetException. However, this isn't useful for the end user who has to dig through the logs to find the actual cause.
-            LOGGER.error(LOADING, "Failed to create mod instance. ModID: {}, class {}", getModId(), modClass.getName(), e);
-            throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failedtoloadmod", e, modClass).withCause(e).withAffectedMod(modInfo));
         }
         try {
             LOGGER.trace(LOADING, "Injecting Automatic event subscribers for {}", getModId());
-            AutomaticEventSubscriber.inject(this, this.scanResults, this.modClass.getClassLoader());
+            AutomaticEventSubscriber.inject(this, this.scanResults, layer);
             LOGGER.trace(LOADING, "Completed Automatic event subscribers for {}", getModId());
         } catch (Throwable e) {
-            LOGGER.error(LOADING, "Failed to register automatic subscribers. ModID: {}, class {}", getModId(), modClass.getName(), e);
-            throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failedtoloadmod", e, modClass).withCause(e).withAffectedMod(modInfo));
+            LOGGER.error(LOADING, "Failed to register automatic subscribers. ModID: {}", getModId(), e);
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failedtoloadmod", e).withCause(e).withAffectedMod(modInfo));
         }
-    }
-
-    @Override
-    public boolean matches(Object mod) {
-        return mod == modInstance;
-    }
-
-    @Override
-    public Object getMod() {
-        return modInstance;
     }
 
     @Override

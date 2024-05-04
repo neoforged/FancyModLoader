@@ -22,6 +22,11 @@ public interface IModInfo {
 
     IModFileInfo getOwningFile();
 
+    /**
+     * {@return the language loader this mod uses}
+     */
+    IModLanguageLoader getLoader();
+
     String getModId();
 
     String getDisplayName();

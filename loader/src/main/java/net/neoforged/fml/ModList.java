@@ -121,17 +121,8 @@ public class ModList {
         this.indexedMods = modContainers.stream().collect(Collectors.toMap(ModContainer::getModId, Function.identity()));
     }
 
-    @SuppressWarnings("unchecked")
-    public <T> Optional<T> getModObjectById(String modId) {
-        return getModContainerById(modId).map(ModContainer::getMod).map(o -> (T) o);
-    }
-
     public Optional<? extends ModContainer> getModContainerById(String modId) {
         return Optional.ofNullable(this.indexedMods.get(modId));
-    }
-
-    public Optional<? extends ModContainer> getModContainerByObject(Object obj) {
-        return mods.stream().filter(mc -> mc.getMod() == obj).findFirst();
     }
 
     public List<IModInfo> getMods() {

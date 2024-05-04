@@ -23,6 +23,7 @@ import net.neoforged.fml.event.lifecycle.FMLConstructModEvent;
 import net.neoforged.neoforgespi.language.IModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -53,15 +54,6 @@ public abstract class ModContainer {
         // TODO: Currently not reading namespace from configuration..
         this.namespace = this.modId;
         this.modInfo = info;
-    }
-
-    /**
-     * Errored container state, used for filtering. Does nothing.
-     */
-    ModContainer() {
-        modId = "BROKEN";
-        namespace = "BROKEN";
-        modInfo = null;
     }
 
     /**
@@ -144,20 +136,8 @@ public abstract class ModContainer {
      * Function invoked by FML to construct the mod,
      * right before the dispatch of {@link FMLConstructModEvent}.
      */
+    @ApiStatus.OverrideOnly
     protected void constructMod() {}
-
-    /**
-     * Does this mod match the supplied mod?
-     *
-     * @param mod to compare
-     * @return if the mod matches
-     */
-    public abstract boolean matches(Object mod);
-
-    /**
-     * @return the mod object instance
-     */
-    public abstract Object getMod();
 
     /**
      * {@return the event bus for this mod, if available}

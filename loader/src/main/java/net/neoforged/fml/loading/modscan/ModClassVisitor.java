@@ -7,7 +7,6 @@ package net.neoforged.fml.loading.modscan;
 
 import java.lang.annotation.ElementType;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -55,7 +54,8 @@ public class ModClassVisitor extends ClassVisitor {
 
     public void buildData(final Set<ModFileScanData.ClassData> classes, final Set<ModFileScanData.AnnotationData> annotations) {
         classes.add(new ModFileScanData.ClassData(this.asmType, this.asmSuperType, this.interfaces));
-        final List<ModFileScanData.AnnotationData> collect = this.annotations.stream().filter(ma -> ModFileScanData.interestingAnnotations().test(ma.getASMType())).map(a -> ModAnnotation.fromModAnnotation(this.asmType, a)).collect(Collectors.toList());
-        annotations.addAll(collect);
+        for (var annotation : this.annotations) {
+            annotations.add(ModAnnotation.fromModAnnotation(this.asmType, annotation));
+        }
     }
 }
