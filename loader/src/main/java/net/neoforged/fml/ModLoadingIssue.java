@@ -9,6 +9,7 @@ import com.google.common.collect.Streams;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
+import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import org.jetbrains.annotations.Nullable;
@@ -63,18 +64,12 @@ public record ModLoadingIssue(
             formattingArgs = Streams.concat(Stream.of(affectedMod, null), translationArgs.stream()).toArray();
         }
 
-        return Bindings.parseMessage(translationKey, formattingArgs);
+        return FMLTranslations.parseEnglishMessage(translationKey, formattingArgs);
     }
 
+    @Override
     public String toString() {
-        var result = new StringBuilder(severity + ": " + translationKey);
-
-        for (var arg : translationArgs) {
-            result.append(", ");
-            result.append(arg);
-        }
-
-        return result.toString();
+        return severity + ": " + getTranslatedMessage();
     }
     public enum Severity {
         WARNING,
