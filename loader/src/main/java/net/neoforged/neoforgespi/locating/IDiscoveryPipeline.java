@@ -9,7 +9,7 @@ import cpw.mods.jarhandling.JarContents;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
-import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.neoforgespi.IIssueReporting;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
  * discovery pipeline.
  */
 @ApiStatus.NonExtendable
-public interface IDiscoveryPipeline {
+public interface IDiscoveryPipeline extends IIssueReporting {
     /**
      * Adds a single file or folder to the discovery pipeline,
      * to be further processed by registered {@linkplain IModFileReader readers} into a {@linkplain IModFile mod file}.
@@ -61,11 +61,6 @@ public interface IDiscoveryPipeline {
      * @return True if the file was successfully added.
      */
     boolean addModFile(IModFile modFile);
-
-    /**
-     * Add an issue to the pipeline that arose during the discovery of mod files (i.e. broken files).
-     */
-    void addIssue(ModLoadingIssue issue);
 
     /**
      * Use the registered {@linkplain IModFileReader readers} to attempt to create a mod-file from the given jar

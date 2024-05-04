@@ -16,8 +16,10 @@
 
 package net.neoforged.neoforgespi.language;
 
+import java.util.Collection;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoadingException;
+import net.neoforged.neoforgespi.IIssueReporting;
 import net.neoforged.neoforgespi.locating.IModFile;
 
 /**
@@ -43,4 +45,13 @@ public interface IModLanguageLoader {
      * @throws ModLoadingException if loading encountered an exception
      */
     ModContainer loadMod(IModInfo info, ModFileScanData modFileScanResults, ModuleLayer layer) throws ModLoadingException;
+
+    /**
+     * Validate mod files using this loader, and report any issues (such as entrpoints without medatata).
+     * 
+     * @param file             the file to validate
+     * @param loadedContainers the containers of mods in the file, that have been created using this loader. This list does not contain errored containers
+     * @param reporter         the interface used to report issues to the game
+     */
+    default void validate(IModFile file, Collection<ModContainer> loadedContainers, IIssueReporting reporter) {}
 }
