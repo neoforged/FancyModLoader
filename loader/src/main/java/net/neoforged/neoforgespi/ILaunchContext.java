@@ -9,6 +9,7 @@ import cpw.mods.modlauncher.api.IEnvironment;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +24,7 @@ public interface ILaunchContext {
      */
     IEnvironment environment();
 
-    <T> ServiceLoader<T> createServiceLoader(Class<T> serviceClass);
+    <T> Stream<ServiceLoader.Provider<T>> loadServices(Class<T> serviceClass);
 
     List<String> modLists();
 

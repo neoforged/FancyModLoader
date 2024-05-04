@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.stream.Stream;
 import net.neoforged.neoforgespi.ILaunchContext;
 
 class TestLaunchContext implements ILaunchContext {
@@ -28,8 +29,8 @@ class TestLaunchContext implements ILaunchContext {
     }
 
     @Override
-    public <T> ServiceLoader<T> createServiceLoader(Class<T> serviceClass) {
-        return ServiceLoader.load(serviceClass);
+    public <T> Stream<ServiceLoader.Provider<T>> loadServices(Class<T> serviceClass) {
+        return ServiceLoader.load(serviceClass).stream();
     }
 
     @Override

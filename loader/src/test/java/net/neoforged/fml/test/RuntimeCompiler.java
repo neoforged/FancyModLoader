@@ -10,10 +10,13 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
@@ -25,18 +28,28 @@ import org.intellij.lang.annotations.Language;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RuntimeCompiler {
+public class RuntimeCompiler implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(RuntimeCompiler.class);
     private static final JavaCompiler COMPILER = ToolProvider.getSystemJavaCompiler();
 
     private final DiagnosticCollector<JavaFileObject> diagnostics;
     private final StandardJavaFileManager manager;
+    private final Path rootPath;
+    private FileSystem openedFileSystem;
+
+    public static RuntimeCompiler create(Path targetFile) throws IOException {
+        var fs = FileSystems.newFileSystem(URI.create("jar:" + targetFile.toUri()), Map.of("create", true));
+        var result = new RuntimeCompiler(fs);
+        result.openedFileSystem = fs;
+        return result;
+    }
 
     public RuntimeCompiler(FileSystem targetFS) {
+        this.rootPath = targetFS.getPath("/");
         this.diagnostics = new DiagnosticCollector<>();
         this.manager = COMPILER.getStandardFileManager(diagnostics, Locale.ROOT, StandardCharsets.UTF_8);
         try {
-            manager.setLocationFromPaths(StandardLocation.CLASS_OUTPUT, List.of(targetFS.getPath("/")));
+            manager.setLocationFromPaths(StandardLocation.CLASS_OUTPUT, List.of(rootPath));
         } catch (IOException e) {
             throw new RuntimeException("Failed to set root output location", e);
         }
@@ -44,6 +57,18 @@ public class RuntimeCompiler {
 
     public CompilationBuilder builder() {
         return new CompilationBuilder();
+    }
+
+    public Path getRootPath() {
+        return this.rootPath;
+    }
+
+    @Override
+    public void close() throws IOException {
+        manager.close();
+        if (openedFileSystem != null) {
+            openedFileSystem.close();
+        }
     }
 
     public class CompilationBuilder {
@@ -62,7 +87,9 @@ public class RuntimeCompiler {
         }
 
         public void compile() {
-            var task = COMPILER.getTask(null, manager, diagnostics, null, null, files);
+            var options = List.of("-proc:none");
+
+            var task = COMPILER.getTask(null, manager, diagnostics, options, null, files);
             if (!task.call()) {
                 diagnostics.getDiagnostics().forEach(diagnostic -> LOGGER.error("Failed to compile: {}", diagnostic));
                 throw new RuntimeException("Failed to compile class");
