@@ -410,7 +410,7 @@ class FMLLoaderTest {
 
             var result = launch("forgeclient");
             assertThat(result.issues()).extracting(ModLoadingIssue::toString).allMatch(
-                    msg -> msg.startsWith("ERROR: fml.modloading.technical_error, Unexpected IModFile subclass:"));
+                    msg -> msg.startsWith("ERROR: A technical error occurred during mod loading: Unexpected IModFile subclass:"));
         }
     }
 
