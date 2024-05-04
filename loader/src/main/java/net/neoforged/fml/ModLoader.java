@@ -11,10 +11,12 @@ import static net.neoforged.fml.Logging.LOADING;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -37,6 +39,7 @@ import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.IModLanguageLoader;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.ForgeFeature;
 import net.neoforged.neoforgespi.locating.IModFile;
@@ -275,12 +278,20 @@ public final class ModLoader {
     }
 
     private static List<ModContainer> buildMods(final IModFile modFile) {
-        return modFile.getModFileInfo()
+        final Map<IModLanguageLoader, Set<ModContainer>> byLoader = new IdentityHashMap<>();
+        var containers = modFile.getModFileInfo()
                 .getMods()
                 .stream()
-                .map(info -> buildModContainerFromTOML(info, modFile.getScanResult()))
+                .map(info -> {
+                    var container = buildModContainerFromTOML(info, modFile.getScanResult());
+                    var cont = byLoader.computeIfAbsent(info.getLoader(), k -> new HashSet<>());
+                    if (container != null) cont.add(container);
+                    return container;
+                })
                 .filter(Objects::nonNull)
                 .toList();
+        byLoader.forEach((loader, loaded) -> loader.validate(modFile, loaded, ModLoader::addLoadingIssue));
+        return containers;
     }
 
     private static ModContainer buildModContainerFromTOML(final IModInfo modInfo, final ModFileScanData scanData) {
