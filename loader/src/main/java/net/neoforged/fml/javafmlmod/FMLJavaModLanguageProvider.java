@@ -46,6 +46,11 @@ public class FMLJavaModLanguageProvider implements IModLanguageLoader {
 
         file.getScanResult().getAnnotatedBy(Mod.class, ElementType.TYPE)
                 .filter(data -> !modIds.contains((String) data.annotationData().get("value")))
-                .forEach(annotationData -> reporter.addIssue(ModLoadingIssue.error("fml.modloading.javafml.dangling_entrypoint", annotationData.annotationData().get("value"), annotationData.clazz().getClassName(), file.getFilePath()).withAffectedModFile(file)));
+                .forEach(data -> {
+                    var modId = data.annotationData().get("value");
+                    var entrypointClass = data.clazz().getClassName();
+                    var issue = ModLoadingIssue.error("fml.modloading.javafml.dangling_entrypoint", modId, entrypointClass, file.getFilePath()).withAffectedModFile(file);
+                    reporter.addIssue(issue);
+                });
     }
 }
