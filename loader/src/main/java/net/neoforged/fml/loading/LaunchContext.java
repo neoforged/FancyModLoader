@@ -10,10 +10,13 @@ import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.niofs.union.UnionFileSystem;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import net.neoforged.neoforgespi.ILaunchContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,9 +65,33 @@ final class LaunchContext implements ILaunchContext {
     }
 
     @Override
-    public <T> ServiceLoader<T> createServiceLoader(Class<T> serviceClass) {
-        var moduleLayer = moduleLayerManager.getLayer(IModuleLayerManager.Layer.SERVICE).orElseThrow();
-        return ServiceLoader.load(moduleLayer, serviceClass);
+    public <T> Stream<ServiceLoader.Provider<T>> loadServices(Class<T> serviceClass) {
+        var visitedLayers = EnumSet.noneOf(IModuleLayerManager.Layer.class);
+
+        Stream<ServiceLoader.Provider<T>> result = Stream.empty();
+
+        var layers = IModuleLayerManager.Layer.values();
+        for (int i = layers.length - 1; i >= 0; i--) {
+            var layerId = layers[i];
+            if (!visitedLayers.contains(layerId)) {
+                var layer = moduleLayerManager.getLayer(layerId).orElse(null);
+                if (layer != null) {
+                    result = Stream.concat(result, ServiceLoader.load(layer, serviceClass).stream());
+
+                    // Services loaded from this layer also include services from the parent layers
+                    visitLayer(layerId, visitedLayers::add);
+                }
+            }
+        }
+
+        return result.distinct();
+    }
+
+    private static void visitLayer(IModuleLayerManager.Layer layer, Consumer<IModuleLayerManager.Layer> consumer) {
+        consumer.accept(layer);
+        for (var parentLayer : layer.getParent()) {
+            consumer.accept(parentLayer);
+        }
     }
 
     @Override

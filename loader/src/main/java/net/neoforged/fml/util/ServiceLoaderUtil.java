@@ -36,9 +36,7 @@ public final class ServiceLoaderUtil {
      * @param serviceClass If the service class implements {@link IOrderedProvider}, the services will automatically be sorted.
      */
     public static <T> List<T> loadServices(ILaunchContext context, Class<T> serviceClass, Collection<T> additionalServices) {
-        var serviceLoader = context.createServiceLoader(serviceClass);
-
-        var serviceLoaderServices = serviceLoader.stream().map(p -> {
+        var serviceLoaderServices = context.loadServices(serviceClass).map(p -> {
             try {
                 return p.get();
             } catch (ServiceConfigurationError sce) {
