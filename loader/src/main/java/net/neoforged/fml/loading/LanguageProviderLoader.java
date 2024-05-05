@@ -47,21 +47,14 @@ public class LanguageProviderLoader {
         languageProviders = ServiceLoaderUtil.loadServices(launchContext, IModLanguageLoader.class);
         ImmediateWindowHandler.updateProgress("Loading language providers");
         languageProviders.forEach(lp -> {
-            final Path lpPath;
-            try {
-                lpPath = Paths.get(lp.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
-            } catch (URISyntaxException e) {
-                throw new RuntimeException("Huh?", e);
-            }
-            Optional<String> version = JarVersionLookupHandler.getVersion(lp.getClass());
-            String impl = version.orElse(null);
-            if (impl == null) {
+            String version = lp.version();
+            if (version == null || version.isBlank()) {
                 LOGGER.error(LogMarkers.CORE, "Found unversioned language provider {}", lp.name());
                 throw new RuntimeException("Failed to find implementation version for language provider " + lp.name());
             }
-            LOGGER.debug(LogMarkers.CORE, "Found language provider {}, version {}", lp.name(), impl);
-            ImmediateWindowHandler.updateProgress("Loaded language provider " + lp.name() + " " + impl);
-            languageProviderMap.put(lp.name(), new ModLanguageWrapper(lp, new DefaultArtifactVersion(impl)));
+            LOGGER.debug(LogMarkers.CORE, "Found language provider {}, version {}", lp.name(), version);
+            ImmediateWindowHandler.updateProgress("Loaded language provider " + lp.name() + " " + version);
+            languageProviderMap.put(lp.name(), new ModLanguageWrapper(lp, new DefaultArtifactVersion(version)));
         });
     }
 
