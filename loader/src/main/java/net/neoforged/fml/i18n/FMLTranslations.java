@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -32,6 +33,7 @@ public class FMLTranslations {
     private static final CharMatcher DISALLOWED_CHAR_MATCHER = CharMatcher.anyOf(ALLOWED_CHARS).negate();
     private static final Map<String, FormatFactory> CUSTOM_FACTORIES;
     private static final Pattern PATTERN_CONTROL_CODE = Pattern.compile("(?i)\\u00A7[0-9A-FK-OR]");
+    private static final Pattern FORMAT_PATTERN = Pattern.compile("%(?:(\\d+)\\$)?([A-Za-z%]|$)");
 
     static {
         CUSTOM_FACTORIES = new HashMap<>();
@@ -104,7 +106,16 @@ public class FMLTranslations {
         }
     }
 
-    public static String parseFormat(final String format, final Object... args) {
+    public static String parseFormat(String format, final Object... args) {
+        final AtomicInteger i = new AtomicInteger();
+        format = FORMAT_PATTERN.matcher(format).replaceAll(matchResult -> {
+            if (matchResult.group(0).equals("%%")) {
+                return "%";
+            }
+            final String groupIdx = matchResult.group(1);
+            final int index = groupIdx != null ? Integer.parseInt(groupIdx) - 1 : i.getAndIncrement();
+            return "{" + index + "}";
+        });
         final ExtendedMessageFormat extendedMessageFormat = new ExtendedMessageFormat(format, CUSTOM_FACTORIES);
         return extendedMessageFormat.format(args);
     }
