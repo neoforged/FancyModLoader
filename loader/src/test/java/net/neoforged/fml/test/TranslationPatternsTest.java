@@ -14,8 +14,8 @@ public class TranslationPatternsTest {
                 .isEqualTo("this is a translation b a");
    }
 
-   @Test
-   void testDoublePercent() {
+    @Test
+    void testDoublePercent() {
        Assertions.assertThat(FMLTranslations.parseFormat("%%")).isEqualTo("%");
-   }
+    }
 }
