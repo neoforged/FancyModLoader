@@ -28,14 +28,6 @@ public class Bindings {
         return provider.getGameBus();
     }
 
-    public static String parseMessage(String i18nMessage, Object... args) {
-        return provider.parseMessage(i18nMessage, args);
-    }
-
-    public static String stripControlCodes(String toStrip) {
-        return provider.stripControlCodes(toStrip);
-    }
-
     public static IConfigEvent.ConfigConfig getConfigConfiguration() {
         return provider.getConfigConfiguration();
     }

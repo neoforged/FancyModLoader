@@ -13,9 +13,5 @@ import org.jetbrains.annotations.ApiStatus;
 public interface IBindingsProvider {
     IEventBus getGameBus();
 
-    String parseMessage(String i18nMessage, Object... args);
-
-    String stripControlCodes(String toStrip);
-
     IConfigEvent.ConfigConfig getConfigConfiguration();
 }
