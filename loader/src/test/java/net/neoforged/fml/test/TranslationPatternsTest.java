@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fml.test;
 
 import net.neoforged.fml.i18n.FMLTranslations;
@@ -12,10 +17,10 @@ public class TranslationPatternsTest {
 
         Assertions.assertThat(FMLTranslations.parseFormat("this is a translation %2$s %1$s", "a", "b"))
                 .isEqualTo("this is a translation b a");
-   }
+    }
 
     @Test
     void testDoublePercent() {
-       Assertions.assertThat(FMLTranslations.parseFormat("%%")).isEqualTo("%");
+        Assertions.assertThat(FMLTranslations.parseFormat("%%")).isEqualTo("%");
     }
 }
