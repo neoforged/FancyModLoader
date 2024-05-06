@@ -16,15 +16,9 @@
 
 package net.neoforged.neoforgespi.language;
 
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoadingException;
-import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.JarVersionLookupHandler;
 import net.neoforged.neoforgespi.IIssueReporting;
 import net.neoforged.neoforgespi.locating.IModFile;
 
@@ -44,15 +38,7 @@ public interface IModLanguageLoader {
     /**
      * @return the version of this loader
      */
-    default String version() {
-        final Path lpPath;
-        try {
-            lpPath = Paths.get(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
-        } catch (URISyntaxException e) {
-            throw new RuntimeException("Huh?", e);
-        }
-        return JarVersionLookupHandler.getVersion(this.getClass()).orElse(Files.isDirectory(lpPath) ? FMLLoader.versionInfo().fmlVersion().split("\\.")[0] : null);
-    }
+    String version();
 
     /**
      * Load and build a container from the given mod information.
