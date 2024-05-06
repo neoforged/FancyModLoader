@@ -17,6 +17,7 @@
 package net.neoforged.neoforgespi.language;
 
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -36,7 +37,7 @@ import net.neoforged.neoforgespi.locating.IModFile;
  */
 public interface IModLanguageLoader {
     /**
-     * @return the name of this loader, used to decide what loader should load a mod
+     * {@return the name of this loader, used to decide what loader should load a mod}
      */
     String name();
 
@@ -50,7 +51,7 @@ public interface IModLanguageLoader {
         } catch (URISyntaxException e) {
             throw new RuntimeException("Huh?", e);
         }
-        return JarVersionLookupHandler.getVersion(this.getClass()).orElse(FMLLoader.versionInfo().fmlVersion().split("\\.")[0]);
+        return JarVersionLookupHandler.getVersion(this.getClass()).orElse(Files.isDirectory(lpPath) ? FMLLoader.versionInfo().fmlVersion().split("\\.")[0] : null);
     }
 
     /**
