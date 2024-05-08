@@ -36,7 +36,7 @@ public interface IModLanguageLoader {
     String name();
 
     /**
-     * @return the version of this loader
+     * {@return the version of this loader}
      */
     String version();
 
