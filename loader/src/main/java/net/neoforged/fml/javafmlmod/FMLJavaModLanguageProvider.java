@@ -6,10 +6,6 @@
 package net.neoforged.fml.javafmlmod;
 
 import java.lang.annotation.ElementType;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -17,14 +13,13 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.JarVersionLookupHandler;
+import net.neoforged.fml.loading.NeoLanguageLoader;
 import net.neoforged.neoforgespi.IIssueReporting;
 import net.neoforged.neoforgespi.language.IModInfo;
-import net.neoforged.neoforgespi.language.IModLanguageLoader;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.IModFile;
 
-public class FMLJavaModLanguageProvider implements IModLanguageLoader {
+public class FMLJavaModLanguageProvider extends NeoLanguageLoader {
     @Override
     public String name() {
         return "javafml";
@@ -57,16 +52,5 @@ public class FMLJavaModLanguageProvider implements IModLanguageLoader {
                     var issue = ModLoadingIssue.error("fml.modloading.javafml.dangling_entrypoint", modId, entrypointClass, file.getFilePath()).withAffectedModFile(file);
                     reporter.addIssue(issue);
                 });
-    }
-
-    @Override
-    public String version() {
-        final Path lpPath;
-        try {
-            lpPath = Paths.get(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
-        } catch (URISyntaxException e) {
-            throw new RuntimeException("Huh?", e);
-        }
-        return JarVersionLookupHandler.getVersion(this.getClass()).orElse(Files.isDirectory(lpPath) ? FMLLoader.versionInfo().fmlVersion() : null);
     }
 }
