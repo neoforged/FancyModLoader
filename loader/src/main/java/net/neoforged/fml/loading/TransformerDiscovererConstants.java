@@ -9,10 +9,15 @@ import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.IModuleLayerManager.Layer;
+import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Set;
+import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
+import net.neoforged.neoforgespi.locating.IDependencyLocator;
+import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
+import net.neoforged.neoforgespi.locating.IModFileReader;
 
 /**
  * Defines a class containing constants which implementations of {@link ITransformerDiscoveryService}
@@ -26,12 +31,13 @@ public final class TransformerDiscovererConstants {
      * {@link Layer#SERVICE} module layer.
      */
     public static final Set<String> SERVICES = Set.of(
-            "cpw.mods.modlauncher.api.ITransformationService",
-            "net.neoforged.neoforgespi.locating.IModLocator",
-            "net.neoforged.neoforgespi.locating.IDependencyLocator",
-            "net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper",
-            "net.neoforged.fml.loading.ImmediateWindowProvider", // FIXME: remove this when removing the legacy ImmediateWindowProvider
-            "net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider");
+            ITransformationService.class.getName(),
+            IModFileCandidateLocator.class.getName(),
+            IModFileReader.class.getName(),
+            IDependencyLocator.class.getName(),
+            GraphicsBootstrapper.class.getName(),
+            ImmediateWindowProvider.class.getName(), // FIXME: remove this when removing the legacy ImmediateWindowProvider
+            net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider.class.getName());
 
     public static boolean shouldLoadInServiceLayer(Collection<Path> paths) {
         return shouldLoadInServiceLayer(JarContents.of(paths));
