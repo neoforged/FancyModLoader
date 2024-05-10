@@ -6,11 +6,11 @@
 package net.neoforged.fml.lowcodemod;
 
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.loading.NeoLanguageLoader;
+import net.neoforged.fml.loading.BuiltInLanguageLoader;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 
-public class LowCodeModLanguageProvider extends NeoLanguageLoader {
+public class LowCodeModLanguageProvider extends BuiltInLanguageLoader {
     @Override
     public String name() {
         return "lowcodefml";

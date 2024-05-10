@@ -11,7 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import net.neoforged.neoforgespi.language.IModLanguageLoader;
 
-public abstract class NeoLanguageLoader implements IModLanguageLoader {
+public abstract class BuiltInLanguageLoader implements IModLanguageLoader {
     @Override
     public String version() {
         final Path lpPath;

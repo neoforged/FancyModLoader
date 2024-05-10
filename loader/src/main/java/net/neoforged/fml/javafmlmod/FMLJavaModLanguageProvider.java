@@ -13,13 +13,13 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.NeoLanguageLoader;
+import net.neoforged.fml.loading.BuiltInLanguageLoader;
 import net.neoforged.neoforgespi.IIssueReporting;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.IModFile;
 
-public class FMLJavaModLanguageProvider extends NeoLanguageLoader {
+public class FMLJavaModLanguageProvider extends BuiltInLanguageLoader {
     @Override
     public String name() {
         return "javafml";
