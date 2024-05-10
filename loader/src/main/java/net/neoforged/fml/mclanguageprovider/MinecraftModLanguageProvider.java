@@ -6,11 +6,11 @@
 package net.neoforged.fml.mclanguageprovider;
 
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.loading.BuiltInLanguageLoader;
 import net.neoforged.neoforgespi.language.IModInfo;
-import net.neoforged.neoforgespi.language.IModLanguageLoader;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 
-public class MinecraftModLanguageProvider implements IModLanguageLoader {
+public class MinecraftModLanguageProvider extends BuiltInLanguageLoader {
     @Override
     public String name() {
         return "minecraft";

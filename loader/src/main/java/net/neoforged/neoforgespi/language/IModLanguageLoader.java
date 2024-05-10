@@ -36,6 +36,11 @@ public interface IModLanguageLoader {
     String name();
 
     /**
+     * {@return the version of this loader}
+     */
+    String version();
+
+    /**
      * Load and build a container from the given mod information.
      *
      * @param info               the mod information
