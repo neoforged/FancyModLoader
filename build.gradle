@@ -95,11 +95,7 @@ sourceSets {
     }
 }
 
-// We can't use toolchains because we need --add-export
-//java.toolchain.languageVersion = JavaLanguageVersion.of(16)
 compileJava {
-    sourceCompatibility = JavaVersion.VERSION_16
-    targetCompatibility = JavaVersion.VERSION_16
     options.compilerArgs += [
             '-Xlint:unchecked',
             '--add-exports=java.base/sun.security.util=cpw.mods.securejarhandler',
@@ -107,8 +103,6 @@ compileJava {
 }
 
 compileTestJava {
-    sourceCompatibility = JavaVersion.VERSION_16
-    targetCompatibility = JavaVersion.VERSION_16
     options.compilerArgs += [
             '--add-modules=jdk.zipfs',
             '--add-exports=jdk.zipfs/jdk.nio.zipfs=cpw.mods.securejarhandler'
