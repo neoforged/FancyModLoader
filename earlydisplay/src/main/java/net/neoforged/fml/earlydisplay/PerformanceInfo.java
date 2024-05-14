@@ -14,7 +14,7 @@ public class PerformanceInfo {
     private final OperatingSystemMXBean osBean;
     private final MemoryMXBean memoryBean;
     float memory;
-    private String text;
+    private String text = "";
 
     PerformanceInfo() {
         osBean = ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
