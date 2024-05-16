@@ -174,8 +174,9 @@ public class ModSorter {
     private void detectSystemMods(final Map<String, List<ModFile>> modFilesByFirstId) {
         // Capture system mods (ex. MC, Forge) here, so we can keep them for later
         final Set<String> systemMods = new HashSet<>();
-        // The minecraft mod is always a system mod
+        // The minecraft and neoforge mods are always system mods
         systemMods.add("minecraft");
+        systemMods.add("neoforge");
         // Find system mod files and scan them for system mods
         modFiles.stream()
                 .map(ModFile::getSecureJar)
