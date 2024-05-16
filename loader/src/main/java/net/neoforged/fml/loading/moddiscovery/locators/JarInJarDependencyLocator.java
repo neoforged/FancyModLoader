@@ -83,14 +83,13 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
     }
 
     private ModLoadingIssue buildExceptionData(final JarSelector.ResolutionFailureInformation<IModFile> entry) {
-        return ModLoadingIssue.error(
-                getErrorTranslationKey(entry),
-                entry.identifier().group() + ":" + entry.identifier().artifact(),
-                entry.sources()
-                        .stream()
-                        .flatMap(this::getModWithVersionRangeStream)
-                        .map(this::formatError)
-                        .collect(Collectors.joining(", ")));
+        var artifact = entry.identifier().group() + ":" + entry.identifier().artifact();
+        var requestedBy = entry.sources()
+                .stream()
+                .flatMap(this::getModWithVersionRangeStream)
+                .map(this::formatError)
+                .collect(Collectors.joining(", "));
+        return ModLoadingIssue.error(getErrorTranslationKey(entry), artifact, requestedBy);
     }
 
     private String getErrorTranslationKey(final JarSelector.ResolutionFailureInformation<IModFile> entry) {

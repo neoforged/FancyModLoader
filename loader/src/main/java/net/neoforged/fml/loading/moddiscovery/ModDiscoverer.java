@@ -221,7 +221,7 @@ public class ModDiscoverer {
                     addIssue(ModLoadingIssue.warning(reason.get().getReason(), jarContents.getPrimaryPath()).withAffectedPath(jarContents.getPrimaryPath()));
                 } else if (reporting == IncompatibleFileReporting.WARN_ALWAYS) {
                     LOGGER.warn(LogMarkers.SCAN, "Ignoring incompatible jar {} for an unknown reason.", jarContents.getPrimaryPath());
-                    addIssue(ModLoadingIssue.warning("fml.modloading.brokenfile", jarContents.getPrimaryPath()).withAffectedPath(jarContents.getPrimaryPath()));
+                    addIssue(ModLoadingIssue.warning("fml.modloading.brokenfile.unknown", jarContents.getPrimaryPath()).withAffectedPath(jarContents.getPrimaryPath()));
                 }
             }
             return Optional.empty();

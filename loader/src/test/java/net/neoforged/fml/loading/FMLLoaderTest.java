@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.ContainedVersion;
@@ -409,8 +410,45 @@ class FMLLoaderTest {
             installation.writeModJar("test.jar", CustomSubclassModFileReader.TRIGGER);
 
             var result = launch("forgeclient");
-            assertThat(result.issues()).extracting(ModLoadingIssue::toString).allMatch(
+            assertThat(result.issues()).extracting(FMLLoaderTest::getTranslatedIssue).allMatch(
                     msg -> msg.startsWith("ERROR: A technical error occurred during mod loading: Unexpected IModFile subclass:"));
+        }
+
+        @Test
+        void testUnsatisfiedNeoForgeRange() throws Exception {
+            installation.setupProductionClient();
+
+            installation.writeModJar("test.jar", new IdentifiableContent("MODS_TOML", "META-INF/neoforge.mods.toml", """
+                    modLoader="javafml"
+                    loaderVersion="[3,)"
+                    license="CC0"
+                    [[mods]]
+                    modId="testproject"
+                    version="0.0.0"
+                    displayName="Test Project"
+                    description='''A test project.'''
+                    [[dependencies.testproject]]
+                    modId="neoforge"
+                    type="required"
+                    versionRange="[999.6,)"
+                    ordering="NONE"
+                    side="BOTH"
+                    """.getBytes()));
+
+            var result = launch("forgeclient");
+            assertThat(result.issues()).extracting(FMLLoaderTest::getTranslatedIssue).containsOnly("ERROR: Mod testproject requires neoforge 999.6 or above\nCurrently, neoforge is 1\n");
+        }
+
+        @Test
+        void testDuplicateMods() throws Exception {
+            installation.setupProductionClient();
+
+            installation.writeModJar("test1.jar", SimulatedInstallation.createMultiModsToml("mod_a", "1.0", "mod_c", "1.0"));
+            installation.writeModJar("test2.jar", SimulatedInstallation.createMultiModsToml("mod_b", "1.0", "mod_c", "1.0"));
+
+            var result = launch("forgeclient");
+            assertThat(result.issues()).extracting(FMLLoaderTest::getTranslatedIssue).containsOnly(
+                    "ERROR: Mod mod_c is present in multiple files: test2.jar, test1.jar");
         }
     }
 
@@ -525,5 +563,9 @@ class FMLLoaderTest {
                 loadedMods.stream().collect(Collectors.toMap(
                         o -> o.getMods().getFirst().getModId(),
                         o -> o)));
+    }
+
+    private static String getTranslatedIssue(ModLoadingIssue issue) {
+        return issue.severity() + ": " + FMLTranslations.stripControlCodes(FMLTranslations.translateIssue(issue));
     }
 }

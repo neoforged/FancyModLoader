@@ -6,9 +6,11 @@
 package net.neoforged.fml.i18n;
 
 import com.google.common.base.CharMatcher;
+import java.nio.file.Path;
 import java.text.FieldPosition;
 import java.text.Format;
 import java.text.ParsePosition;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -18,6 +20,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import net.neoforged.fml.Logging;
+import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.StringUtils;
 import net.neoforged.neoforgespi.language.IModInfo;
 import org.apache.commons.lang3.text.ExtendedMessageFormat;
@@ -108,6 +112,7 @@ public class FMLTranslations {
 
     public static String parseFormat(String format, final Object... args) {
         final AtomicInteger i = new AtomicInteger();
+        // Converts Mojang translation format (%s) to the one used by Apache Commons ({0})
         format = FORMAT_PATTERN.matcher(format).replaceAll(matchResult -> {
             if (matchResult.group(0).equals("%%")) {
                 return "%";
@@ -118,6 +123,41 @@ public class FMLTranslations {
         });
         final ExtendedMessageFormat extendedMessageFormat = new ExtendedMessageFormat(format, CUSTOM_FACTORIES);
         return extendedMessageFormat.format(args);
+    }
+
+    public static String translateIssue(ModLoadingIssue issue) {
+        var args = new ArrayList<>(3 + issue.translationArgs().size());
+
+        var modInfo = issue.affectedMod();
+        if (modInfo == null && issue.affectedModFile() != null) {
+            if (!issue.affectedModFile().getModInfos().isEmpty()) {
+                modInfo = issue.affectedModFile().getModInfos().getFirst();
+            }
+        }
+        args.add(modInfo);
+        args.add(null); // Previously mod-loading phase
+        // For errors, we expose the cause
+        if (issue.severity() == ModLoadingIssue.Severity.ERROR) {
+            args.add(issue.cause());
+        }
+        args.addAll(issue.translationArgs());
+
+        args.replaceAll(FMLTranslations::formatArg);
+
+        return parseMessage(issue.translationKey(), args.toArray(Object[]::new));
+    }
+
+    private static Object formatArg(Object arg) {
+        if (arg instanceof Path path) {
+            var gameDir = FMLLoader.getGamePath();
+            if (path.startsWith(gameDir)) {
+                return gameDir.relativize(path).toString();
+            } else {
+                return path.toString();
+            }
+        } else {
+            return arg;
+        }
     }
 
     public static String stripControlCodes(String text) {

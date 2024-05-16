@@ -267,6 +267,23 @@ class SimulatedInstallation implements AutoCloseable {
         return new IdentifiableContent(modId + "_MODS_TOML", "META-INF/neoforge.mods.toml", content);
     }
 
+    public static IdentifiableContent createMultiModsToml(String modId, String version, String secondaryModId, String secondaryModversion) {
+        var content = """
+                modLoader = "javafml"
+                loaderVersion = "[3,]"
+                license = "LICENSE"
+
+                [[mods]]
+                modId="%s"
+                version="%s"
+
+                [[mods]]
+                modId="%s"
+                version="%s"
+                """.formatted(modId, version, secondaryModId, secondaryModversion).getBytes();
+        return new IdentifiableContent(modId + "_MODS_TOML", "META-INF/neoforge.mods.toml", content);
+    }
+
     public Path writeLibrary(String group, String artifact, String version, IdentifiableContent... content) throws IOException {
         return writeLibrary(group, artifact, version, null, content);
     }
