@@ -446,7 +446,7 @@ class FMLLoaderTest extends LauncherTest {
             var e = assertThrows(ModLoadingException.class, () -> loadMods(launch("forgeclient")));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                     "ERROR: testmod (testmod) is missing a feature it requires to run"
-                            + "\nIt requires javaVersion 999 but 21.0.2 is available",
+                            + "\nIt requires javaVersion 999 but " + System.getProperty("java.version") + " is available",
                     "ERROR: testmod (testmod) is missing a feature it requires to run"
                             + "\nIt requires thisFeatureDoesNotExist=\"*\" but NONE is available");
         }
