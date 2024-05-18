@@ -9,6 +9,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -30,7 +31,7 @@ public class I18nManager {
     public static Map<String, String> loadTranslations(String language) {
         var stream = FMLTranslations.class.getResourceAsStream("/lang/" + language + ".json");
         if (stream != null) {
-            try (var reader = new InputStreamReader(stream)) {
+            try (var reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
                 return GSON.fromJson(reader, new TypeToken<>() {});
             } catch (IOException e) {
                 LOGGER.error("Failed to load translations for locale {}", language, e);
