@@ -5,11 +5,10 @@
 
 package net.neoforged.fml.event.lifecycle;
 
+import java.util.function.Predicate;
+import net.neoforged.fml.DeferredWorkQueue;
 import net.neoforged.fml.InterModComms;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.ModLoadingStage;
-
-import java.util.function.Predicate;
 
 /**
  * This is the fourth of four commonly called events during mod core startup.
@@ -24,10 +23,8 @@ import java.util.function.Predicate;
  * @see #getIMCStream()
  * @see #getIMCStream(Predicate)
  */
-public class InterModProcessEvent extends ParallelDispatchEvent
-{
-    public InterModProcessEvent(final ModContainer container, final ModLoadingStage stage)
-    {
-        super(container, stage);
+public class InterModProcessEvent extends ParallelDispatchEvent {
+    public InterModProcessEvent(ModContainer container, DeferredWorkQueue deferredWorkQueue) {
+        super(container, deferredWorkQueue);
     }
 }

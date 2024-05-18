@@ -5,23 +5,22 @@
 
 package net.neoforged.fml.earlydisplay;
 
-import org.lwjgl.BufferUtils;
-import org.lwjgl.stb.STBImage;
-import org.lwjgl.system.MemoryUtil;
+import static org.lwjgl.opengl.GL32C.*;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.util.Objects;
-
-import static org.lwjgl.opengl.GL32C.*;
+import org.lwjgl.BufferUtils;
+import org.lwjgl.stb.STBImage;
+import org.lwjgl.system.MemoryUtil;
 
 public class STBHelper {
     public static ByteBuffer readFromClasspath(final String name, int initialCapacity) {
         ByteBuffer buf;
         try (var channel = Channels.newChannel(
-                Objects.requireNonNull(STBHelper.class.getClassLoader().getResourceAsStream(name), "The resource "+name+" cannot be found"))) {
+                Objects.requireNonNull(STBHelper.class.getClassLoader().getResourceAsStream(name), "The resource " + name + " cannot be found"))) {
             buf = BufferUtils.createByteBuffer(initialCapacity);
             while (true) {
                 var readbytes = channel.read(buf);
@@ -55,7 +54,7 @@ public class STBHelper {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, lw[0], lh[0], 0, GL_RGBA, GL_UNSIGNED_BYTE, img);
         glActiveTexture(GL_TEXTURE0);
         MemoryUtil.memFree(img);
-        return new int[] {lw[0], lh[0]};
+        return new int[] { lw[0], lh[0] };
     }
 
     public static ByteBuffer loadImageFromClasspath(String file, int size, int[] width, int[] height, int[] channels) {

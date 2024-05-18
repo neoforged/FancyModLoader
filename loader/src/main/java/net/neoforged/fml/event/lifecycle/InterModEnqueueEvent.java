@@ -5,9 +5,9 @@
 
 package net.neoforged.fml.event.lifecycle;
 
+import net.neoforged.fml.DeferredWorkQueue;
 import net.neoforged.fml.InterModComms;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.ModLoadingStage;
 
 /**
  * This is the third of four commonly called events during mod core startup.
@@ -20,11 +20,8 @@ import net.neoforged.fml.ModLoadingStage;
  *
  * This is a parallel dispatch event.
  */
-public class InterModEnqueueEvent extends ParallelDispatchEvent
-{
-
-    public InterModEnqueueEvent(final ModContainer container, final ModLoadingStage stage)
-    {
-        super(container, stage);
+public class InterModEnqueueEvent extends ParallelDispatchEvent {
+    public InterModEnqueueEvent(ModContainer container, DeferredWorkQueue deferredWorkQueue) {
+        super(container, deferredWorkQueue);
     }
 }

@@ -5,14 +5,13 @@
 
 package net.neoforged.fml.loading.moddiscovery;
 
-import net.neoforged.neoforgespi.coremod.ICoreModFile;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import net.neoforged.coremod.ICoreModScriptSource;
 
-public class CoreModFile implements ICoreModFile {
+public class CoreModFile implements ICoreModScriptSource {
     private final Path internalPath;
     private final ModFile file;
     private final String name;
@@ -29,8 +28,8 @@ public class CoreModFile implements ICoreModFile {
     }
 
     @Override
-    public Path getPath() {
-        return this.internalPath;
+    public String getDebugSource() {
+        return this.internalPath.toString();
     }
 
     @Override
@@ -45,6 +44,6 @@ public class CoreModFile implements ICoreModFile {
 
     @Override
     public String toString() {
-        return "{Name: " + name + ", Owner: " + getOwnerId() + " @ " + getPath() + "}";
+        return "{Name: " + name + ", Owner: " + getOwnerId() + " @ " + getDebugSource() + "}";
     }
 }

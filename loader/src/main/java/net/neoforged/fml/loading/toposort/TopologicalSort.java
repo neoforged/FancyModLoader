@@ -7,8 +7,6 @@ package net.neoforged.fml.loading.toposort;
 
 import com.google.common.base.Preconditions;
 import com.google.common.graph.Graph;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -19,6 +17,7 @@ import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides a topological sort algorithm.
@@ -28,7 +27,6 @@ import java.util.Set;
  * for renderers, and even mod module loading.
  */
 public final class TopologicalSort {
-
     /**
      * A breath-first-search based topological sort.
      *

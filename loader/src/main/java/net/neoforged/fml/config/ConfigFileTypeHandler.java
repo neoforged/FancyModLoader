@@ -5,23 +5,22 @@
 
 package net.neoforged.fml.config;
 
+import static net.neoforged.fml.config.ConfigTracker.CONFIG;
+
 import com.electronwill.nightconfig.core.ConfigFormat;
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.electronwill.nightconfig.core.file.FileWatcher;
 import com.electronwill.nightconfig.core.io.ParsingException;
 import com.electronwill.nightconfig.core.io.WritingMode;
 import com.mojang.logging.LogUtils;
-import net.neoforged.fml.loading.FMLConfig;
-import net.neoforged.fml.loading.FMLPaths;
-import org.apache.commons.io.FilenameUtils;
-import org.slf4j.Logger;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Function;
-
-import static net.neoforged.fml.config.ConfigTracker.CONFIG;
+import net.neoforged.fml.loading.FMLConfig;
+import net.neoforged.fml.loading.FMLPaths;
+import org.apache.commons.io.FilenameUtils;
+import org.slf4j.Logger;
 
 public class ConfigFileTypeHandler {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -39,22 +38,16 @@ public class ConfigFileTypeHandler {
                     .writingMode(WritingMode.REPLACE)
                     .build();
             LOGGER.debug(CONFIG, "Built TOML config for {}", configPath);
-            try
-            {
+            try {
                 configData.load();
-            }
-            catch (ParsingException ex)
-            {
+            } catch (ParsingException ex) {
                 LOGGER.warn(CONFIG, "Attempting to recreate {}", configPath);
-                try
-                {
+                try {
                     backUpConfig(configData.getNioPath(), 5);
                     Files.delete(configData.getNioPath());
 
                     configData.load();
-                }
-                catch (Throwable t)
-                {
+                } catch (Throwable t) {
                     ex.addSuppressed(t);
 
                     throw new ConfigLoadingException(c, ex);
@@ -97,39 +90,31 @@ public class ConfigFileTypeHandler {
         return true;
     }
 
-    public static void backUpConfig(final CommentedFileConfig commentedFileConfig)
-    {
+    public static void backUpConfig(final CommentedFileConfig commentedFileConfig) {
         backUpConfig(commentedFileConfig, 5); //TODO: Think of a way for mods to set their own preference (include a sanity check as well, no disk stuffing)
     }
 
-    public static void backUpConfig(final CommentedFileConfig commentedFileConfig, final int maxBackups)
-    {
+    public static void backUpConfig(final CommentedFileConfig commentedFileConfig, final int maxBackups) {
         backUpConfig(commentedFileConfig.getNioPath(), maxBackups);
     }
 
-    public static void backUpConfig(final Path commentedFileConfig, final int maxBackups)
-    {
+    public static void backUpConfig(final Path commentedFileConfig, final int maxBackups) {
         Path bakFileLocation = commentedFileConfig.getParent();
         String bakFileName = FilenameUtils.removeExtension(commentedFileConfig.getFileName().toString());
         String bakFileExtension = FilenameUtils.getExtension(commentedFileConfig.getFileName().toString()) + ".bak";
         Path bakFile = bakFileLocation.resolve(bakFileName + "-1" + "." + bakFileExtension);
-        try
-        {
-            for(int i = maxBackups; i > 0; i--)
-            {
+        try {
+            for (int i = maxBackups; i > 0; i--) {
                 Path oldBak = bakFileLocation.resolve(bakFileName + "-" + i + "." + bakFileExtension);
-                if(Files.exists(oldBak))
-                {
-                    if(i >= maxBackups)
+                if (Files.exists(oldBak)) {
+                    if (i >= maxBackups)
                         Files.delete(oldBak);
                     else
                         Files.move(oldBak, bakFileLocation.resolve(bakFileName + "-" + (i + 1) + "." + bakFileExtension));
                 }
             }
             Files.copy(commentedFileConfig, bakFile);
-        }
-        catch (IOException exception)
-        {
+        } catch (IOException exception) {
             LOGGER.warn(CONFIG, "Failed to back up config file {}", commentedFileConfig, exception);
         }
     }
@@ -150,19 +135,15 @@ public class ConfigFileTypeHandler {
             // Force the regular classloader onto the special thread
             Thread.currentThread().setContextClassLoader(realClassLoader);
             if (!this.modConfig.getSpec().isCorrecting()) {
-                try
-                {
+                try {
                     this.commentedFileConfig.load();
-                    if(!this.modConfig.getSpec().isCorrect(commentedFileConfig))
-                    {
+                    if (!this.modConfig.getSpec().isCorrect(commentedFileConfig)) {
                         LOGGER.warn(CONFIG, "Configuration file {} is not correct. Correcting", commentedFileConfig.getFile().getAbsolutePath());
                         ConfigFileTypeHandler.backUpConfig(commentedFileConfig);
                         this.modConfig.getSpec().correct(commentedFileConfig);
                         commentedFileConfig.save();
                     }
-                }
-                catch (ParsingException ex)
-                {
+                } catch (ParsingException ex) {
                     throw new ConfigLoadingException(modConfig, ex);
                 }
                 LOGGER.debug(CONFIG, "Config file {} changed, sending notifies", this.modConfig.getFileName());
@@ -172,10 +153,8 @@ public class ConfigFileTypeHandler {
         }
     }
 
-    private static class ConfigLoadingException extends RuntimeException
-    {
-        public ConfigLoadingException(ModConfig config, Exception cause)
-        {
+    private static class ConfigLoadingException extends RuntimeException {
+        public ConfigLoadingException(ModConfig config, Exception cause) {
             super("Failed loading config file " + config.getFileName() + " of type " + config.getType() + " for modid " + config.getModId(), cause);
         }
     }

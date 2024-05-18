@@ -8,8 +8,7 @@ package net.neoforged.fml;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
-public class Logging
-{
+public class Logging {
     // Lots of markers
     public static final Marker CORE = MarkerManager.getMarker("CORE");
     public static final Marker LOADING = MarkerManager.getMarker("LOADING");
@@ -21,5 +20,4 @@ public class Logging
 
     // --log CORE:+DEBUG,SCAN:-OFF
     // forge log debug 5
-
 }

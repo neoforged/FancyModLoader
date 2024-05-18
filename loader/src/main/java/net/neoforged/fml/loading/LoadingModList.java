@@ -5,14 +5,7 @@
 
 package net.neoforged.fml.loading;
 
-import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
-import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
-import net.neoforged.fml.loading.moddiscovery.BackgroundScanHandler;
-import net.neoforged.fml.loading.moddiscovery.ModFile;
-import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
-import net.neoforged.fml.loading.moddiscovery.ModInfo;
-import net.neoforged.neoforgespi.locating.IModFile;
-
+import cpw.mods.modlauncher.api.LambdaExceptionUtils;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,23 +17,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
+import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
+import net.neoforged.fml.loading.moddiscovery.ModFile;
+import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
+import net.neoforged.fml.loading.moddiscovery.ModInfo;
+import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
+import net.neoforged.neoforgespi.language.IModInfo;
 
 /**
  * Master list of all mods <em>in the loading context. This class cannot refer outside the
  * loading package</em>
  */
-public class LoadingModList
-{
+public class LoadingModList {
     private static LoadingModList INSTANCE;
     private final List<ModFileInfo> modFiles;
     private final List<ModInfo> sortedList;
+    private final Map<ModInfo, List<ModInfo>> modDependencies;
     private final Map<String, ModFileInfo> fileById;
-    private final List<EarlyLoadingException> preLoadErrors;
-    private final List<EarlyLoadingException> preLoadWarnings;
-    private List<IModFile> brokenFiles;
+    private final List<ModLoadingIssue> modLoadingIssues;
 
-    private LoadingModList(final List<ModFile> modFiles, final List<ModInfo> sortedList)
-    {
+    private LoadingModList(final List<ModFile> modFiles, final List<ModInfo> sortedList, Map<ModInfo, List<ModInfo>> modDependencies) {
         this.modFiles = modFiles.stream()
                 .map(ModFile::getModFileInfo)
                 .map(ModFileInfo.class::cast)
@@ -48,67 +45,60 @@ public class LoadingModList
         this.sortedList = sortedList.stream()
                 .map(ModInfo.class::cast)
                 .collect(Collectors.toList());
+        this.modDependencies = modDependencies;
         this.fileById = this.modFiles.stream()
                 .map(ModFileInfo::getMods)
                 .flatMap(Collection::stream)
                 .map(ModInfo.class::cast)
                 .collect(Collectors.toMap(ModInfo::getModId, ModInfo::getOwningFile));
-        this.preLoadErrors = new ArrayList<>();
-        this.preLoadWarnings = new ArrayList<>();
+        this.modLoadingIssues = new ArrayList<>();
     }
 
-    public static LoadingModList of(List<ModFile> modFiles, List<ModInfo> sortedList, final EarlyLoadingException earlyLoadingException)
-    {
-        INSTANCE = new LoadingModList(modFiles, sortedList);
-        if (earlyLoadingException != null)
-        {
-            INSTANCE.preLoadErrors.add(earlyLoadingException);
-        }
+    public static LoadingModList of(List<ModFile> modFiles, List<ModInfo> sortedList, List<ModLoadingIssue> issues, Map<ModInfo, List<ModInfo>> modDependencies) {
+        INSTANCE = new LoadingModList(modFiles, sortedList, modDependencies);
+        INSTANCE.modLoadingIssues.addAll(issues);
         return INSTANCE;
     }
 
     public static LoadingModList get() {
         return INSTANCE;
     }
-    public void addCoreMods()
-    {
+
+    public void addCoreMods() {
         modFiles.stream()
                 .map(ModFileInfo::getFile)
                 .map(ModFile::getCoreMods)
                 .flatMap(List::stream)
-                .forEach(FMLLoader.getCoreModProvider()::addCoreMod);
+                .forEach(FMLLoader.getCoreModEngine()::loadCoreMod);
     }
 
     public void addMixinConfigs() {
         modFiles.stream()
                 .map(ModFileInfo::getFile)
-                .map(ModFile::getMixinConfigs)
-                .flatMap(List::stream)
-                .forEach(DeferredMixinConfigRegistration::addMixinConfig);
+                .forEach(file -> {
+                    final String modId = file.getModInfos().get(0).getModId();
+                    file.getMixinConfigs().forEach(cfg -> DeferredMixinConfigRegistration.addMixinConfig(cfg, modId));
+                });
     }
 
-    public void addAccessTransformers()
-    {
+    public void addAccessTransformers() {
         modFiles.stream()
                 .map(ModFileInfo::getFile)
                 .forEach(mod -> mod.getAccessTransformers().forEach(path -> FMLLoader.addAccessTransformer(path, mod)));
     }
 
-    public void addForScanning(BackgroundScanHandler backgroundScanHandler)
-    {
+    public void addForScanning(BackgroundScanHandler backgroundScanHandler) {
         backgroundScanHandler.setLoadingModList(this);
         modFiles.stream()
                 .map(ModFileInfo::getFile)
                 .forEach(backgroundScanHandler::submitForScanning);
     }
 
-    public List<ModFileInfo> getModFiles()
-    {
+    public List<ModFileInfo> getModFiles() {
         return modFiles;
     }
 
-    public Path findResource(final String className)
-    {
+    public Path findResource(final String className) {
         for (ModFileInfo mf : modFiles) {
             final Path resource = mf.getFile().findResource(className);
             if (Files.exists(resource)) return resource;
@@ -127,9 +117,10 @@ public class LoadingModList
         return new Enumeration<URL>() {
             private final Iterator<ModFileInfo> modFileIterator = modFiles.iterator();
             private URL next;
+
             @Override
             public boolean hasMoreElements() {
-                if (next!=null) return true;
+                if (next != null) return true;
                 next = findNextURL();
                 return next != null;
             }
@@ -150,7 +141,7 @@ public class LoadingModList
                     final ModFileInfo next = modFileIterator.next();
                     final Path resource = next.getFile().findResource(resourceName);
                     if (Files.exists(resource)) {
-                        return LamdbaExceptionUtils.uncheck(()->new URL("modjar://" + next.getMods().get(0).getModId() + "/" + resourceName));
+                        return LambdaExceptionUtils.uncheck(() -> new URL("modjar://" + next.getMods().get(0).getModId() + "/" + resourceName));
                     }
                 }
                 return null;
@@ -158,29 +149,30 @@ public class LoadingModList
         };
     }
 
-    public ModFileInfo getModFileById(String modid)
-    {
+    public ModFileInfo getModFileById(String modid) {
         return this.fileById.get(modid);
     }
 
-    public List<ModInfo> getMods()
-    {
+    public List<ModInfo> getMods() {
         return this.sortedList;
     }
 
-    public List<EarlyLoadingException> getErrors() {
-        return preLoadErrors;
+    /**
+     * Returns all direct loading dependencies of the given mod.
+     *
+     * <p>This means: all the mods that are directly specified to be loaded before the given mod,
+     * either because the given mod has an {@link IModInfo.Ordering#AFTER} constraint on the dependency,
+     * or because the dependency has a {@link IModInfo.Ordering#BEFORE} constraint on the given mod.
+     */
+    public List<ModInfo> getDependencies(IModInfo mod) {
+        return this.modDependencies.getOrDefault(mod, List.of());
     }
 
-    public List<EarlyLoadingException> getWarnings() {
-        return preLoadWarnings;
+    public boolean hasErrors() {
+        return modLoadingIssues.stream().noneMatch(issue -> issue.severity() == ModLoadingIssue.Severity.ERROR);
     }
 
-    public void setBrokenFiles(final List<IModFile> brokenFiles) {
-        this.brokenFiles = brokenFiles;
-    }
-
-    public List<IModFile> getBrokenFiles() {
-        return this.brokenFiles;
+    public List<ModLoadingIssue> getModLoadingIssues() {
+        return modLoadingIssues;
     }
 }

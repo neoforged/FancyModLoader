@@ -7,8 +7,14 @@ package net.neoforged.fml.loading.progress;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.CharMatcher;
-
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public class StartupNotificationManager {
@@ -25,25 +31,27 @@ public class StartupNotificationManager {
     public static ProgressMeter prependProgressBar(final String barName, final int count) {
         var pm = new ProgressMeter(barName, count, 0, new Message(barName, Message.MessageType.ML));
         synchronized (progressMeters) {
-            progressMeters.addLast(pm);
+            progressMeters.addFirst(pm);
         }
         return pm;
     }
+
     public static ProgressMeter addProgressBar(final String barName, final int count) {
         var pm = new ProgressMeter(barName, count, 0, new Message(barName, Message.MessageType.ML));
         synchronized (progressMeters) {
-            progressMeters.push(pm);
+            progressMeters.addLast(pm);
         }
         return pm;
     }
 
     public static void popBar(final ProgressMeter progressMeter) {
         synchronized (progressMeters) {
-            progressMeters.remove(progressMeter);
+            progressMeters.removeLastOccurrence(progressMeter);
         }
     }
 
     public record AgeMessage(int age, Message message) {}
+
     public static List<AgeMessage> getMessages() {
         final long ts = System.nanoTime();
         return messages.values().stream().flatMap(Collection::stream)
@@ -53,19 +61,14 @@ public class StartupNotificationManager {
                 .toList();
     }
 
-    private synchronized static void addMessage(Message.MessageType type, String message, int maxSize)
-    {
+    private synchronized static void addMessage(Message.MessageType type, String message, int maxSize) {
         EnumMap<Message.MessageType, List<Message>> newMessages = new EnumMap<>(messages);
         newMessages.compute(type, (key, existingList) -> {
             List<Message> newList = new ArrayList<>();
-            if (existingList != null)
-            {
-                if (maxSize < 0)
-                {
+            if (existingList != null) {
+                if (maxSize < 0) {
                     newList.addAll(existingList);
-                }
-                else
-                {
+                } else {
                     newList.addAll(existingList.subList(0, Math.min(existingList.size(), maxSize)));
                 }
             }
@@ -76,12 +79,16 @@ public class StartupNotificationManager {
     }
 
     public static void addModMessage(final String message) {
-        final String safeMessage = Ascii.truncate(CharMatcher.ascii().retainFrom(message),80,"~");
+        final String safeMessage = Ascii.truncate(CharMatcher.ascii().retainFrom(message), 80, "~");
         addMessage(Message.MessageType.MOD, safeMessage, 20);
     }
 
+    public static void modLoaderMessage(String message) {
+        addMessage(Message.MessageType.ML, message, -1);
+    }
+
     public static Optional<Consumer<String>> modLoaderConsumer() {
-        return Optional.of(s-> addMessage(Message.MessageType.ML, s, -1));
+        return Optional.of(s -> addMessage(Message.MessageType.ML, s, -1));
     }
 
     public static Optional<Consumer<String>> locatorConsumer() {
@@ -89,6 +96,6 @@ public class StartupNotificationManager {
     }
 
     public static Optional<Consumer<String>> mcLoaderConsumer() {
-        return Optional.of(s-> addMessage(Message.MessageType.MC, s, -1));
+        return Optional.of(s -> addMessage(Message.MessageType.MC, s, -1));
     }
 }

@@ -1,1 +1,1 @@
-net.neoforged.fml.loading.moddiscovery.JarInJarDependencyLocator
+net.neoforged.fml.loading.moddiscovery.locators.JarInJarDependencyLocator

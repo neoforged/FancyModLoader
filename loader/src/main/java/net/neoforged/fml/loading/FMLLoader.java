@@ -7,38 +7,40 @@ package net.neoforged.fml.loading;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.Launcher;
-import cpw.mods.modlauncher.api.*;
-import cpw.mods.modlauncher.util.ServiceLoaderUtils;
-import net.neoforged.accesstransformer.api.AccessTransformerEngine;
-import net.neoforged.accesstransformer.ml.AccessTransformerService;
-import net.neoforged.fml.common.asm.RuntimeDistCleaner;
-import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
-import net.neoforged.fml.loading.moddiscovery.BackgroundScanHandler;
-import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
-import net.neoforged.fml.loading.moddiscovery.ModFile;
-import net.neoforged.fml.loading.moddiscovery.ModValidator;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.targets.CommonLaunchHandler;
-import net.neoforged.neoforgespi.Environment;
-import net.neoforged.neoforgespi.coremod.ICoreModProvider;
-import org.slf4j.Logger;
-
+import cpw.mods.modlauncher.api.IEnvironment;
+import cpw.mods.modlauncher.api.ILaunchHandlerService;
+import cpw.mods.modlauncher.api.ITransformationService;
+import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import net.neoforged.accesstransformer.api.AccessTransformerEngine;
+import net.neoforged.accesstransformer.ml.AccessTransformerService;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.coremod.CoreModScriptingEngine;
+import net.neoforged.fml.common.asm.RuntimeDistCleaner;
+import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
+import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
+import net.neoforged.fml.loading.moddiscovery.ModFile;
+import net.neoforged.fml.loading.moddiscovery.ModValidator;
+import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
+import net.neoforged.fml.loading.targets.CommonLaunchHandler;
+import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 
-public class FMLLoader
-{
+public class FMLLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static AccessTransformerEngine accessTransformer;
-    private static ModDiscoverer modDiscoverer;
-    private static ICoreModProvider coreModProvider;
-    private static LanguageLoadingProvider languageLoadingProvider;
+    private static CoreModScriptingEngine coreModEngine;
+    private static LanguageProviderLoader languageProviderLoader;
     private static Dist dist;
-    private static String naming;
     private static LoadingModList loadingModList;
     private static RuntimeDistCleaner runtimeDistCleaner;
     private static Path gamePath;
@@ -49,66 +51,47 @@ public class FMLLoader
     private static ModValidator modValidator;
     public static BackgroundScanHandler backgroundScanHandler;
     private static boolean production;
-    private static IModuleLayerManager moduleLayerManager;
+    @Nullable
+    private static ModuleLayer gameLayer;
 
-    static void onInitialLoad(IEnvironment environment, Set<String> otherServices) throws IncompatibleEnvironmentException
-    {
+    static void onInitialLoad(IEnvironment environment) throws IncompatibleEnvironmentException {
         final String version = LauncherVersion.getVersion();
-        LOGGER.debug(LogMarkers.CORE,"FML {} loading", version);
+        LOGGER.debug(LogMarkers.CORE, "FML {} loading", version);
         final Package modLauncherPackage = ITransformationService.class.getPackage();
-        LOGGER.debug(LogMarkers.CORE,"FML found ModLauncher version : {}", modLauncherPackage.getImplementationVersion());
+        LOGGER.debug(LogMarkers.CORE, "FML found ModLauncher version : {}", modLauncherPackage.getImplementationVersion());
         if (!modLauncherPackage.isCompatibleWith("4.0")) {
             LOGGER.error(LogMarkers.CORE, "Found incompatible ModLauncher specification : {}, version {} from {}", modLauncherPackage.getSpecificationVersion(), modLauncherPackage.getImplementationVersion(), modLauncherPackage.getImplementationVendor());
-            throw new IncompatibleEnvironmentException("Incompatible modlauncher found "+modLauncherPackage.getSpecificationVersion());
+            throw new IncompatibleEnvironmentException("Incompatible modlauncher found " + modLauncherPackage.getSpecificationVersion());
         }
 
-        accessTransformer = ((AccessTransformerService) environment.findLaunchPlugin("accesstransformer").orElseThrow(()-> {
+        accessTransformer = ((AccessTransformerService) environment.findLaunchPlugin("accesstransformer").orElseThrow(() -> {
             LOGGER.error(LogMarkers.CORE, "Access Transformer library is missing, we need this to run");
             return new IncompatibleEnvironmentException("Missing AccessTransformer, cannot run");
         })).engine;
 
         final Package atPackage = accessTransformer.getClass().getPackage();
-        LOGGER.debug(LogMarkers.CORE,"FML found AccessTransformer version : {}", atPackage.getImplementationVersion());
+        LOGGER.debug(LogMarkers.CORE, "FML found AccessTransformer version : {}", atPackage.getImplementationVersion());
         if (!atPackage.isCompatibleWith("1.0")) {
             LOGGER.error(LogMarkers.CORE, "Found incompatible AccessTransformer specification : {}, version {} from {}", atPackage.getSpecificationVersion(), atPackage.getImplementationVersion(), atPackage.getImplementationVendor());
-            throw new IncompatibleEnvironmentException("Incompatible accesstransformer found "+atPackage.getSpecificationVersion());
+            throw new IncompatibleEnvironmentException("Incompatible accesstransformer found " + atPackage.getSpecificationVersion());
         }
 
         try {
             var eventBus = Class.forName("net.neoforged.bus.api.IEventBus", false, environment.getClass().getClassLoader());
-            LOGGER.debug(LogMarkers.CORE,"FML found EventBus version : {}", eventBus.getPackage().getImplementationVersion());
+            LOGGER.debug(LogMarkers.CORE, "FML found EventBus version : {}", eventBus.getPackage().getImplementationVersion());
         } catch (ClassNotFoundException e) {
             LOGGER.error(LogMarkers.CORE, "Event Bus library is missing, we need this to run");
             throw new IncompatibleEnvironmentException("Missing EventBus, cannot run");
         }
 
-        runtimeDistCleaner = (RuntimeDistCleaner)environment.findLaunchPlugin("runtimedistcleaner").orElseThrow(()-> {
+        runtimeDistCleaner = (RuntimeDistCleaner) environment.findLaunchPlugin("runtimedistcleaner").orElseThrow(() -> {
             LOGGER.error(LogMarkers.CORE, "Dist Cleaner is missing, we need this to run");
             return new IncompatibleEnvironmentException("Missing DistCleaner, cannot run!");
         });
         LOGGER.debug(LogMarkers.CORE, "Found Runtime Dist Cleaner");
 
-        var coreModProviders = ServiceLoaderUtils.streamWithErrorHandling(ServiceLoader.load(FMLLoader.class.getModule().getLayer(), ICoreModProvider.class), sce -> LOGGER.error(LogMarkers.CORE, "Failed to load a coremod library, expect problems", sce)).toList();
-
-        if (coreModProviders.isEmpty()) {
-            LOGGER.error(LogMarkers.CORE, "Found no coremod provider. Cannot run");
-            throw new IncompatibleEnvironmentException("No coremod library found");
-        } else if (coreModProviders.size() > 1) {
-            LOGGER.error(LogMarkers.CORE, "Found multiple coremod providers : {}. Cannot run", coreModProviders.stream().map(p -> p.getClass().getName()).collect(Collectors.toList()));
-            throw new IncompatibleEnvironmentException("Multiple coremod libraries found");
-        }
-
-        coreModProvider = coreModProviders.get(0);
-        final Package coremodPackage = coreModProvider.getClass().getPackage();
-        LOGGER.debug(LogMarkers.CORE,"FML found CoreMod version : {}", coremodPackage.getImplementationVersion());
-
-
-        LOGGER.debug(LogMarkers.CORE, "Found ForgeSPI package implementation version {}", Environment.class.getPackage().getImplementationVersion());
-        LOGGER.debug(LogMarkers.CORE, "Found ForgeSPI package specification {}", Environment.class.getPackage().getSpecificationVersion());
-        if (Integer.parseInt(Environment.class.getPackage().getSpecificationVersion()) < 2) {
-            LOGGER.error(LogMarkers.CORE, "Found an out of date ForgeSPI implementation: {}, loading cannot continue", Environment.class.getPackage().getSpecificationVersion());
-            throw new IncompatibleEnvironmentException("ForgeSPI is out of date, we cannot continue");
-        }
+        coreModEngine = new CoreModScriptingEngine();
+        LOGGER.debug(LogMarkers.CORE, "FML found CoreMods version : {}", coreModEngine.getClass().getPackage().getImplementationVersion());
 
         try {
             Class.forName("com.electronwill.nightconfig.core.Config", false, environment.getClass().getClassLoader());
@@ -119,10 +102,8 @@ public class FMLLoader
         }
     }
 
-    static void setupLaunchHandler(final IEnvironment environment, final Map<String, Object> arguments)
-    {
-        final String launchTarget = environment.getProperty(IEnvironment.Keys.LAUNCHTARGET.get()).orElse("MISSING");
-        arguments.put("launchTarget", launchTarget);
+    static void setupLaunchHandler(IEnvironment environment, VersionInfo versionInfo) {
+        var launchTarget = environment.getProperty(IEnvironment.Keys.LAUNCHTARGET.get()).orElse("MISSING");
         final Optional<ILaunchHandlerService> launchHandler = environment.findLaunchHandler(launchTarget);
         LOGGER.debug(LogMarkers.CORE, "Using {} as launch service", launchTarget);
         if (launchHandler.isEmpty()) {
@@ -134,60 +115,47 @@ public class FMLLoader
             LOGGER.error(LogMarkers.CORE, "Incompatible Launch handler found - type {}, cannot continue", launchHandler.get().getClass().getName());
             throw new RuntimeException("Incompatible launch handler found");
         }
-        commonLaunchHandler = (CommonLaunchHandler)launchHandler.get();
+        commonLaunchHandler = (CommonLaunchHandler) launchHandler.get();
         launchHandlerName = launchHandler.get().name();
         gamePath = environment.getProperty(IEnvironment.Keys.GAMEDIR.get()).orElse(Paths.get(".").toAbsolutePath());
+        FMLLoader.versionInfo = versionInfo;
 
-        naming = commonLaunchHandler.getNaming();
         dist = commonLaunchHandler.getDist();
         production = commonLaunchHandler.isProduction();
 
-        versionInfo = new VersionInfo(arguments);
-
-        LOGGER.debug(LogMarkers.CORE,"Received command line version data  : {}", versionInfo);
-
         runtimeDistCleaner.getExtension().accept(dist);
     }
-    public static List<ITransformationService.Resource> beginModScan(final Map<String,?> arguments)
-    {
-        LOGGER.debug(LogMarkers.SCAN,"Scanning for Mod Locators");
-        modDiscoverer = new ModDiscoverer(arguments);
+
+    public static List<ITransformationService.Resource> beginModScan(ILaunchContext launchContext) {
+        var additionalLocators = new ArrayList<IModFileCandidateLocator>();
+        commonLaunchHandler.collectAdditionalModFileLocators(versionInfo, additionalLocators::add);
+
+        var modDiscoverer = new ModDiscoverer(launchContext, additionalLocators);
         modValidator = modDiscoverer.discoverMods();
         var pluginResources = modValidator.getPluginResources();
         return List.of(pluginResources);
     }
 
-    public static List<ITransformationService.Resource> completeScan(IModuleLayerManager layerManager, List<String> extraMixinConfigs) {
-        moduleLayerManager = layerManager;
-        languageLoadingProvider = new LanguageLoadingProvider();
+    public static List<ITransformationService.Resource> completeScan(ILaunchContext launchContext, List<String> extraMixinConfigs) {
+        languageProviderLoader = new LanguageProviderLoader(launchContext);
         backgroundScanHandler = modValidator.stage2Validation();
         loadingModList = backgroundScanHandler.getLoadingModList();
-        if (loadingModList.getErrors().isEmpty()) {
+        if (!loadingModList.hasErrors()) {
             // Add extra mixin configs
             extraMixinConfigs.forEach(DeferredMixinConfigRegistration::addMixinConfig);
         }
         return List.of(modValidator.getModResources());
     }
 
-    public static ICoreModProvider getCoreModProvider() {
-        return coreModProvider;
+    static CoreModScriptingEngine getCoreModEngine() {
+        return coreModEngine;
     }
 
-    public static LanguageLoadingProvider getLanguageLoadingProvider()
-    {
-        return languageLoadingProvider;
+    public static LanguageProviderLoader getLanguageLoadingProvider() {
+        return languageProviderLoader;
     }
 
-    static ModDiscoverer getModDiscoverer() {
-        return modDiscoverer;
-    }
-
-    public static CommonLaunchHandler getLaunchHandler() {
-        return commonLaunchHandler;
-    }
-
-    public static void addAccessTransformer(Path atPath, ModFile modName)
-    {
+    public static void addAccessTransformer(Path atPath, ModFile modName) {
         LOGGER.debug(LogMarkers.SCAN, "Adding Access Transformer in {}", modName.getFilePath());
         try {
             accessTransformer.loadATFromPath(atPath);
@@ -196,34 +164,23 @@ public class FMLLoader
         }
     }
 
-    public static Dist getDist()
-    {
+    public static Dist getDist() {
         return dist;
     }
 
-    public static void beforeStart(ModuleLayer gameLayer)
-    {
+    public static void beforeStart(ModuleLayer gameLayer) {
+        FMLLoader.gameLayer = gameLayer;
         ImmediateWindowHandler.acceptGameLayer(gameLayer);
         ImmediateWindowHandler.updateProgress("Launching minecraft");
         progressWindowTick.run();
     }
 
-    public static LoadingModList getLoadingModList()
-    {
+    public static LoadingModList getLoadingModList() {
         return loadingModList;
     }
 
-    public static Path getGamePath()
-    {
+    public static Path getGamePath() {
         return gamePath;
-    }
-
-    public static String getNaming() {
-        return naming;
-    }
-
-    public static Optional<BiFunction<INameMappingService.Domain, String, String>> getNameFunction(final String naming) {
-        return Launcher.INSTANCE.environment().findNameMapping(naming);
     }
 
     public static String getLauncherInfo() {
@@ -242,12 +199,11 @@ public class FMLLoader
         return production;
     }
 
-    public static boolean isSecureJarEnabled() {
-        return true;
-    }
-
     public static ModuleLayer getGameLayer() {
-        return moduleLayerManager.getLayer(IModuleLayerManager.Layer.GAME).orElseThrow();
+        if (gameLayer == null) {
+            throw new IllegalStateException("This can only be called after mod discovery is completed");
+        }
+        return gameLayer;
     }
 
     public static VersionInfo versionInfo() {

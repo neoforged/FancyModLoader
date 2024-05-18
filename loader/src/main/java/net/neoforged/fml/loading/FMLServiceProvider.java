@@ -5,27 +5,27 @@
 
 package net.neoforged.fml.loading;
 
-import com.mojang.logging.LogUtils;
-import cpw.mods.modlauncher.api.*;
-import joptsimple.ArgumentAcceptingOptionSpec;
-import joptsimple.OptionSpecBuilder;
-import net.neoforged.fml.loading.moddiscovery.ModFile;
-import net.neoforged.neoforgespi.Environment;
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.BiFunction;
 import static net.neoforged.fml.loading.LogMarkers.CORE;
 
-public class FMLServiceProvider implements ITransformationService
-{
+import com.mojang.logging.LogUtils;
+import cpw.mods.modlauncher.api.IEnvironment;
+import cpw.mods.modlauncher.api.IModuleLayerManager;
+import cpw.mods.modlauncher.api.ITransformationService;
+import cpw.mods.modlauncher.api.ITransformer;
+import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
+import joptsimple.ArgumentAcceptingOptionSpec;
+import joptsimple.OptionSpecBuilder;
+import net.neoforged.neoforgespi.Environment;
+import net.neoforged.neoforgespi.ILaunchContext;
+import org.slf4j.Logger;
+
+public class FMLServiceProvider implements ITransformationService {
     private static final Logger LOGGER = LogUtils.getLogger();
     private ArgumentAcceptingOptionSpec<String> modsOption;
     private ArgumentAcceptingOptionSpec<String> modListsOption;
@@ -35,27 +35,20 @@ public class FMLServiceProvider implements ITransformationService
     private ArgumentAcceptingOptionSpec<String> forgeOption;
     private ArgumentAcceptingOptionSpec<String> mcOption;
     private ArgumentAcceptingOptionSpec<String> mcpOption;
-    private ArgumentAcceptingOptionSpec<String> mappingsOption;
     private List<String> modsArgumentList;
     private List<String> modListsArgumentList;
     private List<String> mavenRootsArgumentList;
     private List<String> mixinConfigsArgumentList;
-    private String targetForgeVersion;
-    private String targetFMLVersion;
-    private String targetMcVersion;
-    private String targetMcpVersion;
-    private String targetMcpMappings;
-    private Map<String, Object> arguments;
+    private VersionInfo versionInfo;
+    private ILaunchContext launchContext;
 
-    public FMLServiceProvider()
-    {
+    public FMLServiceProvider() {
         final String markerselection = System.getProperty("forge.logging.markers", "");
         Arrays.stream(markerselection.split(",")).forEach(marker -> System.setProperty("forge.logging.marker." + marker.toLowerCase(Locale.ROOT), "ACCEPT"));
     }
 
     @Override
-    public String name()
-    {
+    public String name() {
         return "fml";
     }
 
@@ -65,51 +58,41 @@ public class FMLServiceProvider implements ITransformationService
         FMLPaths.setup(environment);
         LOGGER.debug(CORE, "Loading configuration");
         FMLConfig.load();
-        LOGGER.debug(CORE, "Preparing ModFile");
-        environment.computePropertyIfAbsent(Environment.Keys.MODFILEFACTORY.get(), k->ModFile::new);
-        arguments = new HashMap<>();
-        arguments.put("modLists", modListsArgumentList);
-        arguments.put("mods", modsArgumentList);
-        arguments.put("mavenRoots", mavenRootsArgumentList);
-        arguments.put("neoForgeVersion", targetForgeVersion);
-        arguments.put("fmlVersion", targetFMLVersion);
-        arguments.put("mcVersion", targetMcVersion);
-        arguments.put("neoFormVersion", targetMcpVersion);
-        arguments.put("mcpMappings", targetMcpMappings);
+        var moduleLayerManager = environment.findModuleLayerManager().orElseThrow();
+        launchContext = new LaunchContext(environment,
+                moduleLayerManager,
+                modListsArgumentList,
+                modsArgumentList,
+                mavenRootsArgumentList);
         LOGGER.debug(CORE, "Preparing launch handler");
-        FMLLoader.setupLaunchHandler(environment, arguments);
+        FMLLoader.setupLaunchHandler(environment, versionInfo);
         FMLEnvironment.setupInteropEnvironment(environment);
         Environment.build(environment);
     }
 
     @Override
     public List<Resource> beginScanning(final IEnvironment environment) {
-        LOGGER.debug(CORE,"Initiating mod scan");
-        return FMLLoader.beginModScan(arguments);
+        LOGGER.debug(CORE, "Initiating mod scan");
+        return FMLLoader.beginModScan(launchContext);
     }
 
     @Override
     public List<Resource> completeScan(final IModuleLayerManager layerManager) {
-        return FMLLoader.completeScan(layerManager, mixinConfigsArgumentList);
+        Supplier<ModuleLayer> gameLayerSupplier = () -> layerManager.getLayer(IModuleLayerManager.Layer.GAME).orElseThrow();
+        return FMLLoader.completeScan(launchContext, mixinConfigsArgumentList);
     }
 
     @Override
-    public void onLoad(IEnvironment environment, Set<String> otherServices) throws IncompatibleEnvironmentException
-    {
-//        LOGGER.debug("Injecting tracing printstreams for STDOUT/STDERR.");
-//        System.setOut(new TracingPrintStream(LogManager.getLogger("STDOUT"), System.out));
-//        System.setErr(new TracingPrintStream(LogManager.getLogger("STDERR"), System.err));
-        FMLLoader.onInitialLoad(environment, otherServices);
+    public void onLoad(IEnvironment environment, Set<String> otherServices) throws IncompatibleEnvironmentException {
+        FMLLoader.onInitialLoad(environment);
     }
 
     @Override
-    public void arguments(BiFunction<String, String, OptionSpecBuilder> argumentBuilder)
-    {
-        forgeOption = argumentBuilder.apply("neoForgeVersion", "Forge Version number").withRequiredArg().ofType(String.class).required();
+    public void arguments(BiFunction<String, String, OptionSpecBuilder> argumentBuilder) {
+        forgeOption = argumentBuilder.apply("neoForgeVersion", "NeoForge Version number").withRequiredArg().ofType(String.class).required();
         fmlOption = argumentBuilder.apply("fmlVersion", "FML Version number").withRequiredArg().ofType(String.class).required();
         mcOption = argumentBuilder.apply("mcVersion", "Minecraft Version number").withRequiredArg().ofType(String.class).required();
-        mcpOption = argumentBuilder.apply("neoFormVersion", "MCP Version number").withRequiredArg().ofType(String.class).required();
-        mappingsOption = argumentBuilder.apply("mcpMappings", "MCP Mappings Channel and Version").withRequiredArg().ofType(String.class);
+        mcpOption = argumentBuilder.apply("neoFormVersion", "Neoform Version number").withRequiredArg().ofType(String.class).required();
         modsOption = argumentBuilder.apply("mods", "List of mods to add").withRequiredArg().ofType(String.class).withValuesSeparatedBy(",");
         modListsOption = argumentBuilder.apply("modLists", "JSON modlists").withRequiredArg().ofType(String.class).withValuesSeparatedBy(",");
         mavenRootsOption = argumentBuilder.apply("mavenRoots", "Maven root directories").withRequiredArg().ofType(String.class).withValuesSeparatedBy(",");
@@ -117,24 +100,22 @@ public class FMLServiceProvider implements ITransformationService
     }
 
     @Override
-    public void argumentValues(OptionResult option)
-    {
+    public void argumentValues(OptionResult option) {
         modsArgumentList = option.values(modsOption);
         modListsArgumentList = option.values(modListsOption);
         mavenRootsArgumentList = option.values(mavenRootsOption);
         mixinConfigsArgumentList = option.values(mixinConfigsOption);
-        targetFMLVersion = option.value(fmlOption);
-        targetForgeVersion = option.value(forgeOption);
-        targetMcVersion = option.value(mcOption);
-        targetMcpVersion = option.value(mcpOption);
-        targetMcpMappings = option.value(mappingsOption);
+        versionInfo = new VersionInfo(
+                option.value(forgeOption),
+                option.value(fmlOption),
+                option.value(mcOption),
+                option.value(mcpOption));
+        LOGGER.debug(LogMarkers.CORE, "Received command line version data  : {}", versionInfo);
     }
 
     @Override
-    public @NotNull List<ITransformer> transformers()
-    {
+    public List<? extends ITransformer<?>> transformers() {
         LOGGER.debug(CORE, "Loading coremod transformers");
-        return new ArrayList<>(FMLLoader.getCoreModProvider().getCoreModTransformers());
+        return FMLLoader.getCoreModEngine().initializeCoreMods();
     }
-
 }

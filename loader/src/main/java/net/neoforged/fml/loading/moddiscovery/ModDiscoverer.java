@@ -5,102 +5,82 @@
 
 package net.neoforged.fml.loading.moddiscovery;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
 import com.mojang.logging.LogUtils;
-import cpw.mods.modlauncher.Launcher;
-import cpw.mods.modlauncher.api.IModuleLayerManager;
-import cpw.mods.modlauncher.util.ServiceLoaderUtils;
-import net.neoforged.fml.loading.EarlyLoadingException;
+import cpw.mods.jarhandling.JarContents;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.zip.ZipException;
+import net.neoforged.fml.ModLoadingException;
+import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.UniqueModListBuilder;
-import net.neoforged.fml.loading.progress.StartupNotificationManager;
-import net.neoforged.neoforgespi.Environment;
-import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.fml.util.ServiceLoaderUtil;
+import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IDependencyLocator;
+import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFile;
-import net.neoforged.neoforgespi.locating.IModLocator;
+import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
+import net.neoforged.neoforgespi.locating.IModFileReader;
+import net.neoforged.neoforgespi.locating.IncompatibleFileReporting;
+import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.ServiceLoader;
-import java.util.stream.Collectors;
 
 public class ModDiscoverer {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private final ServiceLoader<IModLocator> modLocators;
-    private final ServiceLoader<IDependencyLocator> dependencyLocators;
-    private final List<IModLocator>          modLocatorList;
-    private final List<IDependencyLocator>   dependencyLocatorList;
+    private final List<IModFileCandidateLocator> modFileLocators;
+    private final List<IDependencyLocator> dependencyLocators;
+    private final List<IModFileReader> modFileReaders;
+    private final ILaunchContext launchContext;
 
-    public ModDiscoverer(Map<String, ?> arguments) {
-        Launcher.INSTANCE.environment().computePropertyIfAbsent(Environment.Keys.MODDIRECTORYFACTORY.get(), v->ModsFolderLocator::new);
-        Launcher.INSTANCE.environment().computePropertyIfAbsent(Environment.Keys.PROGRESSMESSAGE.get(), v-> StartupNotificationManager.locatorConsumer().orElseGet(()-> s->{}));
-        final var moduleLayerManager = Launcher.INSTANCE.environment().findModuleLayerManager().orElseThrow();
-        modLocators = ServiceLoader.load(moduleLayerManager.getLayer(IModuleLayerManager.Layer.SERVICE).orElseThrow(), IModLocator.class);
-        dependencyLocators = ServiceLoader.load(moduleLayerManager.getLayer(IModuleLayerManager.Layer.SERVICE).orElseThrow(), IDependencyLocator.class);
-        modLocatorList = ServiceLoaderUtils.streamServiceLoader(()-> modLocators, sce->LOGGER.error("Failed to load mod locator list", sce)).collect(Collectors.toList());
-        modLocatorList.forEach(l->l.initArguments(arguments));
-        dependencyLocatorList = ServiceLoaderUtils.streamServiceLoader(()-> dependencyLocators, sce->LOGGER.error("Failed to load dependency locator list", sce)).collect(Collectors.toList());
-        dependencyLocatorList.forEach(l->l.initArguments(arguments));
-        if (LOGGER.isDebugEnabled(LogMarkers.CORE))
-        {
-            LOGGER.debug(LogMarkers.CORE, "Found Mod Locators : {}", modLocatorList.stream()
-                                                                       .map(modLocator -> "(%s:%s)".formatted(modLocator.name(),
-                                                                         modLocator.getClass().getPackage().getImplementationVersion())).collect(Collectors.joining(",")));
-        }
-        if (LOGGER.isDebugEnabled(LogMarkers.CORE))
-        {
-            LOGGER.debug(LogMarkers.CORE, "Found Dependency Locators : {}", dependencyLocatorList.stream()
-                                                                       .map(dependencyLocator -> "(%s:%s)".formatted(dependencyLocator.name(),
-                                                                         dependencyLocator.getClass().getPackage().getImplementationVersion())).collect(Collectors.joining(",")));
-        }
+    public ModDiscoverer(ILaunchContext launchContext) {
+        this(launchContext, List.of());
+    }
+
+    public ModDiscoverer(ILaunchContext launchContext,
+            Collection<IModFileCandidateLocator> additionalModFileLocators) {
+        this.launchContext = launchContext;
+
+        modFileLocators = ServiceLoaderUtil.loadServices(launchContext, IModFileCandidateLocator.class, additionalModFileLocators);
+        modFileReaders = ServiceLoaderUtil.loadServices(launchContext, IModFileReader.class);
+        dependencyLocators = ServiceLoaderUtil.loadServices(launchContext, IDependencyLocator.class);
     }
 
     public ModValidator discoverMods() {
-        LOGGER.debug(LogMarkers.SCAN,"Scanning for mods and other resources to load. We know {} ways to find mods", modLocatorList.size());
+        LOGGER.debug(LogMarkers.SCAN, "Scanning for mods and other resources to load. We know {} ways to find mods", modFileLocators.size());
         List<ModFile> loadedFiles = new ArrayList<>();
-        List<EarlyLoadingException.ExceptionData> discoveryErrorData = new ArrayList<>();
+        List<ModLoadingIssue> discoveryIssues = new ArrayList<>();
         boolean successfullyLoadedMods = true;
-        List<IModFileInfo> brokenFiles = new ArrayList<>();
         ImmediateWindowHandler.updateProgress("Discovering mod files");
-        //Loop all mod locators to get the prime mods to load from.
-        for (IModLocator locator : modLocatorList) {
-            try {
-                LOGGER.debug(LogMarkers.SCAN, "Trying locator {}", locator);
-                var candidates = locator.scanMods();
-                LOGGER.debug(LogMarkers.SCAN, "Locator {} found {} candidates or errors", locator, candidates.size());
-                var exceptions = candidates.stream().map(IModLocator.ModFileOrException::ex).filter(Objects::nonNull).toList();
-                if (!exceptions.isEmpty()) {
-                    LOGGER.debug(LogMarkers.SCAN, "Locator {} found {} invalid mod files", locator, exceptions.size());
-                    brokenFiles.addAll(exceptions.stream().map(e->e instanceof InvalidModFileException ime ? ime.getBrokenFile() : null).filter(Objects::nonNull).toList());
-                }
-                var locatedFiles = candidates.stream().map(IModLocator.ModFileOrException::file).filter(Objects::nonNull).collect(Collectors.toList());
 
-                var badModFiles = locatedFiles.stream().filter(file -> !(file instanceof ModFile)).toList();
-                if (!badModFiles.isEmpty()) {
-                    LOGGER.error(LogMarkers.SCAN, "Locator {} returned {} files which is are not ModFile instances! They will be skipped!", locator, badModFiles.size());
-                    brokenFiles.addAll(badModFiles.stream().map(IModFile::getModFileInfo).toList());
-                }
-                locatedFiles.removeAll(badModFiles);
-                LOGGER.debug(LogMarkers.SCAN, "Locator {} found {} valid mod files", locator, locatedFiles.size());
-                handleLocatedFiles(loadedFiles, locatedFiles);
-            } catch (InvalidModFileException imfe) {
-                // We don't generally expect this exception, since it should come from the candidates stream above and be handled in the Locator, but just in case.
-                LOGGER.error(LogMarkers.SCAN, "Locator {} found an invalid mod file {}", locator, imfe.getBrokenFile(), imfe);
-                brokenFiles.add(imfe.getBrokenFile());
-            } catch (EarlyLoadingException exception) {
-                LOGGER.error(LogMarkers.SCAN, "Failed to load mods with locator {}", locator, exception);
-                discoveryErrorData.addAll(exception.getAllData());
+        // Loop all mod locators to get the root mods to load from.
+        for (var locator : modFileLocators) {
+            LOGGER.debug(LogMarkers.SCAN, "Trying locator {}", locator);
+
+            var defaultAttributes = ModFileDiscoveryAttributes.DEFAULT.withLocator(locator);
+            var pipeline = new DiscoveryPipeline(defaultAttributes, loadedFiles, discoveryIssues);
+            try {
+                locator.findCandidates(launchContext, pipeline);
+            } catch (ModLoadingException e) {
+                discoveryIssues.addAll(e.getIssues());
+            } catch (Exception e) {
+                discoveryIssues.add(ModLoadingIssue.error("fml.modloading.technical_error", locator.toString() + "failed").withCause(e));
             }
+
+            LOGGER.debug(LogMarkers.SCAN, "Locator {} found {} mods, {} warnings, {} errors and skipped {} candidates", locator,
+                    pipeline.successCount, pipeline.warningCount, pipeline.errorCount, pipeline.skipCount);
         }
 
         //First processing run of the mod list. Any duplicates will cause resolution failure and dependency loading will be skipped.
-        Map<IModFile.Type, List<ModFile>> modFilesMap = Maps.newHashMap();
+        Map<IModFile.Type, List<ModFile>> modFilesMap = Collections.emptyMap();
         try {
             final UniqueModListBuilder modsUniqueListBuilder = new UniqueModListBuilder(loadedFiles);
             final UniqueModListBuilder.UniqueModListData uniqueModsData = modsUniqueListBuilder.buildUniqueList();
@@ -108,33 +88,25 @@ public class ModDiscoverer {
             //Grab the temporary results.
             //This allows loading to continue to a base state, in case dependency loading fails.
             modFilesMap = uniqueModsData.modFiles().stream()
-                            .collect(Collectors.groupingBy(IModFile::getType));
+                    .collect(Collectors.groupingBy(IModFile::getType));
             loadedFiles = uniqueModsData.modFiles();
-        }
-        catch (EarlyLoadingException exception) {
+        } catch (ModLoadingException exception) {
             LOGGER.error(LogMarkers.SCAN, "Failed to build unique mod list after mod discovery.", exception);
-            discoveryErrorData.addAll(exception.getAllData());
+            discoveryIssues.addAll(exception.getIssues());
             successfullyLoadedMods = false;
         }
 
         //We can continue loading if prime mods loaded successfully.
         if (successfullyLoadedMods) {
             LOGGER.debug(LogMarkers.SCAN, "Successfully Loaded {} mods. Attempting to load dependencies...", loadedFiles.size());
-            for (IDependencyLocator locator : dependencyLocatorList) {
+            for (var locator : dependencyLocators) {
                 try {
-                    LOGGER.debug(LogMarkers.SCAN,"Trying locator {}", locator);
-                    final List<IModFile> locatedMods = ImmutableList.copyOf(loadedFiles);
-
-                    var locatedFiles = locator.scanMods(locatedMods);
-                    if (locatedFiles.stream().anyMatch(file -> !(file instanceof ModFile))) {
-                        LOGGER.error(LogMarkers.SCAN, "A dependency locator returned a file which is not a ModFile instance!. They will be skipped!");
-                    }
-
-                    handleLocatedFiles(loadedFiles, locatedFiles);
-                }
-                catch (EarlyLoadingException exception) {
+                    LOGGER.debug(LogMarkers.SCAN, "Trying locator {}", locator);
+                    var pipeline = new DiscoveryPipeline(ModFileDiscoveryAttributes.DEFAULT.withDependencyLocator(locator), loadedFiles, discoveryIssues);
+                    locator.scanMods(List.copyOf(loadedFiles), pipeline);
+                } catch (ModLoadingException exception) {
                     LOGGER.error(LogMarkers.SCAN, "Failed to load dependencies with locator {}", locator, exception);
-                    discoveryErrorData.addAll(exception.getAllData());
+                    discoveryIssues.addAll(exception.getIssues());
                 }
             }
 
@@ -145,31 +117,150 @@ public class ModDiscoverer {
 
                 //We now only need the mod files map, not the list.
                 modFilesMap = uniqueModsAndDependenciesData.modFiles().stream()
-                                .collect(Collectors.groupingBy(IModFile::getType));
-            } catch (EarlyLoadingException exception) {
+                        .collect(Collectors.groupingBy(IModFile::getType));
+            } catch (ModLoadingException exception) {
                 LOGGER.error(LogMarkers.SCAN, "Failed to build unique mod list after dependency discovery.", exception);
-                discoveryErrorData.addAll(exception.getAllData());
+                discoveryIssues.addAll(exception.getIssues());
                 modFilesMap = loadedFiles.stream().collect(Collectors.groupingBy(IModFile::getType));
             }
-        }
-        else {
+        } else {
             //Failure notify the listeners.
             LOGGER.error(LogMarkers.SCAN, "Mod Discovery failed. Skipping dependency discovery.");
         }
 
         //Validate the loading. With a deduplicated list, we can now successfully process the artifacts and load
         //transformer plugins.
-        var validator = new ModValidator(modFilesMap, brokenFiles, discoveryErrorData);
+        var validator = new ModValidator(modFilesMap, discoveryIssues);
         validator.stage1Validation();
         return validator;
     }
 
-    private void handleLocatedFiles(final List<ModFile> loadedFiles, final List<IModFile> locatedFiles)
-    {
-        var locatedModFiles = locatedFiles.stream().filter(ModFile.class::isInstance).map(ModFile.class::cast).toList();
-        for (IModFile mf : locatedModFiles) {
-            LOGGER.info(LogMarkers.SCAN, "Found mod file \"{}\" of type {} with provider {}", mf.getFileName(), mf.getType(), mf.getProvider());
+    private class DiscoveryPipeline implements IDiscoveryPipeline {
+        private final ModFileDiscoveryAttributes defaultAttributes;
+        private final List<ModFile> loadedFiles;
+        private final List<ModLoadingIssue> issues;
+
+        private int successCount;
+        private int errorCount;
+        private int warningCount;
+        private int skipCount;
+
+        public DiscoveryPipeline(ModFileDiscoveryAttributes defaultAttributes,
+                List<ModFile> loadedFiles,
+                List<ModLoadingIssue> issues) {
+            this.defaultAttributes = defaultAttributes;
+            this.loadedFiles = loadedFiles;
+            this.issues = issues;
         }
-        loadedFiles.addAll(locatedModFiles);
+
+        @Override
+        public Optional<IModFile> addPath(List<Path> groupedPaths, ModFileDiscoveryAttributes attributes, IncompatibleFileReporting reporting) {
+            var primaryPath = groupedPaths.getFirst();
+
+            if (!launchContext.addLocated(primaryPath)) {
+                LOGGER.debug("Skipping {} because it was already located earlier", primaryPath);
+                skipCount++;
+                return Optional.empty();
+            }
+
+            JarContents jarContents;
+            try {
+                jarContents = JarContents.of(groupedPaths);
+            } catch (Exception e) {
+                if (causeChainContains(e, ZipException.class)) {
+                    addIssue(ModLoadingIssue.error("fml.modloading.brokenfile.invalidzip", primaryPath).withAffectedPath(primaryPath).withCause(e));
+                } else {
+                    addIssue(ModLoadingIssue.error("fml.modloading.brokenfile", primaryPath).withAffectedPath(primaryPath).withCause(e));
+                }
+                return Optional.empty();
+            }
+
+            return addJarContent(jarContents, attributes, reporting);
+        }
+
+        @Override
+        public @Nullable IModFile readModFile(JarContents jarContents, ModFileDiscoveryAttributes attributes) {
+            for (var reader : modFileReaders) {
+                var provided = reader.read(jarContents, attributes);
+                if (provided != null) {
+                    return provided;
+                }
+            }
+
+            throw new RuntimeException("No mod reader felt responsible for " + jarContents.getPrimaryPath());
+        }
+
+        @Override
+        public Optional<IModFile> addJarContent(JarContents jarContents, ModFileDiscoveryAttributes attributes, IncompatibleFileReporting reporting) {
+            attributes = defaultAttributes.merge(attributes);
+
+            for (var reader : modFileReaders) {
+                try {
+                    var provided = reader.read(jarContents, attributes);
+                    if (provided != null) {
+                        if (addModFile(provided)) {
+                            return Optional.of(provided);
+                        }
+                        return Optional.empty();
+                    }
+                } catch (Exception e) {
+                    addIssue(ModLoadingIssue.error("fml.modloading.brokenfile", jarContents.getPrimaryPath()).withAffectedPath(jarContents.getPrimaryPath()).withCause(e));
+                    return Optional.empty();
+                }
+            }
+
+            // If a jar file was found in a subdirectory of the game directory, but could not be loaded,
+            // it might be an incompatible mod type. We do not perform this validation for jars that we
+            // found on the classpath or other locations since these are usually not under user control.
+            if (reporting == IncompatibleFileReporting.ERROR) {
+                addIssue(ModLoadingIssue.error("fml.modloading.brokenfile", jarContents.getPrimaryPath()));
+            } else if (reporting == IncompatibleFileReporting.WARN_ON_KNOWN_INCOMPATIBILITY || reporting == IncompatibleFileReporting.WARN_ALWAYS) {
+                var reason = IncompatibleModReason.detect(jarContents);
+                if (reason.isPresent()) {
+                    LOGGER.warn(LogMarkers.SCAN, "Found incompatible jar {} with reason {}. Skipping.", jarContents.getPrimaryPath(), reason.get());
+                    addIssue(ModLoadingIssue.warning(reason.get().getReason(), jarContents.getPrimaryPath()).withAffectedPath(jarContents.getPrimaryPath()));
+                } else if (reporting == IncompatibleFileReporting.WARN_ALWAYS) {
+                    LOGGER.warn(LogMarkers.SCAN, "Ignoring incompatible jar {} for an unknown reason.", jarContents.getPrimaryPath());
+                    addIssue(ModLoadingIssue.warning("fml.modloading.brokenfile", jarContents.getPrimaryPath()).withAffectedPath(jarContents.getPrimaryPath()));
+                }
+            }
+            return Optional.empty();
+        }
+
+        @Override
+        public boolean addModFile(IModFile mf) {
+            if (!(mf instanceof ModFile modFile)) {
+                String detail = "Unexpected IModFile subclass: " + mf.getClass();
+                addIssue(ModLoadingIssue.error("fml.modloading.technical_error", detail).withAffectedModFile(mf));
+                return false;
+            }
+
+            modFile.setDiscoveryAttributes(defaultAttributes.merge(mf.getDiscoveryAttributes()));
+
+            var discoveryAttributes = mf.getDiscoveryAttributes();
+            LOGGER.info(LogMarkers.SCAN, "Found {} file \"{}\" {}", mf.getType().name().toLowerCase(Locale.ROOT), mf.getFileName(), discoveryAttributes);
+
+            loadedFiles.add(modFile);
+            successCount++;
+            return true;
+        }
+
+        @Override
+        public void addIssue(ModLoadingIssue issue) {
+            issues.add(issue);
+            switch (issue.severity()) {
+                case WARNING -> warningCount++;
+                case ERROR -> errorCount++;
+            }
+        }
+    }
+
+    private static boolean causeChainContains(Throwable e, Class<?> exceptionClass) {
+        for (; e != null; e = e.getCause()) {
+            if (exceptionClass.isInstance(e)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

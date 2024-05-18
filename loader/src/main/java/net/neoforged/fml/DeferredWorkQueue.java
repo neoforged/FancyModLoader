@@ -7,9 +7,7 @@ package net.neoforged.fml;
 
 import static net.neoforged.fml.Logging.LOADING;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import com.google.common.base.Stopwatch;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -17,8 +15,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import com.google.common.base.Stopwatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,28 +29,19 @@ import org.apache.logging.log4j.Logger;
  * Exceptions from tasks will be handled gracefully, causing a mod loading
  * error. Tasks that take egregiously long times to run will be logged.
  */
-public class DeferredWorkQueue
-{
+public class DeferredWorkQueue {
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final Map<ModLoadingStage, DeferredWorkQueue> workQueues = new HashMap<>();
-
     private final ConcurrentLinkedDeque<TaskInfo> tasks = new ConcurrentLinkedDeque<>();
-    private final ModLoadingStage modLoadingStage;
+    private final String name;
 
-    public DeferredWorkQueue(ModLoadingStage modLoadingStage) {
-        this.modLoadingStage = modLoadingStage;
-        workQueues.put(modLoadingStage, this);
-    }
-
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    public static Optional<DeferredWorkQueue> lookup(Optional<ModLoadingStage> parallelClass) {
-        return Optional.ofNullable(workQueues.get(parallelClass.orElse(null)));
+    public DeferredWorkQueue(String name) {
+        this.name = name;
     }
 
     public void runTasks() {
         if (tasks.isEmpty()) return;
-        LOGGER.debug(LOADING, "Dispatching synchronous work for work queue {}: {} jobs", modLoadingStage, tasks.size());
+        LOGGER.debug(LOADING, "Dispatching synchronous work for work queue {}: {} jobs", name, tasks.size());
         RuntimeException aggregate = new RuntimeException();
         Stopwatch timer = Stopwatch.createStarted();
         tasks.forEach(t -> makeRunnable(t, Runnable::run, aggregate));
@@ -64,8 +51,7 @@ public class DeferredWorkQueue
                     LOADING,
                     "Synchronous work queue completed exceptionally in {}, see suppressed exceptions for details:",
                     timer,
-                    aggregate
-            );
+                    aggregate);
             throw aggregate;
         } else {
             LOGGER.debug(LOADING, "Synchronous work queue completed in {}", timer);

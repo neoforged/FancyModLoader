@@ -5,17 +5,17 @@
 
 package net.neoforged.fml.loading.moddiscovery;
 
-import com.electronwill.nightconfig.core.UnmodifiableConfig;
-import net.neoforged.neoforgespi.language.IConfigurable;
-import net.neoforged.neoforgespi.language.IModFileInfo;
+import static java.util.Arrays.asList;
 
+import com.electronwill.nightconfig.core.UnmodifiableConfig;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static java.util.Arrays.asList;
+import net.neoforged.neoforgespi.language.IConfigurable;
+import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.locating.InvalidModFileException;
 
 public class NightConfigWrapper implements IConfigurable {
     private final UnmodifiableConfig config;
@@ -25,7 +25,7 @@ public class NightConfigWrapper implements IConfigurable {
         this.config = config;
     }
 
-    NightConfigWrapper setFile(IModFileInfo file) {
+    public NightConfigWrapper setFile(IModFileInfo file) {
         this.file = file;
         return this;
     }
@@ -48,12 +48,12 @@ public class NightConfigWrapper implements IConfigurable {
     public List<? extends IConfigurable> getConfigList(final String... key) {
         final List<String> path = asList(key);
         if (this.config.contains(path) && !(this.config.get(path) instanceof Collection)) {
-            throw new InvalidModFileException("The configuration path "+path+" is invalid. Expecting a collection!", file);
+            throw new InvalidModFileException("The configuration path " + path + " is invalid. Expecting a collection!", file);
         }
         final Collection<UnmodifiableConfig> nestedConfigs = this.config.getOrElse(path, ArrayList::new);
         return nestedConfigs.stream()
                 .map(NightConfigWrapper::new)
-                .map(cw->cw.setFile(file))
+                .map(cw -> cw.setFile(file))
                 .collect(Collectors.toList());
     }
 }

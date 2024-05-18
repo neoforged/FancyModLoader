@@ -26,8 +26,7 @@ dependencies {
     implementation("net.sf.jopt-simple:jopt-simple:${jopt_simple_version}")
     
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiter_version}")
-    testImplementation("org.powermock:powermock-core:${powermock_version}")
-    
+
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiter_version}")
     testRuntimeOnly("org.slf4j:slf4j-jdk14:${slf4j_api_version}")
     testRuntimeOnly("org.lwjgl:lwjgl::${lwjglNatives}")

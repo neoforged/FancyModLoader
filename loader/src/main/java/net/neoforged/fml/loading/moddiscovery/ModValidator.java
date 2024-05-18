@@ -8,37 +8,36 @@ package net.neoforged.fml.loading.moddiscovery;
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
-import net.neoforged.fml.loading.*;
-import net.neoforged.neoforgespi.language.IModFileInfo;
-import net.neoforged.neoforgespi.locating.IModFile;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import net.neoforged.fml.ModLoadingException;
+import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.loading.ImmediateWindowHandler;
+import net.neoforged.fml.loading.LoadingModList;
+import net.neoforged.fml.loading.LogMarkers;
+import net.neoforged.fml.loading.ModSorter;
+import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
+import net.neoforged.neoforgespi.locating.IModFile;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 
 public class ModValidator {
     private static final Logger LOGGER = LogUtils.getLogger();
     private final Map<IModFile.Type, List<ModFile>> modFiles;
     private final List<ModFile> candidatePlugins;
     private final List<ModFile> candidateMods;
+    private final List<ModLoadingIssue> issues;
     private LoadingModList loadingModList;
-    private List<IModFile> brokenFiles;
-    private final List<EarlyLoadingException.ExceptionData> discoveryErrorData;
 
-    public ModValidator(final Map<IModFile.Type, List<ModFile>> modFiles, final List<IModFileInfo> brokenFiles, final List<EarlyLoadingException.ExceptionData> discoveryErrorData) {
+    public ModValidator(Map<IModFile.Type, List<ModFile>> modFiles, List<ModLoadingIssue> issues) {
         this.modFiles = modFiles;
         this.candidateMods = lst(modFiles.get(IModFile.Type.MOD));
         this.candidateMods.addAll(lst(modFiles.get(IModFile.Type.GAMELIBRARY)));
-        this.candidatePlugins = lst(modFiles.get(IModFile.Type.LANGPROVIDER));
-        this.candidatePlugins.addAll(lst(modFiles.get(IModFile.Type.LIBRARY)));
-        this.discoveryErrorData = discoveryErrorData;
-        this.brokenFiles = brokenFiles.stream().map(IModFileInfo::getFile).collect(Collectors.toList()); // mutable list
+        this.candidatePlugins = lst(modFiles.get(IModFile.Type.LIBRARY));
+        this.issues = issues;
     }
 
     private static List<ModFile> lst(@Nullable List<ModFile> files) {
@@ -46,26 +45,21 @@ public class ModValidator {
     }
 
     public void stage1Validation() {
-        brokenFiles.addAll(validateFiles(candidateMods));
+        validateFiles(candidateMods);
         if (LOGGER.isDebugEnabled(LogMarkers.SCAN)) {
             LOGGER.debug(LogMarkers.SCAN, "Found {} mod files with {} mods", candidateMods.size(), candidateMods.stream().mapToInt(mf -> mf.getModInfos().size()).sum());
         }
-        ImmediateWindowHandler.updateProgress("Found "+candidateMods.size()+" mod candidates");
+        ImmediateWindowHandler.updateProgress("Found " + candidateMods.size() + " mod candidates");
     }
 
-    @NotNull
-    private List<ModFile> validateFiles(final List<ModFile> mods) {
-        final List<ModFile> brokenFiles = new ArrayList<>();
-        for (Iterator<ModFile> iterator = mods.iterator(); iterator.hasNext(); )
-        {
-            ModFile modFile = iterator.next();
-            if (!modFile.getProvider().isValid(modFile) || !modFile.identifyMods()) {
+    private void validateFiles(final List<ModFile> mods) {
+        for (Iterator<ModFile> iterator = mods.iterator(); iterator.hasNext();) {
+            var modFile = iterator.next();
+            if (!modFile.identifyMods()) {
                 LOGGER.warn(LogMarkers.SCAN, "File {} has been ignored - it is invalid", modFile.getFilePath());
                 iterator.remove();
-                brokenFiles.add(modFile);
             }
         }
-        return brokenFiles;
     }
 
     public ITransformationService.Resource getPluginResources() {
@@ -81,32 +75,29 @@ public class ModValidator {
         return new ITransformationService.Resource(IModuleLayerManager.Layer.GAME, modFilesToLoad.map(ModFile::getSecureJar).toList());
     }
 
-    private List<EarlyLoadingException.ExceptionData> validateLanguages() {
-        List<EarlyLoadingException.ExceptionData> errorData = new ArrayList<>();
-        for (Iterator<ModFile> iterator = this.candidateMods.iterator(); iterator.hasNext(); ) {
-            final ModFile modFile = iterator.next();
+    private void validateLanguages() {
+        for (Iterator<ModFile> iterator = this.candidateMods.iterator(); iterator.hasNext();) {
+            var modFile = iterator.next();
             try {
                 modFile.identifyLanguage();
-            } catch (EarlyLoadingException e) {
-                errorData.addAll(e.getAllData());
+            } catch (ModLoadingException e) {
+                issues.addAll(e.getIssues());
+                iterator.remove();
+            } catch (Exception e) {
+                issues.add(ModLoadingIssue.error("").withAffectedModFile(modFile).withCause(e));
                 iterator.remove();
             }
         }
-        return errorData;
     }
 
     public BackgroundScanHandler stage2Validation() {
-        var errors = validateLanguages();
+        validateLanguages();
 
-        var allErrors = new ArrayList<>(errors);
-        allErrors.addAll(this.discoveryErrorData);
-
-        loadingModList = ModSorter.sort(candidateMods, allErrors);
+        loadingModList = ModSorter.sort(candidateMods, issues);
         loadingModList.addCoreMods();
         loadingModList.addAccessTransformers();
         loadingModList.addMixinConfigs();
-        loadingModList.setBrokenFiles(brokenFiles);
-        BackgroundScanHandler backgroundScanHandler = new BackgroundScanHandler();
+        var backgroundScanHandler = new BackgroundScanHandler();
         loadingModList.addForScanning(backgroundScanHandler);
         return backgroundScanHandler;
     }

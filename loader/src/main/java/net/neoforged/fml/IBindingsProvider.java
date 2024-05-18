@@ -7,11 +7,11 @@ package net.neoforged.fml;
 
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.config.IConfigEvent;
+import org.jetbrains.annotations.ApiStatus;
 
-import java.util.function.Supplier;
-
+@ApiStatus.Internal
 public interface IBindingsProvider {
-    Supplier<IEventBus> getForgeBusSupplier();
-    Supplier<I18NParser> getMessageParser();
-    Supplier<IConfigEvent.ConfigConfig> getConfigConfiguration();
+    IEventBus getGameBus();
+
+    IConfigEvent.ConfigConfig getConfigConfiguration();
 }

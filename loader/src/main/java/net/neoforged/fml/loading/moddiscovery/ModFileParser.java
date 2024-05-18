@@ -9,12 +9,6 @@ import com.electronwill.nightconfig.core.file.FileConfig;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.mojang.logging.LogUtils;
-import net.neoforged.fml.loading.LogMarkers;
-import net.neoforged.neoforgespi.language.IModFileInfo;
-import net.neoforged.neoforgespi.locating.IModFile;
-import net.neoforged.neoforgespi.locating.ModFileFactory;
-import org.slf4j.Logger;
-
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
@@ -23,20 +17,27 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import net.neoforged.fml.loading.LogMarkers;
+import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
+import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.locating.IModFile;
+import net.neoforged.neoforgespi.locating.InvalidModFileException;
+import net.neoforged.neoforgespi.locating.ModFileInfoParser;
+import org.slf4j.Logger;
 
 public class ModFileParser {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public static IModFileInfo readModList(final ModFile modFile, final ModFileFactory.ModFileInfoParser parser) {
+    public static IModFileInfo readModList(final ModFile modFile, final ModFileInfoParser parser) {
         return parser.build(modFile);
     }
 
     public static IModFileInfo modsTomlParser(final IModFile imodFile) {
         ModFile modFile = (ModFile) imodFile;
-        LOGGER.debug(LogMarkers.LOADING,"Considering mod file candidate {}", modFile.getFilePath());
-        final Path modsjson = modFile.findResource("META-INF", "mods.toml");
+        LOGGER.debug(LogMarkers.LOADING, "Considering mod file candidate {}", modFile.getFilePath());
+        final Path modsjson = modFile.findResource(JarModsDotTomlModFileReader.MODS_TOML);
         if (!Files.exists(modsjson)) {
-            LOGGER.warn(LogMarkers.LOADING, "Mod file {} is missing mods.toml file", modFile.getFilePath());
+            LOGGER.warn(LogMarkers.LOADING, "Mod file {} is missing {} file", modFile.getFilePath(), JarModsDotTomlModFileReader.MODS_TOML);
             return null;
         }
 
@@ -48,7 +49,7 @@ public class ModFileParser {
     }
 
     protected static List<CoreModFile> getCoreMods(final ModFile modFile) {
-        Map<String,String> coreModPaths;
+        Map<String, String> coreModPaths;
         try {
             final Path coremodsjson = modFile.findResource("META-INF", "coremods.json");
             if (!Files.exists(coremodsjson)) {
@@ -58,13 +59,13 @@ public class ModFileParser {
             final Gson gson = new Gson();
             coreModPaths = gson.fromJson(Files.newBufferedReader(coremodsjson), type);
         } catch (IOException e) {
-            LOGGER.debug(LogMarkers.LOADING,"Failed to read coremod list coremods.json", e);
+            LOGGER.debug(LogMarkers.LOADING, "Failed to read coremod list coremods.json", e);
             return Collections.emptyList();
         }
 
         return coreModPaths.entrySet().stream()
-                .peek(e-> LOGGER.debug(LogMarkers.LOADING,"Found coremod {} with Javascript path {}", e.getKey(), e.getValue()))
-                .map(e -> new CoreModFile(e.getKey(), modFile.findResource(e.getValue()),modFile))
+                .peek(e -> LOGGER.debug(LogMarkers.LOADING, "Found coremod {} with Javascript path {}", e.getKey(), e.getValue()))
+                .map(e -> new CoreModFile(e.getKey(), modFile.findResource(e.getValue()), modFile))
                 .toList();
     }
 
@@ -84,7 +85,6 @@ public class ModFileParser {
             return List.of();
         }
     }
-
 
     protected static Optional<List<String>> getAccessTransformers(IModFileInfo modFileInfo) {
         try {

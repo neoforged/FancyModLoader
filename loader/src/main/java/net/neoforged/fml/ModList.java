@@ -5,19 +5,6 @@
 
 package net.neoforged.fml;
 
-import net.neoforged.bus.api.Event;
-import net.neoforged.fml.event.IModBusEvent;
-import net.neoforged.fml.loading.progress.ProgressMeter;
-import net.neoforged.neoforgespi.language.IModFileInfo;
-import net.neoforged.neoforgespi.language.IModInfo;
-import net.neoforged.neoforgespi.language.ModFileScanData;
-import net.neoforged.fml.loading.moddiscovery.ModFile;
-import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
-import net.neoforged.fml.loading.moddiscovery.ModInfo;
-import net.neoforged.neoforgespi.locating.IModFile;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,23 +18,24 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import net.neoforged.fml.loading.moddiscovery.ModFile;
+import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
+import net.neoforged.fml.loading.moddiscovery.ModInfo;
+import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.ModFileScanData;
+import net.neoforged.neoforgespi.locating.IModFile;
 
 /**
  * Master list of all mods - game-side version. This is classloaded in the game scope and
  * can dispatch game level events as a result.
  */
-public class ModList
-{
-    private static Logger LOGGER = LogManager.getLogger();
+public class ModList {
     private static ModList INSTANCE;
     private final List<IModFileInfo> modFiles;
     private final List<IModInfo> sortedList;
@@ -57,36 +45,27 @@ public class ModList
     private List<ModFileScanData> modFileScanData;
     private List<ModContainer> sortedContainers;
 
-    private ModList(final List<ModFile> modFiles, final List<ModInfo> sortedList)
-    {
+    private ModList(final List<ModFile> modFiles, final List<ModInfo> sortedList) {
         this.modFiles = modFiles.stream().map(ModFile::getModFileInfo).map(ModFileInfo.class::cast).collect(Collectors.toList());
-        this.sortedList = sortedList.stream().
-                map(ModInfo.class::cast).
-                collect(Collectors.toList());
-        this.fileById = this.modFiles.stream().map(IModFileInfo::getMods).flatMap(Collection::stream).
-                map(ModInfo.class::cast).
-                collect(Collectors.toMap(ModInfo::getModId, ModInfo::getOwningFile));
+        this.sortedList = sortedList.stream().map(ModInfo.class::cast).collect(Collectors.toList());
+        this.fileById = this.modFiles.stream().map(IModFileInfo::getMods).flatMap(Collection::stream).map(ModInfo.class::cast).collect(Collectors.toMap(ModInfo::getModId, ModInfo::getOwningFile));
         CrashReportCallables.registerCrashCallable("Mod List", this::crashReport);
     }
 
-    private String getModContainerState(String modId) {
-        return getModContainerById(modId).map(ModContainer::getCurrentState).map(Object::toString).orElse("NONE");
-    }
-
     private String fileToLine(IModFile mf) {
-        return String.format(Locale.ENGLISH, "%-50.50s|%-30.30s|%-30.30s|%-20.20s|%-10.10s|Manifest: %s", mf.getFileName(),
-                mf.getModInfos().get(0).getDisplayName(),
-                mf.getModInfos().get(0).getModId(),
-                mf.getModInfos().get(0).getVersion(),
-                getModContainerState(mf.getModInfos().get(0).getModId()),
-                ((ModFileInfo)mf.getModFileInfo()).getCodeSigningFingerprint().orElse("NOSIGNATURE"));
-    }
-    private String crashReport() {
-        return "\n"+applyForEachModFile(this::fileToLine).collect(Collectors.joining("\n\t\t", "\t\t", ""));
+        var mainMod = mf.getModInfos().getFirst();
+        return String.format(Locale.ENGLISH, "%-50.50s|%-30.30s|%-30.30s|%-20.20s|Manifest: %s", mf.getFileName(),
+                mainMod.getDisplayName(),
+                mainMod.getModId(),
+                mainMod.getVersion(),
+                ((ModFileInfo) mf.getModFileInfo()).getCodeSigningFingerprint().orElse("NOSIGNATURE"));
     }
 
-    public static ModList of(List<ModFile> modFiles, List<ModInfo> sortedList)
-    {
+    private String crashReport() {
+        return "\n" + applyForEachModFile(this::fileToLine).collect(Collectors.joining("\n\t\t", "\t\t", ""));
+    }
+
+    public static ModList of(List<ModFile> modFiles, List<ModInfo> sortedList) {
         INSTANCE = new ModList(modFiles, sortedList);
         return INSTANCE;
     }
@@ -95,36 +74,16 @@ public class ModList
         return INSTANCE;
     }
 
-    private static ForkJoinWorkerThread newForkJoinWorkerThread(ForkJoinPool pool) {
-        ForkJoinWorkerThread thread = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
-        thread.setName("modloading-worker-" + thread.getPoolIndex());
-        // The default sets it to the SystemClassloader, so copy the current one.
-        thread.setContextClassLoader(Thread.currentThread().getContextClassLoader());
-        return thread;
-    }
-
-    public List<IModFileInfo> getModFiles()
-    {
+    public List<IModFileInfo> getModFiles() {
         return modFiles;
     }
 
-    public IModFileInfo getModFileById(String modid)
-    {
+    public IModFileInfo getModFileById(String modid) {
         return this.fileById.get(modid);
     }
 
-    <T extends Event & IModBusEvent> Function<Executor, CompletableFuture<Void>> futureVisitor(
-            final IModStateTransition.EventGenerator<T> eventGenerator,
-            final ProgressMeter progressBar,
-            final BiFunction<ModLoadingStage, Throwable, ModLoadingStage> stateChange) {
-        return executor -> gather(
-                this.mods.stream()
-                .map(mod -> ModContainer.buildTransitionHandler(mod, eventGenerator, progressBar, stateChange, executor))
-                .collect(Collectors.toList()))
-            .thenComposeAsync(ModList::completableFutureFromExceptionList, executor);
-    }
     static CompletionStage<Void> completableFutureFromExceptionList(List<? extends Map.Entry<?, Throwable>> t) {
-        if (t.stream().noneMatch(e->e.getValue()!=null)) {
+        if (t.stream().noneMatch(e -> e.getValue() != null)) {
             return CompletableFuture.completedFuture(null);
         } else {
             final List<Throwable> throwables = t.stream().filter(e -> e.getValue() != null).map(Map.Entry::getValue).collect(Collectors.toList());
@@ -135,7 +94,7 @@ public class ModList
                 if (exception instanceof CompletionException) {
                     exception = exception.getCause();
                 }
-                if (exception.getSuppressed().length!=0) {
+                if (exception.getSuppressed().length != 0) {
                     Arrays.stream(exception.getSuppressed()).forEach(accumulator::addSuppressed);
                 } else {
                     accumulator.addSuppressed(exception);
@@ -153,65 +112,39 @@ public class ModList
             list.add(null);
             results[i] = future.whenComplete((result, exception) -> list.set(i, new AbstractMap.SimpleImmutableEntry<>(result, exception)));
         });
-        return CompletableFuture.allOf(results).handle((r, th)->null).thenApply(res -> list);
+        return CompletableFuture.allOf(results).handle((r, th) -> null).thenApply(res -> list);
     }
 
-    void setLoadedMods(final List<ModContainer> modContainers)
-    {
+    void setLoadedMods(final List<ModContainer> modContainers) {
         this.mods = modContainers;
-        this.sortedContainers = modContainers.stream().sorted(Comparator.comparingInt(c->sortedList.indexOf(c.getModInfo()))).toList();
+        this.sortedContainers = modContainers.stream().sorted(Comparator.comparingInt(c -> sortedList.indexOf(c.getModInfo()))).toList();
         this.indexedMods = modContainers.stream().collect(Collectors.toMap(ModContainer::getModId, Function.identity()));
     }
 
-    @SuppressWarnings("unchecked")
-    public <T> Optional<T> getModObjectById(String modId)
-    {
-        return getModContainerById(modId).map(ModContainer::getMod).map(o -> (T) o);
-    }
-
-    public Optional<? extends ModContainer> getModContainerById(String modId)
-    {
+    public Optional<? extends ModContainer> getModContainerById(String modId) {
         return Optional.ofNullable(this.indexedMods.get(modId));
     }
 
-    public Optional<? extends ModContainer> getModContainerByObject(Object obj)
-    {
-        return mods.stream().filter(mc -> mc.getMod() == obj).findFirst();
-    }
-
-    public List<IModInfo> getMods()
-    {
+    public List<IModInfo> getMods() {
         return this.sortedList;
     }
 
-    public boolean isLoaded(String modTarget)
-    {
+    public boolean isLoaded(String modTarget) {
         return this.indexedMods.containsKey(modTarget);
     }
 
-    public int size()
-    {
+    public int size() {
         return mods.size();
     }
 
-    public List<ModFileScanData> getAllScanData()
-    {
-        if (modFileScanData == null)
-        {
-            modFileScanData = this.sortedList.stream().
-                    map(IModInfo::getOwningFile).
-                    filter(Objects::nonNull).
-                    map(IModFileInfo::getFile).
-                    distinct().
-                    map(IModFile::getScanResult).
-                    collect(Collectors.toList());
+    public List<ModFileScanData> getAllScanData() {
+        if (modFileScanData == null) {
+            modFileScanData = this.sortedList.stream().map(IModInfo::getOwningFile).filter(Objects::nonNull).map(IModFileInfo::getFile).distinct().map(IModFile::getScanResult).collect(Collectors.toList());
         }
         return modFileScanData;
-
     }
 
-    public void forEachModFile(Consumer<IModFile> fileConsumer)
-    {
+    public void forEachModFile(Consumer<IModFile> fileConsumer) {
         modFiles.stream().map(IModFileInfo::getFile).forEach(fileConsumer);
     }
 
@@ -233,11 +166,5 @@ public class ModList
 
     public <T> Stream<T> applyForEachModContainer(Function<ModContainer, T> function) {
         return indexedMods.values().stream().map(function);
-    }
-
-    private static class UncaughtModLoadingException extends ModLoadingException {
-        public UncaughtModLoadingException(ModLoadingStage stage, Throwable originalException) {
-            super(null, stage, "fml.modloading.uncaughterror", originalException);
-        }
     }
 }

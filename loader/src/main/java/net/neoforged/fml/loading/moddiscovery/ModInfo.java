@@ -6,18 +6,6 @@
 package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
-import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.StringSubstitutor;
-import net.neoforged.fml.loading.StringUtils;
-import net.neoforged.neoforgespi.language.IConfigurable;
-import net.neoforged.neoforgespi.language.IModInfo;
-import net.neoforged.neoforgespi.language.MavenVersionAdapter;
-import net.neoforged.neoforgespi.locating.ForgeFeature;
-import org.apache.maven.artifact.versioning.ArtifactVersion;
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
-import org.apache.maven.artifact.versioning.VersionRange;
-import org.slf4j.Logger;
-
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
@@ -25,9 +13,20 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import net.neoforged.fml.loading.StringSubstitutor;
+import net.neoforged.fml.loading.StringUtils;
+import net.neoforged.neoforgespi.language.IConfigurable;
+import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.IModLanguageLoader;
+import net.neoforged.neoforgespi.language.MavenVersionAdapter;
+import net.neoforged.neoforgespi.locating.ForgeFeature;
+import net.neoforged.neoforgespi.locating.InvalidModFileException;
+import org.apache.maven.artifact.versioning.ArtifactVersion;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import org.apache.maven.artifact.versioning.VersionRange;
+import org.slf4j.Logger;
 
-public class ModInfo implements IModInfo, IConfigurable
-{
+public class ModInfo implements IModInfo, IConfigurable {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final DefaultArtifactVersion DEFAULT_VERSION = new DefaultArtifactVersion("1");
     private static final Pattern VALID_MODID = Pattern.compile("^[a-z][a-z0-9_]{1,63}$");
@@ -46,12 +45,11 @@ public class ModInfo implements IModInfo, IConfigurable
     private final List<? extends IModInfo.ModVersion> dependencies;
 
     private final List<ForgeFeature.Bound> features;
-    private final Map<String,Object> properties;
+    private final Map<String, Object> properties;
     private final IConfigurable config;
     private final Optional<URL> modUrl;
 
-    public ModInfo(final ModFileInfo owningFile, final IConfigurable config)
-    {
+    public ModInfo(final ModFileInfo owningFile, final IConfigurable config) {
         Optional<ModFileInfo> ownFile = Optional.ofNullable(owningFile);
         this.owningFile = owningFile;
         this.config = config;
@@ -76,7 +74,7 @@ public class ModInfo implements IModInfo, IConfigurable
                 .orElse(DEFAULT_VERSION);
         // verify we have a valid mod version
         if (!VALID_VERSION.matcher(this.version.toString()).matches()) {
-            throw new InvalidModFileException("Illegal version number specified "+this.version, this.getOwningFile());
+            throw new InvalidModFileException("Illegal version number specified " + this.version, this.getOwningFile());
         }
         // The remaining properties all default to sensible values and are not essential
         this.displayName = config.<String>getConfigElement("displayName")
@@ -103,11 +101,16 @@ public class ModInfo implements IModInfo, IConfigurable
                 .toList();
         this.features = ownFile.flatMap(mfi -> mfi.<Map<String, Object>>getConfigElement("features", this.modId))
                 .stream()
-                .flatMap(m->m.entrySet().stream())
+                .flatMap(m -> m.entrySet().stream())
                 .map(this::makeBound)
                 .toList();
         this.properties = ownFile.flatMap(mfi -> mfi.<Map<String, Object>>getConfigElement("modproperties", this.modId))
                 .orElse(Collections.emptyMap());
+    }
+
+    @Override
+    public IModLanguageLoader getLoader() {
+        return owningFile.getFile().getLoaders().getFirst();
     }
 
     @Override
@@ -121,14 +124,12 @@ public class ModInfo implements IModInfo, IConfigurable
     }
 
     @Override
-    public String getDisplayName()
-    {
+    public String getDisplayName() {
         return this.displayName;
     }
 
     @Override
-    public String getDescription()
-    {
+    public String getDescription() {
         return this.description;
     }
 
@@ -158,14 +159,12 @@ public class ModInfo implements IModInfo, IConfigurable
     }
 
     @Override
-    public Optional<String> getLogoFile()
-    {
+    public Optional<String> getLogoFile() {
         return this.logoFile;
     }
 
     @Override
-    public boolean getLogoBlur()
-    {
+    public boolean getLogoBlur() {
         return this.logoBlur;
     }
 
@@ -215,25 +214,9 @@ public class ModInfo implements IModInfo, IConfigurable
         public ModVersion(final IModInfo owner, final IConfigurable config) {
             this.owner = owner;
             this.modId = config.<String>getConfigElement("modId")
-                    .orElseThrow(()->new InvalidModFileException("Missing required field modid in dependency", getOwningFile()));
+                    .orElseThrow(() -> new InvalidModFileException("Missing required field modid in dependency", getOwningFile()));
             this.type = config.<String>getConfigElement("type")
-                    // TODO - 1.21: remove the fallback to the mandatory field
-                    .map(str -> str.toUpperCase(Locale.ROOT)).map(DependencyType::valueOf).orElseGet(() -> {
-                        final var mandatory = config.<Boolean>getConfigElement("mandatory");
-                        if (mandatory.isPresent()) {
-                            if (!FMLLoader.isProduction()) {
-                                LOGGER.error("Mod '{}' uses deprecated 'mandatory' field in the dependency declaration for '{}'. Use the 'type' field and 'required'/'optional' instead", owner.getModId(), modId);
-                                // only error the mod being "developed" (i.e. found through the MOD_CLASSES) to prevent dependencies from causing the crash
-                                if (owner.getOwningFile().getFile().getProvider() instanceof MinecraftLocator) {
-                                    throw new InvalidModFileException("Deprecated 'mandatory' field is used in dependency", getOwningFile());
-                                }
-                            }
-
-                            return mandatory.get() ? DependencyType.REQUIRED : DependencyType.OPTIONAL;
-                        }
-
-                        return DependencyType.REQUIRED;
-                    });
+                    .map(str -> str.toUpperCase(Locale.ROOT)).map(DependencyType::valueOf).orElse(DependencyType.REQUIRED);
             this.reason = config.<String>getConfigElement("reason");
             this.versionRange = config.<String>getConfigElement("versionRange")
                     .map(MavenVersionAdapter::createFromVersionSpec)
@@ -248,16 +231,13 @@ public class ModInfo implements IModInfo, IConfigurable
                     .map(StringUtils::toURL);
         }
 
-
         @Override
-        public String getModId()
-        {
+        public String getModId() {
             return modId;
         }
 
         @Override
-        public VersionRange getVersionRange()
-        {
+        public VersionRange getVersionRange() {
             return versionRange;
         }
 
@@ -272,26 +252,22 @@ public class ModInfo implements IModInfo, IConfigurable
         }
 
         @Override
-        public Ordering getOrdering()
-        {
+        public Ordering getOrdering() {
             return ordering;
         }
 
         @Override
-        public DependencySide getSide()
-        {
+        public DependencySide getSide() {
             return side;
         }
 
         @Override
-        public void setOwner(final IModInfo owner)
-        {
+        public void setOwner(final IModInfo owner) {
             this.owner = owner;
         }
 
         @Override
-        public IModInfo getOwner()
-        {
+        public IModInfo getOwner() {
             return owner;
         }
 
@@ -300,5 +276,4 @@ public class ModInfo implements IModInfo, IConfigurable
             return referralUrl;
         }
     }
-
 }

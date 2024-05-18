@@ -1,10 +1,17 @@
+plugins {
+    id 'net.neoforged.jarcompatibilitychecker' version '0.1.3'
+}
+
+checkJarCompatibility {
+    isAPI = true
+}
+
 dependencies {
     compileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
 
     api("org.ow2.asm:asm:${asm_version}")
     api("org.ow2.asm:asm-tree:${asm_version}")
     api("org.ow2.asm:asm-commons:${asm_version}")
-    api(project(':spi'))
     api("net.neoforged:mergetool:${mergetool_version}:api")
     api("org.apache.logging.log4j:log4j-api:${log4j_version}")
     api("org.slf4j:slf4j-api:${slf4j_api_version}")
@@ -27,7 +34,7 @@ dependencies {
     implementation("net.neoforged.accesstransformers:at-modlauncher:${accesstransformers_version}") {
         exclude module: 'modlauncher'
     }
-    implementation("org.spongepowered:mixin:${mixin_version}")
+    implementation("net.fabricmc:sponge-mixin:${mixin_version}")
     implementation("net.minecrell:terminalconsoleappender:${terminalconsoleappender_version}")
     implementation("commons-io:commons-io:${commons_io_version}")
 
@@ -36,6 +43,14 @@ dependencies {
 
     testCompileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
     testRuntimeOnly("cpw.mods:bootstraplauncher:${bootstraplauncher_version}")
+    testRuntimeOnly("org.apache.logging.log4j:log4j-core:$log4j_version")
+    testRuntimeOnly("net.neoforged:JarJarFileSystems:$jarjar_version")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:$jupiter_version")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:$jupiter_version")
+    testImplementation("org.mockito:mockito-junit-jupiter:$mockito_version")
+    testImplementation("org.assertj:assertj-core:3.25.3")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:$jupiter_version")
+    testImplementation('com.google.jimfs:jimfs:1.3.0')
 
     // Provides the JUnit project as a BOM entry
     constraints {
@@ -43,3 +58,21 @@ dependencies {
     }
 }
 
+spotless {
+    java {
+        // courtesy of diffplug/spotless#240
+        // https://github.com/diffplug/spotless/issues/240#issuecomment-385206606
+        custom 'noWildcardImports', { String fileContents ->
+            if (fileContents.contains('*;\n')) {
+                throw new GradleException('No wildcard imports are allowed!')
+            }
+        }
+
+        custom 'noNotNull', { String fileContents ->
+            if (fileContents.contains('@NotNull') || fileContents.contains('@Nonnull')) {
+                throw new GradleException('@NotNull and @Nonnull are disallowed.')
+            }
+        }
+        bumpThisNumberIfACustomStepChanges(1)
+    }
+}

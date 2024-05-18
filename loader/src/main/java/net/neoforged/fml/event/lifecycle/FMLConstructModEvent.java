@@ -5,11 +5,11 @@
 
 package net.neoforged.fml.event.lifecycle;
 
+import net.neoforged.fml.DeferredWorkQueue;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.ModLoadingStage;
 
 public class FMLConstructModEvent extends ParallelDispatchEvent {
-    public FMLConstructModEvent(final ModContainer container, final ModLoadingStage stage) {
-        super(container, stage);
+    public FMLConstructModEvent(ModContainer container, DeferredWorkQueue deferredWorkQueue) {
+        super(container, deferredWorkQueue);
     }
 }

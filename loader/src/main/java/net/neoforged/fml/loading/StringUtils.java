@@ -5,12 +5,11 @@
 
 package net.neoforged.fml.loading;
 
-import org.apache.commons.lang3.text.StrSubstitutor;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.commons.lang3.text.StrSubstitutor;
 
 public class StringUtils {
     public static String toLowerCase(final String str) {
@@ -31,8 +30,8 @@ public class StringUtils {
             return null;
 
         try {
-            return new URL(string); }
-        catch (MalformedURLException e) {
+            return new URL(string);
+        } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
     }
@@ -44,8 +43,8 @@ public class StringUtils {
     public static String binToHex(final byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < bytes.length; i++) {
-            sb.append(Integer.toHexString((bytes[i]&0xf0) >>4));
-            sb.append(Integer.toHexString(bytes[i]&0x0f));
+            sb.append(Integer.toHexString((bytes[i] & 0xf0) >> 4));
+            sb.append(Integer.toHexString(bytes[i] & 0x0f));
         }
         return sb.toString();
     }
