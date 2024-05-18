@@ -5,11 +5,8 @@
 
 package net.neoforged.fml;
 
-import com.google.common.collect.Streams;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Stream;
-import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import org.jetbrains.annotations.Nullable;
@@ -54,22 +51,23 @@ public record ModLoadingIssue(
         return new ModLoadingIssue(severity, translationKey, translationArgs, cause, affectedPath, affectedModFile, affectedMod);
     }
 
-    public String getTranslatedMessage() {
-        Object[] formattingArgs;
-        // TODO: cleanup null here - this requires moving all indices in the translations
-        if (severity == Severity.ERROR) {
-            // Error translations included a "cause" in position 2
-            formattingArgs = Streams.concat(Stream.of(affectedMod, null, cause), translationArgs.stream()).toArray();
-        } else {
-            formattingArgs = Streams.concat(Stream.of(affectedMod, null), translationArgs.stream()).toArray();
-        }
-
-        return FMLTranslations.parseEnglishMessage(translationKey, formattingArgs);
-    }
-
     @Override
     public String toString() {
-        return severity + ": " + getTranslatedMessage();
+        var result = new StringBuilder(severity + ": " + translationKey);
+        if (!translationArgs.isEmpty()) {
+            result.append(" [");
+            for (int i = 0; i < translationArgs.size(); i++) {
+                if (i > 0) {
+                    result.append("; ");
+                }
+                result.append(translationArgs.get(i));
+            }
+            result.append("]");
+        }
+        if (cause != null) {
+            result.append(" caused by ").append(cause);
+        }
+        return result.toString();
     }
     public enum Severity {
         WARNING,

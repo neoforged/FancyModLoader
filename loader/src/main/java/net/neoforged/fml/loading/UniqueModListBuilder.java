@@ -72,30 +72,30 @@ public class UniqueModListBuilder {
 
         // Its theoretically possible that some mod has somehow moved an id to a secondary place, thus causing a dupe.
         // We can't handle this
-        final List<String> dupedModErrors = modIds.values().stream()
+        final List<ModLoadingIssue> dupedModErrors = modIds.values().stream()
                 .filter(modInfos -> modInfos.size() > 1)
-                .map(mods -> String.format("\tMod ID: '%s' from mod files: %s",
-                        mods.get(0).getModId(),
-                        mods.stream()
-                                .map(modInfo -> modInfo.getOwningFile().getFile().getFileName()).collect(joining(", "))))
+                .map(mods -> ModLoadingIssue.error(
+                        "fml.modloading.duplicate_mod",
+                        mods.getFirst().getModId(),
+                        mods.stream().map(modInfo -> modInfo.getOwningFile().getFile().getFileName()).collect(joining(", "))))
                 .toList();
 
         if (!dupedModErrors.isEmpty()) {
-            LOGGER.error(LOADING, "Found duplicate mods:\n{}", String.join("\n", dupedModErrors));
-            throw new ModLoadingException(dupedModErrors.stream().map(ModLoadingIssue::error).toList());
+            LOGGER.error(LOADING, "Found duplicate mods:\n{}", dupedModErrors.stream().map(Object::toString).collect(joining()));
+            throw new ModLoadingException(dupedModErrors);
         }
 
-        final List<String> dupedLibErrors = versionedLibIds.values().stream()
+        final List<ModLoadingIssue> dupedLibErrors = versionedLibIds.values().stream()
                 .filter(modFiles -> modFiles.size() > 1)
-                .map(mods -> String.format("\tLibrary: '%s' from files: %s",
-                        getModId(mods.get(0)),
-                        mods.stream()
-                                .map(modFile -> modFile.getFileName()).collect(joining(", "))))
+                .map(mods -> ModLoadingIssue.error(
+                        "fml.modloading.duplicate_mod",
+                        getModId(mods.getFirst()),
+                        mods.stream().map(ModFile::getFileName).collect(joining(", "))))
                 .toList();
 
         if (!dupedLibErrors.isEmpty()) {
-            LOGGER.error(LOADING, "Found duplicate plugins or libraries:\n{}", String.join("\n", dupedLibErrors));
-            throw new ModLoadingException(dupedLibErrors.stream().map(ModLoadingIssue::error).toList());
+            LOGGER.error(LOADING, "Found duplicate plugins or libraries:\n{}", dupedLibErrors.stream().map(Object::toString).collect(joining()));
+            throw new ModLoadingException(dupedLibErrors);
         }
 
         // Collect unique mod files by module name. This will be used for deduping purposes

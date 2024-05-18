@@ -11,7 +11,7 @@ import java.util.Map;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 
-record LaunchResult(Map<String, SecureJar> pluginLayerModules,
+public record LaunchResult(Map<String, SecureJar> pluginLayerModules,
         Map<String, SecureJar> gameLayerModules,
         List<ModLoadingIssue> issues,
         Map<String, ModFileInfo> loadedMods) {}

@@ -87,7 +87,12 @@ public class RuntimeCompiler implements AutoCloseable {
         }
 
         public void compile() {
-            var options = List.of("-proc:none");
+            if (files.isEmpty()) {
+                return;
+            }
+
+            List<String> options = new ArrayList<>();
+            options.add("-proc:none");
 
             var task = COMPILER.getTask(null, manager, diagnostics, options, null, files);
             if (!task.call()) {

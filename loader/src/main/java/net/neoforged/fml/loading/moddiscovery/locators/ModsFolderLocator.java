@@ -58,12 +58,12 @@ public class ModsFolderLocator implements IModFileCandidateLocator {
                     .sorted(Comparator.comparing(path -> StringUtils.toLowerCase(path.getFileName().toString())))
                     .toList();
         } catch (UncheckedIOException | IOException e) {
-            throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failed_to_list_folder_content").withAffectedPath(this.modFolder).withCause(e));
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failed_to_list_folder_content", this.modFolder).withAffectedPath(this.modFolder).withCause(e));
         }
 
         for (var file : directoryContent) {
             if (!Files.isRegularFile(file)) {
-                pipeline.addIssue(ModLoadingIssue.warning("fml.modloading.brokenfile", file).withAffectedPath(file));
+                pipeline.addIssue(ModLoadingIssue.warning("fml.modloading.brokenfile.unknown", file).withAffectedPath(file));
                 continue;
             }
 

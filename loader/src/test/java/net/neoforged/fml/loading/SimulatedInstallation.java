@@ -43,7 +43,7 @@ import org.objectweb.asm.Opcodes;
 /**
  * Simulates various installation types for NeoForge
  */
-class SimulatedInstallation implements AutoCloseable {
+public class SimulatedInstallation implements AutoCloseable {
     private static final IdentifiableContent CLIENT_ASSETS = new IdentifiableContent("CLIENT_ASSETS", "assets/.mcassetsroot");
     private static final IdentifiableContent SHARED_ASSETS = new IdentifiableContent("SHARED_ASSETS", "data/.mcassetsroot");
     /**
@@ -267,6 +267,23 @@ class SimulatedInstallation implements AutoCloseable {
         return new IdentifiableContent(modId + "_MODS_TOML", "META-INF/neoforge.mods.toml", content);
     }
 
+    public static IdentifiableContent createMultiModsToml(String modId, String version, String secondaryModId, String secondaryModversion) {
+        var content = """
+                modLoader = "javafml"
+                loaderVersion = "[3,]"
+                license = "LICENSE"
+
+                [[mods]]
+                modId="%s"
+                version="%s"
+
+                [[mods]]
+                modId="%s"
+                version="%s"
+                """.formatted(modId, version, secondaryModId, secondaryModversion).getBytes();
+        return new IdentifiableContent(modId + "_MODS_TOML", "META-INF/neoforge.mods.toml", content);
+    }
+
     public Path writeLibrary(String group, String artifact, String version, IdentifiableContent... content) throws IOException {
         return writeLibrary(group, artifact, version, null, content);
     }
@@ -292,6 +309,11 @@ class SimulatedInstallation implements AutoCloseable {
         var path = getModsFolder().resolve(filename);
         writeJarFile(path, content);
         return path;
+    }
+
+    public ModFileBuilder buildModJar(String filename) throws IOException {
+        var path = getModsFolder().resolve(filename);
+        return new ModFileBuilder(path);
     }
 
     public static void writeJarFile(Path file, IdentifiableContent... content) throws IOException {

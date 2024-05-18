@@ -32,9 +32,7 @@ public class ForgeFeature {
     private static final Map<String, IFeatureTest<?>> features = new HashMap<>();
 
     public static <T> void registerFeature(final String featureName, final IFeatureTest<T> featureTest) {
-        if (features.putIfAbsent(featureName, featureTest) != null) {
-            throw new IllegalArgumentException("ForgeFeature with name " + featureName + " exists");
-        }
+        features.put(featureName, featureTest);
     }
 
     private static final MissingFeatureTest MISSING = new MissingFeatureTest();
