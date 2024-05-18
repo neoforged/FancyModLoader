@@ -5,13 +5,7 @@
 
 package net.neoforged.fml.loading;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-import java.nio.file.Files;
-import java.util.List;
-import java.util.Map;
+import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
@@ -22,6 +16,15 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+
+import java.nio.file.Files;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FMLLoaderTest extends LauncherTest {
     private static final ContainedVersion JIJ_V1 = new ContainedVersion(VersionRange.createFromVersion("1.0"), new DefaultArtifactVersion("1.0"));
@@ -355,7 +358,7 @@ class FMLLoaderTest extends LauncherTest {
             installation.setupProductionClient();
 
             var path = installation.getModsFolder().resolve("mod.jar");
-            Files.write(path, new byte[] { 1, 2, 3 });
+            Files.write(path, new byte[]{1, 2, 3});
 
             var result = launch("forgeclient");
             // Clear the cause, otherwise equality will fail
@@ -427,6 +430,26 @@ class FMLLoaderTest extends LauncherTest {
             var result = launch("forgeclient");
             assertThat(getTranslatedIssues(result)).containsOnly(
                     "ERROR: Mod mod_c is present in multiple files: test2.jar, test1.jar");
+        }
+
+        @Test
+        void testMissingOrUnsatisfiedForgeFeatures() throws Exception {
+            installation.setupProductionClient();
+
+            installation.buildModJar("test1.jar")
+                    .withModsToml(builder -> builder.unlicensedJavaMod()
+                            .addMod("testmod", "1.0")
+                            .withRequiredFeatures("testmod", Map.of(
+                                    "javaVersion", "[999]",
+                                    "thisFeatureDoesNotExist", "*")))
+                    .build();
+
+            var e = assertThrows(ModLoadingException.class, () -> loadMods(launch("forgeclient")));
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
+                    "ERROR: testmod (testmod) is missing a feature it requires to run"
+                    + "\nIt requires javaVersion 999 but 21.0.2 is available",
+                    "ERROR: testmod (testmod) is missing a feature it requires to run"
+                    + "\nIt requires thisFeatureDoesNotExist=\"*\" but NONE is available");
         }
     }
 

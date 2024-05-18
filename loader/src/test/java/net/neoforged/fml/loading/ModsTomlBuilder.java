@@ -10,6 +10,9 @@ import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.toml.TomlFormat;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,10 +53,29 @@ public class ModsTomlBuilder {
     }
 
     public ModsTomlBuilder addMod(String modId, String version) {
+        return addMod(modId, version, ignored -> {});
+    }
+
+    public ModsTomlBuilder addMod(String modId, String version, Consumer<Config> customizer) {
         var modConfig = Config.inMemory();
         modConfig.set("modId", modId);
         modConfig.set("version", version);
+        customizer.accept(modConfig);
         config.getOrElse("mods", ArrayList::new).add(modConfig);
+        return this;
+    }
+
+    public ModsTomlBuilder withRequiredFeatures(String modId, Map<String, String> features) {
+        var featuresConfig = Config.inMemory();
+        for (var entry : features.entrySet()) {
+            featuresConfig.set(entry.getKey(), entry.getValue());
+        }
+        config.set(List.of("features", modId), featuresConfig);
+        return this;
+    }
+
+    public ModsTomlBuilder customize(Consumer<CommentedConfig> consumer) {
+        consumer.accept(config);
         return this;
     }
 
