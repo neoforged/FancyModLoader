@@ -6,7 +6,6 @@
 package net.neoforged.fml.junit;
 
 import cpw.mods.bootstraplauncher.BootstrapLauncher;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 

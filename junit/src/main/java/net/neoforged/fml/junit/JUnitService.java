@@ -13,9 +13,8 @@ import org.junit.platform.launcher.LauncherSessionListener;
  */
 public class JUnitService implements LauncherSessionListener {
     private ClassLoader oldLoader;
-    public JUnitService() {
 
-    }
+    public JUnitService() {}
 
     @Override
     public void launcherSessionOpened(LauncherSession session) {

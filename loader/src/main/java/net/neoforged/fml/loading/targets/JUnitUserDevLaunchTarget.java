@@ -18,7 +18,7 @@ public class JUnitUserDevLaunchTarget extends NeoForgeUserdevLaunchHandler {
 
     @Override
     protected void runService(String[] arguments, ModuleLayer gameLayer) throws Throwable {
-        Class.forName(gameLayer.findModule("neoforge").orElseThrow(), "net.neoforged.neoforge.junit.JUnitMain").getMethod("main", String[].class).invoke(null, (Object)arguments);
+        Class.forName(gameLayer.findModule("neoforge").orElseThrow(), "net.neoforged.neoforge.junit.JUnitMain").getMethod("main", String[].class).invoke(null, (Object) arguments);
     }
 
     @Override

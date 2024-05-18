@@ -9,5 +9,6 @@ import org.junit.platform.launcher.LauncherSessionListener;
 module net.neoforged.fml.junit {
     requires org.junit.platform.launcher;
     requires cpw.mods.bootstraplauncher;
+
     provides LauncherSessionListener with JUnitService;
 }
