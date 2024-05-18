@@ -259,21 +259,50 @@ public final class ModLoader {
                 return;
             } catch (ExecutionException e) {
                 // Merge all potential modloading issues
-                var errorCount = 0;
-                for (var error : e.getCause().getSuppressed()) {
-                    if (error instanceof DependentFutureFailedException) {
-                        continue;
-                    } else if (error instanceof ModLoadingException modLoadingException) {
-                        loadingIssues.addAll(modLoadingException.getIssues());
-                    } else {
-                        loadingIssues.add(ModLoadingIssue.error("fml.modloading.uncaughterror", name).withCause(e));
-                    }
-                    errorCount++;
+                var issueCountBefore = loadingIssues.size();
+                // Add the cause itself if it seems meaningful based on its type and/or message, since we'd
+                // present this exception to the user using toString().
+                // "RuntimeException: null" or "IllegalStateException: null" isn't meaningful.
+                if (isMeaningfulException(e.getCause())) {
+                    addLoadingIssuesFromException(name, e.getCause());
                 }
+                for (var error : e.getCause().getSuppressed()) {
+                    // When a prerequisite of the task failed due to an exception, skip this so only
+                    // the root cause is reported.
+                    if (!(error instanceof DependentFutureFailedException)) {
+                        addLoadingIssuesFromException(name, error);
+                    }
+                }
+                // If we discarded all exceptions, we'd report an empty issue list while still canceling the loading process
+                // Fall back to using the cause.
+                if (loadingIssues.isEmpty()) {
+                    addLoadingIssuesFromException(name, e.getCause());
+                }
+
+                var errorCount = loadingIssues.size() - issueCountBefore;
                 LOGGER.fatal(LOADING, "Failed to wait for future {}, {} errors found", name, errorCount);
                 cancelLoading(modList);
                 throw new ModLoadingException(loadingIssues);
             } catch (Exception ignored) {}
+        }
+    }
+
+    private static boolean isMeaningfulException(Throwable error) {
+        var message = error.getLocalizedMessage();
+        if (message != null && !message.isBlank()) {
+            return true; // We'd consider any exception with a message as meaningful
+        }
+        // The trifecta of generic exceptions...
+        return !error.getClass().isAssignableFrom(RuntimeException.class)
+                && !error.getClass().isAssignableFrom(IllegalStateException.class)
+                && !error.getClass().isAssignableFrom(IllegalArgumentException.class);
+    }
+
+    private static void addLoadingIssuesFromException(String context, Throwable error) {
+        if (error instanceof ModLoadingException modLoadingException) {
+            loadingIssues.addAll(modLoadingException.getIssues());
+        } else {
+            loadingIssues.add(ModLoadingIssue.error("fml.modloading.uncaughterror", context).withCause(error));
         }
     }
 
