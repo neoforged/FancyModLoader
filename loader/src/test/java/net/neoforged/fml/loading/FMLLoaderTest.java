@@ -9,64 +9,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.modlauncher.api.IModuleLayerManager;
-import cpw.mods.modlauncher.api.ITransformationService;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.ContainedVersion;
-import net.neoforged.neoforgespi.Environment;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoSettings;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
-@MockitoSettings
-class FMLLoaderTest {
+class FMLLoaderTest extends LauncherTest {
     private static final ContainedVersion JIJ_V1 = new ContainedVersion(VersionRange.createFromVersion("1.0"), new DefaultArtifactVersion("1.0"));
-    @Mock
-    MockedStatic<ImmediateWindowHandler> immediateWindowHandlerMock;
-
-    TestModuleLayerManager moduleLayerManager = new TestModuleLayerManager();
-
-    TestEnvironment environment = new TestEnvironment(moduleLayerManager);
-
-    SimulatedInstallation installation;
-
-    // can be used to mark paths as already being located before, i.e. if they were loaded
-    // by the two early ModLoader discovery interfaces ClasspathTransformerDiscoverer
-    // and ModDirTransformerDiscoverer, which pick up files like mixin.
-    Set<Path> locatedPaths = new HashSet<>();
-
-    @BeforeEach
-    void setUp() throws IOException {
-        installation = new SimulatedInstallation();
-    }
-
-    @AfterEach
-    void clearSystemProperties() throws Exception {
-        installation.close();
-    }
 
     @Nested
     class WithoutMods {
@@ -208,9 +166,8 @@ class FMLLoaderTest {
 
             assertThat(result.gameLayerModules()).doesNotContainKey("plainmod");
             assertThat(result.pluginLayerModules()).doesNotContainKey("plainmod");
-            var plainJar = installation.getModsFolder().resolve("plainmod.jar");
-            assertThat(result.issues()).containsOnly(ModLoadingIssue.warning(
-                    "fml.modloading.brokenfile", plainJar).withAffectedPath(plainJar));
+            assertThat(getTranslatedIssues(result)).containsOnly(
+                    "WARNING: File mods/plainmod.jar is not a valid mod file");
         }
 
         /**
@@ -348,6 +305,27 @@ class FMLLoaderTest {
 
     @Nested
     class Errors {
+        @ParameterizedTest
+        @CsvSource(textBlock = """
+                unknownloader|[1.0]|ERROR: Mod File testmod.jar needs language provider unknownloader:1.0 to load\\nWe have found -
+                javafml|[1.0]|ERROR: Mod File testmod.jar needs language provider javafml:1.0 to load\\nWe have found 3.0.9999
+                javafml|[999.0]|ERROR: Mod File testmod.jar needs language provider javafml:999.0 to load\\nWe have found 3.0.9999
+                """, delimiter = '|')
+        void testIncompatibleLoaderVersions(String requestedLoader, String requestedVersionRange, String expectedError) throws Exception {
+            expectedError = expectedError.replace("\\n", "\n");
+
+            installation.setupProductionClient();
+            installation.buildModJar("testmod.jar")
+                    .withModsToml(builder -> builder
+                            .unlicensedJavaMod()
+                            .setLoader(requestedLoader, requestedVersionRange)
+                            .addMod("testmod"))
+                    .build();
+
+            var result = launch("forgeclient");
+            assertThat(getTranslatedIssues(result.issues())).containsOnly(expectedError);
+        }
+
         @Test
         void testCorruptedServerInstallation() throws Exception {
             installation.setupProductionServer();
@@ -410,8 +388,8 @@ class FMLLoaderTest {
             installation.writeModJar("test.jar", CustomSubclassModFileReader.TRIGGER);
 
             var result = launch("forgeclient");
-            assertThat(result.issues()).extracting(FMLLoaderTest::getTranslatedIssue).allMatch(
-                    msg -> msg.startsWith("ERROR: A technical error occurred during mod loading: Unexpected IModFile subclass:"));
+            assertThat(getTranslatedIssues(result)).containsOnly(
+                    "ERROR: A technical error occurred during mod loading: Unexpected IModFile subclass: class net.neoforged.neoforgespi.locating.IModFile");
         }
 
         @Test
@@ -436,7 +414,7 @@ class FMLLoaderTest {
                     """.getBytes()));
 
             var result = launch("forgeclient");
-            assertThat(result.issues()).extracting(FMLLoaderTest::getTranslatedIssue).containsOnly("ERROR: Mod testproject requires neoforge 999.6 or above\nCurrently, neoforge is 1\n");
+            assertThat(getTranslatedIssues(result)).containsOnly("ERROR: Mod testproject requires neoforge 999.6 or above\nCurrently, neoforge is 1\n");
         }
 
         @Test
@@ -447,7 +425,7 @@ class FMLLoaderTest {
             installation.writeModJar("test2.jar", SimulatedInstallation.createMultiModsToml("mod_b", "1.0", "mod_c", "1.0"));
 
             var result = launch("forgeclient");
-            assertThat(result.issues()).extracting(FMLLoaderTest::getTranslatedIssue).containsOnly(
+            assertThat(getTranslatedIssues(result)).containsOnly(
                     "ERROR: Mod mod_c is present in multiple files: test2.jar, test1.jar");
         }
     }
@@ -482,90 +460,7 @@ class FMLLoaderTest {
             Files.createDirectories(path);
 
             var result = launch("forgeclient");
-            assertThat(result.issues()).containsOnly(
-                    ModLoadingIssue.warning("fml.modloading.brokenfile", path).withAffectedPath(path));
+            assertThat(getTranslatedIssues(result)).containsOnly("WARNING: File mods/mod.jar is not a valid mod file");
         }
-    }
-
-    private LaunchResult launchInNeoForgeDevEnvironment(String launchTarget) throws Exception {
-        var additionalClasspath = installation.setupNeoForgeDevProject();
-
-        return launchWithAdditionalClasspath(launchTarget, additionalClasspath);
-    }
-
-    LaunchResult launchWithAdditionalClasspath(String launchTarget, List<Path> additionalClassPath) throws Exception {
-        var urls = additionalClassPath.stream().map(path -> {
-            try {
-                return path.toUri().toURL();
-            } catch (MalformedURLException e) {
-                throw new RuntimeException(e);
-            }
-        }).toArray(URL[]::new);
-
-        var previousCl = Thread.currentThread().getContextClassLoader();
-        try (var cl = new URLClassLoader(urls, getClass().getClassLoader())) {
-            Thread.currentThread().setContextClassLoader(cl);
-            return launch(launchTarget);
-        } finally {
-            Thread.currentThread().setContextClassLoader(previousCl);
-        }
-    }
-
-    LaunchResult launch(String launchTarget) throws Exception {
-        environment.computePropertyIfAbsent(IEnvironment.Keys.GAMEDIR.get(), ignored -> installation.getGameDir());
-        environment.computePropertyIfAbsent(IEnvironment.Keys.LAUNCHTARGET.get(), ignored -> launchTarget);
-
-        FMLPaths.loadAbsolutePaths(installation.getGameDir());
-
-        FMLLoader.onInitialLoad(environment);
-        FMLPaths.setup(environment);
-        FMLConfig.load();
-        FMLLoader.setupLaunchHandler(environment, new VersionInfo(
-                SimulatedInstallation.NEOFORGE_VERSION,
-                SimulatedInstallation.FML_VERSION,
-                SimulatedInstallation.MC_VERSION,
-                SimulatedInstallation.NEOFORM_VERSION));
-        FMLEnvironment.setupInteropEnvironment(environment);
-        Environment.build(environment);
-
-        var launchContext = new TestLaunchContext(environment, locatedPaths);
-        var pluginResources = FMLLoader.beginModScan(launchContext);
-        // In this phase, FML should only return plugin libraries
-        assertThat(pluginResources).extracting(ITransformationService.Resource::target).containsOnly(IModuleLayerManager.Layer.PLUGIN);
-
-        var gameLayerResources = FMLLoader.completeScan(launchContext, List.of());
-        // In this phase, FML should only return game layer content
-        assertThat(gameLayerResources).extracting(ITransformationService.Resource::target).containsOnly(IModuleLayerManager.Layer.GAME);
-
-        var loadingModList = LoadingModList.get();
-        var loadedMods = loadingModList.getModFiles();
-
-        var pluginSecureJars = pluginResources.stream()
-                .flatMap(r -> r.resources().stream())
-                .collect(Collectors.toMap(
-                        SecureJar::name,
-                        Function.identity()));
-        var gameSecureJars = gameLayerResources.stream()
-                .flatMap(r -> r.resources().stream())
-                .collect(Collectors.toMap(
-                        SecureJar::name,
-                        Function.identity()));
-
-        // Wait for background scans of all mods to complete
-        for (var modFile : loadingModList.getModFiles()) {
-            modFile.getFile().getScanResult();
-        }
-
-        return new LaunchResult(
-                pluginSecureJars,
-                gameSecureJars,
-                loadingModList.getModLoadingIssues(),
-                loadedMods.stream().collect(Collectors.toMap(
-                        o -> o.getMods().getFirst().getModId(),
-                        o -> o)));
-    }
-
-    private static String getTranslatedIssue(ModLoadingIssue issue) {
-        return issue.severity() + ": " + FMLTranslations.stripControlCodes(FMLTranslations.translateIssue(issue));
     }
 }

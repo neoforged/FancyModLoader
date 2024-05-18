@@ -63,7 +63,7 @@ public class ModsFolderLocator implements IModFileCandidateLocator {
 
         for (var file : directoryContent) {
             if (!Files.isRegularFile(file)) {
-                pipeline.addIssue(ModLoadingIssue.warning("fml.modloading.brokenfile", file).withAffectedPath(file));
+                pipeline.addIssue(ModLoadingIssue.warning("fml.modloading.brokenfile.unknown", file).withAffectedPath(file));
                 continue;
             }
 

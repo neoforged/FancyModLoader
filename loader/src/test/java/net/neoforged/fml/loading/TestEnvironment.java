@@ -17,7 +17,7 @@ import net.neoforged.accesstransformer.ml.AccessTransformerService;
 import net.neoforged.fml.common.asm.RuntimeDistCleaner;
 import org.jetbrains.annotations.Nullable;
 
-class TestEnvironment implements IEnvironment {
+public class TestEnvironment implements IEnvironment {
     private final TypesafeMap map = new TypesafeMap(IEnvironment.class);
     private final TestModuleLayerManager moduleLayerManager;
     @Nullable

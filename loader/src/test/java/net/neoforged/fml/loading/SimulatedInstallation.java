@@ -43,7 +43,7 @@ import org.objectweb.asm.Opcodes;
 /**
  * Simulates various installation types for NeoForge
  */
-class SimulatedInstallation implements AutoCloseable {
+public class SimulatedInstallation implements AutoCloseable {
     private static final IdentifiableContent CLIENT_ASSETS = new IdentifiableContent("CLIENT_ASSETS", "assets/.mcassetsroot");
     private static final IdentifiableContent SHARED_ASSETS = new IdentifiableContent("SHARED_ASSETS", "data/.mcassetsroot");
     /**
@@ -309,6 +309,11 @@ class SimulatedInstallation implements AutoCloseable {
         var path = getModsFolder().resolve(filename);
         writeJarFile(path, content);
         return path;
+    }
+
+    public ModFileBuilder buildModJar(String filename) throws IOException {
+        var path = getModsFolder().resolve(filename);
+        return new ModFileBuilder(path);
     }
 
     public static void writeJarFile(Path file, IdentifiableContent... content) throws IOException {

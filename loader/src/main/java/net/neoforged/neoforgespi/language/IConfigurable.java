@@ -14,5 +14,5 @@ import java.util.Optional;
 public interface IConfigurable {
     <T> Optional<T> getConfigElement(final String... key);
 
-    public List<? extends IConfigurable> getConfigList(final String... key);
+    List<? extends IConfigurable> getConfigList(final String... key);
 }

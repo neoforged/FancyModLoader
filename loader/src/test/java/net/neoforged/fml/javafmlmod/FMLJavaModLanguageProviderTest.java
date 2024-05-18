@@ -1,0 +1,139 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
+package net.neoforged.fml.javafmlmod;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.ArrayList;
+import java.util.List;
+import net.neoforged.fml.ModLoader;
+import net.neoforged.fml.ModLoadingException;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.loading.LauncherTest;
+import net.neoforged.fml.loading.SimulatedInstallation;
+import net.neoforged.fml.test.RuntimeCompiler;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+public class FMLJavaModLanguageProviderTest extends LauncherTest {
+    // Allows us to capture events received by mods loaded in the game layer
+    public static List<FMLClientSetupEvent> EVENTS = new ArrayList<>();
+
+    @AfterEach
+    void tearDown() {
+        EVENTS.clear();
+    }
+
+    /**
+     * Tests that the java language provider warns about classes that are annotated with @Mod,
+     * but use a mod-id that is not declared in the mod-file.
+     */
+    @Test
+    public void testDanglingEntryPoints() throws Exception {
+        installation.setupProductionClient();
+
+        var testJar = installation.writeModJar("test.jar", SimulatedInstallation.createModsToml("testmod", "1.0"));
+        try (var compiler = RuntimeCompiler.create(testJar)) {
+            compiler.builder()
+                    .addClass("testmod.DanglingEntryPoint", """
+                            package testmod;
+                            @net.neoforged.fml.common.Mod("notthismod")
+                            class DanglingEntryPoint {
+                            }
+                            """)
+                    .compile();
+        }
+
+        var result = launch("forgeclient");
+        var e = Assertions.assertThrows(ModLoadingException.class, () -> loadMods(result));
+        assertThat(getTranslatedIssues(e.getIssues()))
+                .containsOnly("ERROR: File mods/test.jar contains mod entrypoint class testmod.DanglingEntryPoint for mod with id notthismod, which does not exist or is not in the same file."
+                        + "\nDid you forget to update the mod id in the entrypoint?");
+    }
+
+    @Test
+    void testModConstructionWithoutPublicConstructor() throws Exception {
+        installation.setupProductionClient();
+
+        var testJar = installation.writeModJar("test.jar", SimulatedInstallation.createModsToml("testmod", "1.0"));
+        try (var compiler = RuntimeCompiler.create(testJar)) {
+            compiler.builder()
+                    .addClass("testmod.EntryPoint", """
+                            package testmod;
+                            @net.neoforged.fml.common.Mod("testmod")
+                            class EntryPoint {
+                                EntryPoint() {
+                                }
+                            }
+                            """)
+                    .compile();
+        }
+
+        var result = launch("forgeclient");
+        var e = Assertions.assertThrows(ModLoadingException.class, () -> loadMods(result));
+        assertThat(getTranslatedIssues(e.getIssues()))
+                .containsOnly("ERROR: testmod (testmod) has failed to load correctly"
+                        + "\njava.lang.RuntimeException: Mod class class testmod.EntryPoint must have exactly 1 public constructor, found 0");
+    }
+
+    @Test
+    void testModConstructionAndEventDispatch() throws Exception {
+        installation.setupProductionClient();
+
+        var testJar = installation.writeModJar("test.jar", SimulatedInstallation.createModsToml("testmod", "1.0"));
+        try (var compiler = RuntimeCompiler.create(testJar)) {
+            compiler.builder()
+                    .addClass("testmod.EntryPoint", """
+                            import java.util.ArrayList;
+                            @net.neoforged.fml.common.Mod("testmod")
+                            public class EntryPoint {
+                                public EntryPoint(net.neoforged.bus.api.IEventBus modEventBus) {
+                                    modEventBus.addListener(net.neoforged.fml.event.lifecycle.FMLClientSetupEvent.class, e -> net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.EVENTS.add(e));
+                                }
+                            }
+                            """)
+                    .compile();
+        }
+
+        var result = launch("forgeclient");
+        loadMods(result);
+
+        ModLoader.dispatchParallelEvent("test", Runnable::run, Runnable::run, () -> {}, FMLClientSetupEvent::new);
+
+        assertThat(EVENTS).hasSize(1);
+    }
+
+    @Test
+    void testErrorDuringEventDispatch() throws Exception {
+        installation.setupProductionClient();
+        installation.buildModJar("test.jar")
+                .withModsToml(builder -> {
+                    builder.unlicensedJavaMod().addMod("testmod", "1.0");
+                })
+                .addClass("testmod.EntryPoint", """
+                        import java.util.ArrayList;
+                        @net.neoforged.fml.common.Mod("testmod")
+                        public class EntryPoint {
+                            public EntryPoint(net.neoforged.bus.api.IEventBus modEventBus) {
+                                modEventBus.addListener(net.neoforged.fml.event.lifecycle.FMLClientSetupEvent.class, e -> {
+                                    throw new RuntimeException();
+                                });
+                            }
+                        }
+                        """)
+                .build();
+
+        var result = launch("forgeclient");
+        loadMods(result);
+
+        var e = Assertions.assertThrows(ModLoadingException.class, () -> {
+            ModLoader.dispatchParallelEvent("test", Runnable::run, Runnable::run, () -> {}, FMLClientSetupEvent::new);
+        });
+        assertThat(getTranslatedIssues(e.getIssues())).containsOnly("ERROR: testmod (testmod) encountered an error while dispatching the net.neoforged.fml.event.lifecycle.FMLClientSetupEvent event"
+                + "\njava.lang.RuntimeException: null");
+    }
+}

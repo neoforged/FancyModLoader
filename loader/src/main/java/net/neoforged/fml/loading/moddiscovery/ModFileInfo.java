@@ -69,7 +69,7 @@ public class ModFileInfo implements IModFileInfo, IConfigurable {
                 .orElse("");
         // Validate the license is set. Only apply this validation to mods.
         if (this.license.isBlank()) {
-            throw new InvalidModFileException("fml.modloading.missinglicense", this);
+            throw new InvalidModFileException("Missing license", this);
         }
         this.showAsResourcePack = config.<Boolean>getConfigElement("showAsResourcePack")
                 .orElse(false);

@@ -64,6 +64,9 @@ public record ModLoadingIssue(
             }
             result.append("]");
         }
+        if (cause != null) {
+            result.append(" caused by ").append(cause);
+        }
         return result.toString();
     }
     public enum Severity {
