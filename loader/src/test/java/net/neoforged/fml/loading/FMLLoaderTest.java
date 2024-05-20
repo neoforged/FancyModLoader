@@ -13,8 +13,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
+import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.ModWorkManager;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.ContainedVersion;
@@ -449,6 +452,46 @@ class FMLLoaderTest extends LauncherTest {
                             + "\nIt requires javaVersion 999 but " + System.getProperty("java.version") + " is available",
                     "ERROR: testmod (testmod) is missing a feature it requires to run"
                             + "\nIt requires thisFeatureDoesNotExist=\"*\" but NONE is available");
+        }
+
+        @Test
+        void testExceptionInParallelEventDispatchIsCollectedAsModLoadingIssue() throws Exception {
+            installation.setupProductionClient();
+
+            installation.buildModJar("testmod.jar")
+                    .withTestmodModsToml()
+                    .addClass("testmod.Thrower", """
+                            @net.neoforged.fml.common.Mod("testmod")
+                            public class Thrower {
+                                public Thrower(net.neoforged.bus.api.IEventBus modEventBus) {
+                                    modEventBus.addListener(net.neoforged.fml.event.lifecycle.FMLClientSetupEvent.class, e -> {
+                                        throw new IllegalStateException("Exception Message");
+                                    });
+                                }
+                            }
+                            """)
+                    .build();
+
+            var launchResult = launch("forgeclient");
+            assertThat(launchResult.loadedMods()).containsKey("testmod");
+            loadMods(launchResult);
+            var e = assertThrows(ModLoadingException.class, () -> ModLoader.dispatchParallelEvent("test", ModWorkManager.syncExecutor(), ModWorkManager.parallelExecutor(), () -> {}, FMLClientSetupEvent::new));
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
+                    "ERROR: testmod (testmod) encountered an error while dispatching the net.neoforged.fml.event.lifecycle.FMLClientSetupEvent event\n"
+                            + "java.lang.IllegalStateException: Exception Message");
+        }
+
+        @Test
+        void testExceptionInInitTaskIsCollectedAsModLoadingIssue() throws Exception {
+            installation.setupProductionClient();
+
+            loadMods(launch("forgeclient"));
+            var e = assertThrows(ModLoadingException.class, () -> ModLoader.runInitTask("test", ModWorkManager.syncExecutor(), () -> {}, () -> {
+                throw new IllegalStateException("Exception Message");
+            }));
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
+                    "ERROR: An uncaught parallel processing error has occurred."
+                            + "\njava.lang.IllegalStateException: Exception Message");
         }
     }
 

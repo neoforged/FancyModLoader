@@ -38,6 +38,18 @@ public class ModFileBuilder implements Closeable {
         compilationBuilder = compiler.builder();
     }
 
+    public ModFileBuilder withTestmodModsToml() {
+        return withTestmodModsToml(ignored -> {});
+    }
+
+    public ModFileBuilder withTestmodModsToml(Consumer<ModsTomlBuilder> customizer) {
+        return withModsToml(builder -> {
+            builder.unlicensedJavaMod();
+            builder.addMod("testmod", "1.0");
+            customizer.accept(builder);
+        });
+    }
+
     public ModFileBuilder withModsToml(Consumer<ModsTomlBuilder> customizer) {
         var modsToml = new ModsTomlBuilder();
         customizer.accept(modsToml);
