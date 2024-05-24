@@ -138,8 +138,6 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
         var result = launch("forgeclient");
         loadMods(result);
 
-        ModLoader.dispatchParallelEvent("test", Runnable::run, Runnable::run, () -> {}, FMLClientSetupEvent::new);
-
         assertThat(MESSAGES).isEqualTo(List.of("common", "client"));
     }
 
