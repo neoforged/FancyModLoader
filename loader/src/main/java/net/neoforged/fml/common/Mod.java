@@ -34,4 +34,10 @@ public @interface Mod {
      * {@return the side to load this mod entrypoint on}
      */
     Dist[] dist() default { Dist.CLIENT, Dist.DEDICATED_SERVER };
+
+    /**
+     * The order in which to run entrypoints, when there are multiple. Entrypoints will be run from the lowest
+     * {@code order} value to the highest, within a given mod.
+     */
+    int order() default 0;
 }
