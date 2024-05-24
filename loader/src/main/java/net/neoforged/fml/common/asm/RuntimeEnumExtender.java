@@ -7,6 +7,10 @@ package net.neoforged.fml.common.asm;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,6 +38,21 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     private final String CLEAN_DESC = Type.getMethodDescriptor(Type.VOID_TYPE, Type.getType(Class.class));
     private final String NAME_DESC = Type.getMethodDescriptor(STRING);
     private final String EQUALS_DESC = Type.getMethodDescriptor(Type.BOOLEAN_TYPE, STRING);
+    private final Type LIST_TYPE = Type.getType(List.class);
+    private final Type ARRAY_LIST_TYPE = Type.getType(ArrayList.class);
+    private final String ARRAY_LIST_INIT_DESC = Type.getMethodDescriptor(Type.VOID_TYPE, Type.getType(Collection.class));
+    private final String VANILLA_FIELDS_SIGN = "Ljava/util/List<LMyExtensibleEnum;>";
+    private final Type ARRAYS_TYPE = Type.getType(Arrays.class);
+    private final String AS_LIST_DESC = Type.getMethodDescriptor(LIST_TYPE, Type.getType(Object[].class));
+    private final String REMOVE_ALL_DESC = Type.getMethodDescriptor(Type.BOOLEAN_TYPE, Type.getType(Collection.class));
+    private final String LIST_ADD_DESC = Type.getMethodDescriptor(Type.BOOLEAN_TYPE, Type.getType(Object.class));
+    private final Type ASM_UTILS_TYPE = Type.getType("Lnet/neoforged/fml/util/ASMUtils;");
+    private final String NAME_COMPARATOR_DESC = Type.getMethodDescriptor(Type.getType(Comparator.class));
+    private final String SORT_DESC = Type.getMethodDescriptor(Type.VOID_TYPE, Type.getType(Comparator.class));
+    private final String LIST_ADD_ALL_DESC = Type.getMethodDescriptor(Type.BOOLEAN_TYPE, Type.INT_TYPE, Type.getType(Collection.class));
+    private final String TO_ARRAY_DESC = Type.getMethodDescriptor(Type.getType(Object[].class), Type.getType(Object[].class));
+    private final String SIZE_DESC = Type.getMethodDescriptor(Type.INT_TYPE);
+    private final String SET_ORDINAL_DESCRIPTOR = Type.getMethodDescriptor(Type.VOID_TYPE, Type.getType(Enum.class), Type.INT_TYPE);
 
     @Override
     public String name() {
@@ -70,6 +89,9 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         if (candidates.isEmpty()) {
             throw new IllegalStateException("IExtensibleEnum has no candidate factory methods: " + classType.getClassName());
         }
+
+        FieldNode vanillaValues = new FieldNode(Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE, "VANILLA_VALUES", LIST_TYPE.getDescriptor(), VANILLA_FIELDS_SIGN, null);
+        classNode.fields.add(vanillaValues);
 
         candidates.forEach(mtd -> {
             Type[] args = Type.getArgumentTypes(mtd.desc);
@@ -145,11 +167,22 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
             }
             InstructionAdapter ins = new InstructionAdapter(mtd);
 
+            {
+                Label if_initialized_vanilla = new Label();
+                //if vanillaValues == null
+                //  vanillaValues = Arrays.asList(VALUES)
+                ins.getstatic(classType.getInternalName(), vanillaValues.name, vanillaValues.desc);
+                ins.ifnonnull(if_initialized_vanilla);
+                ins.getstatic(classType.getInternalName(), values.name, values.desc);
+                ins.invokestatic(ARRAYS_TYPE.getInternalName(), "asList", AS_LIST_DESC, false);
+                ins.putstatic(classType.getInternalName(), vanillaValues.name, vanillaValues.desc);
+                ins.mark(if_initialized_vanilla);
+            }
             int vars = 0;
             for (Type arg : args)
                 vars += arg.getSize();
 
-            {
+            { //remove duplicates
                 vars += 1; //int x
                 Label for_start = new Label();
                 Label for_condition = new Label();
@@ -204,14 +237,73 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                 ins.invokestatic(ARRAY_UTILS.getInternalName(), "add", ADD_DESC, false);
                 ins.checkcast(array);
                 ins.putstatic(classType.getInternalName(), values.name, values.desc);
-                //EnumHelper.cleanEnumCache(ThisType.class)
+                //UnsafeHacks.cleanEnumCache(ThisType.class)
                 ins.visitLdcInsn(classType);
                 ins.invokestatic(UNSAFE_HACKS.getInternalName(), "cleanEnumCache", CLEAN_DESC, false);
                 //init ret
                 ins.load(vars, classType);
                 ins.invokeinterface(MARKER_IFACE.getInternalName(), "init", "()V");
-                //return ret
                 ins.load(vars, classType);
+
+                { // reorder enum entries
+                    vars += 1;
+                    int moddedElements = vars;
+                    vars += 1;
+                    int iterationIndex = vars;
+
+                    //gather all modded values, sort them alphabetically and prepend vanilla values to create a new values order
+                    //moddedValues = new ArrayList(Arrays.asList($VALUES))
+                    ins.anew(ARRAY_LIST_TYPE);
+                    ins.dup();
+                    ins.getstatic(classType.getInternalName(), values.name, values.desc); //load values into stack
+                    ins.invokestatic(ARRAYS_TYPE.getInternalName(), "asList", AS_LIST_DESC, false);
+                    ins.invokespecial(ARRAY_LIST_TYPE.getInternalName(), "<init>", ARRAY_LIST_INIT_DESC, false);
+                    ins.store(moddedElements, LIST_TYPE);
+                    //moddedValues.removeAll(vanillaValues))
+                    ins.load(moddedElements, LIST_TYPE);
+                    ins.getstatic(classType.getInternalName(), vanillaValues.name, vanillaValues.desc);
+                    ins.invokeinterface(LIST_TYPE.getInternalName(), "removeAll", REMOVE_ALL_DESC);
+                    ins.pop();
+                    //moddedValues.sort(ASMUtils.nameComparator())
+                    ins.load(moddedElements, LIST_TYPE);
+                    ins.invokestatic(ASM_UTILS_TYPE.getInternalName(), "nameComparator", NAME_COMPARATOR_DESC);
+                    ins.invokeinterface(LIST_TYPE.getInternalName(), "sort", SORT_DESC);
+                    //moddedValues.addAll(0, vanillaValues)
+                    ins.load(moddedElements, LIST_TYPE);
+                    ins.iconst(0);
+                    ins.getstatic(classType.getInternalName(), vanillaValues.name, vanillaValues.desc);
+                    ins.invokeinterface(LIST_TYPE.getInternalName(), "addAll", LIST_ADD_ALL_DESC);
+                    ins.pop();
+                    //$VALUES = moddedValues.toArray(new <EnumType>[0])
+                    ins.load(moddedElements, LIST_TYPE);
+                    ins.iconst(0);
+                    ins.newarray(classType);
+                    ins.invokeinterface(LIST_TYPE.getInternalName(), "toArray", TO_ARRAY_DESC);
+                    ins.checkcast(array);
+                    ins.putstatic(classType.getInternalName(), values.name, values.desc);
+
+                    //iterate over elements and set their ordinal
+                    Label for_end = new Label();
+                    Label for_condition = new Label();
+                    ins.getstatic(classType.getInternalName(), vanillaValues.name, vanillaValues.desc);
+                    ins.invokeinterface(LIST_TYPE.getInternalName(), "size", SIZE_DESC);
+                    ins.store(iterationIndex, Type.INT_TYPE);
+
+                    ins.mark(for_condition);
+                    ins.load(iterationIndex, Type.INT_TYPE);
+                    ins.getstatic(classType.getInternalName(), values.name, values.desc);
+                    ins.arraylength();
+                    ins.ificmpge(for_end);
+                    ins.getstatic(classType.getInternalName(), values.name, values.desc);
+                    ins.load(iterationIndex, Type.INT_TYPE);
+                    ins.aload(array);
+                    ins.load(iterationIndex, Type.INT_TYPE);
+                    ins.invokestatic(ASM_UTILS_TYPE.getInternalName(), "setOrdinal", SET_ORDINAL_DESCRIPTOR, false);
+                    ins.iinc(iterationIndex, 1);
+                    ins.goTo(for_condition);
+                    ins.mark(for_end);
+                }
+                //return ret
                 ins.areturn(classType);
             }
         });
