@@ -116,7 +116,7 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
         var testJar = installation.writeModJar("test.jar", SimulatedInstallation.createModsToml("testmod", "1.0"));
         try (var compiler = RuntimeCompiler.create(testJar)) {
             compiler.builder()
-                .addClass("testmod.EntryPoint", """
+                    .addClass("testmod.EntryPoint", """
                             @net.neoforged.fml.common.Mod("testmod")
                             public class EntryPoint {
                                 public EntryPoint() {
@@ -124,7 +124,7 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
                                 }
                             }
                             """)
-                .addClass("testmod.ClientEntryPoint", """
+                    .addClass("testmod.ClientEntryPoint", """
                             @net.neoforged.fml.common.Mod(value = "testmod", dist = net.neoforged.api.distmarker.Dist.CLIENT)
                             public class ClientEntryPoint {
                                 public ClientEntryPoint() {
@@ -132,7 +132,7 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
                                 }
                             }
                             """)
-                .compile();
+                    .compile();
         }
 
         var result = launch("forgeclient");
