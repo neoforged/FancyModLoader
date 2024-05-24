@@ -41,11 +41,10 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     private final Type LIST_TYPE = Type.getType(List.class);
     private final Type ARRAY_LIST_TYPE = Type.getType(ArrayList.class);
     private final String ARRAY_LIST_INIT_DESC = Type.getMethodDescriptor(Type.VOID_TYPE, Type.getType(Collection.class));
-    private final String VANILLA_FIELDS_SIGN = "Ljava/util/List<LMyExtensibleEnum;>";
+    private final String VANILLA_FIELDS_SIGN = "Ljava/util/List<%s>;";
     private final Type ARRAYS_TYPE = Type.getType(Arrays.class);
     private final String AS_LIST_DESC = Type.getMethodDescriptor(LIST_TYPE, Type.getType(Object[].class));
     private final String REMOVE_ALL_DESC = Type.getMethodDescriptor(Type.BOOLEAN_TYPE, Type.getType(Collection.class));
-    private final String LIST_ADD_DESC = Type.getMethodDescriptor(Type.BOOLEAN_TYPE, Type.getType(Object.class));
     private final Type ASM_UTILS_TYPE = Type.getType("Lnet/neoforged/fml/util/ASMUtils;");
     private final String NAME_COMPARATOR_DESC = Type.getMethodDescriptor(Type.getType(Comparator.class));
     private final String SORT_DESC = Type.getMethodDescriptor(Type.VOID_TYPE, Type.getType(Comparator.class));
@@ -90,7 +89,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
             throw new IllegalStateException("IExtensibleEnum has no candidate factory methods: " + classType.getClassName());
         }
 
-        FieldNode vanillaValues = new FieldNode(Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE, "VANILLA_VALUES", LIST_TYPE.getDescriptor(), VANILLA_FIELDS_SIGN, null);
+        FieldNode vanillaValues = new FieldNode(Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE | Opcodes.ACC_SYNTHETIC, "FML$VANILLA_VALUES", LIST_TYPE.getDescriptor(), VANILLA_FIELDS_SIGN.formatted(classType.getDescriptor()), null);
         classNode.fields.add(vanillaValues);
 
         candidates.forEach(mtd -> {
