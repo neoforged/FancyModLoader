@@ -21,11 +21,13 @@ import org.junit.jupiter.api.Test;
 
 public class FMLJavaModLanguageProviderTest extends LauncherTest {
     // Allows us to capture events received by mods loaded in the game layer
-    public static List<FMLClientSetupEvent> EVENTS = new ArrayList<>();
+    public static final List<FMLClientSetupEvent> EVENTS = new ArrayList<>();
+    public static final List<String> MESSAGES = new ArrayList<>();
 
     @AfterEach
     void tearDown() {
         EVENTS.clear();
+        MESSAGES.clear();
     }
 
     /**
@@ -105,6 +107,40 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
         ModLoader.dispatchParallelEvent("test", Runnable::run, Runnable::run, () -> {}, FMLClientSetupEvent::new);
 
         assertThat(EVENTS).hasSize(1);
+    }
+
+    @Test
+    void testMultipleEntrypoints() throws Exception {
+        installation.setupProductionClient();
+
+        var testJar = installation.writeModJar("test.jar", SimulatedInstallation.createModsToml("testmod", "1.0"));
+        try (var compiler = RuntimeCompiler.create(testJar)) {
+            compiler.builder()
+                .addClass("testmod.EntryPoint", """
+                            @net.neoforged.fml.common.Mod("testmod")
+                            public class EntryPoint {
+                                public EntryPoint() {
+                                    net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.MESSAGES.add("common");
+                                }
+                            }
+                            """)
+                .addClass("testmod.ClientEntryPoint", """
+                            @net.neoforged.fml.common.Mod(value = "testmod", dist = net.neoforged.api.distmarker.Dist.CLIENT)
+                            public class ClientEntryPoint {
+                                public ClientEntryPoint() {
+                                    net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.MESSAGES.add("client");
+                                }
+                            }
+                            """)
+                .compile();
+        }
+
+        var result = launch("forgeclient");
+        loadMods(result);
+
+        ModLoader.dispatchParallelEvent("test", Runnable::run, Runnable::run, () -> {}, FMLClientSetupEvent::new);
+
+        assertThat(MESSAGES).isEqualTo(List.of("common", "client"));
     }
 
     @Test
