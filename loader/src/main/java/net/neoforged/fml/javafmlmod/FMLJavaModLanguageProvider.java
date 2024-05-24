@@ -9,7 +9,6 @@ import java.lang.annotation.ElementType;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoadingIssue;
@@ -32,11 +31,7 @@ public class FMLJavaModLanguageProvider extends BuiltInLanguageLoader {
         final var modClasses = modFileScanResults.getAnnotatedBy(Mod.class, ElementType.TYPE)
                 .filter(data -> data.annotationData().get("value").equals(info.getModId()))
                 .filter(ad -> AutomaticEventSubscriber.getSides(ad.annotationData().get("dist")).contains(FMLLoader.getDist()))
-                .sorted(Comparator
-                    .<ModFileScanData.AnnotationData>comparingInt(ad -> AutomaticEventSubscriber.getSides(ad.annotationData().get("dist")).size())
-                    .reversed()
-                    .thenComparingInt(ad -> Objects.requireNonNullElse((Integer)ad.annotationData().get("order"), 0))
-                )
+                .sorted(Comparator.comparingInt(ad -> -AutomaticEventSubscriber.getSides(ad.annotationData().get("dist")).size()))
                 .map(ad -> ad.clazz().getClassName())
                 .toList();
         return new FMLModContainer(info, modClasses, modFileScanResults, layer);
