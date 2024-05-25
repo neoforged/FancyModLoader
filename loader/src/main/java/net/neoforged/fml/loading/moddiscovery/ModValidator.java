@@ -97,6 +97,7 @@ public class ModValidator {
         loadingModList.addCoreMods();
         loadingModList.addAccessTransformers();
         loadingModList.addMixinConfigs();
+        loadingModList.addEnumExtenders();
         var backgroundScanHandler = new BackgroundScanHandler();
         loadingModList.addForScanning(backgroundScanHandler);
         return backgroundScanHandler;

@@ -58,6 +58,7 @@ public class ModFile implements IModFile {
     private List<CoreModFile> coreMods;
     private List<String> mixinConfigs;
     private List<Path> accessTransformers;
+    private List<Path> enumExtenders;
 
     public static final Attributes.Name TYPE = new Attributes.Name("FMLModType");
     private SecureJar.Status securityStatus;
@@ -129,6 +130,17 @@ public class ModFile implements IModFile {
                 .orElseGet(() -> Stream.of(findResource("META-INF", "accesstransformer.cfg"))
                         .filter(Files::exists))
                 .toList();
+        this.enumExtenders = ModFileParser.getEnumExtenders(this.modFileInfo)
+                .map(list -> list.stream().map(this::findResource).filter(path -> {
+                    if (Files.notExists(path)) {
+                        LOGGER.error(LogMarkers.LOADING, "Enum extender file {} provided by mod {} does not exist!", path, modFileInfo.moduleName());
+                        return false;
+                    }
+                    return true;
+                }))
+                .orElseGet(() -> Stream.of(findResource("META-INF", "enumextender.json"))
+                        .filter(Files::exists))
+                .toList();
         return true;
     }
 
@@ -138,6 +150,10 @@ public class ModFile implements IModFile {
 
     public List<String> getMixinConfigs() {
         return mixinConfigs;
+    }
+
+    public List<Path> getEnumExtenders() {
+        return enumExtenders;
     }
 
     /**

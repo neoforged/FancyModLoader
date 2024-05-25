@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
@@ -85,6 +86,15 @@ public class LoadingModList {
         modFiles.stream()
                 .map(ModFileInfo::getFile)
                 .forEach(mod -> mod.getAccessTransformers().forEach(path -> FMLLoader.addAccessTransformer(path, mod)));
+    }
+
+    public void addEnumExtenders() {
+        List<Path> paths = modFiles.stream()
+                .map(ModFileInfo::getFile)
+                .map(ModFile::getEnumExtenders)
+                .flatMap(List::stream)
+                .toList();
+        RuntimeEnumExtender.loadEnumPrototypes(paths);
     }
 
     public void addForScanning(BackgroundScanHandler backgroundScanHandler) {
