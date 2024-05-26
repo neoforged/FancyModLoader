@@ -7,6 +7,7 @@ package net.neoforged.fml;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import net.neoforged.fml.i18n.FMLTranslations;
 
 public class ModLoadingException extends RuntimeException {
     private final List<ModLoadingIssue> issues;
@@ -25,7 +26,7 @@ public class ModLoadingException extends RuntimeException {
 
     @Override
     public String getMessage() {
-        return "Loading errors encountered: " + this.issues.stream().map(ModLoadingIssue::translationKey)
+        return "Loading errors encountered: " + this.issues.stream().map(FMLTranslations::translateIssue)
                 .collect(Collectors.joining(",\n\t", "[\n\t", "\n]"));
     }
 }

@@ -11,6 +11,7 @@ import java.text.FieldPosition;
 import java.text.Format;
 import java.text.ParsePosition;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -19,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import net.neoforged.fml.Logging;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.FMLLoader;
@@ -125,7 +127,33 @@ public class FMLTranslations {
         return extendedMessageFormat.format(args);
     }
 
+    public static String translateIssueEnglish(ModLoadingIssue issue) {
+        var args = getTranslationArgs(issue);
+
+        try {
+            return parseEnglishMessage(issue.translationKey(), args);
+        } catch (Exception e) {
+            // Fall back to *something* readable in case the translation fails
+            return issue.translationKey() + "["
+                    + Arrays.stream(args).map(Object::toString).collect(Collectors.joining(", "))
+                    + "]";
+        }
+    }
+
     public static String translateIssue(ModLoadingIssue issue) {
+        var args = getTranslationArgs(issue);
+
+        try {
+            return parseMessage(issue.translationKey(), args);
+        } catch (Exception e) {
+            // Fall back to *something* readable in case the translation fails
+            return issue.translationKey() + "["
+                    + Arrays.stream(args).map(Object::toString).collect(Collectors.joining(", "))
+                    + "]";
+        }
+    }
+
+    private static Object[] getTranslationArgs(ModLoadingIssue issue) {
         var args = new ArrayList<>(3 + issue.translationArgs().size());
 
         var modInfo = issue.affectedMod();
@@ -144,13 +172,13 @@ public class FMLTranslations {
 
         args.replaceAll(FMLTranslations::formatArg);
 
-        return parseMessage(issue.translationKey(), args.toArray(Object[]::new));
+        return args.toArray(Object[]::new);
     }
 
     private static Object formatArg(Object arg) {
         if (arg instanceof Path path) {
             var gameDir = FMLLoader.getGamePath();
-            if (path.startsWith(gameDir)) {
+            if (gameDir != null && path.startsWith(gameDir)) {
                 return gameDir.relativize(path).toString();
             } else {
                 return path.toString();
