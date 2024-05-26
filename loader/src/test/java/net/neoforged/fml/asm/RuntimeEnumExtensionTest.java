@@ -77,7 +77,6 @@ public class RuntimeEnumExtensionTest extends LauncherTest {
                             package enumtestmod;
                             public enum ExtensibleEnum implements net.neoforged.fml.common.asm.enumextension.IExtensibleEnum {
                                 TEST_THING("test");
-                            
                                 private final String name;
                                 ExtensibleEnum(String name) {
                                     this.name = name;
@@ -89,7 +88,6 @@ public class RuntimeEnumExtensionTest extends LauncherTest {
                             @net.neoforged.fml.common.asm.enumextension.NumberedEnum
                             public enum EnumWithId implements net.neoforged.fml.common.asm.enumextension.IExtensibleEnum {
                                 TEST_THING(0, "test");
-                            
                                 private final int id;
                                 private final String name;
                                 EnumWithId(int id, String name) {
@@ -107,24 +105,19 @@ public class RuntimeEnumExtensionTest extends LauncherTest {
                             public class TestMod {
                                 private static final java.util.List<Object> ENUM_PARAMS = java.util.List.of("enumtestmod:lazy_test_thing");
                                 private static final java.util.List<Object> ID_ENUM_PARAMS = java.util.List.of(-1, "enumtestmod:lazy_id_test_thing");
-                            
                                 public TestMod() {
                                     System.out.println(java.util.Arrays.toString(ExtensibleEnum.values()));
                                     System.out.println(java.util.Arrays.toString(EnumWithId.values()));
-                            
                                     /*
                                     ExtensibleEnum otherTestThing = ExtensibleEnum.valueOf("ENUMTESTMOD_OTHER_TEST_THING");
                                     ExtensibleEnum prefixedTestThing = ExtensibleEnum.valueOf("ENUMTESTMOD_PREFIXED_TEST_THING");
                                     ExtensibleEnum lazyTestThing = ExtensibleEnum.valueOf("ENUMTESTMOD_LAZY_TEST_THING");
-                            
                                     com.google.common.base.Preconditions.checkState(otherTestThing.ordinal() == 2);
                                     com.google.common.base.Preconditions.checkState(prefixedTestThing.ordinal() == 3);
                                     com.google.common.base.Preconditions.checkState(lazyTestThing.ordinal() == 1);
-                            
                                     EnumWithId otherIdTestThing = EnumWithId.valueOf("ENUMTESTMOD_OTHER_ID_TEST_THING");
                                     EnumWithId prefixedIdTestThing = EnumWithId.valueOf("ENUMTESTMOD_PREFIXED_ID_TEST_THING");
                                     EnumWithId lazyIdTestThing = EnumWithId.valueOf("ENUMTESTMOD_LAZY_ID_TEST_THING");
-                            
                                     com.google.common.base.Preconditions.checkState(otherIdTestThing.ordinal() == 2);
                                     com.google.common.base.Preconditions.checkState(otherIdTestThing.getId() == 2);
                                     com.google.common.base.Preconditions.checkState(prefixedIdTestThing.ordinal() == 3);
