@@ -6,3 +6,5 @@ net.neoforged.fml.loading.targets.NeoForgeServerDevLaunchHandler
 net.neoforged.fml.loading.targets.NeoForgeServerUserdevLaunchHandler
 net.neoforged.fml.loading.targets.NeoForgeDataDevLaunchHandler
 net.neoforged.fml.loading.targets.NeoForgeDataUserdevLaunchHandler
+net.neoforged.fml.loading.targets.JUnitDevLaunchTarget
+net.neoforged.fml.loading.targets.JUnitUserDevLaunchTarget
