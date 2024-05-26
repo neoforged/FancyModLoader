@@ -18,9 +18,10 @@ class ModLoadingExceptionTest {
 
         var message = new ModLoadingException(List.of(w, e)).getMessage();
         assertEquals("""
-                Loading errors encountered: [
-                \tFile XXXX is not a valid mod file,
+                Loading errors encountered:
                 \tFile YYYY is not a valid mod file
-                ]""", message);
+                Loading warnings encountered:
+                \tFile XXXX is not a valid mod file
+                """, message);
     }
 }

@@ -11,7 +11,6 @@ import java.text.FieldPosition;
 import java.text.Format;
 import java.text.ParsePosition;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -20,7 +19,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import net.neoforged.fml.Logging;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.FMLLoader;
@@ -129,28 +127,12 @@ public class FMLTranslations {
 
     public static String translateIssueEnglish(ModLoadingIssue issue) {
         var args = getTranslationArgs(issue);
-
-        try {
-            return parseEnglishMessage(issue.translationKey(), args);
-        } catch (Exception e) {
-            // Fall back to *something* readable in case the translation fails
-            return issue.translationKey() + "["
-                    + Arrays.stream(args).map(Object::toString).collect(Collectors.joining(", "))
-                    + "]";
-        }
+        return parseEnglishMessage(issue.translationKey(), args);
     }
 
     public static String translateIssue(ModLoadingIssue issue) {
         var args = getTranslationArgs(issue);
-
-        try {
-            return parseMessage(issue.translationKey(), args);
-        } catch (Exception e) {
-            // Fall back to *something* readable in case the translation fails
-            return issue.translationKey() + "["
-                    + Arrays.stream(args).map(Object::toString).collect(Collectors.joining(", "))
-                    + "]";
-        }
+        return parseMessage(issue.translationKey(), args);
     }
 
     private static Object[] getTranslationArgs(ModLoadingIssue issue) {
