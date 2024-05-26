@@ -29,26 +29,32 @@ public class ModLoadingException extends RuntimeException {
         var errors = this.issues.stream().filter(i -> i.severity() == ModLoadingIssue.Severity.ERROR).toList();
         if (!errors.isEmpty()) {
             result.append("Loading errors encountered:\n");
-            for (var warning : errors) {
-                result.append("\t").append(translateIssue(warning)).append("\n");
+            for (var error : errors) {
+                appendIssue(error, result);
             }
         }
         var warnings = this.issues.stream().filter(i -> i.severity() == ModLoadingIssue.Severity.WARNING).toList();
         if (!warnings.isEmpty()) {
             result.append("Loading warnings encountered:\n");
             for (var warning : warnings) {
-                result.append("\t").append(translateIssue(warning)).append("\n");
+                appendIssue(warning, result);
             }
         }
         return result.toString();
     }
 
-    private String translateIssue(ModLoadingIssue issue) {
+    private void appendIssue(ModLoadingIssue issue, StringBuilder result) {
+        String translation;
         try {
-            return FMLTranslations.stripControlCodes(FMLTranslations.translateIssueEnglish(issue));
+            translation = FMLTranslations.stripControlCodes(FMLTranslations.translateIssueEnglish(issue));
         } catch (Exception e) {
             // Fall back to *something* readable in case the translation fails
-            return issue.toString();
+            translation = issue.toString();
         }
+
+        // Poor mans indentation
+        translation = translation.replace("\n", "\n\t  ");
+
+        result.append("\t- ").append(translation).append("\n");
     }
 }
