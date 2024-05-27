@@ -43,7 +43,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     private static final Type MARKER_IFACE = Type.getType(IExtensibleEnum.class);
     private static final Type NUMBERED_ANNOTATION = Type.getType(NumberedEnum.class);
     private static final Type BLACKLIST_ANNOTATION = Type.getType(BlacklistedConstructor.class);
-    private static final Type LIST = Type.getType("Ljava/util/List;");
+    private static final Type ENUM_PROXY = Type.getType(EnumProxy.class);
     private static final int ENUM_FLAGS = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_ENUM;
     private static volatile Map<String, List<EnumPrototype>> prototypes = Map.of();
 
@@ -116,6 +116,12 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         List<FieldNode> enumEntries = createEnumEntries(classType, clinitInsnList, ctors, idParamIdx, vanillaEntryCount, protos);
         MethodInsnNode $valuesInsn = ASMAPI.findFirstMethodCall(clinit, ASMAPI.MethodType.STATIC, classType.getInternalName(), "$values", $values.desc);
         clinit.instructions.insertBefore($valuesInsn, clinitInsnList);
+
+        InsnList clinitTailInsnList = new InsnList();
+        returnValuesToExtender(classType, clinitTailInsnList, protos, enumEntries);
+        AbstractInsnNode retNode = ASMAPI.findFirstInstructionBefore(clinit, Opcodes.RETURN, clinit.instructions.size() - 1);
+        clinit.instructions.insertBefore(retNode, clinitTailInsnList);
+
         classNode.fields.addAll(vanillaEntryCount, enumEntries);
 
         InsnList $valuesInsnList = new InsnList();
@@ -206,42 +212,57 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     private static void loadConstructorParams(InsnList insnList, int idParamIdx, int ordinal, String ctorDesc, EnumParameters params) {
         ListGeneratorAdapter generator = new ListGeneratorAdapter(insnList);
         Type[] argTypes = Type.getType(ctorDesc).getArgumentTypes();
-        if (params instanceof EnumParameters.ListBased listBased) {
-            for (int idx = 2; idx < argTypes.length; idx++) {
-                if (idx - 2 == idParamIdx) {
-                    generator.push(ordinal);
-                    continue;
-                }
-                generator.getStatic(listBased.owner(), listBased.fieldName(), LIST);
-                generator.push(idx - 2);
-                insnList.add(ASMAPI.buildMethodCall(LIST.getInternalName(), "get", "(I)Ljava/lang/Object;", ASMAPI.MethodType.INTERFACE));
-                generator.unbox(argTypes[idx]);
-            }
-        } else if (params instanceof EnumParameters.Constant constant) {
-            for (int idx = 2; idx < argTypes.length; idx++) {
-                if (idx - 2 == idParamIdx) {
-                    if (!(constant.params().get(idx - 2) instanceof Integer i) || i != -1) {
-                        throw new IllegalArgumentException("Expected -1 as ID parameter");
+        switch (params) {
+            case EnumParameters.FieldReference(Type owner, String fieldName) -> {
+                for (int idx = 2; idx < argTypes.length; idx++) {
+                    if (idx - 2 == idParamIdx) {
+                        generator.push(ordinal);
+                        continue;
                     }
-                    generator.push(ordinal);
-                    continue;
-                }
-                switch (constant.params().get(idx - 2)) {
-                    case null -> generator.push((String) null);
-                    case String string -> generator.push(string);
-                    case Character ch -> generator.push(ch);
-                    case Byte b -> generator.push(b);
-                    case Short s -> generator.push(s);
-                    case Integer i -> generator.push(i);
-                    case Long l -> generator.push(l);
-                    case Float f -> generator.push(f);
-                    case Double d -> generator.push(d);
-                    case Boolean bool -> generator.push(bool);
-                    default -> throw new IllegalArgumentException("Unsupported constant type");
+                    generator.getStatic(owner, fieldName, ENUM_PROXY);
+                    generator.push(idx - 2);
+                    insnList.add(ASMAPI.buildMethodCall(ENUM_PROXY.getInternalName(), "getParameter", "(I)Ljava/lang/Object;", ASMAPI.MethodType.VIRTUAL));
+                    generator.unbox(argTypes[idx]);
                 }
             }
-        } else {
-            throw new IllegalArgumentException("Unexpected enum parameter source type");
+            case EnumParameters.Constant(List<Object> paramList) -> {
+                for (int idx = 2; idx < argTypes.length; idx++) {
+                    if (idx - 2 == idParamIdx) {
+                        if (!(paramList.get(idx - 2) instanceof Integer i) || i != -1) {
+                            throw new IllegalArgumentException("Expected -1 as ID parameter");
+                        }
+                        generator.push(ordinal);
+                        continue;
+                    }
+                    switch (paramList.get(idx - 2)) {
+                        case null -> generator.push((String) null);
+                        case String string -> generator.push(string);
+                        case Character ch -> generator.push(ch);
+                        case Byte b -> generator.push(b);
+                        case Short s -> generator.push(s);
+                        case Integer i -> generator.push(i);
+                        case Long l -> generator.push(l);
+                        case Float f -> generator.push(f);
+                        case Double d -> generator.push(d);
+                        case Boolean bool -> generator.push(bool);
+                        default -> throw new IllegalArgumentException("Unsupported constant type");
+                    }
+                }
+            }
+        }
+    }
+
+    private static void returnValuesToExtender(Type classType, InsnList insnList, List<EnumPrototype> protos, List<FieldNode> entries) {
+        for (int i = 0; i < protos.size(); i++) {
+            EnumPrototype prototype = protos.get(i);
+            if (!(prototype.ctorParams() instanceof EnumParameters.FieldReference(Type owner, String fieldName))) {
+                continue;
+            }
+
+            FieldNode field = entries.get(i);
+            insnList.add(new FieldInsnNode(Opcodes.GETSTATIC, owner.getInternalName(), fieldName, ENUM_PROXY.getDescriptor()));
+            insnList.add(new FieldInsnNode(Opcodes.GETSTATIC, classType.getInternalName(), field.name, field.desc));
+            insnList.add(ASMAPI.buildMethodCall(ENUM_PROXY.getInternalName(), "setValue", "(Ljava/lang/Enum;)V", ASMAPI.MethodType.VIRTUAL));
         }
     }
 

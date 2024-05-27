@@ -103,12 +103,16 @@ public class RuntimeEnumExtensionTest extends LauncherTest {
                             package enumtestmod;
                             @net.neoforged.fml.common.Mod("enumtestmod")
                             public class TestMod {
-                                private static final java.util.List<Object> ENUM_PARAMS = java.util.List.of("enumtestmod:lazy_test_thing");
-                                private static final java.util.List<Object> ID_ENUM_PARAMS = java.util.List.of(-1, "enumtestmod:lazy_id_test_thing");
+                                private static final net.neoforged.fml.common.asm.enumextension.EnumProxy<ExtensibleEnum> ENUM_PARAMS =
+                                        new net.neoforged.fml.common.asm.enumextension.EnumProxy<>(ExtensibleEnum.class, "enumtestmod:lazy_test_thing");
+                                private static final net.neoforged.fml.common.asm.enumextension.EnumProxy<EnumWithId> ID_ENUM_PARAMS =
+                                        new net.neoforged.fml.common.asm.enumextension.EnumProxy<>(EnumWithId.class, -1, "enumtestmod:lazy_id_test_thing");
                                 public TestMod() {
                                     System.out.println(java.util.Arrays.toString(ExtensibleEnum.values()));
                                     System.out.println(java.util.Arrays.toString(EnumWithId.values()));
                                     /*
+                                    System.out.println(ENUM_PARAMS.getValue());
+                                    System.out.println(ID_ENUM_PARAMS.getValue());
                                     ExtensibleEnum otherTestThing = ExtensibleEnum.valueOf("ENUMTESTMOD_OTHER_TEST_THING");
                                     ExtensibleEnum prefixedTestThing = ExtensibleEnum.valueOf("ENUMTESTMOD_PREFIXED_TEST_THING");
                                     ExtensibleEnum lazyTestThing = ExtensibleEnum.valueOf("ENUMTESTMOD_LAZY_TEST_THING");

@@ -51,7 +51,7 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
                     ctorParams = loadConstantParameters(ctorDesc, paramElem.getAsJsonArray());
                 } else if (paramElem.isJsonObject()) {
                     JsonObject obj = paramElem.getAsJsonObject();
-                    ctorParams = new EnumParameters.ListBased(
+                    ctorParams = new EnumParameters.FieldReference(
                             Type.getObjectType(obj.get("class").getAsString()),
                             obj.get("field").getAsString());
                 } else {
