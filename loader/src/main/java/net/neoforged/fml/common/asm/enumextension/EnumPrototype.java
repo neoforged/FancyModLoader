@@ -26,10 +26,9 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
         return comp != 0 ? comp : fieldName.compareTo(other.fieldName);
     }
 
-    static List<EnumPrototype> load(Path path) {
+    static List<EnumPrototype> load(String modId, Path path) {
         try {
             JsonObject json = GSON.fromJson(Files.newBufferedReader(path), JsonObject.class);
-            String owner = json.get("modid").getAsString();
 
             JsonArray entries = json.getAsJsonArray("entries");
             List<EnumPrototype> prototypes = new ArrayList<>(entries.size());
@@ -39,8 +38,8 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
                 String enumName = entryObj.get("enum").getAsString();
 
                 String fieldName = entryObj.get("name").getAsString();
-                if (!fieldName.toLowerCase(Locale.ROOT).startsWith(owner)) {
-                    fieldName = owner.toUpperCase(Locale.ROOT) + "_" + fieldName;
+                if (!fieldName.toLowerCase(Locale.ROOT).startsWith(modId)) {
+                    fieldName = modId.toUpperCase(Locale.ROOT) + "_" + fieldName;
                 }
 
                 String ctorDesc = entryObj.get("constructor").getAsString();
@@ -60,7 +59,7 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
 
                 // Prepend source-invisible field name and ordinal parameters after checking user-provided parameters
                 ctorDesc = "(" + ENUM_CTOR_BASE_DESC + ctorDesc.substring(1);
-                prototypes.add(new EnumPrototype(owner, enumName, fieldName, ctorDesc, ctorParams));
+                prototypes.add(new EnumPrototype(modId, enumName, fieldName, ctorDesc, ctorParams));
             }
             return prototypes;
         } catch (Throwable e) {
@@ -95,7 +94,7 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
                 case "D" -> element.getAsDouble();
                 case "Ljava/lang/String;" -> element.isJsonNull() ? null : element.getAsString();
                 default -> {
-                    if (element.isJsonNull() || element.getAsString().equals("null")) {
+                    if (element.isJsonNull()) {
                         yield null;
                     }
                     throw new IllegalArgumentException("Unsupported immediate argument type");

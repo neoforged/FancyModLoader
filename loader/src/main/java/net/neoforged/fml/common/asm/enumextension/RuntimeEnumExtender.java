@@ -41,7 +41,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     private static final EnumSet<Phase> YAY = EnumSet.of(Phase.AFTER);
     private static final EnumSet<Phase> NAY = EnumSet.noneOf(Phase.class);
     private static final Type MARKER_IFACE = Type.getType(IExtensibleEnum.class);
-    private static final Type NUMBERED_ANNOTATION = Type.getType(NumberedEnum.class);
+    private static final Type INDEXED_ANNOTATION = Type.getType(IndexedEnum.class);
     private static final Type BLACKLIST_ANNOTATION = Type.getType(BlacklistedConstructor.class);
     private static final Type ENUM_PROXY = Type.getType(EnumProxy.class);
     private static final int ENUM_FLAGS = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_ENUM;
@@ -139,7 +139,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         }
 
         AnnotationNode annotation = classNode.invisibleAnnotations.stream()
-                .filter(anno -> anno.desc.equals(NUMBERED_ANNOTATION.getDescriptor()))
+                .filter(anno -> anno.desc.equals(INDEXED_ANNOTATION.getDescriptor()))
                 .findFirst()
                 .orElse(null);
         if (annotation == null) {
@@ -286,9 +286,10 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         }
     }
 
-    public static void loadEnumPrototypes(List<Path> paths) {
-        prototypes = paths.stream()
-                .map(EnumPrototype::load)
+    public static void loadEnumPrototypes(Map<String, Path> paths) {
+        prototypes = paths.entrySet()
+                .stream()
+                .map(entry -> EnumPrototype.load(entry.getKey(), entry.getValue()))
                 .flatMap(List::stream)
                 .sorted()
                 .reduce(

@@ -9,7 +9,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
-public @interface NumberedEnum {
+public @interface IndexedEnum {
     /**
      * {@return the parameter index of the ID parameter}
      */

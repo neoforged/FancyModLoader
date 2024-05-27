@@ -8,7 +8,6 @@ package net.neoforged.fml.asm;
 import java.nio.charset.StandardCharsets;
 import net.neoforged.fml.loading.IdentifiableContent;
 import net.neoforged.fml.loading.LauncherTest;
-import net.neoforged.fml.loading.SimulatedInstallation;
 import net.neoforged.fml.test.RuntimeCompiler;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -21,7 +20,16 @@ public class RuntimeEnumExtensionTest extends LauncherTest {
 
         var testJar = installation.writeModJar(
                 "enum_ext_test.jar",
-                SimulatedInstallation.createModsToml("enumtestmod", "1.0"),
+                new IdentifiableContent("enumtestmod_MODS_TOML", "META-INF/neoforge.mods.toml", """
+                        modLoader = "javafml"
+                        loaderVersion = "[3,]"
+                        license = "LICENSE"
+
+                        [[mods]]
+                        modId="enumtestmod"
+                        version="1.0"
+                        enumExtender="META-INF/enumextender.json"
+                        """.getBytes(StandardCharsets.UTF_8)),
                 new IdentifiableContent("enumtestmod_ENUM_EXT_DATA", "META-INF/enumextender.json", """
                         {
                             "modid": "enumtestmod",
@@ -85,9 +93,9 @@ public class RuntimeEnumExtensionTest extends LauncherTest {
                             """)
                     .addClass("enumtestmod.EnumWithId", """
                             package enumtestmod;
-                            @net.neoforged.fml.common.asm.enumextension.NumberedEnum
+                            @net.neoforged.fml.common.asm.enumextension.IndexedEnum
                             public enum EnumWithId implements net.neoforged.fml.common.asm.enumextension.IExtensibleEnum {
-                                TEST_THING(0, "test");
+                                TEST_ID_THING(0, "test");
                                 private final int id;
                                 private final String name;
                                 EnumWithId(int id, String name) {

@@ -5,6 +5,7 @@
 
 package net.neoforged.fml.loading;
 
+import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.LambdaExceptionUtils;
 import java.net.URL;
 import java.nio.file.Files;
@@ -12,6 +13,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -25,12 +27,14 @@ import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.neoforgespi.language.IModInfo;
+import org.slf4j.Logger;
 
 /**
  * Master list of all mods <em>in the loading context. This class cannot refer outside the
  * loading package</em>
  */
 public class LoadingModList {
+    private static final Logger LOGGER = LogUtils.getLogger();
     private static LoadingModList INSTANCE;
     private final List<ModFileInfo> modFiles;
     private final List<ModInfo> sortedList;
@@ -89,12 +93,19 @@ public class LoadingModList {
     }
 
     public void addEnumExtenders() {
-        List<Path> paths = modFiles.stream()
-                .map(ModFileInfo::getFile)
-                .map(ModFile::getEnumExtenders)
+        Map<String, Path> pathPerMod = new HashMap<>();
+        modFiles.stream()
+                .map(ModFileInfo::getMods)
                 .flatMap(List::stream)
-                .toList();
-        RuntimeEnumExtender.loadEnumPrototypes(paths);
+                .forEach(mod -> mod.getConfig().<String>getConfigElement("enumExtender").ifPresent(file -> {
+                    Path path = mod.getOwningFile().getFile().findResource(file);
+                    if (Files.notExists(path)) {
+                        LOGGER.error(LogMarkers.LOADING, "Enum extender file {} provided by mod {} does not exist!", path, mod.getOwningFile().moduleName());
+                        return;
+                    }
+                    pathPerMod.put(mod.getModId(), path);
+                }));
+        RuntimeEnumExtender.loadEnumPrototypes(pathPerMod);
     }
 
     public void addForScanning(BackgroundScanHandler backgroundScanHandler) {
