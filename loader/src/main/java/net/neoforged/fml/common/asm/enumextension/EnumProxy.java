@@ -13,7 +13,7 @@ import org.jetbrains.annotations.ApiStatus;
 public final class EnumProxy<T extends Enum<T> & IExtensibleEnum> {
     private final Class<T> enumClass;
     private final List<Object> parameters;
-    private T enumValue;
+    private volatile T enumValue;
 
     public EnumProxy(Class<T> enumClass, Object... parameters) {
         this(enumClass, Arrays.asList(parameters));
