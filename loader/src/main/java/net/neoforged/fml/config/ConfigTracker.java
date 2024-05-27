@@ -36,8 +36,8 @@ public class ConfigTracker {
         this.configsByMod = new ConcurrentHashMap<>();
         this.configSets.put(ModConfig.Type.CLIENT, Collections.synchronizedSet(new LinkedHashSet<>()));
         this.configSets.put(ModConfig.Type.COMMON, Collections.synchronizedSet(new LinkedHashSet<>()));
-//        this.configSets.put(ModConfig.Type.PLAYER, new ConcurrentSkipListSet<>());
         this.configSets.put(ModConfig.Type.SERVER, Collections.synchronizedSet(new LinkedHashSet<>()));
+        this.configSets.put(ModConfig.Type.STARTUP, Collections.synchronizedSet(new LinkedHashSet<>()));
     }
 
     void trackConfig(final ModConfig config) {
@@ -76,7 +76,7 @@ public class ConfigTracker {
         return configBasePath;
     }
 
-    private void openConfig(final ModConfig config, final Path configBasePath, @Nullable Path configOverrideBasePath) {
+    public void openConfig(final ModConfig config, final Path configBasePath, @Nullable Path configOverrideBasePath) {
         LOGGER.trace(CONFIG, "Loading config file type {} at {} for {}", config.getType(), config.getFileName(), config.getModId());
         final Path basePath = resolveBasePath(config, configBasePath, configOverrideBasePath);
         final CommentedFileConfig configData = ConfigFileTypeHandler.TOML.reader(basePath).apply(config);

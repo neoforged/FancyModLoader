@@ -94,11 +94,6 @@ public class ModConfig {
          * Suffix is "-client" by default.
          */
         CLIENT,
-//        /**
-//         * Player type config is configuration that is associated with a player.
-//         * Preferences around machine states, for example.
-//         */
-//        PLAYER,
         /**
          * Server type config is configuration that is associated with a server instance.
          * Only loaded during server startup.
@@ -106,7 +101,17 @@ public class ModConfig {
          * Synced to clients during connection.
          * Suffix is "-server" by default.
          */
-        SERVER;
+        SERVER,
+        /**
+         * Startup config is for configuration that needs to run as early as possible.
+         * Only loaded right after the config are registered to FML.
+         * Please know what you are doing as using these configs to enable/disable registration and other specific stuff
+         * can cause clients to have issues connecting to servers with a different Startup config value.
+         * Stored in the global config directory.
+         * Not synced.
+         * Suffix is "-startup" by default.
+         */
+        STARTUP;
 
         public String extension() {
             return StringUtils.toLowerCase(name());
