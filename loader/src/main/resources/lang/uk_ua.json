@@ -6,7 +6,7 @@
   "fml.modloading.missingmetadata": "В mods.toml відсутні метадані для modid {3}",
   "fml.modloading.failedtoloadmodclass": "{0,modinfo,name} ({0,modinfo,id}) містить помилки при завантаженні класів\n§7{2,exc,msg}",
   "fml.modloading.failedtoloadmod": "{0,modinfo,name} ({0,modinfo,id}) не вдалося завантажити належним чином\n§7{2,exc,msg}",
-  "fml.modloading.feature.missing": "В {0,modinfo,name} ({0,modinfo,id}) відсутня функція, необхідна для запуску\n§7Для запуску потребується {3,featurebound}, а {4} доступно",
+  "fml.modloading.feature.missing": "В {0,modinfo,name} ({0,modinfo,id}) відсутня функція, необхідна для запуску\n§7Для запуску потребується {3,featurebound}, та {4} доступно",
   "fml.modloading.uncaughterror": "Сталася не перехоплена помилка паралельного опрацювання.\n§7{2,exc,msg}",
   "fml.modloading.errorduringevent": "{0,modinfo,name} ({0,modinfo,id}) зіткнулася з помилкою при диспетчеризації події {3}\n§7{2,exc,msg}",
   "fml.modloading.failedtoloadforge": "Не вдалося завантажити NeoForge",
