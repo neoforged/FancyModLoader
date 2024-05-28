@@ -42,7 +42,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     private static final EnumSet<Phase> NAY = EnumSet.noneOf(Phase.class);
     private static final Type MARKER_IFACE = Type.getType(IExtensibleEnum.class);
     private static final Type INDEXED_ANNOTATION = Type.getType(IndexedEnum.class);
-    private static final Type BLACKLIST_ANNOTATION = Type.getType(BlacklistedConstructor.class);
+    private static final Type RESERVED_ANNOTATION = Type.getType(ReservedConstructor.class);
     private static final Type ENUM_PROXY = Type.getType(EnumProxy.class);
     private static final int ENUM_FLAGS = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_ENUM;
     private static volatile Map<String, List<EnumPrototype>> prototypes = Map.of();
@@ -163,7 +163,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         }
 
         AnnotationNode annotation = mth.invisibleAnnotations.stream()
-                .filter(anno -> anno.desc.equals(BLACKLIST_ANNOTATION.getDescriptor()))
+                .filter(anno -> anno.desc.equals(RESERVED_ANNOTATION.getDescriptor()))
                 .findFirst()
                 .orElse(null);
         return annotation == null;
@@ -222,6 +222,18 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                     generator.getStatic(owner, fieldName, ENUM_PROXY);
                     generator.push(idx - 2);
                     insnList.add(ASMAPI.buildMethodCall(ENUM_PROXY.getInternalName(), "getParameter", "(I)Ljava/lang/Object;", ASMAPI.MethodType.VIRTUAL));
+                    generator.unbox(argTypes[idx]);
+                }
+            }
+            case EnumParameters.MethodReference(Type owner, String methodName) -> {
+                for (int idx = 2; idx < argTypes.length; idx++) {
+                    if (idx - 2 == idParamIdx) {
+                        generator.push(ordinal);
+                        continue;
+                    }
+                    generator.push(idx - 2);
+                    generator.push(argTypes[idx]);
+                    insnList.add(ASMAPI.buildMethodCall(owner.getInternalName(), methodName, "(ILjava/lang/Class;)Ljava/lang/Object;", ASMAPI.MethodType.STATIC));
                     generator.unbox(argTypes[idx]);
                 }
             }

@@ -12,4 +12,6 @@ public sealed interface EnumParameters {
     record Constant(List<Object> params) implements EnumParameters {}
 
     record FieldReference(Type owner, String fieldName) implements EnumParameters {}
+
+    record MethodReference(Type owner, String methodName) implements EnumParameters {}
 }

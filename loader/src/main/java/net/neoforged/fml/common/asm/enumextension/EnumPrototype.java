@@ -50,9 +50,17 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
                     ctorParams = loadConstantParameters(ctorDesc, paramElem.getAsJsonArray());
                 } else if (paramElem.isJsonObject()) {
                     JsonObject obj = paramElem.getAsJsonObject();
-                    ctorParams = new EnumParameters.FieldReference(
-                            Type.getObjectType(obj.get("class").getAsString()),
-                            obj.get("field").getAsString());
+                    if (obj.has("method")) {
+                        ctorParams = new EnumParameters.MethodReference(
+                                Type.getObjectType(obj.get("class").getAsString()),
+                                obj.get("method").getAsString());
+                    } else if (obj.has("field")) {
+                        ctorParams = new EnumParameters.FieldReference(
+                                Type.getObjectType(obj.get("class").getAsString()),
+                                obj.get("field").getAsString());
+                    } else {
+                        throw new IllegalArgumentException("Unexpected reference parameter declaration: " + paramElem);
+                    }
                 } else {
                     throw new IllegalArgumentException("Unexpected parameter declaration: " + paramElem);
                 }
