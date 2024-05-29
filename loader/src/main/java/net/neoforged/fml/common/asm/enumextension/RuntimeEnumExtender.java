@@ -14,6 +14,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.neoforged.coremod.api.ASMAPI;
@@ -44,7 +45,14 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     private static final Type INDEXED_ANNOTATION = Type.getType(IndexedEnum.class);
     private static final Type RESERVED_ANNOTATION = Type.getType(ReservedConstructor.class);
     private static final Type ENUM_PROXY = Type.getType(EnumProxy.class);
+    private static final Type NET_CHECK = Type.getType(NetworkedEnum.NetworkCheck.class);
+    private static final Type EXT_INFO = Type.getType(ExtensionInfo.class);
+    private static final String EXT_INFO_GETTER_DESC = Type.getMethodDescriptor(EXT_INFO);
+    private static final String EXT_INFO_CTOR_DESC = Type.getMethodDescriptor(
+            Type.VOID_TYPE, Type.BOOLEAN_TYPE, Type.INT_TYPE, Type.INT_TYPE, NET_CHECK);
+    private static final Type NETWORKED_ANNOTATION = Type.getType(NetworkedEnum.class);
     private static final int ENUM_FLAGS = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_ENUM;
+    private static final int EXT_INFO_FLAGS = Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL;
     private static volatile Map<String, List<EnumPrototype>> prototypes = Map.of();
 
     @Override
@@ -67,43 +75,52 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
             return false;
         }
 
-        MethodNode isExtended = classNode.methods.stream()
-                .filter(mth -> mth.name.equals("isExtended"))
-                .findFirst()
-                .orElseThrow();
-
         List<EnumPrototype> protos = prototypes.getOrDefault(classType.getInternalName(), List.of());
-
-        InsnList isExtInsnList = isExtended.instructions;
-        isExtInsnList.clear();
-        isExtended.localVariables.clear();
-        if (isExtended.tryCatchBlocks != null) {
-            isExtended.tryCatchBlocks.clear();
-        }
-        if (isExtended.visibleLocalVariableAnnotations != null) {
-            isExtended.visibleLocalVariableAnnotations.clear();
-        }
-        if (isExtended.invisibleLocalVariableAnnotations != null) {
-            isExtended.invisibleLocalVariableAnnotations.clear();
-        }
-        isExtInsnList.add(new InsnNode(protos.isEmpty() ? Opcodes.ICONST_0 : Opcodes.ICONST_1));
-        isExtInsnList.add(new InsnNode(Opcodes.IRETURN));
-
-        if (protos.isEmpty()) {
-            return true;
-        }
 
         MethodNode clinit = classNode.methods.stream()
                 .filter(mth -> mth.name.equals("<clinit>"))
                 .findFirst()
                 .orElseThrow();
+        int vanillaEntryCount = (int) classNode.fields.stream()
+                .takeWhile(field -> (field.access & Opcodes.ACC_ENUM) != 0 && field.desc.equals(classType.getDescriptor()))
+                .count();
+
+        InsnList clinitTailInsnList = new InsnList();
+        FieldNode infoField = new FieldNode(EXT_INFO_FLAGS, "FML$ENUM_EXT_INFO", EXT_INFO.getDescriptor(), null, null);
+        buildExtensionInfo(classNode, classType, clinitTailInsnList, infoField, vanillaEntryCount, protos.size());
+        AbstractInsnNode clinitRetNode = ASMAPI.findFirstInstructionBefore(clinit, Opcodes.RETURN, clinit.instructions.size() - 1);
+        classNode.fields.add(infoField);
+
+        MethodNode getExtInfo = classNode.methods.stream()
+                .filter(mth -> mth.name.equals("getExtensionInfo"))
+                .filter(mth -> mth.desc.equals(EXT_INFO_GETTER_DESC))
+                .findFirst()
+                .orElseThrow();
+
+        InsnList getExtInfoInsnList = getExtInfo.instructions;
+        getExtInfoInsnList.clear();
+        getExtInfo.localVariables.clear();
+        if (getExtInfo.tryCatchBlocks != null) {
+            getExtInfo.tryCatchBlocks.clear();
+        }
+        if (getExtInfo.visibleLocalVariableAnnotations != null) {
+            getExtInfo.visibleLocalVariableAnnotations.clear();
+        }
+        if (getExtInfo.invisibleLocalVariableAnnotations != null) {
+            getExtInfo.invisibleLocalVariableAnnotations.clear();
+        }
+        getExtInfoInsnList.add(new FieldInsnNode(Opcodes.GETSTATIC, classType.getInternalName(), infoField.name, infoField.desc));
+        getExtInfoInsnList.add(new InsnNode(Opcodes.ARETURN));
+
+        if (protos.isEmpty()) {
+            clinit.instructions.insertBefore(clinitRetNode, clinitTailInsnList);
+            return true;
+        }
+
         MethodNode $values = classNode.methods.stream()
                 .filter(mth -> mth.name.equals("$values"))
                 .findFirst()
                 .orElseThrow();
-        int vanillaEntryCount = (int) classNode.fields.stream()
-                .takeWhile(field -> (field.access & Opcodes.ACC_ENUM) != 0 && field.desc.equals(classType.getDescriptor()))
-                .count();
 
         int idParamIdx = getIdParameterIndex(classNode);
         Set<String> ctors = classNode.methods.stream()
@@ -117,11 +134,8 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         MethodInsnNode $valuesInsn = ASMAPI.findFirstMethodCall(clinit, ASMAPI.MethodType.STATIC, classType.getInternalName(), "$values", $values.desc);
         clinit.instructions.insertBefore($valuesInsn, clinitInsnList);
 
-        InsnList clinitTailInsnList = new InsnList();
         returnValuesToExtender(classType, clinitTailInsnList, protos, enumEntries);
-        AbstractInsnNode retNode = ASMAPI.findFirstInstructionBefore(clinit, Opcodes.RETURN, clinit.instructions.size() - 1);
-        clinit.instructions.insertBefore(retNode, clinitTailInsnList);
-
+        clinit.instructions.insertBefore(clinitRetNode, clinitTailInsnList);
         classNode.fields.addAll(vanillaEntryCount, enumEntries);
 
         InsnList $valuesInsnList = new InsnList();
@@ -131,6 +145,41 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
 
         exportClassBytes(classNode, classType.getInternalName());
         return true;
+    }
+
+    private static void buildExtensionInfo(ClassNode classNode, Type classType, InsnList insnList, FieldNode infoField, int vanillaCount, int moddedCount) {
+        String netCheckValue = null;
+        if (classNode.invisibleAnnotations != null) {
+            netCheckValue = classNode.invisibleAnnotations.stream()
+                    .filter(anno -> anno.desc.equals(NETWORKED_ANNOTATION.getDescriptor()))
+                    .findFirst()
+                    .flatMap(anno -> {
+                        if (anno.values == null) {
+                            throw new IllegalStateException("Expected values on NetworkedEnum annotation");
+                        }
+                        for (int i = 0; i < anno.values.size(); i += 2) {
+                            if (anno.values.get(i).equals("value")) {
+                                String[] value = (String[]) anno.values.get(i + 1);
+                                return Optional.of(value[1]);
+                            }
+                        }
+                        throw new IllegalStateException("Expected NetworkedEnum.NetworkCheck value on NetworkedEnum annotation");
+                    })
+                    .orElse(null);
+        }
+
+        insnList.add(new TypeInsnNode(Opcodes.NEW, EXT_INFO.getInternalName()));
+        insnList.add(new InsnNode(Opcodes.DUP));
+        insnList.add(new InsnNode(moddedCount > 0 ? Opcodes.ICONST_1 : Opcodes.ICONST_0));
+        insnList.add(new LdcInsnNode(vanillaCount));
+        insnList.add(new LdcInsnNode(vanillaCount + moddedCount));
+        if (netCheckValue != null) {
+            insnList.add(new FieldInsnNode(Opcodes.GETSTATIC, NET_CHECK.getInternalName(), netCheckValue, NET_CHECK.getDescriptor()));
+        } else {
+            insnList.add(new InsnNode(Opcodes.ACONST_NULL));
+        }
+        insnList.add(ASMAPI.buildMethodCall(EXT_INFO.getInternalName(), "<init>", EXT_INFO_CTOR_DESC, ASMAPI.MethodType.SPECIAL));
+        insnList.add(new FieldInsnNode(Opcodes.PUTSTATIC, classType.getInternalName(), infoField.name, infoField.desc));
     }
 
     private static int getIdParameterIndex(ClassNode classNode) {

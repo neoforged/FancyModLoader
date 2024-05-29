@@ -89,6 +89,9 @@ public class RuntimeEnumExtensionTest extends LauncherTest {
                                 ExtensibleEnum(String name) {
                                     this.name = name;
                                 }
+                                public static net.neoforged.fml.common.asm.enumextension.ExtensionInfo getExtensionInfo() {
+                                    throw new IllegalStateException("Enum not transformed");
+                                }
                             }
                             """)
                     .addClass("enumtestmod.EnumWithId", """
@@ -136,6 +139,8 @@ public class RuntimeEnumExtensionTest extends LauncherTest {
                                     com.google.common.base.Preconditions.checkState(prefixedIdTestThing.getId() == 3);
                                     com.google.common.base.Preconditions.checkState(lazyIdTestThing.ordinal() == 1);
                                     com.google.common.base.Preconditions.checkState(lazyIdTestThing.getId() == 1);
+                                    System.out.println(ExtensibleEnum.getExtensionInfo());
+                                    System.out.println(EnumWithId.getExtensionInfo());
                                     */
                                 }
                             }
