@@ -106,25 +106,4 @@ public class ModFileParser {
             return Optional.of(List.of());
         }
     }
-
-    protected static Optional<List<String>> getEnumExtenders(IModFileInfo modFileInfo) {
-        try {
-            var config = modFileInfo.getConfig();
-            var eeEntries = config.getConfigList("enumExtenders");
-            if (eeEntries.isEmpty()) {
-                return Optional.empty();
-            }
-
-            return Optional.of(eeEntries
-                    .stream()
-                    .map(entry -> entry
-                            .<String>getConfigElement("file")
-                            .orElseThrow(
-                                    () -> new InvalidModFileException("Missing \"file\" in [[enumExtenders]] entry", modFileInfo)))
-                    .toList());
-        } catch (Exception exception) {
-            LOGGER.error("Failed to load enum extenders from mod file", exception);
-            return Optional.of(List.of());
-        }
-    }
 }
