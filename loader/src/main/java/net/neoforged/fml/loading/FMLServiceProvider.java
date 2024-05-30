@@ -6,9 +6,9 @@
 package net.neoforged.fml.loading;
 
 import static net.neoforged.fml.loading.LogMarkers.CORE;
+import static net.neoforged.fml.loading.LogMarkers.LOADING;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
@@ -19,15 +19,18 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionSpecBuilder;
+import net.neoforged.fml.ModLoader;
+import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.Environment;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.coremod.ICoreMod;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 
 public class FMLServiceProvider implements ITransformationService {
@@ -45,7 +48,8 @@ public class FMLServiceProvider implements ITransformationService {
     private List<String> mavenRootsArgumentList;
     private List<String> mixinConfigsArgumentList;
     private VersionInfo versionInfo;
-    private ILaunchContext launchContext;
+    @VisibleForTesting
+    ILaunchContext launchContext;
 
     public FMLServiceProvider() {
         final String markerselection = System.getProperty("forge.logging.markers", "");
@@ -120,21 +124,25 @@ public class FMLServiceProvider implements ITransformationService {
 
     @Override
     public List<? extends ITransformer<?>> transformers() {
-        LOGGER.debug(CORE, "Loading coremod transformers");
+        LOGGER.debug(LOADING, "Loading coremod transformers");
 
         var result = new ArrayList<>(loadCoreModScripts());
 
         // Find all Java core mods
-        var pluginLayer = Launcher.INSTANCE.findLayerManager()
-                .flatMap(m -> m.getLayer(IModuleLayerManager.Layer.PLUGIN))
-                .orElseThrow();
-        for (var coreMod : ServiceLoader.load(pluginLayer, ICoreMod.class)) {
-            for (var transformer : coreMod.getTransformers()) {
-                if (transformer == null) {
-                    throw new IllegalStateException("Core mod " + coreMod + " is trying to add null transformer");
+        for (var coreMod : ServiceLoaderUtil.loadServices(launchContext, ICoreMod.class)) {
+            // Try to identify the mod-file this is from
+            var sourceFile = ServiceLoaderUtil.identifySourcePath(launchContext, coreMod);
+
+            try {
+                for (var transformer : coreMod.getTransformers()) {
+                    LOGGER.debug(CORE, "Adding {} transformer from core-mod {} in {}", transformer.targets(), coreMod, sourceFile);
+                    result.add(transformer);
                 }
-                LOGGER.debug(CORE, "Adding {} transformer from core-mod {}", transformer.targets(), coreMod);
-                result.add(transformer);
+            } catch (Exception e) {
+                // Throwing here would cause the game to immediately crash without a proper error screen,
+                // since this method is called by ModLauncher directly.
+                ModLoader.addLoadingIssue(
+                        ModLoadingIssue.error("fml.modloading.coremod_error", coreMod.getClass().getName(), sourceFile).withCause(e));
             }
         }
 

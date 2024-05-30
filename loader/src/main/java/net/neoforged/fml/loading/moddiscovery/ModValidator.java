@@ -93,7 +93,7 @@ public class ModValidator {
     public BackgroundScanHandler stage2Validation() {
         validateLanguages();
 
-        loadingModList = ModSorter.sort(candidateMods, issues);
+        loadingModList = ModSorter.sort(candidatePlugins, candidateMods, issues);
         loadingModList.addAccessTransformers();
         loadingModList.addMixinConfigs();
         var backgroundScanHandler = new BackgroundScanHandler();

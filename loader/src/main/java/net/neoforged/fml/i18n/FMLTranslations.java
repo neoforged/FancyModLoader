@@ -139,10 +139,12 @@ public class FMLTranslations {
         var args = new ArrayList<>(3 + issue.translationArgs().size());
 
         var modInfo = issue.affectedMod();
-        if (modInfo == null && issue.affectedModFile() != null) {
-            if (!issue.affectedModFile().getModInfos().isEmpty()) {
-                modInfo = issue.affectedModFile().getModInfos().getFirst();
+        var file = issue.affectedModFile();
+        while (modInfo == null && file != null) {
+            if (!file.getModInfos().isEmpty()) {
+                modInfo = file.getModInfos().getFirst();
             }
+            file = file.getDiscoveryAttributes().parent();
         }
         args.add(modInfo);
         args.add(null); // Previously mod-loading phase
