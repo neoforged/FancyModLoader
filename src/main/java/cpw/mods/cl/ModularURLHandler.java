@@ -1,5 +1,7 @@
 package cpw.mods.cl;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -7,24 +9,36 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class ModularURLHandler implements URLStreamHandlerFactory {
     public static final ModularURLHandler INSTANCE = new ModularURLHandler();
     private Map<String, IURLProvider> handlers;
 
-    public static void initFrom(ModuleLayer layer) {
+    public static void initFrom(@Nullable ModuleLayer layer) {
+        var handlers = new HashMap<String, IURLProvider>();
+
+        // This handler is required for SJH to work.
+        var unionHandler = new UnionURLStreamHandler();
+        handlers.put(unionHandler.protocol(), unionHandler);
+
         if (layer == null) {
-            INSTANCE.handlers = null;
-        } else {
-            INSTANCE.handlers = ServiceLoader.load(layer, IURLProvider.class).stream()
+            // Support non-modular environment for testing purposes
+            ServiceLoader.load(IURLProvider.class).stream()
                     .map(ServiceLoader.Provider::get)
-                    .collect(Collectors.toMap(IURLProvider::protocol, Function.identity()));
+                    .forEach(handler -> handlers.putIfAbsent(handler.protocol(), handler));
+        } else {
+            ServiceLoader.load(layer, IURLProvider.class).stream()
+                    .map(ServiceLoader.Provider::get)
+                    .forEach(handler -> handlers.putIfAbsent(handler.protocol(), handler));
         }
+
+        INSTANCE.handlers = Map.copyOf(handlers);
     }
+
     @Override
     public URLStreamHandler createURLStreamHandler(final String protocol) {
         if (handlers == null) return null;

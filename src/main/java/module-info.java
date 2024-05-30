@@ -1,5 +1,4 @@
 import cpw.mods.cl.ModularURLHandler;
-import cpw.mods.cl.UnionURLStreamHandler;
 import cpw.mods.niofs.union.UnionFileSystemProvider;
 
 module cpw.mods.securejarhandler {
@@ -14,5 +13,4 @@ module cpw.mods.securejarhandler {
     requires static org.jetbrains.annotations;
     provides java.nio.file.spi.FileSystemProvider with UnionFileSystemProvider;
     uses cpw.mods.cl.ModularURLHandler.IURLProvider;
-    provides ModularURLHandler.IURLProvider with UnionURLStreamHandler;
 }
