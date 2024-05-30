@@ -68,20 +68,12 @@ class CoreModScriptLoader {
 
         @Override
         public String getOwnerId() {
-            return this.coreMod.file().getModInfos().get(0).getModId();
+            return this.coreMod.file().getModInfos().getFirst().getModId();
         }
 
         @Override
         public String toString() {
             return "{Name: " + coreMod.name() + ", Owner: " + getOwnerId() + " @ " + getDebugSource() + "}";
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == this) return true;
-            if (obj == null || obj.getClass() != this.getClass()) return false;
-            var that = (ScriptSourceAdapter) obj;
-            return Objects.equals(this.coreMod, that.coreMod);
         }
     }
 }
