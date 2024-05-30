@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.util.List;
-import java.util.Objects;
 import net.neoforged.coremod.CoreModScriptingEngine;
 import net.neoforged.coremod.ICoreModScriptSource;
 import net.neoforged.fml.loading.moddiscovery.CoreModFile;
