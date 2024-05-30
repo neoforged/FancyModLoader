@@ -75,12 +75,11 @@ allprojects {
 subprojects { subProject ->
     subProject.version = rootProject.version
 
-    jar.doFirst {
+    jar {
         manifest.attributes(
                 'Git-Commit'  : gradleutils.gitInfo.abbreviatedId,
                 'Build-Number': "${subProject.version}",
                 'Automatic-Module-Name' : "fml_${subProject.name.replace("-", "_")}",
-                'FMLModType'  : 'LIBRARY',
                 'Specification-Title'   : "FML${subProject.name}",
                 'Specification-Vendor'  : 'NeoForged',
                 'Specification-Version' : "${subProject.version.toString().split('\\.')[0]}",
@@ -88,6 +87,10 @@ subprojects { subProject ->
                 'Implementation-Version': "${subProject.version.toString().split('\\.')[0]}.${subProject.version.toString().split('\\.')[1]}",
                 'Implementation-Vendor' : 'NeoForged'
         )
+
+        if (subProject.name != 'junit') {
+            manifest.attributes.put('FMLModType', 'LIBRARY')
+        }
     }
 
     tasks.withType(JavaCompile) {

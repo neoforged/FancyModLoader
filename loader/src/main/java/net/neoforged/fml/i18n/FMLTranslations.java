@@ -125,7 +125,17 @@ public class FMLTranslations {
         return extendedMessageFormat.format(args);
     }
 
+    public static String translateIssueEnglish(ModLoadingIssue issue) {
+        var args = getTranslationArgs(issue);
+        return parseEnglishMessage(issue.translationKey(), args);
+    }
+
     public static String translateIssue(ModLoadingIssue issue) {
+        var args = getTranslationArgs(issue);
+        return parseMessage(issue.translationKey(), args);
+    }
+
+    private static Object[] getTranslationArgs(ModLoadingIssue issue) {
         var args = new ArrayList<>(3 + issue.translationArgs().size());
 
         var modInfo = issue.affectedMod();
@@ -144,13 +154,13 @@ public class FMLTranslations {
 
         args.replaceAll(FMLTranslations::formatArg);
 
-        return parseMessage(issue.translationKey(), args.toArray(Object[]::new));
+        return args.toArray(Object[]::new);
     }
 
     private static Object formatArg(Object arg) {
         if (arg instanceof Path path) {
             var gameDir = FMLLoader.getGamePath();
-            if (path.startsWith(gameDir)) {
+            if (gameDir != null && path.startsWith(gameDir)) {
                 return gameDir.relativize(path).toString();
             } else {
                 return path.toString();
