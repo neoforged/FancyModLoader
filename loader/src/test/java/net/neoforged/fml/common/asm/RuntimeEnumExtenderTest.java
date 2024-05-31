@@ -16,6 +16,7 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
+import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
 import net.neoforged.fml.loading.SimulatedInstallation;
@@ -269,16 +270,20 @@ class RuntimeEnumExtenderTest {
         try (var in = new JarInputStream(Files.newInputStream(modJarPath))) {
             try (var out = new JarOutputStream(Files.newOutputStream(transformedJar), in.getManifest())) {
                 for (var entry = in.getNextEntry(); entry != null; entry = in.getNextEntry()) {
+                    var path = entry.getName();
+                    if (path.startsWith("/")) {
+                        path = path.substring(1);
+                    }
 
-                    out.putNextEntry(entry);
-                    if (entry.getName().endsWith(".class")) {
+                    out.putNextEntry(new JarEntry(path));
+                    if (path.endsWith(".class")) {
                         var classData = in.readAllBytes();
                         var classNode = new ClassNode();
                         ClassReader classReader = new ClassReader(classData);
                         classReader.accept(classNode, ClassReader.EXPAND_FRAMES);
 
                         // TRANSFORM CLASS
-                        var enumType = Type.getType("L" + entry.getName().replaceAll("\\.class$", "") + ";");
+                        var enumType = getTypeFromPath(path);
                         transformer.processClassWithFlags(
                                 ILaunchPluginService.Phase.BEFORE,
                                 classNode,
@@ -299,6 +304,17 @@ class RuntimeEnumExtenderTest {
         // Then load the transformed result into a class-loader to make sure it works and is valid
         classLoader = new URLClassLoader(new URL[] { transformedJar.toUri().toURL() }, getClass().getClassLoader());
         return (Class<T>) classLoader.loadClass(ENUM_CLASS);
+    }
+
+    private static Type getTypeFromPath(String entry) {
+        // Remove .class suffix
+        entry = entry.substring(0, entry.length() - ".class".length());
+        // Remove leading slashes
+        if (entry.startsWith("/")) {
+            entry = entry.substring(1);
+        }
+
+        return Type.getType("L" + entry + ";");
     }
 
     @SuppressWarnings("unchecked")
