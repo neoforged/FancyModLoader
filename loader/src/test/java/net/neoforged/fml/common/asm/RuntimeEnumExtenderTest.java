@@ -305,13 +305,9 @@ class RuntimeEnumExtenderTest {
 
     private static Type getTypeFromPath(String entry) {
         // Remove .class suffix
-        entry = entry.substring(0, entry.length() - ".class".length());
-        // Remove leading slashes
-        if (entry.startsWith("/")) {
-            entry = entry.substring(1);
-        }
+        var className = entry.substring(0, entry.length() - ".class".length());
 
-        return Type.getType("L" + entry + ";");
+        return Type.getType("L" + className + ";");
     }
 
     @SuppressWarnings("unchecked")
