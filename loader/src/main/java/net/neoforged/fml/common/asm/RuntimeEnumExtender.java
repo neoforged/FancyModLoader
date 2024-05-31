@@ -7,9 +7,9 @@ package net.neoforged.fml.common.asm;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
+import java.lang.reflect.Field;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -18,6 +18,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.slf4j.Logger;
+import sun.misc.Unsafe;
 
 /**
  * Modifies specified enums to allow runtime extension by making the $VALUES field non-final and
@@ -30,7 +31,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     private final Type MARKER_IFACE = Type.getType("Lnet/neoforged/neoforge/common/IExtensibleEnum;");
     private final Type ARRAY_UTILS = Type.getType("Lorg/apache/commons/lang3/ArrayUtils;"); //Don't directly reference this to prevent class loading.
     private final String ADD_DESC = Type.getMethodDescriptor(Type.getType(Object[].class), Type.getType(Object[].class), Type.getType(Object.class));
-    private final Type UNSAFE_HACKS = Type.getType("Lnet/minecraftforge/fml/unsafe/UnsafeHacks;"); //Again, not direct reference to prevent class loading.
+    private final Type THIS_CLASS = Type.getType(RuntimeEnumExtender.class);
     private final String CLEAN_DESC = Type.getMethodDescriptor(Type.VOID_TYPE, Type.getType(Class.class));
     private final String NAME_DESC = Type.getMethodDescriptor(STRING);
     private final String EQUALS_DESC = Type.getMethodDescriptor(Type.BOOLEAN_TYPE, STRING);
@@ -65,7 +66,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         //Static methods named "create" with first argument as a string
         List<MethodNode> candidates = classNode.methods.stream()
                 .filter(m -> ((m.access & Opcodes.ACC_STATIC) != 0) && m.name.equals("create"))
-                .collect(Collectors.toList());
+                .toList();
 
         if (candidates.isEmpty()) {
             throw new IllegalStateException("IExtensibleEnum has no candidate factory methods: " + classType.getClassName());
@@ -206,7 +207,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                 ins.putstatic(classType.getInternalName(), values.name, values.desc);
                 //EnumHelper.cleanEnumCache(ThisType.class)
                 ins.visitLdcInsn(classType);
-                ins.invokestatic(UNSAFE_HACKS.getInternalName(), "cleanEnumCache", CLEAN_DESC, false);
+                ins.invokestatic(THIS_CLASS.getInternalName(), "clearEnumCache", CLEAN_DESC, false);
                 //init ret
                 ins.load(vars, classType);
                 ins.invokeinterface(MARKER_IFACE.getInternalName(), "init", "()V");
@@ -216,5 +217,47 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
             }
         });
         return ComputeFlags.COMPUTE_FRAMES;
+    }
+
+    /**
+     * References to this method are injected into generated code to clear the enum literal cache in the enum class
+     */
+    @SuppressWarnings("unused")
+    public static void clearEnumCache(Class<? extends Enum<?>> enumClass) {
+        UnsafeHacks.cleanEnumCache(enumClass);
+    }
+
+    private static final class UnsafeHacks {
+        private static final Unsafe UNSAFE;
+        private static Field enumConstantDirectoryField;
+        private static Field enumConstantsField;
+
+        static {
+            try {
+                var theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+                theUnsafe.setAccessible(true);
+                UNSAFE = (Unsafe) theUnsafe.get(null);
+            } catch (IllegalAccessException | NoSuchFieldException e) {
+                throw new RuntimeException("Failed to gain access to sun.misc.Unsafe", e);
+            }
+
+            for (var f : Class.class.getDeclaredFields()) {
+                var fieldName = f.getName();
+                switch (fieldName) {
+                    case "enumConstantDirectory" -> enumConstantDirectoryField = f;
+                    case "enumConstants" -> enumConstantsField = f;
+                }
+            }
+        }
+
+        public static void cleanEnumCache(Class<? extends Enum<?>> enumClass) {
+            // Reset the two cached fields back to null
+            if (enumConstantDirectoryField != null) {
+                UNSAFE.putObject(enumClass, UNSAFE.objectFieldOffset(enumConstantDirectoryField), null);
+            }
+            if (enumConstantsField != null) {
+                UNSAFE.putObject(enumClass, UNSAFE.objectFieldOffset(enumConstantsField), null);
+            }
+        }
     }
 }

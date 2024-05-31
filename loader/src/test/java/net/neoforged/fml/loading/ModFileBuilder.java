@@ -62,7 +62,7 @@ public class ModFileBuilder implements Closeable {
         return this;
     }
 
-    public void build() throws IOException {
+    public Path build() throws IOException {
         compilationBuilder.compile();
 
         var manifest = new Manifest();
@@ -93,6 +93,8 @@ public class ModFileBuilder implements Closeable {
                 }
             }
         }
+
+        return destination;
     }
 
     @Override
