@@ -9,11 +9,11 @@ package net.neoforged.fml.common.asm.enumextension;
  * To be implemented on vanilla enums that should be enhanced with ASM to be
  * extensible. If this is implemented on a class, the class must define a static
  * method called {@code getExtensionInfo()} which takes zero args and returns an {@link ExtensionInfo}.
- * By default, the method should throw to make sure the enum was handled by the transformer.
+ * By default, the method must return {@link ExtensionInfo#nonExtended(Class)} with the enum's class as the parameter.
  *
  * {@snippet :
  * public static ExtensionInfo getExtensionInfo() {
- *     throw new IllegalStateException("Enum not transformed");
+ *     return ExtensionInfo.nonExtended(TheEnum.class);
  * }
  * }
  *

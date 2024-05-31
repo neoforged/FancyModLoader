@@ -90,7 +90,7 @@ public class RuntimeEnumExtensionTest extends LauncherTest {
                                     this.name = name;
                                 }
                                 public static net.neoforged.fml.common.asm.enumextension.ExtensionInfo getExtensionInfo() {
-                                    throw new IllegalStateException("Enum not transformed");
+                                    return net.neoforged.fml.common.asm.enumextension.ExtensionInfo.nonExtended(ExtensibleEnum.class);
                                 }
                             }
                             """)
@@ -107,6 +107,9 @@ public class RuntimeEnumExtensionTest extends LauncherTest {
                                 }
                                 public int getId() {
                                     return id;
+                                }
+                                public static net.neoforged.fml.common.asm.enumextension.ExtensionInfo getExtensionInfo() {
+                                    return net.neoforged.fml.common.asm.enumextension.ExtensionInfo.nonExtended(EnumWithId.class);
                                 }
                             }
                             """)
