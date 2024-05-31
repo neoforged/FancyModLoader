@@ -71,7 +71,11 @@ public class ModFileBuilder implements Closeable {
             // Copy compiled files over
             try (var files = Files.walk(memoryFs.getPath("/"))) {
                 files.filter(Files::isRegularFile).forEach(path -> {
-                    var entry = new JarEntry(path.toString().replace('\\', '/'));
+                    var relativePath = path.toString().replace('\\', '/');
+                    if (relativePath.startsWith("/")) {
+                        relativePath = relativePath.substring(1);
+                    }
+                    var entry = new JarEntry(relativePath);
                     try {
                         output.putNextEntry(entry);
                         Files.copy(path, output);

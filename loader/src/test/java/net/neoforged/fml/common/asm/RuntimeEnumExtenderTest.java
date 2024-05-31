@@ -271,9 +271,6 @@ class RuntimeEnumExtenderTest {
             try (var out = new JarOutputStream(Files.newOutputStream(transformedJar), in.getManifest())) {
                 for (var entry = in.getNextEntry(); entry != null; entry = in.getNextEntry()) {
                     var path = entry.getName();
-                    if (path.startsWith("/")) {
-                        path = path.substring(1);
-                    }
 
                     out.putNextEntry(new JarEntry(path));
                     if (path.endsWith(".class")) {
