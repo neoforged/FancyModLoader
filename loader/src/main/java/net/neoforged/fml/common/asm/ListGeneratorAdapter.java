@@ -11,8 +11,11 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
 public class ListGeneratorAdapter extends GeneratorAdapter {
+    public final InsnList insnList;
+
     public ListGeneratorAdapter(InsnList insnList) {
         super(Opcodes.ASM9, null, 0, "", "()V");
+        this.insnList = insnList;
         MethodNode method = new MethodNode();
         method.instructions = insnList;
         mv = method;

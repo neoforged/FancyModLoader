@@ -24,6 +24,7 @@ import net.neoforged.fml.common.asm.ListGeneratorAdapter;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -32,10 +33,8 @@ import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.TypeInsnNode;
 import org.slf4j.Logger;
 import org.spongepowered.asm.transformers.MixinClassWriter;
 import org.spongepowered.asm.util.Constants;
@@ -56,6 +55,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
             Type.VOID_TYPE, Type.BOOLEAN_TYPE, Type.INT_TYPE, Type.INT_TYPE, NET_CHECK);
     private static final Type NETWORKED_ANNOTATION = Type.getType(NetworkedEnum.class);
     private static final Type EXTENDER = Type.getType(RuntimeEnumExtender.class);
+    private static final Type ARRAYS = Type.getType("Ljava/util/Arrays;");
     private static final int ENUM_FLAGS = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_ENUM;
     private static final int EXT_INFO_FLAGS = Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL;
     private static volatile Map<String, List<EnumPrototype>> prototypes = Map.of();
@@ -106,22 +106,22 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         getExtInfoInsnList.add(new FieldInsnNode(Opcodes.GETSTATIC, classType.getInternalName(), infoField.name, infoField.desc));
         getExtInfoInsnList.add(new InsnNode(Opcodes.ARETURN));
 
-        InsnList clinitInsnList = new InsnList();
-        List<FieldNode> enumEntries = createEnumEntries(classType, clinitInsnList, ctors, idParamIdx, nameParamIdx, vanillaEntryCount, protos);
+        ListGeneratorAdapter clinitGenerator = new ListGeneratorAdapter(new InsnList());
+        List<FieldNode> enumEntries = createEnumEntries(classType, clinitGenerator, ctors, idParamIdx, nameParamIdx, vanillaEntryCount, protos);
         MethodInsnNode $valuesInsn = ASMAPI.findFirstMethodCall(clinit, ASMAPI.MethodType.STATIC, classType.getInternalName(), "$values", $values.desc);
-        clinit.instructions.insertBefore($valuesInsn, clinitInsnList);
+        clinit.instructions.insertBefore($valuesInsn, clinitGenerator.insnList);
 
-        InsnList clinitTailInsnList = new InsnList();
-        buildExtensionInfo(classNode, classType, clinitTailInsnList, infoField, vanillaEntryCount, protos.size());
-        returnValuesToExtender(classType, clinitTailInsnList, protos, enumEntries);
+        ListGeneratorAdapter clinitTailGenerator = new ListGeneratorAdapter(new InsnList());
+        buildExtensionInfo(classNode, classType, clinitTailGenerator, infoField, vanillaEntryCount, protos.size());
+        returnValuesToExtender(classType, clinitTailGenerator, protos, enumEntries);
         AbstractInsnNode clinitRetNode = ASMAPI.findFirstInstructionBefore(clinit, Opcodes.RETURN, clinit.instructions.size() - 1);
-        clinit.instructions.insertBefore(clinitRetNode, clinitTailInsnList);
+        clinit.instructions.insertBefore(clinitRetNode, clinitTailGenerator.insnList);
         classNode.fields.addAll(vanillaEntryCount, enumEntries);
 
-        InsnList $valuesInsnList = new InsnList();
-        appendValuesArray(classType, $valuesInsnList, enumEntries);
+        ListGeneratorAdapter $valuesGenerator = new ListGeneratorAdapter(new InsnList());
+        appendValuesArray(classType, $valuesGenerator, enumEntries);
         AbstractInsnNode aretInsn = ASMAPI.findFirstInstructionBefore($values, Opcodes.ARETURN, $values.instructions.size() - 1);
-        $values.instructions.insertBefore(aretInsn, $valuesInsnList);
+        $values.instructions.insertBefore(aretInsn, $valuesGenerator.insnList);
 
         exportClassBytes(classNode, classType.getInternalName());
         return true;
@@ -205,7 +205,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
 
     private static List<FieldNode> createEnumEntries(
             Type classType,
-            InsnList insnList,
+            ListGeneratorAdapter generator,
             Set<String> ctors,
             int idParamIdx,
             int nameParamIdx,
@@ -223,21 +223,20 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
             enumFields.add(field);
 
             // NEW_FIELD = new EnumType(fieldName, ordinal, ...);
-            insnList.add(new TypeInsnNode(Opcodes.NEW, classType.getInternalName()));
-            insnList.add(new InsnNode(Opcodes.DUP));
-            insnList.add(new LdcInsnNode(fieldName));
-            insnList.add(new LdcInsnNode(ordinal));
-            loadConstructorParams(insnList, idParamIdx, nameParamIdx, ordinal, proto); // additional parameters
-            insnList.add(ASMAPI.buildMethodCall(classType.getInternalName(), "<init>", proto.ctorDesc(), ASMAPI.MethodType.SPECIAL));
-            insnList.add(new FieldInsnNode(Opcodes.PUTSTATIC, classType.getInternalName(), field.name, field.desc));
+            generator.newInstance(classType);
+            generator.dup();
+            generator.push(fieldName);
+            generator.push(ordinal);
+            loadConstructorParams(generator, idParamIdx, nameParamIdx, ordinal, proto); // additional parameters
+            generator.invokeConstructor(classType, new Method("<init>", proto.ctorDesc()));
+            generator.putStatic(classType, field.name, classType);
 
             ordinal++;
         }
         return enumFields;
     }
 
-    private static void loadConstructorParams(InsnList insnList, int idParamIdx, int nameParamIdx, int ordinal, EnumPrototype proto) {
-        ListGeneratorAdapter generator = new ListGeneratorAdapter(insnList);
+    private static void loadConstructorParams(ListGeneratorAdapter generator, int idParamIdx, int nameParamIdx, int ordinal, EnumPrototype proto) {
         Type[] argTypes = Type.getType(proto.ctorDesc()).getArgumentTypes();
         switch (proto.ctorParams()) {
             case EnumParameters.FieldReference(Type owner, String fieldName) -> {
@@ -305,7 +304,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         }
     }
 
-    private static void buildExtensionInfo(ClassNode classNode, Type classType, InsnList insnList, FieldNode infoField, int vanillaCount, int moddedCount) {
+    private static void buildExtensionInfo(ClassNode classNode, Type classType, ListGeneratorAdapter generator, FieldNode infoField, int vanillaCount, int moddedCount) {
         String netCheckValue = null;
         if (classNode.invisibleAnnotations != null) {
             netCheckValue = classNode.invisibleAnnotations.stream()
@@ -326,21 +325,21 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                     .orElse(null);
         }
 
-        insnList.add(new TypeInsnNode(Opcodes.NEW, EXT_INFO.getInternalName()));
-        insnList.add(new InsnNode(Opcodes.DUP));
-        insnList.add(new InsnNode(moddedCount > 0 ? Opcodes.ICONST_1 : Opcodes.ICONST_0));
-        insnList.add(new LdcInsnNode(vanillaCount));
-        insnList.add(new LdcInsnNode(vanillaCount + moddedCount));
+        generator.newInstance(EXT_INFO);
+        generator.dup();
+        generator.push(moddedCount > 0);
+        generator.push(vanillaCount);
+        generator.push(vanillaCount + moddedCount);
         if (netCheckValue != null) {
-            insnList.add(new FieldInsnNode(Opcodes.GETSTATIC, NET_CHECK.getInternalName(), netCheckValue, NET_CHECK.getDescriptor()));
+            generator.getStatic(NET_CHECK, netCheckValue, NET_CHECK);
         } else {
-            insnList.add(new InsnNode(Opcodes.ACONST_NULL));
+            generator.push((Type) null);
         }
-        insnList.add(ASMAPI.buildMethodCall(EXT_INFO.getInternalName(), "<init>", EXT_INFO_CTOR_DESC, ASMAPI.MethodType.SPECIAL));
-        insnList.add(new FieldInsnNode(Opcodes.PUTSTATIC, classType.getInternalName(), infoField.name, infoField.desc));
+        generator.invokeConstructor(EXT_INFO, new Method("<init>", EXT_INFO_CTOR_DESC));
+        generator.putStatic(classType, infoField.name, EXT_INFO);
     }
 
-    private static void returnValuesToExtender(Type classType, InsnList insnList, List<EnumPrototype> protos, List<FieldNode> entries) {
+    private static void returnValuesToExtender(Type classType, ListGeneratorAdapter generator, List<EnumPrototype> protos, List<FieldNode> entries) {
         for (int i = 0; i < protos.size(); i++) {
             EnumPrototype prototype = protos.get(i);
             if (!(prototype.ctorParams() instanceof EnumParameters.FieldReference(Type owner, String fieldName))) {
@@ -348,29 +347,29 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
             }
 
             FieldNode field = entries.get(i);
-            insnList.add(new FieldInsnNode(Opcodes.GETSTATIC, owner.getInternalName(), fieldName, ENUM_PROXY.getDescriptor()));
-            insnList.add(new FieldInsnNode(Opcodes.GETSTATIC, classType.getInternalName(), field.name, field.desc));
-            insnList.add(ASMAPI.buildMethodCall(ENUM_PROXY.getInternalName(), "setValue", "(Ljava/lang/Enum;)V", ASMAPI.MethodType.VIRTUAL));
+            generator.getStatic(owner, fieldName, ENUM_PROXY);
+            generator.getStatic(classType, field.name, classType);
+            generator.invokeVirtual(ENUM_PROXY, new Method("setValue", "(Ljava/lang/Enum;)V"));
         }
     }
 
-    private static void appendValuesArray(Type classType, InsnList insnList, List<FieldNode> enumEntries) {
+    private static void appendValuesArray(Type classType, ListGeneratorAdapter generator, List<FieldNode> enumEntries) {
         // values = Arrays.copyOf(values, values.length + listSize);
-        insnList.add(new InsnNode(Opcodes.DUP));
-        insnList.add(new InsnNode(Opcodes.ARRAYLENGTH));
-        insnList.add(new LdcInsnNode(enumEntries.size()));
-        insnList.add(new InsnNode(Opcodes.IADD));
-        insnList.add(ASMAPI.buildMethodCall("java/util/Arrays", "copyOf", "([Ljava/lang/Object;I)[Ljava/lang/Object;", ASMAPI.MethodType.STATIC));
-        insnList.add(new TypeInsnNode(Opcodes.CHECKCAST, "[" + classType.getDescriptor()));
+        generator.dup();
+        generator.arrayLength();
+        generator.push(enumEntries.size());
+        generator.math(GeneratorAdapter.ADD, Type.INT_TYPE);
+        generator.invokeStatic(ARRAYS, new Method("copyOf", "([Ljava/lang/Object;I)[Ljava/lang/Object;"));
+        generator.checkCast(Type.getType("[" + classType.getDescriptor()));
 
         // values[NEW_FIELD.ordinal()] = NEW_FIELD;
         for (FieldNode entry : enumEntries) {
-            insnList.add(new InsnNode(Opcodes.DUP));
-            insnList.add(new FieldInsnNode(Opcodes.GETSTATIC, classType.getInternalName(), entry.name, entry.desc));
-            insnList.add(new InsnNode(Opcodes.DUP));
-            insnList.add(ASMAPI.buildMethodCall(classType.getInternalName(), "ordinal", "()I", ASMAPI.MethodType.VIRTUAL));
-            insnList.add(new InsnNode(Opcodes.SWAP));
-            insnList.add(new InsnNode(Opcodes.AASTORE));
+            generator.dup();
+            generator.getStatic(classType, entry.name, classType);
+            generator.dup();
+            generator.invokeVirtual(classType, new Method("ordinal", "()I"));
+            generator.swap();
+            generator.arrayStore(classType);
         }
     }
 
