@@ -19,6 +19,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import net.neoforged.coremod.api.ASMAPI;
 import net.neoforged.fml.common.asm.ListGeneratorAdapter;
+import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
@@ -33,6 +34,10 @@ import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+/**
+ * Transforms enums implementing {@link IExtensibleEnum} to add additional entries loaded from files provided by mods
+ */
+@ApiStatus.Internal
 public class RuntimeEnumExtender implements ILaunchPluginService {
     private static final EnumSet<Phase> YAY = EnumSet.of(Phase.AFTER);
     private static final EnumSet<Phase> NAY = EnumSet.noneOf(Phase.class);

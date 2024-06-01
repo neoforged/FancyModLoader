@@ -8,6 +8,11 @@ package net.neoforged.fml.common.asm.enumextension;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 
+/**
+ * Specifies that the annotated enum is used in networking and must be checked for mismatches between the client and server
+ * 
+ * @see ExtensionInfo
+ */
 @Target(ElementType.TYPE)
 public @interface NetworkedEnum {
     NetworkCheck value();

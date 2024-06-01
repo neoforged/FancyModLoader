@@ -9,6 +9,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -28,8 +29,8 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
     }
 
     static List<EnumPrototype> load(String modId, Path path) {
-        try {
-            JsonObject json = GSON.fromJson(Files.newBufferedReader(path), JsonObject.class);
+        try (Reader reader = Files.newBufferedReader(path)) {
+            JsonObject json = GSON.fromJson(reader, JsonObject.class);
 
             JsonArray entries = json.getAsJsonArray("entries");
             List<EnumPrototype> prototypes = new ArrayList<>(entries.size());

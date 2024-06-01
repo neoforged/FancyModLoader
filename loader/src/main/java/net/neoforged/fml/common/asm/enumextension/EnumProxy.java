@@ -10,6 +10,9 @@ import java.util.List;
 import java.util.Objects;
 import org.jetbrains.annotations.ApiStatus;
 
+/**
+ * Combined list of parameters used to create a new enum constant and mutable holder of the created enum constant
+ */
 public final class EnumProxy<T extends Enum<T> & IExtensibleEnum> {
     private final Class<T> enumClass;
     private final List<Object> parameters;
@@ -29,6 +32,9 @@ public final class EnumProxy<T extends Enum<T> & IExtensibleEnum> {
         return parameters.get(idx);
     }
 
+    /**
+     * {@return the created enum constant, ensuring the containing enum is loaded if the value was not set yet}
+     */
     public T getValue() {
         if (enumValue == null) {
             try {

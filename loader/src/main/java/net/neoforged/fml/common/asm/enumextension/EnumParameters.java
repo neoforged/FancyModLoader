@@ -8,7 +8,7 @@ package net.neoforged.fml.common.asm.enumextension;
 import java.util.List;
 import org.objectweb.asm.Type;
 
-public sealed interface EnumParameters {
+sealed interface EnumParameters {
     record Constant(List<Object> params) implements EnumParameters {}
 
     record FieldReference(Type owner, String fieldName) implements EnumParameters {}
