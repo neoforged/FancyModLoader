@@ -5,9 +5,7 @@
 
 package net.neoforged.fml.common.asm.enumextension;
 
-import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -21,7 +19,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import net.neoforged.coremod.api.ASMAPI;
 import net.neoforged.fml.common.asm.ListGeneratorAdapter;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
@@ -35,12 +32,8 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.slf4j.Logger;
-import org.spongepowered.asm.transformers.MixinClassWriter;
-import org.spongepowered.asm.util.Constants;
 
 public class RuntimeEnumExtender implements ILaunchPluginService {
-    private static final Logger LOGGER = LogUtils.getLogger();
     private static final EnumSet<Phase> YAY = EnumSet.of(Phase.AFTER);
     private static final EnumSet<Phase> NAY = EnumSet.noneOf(Phase.class);
     private static final Type MARKER_IFACE = Type.getType(IExtensibleEnum.class);
@@ -123,7 +116,6 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         AbstractInsnNode aretInsn = ASMAPI.findFirstInstructionBefore($values, Opcodes.ARETURN, $values.instructions.size() - 1);
         $values.instructions.insertBefore(aretInsn, $valuesGenerator.insnList);
 
-        exportClassBytes(classNode, classType.getInternalName());
         return true;
     }
 
@@ -190,19 +182,6 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         return annotation == null;
     }
 
-    private static void exportClassBytes(ClassNode classNode, String fileName) {
-        try {
-            MixinClassWriter cw = new MixinClassWriter(ClassWriter.COMPUTE_FRAMES);
-            classNode.accept(cw);
-            byte[] bytes = cw.toByteArray();
-            File outputFile = new File(new File(Constants.DEBUG_OUTPUT_DIR, "class"), fileName + ".class");
-            outputFile.getParentFile().mkdirs();
-            com.google.common.io.Files.write(bytes, outputFile);
-        } catch (Throwable t) {
-            throw new RuntimeException("Fuck", t);
-        }
-    }
-
     private static List<FieldNode> createEnumEntries(
             Type classType,
             ListGeneratorAdapter generator,
@@ -214,8 +193,14 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         List<FieldNode> enumFields = new ArrayList<>(prototypes.size());
         int ordinal = vanillaEntryCount;
         for (EnumPrototype proto : prototypes) {
-            if (!ctors.contains(proto.ctorDesc())) {
-                throw new IllegalArgumentException("Invalid, non-existant or disallowed constructor: " + proto.ctorDesc());
+            if (!ctors.contains(proto.fullCtorDesc())) {
+                throw new IllegalArgumentException(String.format(
+                        Locale.ROOT,
+                        "Invalid, non-existant or disallowed constructor '%s' for field '%s' in enum '%s' specified by mod '%s'",
+                        proto.ctorDesc(),
+                        proto.fieldName(),
+                        proto.enumName(),
+                        proto.owningMod()));
             }
 
             String fieldName = proto.fieldName();
@@ -228,7 +213,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
             generator.push(fieldName);
             generator.push(ordinal);
             loadConstructorParams(generator, idParamIdx, nameParamIdx, ordinal, proto); // additional parameters
-            generator.invokeConstructor(classType, new Method("<init>", proto.ctorDesc()));
+            generator.invokeConstructor(classType, new Method("<init>", proto.fullCtorDesc()));
             generator.putStatic(classType, field.name, classType);
 
             ordinal++;
@@ -237,7 +222,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     }
 
     private static void loadConstructorParams(ListGeneratorAdapter generator, int idParamIdx, int nameParamIdx, int ordinal, EnumPrototype proto) {
-        Type[] argTypes = Type.getType(proto.ctorDesc()).getArgumentTypes();
+        Type[] argTypes = Type.getType(proto.fullCtorDesc()).getArgumentTypes();
         switch (proto.ctorParams()) {
             case EnumParameters.FieldReference(Type owner, String fieldName) -> {
                 for (int idx = 2; idx < argTypes.length; idx++) {
@@ -275,14 +260,26 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                 for (int idx = 2; idx < argTypes.length; idx++) {
                     if (idx - 2 == idParamIdx) {
                         if (!(paramList.get(idx - 2) instanceof Integer i) || i != -1) {
-                            throw new IllegalArgumentException("Expected -1 as ID parameter");
+                            throw new IllegalArgumentException(String.format(
+                                    Locale.ROOT,
+                                    "Expected -1 as ID parameter at index %d in parameters for field '%s' in enum '%s' specified by mod '%s'",
+                                    idx - 2,
+                                    proto.fieldName(),
+                                    proto.enumName(),
+                                    proto.owningMod()));
                         }
                         generator.push(ordinal);
                         continue;
                     }
                     if (idx - 2 == nameParamIdx) {
                         if (!(paramList.get(idx - 2) instanceof String str)) {
-                            throw new IllegalArgumentException("Expected String at index " + (idx - 2));
+                            throw new IllegalArgumentException(String.format(
+                                    Locale.ROOT,
+                                    "Expected String at index %d in parameters for field '%s' in enum '%s' specified by mod '%s'",
+                                    idx - 2,
+                                    proto.fieldName(),
+                                    proto.enumName(),
+                                    proto.owningMod()));
                         }
                         validateNameParameter(str, proto.owningMod());
                     }
@@ -297,7 +294,13 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                         case Float f -> generator.push(f);
                         case Double d -> generator.push(d);
                         case Boolean bool -> generator.push(bool);
-                        default -> throw new IllegalArgumentException("Unsupported constant type");
+                        default -> throw new IllegalArgumentException(String.format(
+                                Locale.ROOT,
+                                "Unsupported constant type '%s' in parameters for field '%s' in enum '%s' specified by mod '%s'",
+                                paramList.get(idx - 2).getClass(),
+                                proto.fieldName(),
+                                proto.enumName(),
+                                proto.owningMod()));
                     }
                 }
             }
