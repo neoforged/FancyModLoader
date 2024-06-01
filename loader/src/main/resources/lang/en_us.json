@@ -12,6 +12,7 @@
   "fml.modloading.failedtoloadforge": "Failed to load NeoForge",
 
   "fml.modloading.javafml.dangling_entrypoint": "File {5} contains mod entrypoint class \u00a76{4}\u00a7r for mod with id \u00a7e{3}\u00a7r, which does not exist or is not in the same file.\nDid you forget to update the mod id in the entrypoint?",
+  "fml.modloading.javafml.ebs.mixed_buses": "Class {3} annotated with @EventBusSubscriber has listeners for both mod and game bus events, which cannot be mixed",
 
   "fml.modloading.missingdependency": "Mod \u00a7e{4}\u00a7r requires \u00a76{3}\u00a7r \u00a7o{5,vr}\u00a7r\n\u00a77Currently, \u00a76{3}\u00a7r\u00a77 is \u00a7o{6,i18n,fml.messages.artifactversion.ornotinstalled}§r\n{7,optional,§7Reason for the dependency: §r}",
   "fml.modloading.missingdependency.optional": "Mod \u00a7e{4}\u00a7r only supports \u00a73{3}\u00a7r \u00a7o{5,vr}\u00a7r\n\u00a77Currently, \u00a73{3}\u00a7r\u00a77 is \u00a7o{6}",

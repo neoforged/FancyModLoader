@@ -19,10 +19,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ServiceLoader;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.accesstransformer.ml.AccessTransformerService;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.coremod.CoreModScriptingEngine;
+import net.neoforged.fml.IBindingsProvider;
 import net.neoforged.fml.common.asm.RuntimeDistCleaner;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
@@ -33,6 +35,7 @@ import net.neoforged.fml.loading.targets.CommonLaunchHandler;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 
 public class FMLLoader {
@@ -53,6 +56,8 @@ public class FMLLoader {
     private static boolean production;
     @Nullable
     private static ModuleLayer gameLayer;
+    @VisibleForTesting
+    static IBindingsProvider bindings;
 
     static void onInitialLoad(IEnvironment environment) throws IncompatibleEnvironmentException {
         final String version = LauncherVersion.getVersion();
@@ -92,6 +97,8 @@ public class FMLLoader {
 
         coreModEngine = new CoreModScriptingEngine();
         LOGGER.debug(LogMarkers.CORE, "FML found CoreMods version : {}", coreModEngine.getClass().getPackage().getImplementationVersion());
+
+        bindings = null;
 
         try {
             Class.forName("com.electronwill.nightconfig.core.Config", false, environment.getClass().getClassLoader());
@@ -208,5 +215,17 @@ public class FMLLoader {
 
     public static VersionInfo versionInfo() {
         return versionInfo;
+    }
+
+    public static IBindingsProvider getBindings() {
+        if (bindings == null) {
+            var providers = ServiceLoader.load(getGameLayer(), IBindingsProvider.class)
+                    .stream().toList();
+            if (providers.size() != 1) {
+                throw new IllegalStateException("Could not find bindings provider");
+            }
+            bindings = providers.get(0).get();
+        }
+        return bindings;
     }
 }

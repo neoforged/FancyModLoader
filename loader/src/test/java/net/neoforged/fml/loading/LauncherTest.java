@@ -28,8 +28,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.IBindingsProvider;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.config.IConfigEvent;
 import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.neoforgespi.Environment;
 import org.junit.jupiter.api.AfterEach;
@@ -96,6 +99,17 @@ public abstract class LauncherTest {
 
         FMLPaths.loadAbsolutePaths(installation.getGameDir());
 
+        FMLLoader.bindings = new IBindingsProvider() {
+            @Override
+            public IEventBus getGameBus() {
+                return installation.getGameBus();
+            }
+
+            @Override
+            public IConfigEvent.ConfigConfig getConfigConfiguration() {
+                return null;
+            }
+        };
         FMLLoader.onInitialLoad(environment);
         FMLPaths.setup(environment);
         FMLConfig.load();

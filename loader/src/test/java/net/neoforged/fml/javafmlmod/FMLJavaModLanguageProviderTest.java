@@ -5,6 +5,7 @@
 
 package net.neoforged.fml.javafmlmod;
 
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
@@ -169,5 +170,75 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
         });
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly("ERROR: testmod (testmod) encountered an error while dispatching the net.neoforged.fml.event.lifecycle.FMLClientSetupEvent event"
                 + "\njava.lang.RuntimeException: null");
+    }
+
+    @Test
+    void testEventBusSubscriberAutomaticDetection() throws Exception {
+        installation.setupProductionClient();
+        installation.buildModJar("test.jar")
+                .withModsToml(builder -> {
+                    builder.unlicensedJavaMod().addMod("testmod", "1.0");
+                })
+                .addClass("testmod.TestEvent", """
+                        public class TestEvent extends net.neoforged.bus.api.Event {
+                        }""")
+                .addClass("testmod.EBSListener", """
+                        @net.neoforged.fml.common.EventBusSubscriber(bus = net.neoforged.fml.common.EventBusSubscriber.Bus.AUTOMATIC)
+                        public class EBSListener {
+                            @net.neoforged.bus.api.SubscribeEvent
+                            public static void onClientSetup(net.neoforged.fml.event.lifecycle.FMLClientSetupEvent event) {
+                                net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.EVENTS.add(event);
+                                net.neoforged.fml.loading.FMLLoader.getBindings().getGameBus().post(new TestEvent());
+                            }
+                        }
+                        """)
+                .addClass("testmod.EBSListenerGame", """
+                        @net.neoforged.fml.common.EventBusSubscriber(bus = net.neoforged.fml.common.EventBusSubscriber.Bus.AUTOMATIC)
+                        public class EBSListenerGame {
+                            @net.neoforged.bus.api.SubscribeEvent
+                            public static void onTest(TestEvent event) {
+                                net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.MESSAGES.add("game listener invoked");
+                            }
+                        }
+                        """)
+                .build();
+
+        var result = launch("forgeclient");
+        loadMods(result);
+
+        ModLoader.dispatchParallelEvent("test", Runnable::run, Runnable::run, () -> {}, FMLClientSetupEvent::new);
+
+        assertThat(EVENTS).hasSize(1);
+        assertThat(MESSAGES).containsExactly("game listener invoked");
+    }
+
+    @Test
+    void testEventBusSubscriberMixedBuses() throws Exception {
+        installation.setupProductionClient();
+        installation.buildModJar("test.jar")
+                .withModsToml(builder -> {
+                    builder.unlicensedJavaMod().addMod("testmod", "1.0");
+                })
+                .addClass("testmod.TestEvent", """
+                        public class TestEvent extends net.neoforged.bus.api.Event {
+                        }""")
+                .addClass("testmod.EBSListener", """
+                        @net.neoforged.fml.common.EventBusSubscriber(bus = net.neoforged.fml.common.EventBusSubscriber.Bus.AUTOMATIC)
+                        public class EBSListener {
+                            @net.neoforged.bus.api.SubscribeEvent
+                            public static void onClientSetup(net.neoforged.fml.event.lifecycle.FMLClientSetupEvent event) {
+                            }
+                            
+                            @net.neoforged.bus.api.SubscribeEvent
+                            public static void onGame(TestEvent event) {
+                            }
+                        }
+                        """)
+                .build();
+
+        var result = launch("forgeclient");
+        loadMods(result);
+
+        assertThat(getTranslatedIssues(ModLoader.getLoadingIssues())).containsExactly("ERROR: Class testmod.EBSListener annotated with @EventBusSubscriber has listeners for both mod and game bus events, which cannot be mixed");
     }
 }

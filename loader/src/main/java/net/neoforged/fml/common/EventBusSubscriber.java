@@ -12,10 +12,12 @@ import java.lang.annotation.Target;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.event.IModBusEvent;
 
 // @formatter:off - spotless doesn't like @
 /**
- * Annotate a class which will be subscribed to an Event Bus at mod construction time. Defaults to subscribing the current modid to the {@code NeoForge#EVENT_BUS} on both sides.
+ * Annotate a class which will be subscribed to an Event Bus at mod construction time. Defaults to selecting the event bus
+ * based on the listeners you have in the class ({@link Bus#MOD} if all listeners listen to an event of type {@link IModBusEvent}).
  *
  * <p>Annotated classes will be scanned for <b>static</b> methods that have the {@link SubscribeEvent} annotation.
  * For example:
@@ -60,7 +62,7 @@ public @interface EventBusSubscriber {
      *
      * @return the bus you wish to listen to
      */
-    Bus bus() default Bus.GAME;
+    Bus bus() default Bus.AUTOMATIC;
 
     enum Bus {
         /**
@@ -75,5 +77,13 @@ public @interface EventBusSubscriber {
          * @see ModContainer#getEventBus()
          */
         MOD,
+        /**
+         * Detect the bus to use automatically based on the listeners in the class.
+         * <p>
+         * If all listeners listen to an event of type {@link IModBusEvent}, the bus will be the {@linkplain #MOD mod bus},
+         * otherwise it will be the {@linkplain #GAME game bus}.
+         * <p><strong>A class must not mix game and mod bus listeners</strong>.
+         */
+        AUTOMATIC
     }
 }

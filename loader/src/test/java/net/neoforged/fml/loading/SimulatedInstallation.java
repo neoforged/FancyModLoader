@@ -8,6 +8,7 @@ package net.neoforged.fml.loading;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.google.common.base.Suppliers;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import cpw.mods.jarhandling.SecureJar;
@@ -25,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -32,6 +34,8 @@ import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import net.neoforged.bus.api.BusBuilder;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.Metadata;
 import net.neoforged.jarjar.metadata.MetadataIOHandler;
@@ -81,6 +85,8 @@ public class SimulatedInstallation implements AutoCloseable {
     private final Path librariesDir;
     // Used for testing running out of a Gradle project. Is the simulated Gradle project root directory.
     private final Path projectRoot;
+    // Simulates NeoForge's game event bus
+    private final Supplier<IEventBus> gameBus = Suppliers.memoize(() -> BusBuilder.builder().build());
 
     private static final IdentifiableContent[] SERVER_EXTRA_JAR_CONTENT = { SHARED_ASSETS };
     private static final IdentifiableContent[] CLIENT_EXTRA_JAR_CONTENT = { CLIENT_ASSETS, SHARED_ASSETS };
@@ -94,6 +100,10 @@ public class SimulatedInstallation implements AutoCloseable {
         gameDir = Files.createTempDirectory("gameDir");
         librariesDir = Files.createTempDirectory("librariesDir");
         projectRoot = Files.createTempDirectory("projectRoot");
+    }
+
+    public IEventBus getGameBus() {
+        return gameBus.get();
     }
 
     public Path getModsFolder() throws IOException {
