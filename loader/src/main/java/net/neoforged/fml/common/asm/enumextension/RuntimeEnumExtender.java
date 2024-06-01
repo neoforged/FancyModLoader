@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -23,6 +24,7 @@ import net.neoforged.fml.common.asm.ListGeneratorAdapter;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -44,6 +46,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     private static final EnumSet<Phase> NAY = EnumSet.noneOf(Phase.class);
     private static final Type MARKER_IFACE = Type.getType(IExtensibleEnum.class);
     private static final Type INDEXED_ANNOTATION = Type.getType(IndexedEnum.class);
+    private static final Type NAMED_ANNOTATION = Type.getType(NamedEnum.class);
     private static final Type RESERVED_ANNOTATION = Type.getType(ReservedConstructor.class);
     private static final Type ENUM_PROXY = Type.getType(EnumProxy.class);
     private static final Type NET_CHECK = Type.getType(NetworkedEnum.NetworkCheck.class);
@@ -52,6 +55,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     private static final String EXT_INFO_CTOR_DESC = Type.getMethodDescriptor(
             Type.VOID_TYPE, Type.BOOLEAN_TYPE, Type.INT_TYPE, Type.INT_TYPE, NET_CHECK);
     private static final Type NETWORKED_ANNOTATION = Type.getType(NetworkedEnum.class);
+    private static final Type EXTENDER = Type.getType(RuntimeEnumExtender.class);
     private static final int ENUM_FLAGS = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_ENUM;
     private static final int EXT_INFO_FLAGS = Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL;
     private static volatile Map<String, List<EnumPrototype>> prototypes = Map.of();
@@ -87,7 +91,12 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                 .collect(Collectors.toSet());
 
         int vanillaEntryCount = getVanillaEntryCount(classNode, classType);
-        int idParamIdx = getIdParameterIndex(classNode);
+        int idParamIdx = getParameterIndexFromAnnotation(classNode, INDEXED_ANNOTATION);
+        int nameParamIdx = getParameterIndexFromAnnotation(classNode, NAMED_ANNOTATION);
+
+        if (idParamIdx != -1 && idParamIdx == nameParamIdx) {
+            throw new IllegalStateException("ID and name parameter cannot have the same index on enum " + classType);
+        }
 
         FieldNode infoField = new FieldNode(EXT_INFO_FLAGS, "FML$ENUM_EXT_INFO", EXT_INFO.getDescriptor(), null, null);
         classNode.fields.add(infoField);
@@ -98,7 +107,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         getExtInfoInsnList.add(new InsnNode(Opcodes.ARETURN));
 
         InsnList clinitInsnList = new InsnList();
-        List<FieldNode> enumEntries = createEnumEntries(classType, clinitInsnList, ctors, idParamIdx, vanillaEntryCount, protos);
+        List<FieldNode> enumEntries = createEnumEntries(classType, clinitInsnList, ctors, idParamIdx, nameParamIdx, vanillaEntryCount, protos);
         MethodInsnNode $valuesInsn = ASMAPI.findFirstMethodCall(clinit, ASMAPI.MethodType.STATIC, classType.getInternalName(), "$values", $values.desc);
         clinit.instructions.insertBefore($valuesInsn, clinitInsnList);
 
@@ -145,13 +154,13 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                 .count();
     }
 
-    private static int getIdParameterIndex(ClassNode classNode) {
+    private static int getParameterIndexFromAnnotation(ClassNode classNode, Type annoType) {
         if (classNode.invisibleAnnotations == null) {
             return -1;
         }
 
         AnnotationNode annotation = classNode.invisibleAnnotations.stream()
-                .filter(anno -> anno.desc.equals(INDEXED_ANNOTATION.getDescriptor()))
+                .filter(anno -> anno.desc.equals(annoType.getDescriptor()))
                 .findFirst()
                 .orElse(null);
         if (annotation == null) {
@@ -195,7 +204,13 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     }
 
     private static List<FieldNode> createEnumEntries(
-            Type classType, InsnList insnList, Set<String> ctors, int idParamIdx, int vanillaEntryCount, List<EnumPrototype> prototypes) {
+            Type classType,
+            InsnList insnList,
+            Set<String> ctors,
+            int idParamIdx,
+            int nameParamIdx,
+            int vanillaEntryCount,
+            List<EnumPrototype> prototypes) {
         List<FieldNode> enumFields = new ArrayList<>(prototypes.size());
         int ordinal = vanillaEntryCount;
         for (EnumPrototype proto : prototypes) {
@@ -212,7 +227,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
             insnList.add(new InsnNode(Opcodes.DUP));
             insnList.add(new LdcInsnNode(fieldName));
             insnList.add(new LdcInsnNode(ordinal));
-            loadConstructorParams(insnList, idParamIdx, ordinal, proto.ctorDesc(), proto.ctorParams()); // additional parameters
+            loadConstructorParams(insnList, idParamIdx, nameParamIdx, ordinal, proto); // additional parameters
             insnList.add(ASMAPI.buildMethodCall(classType.getInternalName(), "<init>", proto.ctorDesc(), ASMAPI.MethodType.SPECIAL));
             insnList.add(new FieldInsnNode(Opcodes.PUTSTATIC, classType.getInternalName(), field.name, field.desc));
 
@@ -221,10 +236,10 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         return enumFields;
     }
 
-    private static void loadConstructorParams(InsnList insnList, int idParamIdx, int ordinal, String ctorDesc, EnumParameters params) {
+    private static void loadConstructorParams(InsnList insnList, int idParamIdx, int nameParamIdx, int ordinal, EnumPrototype proto) {
         ListGeneratorAdapter generator = new ListGeneratorAdapter(insnList);
-        Type[] argTypes = Type.getType(ctorDesc).getArgumentTypes();
-        switch (params) {
+        Type[] argTypes = Type.getType(proto.ctorDesc()).getArgumentTypes();
+        switch (proto.ctorParams()) {
             case EnumParameters.FieldReference(Type owner, String fieldName) -> {
                 for (int idx = 2; idx < argTypes.length; idx++) {
                     if (idx - 2 == idParamIdx) {
@@ -233,8 +248,12 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                     }
                     generator.getStatic(owner, fieldName, ENUM_PROXY);
                     generator.push(idx - 2);
-                    insnList.add(ASMAPI.buildMethodCall(ENUM_PROXY.getInternalName(), "getParameter", "(I)Ljava/lang/Object;", ASMAPI.MethodType.VIRTUAL));
+                    generator.invokeVirtual(ENUM_PROXY, new Method("getParameter", "(I)Ljava/lang/Object;"));
                     generator.unbox(argTypes[idx]);
+                    if (idx - 2 == nameParamIdx) {
+                        generator.push(proto.owningMod());
+                        generator.invokeStatic(EXTENDER, new Method("validateNameParameter", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"));
+                    }
                 }
             }
             case EnumParameters.MethodReference(Type owner, String methodName) -> {
@@ -245,8 +264,12 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                     }
                     generator.push(idx - 2);
                     generator.push(argTypes[idx]);
-                    insnList.add(ASMAPI.buildMethodCall(owner.getInternalName(), methodName, "(ILjava/lang/Class;)Ljava/lang/Object;", ASMAPI.MethodType.STATIC));
+                    generator.invokeStatic(owner, new Method(methodName, "(ILjava/lang/Class;)Ljava/lang/Object;"));
                     generator.unbox(argTypes[idx]);
+                    if (idx - 2 == nameParamIdx) {
+                        generator.push(proto.owningMod());
+                        generator.invokeStatic(EXTENDER, new Method("validateNameParameter", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"));
+                    }
                 }
             }
             case EnumParameters.Constant(List<Object> paramList) -> {
@@ -257,6 +280,12 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                         }
                         generator.push(ordinal);
                         continue;
+                    }
+                    if (idx - 2 == nameParamIdx) {
+                        if (!(paramList.get(idx - 2) instanceof String str)) {
+                            throw new IllegalArgumentException("Expected String at index " + (idx - 2));
+                        }
+                        validateNameParameter(str, proto.owningMod());
                     }
                     switch (paramList.get(idx - 2)) {
                         case null -> generator.push((String) null);
@@ -360,5 +389,29 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                         (protoOne, protoTwo) -> {
                             throw new IllegalStateException("Duplicate EnumPrototype: " + protoOne);
                         });
+        prototypes.forEach((cls, prototypes) -> {
+            Map<String, EnumPrototype> distinctPrototypes = new HashMap<>();
+            for (EnumPrototype proto : prototypes) {
+                EnumPrototype prevProto = distinctPrototypes.put(proto.fieldName(), proto);
+                if (prevProto != null) {
+                    throw new IllegalStateException(String.format(
+                            Locale.ROOT,
+                            "Found duplicate field '%s' for enum '%s' provided by mods '%s' and '%s'",
+                            proto.fieldName(),
+                            proto.enumName(),
+                            proto.owningMod(),
+                            prevProto.owningMod()));
+                }
+            }
+        });
+    }
+
+    @SuppressWarnings("UnusedReturnValue") // Return value used via transformer
+    public static String validateNameParameter(String fieldName, String owningMod) {
+        if (!fieldName.startsWith(owningMod + ":")) {
+            throw new IllegalArgumentException(String.format(
+                    Locale.ROOT, "Name parameter must be prefixed by mod ID: '%s' provided by mod '%s'", fieldName, owningMod));
+        }
+        return fieldName;
     }
 }
