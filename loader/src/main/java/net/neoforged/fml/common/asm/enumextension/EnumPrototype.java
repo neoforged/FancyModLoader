@@ -89,7 +89,7 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
                         if (!SourceVersion.isIdentifier(srcMethodName)) {
                             throw new IllegalArgumentException(String.format(
                                     Locale.ROOT,
-                                    "Parameter source method '%s' for enum '%s' specified '%s' is not a valid method name",
+                                    "Parameter source method '%s' for enum '%s' specified by mod '%s' is not a valid method name",
                                     srcMethodName,
                                     enumName,
                                     modId));
@@ -100,7 +100,7 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
                         if (!SourceVersion.isIdentifier(srcFieldName)) {
                             throw new IllegalArgumentException(String.format(
                                     Locale.ROOT,
-                                    "Parameter source field '%s' for enum '%s' specified '%s' is not a valid field name",
+                                    "Parameter source field '%s' for enum '%s' specified by mod '%s' is not a valid field name",
                                     srcFieldName,
                                     enumName,
                                     modId));
