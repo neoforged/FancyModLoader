@@ -16,10 +16,12 @@ import net.neoforged.bus.api.BusBuilder;
 import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.config.ConfigTracker;
 import net.neoforged.fml.config.IConfigSpec;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.event.lifecycle.FMLConstructModEvent;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforgespi.language.IModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -96,6 +98,10 @@ public abstract class ModContainer {
 
     public void addConfig(final ModConfig modConfig) {
         configs.put(modConfig.getType(), modConfig);
+
+        if (modConfig.getType() == ModConfig.Type.STARTUP) {
+            ConfigTracker.INSTANCE.openConfig(modConfig, FMLPaths.CONFIGDIR.get(), null);
+        }
     }
 
     /**
