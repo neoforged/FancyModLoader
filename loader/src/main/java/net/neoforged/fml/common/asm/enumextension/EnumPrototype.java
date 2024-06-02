@@ -122,39 +122,33 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
         }
 
         int idx = 0;
-        boolean failed = false;
         for (JsonElement element : obj) {
             Type argType = argTypes[idx];
-            Object value = switch (argType.getDescriptor()) {
-                case "Z" -> element.getAsBoolean();
+            switch (argType.getDescriptor()) {
+                case "Z" -> params.add(element.getAsBoolean());
                 case "C" -> {
                     String param = element.getAsString();
                     if (param.length() != 1) {
                         error("fml.modloading.enumextender.argument.constant.invalid_char", mod, param, idx, fieldName, enumName);
-                        failed = true;
-                        yield null;
+                        return null;
                     }
-                    yield param.charAt(0);
+                    params.add(param.charAt(0));
                 }
-                case "B" -> element.getAsByte();
-                case "S" -> element.getAsShort();
-                case "I" -> element.getAsInt();
-                case "F" -> element.getAsFloat();
-                case "J" -> element.getAsLong();
-                case "D" -> element.getAsDouble();
-                case "Ljava/lang/String;" -> element.isJsonNull() ? null : element.getAsString();
+                case "B" -> params.add(element.getAsByte());
+                case "S" -> params.add(element.getAsShort());
+                case "I" -> params.add(element.getAsInt());
+                case "F" -> params.add(element.getAsFloat());
+                case "J" -> params.add(element.getAsLong());
+                case "D" -> params.add(element.getAsDouble());
+                case "Ljava/lang/String;" -> params.add(element.isJsonNull() ? null : element.getAsString());
                 default -> {
                     if (!element.isJsonNull()) {
                         error("fml.modloading.enumextender.argument.constant.unsupported_type", mod, argType, idx, fieldName, enumName);
-                        failed = true;
+                        return null;
                     }
-                    yield null;
+                    params.add(null);
                 }
-            };
-            if (failed) {
-                return null;
             }
-            params.add(value);
             idx++;
         }
         return new EnumParameters.Constant(params);
