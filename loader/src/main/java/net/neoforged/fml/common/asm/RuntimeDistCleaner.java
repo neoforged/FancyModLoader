@@ -144,9 +144,14 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
         return unpack(anns).stream().filter(ann -> Objects.equals(ann.desc, ONLYIN)).filter(ann -> !ann.values.contains("_interface")).anyMatch(ann -> !Objects.equals(((String[]) ann.values.get(ann.values.indexOf("value") + 1))[1], side));
     }
 
-    public void setDistribution(Dist dist) {
-        this.dist = dist.name();
-        LOGGER.debug(DISTXFORM, "Configuring for Dist {}", this.dist);
+    public void setDistribution(@Nullable Dist dist) {
+        if (dist != null) {
+            this.dist = dist.name();
+            LOGGER.debug(DISTXFORM, "Configuring for Dist {}", this.dist);
+        } else {
+            this.dist = null;
+            LOGGER.debug(DISTXFORM, "Disabling runtime dist cleaner");
+        }
     }
 
     private static final EnumSet<Phase> YAY = EnumSet.of(Phase.AFTER);
