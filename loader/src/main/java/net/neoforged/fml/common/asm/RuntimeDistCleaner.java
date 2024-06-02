@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.api.distmarker.OnlyIns;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -38,6 +39,7 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
     private static final String ONLYIN = Type.getDescriptor(OnlyIn.class);
     private static final String ONLYINS = Type.getDescriptor(OnlyIns.class);
 
+    @Nullable
     private String dist;
 
     @Override
@@ -47,6 +49,11 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
 
     @Override
     public int processClassWithFlags(final Phase phase, final ClassNode classNode, final Type classType, final String reason) {
+        if (dist == null) {
+            // If no distribution was ever set, don't do anything
+            return ComputeFlags.NO_REWRITE;
+        }
+
         AtomicBoolean changes = new AtomicBoolean();
         if (remove(classNode.visibleAnnotations, dist)) {
             LOGGER.error(DISTXFORM, "Attempted to load class {} for invalid dist {}", classNode.name, dist);
