@@ -22,6 +22,7 @@
   "fml.modloading.discouragedmod.noreason": "§eAucune raison fournie§r",
   "fml.dependencyloading.conflictingdependencies": "Certains mods ont demandé des versions opposées de : §6{3}§r. Demandé par: §e{4}§r.",
   "fml.dependencyloading.mismatchedcontaineddependencies": "Certains mods ont convenu d'un intervalle de versions acceptable pour : §6{3}§r, mais aucun jar n'a été fourni qui correspondait à l'intervalle. Demandé par: §e{4}§r.",
+  "fml.modloading.coremod_error": "An error occurred while loading core-mod {3} from {4}",
   "fml.modloading.corrupted_installation": "Your NeoForge installation is corrupted, please try to reinstall",
   "fml.modloading.cycle": "Detected a mod dependency cycle: {3}",
   "fml.modloading.failedtoprocesswork": "{0,modinfo,name} ({0,modinfo,id}) a rencontré une erreur durant la phase différée de traitement\n§7{2,exc,msg}",
