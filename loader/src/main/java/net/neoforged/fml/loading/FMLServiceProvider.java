@@ -158,7 +158,7 @@ public class FMLServiceProvider implements ITransformationService {
         if (filesWithCoreModScripts.isEmpty()) {
             // Don't even bother starting the scripting engine if no mod contains scripting core mods
             LOGGER.debug(LogMarkers.CORE, "Not loading coremod script-engine since no mod requested it");
-            return Collections.emptyList();
+            return List.of();
         }
 
         LOGGER.info(LogMarkers.CORE, "Loading coremod script-engine for {}", filesWithCoreModScripts);
