@@ -75,7 +75,7 @@ public class RenderElement {
             final float fade = clamp((4000.0f - (float) pair.age() - (i - 4) * 1000.0f) / 5000.0f, 0.0f, 1.0f);
             if (fade < 0.01f) continue;
             Message msg = pair.message();
-            int colour = Math.min((int) (fade * 255f), globalAlpha) << 24 | 0xFFFFFF;
+            int colour = context.colourScheme.foreground().packedint(Math.min((int) (fade * 255f), globalAlpha));
             texts.add(new SimpleFont.DisplayText(msg.getText() + "\n", colour));
         }
 
@@ -102,8 +102,8 @@ public class RenderElement {
             var fade = Math.min((frame - frameStart) * 10, 255);
             glBindTexture(GL_TEXTURE_2D, textureId);
             bb.begin(SimpleBufferBuilder.Format.POS_TEX_COLOR, SimpleBufferBuilder.Mode.QUADS);
-            QuadHelper.loadQuad(bb, x0, x0 + size, y0, y0 + size / 2f, 0f, 1f, 0f, 0.5f, (fade << 24) | 0xFFFFFF);
-            QuadHelper.loadQuad(bb, x0 + size, x0 + 2 * size, y0, y0 + size / 2f, 0f, 1f, 0.5f, 1f, (fade << 24) | 0xFFFFFF);
+            QuadHelper.loadQuad(bb, x0, x0 + size, y0, y0 + size / 2f, 0f, 1f, 0f, 0.5f, ctx.colourScheme.foreground().packedint(fade));
+            QuadHelper.loadQuad(bb, x0 + size, x0 + 2 * size, y0, y0 + size / 2f, 0f, 1f, 0.5f, 1f, ctx.colourScheme.foreground().packedint(fade));
             bb.draw();
             glBindTexture(GL_TEXTURE_2D, 0);
         });
@@ -179,7 +179,7 @@ public class RenderElement {
     private static Renderer barRenderer(int cnt, int alpha, SimpleFont font, ProgressMeter pm, DisplayContext context) {
         var barSpacing = font.lineSpacing() - font.descent() + BAR_HEIGHT;
         var y = 250 * context.scale() + cnt * barSpacing;
-        var colour = (alpha << 24) | 0xFFFFFF;
+        var colour = context.colourScheme.foreground().packedint(alpha); //(alpha << 24) | 0xFFFFFF;
         Renderer bar;
         if (pm.steps() == 0) {
             bar = progressBar(ctx -> new int[] { (ctx.scaledWidth() - BAR_WIDTH * ctx.scale()) / 2, y + font.lineSpacing() - font.descent(), BAR_WIDTH * ctx.scale() }, f -> colour, frame -> indeterminateBar(frame, cnt == 0));
