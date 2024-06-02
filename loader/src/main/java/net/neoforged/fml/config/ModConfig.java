@@ -103,10 +103,10 @@ public class ModConfig {
          */
         SERVER,
         /**
-         * Startup config is for configuration that needs to run as early as possible.
-         * Only loaded right after the config are registered to FML.
-         * Please know what you are doing as using these configs to enable/disable registration and other specific stuff
-         * can cause clients to have issues connecting to servers with a different Startup config value.
+         * Startup configs are for configurations that need to run as early as possible.
+         * Loaded as soon as the config is registered to FML.
+         * Please be aware when using them, as using these configs to enable/disable registration and anything that must be present on both sides
+         * can cause clients to have issues connecting to servers with different config values.
          * Stored in the global config directory.
          * Not synced.
          * Suffix is "-startup" by default.
