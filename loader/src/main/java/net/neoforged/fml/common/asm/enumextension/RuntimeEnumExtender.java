@@ -60,7 +60,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     private static final Type ARRAYS = Type.getType("Ljava/util/Arrays;");
     private static final int ENUM_FLAGS = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_ENUM;
     private static final int EXT_INFO_FLAGS = Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL;
-    private static volatile Map<String, List<EnumPrototype>> prototypes = Map.of();
+    private static Map<String, List<EnumPrototype>> prototypes = Map.of();
 
     @Override
     public String name() {
@@ -75,7 +75,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     @Override
     public boolean processClass(final Phase phase, final ClassNode classNode, final Type classType) {
         if ((classNode.access & Opcodes.ACC_ENUM) == 0 || !classNode.interfaces.contains(MARKER_IFACE.getInternalName())) {
-            return false;
+            throw new IllegalStateException("Tried to extend non-enum class or non-extensible enum: " + classType);
         }
 
         List<EnumPrototype> protos = prototypes.getOrDefault(classType.getInternalName(), List.of());

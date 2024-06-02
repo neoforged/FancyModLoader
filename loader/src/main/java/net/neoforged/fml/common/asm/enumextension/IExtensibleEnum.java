@@ -18,5 +18,8 @@ package net.neoforged.fml.common.asm.enumextension;
  * }
  *
  * The method contents will be replaced with ASM at runtime to return information about the extension of the enum
+ * <p>
+ * Enum constants added to enums implementing this interface can be retrieved later via {@code TheEnum.valueOf(String)}
+ * or from the associated {@link EnumProxy} field if the parameters were supplied through it
  */
 public interface IExtensibleEnum {}
