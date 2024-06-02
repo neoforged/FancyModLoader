@@ -6,8 +6,11 @@
 package net.neoforged.fml.util;
 
 import com.google.common.collect.Streams;
+import cpw.mods.modlauncher.api.IEnvironment;
+import cpw.mods.niofs.union.UnionFileSystem;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Comparator;
@@ -16,6 +19,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.ServiceConfigurationError;
 import net.neoforged.fml.loading.LogMarkers;
+import net.neoforged.jarjar.nio.pathfs.PathFileSystem;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IOrderedProvider;
 import org.jetbrains.annotations.ApiStatus;
@@ -62,9 +66,9 @@ public final class ServiceLoaderUtil {
                 }
 
                 if (additionalServices.contains(service)) {
-                    LOGGER.debug(LogMarkers.CORE, "\t{}[built-in] {}", priorityPrefix, identifyService(service));
+                    LOGGER.debug(LogMarkers.CORE, "\t{}[built-in] {}", priorityPrefix, identifyService(context, service));
                 } else {
-                    LOGGER.debug(LogMarkers.CORE, "\t{}{}", priorityPrefix, identifyService(service));
+                    LOGGER.debug(LogMarkers.CORE, "\t{}{}", priorityPrefix, identifyService(context, service));
                 }
             }
         }
@@ -72,19 +76,54 @@ public final class ServiceLoaderUtil {
         return services;
     }
 
-    private static String identifyService(Object o) {
-        String sourceFile;
+    private static String identifyService(ILaunchContext context, Object o) {
+        var sourcePath = identifySourcePath(context, o);
+        return o.getClass().getName() + " from " + sourcePath;
+    }
+
+    /**
+     * Given any object, this method tries to build a human-readable chain of paths that identify where the
+     * code implementing the given object is coming from.
+     */
+    public static String identifySourcePath(ILaunchContext context, Object object) {
+        var codeLocation = object.getClass().getProtectionDomain().getCodeSource().getLocation();
         try {
-            var sourcePath = Paths.get(o.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
-            if (Files.isDirectory(sourcePath)) {
-                sourceFile = sourcePath.toAbsolutePath().toString();
-            } else {
-                sourceFile = sourcePath.getFileName().toString();
-            }
+            return unwrapPath(context, Paths.get(codeLocation.toURI()));
         } catch (URISyntaxException e) {
-            sourceFile = "<unknown>";
+            return codeLocation.toString();
+        }
+    }
+
+    /**
+     * Tries to unwrap the given path if it is from a nested file-system such as JIJ or UnionFS,
+     * while maintaining context in the return (such as "&lt;nested path>" from "&lt;outer jar>").
+     */
+    private static String unwrapPath(ILaunchContext context, Path path) {
+        if (path.getFileSystem() instanceof PathFileSystem pathFileSystem) {
+            return unwrapPath(context, pathFileSystem.getTarget());
+        } else if (path.getFileSystem() instanceof UnionFileSystem unionFileSystem) {
+            if (path.equals(unionFileSystem.getRoot())) {
+                return unwrapPath(context, unionFileSystem.getPrimaryPath());
+            }
+            return unwrapPath(context, unionFileSystem.getPrimaryPath()) + " > " + relativizePath(context, path);
+        }
+        return relativizePath(context, path);
+    }
+
+    private static String relativizePath(ILaunchContext context, Path path) {
+        var gameDir = context.environment().getProperty(IEnvironment.Keys.GAMEDIR.get()).orElse(null);
+
+        String resultPath;
+
+        if (gameDir != null && path.startsWith(gameDir)) {
+            resultPath = gameDir.relativize(path).toString();
+        } else if (Files.isDirectory(path)) {
+            resultPath = path.toAbsolutePath().toString();
+        } else {
+            resultPath = path.getFileName().toString();
         }
 
-        return o.getClass().getName() + " from " + sourceFile;
+        // Unify separators to ensure it is easier to test
+        return resultPath.replace('\\', '/');
     }
 }

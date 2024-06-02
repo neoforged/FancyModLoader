@@ -23,6 +23,7 @@ import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
+import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 
 /**
@@ -31,13 +32,17 @@ import net.neoforged.neoforgespi.language.IModInfo;
  */
 public class LoadingModList {
     private static LoadingModList INSTANCE;
+    private final List<IModFileInfo> plugins;
     private final List<ModFileInfo> modFiles;
     private final List<ModInfo> sortedList;
     private final Map<ModInfo, List<ModInfo>> modDependencies;
     private final Map<String, ModFileInfo> fileById;
     private final List<ModLoadingIssue> modLoadingIssues;
 
-    private LoadingModList(final List<ModFile> modFiles, final List<ModInfo> sortedList, Map<ModInfo, List<ModInfo>> modDependencies) {
+    private LoadingModList(final List<ModFile> plugins, final List<ModFile> modFiles, final List<ModInfo> sortedList, Map<ModInfo, List<ModInfo>> modDependencies) {
+        this.plugins = plugins.stream()
+                .map(ModFile::getModFileInfo)
+                .collect(Collectors.toList());
         this.modFiles = modFiles.stream()
                 .map(ModFile::getModFileInfo)
                 .map(ModFileInfo.class::cast)
@@ -54,22 +59,14 @@ public class LoadingModList {
         this.modLoadingIssues = new ArrayList<>();
     }
 
-    public static LoadingModList of(List<ModFile> modFiles, List<ModInfo> sortedList, List<ModLoadingIssue> issues, Map<ModInfo, List<ModInfo>> modDependencies) {
-        INSTANCE = new LoadingModList(modFiles, sortedList, modDependencies);
+    public static LoadingModList of(List<ModFile> plugins, List<ModFile> modFiles, List<ModInfo> sortedList, List<ModLoadingIssue> issues, Map<ModInfo, List<ModInfo>> modDependencies) {
+        INSTANCE = new LoadingModList(plugins, modFiles, sortedList, modDependencies);
         INSTANCE.modLoadingIssues.addAll(issues);
         return INSTANCE;
     }
 
     public static LoadingModList get() {
         return INSTANCE;
-    }
-
-    public void addCoreMods() {
-        modFiles.stream()
-                .map(ModFileInfo::getFile)
-                .map(ModFile::getCoreMods)
-                .flatMap(List::stream)
-                .forEach(FMLLoader.getCoreModEngine()::loadCoreMod);
     }
 
     public void addMixinConfigs() {
@@ -92,6 +89,10 @@ public class LoadingModList {
         modFiles.stream()
                 .map(ModFileInfo::getFile)
                 .forEach(backgroundScanHandler::submitForScanning);
+    }
+
+    public List<IModFileInfo> getPlugins() {
+        return plugins;
     }
 
     public List<ModFileInfo> getModFiles() {
