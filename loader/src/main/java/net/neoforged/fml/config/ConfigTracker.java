@@ -17,11 +17,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
 
+@ApiStatus.Internal
 public class ConfigTracker {
     private static final Logger LOGGER = LogUtils.getLogger();
     static final Marker CONFIG = MarkerFactory.getMarker("CONFIG");
@@ -36,8 +38,8 @@ public class ConfigTracker {
         this.configsByMod = new ConcurrentHashMap<>();
         this.configSets.put(ModConfig.Type.CLIENT, Collections.synchronizedSet(new LinkedHashSet<>()));
         this.configSets.put(ModConfig.Type.COMMON, Collections.synchronizedSet(new LinkedHashSet<>()));
-//        this.configSets.put(ModConfig.Type.PLAYER, new ConcurrentSkipListSet<>());
         this.configSets.put(ModConfig.Type.SERVER, Collections.synchronizedSet(new LinkedHashSet<>()));
+        this.configSets.put(ModConfig.Type.STARTUP, Collections.synchronizedSet(new LinkedHashSet<>()));
     }
 
     void trackConfig(final ModConfig config) {
@@ -76,7 +78,7 @@ public class ConfigTracker {
         return configBasePath;
     }
 
-    private void openConfig(final ModConfig config, final Path configBasePath, @Nullable Path configOverrideBasePath) {
+    public void openConfig(final ModConfig config, final Path configBasePath, @Nullable Path configOverrideBasePath) {
         LOGGER.trace(CONFIG, "Loading config file type {} at {} for {}", config.getType(), config.getFileName(), config.getModId());
         final Path basePath = resolveBasePath(config, configBasePath, configOverrideBasePath);
         final CommentedFileConfig configData = ConfigFileTypeHandler.TOML.reader(basePath).apply(config);

@@ -21,11 +21,13 @@ import org.junit.jupiter.api.Test;
 
 public class FMLJavaModLanguageProviderTest extends LauncherTest {
     // Allows us to capture events received by mods loaded in the game layer
-    public static List<FMLClientSetupEvent> EVENTS = new ArrayList<>();
+    public static final List<FMLClientSetupEvent> EVENTS = new ArrayList<>();
+    public static final List<String> MESSAGES = new ArrayList<>();
 
     @AfterEach
     void tearDown() {
         EVENTS.clear();
+        MESSAGES.clear();
     }
 
     /**
@@ -48,8 +50,7 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
                     .compile();
         }
 
-        var result = launch("forgeclient");
-        var e = Assertions.assertThrows(ModLoadingException.class, () -> loadMods(result));
+        var e = Assertions.assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
         assertThat(getTranslatedIssues(e.getIssues()))
                 .containsOnly("ERROR: File mods/test.jar contains mod entrypoint class testmod.DanglingEntryPoint for mod with id notthismod, which does not exist or is not in the same file."
                         + "\nDid you forget to update the mod id in the entrypoint?");
@@ -73,8 +74,7 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
                     .compile();
         }
 
-        var result = launch("forgeclient");
-        var e = Assertions.assertThrows(ModLoadingException.class, () -> loadMods(result));
+        var e = Assertions.assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
         assertThat(getTranslatedIssues(e.getIssues()))
                 .containsOnly("ERROR: testmod (testmod) has failed to load correctly"
                         + "\njava.lang.RuntimeException: Mod class class testmod.EntryPoint must have exactly 1 public constructor, found 0");
@@ -99,12 +99,42 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
                     .compile();
         }
 
-        var result = launch("forgeclient");
-        loadMods(result);
+        launchAndLoad("forgeclient");
 
         ModLoader.dispatchParallelEvent("test", Runnable::run, Runnable::run, () -> {}, FMLClientSetupEvent::new);
 
         assertThat(EVENTS).hasSize(1);
+    }
+
+    @Test
+    void testMultipleEntrypoints() throws Exception {
+        installation.setupProductionClient();
+
+        var testJar = installation.writeModJar("test.jar", SimulatedInstallation.createModsToml("testmod", "1.0"));
+        try (var compiler = RuntimeCompiler.create(testJar)) {
+            compiler.builder()
+                    .addClass("testmod.EntryPoint", """
+                            @net.neoforged.fml.common.Mod("testmod")
+                            public class EntryPoint {
+                                public EntryPoint() {
+                                    net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.MESSAGES.add("common");
+                                }
+                            }
+                            """)
+                    .addClass("testmod.ClientEntryPoint", """
+                            @net.neoforged.fml.common.Mod(value = "testmod", dist = net.neoforged.api.distmarker.Dist.CLIENT)
+                            public class ClientEntryPoint {
+                                public ClientEntryPoint() {
+                                    net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.MESSAGES.add("client");
+                                }
+                            }
+                            """)
+                    .compile();
+        }
+
+        launchAndLoad("forgeclient");
+
+        assertThat(MESSAGES).isEqualTo(List.of("common", "client"));
     }
 
     @Test
@@ -127,8 +157,7 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
                         """)
                 .build();
 
-        var result = launch("forgeclient");
-        loadMods(result);
+        launchAndLoad("forgeclient");
 
         var e = Assertions.assertThrows(ModLoadingException.class, () -> {
             ModLoader.dispatchParallelEvent("test", Runnable::run, Runnable::run, () -> {}, FMLClientSetupEvent::new);

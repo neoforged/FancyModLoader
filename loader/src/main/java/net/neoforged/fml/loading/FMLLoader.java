@@ -22,7 +22,6 @@ import java.util.Optional;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.accesstransformer.ml.AccessTransformerService;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.coremod.CoreModScriptingEngine;
 import net.neoforged.fml.common.asm.RuntimeDistCleaner;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
@@ -38,7 +37,6 @@ import org.slf4j.Logger;
 public class FMLLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static AccessTransformerEngine accessTransformer;
-    private static CoreModScriptingEngine coreModEngine;
     private static LanguageProviderLoader languageProviderLoader;
     private static Dist dist;
     private static LoadingModList loadingModList;
@@ -89,9 +87,6 @@ public class FMLLoader {
             return new IncompatibleEnvironmentException("Missing DistCleaner, cannot run!");
         });
         LOGGER.debug(LogMarkers.CORE, "Found Runtime Dist Cleaner");
-
-        coreModEngine = new CoreModScriptingEngine();
-        LOGGER.debug(LogMarkers.CORE, "FML found CoreMods version : {}", coreModEngine.getClass().getPackage().getImplementationVersion());
 
         try {
             Class.forName("com.electronwill.nightconfig.core.Config", false, environment.getClass().getClassLoader());
@@ -145,10 +140,6 @@ public class FMLLoader {
             extraMixinConfigs.forEach(DeferredMixinConfigRegistration::addMixinConfig);
         }
         return List.of(modValidator.getModResources());
-    }
-
-    static CoreModScriptingEngine getCoreModEngine() {
-        return coreModEngine;
     }
 
     public static LanguageProviderLoader getLanguageLoadingProvider() {

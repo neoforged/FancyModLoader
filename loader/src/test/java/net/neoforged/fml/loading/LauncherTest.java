@@ -6,15 +6,19 @@
 package net.neoforged.fml.loading;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.when;
 
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModularURLHandler;
 import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.cl.UnionURLStreamHandler;
 import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
+import cpw.mods.modlauncher.api.ITransformer;
 import java.io.IOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
@@ -22,17 +26,24 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import joptsimple.OptionParser;
+import joptsimple.OptionSpec;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.i18n.FMLTranslations;
-import net.neoforged.neoforgespi.Environment;
+import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.language.IModInfo;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -49,30 +60,58 @@ public abstract class LauncherTest {
 
     protected SimulatedInstallation installation;
 
+    protected FMLServiceProvider serviceProvider = new FMLServiceProvider();
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected Launcher launcher;
+
     // can be used to mark paths as already being located before, i.e. if they were loaded
     // by the two early ModLoader discovery interfaces ClasspathTransformerDiscoverer
     // and ModDirTransformerDiscoverer, which pick up files like mixin.
     Set<Path> locatedPaths = new HashSet<>();
 
+    /**
+     * See https://github.com/McModLauncher/securejarhandler/pull/74
+     */
+    @BeforeAll
+    static void fixUpUnionUrlProtocol() throws Exception {
+        // Force Class-Init of ModuleClassLoader, since it'll set the URLStreamHandlerFactory and call initFrom
+        try {
+            new ModuleClassLoader(null, null, null);
+        } catch (Exception ignored) {}
+
+        // Now fix up the handlers in the handler
+        var handlers = Map.of("union", new UnionURLStreamHandler());
+        var handlersField = ModularURLHandler.class.getDeclaredField("handlers");
+        handlersField.setAccessible(true);
+        handlersField.set(ModularURLHandler.INSTANCE, handlers);
+    }
+
     @BeforeEach
     void setUp() throws IOException {
+        Launcher.INSTANCE = launcher;
+        when(Launcher.INSTANCE.findLayerManager()).thenReturn(Optional.of(moduleLayerManager));
+
         installation = new SimulatedInstallation();
 
         immediateWindowHandlerMock.when(ImmediateWindowHandler::getGLVersion).thenReturn("4.3");
+
+        environment.computePropertyIfAbsent(IEnvironment.Keys.GAMEDIR.get(), ignored -> installation.getGameDir());
     }
 
     @AfterEach
     void clearSystemProperties() throws Exception {
         installation.close();
+        Launcher.INSTANCE = null;
     }
 
-    protected LaunchResult launchInNeoForgeDevEnvironment(String launchTarget) throws Exception {
+    protected LaunchResult launchAndLoadInNeoForgeDevEnvironment(String launchTarget) throws Exception {
         var additionalClasspath = installation.setupNeoForgeDevProject();
 
-        return launchWithAdditionalClasspath(launchTarget, additionalClasspath);
+        return launchAndLoadWithAdditionalClasspath(launchTarget, additionalClasspath);
     }
 
-    protected LaunchResult launchWithAdditionalClasspath(String launchTarget, List<Path> additionalClassPath) throws Exception {
+    protected LaunchResult launchAndLoadWithAdditionalClasspath(String launchTarget, List<Path> additionalClassPath) throws Exception {
         var urls = additionalClassPath.stream().map(path -> {
             try {
                 return path.toUri().toURL();
@@ -84,39 +123,75 @@ public abstract class LauncherTest {
         var previousCl = Thread.currentThread().getContextClassLoader();
         try (var cl = new URLClassLoader(urls, getClass().getClassLoader())) {
             Thread.currentThread().setContextClassLoader(cl);
-            return launch(launchTarget);
+            return launchAndLoad(launchTarget);
         } finally {
             Thread.currentThread().setContextClassLoader(previousCl);
         }
     }
 
-    protected LaunchResult launch(String launchTarget) throws Exception {
+    protected LaunchResult launchAndLoad(String launchTarget) throws Exception {
+        // launch represents the modlauncher portion
+        LaunchResult result;
+        try {
+            result = launch(launchTarget);
+        } catch (Exception e) {
+            throw new LaunchException(e);
+        }
+        // while loadMods is usually triggered from NeoForge
+        loadMods(result);
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private LaunchResult launch(String launchTarget) throws Exception {
         ModLoader.clearLoadingIssues();
 
+        // ML would usually handle these two arguments
         environment.computePropertyIfAbsent(IEnvironment.Keys.GAMEDIR.get(), ignored -> installation.getGameDir());
         environment.computePropertyIfAbsent(IEnvironment.Keys.LAUNCHTARGET.get(), ignored -> launchTarget);
 
-        FMLPaths.loadAbsolutePaths(installation.getGameDir());
+        createModuleLayer(IModuleLayerManager.Layer.SERVICE, List.of());
 
-        FMLLoader.onInitialLoad(environment);
-        FMLPaths.setup(environment);
-        FMLConfig.load();
-        FMLLoader.setupLaunchHandler(environment, new VersionInfo(
-                SimulatedInstallation.NEOFORGE_VERSION,
-                SimulatedInstallation.FML_VERSION,
-                SimulatedInstallation.MC_VERSION,
-                SimulatedInstallation.NEOFORM_VERSION));
-        FMLEnvironment.setupInteropEnvironment(environment);
-        Environment.build(environment);
+        serviceProvider.onLoad(environment, Set.of());
 
-        var launchContext = new TestLaunchContext(environment, locatedPaths);
-        var pluginResources = FMLLoader.beginModScan(launchContext);
+        OptionParser parser = new OptionParser();
+        serviceProvider.arguments((a, b) -> parser.accepts(serviceProvider.name() + "." + a, b));
+        var result = parser.parse(
+                "--fml.fmlVersion", SimulatedInstallation.FML_VERSION,
+                "--fml.mcVersion", SimulatedInstallation.MC_VERSION,
+                "--fml.neoForgeVersion", SimulatedInstallation.NEOFORGE_VERSION,
+                "--fml.neoFormVersion", SimulatedInstallation.NEOFORM_VERSION);
+        serviceProvider.argumentValues(new ITransformationService.OptionResult() {
+            @Override
+            public <V> V value(OptionSpec<V> options) {
+                return result.valueOf(options);
+            }
+
+            @Override
+            public <V> List<V> values(OptionSpec<V> options) {
+                return result.valuesOf(options);
+            }
+        });
+
+        serviceProvider.initialize(environment);
+
+        // We need to redirect the launch context to add services reachable via the system classloader since
+        // this unit test and the main code is not loaded in a modular fashion
+        assertThat(serviceProvider.launchContext).isNotNull();
+        assertSame(environment, serviceProvider.launchContext.environment());
+        serviceProvider.launchContext = new TestLaunchContext(serviceProvider.launchContext, locatedPaths);
+
+        var pluginResources = serviceProvider.beginScanning(environment);
         // In this phase, FML should only return plugin libraries
         assertThat(pluginResources).extracting(ITransformationService.Resource::target).containsOnly(IModuleLayerManager.Layer.PLUGIN);
+        createModuleLayer(IModuleLayerManager.Layer.PLUGIN, pluginResources.stream().flatMap(resource -> resource.resources().stream()).toList());
 
-        var gameLayerResources = FMLLoader.completeScan(launchContext, List.of());
+        var gameLayerResources = serviceProvider.completeScan(moduleLayerManager);
         // In this phase, FML should only return game layer content
         assertThat(gameLayerResources).extracting(ITransformationService.Resource::target).containsOnly(IModuleLayerManager.Layer.GAME);
+
+        // Query transformers now, which ML does before building the transforming class loader and launching the game
+        var transformers = serviceProvider.transformers();
 
         var loadingModList = LoadingModList.get();
         var loadedMods = loadingModList.getModFiles();
@@ -143,11 +218,11 @@ public abstract class LauncherTest {
                 loadingModList.getModLoadingIssues(),
                 loadedMods.stream().collect(Collectors.toMap(
                         o -> o.getMods().getFirst().getModId(),
-                        o -> o)));
+                        o -> o)),
+                (List<ITransformer<?>>) transformers);
     }
 
-    public void loadMods(LaunchResult launchResult) throws Exception {
-        assertThat(launchResult.issues()).isEmpty();
+    private void loadMods(LaunchResult launchResult) {
         FMLLoader.progressWindowTick = () -> {};
 
         // build the game layer
@@ -162,11 +237,6 @@ public abstract class LauncherTest {
                 ignored -> classLoader);
 
         FMLLoader.beforeStart(controller.layer());
-
-        var handlers = Map.of("union", new UnionURLStreamHandler());
-        var handlersField = ModularURLHandler.class.getDeclaredField("handlers");
-        handlersField.setAccessible(true);
-        handlersField.set(ModularURLHandler.INSTANCE, handlers);
 
         ModLoader.gatherAndInitializeMods(
                 Runnable::run,
@@ -195,5 +265,48 @@ public abstract class LauncherTest {
         text = text.replace("\\", "/");
 
         return text;
+    }
+
+    private void createModuleLayer(IModuleLayerManager.Layer layer, Collection<SecureJar> jars) {
+        var moduleFinder = JarModuleFinder.of(jars.toArray(SecureJar[]::new));
+
+        var cf = Configuration.resolveAndBind(
+                ModuleFinder.of(),
+                List.of(ModuleLayer.boot().configuration()),
+                moduleFinder,
+                moduleFinder.findAll().stream().map(r -> r.descriptor().name()).toList());
+        var parentLayers = List.of(ModuleLayer.boot());
+        var moduleClassLoader = new ModuleClassLoader(layer.name(), cf, parentLayers, getClass().getClassLoader());
+        var moduleLayer = ModuleLayer.defineModules(
+                cf,
+                parentLayers,
+                s -> moduleClassLoader).layer();
+
+        moduleLayerManager.setLayer(layer, moduleLayer);
+    }
+
+    protected Map<String, IModFileInfo> getLoadedMods() {
+        return ModList.get().getMods().stream()
+                .collect(Collectors.toMap(
+                        IModInfo::getModId,
+                        IModInfo::getOwningFile));
+    }
+
+    protected Map<String, IModFileInfo> getLoadedPlugins() {
+        return LoadingModList.get().getPlugins().stream()
+                .collect(Collectors.toMap(
+                        f -> f.getMods().getFirst().getModId(),
+                        f -> f));
+    }
+
+    /**
+     * When an exception occurs during the ModLauncher controller portion of Startup (represented by {@link #launch},
+     * that exception will not result in a user-friendly error screen. Those errors should instead - if possible -
+     * be recorded in {@link LoadingModList} to then later be reported by {@link ModLoader#gatherAndInitializeMods}.
+     */
+    public static class LaunchException extends Exception {
+        public LaunchException(Throwable cause) {
+            super(cause);
+        }
     }
 }

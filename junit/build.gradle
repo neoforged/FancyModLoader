@@ -1,0 +1,20 @@
+plugins {
+    id 'java-library'
+}
+
+archivesBaseName = 'junit-fml'
+
+dependencies {
+    implementation(platform("org.junit:junit-bom:$jupiter_version"))
+    implementation('org.junit.platform:junit-platform-launcher')
+    // BSL should not be exposed and the actual version should be provided by the neo dep
+    compileOnly("cpw.mods:bootstraplauncher:${project.bootstraplauncher_version}")
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifactId = archivesBaseName
+        }
+    }
+}
