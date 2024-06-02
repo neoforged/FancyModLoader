@@ -92,6 +92,14 @@ public class ModFileBuilder implements Closeable {
         return this;
     }
 
+    public ModFileBuilder addService(Class<?> interfaceClass, String implementationClass) throws IOException {
+        return addService(interfaceClass.getName(), implementationClass);
+    }
+
+    public ModFileBuilder addService(Class<?> interfaceClass, Class<?> implementationClass) throws IOException {
+        return addService(interfaceClass.getName(), implementationClass.getName());
+    }
+
     public ModFileBuilder addClass(String name, @Language("java") String content) {
         compilationBuilder.addClass(name, content);
         return this;
