@@ -115,7 +115,6 @@ public class ModFile implements IModFile {
         if (this.modFileInfo == null) return this.getType() != Type.MOD;
         LOGGER.debug(LogMarkers.LOADING, "Loading mod file {} with languages {}", this.getFilePath(), this.modFileInfo.requiredLanguageLoaders());
         this.coreMods = ModFileParser.getCoreMods(this);
-        this.coreMods.forEach(mi -> LOGGER.debug(LogMarkers.LOADING, "Found coremod {}", mi.getDebugSource()));
         this.mixinConfigs = ModFileParser.getMixinConfigs(this.modFileInfo);
         this.mixinConfigs.forEach(mc -> LOGGER.debug(LogMarkers.LOADING, "Found mixin config {}", mc));
         this.accessTransformers = ModFileParser.getAccessTransformers(this.modFileInfo)
