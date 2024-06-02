@@ -35,9 +35,10 @@ import org.slf4j.MarkerFactory;
 public class RuntimeDistCleaner implements ILaunchPluginService {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Marker DISTXFORM = MarkerFactory.getMarker("DISTXFORM");
-    private static String DIST;
     private static final String ONLYIN = Type.getDescriptor(OnlyIn.class);
     private static final String ONLYINS = Type.getDescriptor(OnlyIns.class);
+
+    private String dist;
 
     @Override
     public String name() {
@@ -47,16 +48,16 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
     @Override
     public int processClassWithFlags(final Phase phase, final ClassNode classNode, final Type classType, final String reason) {
         AtomicBoolean changes = new AtomicBoolean();
-        if (remove(classNode.visibleAnnotations, DIST)) {
-            LOGGER.error(DISTXFORM, "Attempted to load class {} for invalid dist {}", classNode.name, DIST);
-            throw new RuntimeException("Attempted to load class " + classNode.name + " for invalid dist " + DIST);
+        if (remove(classNode.visibleAnnotations, dist)) {
+            LOGGER.error(DISTXFORM, "Attempted to load class {} for invalid dist {}", classNode.name, dist);
+            throw new RuntimeException("Attempted to load class " + classNode.name + " for invalid dist " + dist);
         }
 
         if (classNode.interfaces != null) {
             unpack(classNode.visibleAnnotations).stream()
                     .filter(ann -> Objects.equals(ann.desc, ONLYIN))
                     .filter(ann -> ann.values.contains("_interface"))
-                    .filter(ann -> !Objects.equals(((String[]) ann.values.get(ann.values.indexOf("value") + 1))[1], DIST))
+                    .filter(ann -> !Objects.equals(((String[]) ann.values.get(ann.values.indexOf("value") + 1))[1], dist))
                     .map(ann -> ((Type) ann.values.get(ann.values.indexOf("_interface") + 1)).getInternalName())
                     .forEach(intf -> {
                         if (classNode.interfaces.remove(intf)) {
@@ -82,7 +83,7 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
         Iterator<FieldNode> fields = classNode.fields.iterator();
         while (fields.hasNext()) {
             FieldNode field = fields.next();
-            if (remove(field.visibleAnnotations, DIST)) {
+            if (remove(field.visibleAnnotations, dist)) {
                 LOGGER.debug(DISTXFORM, "Removing field: {}.{}", classNode.name, field.name);
                 fields.remove();
                 changes.compareAndSet(false, true);
@@ -93,7 +94,7 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
         Iterator<MethodNode> methods = classNode.methods.iterator();
         while (methods.hasNext()) {
             MethodNode method = methods.next();
-            if (remove(method.visibleAnnotations, DIST)) {
+            if (remove(method.visibleAnnotations, dist)) {
                 LOGGER.debug(DISTXFORM, "Removing method: {}.{}{}", classNode.name, method.name, method.desc);
                 methods.remove();
                 lambdaGatherer.accept(method);
@@ -136,9 +137,9 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
         return unpack(anns).stream().filter(ann -> Objects.equals(ann.desc, ONLYIN)).filter(ann -> !ann.values.contains("_interface")).anyMatch(ann -> !Objects.equals(((String[]) ann.values.get(ann.values.indexOf("value") + 1))[1], side));
     }
 
-    public static void setDistribution(Dist dist) {
-        RuntimeDistCleaner.DIST = dist.name();
-        LOGGER.debug(DISTXFORM, "Configuring for Dist {}", DIST);
+    public void setDistribution(Dist dist) {
+        this.dist = dist.name();
+        LOGGER.debug(DISTXFORM, "Configuring for Dist {}", this.dist);
     }
 
     private static final EnumSet<Phase> YAY = EnumSet.of(Phase.AFTER);
