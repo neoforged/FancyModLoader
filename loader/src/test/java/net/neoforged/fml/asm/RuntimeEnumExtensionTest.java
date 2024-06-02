@@ -9,7 +9,6 @@ import java.nio.charset.StandardCharsets;
 import net.neoforged.fml.loading.IdentifiableContent;
 import net.neoforged.fml.loading.LauncherTest;
 import net.neoforged.fml.test.RuntimeCompiler;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 // FIXME: doesn't actually test anything because there's no transforming classloader (see commented-out code in test mod class)
@@ -171,7 +170,6 @@ public class RuntimeEnumExtensionTest extends LauncherTest {
                     .compile();
         }
 
-        var result = launch("forgeclient");
-        Assertions.assertDoesNotThrow(() -> loadMods(result));
+        launchAndLoad("forgeclient");
     }
 }

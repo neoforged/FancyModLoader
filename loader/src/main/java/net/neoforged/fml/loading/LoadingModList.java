@@ -5,7 +5,6 @@
 
 package net.neoforged.fml.loading;
 
-import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.LambdaExceptionUtils;
 import java.net.URL;
 import java.nio.file.Files;
@@ -29,14 +28,12 @@ import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
-import org.slf4j.Logger;
 
 /**
  * Master list of all mods <em>in the loading context. This class cannot refer outside the
  * loading package</em>
  */
 public class LoadingModList {
-    private static final Logger LOGGER = LogUtils.getLogger();
     private static LoadingModList INSTANCE;
     private final List<IModFileInfo> plugins;
     private final List<ModFileInfo> modFiles;
