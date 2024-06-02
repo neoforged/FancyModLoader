@@ -96,7 +96,10 @@ class RuntimeDistCleanerTest {
                     @net.neoforged.api.distmarker.OnlyIn(value = net.neoforged.api.distmarker.Dist.CLIENT)
                     public void method() {}
                 }
-                """, clazz -> assertThat(clazz.getDeclaredMethods()).isEmpty());
+                """, clazz -> assertThat(clazz.getDeclaredMethods())
+                // Coverage on Gradle with jacoco inserts methods
+                .filteredOn(m -> !m.getName().contains("jacoco"))
+                .isEmpty());
     }
 
     @Test
@@ -109,7 +112,10 @@ class RuntimeDistCleanerTest {
                         return () -> arg + 1;
                     }
                 }
-                """, clazz -> assertThat(clazz.getDeclaredMethods()).isEmpty());
+                """, clazz -> assertThat(clazz.getDeclaredMethods())
+                // Coverage on Gradle with jacoco inserts methods
+                .filteredOn(m -> !m.getName().contains("jacoco"))
+                .isEmpty());
     }
 
     private void transformTestClass(Dist dist, @Language("java") String classContent) throws Exception {
