@@ -22,6 +22,7 @@
   "fml.modloading.discouragedmod.noreason": "§e原因がありません§r",
   "fml.dependencyloading.conflictingdependencies": "いくつかのModが競合するバージョンを要求しています：§6{3}§r。要求したMod：§e{4}§r。",
   "fml.dependencyloading.mismatchedcontaineddependencies": "いくつかのModは§6{3}§rのバージョンに対応していますが、対応しているバージョンのjarファイルがありません。要求したMod：§e{4}§r。",
+  "fml.modloading.coremod_error": "An error occurred while loading core-mod {3} from {4}",
   "fml.modloading.corrupted_installation": "NeoForgeのインストールが破損しています。再インストールをお試しください",
   "fml.modloading.cycle": "Detected a mod dependency cycle: {3}",
   "fml.modloading.failedtoprocesswork": "遅延処理中に{0,modinfo,name}（{0,modinfo,id}）でエラーが発生しました\n§7{2,exc,msg}",
