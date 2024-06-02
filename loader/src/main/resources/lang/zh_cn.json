@@ -22,6 +22,7 @@
   "fml.modloading.discouragedmod.noreason": "§e未提供理由§r",
   "fml.dependencyloading.conflictingdependencies": "有些模组要求的版本与下列模组冲突：§6{3}§r。由 §e{4}§r请求。",
   "fml.dependencyloading.mismatchedcontaineddependencies": "有些模组已经提供了一个可以接受的版本范围：§6{3}§r，但没有提供与之匹配的 jar。 由 §e{4}§r 请求。",
+  "fml.modloading.coremod_error": "An error occurred while loading core-mod {3} from {4}",
   "fml.modloading.corrupted_installation": "你的 NeoForge 安装损坏了，请尝试重新安装",
   "fml.modloading.cycle": "Detected a mod dependency cycle: {3}",
   "fml.modloading.failedtoprocesswork": "{0,modinfo,name}（{0,modinfo,id}）在处理延迟工作时发生错误\n§7{2,exc,msg}",
