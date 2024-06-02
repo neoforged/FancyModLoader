@@ -91,7 +91,6 @@ public final class ModLoader {
      */
     public static void gatherAndInitializeMods(final Executor syncExecutor, final Executor parallelExecutor, final Runnable periodicTask) {
         var loadingModList = FMLLoader.getLoadingModList();
-        loadingIssues.clear();
         loadingIssues.addAll(loadingModList.getModLoadingIssues());
 
         ForgeFeature.registerFeature("javaVersion", ForgeFeature.VersionFeatureTest.forVersionString(IModInfo.DependencySide.BOTH, System.getProperty("java.version")));

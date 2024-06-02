@@ -16,6 +16,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import javax.lang.model.SourceVersion;
+import net.neoforged.fml.ModLoader;
+import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.neoforgespi.language.IModInfo;
 import org.objectweb.asm.Type;
 
 record EnumPrototype(String owningMod, String enumName, String fieldName, String ctorDesc, String fullCtorDesc, EnumParameters ctorParams) implements Comparable<EnumPrototype> {
@@ -28,7 +31,7 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
         return comp != 0 ? comp : fieldName.compareTo(other.fieldName);
     }
 
-    static List<EnumPrototype> load(String modId, Path path) {
+    static List<EnumPrototype> load(IModInfo mod, Path path) {
         try (Reader reader = Files.newBufferedReader(path)) {
             JsonObject json = GSON.fromJson(reader, JsonObject.class);
 
@@ -39,119 +42,87 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
 
                 String enumName = entryObj.get("enum").getAsString();
                 if (!isValidClassDescriptor(enumName)) {
-                    throw new IllegalArgumentException(String.format(
-                            Locale.ROOT,
-                            "Enum '%s' specified by mod '%s' is not a valid class descriptor",
-                            enumName,
-                            modId));
+                    error("fml.modloading.enumextender.invalid_enum_name", mod, enumName);
+                    continue;
                 }
 
                 String fieldName = entryObj.get("name").getAsString();
-                if (!fieldName.toLowerCase(Locale.ROOT).startsWith(modId)) {
-                    fieldName = modId.toUpperCase(Locale.ROOT) + "_" + fieldName;
+                if (!fieldName.toLowerCase(Locale.ROOT).startsWith(mod.getModId())) {
+                    error("fml.modloading.enumextender.field_name.missing_prefix", mod, fieldName, enumName);
+                    continue;
                 }
                 if (!SourceVersion.isIdentifier(fieldName)) {
-                    throw new IllegalArgumentException(String.format(
-                            Locale.ROOT,
-                            "Enum constant name '%s' for enum '%s' specified by mod '%s' is invalid",
-                            fieldName,
-                            enumName,
-                            modId));
+                    error("fml.modloading.enumextender.field_name.invalid", mod, fieldName, enumName);
+                    continue;
                 }
 
                 String ctorDesc = entryObj.get("constructor").getAsString();
                 if (!isValidConstructorDescriptor(ctorDesc)) {
-                    throw new IllegalArgumentException(String.format(
-                            Locale.ROOT,
-                            "Constructor '%s' for enum '%s' specified by mod '%s' is not a valid constructor descriptor",
-                            ctorDesc,
-                            enumName,
-                            modId));
+                    error("fml.modloading.enumextender.invalid_constructor", mod, ctorDesc, enumName);
+                    continue;
                 }
 
                 EnumParameters ctorParams;
                 JsonElement paramElem = entryObj.get("parameters");
                 if (paramElem.isJsonArray()) {
-                    ctorParams = loadConstantParameters(modId, enumName, fieldName, ctorDesc, paramElem.getAsJsonArray());
+                    ctorParams = loadConstantParameters(mod, enumName, fieldName, ctorDesc, paramElem.getAsJsonArray());
+                    if (ctorParams == null) {
+                        continue;
+                    }
                 } else if (paramElem.isJsonObject()) {
                     JsonObject obj = paramElem.getAsJsonObject();
                     String className = obj.get("class").getAsString();
                     if (!isValidClassDescriptor(className)) {
-                        throw new IllegalArgumentException(String.format(
-                                Locale.ROOT,
-                                "Parameter source class '%s' for enum '%s' specified by mod '%s' is not a valid class descriptor",
-                                className,
-                                enumName,
-                                modId));
+                        error("fml.modloading.enumextender.argument.reference.invalid_src_class", mod, className, fieldName, enumName);
+                        continue;
                     }
 
                     if (obj.has("method")) {
                         String srcMethodName = obj.get("method").getAsString();
                         if (!SourceVersion.isIdentifier(srcMethodName)) {
-                            throw new IllegalArgumentException(String.format(
-                                    Locale.ROOT,
-                                    "Parameter source method '%s' for enum '%s' specified by mod '%s' is not a valid method name",
-                                    srcMethodName,
-                                    enumName,
-                                    modId));
+                            error("fml.modloading.enumextender.argument.reference.invalid_src_method", mod, srcMethodName, fieldName, enumName);
+                            continue;
                         }
                         ctorParams = new EnumParameters.MethodReference(Type.getObjectType(className), srcMethodName);
                     } else if (obj.has("field")) {
                         String srcFieldName = obj.get("field").getAsString();
                         if (!SourceVersion.isIdentifier(srcFieldName)) {
-                            throw new IllegalArgumentException(String.format(
-                                    Locale.ROOT,
-                                    "Parameter source field '%s' for enum '%s' specified by mod '%s' is not a valid field name",
-                                    srcFieldName,
-                                    enumName,
-                                    modId));
+                            error("fml.modloading.enumextender.argument.reference.invalid_src_field", mod, srcFieldName, fieldName, enumName);
+                            continue;
                         }
                         ctorParams = new EnumParameters.FieldReference(Type.getObjectType(className), srcFieldName);
                     } else {
-                        throw new IllegalArgumentException(String.format(
-                                Locale.ROOT,
-                                "Unexpected reference parameter declaration '%s' for field '%s' in enum '%s' specified by mod '%s'",
-                                paramElem,
-                                fieldName,
-                                enumName,
-                                modId));
+                        error("fml.modloading.enumextender.argument.reference.unexpected_decl", mod, paramElem, fieldName, enumName);
+                        continue;
                     }
                 } else {
-                    throw new IllegalArgumentException(String.format(
-                            Locale.ROOT,
-                            "Unexpected parameter declaration '%s' for field '%s' in enum '%s' specified by mod '%s'",
-                            paramElem,
-                            fieldName,
-                            enumName,
-                            modId));
+                    error("fml.modloading.enumextender.argument.unexpected_decl", mod, paramElem, fieldName, enumName);
+                    continue;
                 }
 
                 // Prepend source-invisible field name and ordinal parameters after checking user-provided parameters
                 String fullCtorDesc = "(" + ENUM_CTOR_BASE_DESC + ctorDesc.substring(1);
-                prototypes.add(new EnumPrototype(modId, enumName, fieldName, ctorDesc, fullCtorDesc, ctorParams));
+                prototypes.add(new EnumPrototype(mod.getModId(), enumName, fieldName, ctorDesc, fullCtorDesc, ctorParams));
             }
             return prototypes;
         } catch (Throwable e) {
-            throw new RuntimeException("Failed to load enum extension data at " + path, e);
+            ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloading.enumextender.loading_error")
+                    .withAffectedMod(mod)
+                    .withCause(e));
+            return List.of();
         }
     }
 
-    private static EnumParameters loadConstantParameters(String modId, String enumName, String fieldName, String ctorDesc, JsonArray obj) {
+    private static EnumParameters loadConstantParameters(IModInfo mod, String enumName, String fieldName, String ctorDesc, JsonArray obj) {
         List<Object> params = new ArrayList<>(obj.size());
         Type[] argTypes = Type.getArgumentTypes(ctorDesc);
         if (argTypes.length != obj.size()) {
-            throw new IllegalArgumentException(String.format(
-                    Locale.ROOT,
-                    "Parameter count %d does not match argument count %d of constructor '%s' for field '%s' in enum '%s' specified by mod '%s'",
-                    obj.size(),
-                    argTypes.length,
-                    ctorDesc,
-                    fieldName,
-                    enumName,
-                    modId));
+            error("fml.modloading.enumextender.argument.constant.count_mismatch", mod, obj.size(), argTypes.length, ctorDesc, fieldName, enumName);
+            return null;
         }
 
         int idx = 0;
+        boolean failed = false;
         for (JsonElement element : obj) {
             Type argType = argTypes[idx];
             Object value = switch (argType.getDescriptor()) {
@@ -159,14 +130,9 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
                 case "C" -> {
                     String param = element.getAsString();
                     if (param.length() != 1) {
-                        throw new IllegalArgumentException(String.format(
-                                Locale.ROOT,
-                                "Invalid character '%s' at parameter index %d for field '%s' in enum '%s' specified by mod '%s'",
-                                param,
-                                idx,
-                                fieldName,
-                                enumName,
-                                modId));
+                        error("fml.modloading.enumextender.argument.constant.invalid_char", mod, param, idx, fieldName, enumName);
+                        failed = true;
+                        yield null;
                     }
                     yield param.charAt(0);
                 }
@@ -178,19 +144,16 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
                 case "D" -> element.getAsDouble();
                 case "Ljava/lang/String;" -> element.isJsonNull() ? null : element.getAsString();
                 default -> {
-                    if (element.isJsonNull()) {
-                        yield null;
+                    if (!element.isJsonNull()) {
+                        error("fml.modloading.enumextender.argument.constant.unsupported_type", mod, argType, idx, fieldName, enumName);
+                        failed = true;
                     }
-                    throw new IllegalArgumentException(String.format(
-                            Locale.ROOT,
-                            "Unsupported immediate argument type '%s' at parameter index %d for field '%s' in enum '%s' specified by mod '%s'",
-                            argType,
-                            idx,
-                            fieldName,
-                            enumName,
-                            modId));
+                    yield null;
                 }
             };
+            if (failed) {
+                return null;
+            }
             params.add(value);
             idx++;
         }
@@ -239,5 +202,9 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
             pendingArray = false;
         }
         return !pendingArray;
+    }
+
+    private static void error(String message, IModInfo mod, Object... params) {
+        ModLoader.addLoadingIssue(ModLoadingIssue.error(message, params).withAffectedMod(mod));
     }
 }

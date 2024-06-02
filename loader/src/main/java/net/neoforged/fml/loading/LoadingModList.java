@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
+import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
@@ -93,17 +94,17 @@ public class LoadingModList {
     }
 
     public void addEnumExtenders() {
-        Map<String, Path> pathPerMod = new HashMap<>();
+        Map<IModInfo, Path> pathPerMod = new HashMap<>();
         modFiles.stream()
                 .map(ModFileInfo::getMods)
                 .flatMap(List::stream)
                 .forEach(mod -> mod.getConfig().<String>getConfigElement("enumExtender").ifPresent(file -> {
                     Path path = mod.getOwningFile().getFile().findResource(file);
                     if (Files.notExists(path)) {
-                        LOGGER.error(LogMarkers.LOADING, "Enum extender file {} provided by mod {} does not exist!", path, mod.getOwningFile().moduleName());
+                        ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloading.enumextender.file_not_found", path).withAffectedMod(mod));
                         return;
                     }
-                    pathPerMod.put(mod.getModId(), path);
+                    pathPerMod.put(mod, path);
                 }));
         RuntimeEnumExtender.loadEnumPrototypes(pathPerMod);
     }

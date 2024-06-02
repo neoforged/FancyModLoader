@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -18,7 +19,10 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import net.neoforged.coremod.api.ASMAPI;
+import net.neoforged.fml.ModLoader;
+import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.asm.ListGeneratorAdapter;
+import net.neoforged.neoforgespi.language.IModInfo;
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -381,7 +385,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         }
     }
 
-    public static void loadEnumPrototypes(Map<String, Path> paths) {
+    public static void loadEnumPrototypes(Map<IModInfo, Path> paths) {
         prototypes = paths.entrySet()
                 .stream()
                 .map(entry -> EnumPrototype.load(entry.getKey(), entry.getValue()))
@@ -396,21 +400,28 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                         (protoOne, protoTwo) -> {
                             throw new IllegalStateException("Duplicate EnumPrototype: " + protoOne);
                         });
-        prototypes.forEach((cls, prototypes) -> {
+
+        Set<String> erroredEnums = new HashSet<>();
+        for (Map.Entry<String, List<EnumPrototype>> entry : prototypes.entrySet()) {
             Map<String, EnumPrototype> distinctPrototypes = new HashMap<>();
-            for (EnumPrototype proto : prototypes) {
+            boolean foundDupe = false;
+            for (EnumPrototype proto : entry.getValue()) {
                 EnumPrototype prevProto = distinctPrototypes.put(proto.fieldName(), proto);
                 if (prevProto != null) {
-                    throw new IllegalStateException(String.format(
-                            Locale.ROOT,
-                            "Found duplicate field '%s' for enum '%s' provided by mods '%s' and '%s'",
+                    foundDupe = true;
+                    ModLoader.addLoadingIssue(ModLoadingIssue.error(
+                            "fml.modloading.enumextender.duplicate",
                             proto.fieldName(),
                             proto.enumName(),
                             proto.owningMod(),
                             prevProto.owningMod()));
                 }
             }
-        });
+            if (foundDupe) {
+                erroredEnums.add(entry.getKey());
+            }
+        }
+        erroredEnums.forEach(prototypes::remove);
     }
 
     @SuppressWarnings("UnusedReturnValue") // Return value used via transformer

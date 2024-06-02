@@ -35,12 +35,6 @@ public class RuntimeEnumExtensionTest extends LauncherTest {
                             "entries": [
                                 {
                                     "enum": "enumtestmod/ExtensibleEnum",
-                                    "name": "OTHER_TEST_THING",
-                                    "constructor": "(Ljava/lang/String;)V",
-                                    "parameters": [ "enumtestmod:other_test_thing" ]
-                                },
-                                {
-                                    "enum": "enumtestmod/ExtensibleEnum",
                                     "name": "ENUMTESTMOD_PREFIXED_TEST_THING",
                                     "constructor": "(Ljava/lang/String;)V",
                                     "parameters": [ "enumtestmod:prefixed_test_thing" ]
@@ -62,12 +56,6 @@ public class RuntimeEnumExtensionTest extends LauncherTest {
                                         "class": "enumtestmod/TestMod",
                                         "method": "getEnumParameter"
                                     }
-                                },
-                                {
-                                    "enum": "enumtestmod/EnumWithId",
-                                    "name": "OTHER_ID_TEST_THING",
-                                    "constructor": "(ILjava/lang/String;)V",
-                                    "parameters": [ -1, "enumtestmod:other_id_test_thing" ]
                                 },
                                 {
                                     "enum": "enumtestmod/EnumWithId",
@@ -146,26 +134,21 @@ public class RuntimeEnumExtensionTest extends LauncherTest {
                                     /*
                                     System.out.println(ENUM_PARAMS.getValue());
                                     System.out.println(ID_ENUM_PARAMS.getValue());
-                                    ExtensibleEnum otherTestThing = ExtensibleEnum.valueOf("ENUMTESTMOD_OTHER_TEST_THING");
                                     ExtensibleEnum prefixedTestThing = ExtensibleEnum.valueOf("ENUMTESTMOD_PREFIXED_TEST_THING");
                                     ExtensibleEnum lazyTestThing = ExtensibleEnum.valueOf("ENUMTESTMOD_LAZY_TEST_THING");
                                     ExtensibleEnum mthLazyTestThing = ExtensibleEnum.valueOf("ENUMTESTMOD_MTH_LAZY_TEST_THING");
-                                    com.google.common.base.Preconditions.checkState(otherTestThing.ordinal() == 2);
-                                    com.google.common.base.Preconditions.checkState(prefixedTestThing.ordinal() == 4);
+                                    com.google.common.base.Preconditions.checkState(prefixedTestThing.ordinal() == 3);
                                     com.google.common.base.Preconditions.checkState(lazyTestThing.ordinal() == 1);
-                                    com.google.common.base.Preconditions.checkState(mthLazyTestThing.ordinal() == 3);
-                                    EnumWithId otherIdTestThing = EnumWithId.valueOf("ENUMTESTMOD_OTHER_ID_TEST_THING");
+                                    com.google.common.base.Preconditions.checkState(mthLazyTestThing.ordinal() == 2);
                                     EnumWithId prefixedIdTestThing = EnumWithId.valueOf("ENUMTESTMOD_PREFIXED_ID_TEST_THING");
                                     EnumWithId lazyIdTestThing = EnumWithId.valueOf("ENUMTESTMOD_LAZY_ID_TEST_THING");
                                     EnumWithId mthLazyIdTestThing = EnumWithId.valueOf("ENUMTESTMOD_MTH_LAZY_ID_TEST_THING");
-                                    com.google.common.base.Preconditions.checkState(otherIdTestThing.ordinal() == 2);
-                                    com.google.common.base.Preconditions.checkState(otherIdTestThing.getId() == 2);
-                                    com.google.common.base.Preconditions.checkState(prefixedIdTestThing.ordinal() == 4);
-                                    com.google.common.base.Preconditions.checkState(prefixedIdTestThing.getId() == 4);
+                                    com.google.common.base.Preconditions.checkState(prefixedIdTestThing.ordinal() == 3);
+                                    com.google.common.base.Preconditions.checkState(prefixedIdTestThing.getId() == 3);
                                     com.google.common.base.Preconditions.checkState(lazyIdTestThing.ordinal() == 1);
                                     com.google.common.base.Preconditions.checkState(lazyIdTestThing.getId() == 1);
-                                    com.google.common.base.Preconditions.checkState(mthLazyIdTestThing.ordinal() == 3);
-                                    com.google.common.base.Preconditions.checkState(mthLazyIdTestThing.getId() == 3);
+                                    com.google.common.base.Preconditions.checkState(mthLazyIdTestThing.ordinal() == 2);
+                                    com.google.common.base.Preconditions.checkState(mthLazyIdTestThing.getId() == 2);
                                     System.out.println(ExtensibleEnum.getExtensionInfo());
                                     System.out.println(EnumWithId.getExtensionInfo());
                                     */
