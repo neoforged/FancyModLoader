@@ -15,7 +15,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -56,7 +55,7 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
         if (classNode.interfaces != null) {
             unpack(classNode.visibleAnnotations).stream()
                     .filter(ann -> Objects.equals(ann.desc, ONLYIN))
-                    .filter(ann -> ann.values.indexOf("_interface") != -1)
+                    .filter(ann -> ann.values.contains("_interface"))
                     .filter(ann -> !Objects.equals(((String[]) ann.values.get(ann.values.indexOf("value") + 1))[1], DIST))
                     .map(ann -> ((Type) ann.values.get(ann.values.indexOf("_interface") + 1)).getInternalName())
                     .forEach(intf -> {
@@ -128,22 +127,18 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
         List<AnnotationNode> ret = anns.stream().filter(ann -> Objects.equals(ann.desc, ONLYIN)).collect(Collectors.toList());
         anns.stream().filter(ann -> Objects.equals(ann.desc, ONLYINS) && ann.values != null)
                 .map(ann -> (List<AnnotationNode>) ann.values.get(ann.values.indexOf("value") + 1))
-                .filter(v -> v != null)
-                .forEach(v -> v.forEach(ret::add));
+                .filter(Objects::nonNull)
+                .forEach(ret::addAll);
         return ret;
     }
 
     private boolean remove(final List<AnnotationNode> anns, final String side) {
-        return unpack(anns).stream().filter(ann -> Objects.equals(ann.desc, ONLYIN)).filter(ann -> ann.values.indexOf("_interface") == -1).anyMatch(ann -> !Objects.equals(((String[]) ann.values.get(ann.values.indexOf("value") + 1))[1], side));
+        return unpack(anns).stream().filter(ann -> Objects.equals(ann.desc, ONLYIN)).filter(ann -> !ann.values.contains("_interface")).anyMatch(ann -> !Objects.equals(((String[]) ann.values.get(ann.values.indexOf("value") + 1))[1], side));
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public Consumer<Dist> getExtension() {
-        return (s) -> {
-            DIST = s.name();
-            LOGGER.debug(DISTXFORM, "Configuring for Dist {}", DIST);
-        };
+    public static void setDistribution(Dist dist) {
+        RuntimeDistCleaner.DIST = dist.name();
+        LOGGER.debug(DISTXFORM, "Configuring for Dist {}", DIST);
     }
 
     private static final EnumSet<Phase> YAY = EnumSet.of(Phase.AFTER);
