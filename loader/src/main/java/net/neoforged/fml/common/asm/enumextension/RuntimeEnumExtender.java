@@ -43,7 +43,7 @@ import org.objectweb.asm.tree.MethodNode;
  */
 @ApiStatus.Internal
 public class RuntimeEnumExtender implements ILaunchPluginService {
-    private static final EnumSet<Phase> YAY = EnumSet.of(Phase.AFTER);
+    private static final EnumSet<Phase> YAY = EnumSet.of(Phase.BEFORE);
     private static final EnumSet<Phase> NAY = EnumSet.noneOf(Phase.class);
     private static final Type MARKER_IFACE = Type.getType(IExtensibleEnum.class);
     private static final Type INDEXED_ANNOTATION = Type.getType(IndexedEnum.class);
@@ -69,7 +69,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
 
     @Override
     public EnumSet<Phase> handlesClass(Type classType, boolean isEmpty) {
-        return isEmpty ? NAY : YAY;
+        return isEmpty || !prototypes.containsKey(classType.getInternalName()) ? NAY : YAY;
     }
 
     @Override
