@@ -46,6 +46,7 @@ import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * Contains the logic to load mods, i.e. turn the {@link LoadingModList} into the {@link ModList},
@@ -407,6 +408,13 @@ public final class ModLoader {
     @ApiStatus.Internal
     public static List<ModLoadingIssue> getLoadingIssues() {
         return List.copyOf(loadingIssues);
+    }
+
+    @VisibleForTesting
+    @ApiStatus.Internal
+    public static void clearLoadingIssues() {
+        LOGGER.info("Clearing {} loading issues", loadingIssues.size());
+        loadingIssues.clear();
     }
 
     @ApiStatus.Internal

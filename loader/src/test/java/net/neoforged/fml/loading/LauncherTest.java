@@ -91,6 +91,8 @@ public abstract class LauncherTest {
     }
 
     protected LaunchResult launch(String launchTarget) throws Exception {
+        ModLoader.clearLoadingIssues();
+
         environment.computePropertyIfAbsent(IEnvironment.Keys.GAMEDIR.get(), ignored -> installation.getGameDir());
         environment.computePropertyIfAbsent(IEnvironment.Keys.LAUNCHTARGET.get(), ignored -> launchTarget);
 
