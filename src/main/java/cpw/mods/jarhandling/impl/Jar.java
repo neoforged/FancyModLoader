@@ -3,10 +3,10 @@ package cpw.mods.jarhandling.impl;
 import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.niofs.union.UnionFileSystem;
-import cpw.mods.niofs.union.UnionPathFilter;
 import cpw.mods.util.LambdaExceptionUtils;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.module.ModuleDescriptor;
 import java.net.URI;
@@ -102,6 +102,11 @@ public class Jar implements SecureJar {
     @Override
     public Path getRootPath() {
         return filesystem.getPath("");
+    }
+
+    @Override
+    public void close() throws IOException {
+        contents.close();
     }
 
     @Override

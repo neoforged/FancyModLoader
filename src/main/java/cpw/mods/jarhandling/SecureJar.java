@@ -17,10 +17,6 @@ import java.nio.file.Path;
 import java.security.CodeSigner;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.BiPredicate;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
@@ -85,6 +81,12 @@ public interface SecureJar {
      * {@return the root path in the jar's own filesystem}
      */
     Path getRootPath();
+
+    /**
+     * Closes the underlying file system resources (if any).
+     * Renders this object unusable.
+     */
+    void close() throws IOException;
 
     /**
      * All the functions that are necessary to turn a {@link SecureJar} into a module.

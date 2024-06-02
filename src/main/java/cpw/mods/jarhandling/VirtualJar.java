@@ -4,6 +4,7 @@ import cpw.mods.niofs.union.UnionFileSystem;
 import cpw.mods.niofs.union.UnionFileSystemProvider;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.module.ModuleDescriptor;
 import java.net.URI;
@@ -104,6 +105,11 @@ public final class VirtualJar implements SecureJar {
     @Override
     public Path getRootPath() {
         return dummyFileSystem.getRoot();
+    }
+
+    @Override
+    public void close() throws IOException {
+        dummyFileSystem.close();
     }
 
     private class VirtualJarModuleDataProvider implements ModuleDataProvider {

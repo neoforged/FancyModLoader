@@ -13,11 +13,9 @@ import java.io.InputStream;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
-import java.lang.module.ResolvedModule;
 import java.net.URI;
 import java.nio.file.Path;
 import java.security.CodeSigner;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -132,6 +130,10 @@ public class TestDummyJarProvider {
         @Override
         public Path getRootPath() {
             return null;
+        }
+
+        @Override
+        public void close() {
         }
     }
 }

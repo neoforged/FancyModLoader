@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
@@ -217,5 +216,10 @@ public class JarContentsImpl implements JarContents {
             }
         }
         return this.providers;
+    }
+
+    @Override
+    public void close() throws IOException {
+        filesystem.close();
     }
 }

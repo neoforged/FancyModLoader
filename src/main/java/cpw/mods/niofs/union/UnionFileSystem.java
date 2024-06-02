@@ -155,8 +155,23 @@ public class UnionFileSystem extends FileSystem {
     }
 
     @Override
-    public void close() {
+    public void close() throws IOException {
         provider().removeFileSystem(this);
+        IOException closeException = null;
+        for (var embeddedFs : embeddedFileSystems.values()) {
+            try {
+                embeddedFs.fs.close();
+            } catch (IOException e) {
+                if (closeException != null) {
+                    closeException.addSuppressed(e);
+                } else {
+                    closeException = e;
+                }
+            }
+        }
+        if (closeException != null) {
+            throw closeException;
+        }
     }
 
     @Override

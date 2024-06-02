@@ -70,5 +70,9 @@ public class TestMetadata
         public List<SecureJar.Provider> getMetaInfServices() {
             return List.of();
         }
+
+        @Override
+        public void close() {
+        }
     }
 }
