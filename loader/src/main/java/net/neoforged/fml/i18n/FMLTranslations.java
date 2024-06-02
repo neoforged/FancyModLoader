@@ -125,14 +125,26 @@ public class FMLTranslations {
         return extendedMessageFormat.format(args);
     }
 
+    public static String translateIssueEnglish(ModLoadingIssue issue) {
+        var args = getTranslationArgs(issue);
+        return parseEnglishMessage(issue.translationKey(), args);
+    }
+
     public static String translateIssue(ModLoadingIssue issue) {
+        var args = getTranslationArgs(issue);
+        return parseMessage(issue.translationKey(), args);
+    }
+
+    private static Object[] getTranslationArgs(ModLoadingIssue issue) {
         var args = new ArrayList<>(3 + issue.translationArgs().size());
 
         var modInfo = issue.affectedMod();
-        if (modInfo == null && issue.affectedModFile() != null) {
-            if (!issue.affectedModFile().getModInfos().isEmpty()) {
-                modInfo = issue.affectedModFile().getModInfos().getFirst();
+        var file = issue.affectedModFile();
+        while (modInfo == null && file != null) {
+            if (!file.getModInfos().isEmpty()) {
+                modInfo = file.getModInfos().getFirst();
             }
+            file = file.getDiscoveryAttributes().parent();
         }
         args.add(modInfo);
         args.add(null); // Previously mod-loading phase
@@ -144,13 +156,13 @@ public class FMLTranslations {
 
         args.replaceAll(FMLTranslations::formatArg);
 
-        return parseMessage(issue.translationKey(), args.toArray(Object[]::new));
+        return args.toArray(Object[]::new);
     }
 
     private static Object formatArg(Object arg) {
         if (arg instanceof Path path) {
             var gameDir = FMLLoader.getGamePath();
-            if (path.startsWith(gameDir)) {
+            if (gameDir != null && path.startsWith(gameDir)) {
                 return gameDir.relativize(path).toString();
             } else {
                 return path.toString();

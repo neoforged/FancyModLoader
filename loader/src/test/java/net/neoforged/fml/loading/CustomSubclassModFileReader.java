@@ -6,6 +6,7 @@
 package net.neoforged.fml.loading;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import cpw.mods.jarhandling.JarContents;
 import net.neoforged.neoforgespi.locating.IModFile;
@@ -19,7 +20,9 @@ public class CustomSubclassModFileReader implements IModFileReader {
     @Override
     public @Nullable IModFile read(JarContents jar, ModFileDiscoveryAttributes attributes) {
         if (jar.findFile(TRIGGER.relativePath()).isPresent()) {
-            return mock(IModFile.class);
+            var modFile = mock(IModFile.class);
+            when(modFile.getDiscoveryAttributes()).thenReturn(new ModFileDiscoveryAttributes(null, null, null, null));
+            return modFile;
         }
         return null;
     }

@@ -6,6 +6,7 @@
 package net.neoforged.fml.loading;
 
 import static net.neoforged.fml.loading.LogMarkers.CORE;
+import static net.neoforged.fml.loading.LogMarkers.LOADING;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.IEnvironment;
@@ -13,6 +14,7 @@ import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -21,8 +23,13 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionSpecBuilder;
+import net.neoforged.fml.ModLoader;
+import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.Environment;
 import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.coremod.ICoreMod;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 
 public class FMLServiceProvider implements ITransformationService {
@@ -40,7 +47,8 @@ public class FMLServiceProvider implements ITransformationService {
     private List<String> mavenRootsArgumentList;
     private List<String> mixinConfigsArgumentList;
     private VersionInfo versionInfo;
-    private ILaunchContext launchContext;
+    @VisibleForTesting
+    ILaunchContext launchContext;
 
     public FMLServiceProvider() {
         final String markerselection = System.getProperty("forge.logging.markers", "");
@@ -115,7 +123,50 @@ public class FMLServiceProvider implements ITransformationService {
 
     @Override
     public List<? extends ITransformer<?>> transformers() {
-        LOGGER.debug(CORE, "Loading coremod transformers");
-        return FMLLoader.getCoreModEngine().initializeCoreMods();
+        LOGGER.debug(LOADING, "Loading coremod transformers");
+
+        var result = new ArrayList<>(loadCoreModScripts());
+
+        // Find all Java core mods
+        for (var coreMod : ServiceLoaderUtil.loadServices(launchContext, ICoreMod.class)) {
+            // Try to identify the mod-file this is from
+            var sourceFile = ServiceLoaderUtil.identifySourcePath(launchContext, coreMod);
+
+            try {
+                for (var transformer : coreMod.getTransformers()) {
+                    LOGGER.debug(CORE, "Adding {} transformer from core-mod {} in {}", transformer.targets(), coreMod, sourceFile);
+                    result.add(transformer);
+                }
+            } catch (Exception e) {
+                // Throwing here would cause the game to immediately crash without a proper error screen,
+                // since this method is called by ModLauncher directly.
+                ModLoader.addLoadingIssue(
+                        ModLoadingIssue.error("fml.modloading.coremod_error", coreMod.getClass().getName(), sourceFile).withCause(e));
+            }
+        }
+
+        return result;
+    }
+
+    private List<ITransformer<?>> loadCoreModScripts() {
+        var filesWithCoreModScripts = LoadingModList.get().getModFiles()
+                .stream()
+                .filter(mf -> !mf.getFile().getCoreMods().isEmpty())
+                .toList();
+
+        if (filesWithCoreModScripts.isEmpty()) {
+            // Don't even bother starting the scripting engine if no mod contains scripting core mods
+            LOGGER.debug(LogMarkers.CORE, "Not loading coremod script-engine since no mod requested it");
+            return List.of();
+        }
+
+        LOGGER.info(LogMarkers.CORE, "Loading coremod script-engine for {}", filesWithCoreModScripts);
+        try {
+            return CoreModScriptLoader.loadCoreModScripts(filesWithCoreModScripts);
+        } catch (NoClassDefFoundError e) {
+            var message = "Could not find the coremod script-engine, but the following mods require it: " + filesWithCoreModScripts;
+            ImmediateWindowHandler.crash(message);
+            throw new IllegalStateException(message, e);
+        }
     }
 }
