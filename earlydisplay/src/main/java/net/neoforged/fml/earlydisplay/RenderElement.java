@@ -179,7 +179,7 @@ public class RenderElement {
     private static Renderer barRenderer(int cnt, int alpha, SimpleFont font, ProgressMeter pm, DisplayContext context) {
         var barSpacing = font.lineSpacing() - font.descent() + BAR_HEIGHT;
         var y = 250 * context.scale() + cnt * barSpacing;
-        var colour = context.colourScheme.foreground().packedint(alpha); //(alpha << 24) | 0xFFFFFF;
+        var colour = context.colourScheme.foreground().packedint(alpha);
         Renderer bar;
         if (pm.steps() == 0) {
             bar = progressBar(ctx -> new int[] { (ctx.scaledWidth() - BAR_WIDTH * ctx.scale()) / 2, y + font.lineSpacing() - font.descent(), BAR_WIDTH * ctx.scale() }, f -> colour, frame -> indeterminateBar(frame, cnt == 0));
