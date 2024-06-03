@@ -15,11 +15,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.api.distmarker.OnlyIns;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -36,9 +36,11 @@ import org.slf4j.MarkerFactory;
 public class RuntimeDistCleaner implements ILaunchPluginService {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Marker DISTXFORM = MarkerFactory.getMarker("DISTXFORM");
-    private static String DIST;
     private static final String ONLYIN = Type.getDescriptor(OnlyIn.class);
     private static final String ONLYINS = Type.getDescriptor(OnlyIns.class);
+
+    @Nullable
+    private String dist;
 
     @Override
     public String name() {
@@ -47,17 +49,22 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
 
     @Override
     public int processClassWithFlags(final Phase phase, final ClassNode classNode, final Type classType, final String reason) {
+        if (dist == null) {
+            // If no distribution was ever set, don't do anything
+            return ComputeFlags.NO_REWRITE;
+        }
+
         AtomicBoolean changes = new AtomicBoolean();
-        if (remove(classNode.visibleAnnotations, DIST)) {
-            LOGGER.error(DISTXFORM, "Attempted to load class {} for invalid dist {}", classNode.name, DIST);
-            throw new RuntimeException("Attempted to load class " + classNode.name + " for invalid dist " + DIST);
+        if (remove(classNode.visibleAnnotations, dist)) {
+            LOGGER.error(DISTXFORM, "Attempted to load class {} for invalid dist {}", classNode.name, dist);
+            throw new RuntimeException("Attempted to load class " + classNode.name + " for invalid dist " + dist);
         }
 
         if (classNode.interfaces != null) {
             unpack(classNode.visibleAnnotations).stream()
                     .filter(ann -> Objects.equals(ann.desc, ONLYIN))
-                    .filter(ann -> ann.values.indexOf("_interface") != -1)
-                    .filter(ann -> !Objects.equals(((String[]) ann.values.get(ann.values.indexOf("value") + 1))[1], DIST))
+                    .filter(ann -> ann.values.contains("_interface"))
+                    .filter(ann -> !Objects.equals(((String[]) ann.values.get(ann.values.indexOf("value") + 1))[1], dist))
                     .map(ann -> ((Type) ann.values.get(ann.values.indexOf("_interface") + 1)).getInternalName())
                     .forEach(intf -> {
                         if (classNode.interfaces.remove(intf)) {
@@ -83,7 +90,7 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
         Iterator<FieldNode> fields = classNode.fields.iterator();
         while (fields.hasNext()) {
             FieldNode field = fields.next();
-            if (remove(field.visibleAnnotations, DIST)) {
+            if (remove(field.visibleAnnotations, dist)) {
                 LOGGER.debug(DISTXFORM, "Removing field: {}.{}", classNode.name, field.name);
                 fields.remove();
                 changes.compareAndSet(false, true);
@@ -94,7 +101,7 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
         Iterator<MethodNode> methods = classNode.methods.iterator();
         while (methods.hasNext()) {
             MethodNode method = methods.next();
-            if (remove(method.visibleAnnotations, DIST)) {
+            if (remove(method.visibleAnnotations, dist)) {
                 LOGGER.debug(DISTXFORM, "Removing method: {}.{}{}", classNode.name, method.name, method.desc);
                 methods.remove();
                 lambdaGatherer.accept(method);
@@ -128,22 +135,23 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
         List<AnnotationNode> ret = anns.stream().filter(ann -> Objects.equals(ann.desc, ONLYIN)).collect(Collectors.toList());
         anns.stream().filter(ann -> Objects.equals(ann.desc, ONLYINS) && ann.values != null)
                 .map(ann -> (List<AnnotationNode>) ann.values.get(ann.values.indexOf("value") + 1))
-                .filter(v -> v != null)
-                .forEach(v -> v.forEach(ret::add));
+                .filter(Objects::nonNull)
+                .forEach(ret::addAll);
         return ret;
     }
 
     private boolean remove(final List<AnnotationNode> anns, final String side) {
-        return unpack(anns).stream().filter(ann -> Objects.equals(ann.desc, ONLYIN)).filter(ann -> ann.values.indexOf("_interface") == -1).anyMatch(ann -> !Objects.equals(((String[]) ann.values.get(ann.values.indexOf("value") + 1))[1], side));
+        return unpack(anns).stream().filter(ann -> Objects.equals(ann.desc, ONLYIN)).filter(ann -> !ann.values.contains("_interface")).anyMatch(ann -> !Objects.equals(((String[]) ann.values.get(ann.values.indexOf("value") + 1))[1], side));
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public Consumer<Dist> getExtension() {
-        return (s) -> {
-            DIST = s.name();
-            LOGGER.debug(DISTXFORM, "Configuring for Dist {}", DIST);
-        };
+    public void setDistribution(@Nullable Dist dist) {
+        if (dist != null) {
+            this.dist = dist.name();
+            LOGGER.debug(DISTXFORM, "Configuring for Dist {}", this.dist);
+        } else {
+            this.dist = null;
+            LOGGER.debug(DISTXFORM, "Disabling runtime dist cleaner");
+        }
     }
 
     private static final EnumSet<Phase> YAY = EnumSet.of(Phase.AFTER);
