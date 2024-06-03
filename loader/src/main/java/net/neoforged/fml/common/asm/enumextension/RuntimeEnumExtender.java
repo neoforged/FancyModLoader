@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -37,6 +38,7 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 
 /**
  * Transforms enums implementing {@link IExtensibleEnum} to add additional entries loaded from files provided by mods
@@ -59,6 +61,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     private static final Type EXTENDER = Type.getType(RuntimeEnumExtender.class);
     private static final Type ARRAYS = Type.getType("Ljava/util/Arrays;");
     private static final int ENUM_FLAGS = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_ENUM;
+    private static final int ARRAY_FLAGS = Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC;
     private static final int EXT_INFO_FLAGS = Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL;
     private static Map<String, List<EnumPrototype>> prototypes = Map.of();
 
@@ -84,7 +87,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         }
 
         MethodNode clinit = findMethod(classNode, mth -> mth.name.equals("<clinit>"));
-        MethodNode $values = findMethod(classNode, mth -> mth.name.equals("$values"));
+        Optional<MethodNode> $valuesOpt = tryFindMethod(classNode, mth -> mth.name.equals("$values"));
         MethodNode getExtInfo = findMethod(classNode, mth -> mth.name.equals("getExtensionInfo") && mth.desc.equals(EXT_INFO_GETTER_DESC));
         Set<String> ctors = classNode.methods.stream()
                 .filter(mth -> mth.name.equals("<init>"))
@@ -110,8 +113,14 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
 
         ListGeneratorAdapter clinitGenerator = new ListGeneratorAdapter(new InsnList());
         List<FieldNode> enumEntries = createEnumEntries(classType, clinitGenerator, ctors, idParamIdx, nameParamIdx, vanillaEntryCount, protos);
-        MethodInsnNode $valuesInsn = ASMAPI.findFirstMethodCall(clinit, ASMAPI.MethodType.STATIC, classType.getInternalName(), "$values", $values.desc);
-        clinit.instructions.insertBefore($valuesInsn, clinitGenerator.insnList);
+        if ($valuesOpt.isPresent()) { // javac
+            MethodNode $values = $valuesOpt.get();
+            MethodInsnNode $valuesInsn = ASMAPI.findFirstMethodCall(clinit, ASMAPI.MethodType.STATIC, classType.getInternalName(), $values.name, $values.desc);
+            clinit.instructions.insertBefore($valuesInsn, clinitGenerator.insnList);
+        } else { // ECJ
+            AbstractInsnNode firstValuesArrayInsn = findValuesArrayCreation(classType, clinit);
+            clinit.instructions.insertBefore(firstValuesArrayInsn, clinitGenerator.insnList);
+        }
 
         ListGeneratorAdapter clinitTailGenerator = new ListGeneratorAdapter(new InsnList());
         buildExtensionInfo(classNode, classType, clinitTailGenerator, infoField, vanillaEntryCount, protos.size());
@@ -120,16 +129,33 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         clinit.instructions.insertBefore(clinitRetNode, clinitTailGenerator.insnList);
         classNode.fields.addAll(vanillaEntryCount, enumEntries);
 
-        ListGeneratorAdapter $valuesGenerator = new ListGeneratorAdapter(new InsnList());
-        appendValuesArray(classType, $valuesGenerator, enumEntries);
-        AbstractInsnNode aretInsn = ASMAPI.findFirstInstructionBefore($values, Opcodes.ARETURN, $values.instructions.size() - 1);
-        $values.instructions.insertBefore(aretInsn, $valuesGenerator.insnList);
+        ListGeneratorAdapter appendValuesGenerator = new ListGeneratorAdapter(new InsnList());
+        appendValuesArray(classType, appendValuesGenerator, enumEntries);
+        if ($valuesOpt.isPresent()) { // javac
+            MethodNode $values = $valuesOpt.get();
+            AbstractInsnNode $valuesAretInsn = ASMAPI.findFirstInstructionBefore($values, Opcodes.ARETURN, $values.instructions.size() - 1);
+            $values.instructions.insertBefore($valuesAretInsn, appendValuesGenerator.insnList);
+        } else { // ECJ
+            AbstractInsnNode putStaticInsn = findValuesArrayStore(classType, classNode, clinit, classType.getInternalName());
+            clinit.instructions.insertBefore(putStaticInsn, appendValuesGenerator.insnList);
+        }
 
         return true;
     }
 
-    private static MethodNode findMethod(ClassNode classNode, Predicate<MethodNode> predicate) {
+    private static Optional<MethodNode> tryFindMethod(ClassNode classNode, Predicate<MethodNode> predicate) {
         return classNode.methods.stream()
+                .filter(predicate)
+                .findFirst();
+    }
+
+    private static MethodNode findMethod(ClassNode classNode, Predicate<MethodNode> predicate) {
+        return tryFindMethod(classNode, predicate)
+                .orElseThrow();
+    }
+
+    private static FieldNode findField(ClassNode classNode, Predicate<FieldNode> predicate) {
+        return classNode.fields.stream()
                 .filter(predicate)
                 .findFirst()
                 .orElseThrow();
@@ -151,7 +177,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
 
     private static int getVanillaEntryCount(ClassNode classNode, Type classType) {
         return (int) classNode.fields.stream()
-                .takeWhile(field -> (field.access & Opcodes.ACC_ENUM) != 0 && field.desc.equals(classType.getDescriptor()))
+                .takeWhile(field -> (field.access & ENUM_FLAGS) == ENUM_FLAGS && field.desc.equals(classType.getDescriptor()))
                 .count();
     }
 
@@ -189,6 +215,37 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                 .findFirst()
                 .orElse(null);
         return annotation == null;
+    }
+
+    private static AbstractInsnNode findValuesArrayCreation(Type classType, MethodNode clinit) {
+        for (int i = 0; i < clinit.instructions.size(); i++) {
+            AbstractInsnNode ain = clinit.instructions.get(i);
+            if (ain.getOpcode() != Opcodes.ANEWARRAY || !(ain instanceof TypeInsnNode tin)) {
+                continue;
+            }
+
+            if (tin.desc.equals(classType.getInternalName())) {
+                // Return instruction loading the array size
+                return tin.getPrevious();
+            }
+        }
+
+        throw new NoSuchElementException("Failed to locate values array creation in enum " + classType);
+    }
+
+    private static FieldInsnNode findValuesArrayStore(Type classType, ClassNode classNode, MethodNode mth, String owner) {
+        String arrayDesc = Type.getType("[" + classType.getDescriptor()).getDescriptor();
+        FieldNode valuesArray = findField(classNode, field -> ((field.access & ARRAY_FLAGS) == ARRAY_FLAGS) && field.desc.equals(arrayDesc));
+        for (int i = 0; i < mth.instructions.size(); i++) {
+            AbstractInsnNode ain = mth.instructions.get(i);
+            if (ain.getOpcode() != Opcodes.PUTSTATIC || !(ain instanceof FieldInsnNode fin)) {
+                continue;
+            }
+            if (fin.desc.equals(valuesArray.desc) && fin.name.equals(valuesArray.name) && fin.owner.equals(owner)) {
+                return fin;
+            }
+        }
+        throw new NoSuchElementException();
     }
 
     private static List<FieldNode> createEnumEntries(
