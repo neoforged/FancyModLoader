@@ -170,7 +170,7 @@ public class LoadingModList {
     }
 
     public boolean hasErrors() {
-        return modLoadingIssues.stream().noneMatch(issue -> issue.severity() == ModLoadingIssue.Severity.ERROR);
+        return !modLoadingIssues.isEmpty() && modLoadingIssues.stream().anyMatch(issue -> issue.severity() == ModLoadingIssue.Severity.ERROR);
     }
 
     public List<ModLoadingIssue> getModLoadingIssues() {
