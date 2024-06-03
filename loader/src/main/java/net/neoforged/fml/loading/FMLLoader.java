@@ -118,7 +118,7 @@ public class FMLLoader {
         dist = commonLaunchHandler.getDist();
         production = commonLaunchHandler.isProduction();
 
-        runtimeDistCleaner.getExtension().accept(dist);
+        runtimeDistCleaner.setDistribution(dist);
     }
 
     public static List<ITransformationService.Resource> beginModScan(ILaunchContext launchContext) {
