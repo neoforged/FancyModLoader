@@ -14,19 +14,20 @@ logger.lifecycle("Version: {}", version)
 
 repositories {
     mavenLocal()
+    mavenCentral()
     maven {
-        name 'forge'
-        url 'https://maven.neoforged.net/releases'
+        name 'NeoForge'
+        url 'https://maven.neoforged.net/releases/'
     }
 }
 
 dependencies {
-    compileOnly('org.jetbrains:annotations:24.0.1')
-    implementation('cpw.mods:securejarhandler:3.0.4')
+    compileOnly('org.jetbrains:annotations:24.1.0')
+    implementation('cpw.mods:securejarhandler:3.0.7')
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(17)
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
     withSourcesJar()
 }
 
