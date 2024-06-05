@@ -22,7 +22,7 @@
   "fml.modloading.discouragedmod.noreason": "§eKein Grund angegeben§r",
   "fml.dependencyloading.conflictingdependencies": "Einige Mods benötigen nicht vereinbare Versionen von: §6{3}§r. Benötigt von: §e{4}§r.",
   "fml.dependencyloading.mismatchedcontaineddependencies": "Einige Mods haben sich auf einen akzeptablen Versionsbereich von: §6{3}§r geeinigt, aber es wurde keine jar-Datei bereitgestellt, die zum Bereich passt. Angefordert von: §e{4}§r.",
-  "fml.modloading.coremod_error": "An error occurred while loading core-mod {3} from {4}",
+  "fml.modloading.coremod_error": "Ein Fehler ist beim Laden von Core-Mod {3} von {4} aufgetreten",
   "fml.modloading.corrupted_installation": "Deine NeoForge-Installation ist beschädigt, bitte versuche, NeoForge neu zu installieren",
   "fml.modloading.cycle": "Mod-Abhängigkeitszyklus erkannt: {3}",
   "fml.modloading.failedtoprocesswork": "{0,modinfo,name} ({0,modinfo,id}) ist auf einen Fehler bei der Verarbeitung der aufgeschobenen Arbeit gestoßen\n§7{2,exc,msg}",
