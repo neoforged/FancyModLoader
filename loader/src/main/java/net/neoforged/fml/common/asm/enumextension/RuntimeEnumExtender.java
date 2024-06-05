@@ -88,6 +88,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
 
         MethodNode clinit = findMethod(classNode, mth -> mth.name.equals("<clinit>"));
         Optional<MethodNode> $valuesOpt = tryFindMethod(classNode, mth -> mth.name.equals("$values"));
+        boolean $valuesPresent = $valuesOpt.isPresent();
         MethodNode getExtInfo = findMethod(classNode, mth -> mth.name.equals("getExtensionInfo") && mth.desc.equals(EXT_INFO_GETTER_DESC));
         Set<String> ctors = classNode.methods.stream()
                 .filter(mth -> mth.name.equals("<init>"))
@@ -113,7 +114,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
 
         ListGeneratorAdapter clinitGenerator = new ListGeneratorAdapter(new InsnList());
         List<FieldNode> enumEntries = createEnumEntries(classType, clinitGenerator, ctors, idParamIdx, nameParamIdx, vanillaEntryCount, protos);
-        if ($valuesOpt.isPresent()) { // javac
+        if ($valuesPresent) { // javac
             MethodNode $values = $valuesOpt.get();
             MethodInsnNode $valuesInsn = ASMAPI.findFirstMethodCall(clinit, ASMAPI.MethodType.STATIC, classType.getInternalName(), $values.name, $values.desc);
             clinit.instructions.insertBefore($valuesInsn, clinitGenerator.insnList);
@@ -131,7 +132,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
 
         ListGeneratorAdapter appendValuesGenerator = new ListGeneratorAdapter(new InsnList());
         appendValuesArray(classType, appendValuesGenerator, enumEntries);
-        if ($valuesOpt.isPresent()) { // javac
+        if ($valuesPresent) { // javac
             MethodNode $values = $valuesOpt.get();
             AbstractInsnNode $valuesAretInsn = ASMAPI.findFirstInstructionBefore($values, Opcodes.ARETURN, $values.instructions.size() - 1);
             $values.instructions.insertBefore($valuesAretInsn, appendValuesGenerator.insnList);
