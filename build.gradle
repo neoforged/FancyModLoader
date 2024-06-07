@@ -118,7 +118,7 @@ dependencies {
     api("org.ow2.asm:asm:${project.asm_version}")
     api("org.ow2.asm:asm-tree:${project.asm_version}")
     api("org.ow2.asm:asm-commons:${project.asm_version}")
-    implementation("org.jetbrains:annotations:${project.jb_annotations_version}")
+    compileOnly("org.jetbrains:annotations:${project.jb_annotations_version}")
     testImplementation('org.junit.jupiter:junit-jupiter-api:5.8.+')
     testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.8.+')
 }
