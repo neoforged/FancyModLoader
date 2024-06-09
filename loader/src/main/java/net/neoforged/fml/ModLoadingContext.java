@@ -5,14 +5,10 @@
 
 package net.neoforged.fml;
 
-import com.mojang.logging.LogUtils;
 import java.util.function.Supplier;
-import org.slf4j.Logger;
 
 public class ModLoadingContext {
-    private static final Logger LOGGER = LogUtils.getLogger();
     private static final ThreadLocal<ModLoadingContext> context = ThreadLocal.withInitial(ModLoadingContext::new);
-    private Object languageExtension;
 
     public static ModLoadingContext get() {
         return context.get();
@@ -22,7 +18,6 @@ public class ModLoadingContext {
 
     public void setActiveContainer(final ModContainer container) {
         this.activeContainer = container;
-        this.languageExtension = container == null ? null : container.contextExtension.get();
     }
 
     public ModContainer getActiveContainer() {
@@ -42,10 +37,5 @@ public class ModLoadingContext {
      */
     public <T extends IExtensionPoint> void registerExtensionPoint(Class<T> point, Supplier<T> extension) {
         getActiveContainer().registerExtensionPoint(point, extension);
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T> T extension() {
-        return (T) languageExtension;
     }
 }

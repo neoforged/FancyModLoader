@@ -51,22 +51,24 @@ public class FMLModContainer extends ModContainer {
         this.layer = gameLayer.findModule(info.getOwningFile().moduleName()).orElseThrow();
 
         var context = ModLoadingContext.get();
-        context.setActiveContainer(this);
-        this.contextExtension = () -> contextExtension;
-        modClasses = new ArrayList<>();
+        try {
+            context.setActiveContainer(this);
 
-        for (var entrypoint : entrypoints) {
-            try {
-                var cls = Class.forName(layer, entrypoint);
-                modClasses.add(cls);
-                LOGGER.trace(LOADING, "Loaded modclass {} with {}", cls.getName(), cls.getClassLoader());
-            } catch (Throwable e) {
-                LOGGER.error(LOADING, "Failed to load class {}", entrypoint, e);
-                throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failedtoloadmodclass").withCause(e).withAffectedMod(info));
+            modClasses = new ArrayList<>();
+
+            for (var entrypoint : entrypoints) {
+                try {
+                    var cls = Class.forName(layer, entrypoint);
+                    modClasses.add(cls);
+                    LOGGER.trace(LOADING, "Loaded modclass {} with {}", cls.getName(), cls.getClassLoader());
+                } catch (Throwable e) {
+                    LOGGER.error(LOADING, "Failed to load class {}", entrypoint, e);
+                    throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failedtoloadmodclass").withCause(e).withAffectedMod(info));
+                }
             }
+        } finally {
+            context.setActiveContainer(null);
         }
-
-        context.setActiveContainer(null);
     }
 
     private void onEventFailed(IEventBus iEventBus, Event event, EventListener[] iEventListeners, int i, Throwable throwable) {

@@ -47,7 +47,6 @@ public abstract class ModContainer {
     protected final String modId;
     protected final String namespace;
     protected final IModInfo modInfo;
-    protected Supplier<?> contextExtension;
     protected final Map<Class<? extends IExtensionPoint>, Supplier<?>> extensionPoints = new IdentityHashMap<>();
     protected final EnumMap<ModConfig.Type, ModConfig> configs = new EnumMap<>(ModConfig.Type.class);
 
