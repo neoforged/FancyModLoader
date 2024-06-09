@@ -19,6 +19,7 @@ import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.EventListener;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.event.IModBusEvent;
@@ -49,7 +50,8 @@ public class FMLModContainer extends ModContainer {
                 .build();
         this.layer = gameLayer.findModule(info.getOwningFile().moduleName()).orElseThrow();
 
-        final FMLJavaModLoadingContext contextExtension = new FMLJavaModLoadingContext(this);
+        var context = ModLoadingContext.get();
+        context.setActiveContainer(this);
         this.contextExtension = () -> contextExtension;
         modClasses = new ArrayList<>();
 
@@ -63,6 +65,8 @@ public class FMLModContainer extends ModContainer {
                 throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failedtoloadmodclass").withCause(e).withAffectedMod(info));
             }
         }
+
+        context.setActiveContainer(null);
     }
 
     private void onEventFailed(IEventBus iEventBus, Event event, EventListener[] iEventListeners, int i, Throwable throwable) {
