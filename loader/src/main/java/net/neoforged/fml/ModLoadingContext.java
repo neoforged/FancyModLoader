@@ -7,8 +7,6 @@ package net.neoforged.fml;
 
 import com.mojang.logging.LogUtils;
 import java.util.function.Supplier;
-import net.neoforged.fml.config.IConfigSpec;
-import net.neoforged.fml.config.ModConfig;
 import org.slf4j.Logger;
 
 public class ModLoadingContext {
