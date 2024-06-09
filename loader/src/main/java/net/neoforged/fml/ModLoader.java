@@ -146,11 +146,6 @@ public final class ModLoader {
         modList.setLoadedMods(Collections.emptyList());
     }
 
-    @Deprecated(forRemoval = true, since = "20.5")
-    public static boolean isLoadingStateValid() {
-        return !hasErrors();
-    }
-
     private static void constructMods(Executor syncExecutor, Executor parallelExecutor, Runnable periodicTask) {
         var workQueue = new DeferredWorkQueue("Mod Construction");
         dispatchParallelTask("Mod Construction", parallelExecutor, periodicTask, modContainer -> {

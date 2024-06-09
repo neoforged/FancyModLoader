@@ -46,22 +46,6 @@ public class ModLoadingContext {
         getActiveContainer().registerExtensionPoint(point, extension);
     }
 
-    /**
-     * @deprecated Use the corresponding method {@link ModContainer#registerConfig(ModConfig.Type, IConfigSpec)}
-     */
-    @Deprecated(forRemoval = true)
-    public void registerConfig(ModConfig.Type type, IConfigSpec<?> spec) {
-        getActiveContainer().registerConfig(type, spec);
-    }
-
-    /**
-     * @deprecated Use the corresponding method {@link ModContainer#registerConfig(ModConfig.Type, IConfigSpec, String)}
-     */
-    @Deprecated(forRemoval = true)
-    public void registerConfig(ModConfig.Type type, IConfigSpec<?> spec, String fileName) {
-        getActiveContainer().registerConfig(type, spec, fileName);
-    }
-
     @SuppressWarnings("unchecked")
     public <T> T extension() {
         return (T) languageExtension;
