@@ -13,7 +13,6 @@ import org.jetbrains.annotations.Nullable;
 public class MinecraftModContainer extends ModContainer {
     public MinecraftModContainer(final IModInfo info) {
         super(info);
-        contextExtension = () -> null;
     }
 
     @Override

@@ -21,7 +21,6 @@ public class LowCodeModContainer extends ModContainer {
     public LowCodeModContainer(IModInfo info, ModFileScanData modFileScanResults, ModuleLayer gameLayer) {
         super(info);
         LOGGER.debug(LOADING, "Creating LowCodeModContainer for {}", info.getModId());
-        this.contextExtension = () -> null;
     }
 
     @Override

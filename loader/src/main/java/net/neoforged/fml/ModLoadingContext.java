@@ -5,16 +5,10 @@
 
 package net.neoforged.fml;
 
-import com.mojang.logging.LogUtils;
 import java.util.function.Supplier;
-import net.neoforged.fml.config.IConfigSpec;
-import net.neoforged.fml.config.ModConfig;
-import org.slf4j.Logger;
 
 public class ModLoadingContext {
-    private static final Logger LOGGER = LogUtils.getLogger();
     private static final ThreadLocal<ModLoadingContext> context = ThreadLocal.withInitial(ModLoadingContext::new);
-    private Object languageExtension;
 
     public static ModLoadingContext get() {
         return context.get();
@@ -24,7 +18,6 @@ public class ModLoadingContext {
 
     public void setActiveContainer(final ModContainer container) {
         this.activeContainer = container;
-        this.languageExtension = container == null ? null : container.contextExtension.get();
     }
 
     public ModContainer getActiveContainer() {
@@ -44,26 +37,5 @@ public class ModLoadingContext {
      */
     public <T extends IExtensionPoint> void registerExtensionPoint(Class<T> point, Supplier<T> extension) {
         getActiveContainer().registerExtensionPoint(point, extension);
-    }
-
-    /**
-     * @deprecated Use the corresponding method {@link ModContainer#registerConfig(ModConfig.Type, IConfigSpec)}
-     */
-    @Deprecated(forRemoval = true)
-    public void registerConfig(ModConfig.Type type, IConfigSpec<?> spec) {
-        getActiveContainer().registerConfig(type, spec);
-    }
-
-    /**
-     * @deprecated Use the corresponding method {@link ModContainer#registerConfig(ModConfig.Type, IConfigSpec, String)}
-     */
-    @Deprecated(forRemoval = true)
-    public void registerConfig(ModConfig.Type type, IConfigSpec<?> spec, String fileName) {
-        getActiveContainer().registerConfig(type, spec, fileName);
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T> T extension() {
-        return (T) languageExtension;
     }
 }
