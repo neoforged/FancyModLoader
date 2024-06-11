@@ -12,12 +12,15 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
+import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
@@ -82,6 +85,22 @@ public class LoadingModList {
         modFiles.stream()
                 .map(ModFileInfo::getFile)
                 .forEach(mod -> mod.getAccessTransformers().forEach(path -> FMLLoader.addAccessTransformer(path, mod)));
+    }
+
+    public void addEnumExtenders() {
+        Map<IModInfo, Path> pathPerMod = new HashMap<>();
+        modFiles.stream()
+                .map(ModFileInfo::getMods)
+                .flatMap(List::stream)
+                .forEach(mod -> mod.getConfig().<String>getConfigElement("enumExtender").ifPresent(file -> {
+                    Path path = mod.getOwningFile().getFile().findResource(file);
+                    if (Files.notExists(path)) {
+                        ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloading.enumextender.file_not_found", path).withAffectedMod(mod));
+                        return;
+                    }
+                    pathPerMod.put(mod, path);
+                }));
+        RuntimeEnumExtender.loadEnumPrototypes(pathPerMod);
     }
 
     public void addForScanning(BackgroundScanHandler backgroundScanHandler) {
@@ -170,7 +189,7 @@ public class LoadingModList {
     }
 
     public boolean hasErrors() {
-        return modLoadingIssues.stream().noneMatch(issue -> issue.severity() == ModLoadingIssue.Severity.ERROR);
+        return !modLoadingIssues.isEmpty() && modLoadingIssues.stream().anyMatch(issue -> issue.severity() == ModLoadingIssue.Severity.ERROR);
     }
 
     public List<ModLoadingIssue> getModLoadingIssues() {
