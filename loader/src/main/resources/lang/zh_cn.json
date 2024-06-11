@@ -55,5 +55,20 @@
   "fml.messages.version.restriction.bounded.inclusive": "{0} 和 {1} 之间（含）",
   "fml.messages.version.restriction.bounded.exclusive": "{0} 和 {1} 之间（不含）",
   "fml.messages.version.restriction.bounded.lowerexclusive": "{0} 以上，或 {1} 或更低",
-  "fml.messages.version.restriction.bounded.upperexclusive": "{0} 或以上，并低于 {1}"
+  "fml.messages.version.restriction.bounded.upperexclusive": "{3} or above, and below {4}",
+  "fml.modloading.enumextender.file_not_found": "Enum extender file {3}, provided by mod {0,modinfo,id}, does not exist",
+  "fml.modloading.enumextender.invalid_enum_name": "Enum {3}, specified by mod {0,modinfo,id}, is not a valid class descriptor",
+  "fml.modloading.enumextender.field_name.missing_prefix": "Enum constant name {3} for enum {4}, specified by mod {0,modinfo,id},must be prefixed with the mod ID",
+  "fml.modloading.enumextender.field_name.invalid": "Enum constant name {3} for enum {4}, specified by mod {0,modinfo,id}, is invalid",
+  "fml.modloading.enumextender.invalid_constructor": "Constructor {3} for enum {4}, specified by mod {0,modinfo,id}, is not a valid constructor descriptor",
+  "fml.modloading.enumextender.argument.reference.invalid_src_class": "Parameter source class {3} for field {4} in enum {5}, specified by mod {0,modinfo,id}, is not a valid class descriptor",
+  "fml.modloading.enumextender.argument.reference.invalid_src_method": "Parameter source method {3} for field {4} in enum {5}, specified by mod {0,modinfo,id}, is not a valid method name",
+  "fml.modloading.enumextender.argument.reference.invalid_src_field": "Parameter source field {3} for field {4} in enum {5}, specified by mod {0,modinfo,id}, is not a valid field name",
+  "fml.modloading.enumextender.argument.reference.unexpected_decl": "Unexpected reference parameter declaration {3} for field {4} in enum {5}, specified by mod {0,modinfo,id}",
+  "fml.modloading.enumextender.argument.unexpected_decl": "Unexpected parameter declaration {3} for field {4} in enum {5}, specified by mod {0,modinfo,id}",
+  "fml.modloading.enumextender.loading_error": "Failed to load enum extension data at {3} in mod {0,modinfo,id}: {2,exc,msg}",
+  "fml.modloading.enumextender.argument.constant.count_mismatch": "Parameter count {3} does not match argument count {4} of constructor {5} for field {6} in enum {7}, specified by mod {0,modinfo,id}",
+  "fml.modloading.enumextender.argument.constant.invalid_char": "Invalid character {3} at parameter index {4} for field {5} in enum {6}, specified by mod {0,modinfo,id}",
+  "fml.modloading.enumextender.argument.constant.unsupported_type": "Unsupported immediate argument type {3} at parameter index {4} for field {5} in enum {6}, specified by mod {0,modinfo,id}",
+  "fml.modloading.enumextender.duplicate": "Found duplicate field {3} for enum {4}, provided by mods {5} and {6}"
 }
