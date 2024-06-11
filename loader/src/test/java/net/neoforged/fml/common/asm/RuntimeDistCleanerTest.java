@@ -124,7 +124,7 @@ class RuntimeDistCleanerTest {
 
     private void transformTestClass(Dist dist, @Language("java") String classContent, Consumer<Class<?>> asserter) throws Exception {
         var distCleaner = new RuntimeDistCleaner();
-        distCleaner.getExtension().accept(dist);
+        distCleaner.setDistribution(dist);
 
         var modJar = tempDir.resolve("modjar.jar");
         new ModFileBuilder(modJar)

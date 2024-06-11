@@ -10,9 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.when;
 
 import cpw.mods.cl.JarModuleFinder;
-import cpw.mods.cl.ModularURLHandler;
 import cpw.mods.cl.ModuleClassLoader;
-import cpw.mods.cl.UnionURLStreamHandler;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.api.IEnvironment;
@@ -43,7 +41,6 @@ import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -69,23 +66,6 @@ public abstract class LauncherTest {
     // by the two early ModLoader discovery interfaces ClasspathTransformerDiscoverer
     // and ModDirTransformerDiscoverer, which pick up files like mixin.
     Set<Path> locatedPaths = new HashSet<>();
-
-    /**
-     * See https://github.com/McModLauncher/securejarhandler/pull/74
-     */
-    @BeforeAll
-    static void fixUpUnionUrlProtocol() throws Exception {
-        // Force Class-Init of ModuleClassLoader, since it'll set the URLStreamHandlerFactory and call initFrom
-        try {
-            new ModuleClassLoader(null, null, null);
-        } catch (Exception ignored) {}
-
-        // Now fix up the handlers in the handler
-        var handlers = Map.of("union", new UnionURLStreamHandler());
-        var handlersField = ModularURLHandler.class.getDeclaredField("handlers");
-        handlersField.setAccessible(true);
-        handlersField.set(ModularURLHandler.INSTANCE, handlers);
-    }
 
     @BeforeEach
     void setUp() throws IOException {
