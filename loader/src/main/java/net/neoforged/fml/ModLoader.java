@@ -146,11 +146,6 @@ public final class ModLoader {
         modList.setLoadedMods(Collections.emptyList());
     }
 
-    @Deprecated(forRemoval = true, since = "20.5")
-    public static boolean isLoadingStateValid() {
-        return !hasErrors();
-    }
-
     private static void constructMods(Executor syncExecutor, Executor parallelExecutor, Runnable periodicTask) {
         var workQueue = new DeferredWorkQueue("Mod Construction");
         dispatchParallelTask("Mod Construction", parallelExecutor, periodicTask, modContainer -> {
@@ -392,7 +387,7 @@ public final class ModLoader {
      *         If you are running in a Mixin before mod loading has actually started, check {@link LoadingModList#hasErrors()} instead.
      */
     public static boolean hasErrors() {
-        return loadingIssues.stream().anyMatch(issue -> issue.severity() == ModLoadingIssue.Severity.ERROR);
+        return !loadingIssues.isEmpty() && loadingIssues.stream().anyMatch(issue -> issue.severity() == ModLoadingIssue.Severity.ERROR);
     }
 
     @ApiStatus.Internal

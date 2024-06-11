@@ -19,6 +19,7 @@ import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.EventListener;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.event.IModBusEvent;
@@ -49,19 +50,24 @@ public class FMLModContainer extends ModContainer {
                 .build();
         this.layer = gameLayer.findModule(info.getOwningFile().moduleName()).orElseThrow();
 
-        final FMLJavaModLoadingContext contextExtension = new FMLJavaModLoadingContext(this);
-        this.contextExtension = () -> contextExtension;
-        modClasses = new ArrayList<>();
+        var context = ModLoadingContext.get();
+        try {
+            context.setActiveContainer(this);
 
-        for (var entrypoint : entrypoints) {
-            try {
-                var cls = Class.forName(layer, entrypoint);
-                modClasses.add(cls);
-                LOGGER.trace(LOADING, "Loaded modclass {} with {}", cls.getName(), cls.getClassLoader());
-            } catch (Throwable e) {
-                LOGGER.error(LOADING, "Failed to load class {}", entrypoint, e);
-                throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failedtoloadmodclass").withCause(e).withAffectedMod(info));
+            modClasses = new ArrayList<>();
+
+            for (var entrypoint : entrypoints) {
+                try {
+                    var cls = Class.forName(layer, entrypoint);
+                    modClasses.add(cls);
+                    LOGGER.trace(LOADING, "Loaded modclass {} with {}", cls.getName(), cls.getClassLoader());
+                } catch (Throwable e) {
+                    LOGGER.error(LOADING, "Failed to load class {}", entrypoint, e);
+                    throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failedtoloadmodclass").withCause(e).withAffectedMod(info));
+                }
             }
+        } finally {
+            context.setActiveContainer(null);
         }
     }
 

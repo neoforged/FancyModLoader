@@ -36,7 +36,6 @@ public final class TransformerDiscovererConstants {
             IModFileReader.class.getName(),
             IDependencyLocator.class.getName(),
             GraphicsBootstrapper.class.getName(),
-            ImmediateWindowProvider.class.getName(), // FIXME: remove this when removing the legacy ImmediateWindowProvider
             net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider.class.getName());
 
     public static boolean shouldLoadInServiceLayer(Collection<Path> paths) {
