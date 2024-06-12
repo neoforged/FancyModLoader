@@ -5,6 +5,10 @@
 
 package net.neoforged.fml.loading;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.when;
+
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.SecureJar;
@@ -18,20 +22,6 @@ import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-import joptsimple.OptionParser;
-import joptsimple.OptionSpec;
-import net.neoforged.fml.ModList;
-import net.neoforged.fml.ModLoader;
-import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.i18n.FMLTranslations;
-import net.neoforged.neoforgespi.language.IModFileInfo;
-import net.neoforged.neoforgespi.language.IModInfo;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoSettings;
-
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.net.MalformedURLException;
@@ -48,10 +38,19 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.Mockito.when;
+import joptsimple.OptionParser;
+import joptsimple.OptionSpec;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.ModLoader;
+import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.i18n.FMLTranslations;
+import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.language.IModInfo;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoSettings;
 
 @MockitoSettings
 public abstract class LauncherTest {
@@ -217,8 +216,7 @@ public abstract class LauncherTest {
     }
 
     private void loadMods(LaunchResult launchResult) throws Exception {
-        FMLLoader.progressWindowTick = () -> {
-        };
+        FMLLoader.progressWindowTick = () -> {};
 
         // build the game layer
         var parents = List.of(ModuleLayer.boot());
@@ -237,8 +235,7 @@ public abstract class LauncherTest {
                 launcher.environment(),
                 configuration,
                 parents,
-                getClass().getClassLoader()
-        );
+                getClass().getClassLoader());
 
         var controller = ModuleLayer.defineModules(
                 configuration,
@@ -252,8 +249,7 @@ public abstract class LauncherTest {
         ModLoader.gatherAndInitializeMods(
                 Runnable::run,
                 Runnable::run,
-                () -> {
-                });
+                () -> {});
     }
 
     protected static List<String> getTranslatedIssues(LaunchResult launchResult) {
