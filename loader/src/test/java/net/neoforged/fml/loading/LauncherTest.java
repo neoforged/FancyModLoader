@@ -22,7 +22,6 @@ import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.net.MalformedURLException;
@@ -35,7 +34,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -231,7 +229,7 @@ public abstract class LauncherTest {
         new TransformationServiceDecorator(serviceProvider).gatherTransformers(transformStore);
 
         Launcher.INSTANCE.environment().computePropertyIfAbsent(IEnvironment.Keys.MODLIST.get(), ignored1 -> new ArrayList<>());
-        var lph = new LaunchPluginHandler(ServiceLoader.load(ILaunchPluginService.class).stream().map(ServiceLoader.Provider::get));
+        var lph = new LaunchPluginHandler(environment.getLaunchPlugins());
         gameClassLoader = new TransformingClassLoader(
                 transformStore,
                 lph,

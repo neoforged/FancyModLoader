@@ -13,15 +13,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.jar.JarEntry;
-import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import net.neoforged.fml.test.RuntimeCompiler;
@@ -32,10 +29,6 @@ import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.intellij.lang.annotations.Language;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
 
 public class ModFileBuilder {
     public static final ContainedVersion JIJ_V1 = new ContainedVersion(VersionRange.createFromVersion("1.0"), new DefaultArtifactVersion("1.0"));
@@ -48,7 +41,6 @@ public class ModFileBuilder {
     private final List<IdentifiableContent> content = new ArrayList<>();
     private final Manifest manifest = new Manifest();
     private final List<ContainedJarMetadata> jijEntries = new ArrayList<>();
-    private final List<BiFunction<Type, ClassNode, ClassNode>> transforms = new ArrayList<>();
 
     // Info that will end up in the mods.toml
 
@@ -152,14 +144,6 @@ public class ModFileBuilder {
         return this;
     }
 
-    /**
-     * Statically applies the given class-node transforms to each class in the jar-file.
-     */
-    public ModFileBuilder withTransform(BiFunction<Type, ClassNode, ClassNode> transform) {
-        this.transforms.add(transform);
-        return this;
-    }
-
     public Path build() throws IOException {
         compilationBuilder.compile();
 
@@ -201,58 +185,9 @@ public class ModFileBuilder {
             }
         }
 
-        if (!transforms.isEmpty()) {
-            transformJar(destination, transforms);
-        }
-
         close();
 
         return destination;
-    }
-
-    private static void transformJar(Path destination,
-            List<BiFunction<Type, ClassNode, ClassNode>> transforms) throws IOException {
-        var transformedJar = destination.resolveSibling(destination.getFileName() + ".transformed");
-
-        // In the absence of a transforming class-loader, pre-transform everything
-        try (var in = new JarInputStream(Files.newInputStream(destination))) {
-            try (var out = new JarOutputStream(Files.newOutputStream(transformedJar), in.getManifest())) {
-                for (var entry = in.getNextEntry(); entry != null; entry = in.getNextEntry()) {
-                    var path = entry.getName();
-
-                    out.putNextEntry(new JarEntry(path));
-                    if (path.endsWith(".class")) {
-                        var classData = in.readAllBytes();
-                        var classNode = new ClassNode();
-                        ClassReader classReader = new ClassReader(classData);
-                        classReader.accept(classNode, ClassReader.EXPAND_FRAMES);
-
-                        // TRANSFORM CLASS
-                        var classType = getTypeFromPath(path);
-                        for (var transform : transforms) {
-                            classNode = transform.apply(classType, classNode);
-                        }
-
-                        var cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-                        classNode.accept(cw);
-                        out.write(cw.toByteArray());
-                    } else {
-                        in.transferTo(out);
-                    }
-                    out.closeEntry();
-                }
-            }
-        }
-
-        // Move it over
-        Files.move(transformedJar, destination, StandardCopyOption.REPLACE_EXISTING);
-    }
-
-    private static Type getTypeFromPath(String entry) {
-        // Remove .class suffix
-        var className = entry.substring(0, entry.length() - ".class".length());
-
-        return Type.getType("L" + className + ";");
     }
 
     public void close() throws IOException {

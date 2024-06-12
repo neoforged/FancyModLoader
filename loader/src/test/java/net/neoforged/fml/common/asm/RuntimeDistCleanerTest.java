@@ -9,20 +9,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.lang.reflect.Field;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.file.Path;
 import java.util.function.Consumer;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.ModFileBuilder;
+import net.neoforged.fml.loading.LauncherTest;
 import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
-class RuntimeDistCleanerTest {
-    @TempDir
-    Path tempDir;
-
+class RuntimeDistCleanerTest extends LauncherTest {
     @Test
     void testStripInterface() throws Exception {
         transformTestClass(Dist.CLIENT, """
@@ -123,26 +116,20 @@ class RuntimeDistCleanerTest {
     }
 
     private void transformTestClass(Dist dist, @Language("java") String classContent, Consumer<Class<?>> asserter) throws Exception {
-        var distCleaner = new RuntimeDistCleaner();
-        distCleaner.setDistribution(dist);
+        if (dist.isClient()) {
+            installation.setupProductionClient();
+        } else {
+            installation.setupProductionServer();
+        }
 
-        var modJar = tempDir.resolve("modjar.jar");
-        new ModFileBuilder(modJar)
+        installation.buildModJar("modjar.jar")
+                .withTestmodModsToml()
                 .addClass("test.Test", classContent)
-                .withTransform((type, classNode) -> {
-                    var phases = distCleaner.handlesClass(type, false);
-                    for (var phase : phases) {
-                        distCleaner.processClassWithFlags(phase, classNode, type, "");
-                    }
-                    return classNode;
-                })
                 .build();
 
-        try (var cl = new URLClassLoader(new URL[] {
-                modJar.toUri().toURL()
-        })) {
-            var testClass = cl.loadClass("test.Test");
-            asserter.accept(testClass);
-        }
+        launchAndLoad(dist.isClient() ? "forgeclient" : "forgeserver");
+
+        var testClass = Class.forName("test.Test", true, gameClassLoader);
+        asserter.accept(testClass);
     }
 }

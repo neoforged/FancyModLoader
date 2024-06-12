@@ -10,9 +10,11 @@ import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.TypesafeMap;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import net.neoforged.accesstransformer.ml.AccessTransformerService;
 import net.neoforged.fml.common.asm.RuntimeDistCleaner;
 import org.jetbrains.annotations.Nullable;
@@ -59,5 +61,11 @@ public class TestEnvironment implements IEnvironment {
     @Override
     public Optional<IModuleLayerManager> findModuleLayerManager() {
         return Optional.of(moduleLayerManager);
+    }
+
+    public Stream<ILaunchPluginService> getLaunchPlugins() {
+        return Stream.of(
+                accessTransformerService,
+                runtimeDistCleaner).filter(Objects::nonNull);
     }
 }
