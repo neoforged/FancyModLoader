@@ -106,7 +106,7 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
             }
             return prototypes;
         } catch (Throwable e) {
-            ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloading.enumextender.loading_error")
+            ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloading.enumextender.loading_error", path)
                     .withAffectedMod(mod)
                     .withCause(e));
             return List.of();

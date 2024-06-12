@@ -452,7 +452,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                 .reduce(
                         new HashMap<>(),
                         (map, proto) -> {
-                            map.computeIfAbsent(proto.enumName(), $ -> new ArrayList<>()).add(proto);
+                            map.computeIfAbsent(proto.enumName(), ignored -> new ArrayList<>()).add(proto);
                             return map;
                         },
                         (protoOne, protoTwo) -> {

@@ -56,11 +56,7 @@ public class FMLLoader {
         final String version = LauncherVersion.getVersion();
         LOGGER.debug(LogMarkers.CORE, "FML {} loading", version);
         final Package modLauncherPackage = ITransformationService.class.getPackage();
-        LOGGER.debug(LogMarkers.CORE, "FML found ModLauncher version : {}", modLauncherPackage.getImplementationVersion());
-        if (!modLauncherPackage.isCompatibleWith("4.0")) {
-            LOGGER.error(LogMarkers.CORE, "Found incompatible ModLauncher specification : {}, version {} from {}", modLauncherPackage.getSpecificationVersion(), modLauncherPackage.getImplementationVersion(), modLauncherPackage.getImplementationVendor());
-            throw new IncompatibleEnvironmentException("Incompatible modlauncher found " + modLauncherPackage.getSpecificationVersion());
-        }
+        LOGGER.debug(LogMarkers.CORE, "FML found ModLauncher version : {}", environment.getProperty(IEnvironment.Keys.MLIMPL_VERSION.get()).orElse("unknown"));
 
         accessTransformer = ((AccessTransformerService) environment.findLaunchPlugin("accesstransformer").orElseThrow(() -> {
             LOGGER.error(LogMarkers.CORE, "Access Transformer library is missing, we need this to run");

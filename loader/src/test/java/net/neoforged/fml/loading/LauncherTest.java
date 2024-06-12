@@ -5,33 +5,19 @@
 
 package net.neoforged.fml.loading;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.Mockito.when;
-
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.modlauncher.Environment;
+import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.Launcher;
+import cpw.mods.modlauncher.TransformStore;
+import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
-import java.io.IOException;
-import java.lang.module.Configuration;
-import java.lang.module.ModuleFinder;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.file.Path;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import joptsimple.OptionParser;
 import joptsimple.OptionSpec;
 import net.neoforged.fml.ModList;
@@ -45,6 +31,27 @@ import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoSettings;
+
+import java.lang.module.Configuration;
+import java.lang.module.ModuleFinder;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.ServiceLoader;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.when;
 
 @MockitoSettings
 public abstract class LauncherTest {
@@ -67,10 +74,16 @@ public abstract class LauncherTest {
     // and ModDirTransformerDiscoverer, which pick up files like mixin.
     Set<Path> locatedPaths = new HashSet<>();
 
+    protected TransformingClassLoader gameClassLoader;
+
     @BeforeEach
-    void setUp() throws IOException {
+    void setUp() throws Exception {
         Launcher.INSTANCE = launcher;
-        when(Launcher.INSTANCE.findLayerManager()).thenReturn(Optional.of(moduleLayerManager));
+        when(launcher.findLayerManager()).thenReturn(Optional.of(moduleLayerManager));
+        var environmentCtor = Environment.class.getDeclaredConstructor(Launcher.class);
+        environmentCtor.setAccessible(true);
+        var environment = environmentCtor.newInstance(launcher);
+        when(launcher.environment()).thenReturn(environment);
 
         installation = new SimulatedInstallation();
 
@@ -81,6 +94,7 @@ public abstract class LauncherTest {
 
     @AfterEach
     void clearSystemProperties() throws Exception {
+        gameClassLoader = null;
         installation.close();
         Launcher.INSTANCE = null;
     }
@@ -202,26 +216,44 @@ public abstract class LauncherTest {
                 (List<ITransformer<?>>) transformers);
     }
 
-    private void loadMods(LaunchResult launchResult) {
-        FMLLoader.progressWindowTick = () -> {};
+    private void loadMods(LaunchResult launchResult) throws Exception {
+        FMLLoader.progressWindowTick = () -> {
+        };
 
         // build the game layer
         var parents = List.of(ModuleLayer.boot());
         var parentConfigs = parents.stream().map(ModuleLayer::configuration).toList();
         var gameLayerFinder = JarModuleFinder.of(launchResult.gameLayerModules().values().toArray(new SecureJar[0]));
         var configuration = Configuration.resolveAndBind(ModuleFinder.of(), parentConfigs, gameLayerFinder, launchResult.gameLayerModules().keySet());
-        var classLoader = new ModuleClassLoader("GAME", configuration, parents, getClass().getClassLoader());
+        /*
+         * Does the minimum to get a transforming classloader.
+         */
+        var transformStore = new TransformStore();
+        Launcher.INSTANCE.environment().computePropertyIfAbsent(IEnvironment.Keys.MODLIST.get(), ignored1 -> new ArrayList<>());
+        var lph = new LaunchPluginHandler(ServiceLoader.load(ILaunchPluginService.class).stream().map(ServiceLoader.Provider::get));
+        gameClassLoader = new TransformingClassLoader(
+                transformStore,
+                lph,
+                launcher.environment(),
+                configuration,
+                parents,
+                getClass().getClassLoader()
+        );
+
         var controller = ModuleLayer.defineModules(
                 configuration,
                 parents,
-                ignored -> classLoader);
+                ignored -> gameClassLoader);
+        moduleLayerManager.setLayer(IModuleLayerManager.Layer.BOOT, ModuleLayer.empty());
+        moduleLayerManager.setLayer(IModuleLayerManager.Layer.GAME, controller.layer());
 
         FMLLoader.beforeStart(controller.layer());
 
         ModLoader.gatherAndInitializeMods(
                 Runnable::run,
                 Runnable::run,
-                () -> {});
+                () -> {
+                });
     }
 
     protected static List<String> getTranslatedIssues(LaunchResult launchResult) {
