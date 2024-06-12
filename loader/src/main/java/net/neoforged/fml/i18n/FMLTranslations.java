@@ -227,7 +227,6 @@ public class FMLTranslations {
                 }
             };
         }
-
         @FunctionalInterface
         interface FormatFunction<T> {
             void format(StringBuffer toAppendTo, T value);
