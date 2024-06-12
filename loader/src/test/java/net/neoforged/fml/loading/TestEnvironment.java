@@ -10,14 +10,16 @@ import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.TypesafeMap;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
+import net.neoforged.accesstransformer.ml.AccessTransformerService;
+import net.neoforged.fml.common.asm.RuntimeDistCleaner;
+import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import net.neoforged.accesstransformer.ml.AccessTransformerService;
-import net.neoforged.fml.common.asm.RuntimeDistCleaner;
-import org.jetbrains.annotations.Nullable;
 
 public class TestEnvironment implements IEnvironment {
     private final TypesafeMap map = new TypesafeMap(IEnvironment.class);
@@ -26,6 +28,8 @@ public class TestEnvironment implements IEnvironment {
     public AccessTransformerService accessTransformerService = new AccessTransformerService();
     @Nullable
     public RuntimeDistCleaner runtimeDistCleaner = new RuntimeDistCleaner();
+    @Nullable
+    public RuntimeEnumExtender runtimeEnumExtender = new RuntimeEnumExtender();
 
     public TestEnvironment(TestModuleLayerManager moduleLayerManager) {
         this.moduleLayerManager = moduleLayerManager;
@@ -43,11 +47,7 @@ public class TestEnvironment implements IEnvironment {
 
     @Override
     public Optional<ILaunchPluginService> findLaunchPlugin(String name) {
-        return switch (name) {
-            case "accesstransformer" -> Optional.ofNullable(accessTransformerService);
-            case "runtimedistcleaner" -> Optional.ofNullable(runtimeDistCleaner);
-            default -> throw new IllegalStateException("Unexpected value: " + name);
-        };
+        return getLaunchPlugins().filter(lp -> lp.name().equals(name)).findFirst();
     }
 
     @Override
@@ -64,8 +64,8 @@ public class TestEnvironment implements IEnvironment {
     }
 
     public Stream<ILaunchPluginService> getLaunchPlugins() {
-        return Stream.of(
-                accessTransformerService,
-                runtimeDistCleaner).filter(Objects::nonNull);
+        return Stream.of(accessTransformerService,
+                runtimeDistCleaner,
+                runtimeEnumExtender).filter(Objects::nonNull);
     }
 }
