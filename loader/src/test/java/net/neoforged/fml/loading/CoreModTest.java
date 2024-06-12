@@ -7,10 +7,12 @@ package net.neoforged.fml.loading;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
 
 import cpw.mods.modlauncher.api.ITransformer;
+import cpw.mods.modlauncher.api.ITransformerVotingContext;
 import cpw.mods.modlauncher.api.TargetType;
+import cpw.mods.modlauncher.api.TransformerVoteResult;
+import java.util.Set;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.neoforgespi.coremod.ICoreMod;
@@ -24,7 +26,29 @@ import org.objectweb.asm.tree.ClassNode;
 public class CoreModTest extends LauncherTest {
     private static final ContainedJarIdentifier JAR_IDENTIFIER = new ContainedJarIdentifier("testmod", "coremod");
 
-    public static final ITransformer<?> TEST_TRANSFORMER = mock(ITransformer.class);
+    // A transformer that just adds a @Deprecated annotation, which is easy to assert for
+    public static final ITransformer<ClassNode> TEST_TRANSFORMER = new ITransformer<>() {
+        @Override
+        public ClassNode transform(ClassNode classNode, ITransformerVotingContext context) {
+            classNode.visitAnnotation("Ljava/lang/Deprecated;", true);
+            return classNode;
+        }
+
+        @Override
+        public TransformerVoteResult castVote(ITransformerVotingContext context) {
+            return TransformerVoteResult.YES;
+        }
+
+        @Override
+        public Set<Target<ClassNode>> targets() {
+            return Set.of(Target.targetClass("testmod.TestClass"));
+        }
+
+        @Override
+        public TargetType<ClassNode> getTargetType() {
+            return TargetType.CLASS;
+        }
+    };
 
     @Test
     public void testBrokenJijJavaCoremod() throws Exception {
@@ -75,6 +99,9 @@ public class CoreModTest extends LauncherTest {
 
         installation.buildModJar("testmod.jar")
                 .withTestmodModsToml()
+                .addClass("testmod.TestClass", """
+                        class TestClass {}
+                        """)
                 .withJarInJar(JAR_IDENTIFIER, coreMod -> {
                     coreMod.withModTypeManifest(IModFile.Type.LIBRARY)
                             .addService(ICoreMod.class.getName(), "testmod.coremods.TestCoreMod")
@@ -90,6 +117,9 @@ public class CoreModTest extends LauncherTest {
 
         var transformers = launchAndLoad("forgeclient").transformers();
         assertThat(transformers).containsOnly(TEST_TRANSFORMER);
+
+        var testClass = Class.forName("testmod.TestClass", true, gameClassLoader);
+        assertThat(testClass).hasAnnotation(Deprecated.class); // This is added by the transformer
     }
 
     @SuppressWarnings("unchecked")
@@ -104,6 +134,7 @@ public class CoreModTest extends LauncherTest {
                             "coremodid": "coremods/test.js"
                         }
                         """)
+                .addClass("net.minecraft.world.level.biome.Biome", "class Biome {}")
                 .addTextFile("coremods/test.js", """
                         function initializeCoreMod() {
                             return {
@@ -113,6 +144,7 @@ public class CoreModTest extends LauncherTest {
                                         'name': 'net.minecraft.world.level.biome.Biome'
                                     },
                                     'transformer': function(classNode) {
+                                        classNode.visitAnnotation("Ljava/lang/Deprecated;", true);
                                         return classNode;
                                     }
                                 }
@@ -127,5 +159,8 @@ public class CoreModTest extends LauncherTest {
         assertThat(transformer.getTargetType()).isEqualTo(TargetType.CLASS);
         assertThat(transformer.targets()).containsOnly(
                 ITransformer.Target.targetClass("net.minecraft.world.level.biome.Biome"));
+
+        var testClass = Class.forName("net.minecraft.world.level.biome.Biome", true, gameClassLoader);
+        assertThat(testClass).hasAnnotation(Deprecated.class); // This is added by the transformer
     }
 }

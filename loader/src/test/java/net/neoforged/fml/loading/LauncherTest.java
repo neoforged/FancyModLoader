@@ -16,6 +16,7 @@ import cpw.mods.modlauncher.Environment;
 import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.TransformStore;
+import cpw.mods.modlauncher.TransformationServiceDecorator;
 import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
@@ -227,6 +228,8 @@ public abstract class LauncherTest {
          * Does the minimum to get a transforming classloader.
          */
         var transformStore = new TransformStore();
+        new TransformationServiceDecorator(serviceProvider).gatherTransformers(transformStore);
+
         Launcher.INSTANCE.environment().computePropertyIfAbsent(IEnvironment.Keys.MODLIST.get(), ignored1 -> new ArrayList<>());
         var lph = new LaunchPluginHandler(ServiceLoader.load(ILaunchPluginService.class).stream().map(ServiceLoader.Provider::get));
         gameClassLoader = new TransformingClassLoader(
