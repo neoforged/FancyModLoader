@@ -55,7 +55,7 @@
   "fml.messages.version.restriction.bounded.inclusive": "між {0} та {1} (включно)",
   "fml.messages.version.restriction.bounded.exclusive": "між {0} та {1} (виключно)",
   "fml.messages.version.restriction.bounded.lowerexclusive": "вище {0} та {1} або нижче",
-  "fml.messages.version.restriction.bounded.upperexclusive": "{3} або вище та нижче {4}",
+  "fml.messages.version.restriction.bounded.upperexclusive": "{0} або вище та нижче {1}",
   "fml.modloading.enumextender.file_not_found": "Файл розширення enum {3}, наданий модом {0,modinfo,id}, не існує",
   "fml.modloading.enumextender.invalid_enum_name": "Enum {3}, визначений модом {0,modinfo,id}, не є припустимим дескриптором класу",
   "fml.modloading.enumextender.field_name.missing_prefix": "Ім'я константи enum {3} для enum {4}, визначений модом {0,modinfo,id},повинен бути префіксований з ID модом",
