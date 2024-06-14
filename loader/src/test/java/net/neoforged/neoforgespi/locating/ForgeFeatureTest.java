@@ -5,6 +5,13 @@
 
 package net.neoforged.neoforgespi.locating;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforgespi.language.IModInfo;
 import org.apache.maven.artifact.versioning.VersionRange;
@@ -14,16 +21,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoSettings;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @MockitoSettings
 class ForgeFeatureTest {
-
     @Mock
     IModInfo modInfo;
 
@@ -43,7 +42,6 @@ class ForgeFeatureTest {
     void testFeatureValueForMissingFeature() {
         assertEquals("NONE", ForgeFeature.featureValue(boundForMissingFeature));
     }
-
 
     @Test
     void testBoundValueForMissingFeature() {
