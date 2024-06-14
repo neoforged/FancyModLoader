@@ -10,16 +10,15 @@ import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.TypesafeMap;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-import net.neoforged.accesstransformer.ml.AccessTransformerService;
-import net.neoforged.fml.common.asm.RuntimeDistCleaner;
-import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import net.neoforged.accesstransformer.ml.AccessTransformerService;
+import net.neoforged.fml.common.asm.RuntimeDistCleaner;
+import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
+import org.jetbrains.annotations.Nullable;
 
 public class TestEnvironment implements IEnvironment {
     private final TypesafeMap map = new TypesafeMap(IEnvironment.class);
