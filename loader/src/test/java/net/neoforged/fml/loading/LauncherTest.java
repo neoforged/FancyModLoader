@@ -12,18 +12,23 @@ import static org.mockito.Mockito.when;
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.modlauncher.Environment;
+import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.Launcher;
+import cpw.mods.modlauncher.TransformStore;
+import cpw.mods.modlauncher.TransformationServiceDecorator;
+import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
-import java.io.IOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -67,10 +72,16 @@ public abstract class LauncherTest {
     // and ModDirTransformerDiscoverer, which pick up files like mixin.
     Set<Path> locatedPaths = new HashSet<>();
 
+    protected TransformingClassLoader gameClassLoader;
+
     @BeforeEach
-    void setUp() throws IOException {
+    void setUp() throws Exception {
         Launcher.INSTANCE = launcher;
-        when(Launcher.INSTANCE.findLayerManager()).thenReturn(Optional.of(moduleLayerManager));
+        when(launcher.findLayerManager()).thenReturn(Optional.of(moduleLayerManager));
+        var environmentCtor = Environment.class.getDeclaredConstructor(Launcher.class);
+        environmentCtor.setAccessible(true);
+        var environment = environmentCtor.newInstance(launcher);
+        when(launcher.environment()).thenReturn(environment);
 
         installation = new SimulatedInstallation();
 
@@ -81,6 +92,7 @@ public abstract class LauncherTest {
 
     @AfterEach
     void clearSystemProperties() throws Exception {
+        gameClassLoader = null;
         installation.close();
         Launcher.INSTANCE = null;
     }
@@ -202,7 +214,7 @@ public abstract class LauncherTest {
                 (List<ITransformer<?>>) transformers);
     }
 
-    private void loadMods(LaunchResult launchResult) {
+    private void loadMods(LaunchResult launchResult) throws Exception {
         FMLLoader.progressWindowTick = () -> {};
 
         // build the game layer
@@ -210,11 +222,28 @@ public abstract class LauncherTest {
         var parentConfigs = parents.stream().map(ModuleLayer::configuration).toList();
         var gameLayerFinder = JarModuleFinder.of(launchResult.gameLayerModules().values().toArray(new SecureJar[0]));
         var configuration = Configuration.resolveAndBind(ModuleFinder.of(), parentConfigs, gameLayerFinder, launchResult.gameLayerModules().keySet());
-        var classLoader = new ModuleClassLoader("GAME", configuration, parents, getClass().getClassLoader());
+        /*
+         * Does the minimum to get a transforming classloader.
+         */
+        var transformStore = new TransformStore();
+        new TransformationServiceDecorator(serviceProvider).gatherTransformers(transformStore);
+
+        Launcher.INSTANCE.environment().computePropertyIfAbsent(IEnvironment.Keys.MODLIST.get(), ignored1 -> new ArrayList<>());
+        var lph = new LaunchPluginHandler(environment.getLaunchPlugins());
+        gameClassLoader = new TransformingClassLoader(
+                transformStore,
+                lph,
+                launcher.environment(),
+                configuration,
+                parents,
+                getClass().getClassLoader());
+
         var controller = ModuleLayer.defineModules(
                 configuration,
                 parents,
-                ignored -> classLoader);
+                ignored -> gameClassLoader);
+        moduleLayerManager.setLayer(IModuleLayerManager.Layer.BOOT, ModuleLayer.empty());
+        moduleLayerManager.setLayer(IModuleLayerManager.Layer.GAME, controller.layer());
 
         FMLLoader.beforeStart(controller.layer());
 

@@ -38,13 +38,12 @@ public final class EnumProxy<T extends Enum<T> & IExtensibleEnum> {
     public T getValue() {
         if (enumValue == null) {
             try {
-                var loader = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass().getClassLoader();
-                Class.forName(enumClass.getName(), true, loader);
+                Class.forName(enumClass.getName(), true, enumClass.getClassLoader());
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
         }
-        return Objects.requireNonNull(enumValue, "Enum not initialized");
+        return Objects.requireNonNull(enumValue, "Enum not initialized. Did you forget to configure the field holding this proxy as a parameter in the enum extension config file?");
     }
 
     @ApiStatus.Internal
