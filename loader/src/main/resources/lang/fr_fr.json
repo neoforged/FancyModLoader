@@ -55,7 +55,7 @@
   "fml.messages.version.restriction.bounded.inclusive": "entre {0} et {1} (inclus)",
   "fml.messages.version.restriction.bounded.exclusive": "entre {0} et {1} (exclu)",
   "fml.messages.version.restriction.bounded.lowerexclusive": "au-dessus de {0}, et {1} ou moins",
-  "fml.messages.version.restriction.bounded.upperexclusive": "{3} or above, and below {4}",
+  "fml.messages.version.restriction.bounded.upperexclusive": "{0} ou plus, et en moins de {1}",
   "fml.modloading.enumextender.file_not_found": "Enum extender file {3}, provided by mod {0,modinfo,id}, does not exist",
   "fml.modloading.enumextender.invalid_enum_name": "Enum {3}, specified by mod {0,modinfo,id}, is not a valid class descriptor",
   "fml.modloading.enumextender.field_name.missing_prefix": "Enum constant name {3} for enum {4}, specified by mod {0,modinfo,id},must be prefixed with the mod ID",
