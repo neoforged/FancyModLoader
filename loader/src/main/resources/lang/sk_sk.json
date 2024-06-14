@@ -55,7 +55,7 @@
   "fml.messages.version.restriction.bounded.inclusive": "medzi {0} a {1} (vrátane)",
   "fml.messages.version.restriction.bounded.exclusive": "medzi {0} a {1} (exkluzívne)",
   "fml.messages.version.restriction.bounded.lowerexclusive": "nad {0}, a {1} alebo pod",
-  "fml.messages.version.restriction.bounded.upperexclusive": "{3} alebo nad, a pod {4}",
+  "fml.messages.version.restriction.bounded.upperexclusive": "{0} alebo nad, a pod {1}",
   "fml.modloading.enumextender.file_not_found": "rozširujúci súbor Enum {3}, poskytnutý módom {0,modinfo,id}, neexistuje",
   "fml.modloading.enumextender.invalid_enum_name": "Enum {3}, špecifikovaný módom {0,modinfo,id}, nie je validný popisovač triedy",
   "fml.modloading.enumextender.field_name.missing_prefix": "názov konštanty enum {3} pre enum {4}, špecifikovaný módom {0,modinfo,id},musí mať predponu s mód ID",
