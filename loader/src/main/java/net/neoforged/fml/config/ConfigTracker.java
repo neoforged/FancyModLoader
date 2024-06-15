@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import net.neoforged.fml.event.config.ModConfigEvent;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -83,7 +84,7 @@ public class ConfigTracker {
         final Path basePath = resolveBasePath(config, configBasePath, configOverrideBasePath);
         final CommentedFileConfig configData = ConfigFileTypeHandler.TOML.reader(basePath).apply(config);
         config.setConfigData(configData);
-        IConfigEvent.loading(config).post();
+        config.postConfigEvent(ModConfigEvent.Loading::new);
         config.save();
     }
 
@@ -92,9 +93,7 @@ public class ConfigTracker {
             LOGGER.trace(CONFIG, "Closing config file type {} at {} for {}", config.getType(), config.getFileName(), config.getModId());
             // stop the filewatcher before we save the file and close it, so reload doesn't fire
             ConfigFileTypeHandler.TOML.unload(config);
-            var unloading = IConfigEvent.unloading(config);
-            if (unloading != null)
-                unloading.post();
+            config.postConfigEvent(ModConfigEvent.Unloading::new);
             config.save();
             config.setConfigData(null);
         }
@@ -105,7 +104,7 @@ public class ConfigTracker {
             final CommentedConfig commentedConfig = CommentedConfig.inMemory();
             modConfig.getSpec().correct(commentedConfig);
             modConfig.setConfigData(commentedConfig);
-            IConfigEvent.loading(modConfig).post();
+            modConfig.postConfigEvent(ModConfigEvent.Loading::new);
         });
     }
 
