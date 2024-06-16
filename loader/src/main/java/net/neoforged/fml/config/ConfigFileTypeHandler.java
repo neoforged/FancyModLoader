@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Function;
+import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
 import org.apache.commons.io.FilenameUtils;
@@ -148,7 +149,7 @@ public class ConfigFileTypeHandler {
                 }
                 LOGGER.debug(CONFIG, "Config file {} changed, sending notifies", this.modConfig.getFileName());
                 this.modConfig.getSpec().afterReload();
-                IConfigEvent.reloading(this.modConfig).post();
+                this.modConfig.postConfigEvent(ModConfigEvent.Reloading::new);
             }
         }
     }
