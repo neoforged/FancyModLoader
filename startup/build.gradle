@@ -1,0 +1,91 @@
+plugins {
+    id "java-library"
+}
+
+jar {
+    manifest {
+        attributes([
+                "Launcher-Agent-Class": "net.neoforged.fmlstartup.DevAgent",
+                "Agent-Class"         : "net.neoforged.fmlstartup.DevAgent",
+                "Premain-Class"       : "net.neoforged.fmlstartup.DevAgent",
+                "Main-Class"          : "net.neoforged.fmlstartup.Startup"
+        ])
+    }
+}
+
+repositories {
+    repositories.maven(repo -> {
+        repo.setName("Mojang Meta");
+        repo.setUrl("https://maven.neoforged.net/mojang-meta/");
+        repo.metadataSources(sources -> sources.gradleMetadata());
+        repo.content(content -> {
+            content.includeModule("net.neoforged", "minecraft-dependencies");
+        });
+    });
+}
+
+abstract class DistributionDisambiguation implements AttributeDisambiguationRule<String> {
+    @Override
+    void execute(MultipleCandidatesDetails<String> details) {
+        details.closestMatch("client");
+    }
+}
+
+abstract class OperatingSystemDisambiguation implements AttributeDisambiguationRule<String> {
+    @Override
+    void execute(MultipleCandidatesDetails<String> details) {
+        var osName = System.getProperty("os.name");
+        // The following matches the logic in Apache Commons Lang 3 SystemUtils
+        if (osName.startsWith("Linux") || osName.startsWith("LINUX")) {
+            osName = "linux";
+        } else if (osName.startsWith("Mac OS X")) {
+            osName = "macosx";
+        } else if (osName.startsWith("Windows")) {
+            osName = "windows";
+        } else {
+            throw new GradleException("Unsupported operating system: " + osName);
+        }
+
+        details.closestMatch(osName);
+    }
+}
+
+var ATTRIBUTE_DISTRIBUTION = Attribute.of("net.neoforged.distribution", String.class);
+var ATTRIBUTE_OPERATING_SYSTEM = Attribute.of("net.neoforged.operatingsystem", String.class);
+configurations {
+    // Used to simulate a Minecraft client production environment
+    minecraftRuntime {
+        canBeConsumed = false
+        canBeResolved = false
+        withDependencies {
+            it.add(dependencyFactory.create("net.neoforged:minecraft-dependencies:1.21"))
+        }
+    }
+    runtimeClasspath.extendsFrom minecraftRuntime
+}
+
+dependencies {
+    attributesSchema(attributesSchema -> {
+        attributesSchema.attribute(ATTRIBUTE_DISTRIBUTION).getDisambiguationRules().add(DistributionDisambiguation.class);
+        attributesSchema.attribute(ATTRIBUTE_OPERATING_SYSTEM).getDisambiguationRules().add(OperatingSystemDisambiguation.class);
+    })
+
+    compileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
+    minecraftRuntime project(":earlydisplay")
+}
+
+test {
+    jvmArgumentProviders.add(new CommandLineArgumentProvider() {
+        @Override
+        Iterable<String> asArguments() {
+            return List.of("-javaagent:" + jar.archiveFile.get().asFile.absolutePath);
+        }
+    })
+}
+
+tasks.register('testStartup', JavaExec) {
+    classpath += sourceSets.main.runtimeClasspath
+    classpath += sourceSets.main.output
+    mainClass = "net.neoforged.fmlstartup.Startup"
+    jvmArgs("-javaagent:" + file("devagent.jar").absolutePath)
+}
