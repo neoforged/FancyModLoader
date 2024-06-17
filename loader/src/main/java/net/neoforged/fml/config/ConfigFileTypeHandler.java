@@ -56,12 +56,8 @@ public class ConfigFileTypeHandler {
             }
             LOGGER.debug(CONFIG, "Loaded TOML config file {}", configPath);
             if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DISABLE_CONFIG_WATCHER)) {
-                try {
-                    FileWatcher.defaultInstance().addWatch(configPath, new ConfigWatcher(c, configData, Thread.currentThread().getContextClassLoader()));
-                    LOGGER.debug(CONFIG, "Watching TOML config file {} for changes", configPath);
-                } catch (IOException e) {
-                    throw new RuntimeException("Couldn't watch config file", e);
-                }
+                FileWatcher.defaultInstance().addWatch(configPath, new ConfigWatcher(c, configData, Thread.currentThread().getContextClassLoader()));
+                LOGGER.debug(CONFIG, "Watching TOML config file {} for changes", configPath);
             }
             return configData;
         };
