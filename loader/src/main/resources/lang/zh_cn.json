@@ -56,7 +56,7 @@
   "fml.messages.version.restriction.bounded.exclusive": "{0} 和 {1} 之间（不含）",
   "fml.messages.version.restriction.bounded.lowerexclusive": "{0} 以上，或 {1} 或更低",
   "fml.messages.version.restriction.bounded.upperexclusive": "{0} 或以上，并低于 {1}",
-  "fml.modloading.enumextender.file_not_found": "Enum extender file {3}, provided by mod {0,modinfo,id}, does not exist",
+  "fml.modloading.enumextender.file_not_found": "由模组{0,modinfo,id}提供的扩展文件{3}不存在",
   "fml.modloading.enumextender.invalid_enum_name": "Enum {3}, specified by mod {0,modinfo,id}, is not a valid class descriptor",
   "fml.modloading.enumextender.field_name.missing_prefix": "Enum constant name {3} for enum {4}, specified by mod {0,modinfo,id},must be prefixed with the mod ID",
   "fml.modloading.enumextender.field_name.invalid": "Enum constant name {3} for enum {4}, specified by mod {0,modinfo,id}, is invalid",
