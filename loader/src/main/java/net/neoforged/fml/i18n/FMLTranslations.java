@@ -30,6 +30,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 @ApiStatus.Internal
 @SuppressWarnings("deprecation")
@@ -125,6 +126,17 @@ public class FMLTranslations {
             args.add(null);
         }
 
+        // Implicit arguments start at index 100
+        args.add(getModInfo(issue)); // {100} = affected mod
+        args.add(getAffectedPath(issue)); // {101} = affected file-path
+        args.add(issue.cause()); // {102} = exception
+
+        args.replaceAll(FMLTranslations::formatArg);
+
+        return args.toArray(Object[]::new);
+    }
+
+    private static @Nullable IModInfo getModInfo(ModLoadingIssue issue) {
         var modInfo = issue.affectedMod();
         var file = issue.affectedModFile();
         while (modInfo == null && file != null) {
@@ -133,15 +145,17 @@ public class FMLTranslations {
             }
             file = file.getDiscoveryAttributes().parent();
         }
+        return modInfo;
+    }
 
-        // Implicit arguments start at index 100
-        args.add(modInfo); // {100} = ModInfo
-        args.add(file); // {101} = ModFile
-        args.add(issue.cause()); // {102} = Exception
-
-        args.replaceAll(FMLTranslations::formatArg);
-
-        return args.toArray(Object[]::new);
+    private static @Nullable Path getAffectedPath(ModLoadingIssue issue) {
+        if (issue.affectedPath() != null) {
+            return issue.affectedPath();
+        } else if (issue.affectedModFile() != null) {
+            return issue.affectedModFile().getFilePath();
+        } else {
+            return null;
+        }
     }
 
     private static Object formatArg(Object arg) {

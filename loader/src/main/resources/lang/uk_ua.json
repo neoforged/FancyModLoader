@@ -1,7 +1,7 @@
 {
   "fml.loadingerrorscreen.errorheader": "Помилка при завантаженні модів\n{0,choice,1#1 помилка |1<{0} помилки} під час завантаження",
   "fml.loadingerrorscreen.warningheader": "{0,choice,1#Попередження|1<Попереджень} при завантаженні модів\n{0,choice,1#1 попередження|1<{0} попередження} при завантаженні модів",
-  "fml.modloadingissue.language.missingversion": "Файл мода {2} потребує мовний провайдер {0}:{1,vr} для завантаження\n§7Ми знайшли {3,i18n,fml.messages.artifactversion}",
+  "fml.modloadingissue.language.missingversion": "Файл мода {101} потребує мовний провайдер {0}:{1,vr} для завантаження\n§7Ми знайшли {2,i18n,fml.messages.artifactversion}",
   "fml.modloading.missingclasses": "Файл мода {3} містить моди, які не були знайдені",
   "fml.modloading.missingmetadata": "В mods.toml відсутні метадані для modid {3}",
   "fml.modloadingissue.failedtoloadmodclass": "{100,modinfo,name} ({100,modinfo,id}) містить помилки при завантаженні класів\n§7{102,exc,msg}",

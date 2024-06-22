@@ -1,7 +1,7 @@
 {
   "fml.loadingerrorscreen.errorheader": "Chyba načítavania módov\n{0,choice,1#1 error has|1<{0} errors have} nastala počas načítavania",
   "fml.loadingerrorscreen.warningheader": "{0,choice,1#Warning|1<Warnings} počas načítavania módov {0,choice,1#1 warning has|1<{0} warnings have} nastali počas načítavania",
-  "fml.modloadingissue.language.missingversion": "Súbor módu {2} potrebuje poskytovateľa jazyku {0}:{1,vr} pre načítanie §7 Našli sme {3,i18n,fml.messages.artifactversion}",
+  "fml.modloadingissue.language.missingversion": "Súbor módu {101} potrebuje poskytovateľa jazyku {0}:{1,vr} pre načítanie §7 Našli sme {2,i18n,fml.messages.artifactversion}",
   "fml.modloading.missingclasses": "Súbor módu {3} obsahuje módy, ktoré neboli nájdené",
   "fml.modloading.missingmetadata": "v mods.toml chýbajú metadata pre modid {3}",
   "fml.modloadingissue.failedtoloadmodclass": "{100,modinfo,name} ({100,modinfo,id}) má chyby načítavania triedy §7{102,exc,msg}",

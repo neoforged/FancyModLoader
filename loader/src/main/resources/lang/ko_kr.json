@@ -1,7 +1,7 @@
 {
   "fml.loadingerrorscreen.errorheader": "모드 구동중 오류 발생\n모드를 불러오는 도중 오류 {0,choice,1#1|1<{0}}개가 발생했습니다",
   "fml.loadingerrorscreen.warningheader": "모드 구동중 {0,choice,1#경고|1<경고} 발생\n모드를 불러오는 도중 경고 {0,choice,1#1|1<{0}} 개가 발생했습니다",
-  "fml.modloadingissue.language.missingversion": "모드 {2}을 구동하려면 언어 제공자 {0}:{1,vr}이(가) 필요합니다\n§7설치된 버전: {3,i18n,fml.messages.artifactversion}",
+  "fml.modloadingissue.language.missingversion": "모드 {101}을 구동하려면 언어 제공자 {0}:{1,vr}이(가) 필요합니다\n§7설치된 버전: {2,i18n,fml.messages.artifactversion}",
   "fml.modloading.missingclasses": "모드 파일 {3}의 진입점이 없습니다",
   "fml.modloading.missingmetadata": "mods.toml에 모드 아이디 {3}의 메타데이터가 없습니다.",
   "fml.modloadingissue.failedtoloadmodclass": "모드 {100,modinfo,name} ({100,modinfo,id})의 클래스를 불러올 수 없습니다!\n§7{102,exc,msg}",

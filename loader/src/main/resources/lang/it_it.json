@@ -1,7 +1,7 @@
 {
   "fml.loadingerrorscreen.errorheader": "Si è verificato {0,choice,1#1 errore|1<{0} errori} durante il caricamento delle mod",
   "fml.loadingerrorscreen.warningheader": "{0,choice,1#Avvertenza|1<Avvertenze} durante il caricamento delle mod\n{0,choice,1#1 avvertenza|1<{0} avvertenze} durante il caricamento",
-  "fml.modloadingissue.language.missingversion": "Il file della mod {2} richiede il provider di lingua {0}:{1,vr} per essere caricata\n§7Abbiamo trovato {3,i18n,fml.messages.artifactversion}",
+  "fml.modloadingissue.language.missingversion": "Il file della mod {101} richiede il provider di lingua {0}:{1,vr} per essere caricata\n§7Abbiamo trovato {2,i18n,fml.messages.artifactversion}",
   "fml.modloading.missingclasses": "Il File della Mod {3} ha delle mod che non sono state trovate",
   "fml.modloading.missingmetadata": "mods.toml ha metadati mancanti per il modid {3}",
   "fml.modloadingissue.failedtoloadmodclass": "{100,modinfo,name} ({100,modinfo,id}) ha errori di caricamento classe\n§7{102,exc,msg}",

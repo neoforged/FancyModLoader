@@ -1,7 +1,7 @@
 {
   "fml.loadingerrorscreen.errorheader": "Fout bij het laden van mods\n{0,choice,1#1 fout heeft|1<{0} fouten hebben} opgetreden tijdens laden",
   "fml.loadingerrorscreen.warningheader": "{0,choice,1#waarschuwing|1<Waarschuwingen} tijdens het laden van mods\n{0,choice,1#1 waarschuwing is 1<{0} waarschuwingen zijn} opgetreden tijdens het laden",
-  "fml.modloadingissue.language.missingversion": "Modbestand {2} heeft de taalaanbieder {0}:{1,vr} nodig om te kunnen laden\n§7We hebben {3,i18n,fml.messages.artifactversion} gevonden",
+  "fml.modloadingissue.language.missingversion": "Modbestand {101} heeft de taalaanbieder {0}:{1,vr} nodig om te kunnen laden\n§7We hebben {2,i18n,fml.messages.artifactversion} gevonden",
   "fml.modloading.missingclasses": "Het Modbestand {3} heeft mods die niet gevonden zijn",
   "fml.modloading.missingmetadata": "mods.toml mist metadata for modid {3}",
   "fml.modloadingissue.failedtoloadmodclass": "{100,modinfo,name} ({100,modinfo,id}) heeft class laadfouten\n§7{102,exc,msg}",

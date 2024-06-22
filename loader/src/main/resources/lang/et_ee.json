@@ -1,7 +1,7 @@
 {
   "fml.loadingerrorscreen.errorheader": "Modide laadimisel esines viga\nLaadimisel esines {0,choice,1#1 viga|1<{0} viga}",
   "fml.loadingerrorscreen.warningheader": "{0,choice,1#Hoiatus|1<Hoiatused} modide laadimisel\nLaadimisel esines {0,choice,1#1 hoiatus|1<{0} hoiatust}",
-  "fml.modloadingissue.language.missingversion": "Modifail {2} vajab laadimiseks keelepakkujat {0}:{1,vr}\n§7Me leidsime {3,i18n,fml.messages.artifactversion}",
+  "fml.modloadingissue.language.missingversion": "Modifail {101} vajab laadimiseks keelepakkujat {0}:{1,vr}\n§7Me leidsime {2,i18n,fml.messages.artifactversion}",
   "fml.modloading.missingclasses": "Modifailil {3} on mode, mida ei leitud",
   "fml.modloading.missingmetadata": "Failis mods.toml puuduvad metaandmed modi IDle {3}",
   "fml.modloadingissue.failedtoloadmodclass": "{100,modinfo,name} ({100,modinfo,id}) on klassilaadimise vead\n§7{102,exc,msg}",
