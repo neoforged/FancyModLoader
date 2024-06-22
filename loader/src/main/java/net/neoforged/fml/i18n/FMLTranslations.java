@@ -118,7 +118,12 @@ public class FMLTranslations {
     }
 
     private static Object[] getTranslationArgs(ModLoadingIssue issue) {
-        var args = new ArrayList<>(3 + issue.translationArgs().size());
+        var args = new ArrayList<>(103);
+        args.addAll(issue.translationArgs());
+        // Pad up to 100
+        while (args.size() < 100) {
+            args.add(null);
+        }
 
         var modInfo = issue.affectedMod();
         var file = issue.affectedModFile();
@@ -128,13 +133,11 @@ public class FMLTranslations {
             }
             file = file.getDiscoveryAttributes().parent();
         }
-        args.add(modInfo);
-        args.add(null); // Previously mod-loading phase
-        // For errors, we expose the cause
-        if (issue.severity() == ModLoadingIssue.Severity.ERROR) {
-            args.add(issue.cause());
-        }
-        args.addAll(issue.translationArgs());
+
+        // Implicit arguments start at index 100
+        args.add(modInfo); // {100} = ModInfo
+        args.add(file); // {101} = ModFile
+        args.add(issue.cause()); // {102} = Exception
 
         args.replaceAll(FMLTranslations::formatArg);
 
