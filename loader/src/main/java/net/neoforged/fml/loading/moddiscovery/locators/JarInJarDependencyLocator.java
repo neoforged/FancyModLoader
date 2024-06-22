@@ -93,7 +93,7 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
     }
 
     private String getErrorTranslationKey(final JarSelector.ResolutionFailureInformation<IModFile> entry) {
-        return entry.failureReason() == JarSelector.FailureReason.VERSION_RESOLUTION_FAILED ? "fml.dependencyloading.conflictingdependencies" : "fml.dependencyloading.mismatchedcontaineddependencies";
+        return entry.failureReason() == JarSelector.FailureReason.VERSION_RESOLUTION_FAILED ? "fml.modloadingissue.dependencyloading.conflictingdependencies" : "fml.modloadingissue.dependencyloading.mismatchedcontaineddependencies";
     }
 
     private Stream<ModWithVersionRange> getModWithVersionRangeStream(final JarSelector.SourceWithRequestedVersionRange<IModFile> file) {

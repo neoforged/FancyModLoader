@@ -163,7 +163,7 @@ class FMLTranslationsTest {
             abc,abc
             """)
     void testFormatOrNull(String arg, String expected) {
-        assertEquals(expected, FMLTranslations.parseFormat("{0,ornull,fml.modloading.discouragedmod.proceed}", arg));
+        assertEquals(expected, FMLTranslations.parseFormat("{0,ornull,fml.modloadingissue.discouragedmod.proceed}", arg));
     }
 
     @ParameterizedTest

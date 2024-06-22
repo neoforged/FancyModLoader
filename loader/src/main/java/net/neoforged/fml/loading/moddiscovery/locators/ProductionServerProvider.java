@@ -39,12 +39,12 @@ public class ProductionServerProvider implements IModFileCandidateLocator {
         try {
             var mc = LibraryFinder.findPathForMaven("net.minecraft", "server", "", "srg", vers.mcAndNeoFormVersion());
             if (!Files.exists(mc)) {
-                pipeline.addIssue(ModLoadingIssue.error("fml.modloading.corrupted_installation").withAffectedPath(mc));
+                pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation").withAffectedPath(mc));
                 return;
             }
             var mcextra = LibraryFinder.findPathForMaven("net.minecraft", "server", "", "extra", vers.mcAndNeoFormVersion());
             if (!Files.exists(mcextra)) {
-                pipeline.addIssue(ModLoadingIssue.error("fml.modloading.corrupted_installation").withAffectedPath(mc));
+                pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation").withAffectedPath(mc));
                 return;
             }
 
@@ -64,7 +64,7 @@ public class ProductionServerProvider implements IModFileCandidateLocator {
             for (var artifact : additionalContent) {
                 var extraPath = LibraryFinder.findPathForMaven(artifact);
                 if (!Files.exists(extraPath)) {
-                    pipeline.addIssue(ModLoadingIssue.error("fml.modloading.corrupted_installation").withAffectedPath(extraPath));
+                    pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation").withAffectedPath(extraPath));
                     return;
                 }
                 content.add(extraPath);
@@ -79,7 +79,7 @@ public class ProductionServerProvider implements IModFileCandidateLocator {
 
             pipeline.addModFile(mcjar);
         } catch (Exception e) {
-            pipeline.addIssue(ModLoadingIssue.error("fml.modloading.corrupted_installation").withCause(e));
+            pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation").withCause(e));
         }
     }
 

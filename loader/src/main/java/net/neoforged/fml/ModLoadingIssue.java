@@ -27,7 +27,7 @@ public record ModLoadingIssue(
     public ModLoadingIssue {
         // Make sure it's easy for us to know which translation keys get access to the implicit args at indices 100 and above
         if (translationKey.startsWith("fml.") && !translationKey.startsWith("fml.modloadingissue.")) {
-            throw new IllegalArgumentException("When using FML translation keys, only use fml.modloadingissue. keys for mod loading issues.");
+            throw new IllegalArgumentException("When using FML translation keys, only use fml.modloadingissue. keys for mod loading issues: " + translationKey);
         }
     }
 

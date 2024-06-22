@@ -84,7 +84,7 @@ public class ModValidator {
                 issues.addAll(e.getIssues());
                 iterator.remove();
             } catch (Exception e) {
-                issues.add(ModLoadingIssue.error("fml.modloading.technical_error").withAffectedModFile(modFile).withCause(e));
+                issues.add(ModLoadingIssue.error("fml.modloadingissue.technical_error").withAffectedModFile(modFile).withCause(e));
                 iterator.remove();
             }
         }

@@ -468,7 +468,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
                 if (prevProto != null) {
                     foundDupe = true;
                     ModLoader.addLoadingIssue(ModLoadingIssue.error(
-                            "fml.modloading.enumextender.duplicate",
+                            "fml.modloadingissue.enumextender.duplicate",
                             proto.fieldName(),
                             proto.enumName(),
                             proto.owningMod(),

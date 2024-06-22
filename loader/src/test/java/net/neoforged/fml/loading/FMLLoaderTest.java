@@ -503,7 +503,7 @@ class FMLLoaderTest extends LauncherTest {
 
             var result = launchAndLoad("forgeclient");
             assertThat(result.issues()).containsOnly(
-                    ModLoadingIssue.warning("fml.modloading.brokenfile.minecraft_forge", path).withAffectedPath(path));
+                    ModLoadingIssue.warning("fml.modloadingissue.brokenfile.minecraft_forge", path).withAffectedPath(path));
         }
 
         @Test
@@ -513,7 +513,7 @@ class FMLLoaderTest extends LauncherTest {
 
             var result = launchAndLoad("forgeclient");
             assertThat(result.issues()).containsOnly(
-                    ModLoadingIssue.warning("fml.modloading.brokenfile.fabric", path).withAffectedPath(path));
+                    ModLoadingIssue.warning("fml.modloadingissue.brokenfile.fabric", path).withAffectedPath(path));
         }
 
         @Test

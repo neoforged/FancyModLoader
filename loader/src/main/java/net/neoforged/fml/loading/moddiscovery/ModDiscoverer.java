@@ -72,7 +72,7 @@ public class ModDiscoverer {
             } catch (ModLoadingException e) {
                 discoveryIssues.addAll(e.getIssues());
             } catch (Exception e) {
-                discoveryIssues.add(ModLoadingIssue.error("fml.modloading.technical_error", locator.toString() + "failed").withCause(e));
+                discoveryIssues.add(ModLoadingIssue.error("fml.modloadingissue.technical_error", locator.toString() + "failed").withCause(e));
             }
 
             LOGGER.debug(LogMarkers.SCAN, "Locator {} found {} mods, {} warnings, {} errors and skipped {} candidates", locator,
@@ -168,9 +168,9 @@ public class ModDiscoverer {
                 jarContents = JarContents.of(groupedPaths);
             } catch (Exception e) {
                 if (causeChainContains(e, ZipException.class)) {
-                    addIssue(ModLoadingIssue.error("fml.modloading.brokenfile.invalidzip", primaryPath).withAffectedPath(primaryPath).withCause(e));
+                    addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile.invalidzip", primaryPath).withAffectedPath(primaryPath).withCause(e));
                 } else {
-                    addIssue(ModLoadingIssue.error("fml.modloading.brokenfile", primaryPath).withAffectedPath(primaryPath).withCause(e));
+                    addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile", primaryPath).withAffectedPath(primaryPath).withCause(e));
                 }
                 return Optional.empty();
             }
@@ -204,7 +204,7 @@ public class ModDiscoverer {
                         return Optional.empty();
                     }
                 } catch (Exception e) {
-                    addIssue(ModLoadingIssue.error("fml.modloading.brokenfile", jarContents.getPrimaryPath()).withAffectedPath(jarContents.getPrimaryPath()).withCause(e));
+                    addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile", jarContents.getPrimaryPath()).withAffectedPath(jarContents.getPrimaryPath()).withCause(e));
                     return Optional.empty();
                 }
             }
@@ -213,7 +213,7 @@ public class ModDiscoverer {
             // it might be an incompatible mod type. We do not perform this validation for jars that we
             // found on the classpath or other locations since these are usually not under user control.
             if (reporting == IncompatibleFileReporting.ERROR) {
-                addIssue(ModLoadingIssue.error("fml.modloading.brokenfile", jarContents.getPrimaryPath()));
+                addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile", jarContents.getPrimaryPath()));
             } else if (reporting == IncompatibleFileReporting.WARN_ON_KNOWN_INCOMPATIBILITY || reporting == IncompatibleFileReporting.WARN_ALWAYS) {
                 var reason = IncompatibleModReason.detect(jarContents);
                 if (reason.isPresent()) {
@@ -221,7 +221,7 @@ public class ModDiscoverer {
                     addIssue(ModLoadingIssue.warning(reason.get().getReason(), jarContents.getPrimaryPath()).withAffectedPath(jarContents.getPrimaryPath()));
                 } else if (reporting == IncompatibleFileReporting.WARN_ALWAYS) {
                     LOGGER.warn(LogMarkers.SCAN, "Ignoring incompatible jar {} for an unknown reason.", jarContents.getPrimaryPath());
-                    addIssue(ModLoadingIssue.warning("fml.modloading.brokenfile.unknown", jarContents.getPrimaryPath()).withAffectedPath(jarContents.getPrimaryPath()));
+                    addIssue(ModLoadingIssue.warning("fml.modloadingissue.brokenfile.unknown", jarContents.getPrimaryPath()).withAffectedPath(jarContents.getPrimaryPath()));
                 }
             }
             return Optional.empty();
@@ -231,7 +231,7 @@ public class ModDiscoverer {
         public boolean addModFile(IModFile mf) {
             if (!(mf instanceof ModFile modFile)) {
                 String detail = "Unexpected IModFile subclass: " + mf.getClass();
-                addIssue(ModLoadingIssue.error("fml.modloading.technical_error", detail).withAffectedModFile(mf));
+                addIssue(ModLoadingIssue.error("fml.modloadingissue.technical_error", detail).withAffectedModFile(mf));
                 return false;
             }
 
