@@ -41,7 +41,6 @@
   "fml.modloadingissue.maven_coordinate_not_found": "No mod with the Maven coordinate {0} could be found in {1}",
   "fml.modloadingissue.failed_to_list_folder_content": "Failed to list content of folder {0}",
   "fml.modloadingissue.failed_to_find_on_classpath": "Failed to find {0} on the classpath",
-  "fml.modloadingissue.multiple_copies_on_classpath": "Found multiple copies of {0} on the classpath: {1}",
   "fml.messages.artifactversion.ornotinstalled": "{0,ornull,fml.messages.artifactversion.notinstalled}",
   "fml.messages.artifactversion": "{0,ornull,fml.messages.artifactversion.none}",
   "fml.messages.artifactversion.none": "none",
