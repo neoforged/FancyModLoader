@@ -30,6 +30,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 @ApiStatus.Internal
 @SuppressWarnings("deprecation")
@@ -118,8 +119,24 @@ public class FMLTranslations {
     }
 
     private static Object[] getTranslationArgs(ModLoadingIssue issue) {
-        var args = new ArrayList<>(3 + issue.translationArgs().size());
+        var args = new ArrayList<>(103);
+        args.addAll(issue.translationArgs());
+        // Pad up to 100
+        while (args.size() < 100) {
+            args.add(null);
+        }
 
+        // Implicit arguments start at index 100
+        args.add(getModInfo(issue)); // {100} = affected mod
+        args.add(getAffectedPath(issue)); // {101} = affected file-path
+        args.add(issue.cause()); // {102} = exception
+
+        args.replaceAll(FMLTranslations::formatArg);
+
+        return args.toArray(Object[]::new);
+    }
+
+    private static @Nullable IModInfo getModInfo(ModLoadingIssue issue) {
         var modInfo = issue.affectedMod();
         var file = issue.affectedModFile();
         while (modInfo == null && file != null) {
@@ -128,17 +145,17 @@ public class FMLTranslations {
             }
             file = file.getDiscoveryAttributes().parent();
         }
-        args.add(modInfo);
-        args.add(null); // Previously mod-loading phase
-        // For errors, we expose the cause
-        if (issue.severity() == ModLoadingIssue.Severity.ERROR) {
-            args.add(issue.cause());
+        return modInfo;
+    }
+
+    private static @Nullable Path getAffectedPath(ModLoadingIssue issue) {
+        if (issue.affectedPath() != null) {
+            return issue.affectedPath();
+        } else if (issue.affectedModFile() != null) {
+            return issue.affectedModFile().getFilePath();
+        } else {
+            return null;
         }
-        args.addAll(issue.translationArgs());
-
-        args.replaceAll(FMLTranslations::formatArg);
-
-        return args.toArray(Object[]::new);
     }
 
     private static Object formatArg(Object arg) {

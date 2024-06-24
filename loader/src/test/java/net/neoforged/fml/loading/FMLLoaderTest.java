@@ -311,9 +311,9 @@ class FMLLoaderTest extends LauncherTest {
     class Errors {
         @ParameterizedTest
         @CsvSource(textBlock = """
-                unknownloader|[1.0]|ERROR: Mod File testmod.jar needs language provider unknownloader:1.0 to load\\nWe have found -
-                javafml|[1.0]|ERROR: Mod File testmod.jar needs language provider javafml:1.0 to load\\nWe have found 3.0.9999
-                javafml|[999.0]|ERROR: Mod File testmod.jar needs language provider javafml:999.0 to load\\nWe have found 3.0.9999
+                unknownloader|[1.0]|ERROR: Mod File mods/testmod.jar needs language provider unknownloader:1.0 to load\\nWe have found -
+                javafml|[1.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:1.0 to load\\nWe have found 3.0.9999
+                javafml|[999.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:999.0 to load\\nWe have found 3.0.9999
                 """, delimiter = '|')
         void testIncompatibleLoaderVersions(String requestedLoader, String requestedVersionRange, String expectedError) throws Exception {
             expectedError = expectedError.replace("\\n", "\n");
@@ -503,7 +503,7 @@ class FMLLoaderTest extends LauncherTest {
 
             var result = launchAndLoad("forgeclient");
             assertThat(result.issues()).containsOnly(
-                    ModLoadingIssue.warning("fml.modloading.brokenfile.minecraft_forge", path).withAffectedPath(path));
+                    ModLoadingIssue.warning("fml.modloadingissue.brokenfile.minecraft_forge", path).withAffectedPath(path));
         }
 
         @Test
@@ -513,7 +513,7 @@ class FMLLoaderTest extends LauncherTest {
 
             var result = launchAndLoad("forgeclient");
             assertThat(result.issues()).containsOnly(
-                    ModLoadingIssue.warning("fml.modloading.brokenfile.fabric", path).withAffectedPath(path));
+                    ModLoadingIssue.warning("fml.modloadingissue.brokenfile.fabric", path).withAffectedPath(path));
         }
 
         @Test

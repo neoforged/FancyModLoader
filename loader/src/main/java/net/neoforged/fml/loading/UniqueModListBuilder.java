@@ -75,7 +75,7 @@ public class UniqueModListBuilder {
         final List<ModLoadingIssue> dupedModErrors = modIds.values().stream()
                 .filter(modInfos -> modInfos.size() > 1)
                 .map(mods -> ModLoadingIssue.error(
-                        "fml.modloading.duplicate_mod",
+                        "fml.modloadingissue.duplicate_mod",
                         mods.getFirst().getModId(),
                         mods.stream().map(modInfo -> modInfo.getOwningFile().getFile().getFileName()).collect(joining(", "))))
                 .toList();
@@ -88,7 +88,7 @@ public class UniqueModListBuilder {
         final List<ModLoadingIssue> dupedLibErrors = versionedLibIds.values().stream()
                 .filter(modFiles -> modFiles.size() > 1)
                 .map(mods -> ModLoadingIssue.error(
-                        "fml.modloading.duplicate_mod",
+                        "fml.modloadingissue.duplicate_mod",
                         getModId(mods.getFirst()),
                         mods.stream().map(ModFile::getFileName).collect(joining(", "))))
                 .toList();

@@ -141,7 +141,7 @@ public class FMLServiceProvider implements ITransformationService {
                 // Throwing here would cause the game to immediately crash without a proper error screen,
                 // since this method is called by ModLauncher directly.
                 ModLoader.addLoadingIssue(
-                        ModLoadingIssue.error("fml.modloading.coremod_error", coreMod.getClass().getName(), sourceFile).withCause(e));
+                        ModLoadingIssue.error("fml.modloadingissue.coremod_error", coreMod.getClass().getName(), sourceFile).withCause(e));
             }
         }
 

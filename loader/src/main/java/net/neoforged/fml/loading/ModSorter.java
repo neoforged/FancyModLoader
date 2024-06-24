@@ -132,7 +132,7 @@ public class ModSorter {
                     .<ModFileInfo>mapMulti(Iterable::forEach)
                     .<IModInfo>mapMulti((mf, c) -> mf.getMods().forEach(c))
                     .map(IModInfo::getModId)
-                    .map(list -> ModLoadingIssue.error("fml.modloading.cycle", list).withCause(e))
+                    .map(list -> ModLoadingIssue.error("fml.modloadingissue.cycle", list).withCause(e))
                     .toList();
             throw new ModLoadingException(dataList);
         }
@@ -206,24 +206,24 @@ public class ModSorter {
             Map<String, ArtifactVersion> modVersions) {
         public List<ModLoadingIssue> buildWarningMessages() {
             return Stream.concat(discouraged.stream()
-                    .map(mv -> ModLoadingIssue.warning("fml.modloading.discouragedmod",
+                    .map(mv -> ModLoadingIssue.warning("fml.modloadingissue.discouragedmod",
                             mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
-                            modVersions.get(mv.getModId()), mv.getReason().orElse("fml.modloading.discouragedmod.noreason")).withAffectedMod(mv.getOwner())),
+                            modVersions.get(mv.getModId()), mv.getReason().orElse("fml.modloadingissue.discouragedmod.noreason")).withAffectedMod(mv.getOwner())),
 
-                    Stream.of(ModLoadingIssue.warning("fml.modloading.discouragedmod.proceed")))
+                    Stream.of(ModLoadingIssue.warning("fml.modloadingissue.discouragedmod.proceed")))
                     .toList();
         }
 
         public List<ModLoadingIssue> buildErrorMessages() {
             return Stream.concat(
                     versionResolution.stream()
-                            .map(mv -> ModLoadingIssue.error(mv.getType() == IModInfo.DependencyType.REQUIRED ? "fml.modloading.missingdependency" : "fml.modloading.missingdependency.optional",
+                            .map(mv -> ModLoadingIssue.error(mv.getType() == IModInfo.DependencyType.REQUIRED ? "fml.modloadingissue.missingdependency" : "fml.modloadingissue.missingdependency.optional",
                                     mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
                                     modVersions.getOrDefault(mv.getModId(), new DefaultArtifactVersion("null")), mv.getReason()).withAffectedMod(mv.getOwner())),
                     incompatibilities.stream()
-                            .map(mv -> ModLoadingIssue.error("fml.modloading.incompatiblemod",
+                            .map(mv -> ModLoadingIssue.error("fml.modloadingissue.incompatiblemod",
                                     mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
-                                    modVersions.get(mv.getModId()), mv.getReason().orElse("fml.modloading.incompatiblemod.noreason")).withAffectedMod(mv.getOwner())))
+                                    modVersions.get(mv.getModId()), mv.getReason().orElse("fml.modloadingissue.incompatiblemod.noreason")).withAffectedMod(mv.getOwner())))
                     .toList();
         }
     }

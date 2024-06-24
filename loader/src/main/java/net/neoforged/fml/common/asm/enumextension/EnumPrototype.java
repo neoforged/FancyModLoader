@@ -42,23 +42,23 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
 
                 String enumName = entryObj.get("enum").getAsString();
                 if (!isValidClassDescriptor(enumName)) {
-                    error("fml.modloading.enumextender.invalid_enum_name", mod, enumName);
+                    error("fml.modloadingissue.enumextender.invalid_enum_name", mod, enumName);
                     continue;
                 }
 
                 String fieldName = entryObj.get("name").getAsString();
                 if (!fieldName.toLowerCase(Locale.ROOT).startsWith(mod.getModId())) {
-                    error("fml.modloading.enumextender.field_name.missing_prefix", mod, fieldName, enumName);
+                    error("fml.modloadingissue.enumextender.field_name.missing_prefix", mod, fieldName, enumName);
                     continue;
                 }
                 if (!SourceVersion.isIdentifier(fieldName)) {
-                    error("fml.modloading.enumextender.field_name.invalid", mod, fieldName, enumName);
+                    error("fml.modloadingissue.enumextender.field_name.invalid", mod, fieldName, enumName);
                     continue;
                 }
 
                 String ctorDesc = entryObj.get("constructor").getAsString();
                 if (!isValidConstructorDescriptor(ctorDesc)) {
-                    error("fml.modloading.enumextender.invalid_constructor", mod, ctorDesc, enumName);
+                    error("fml.modloadingissue.enumextender.invalid_constructor", mod, ctorDesc, enumName);
                     continue;
                 }
 
@@ -73,30 +73,30 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
                     JsonObject obj = paramElem.getAsJsonObject();
                     String className = obj.get("class").getAsString();
                     if (!isValidClassDescriptor(className)) {
-                        error("fml.modloading.enumextender.argument.reference.invalid_src_class", mod, className, fieldName, enumName);
+                        error("fml.modloadingissue.enumextender.argument.reference.invalid_src_class", mod, className, fieldName, enumName);
                         continue;
                     }
 
                     if (obj.has("method")) {
                         String srcMethodName = obj.get("method").getAsString();
                         if (!SourceVersion.isIdentifier(srcMethodName)) {
-                            error("fml.modloading.enumextender.argument.reference.invalid_src_method", mod, srcMethodName, fieldName, enumName);
+                            error("fml.modloadingissue.enumextender.argument.reference.invalid_src_method", mod, srcMethodName, fieldName, enumName);
                             continue;
                         }
                         ctorParams = new EnumParameters.MethodReference(Type.getObjectType(className), srcMethodName);
                     } else if (obj.has("field")) {
                         String srcFieldName = obj.get("field").getAsString();
                         if (!SourceVersion.isIdentifier(srcFieldName)) {
-                            error("fml.modloading.enumextender.argument.reference.invalid_src_field", mod, srcFieldName, fieldName, enumName);
+                            error("fml.modloadingissue.enumextender.argument.reference.invalid_src_field", mod, srcFieldName, fieldName, enumName);
                             continue;
                         }
                         ctorParams = new EnumParameters.FieldReference(Type.getObjectType(className), srcFieldName);
                     } else {
-                        error("fml.modloading.enumextender.argument.reference.unexpected_decl", mod, paramElem, fieldName, enumName);
+                        error("fml.modloadingissue.enumextender.argument.reference.unexpected_decl", mod, paramElem, fieldName, enumName);
                         continue;
                     }
                 } else {
-                    error("fml.modloading.enumextender.argument.unexpected_decl", mod, paramElem, fieldName, enumName);
+                    error("fml.modloadingissue.enumextender.argument.unexpected_decl", mod, paramElem, fieldName, enumName);
                     continue;
                 }
 
@@ -106,7 +106,7 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
             }
             return prototypes;
         } catch (Throwable e) {
-            ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloading.enumextender.loading_error", path)
+            ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloadingissue.enumextender.loading_error", path)
                     .withAffectedMod(mod)
                     .withCause(e));
             return List.of();
@@ -117,7 +117,7 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
         List<Object> params = new ArrayList<>(obj.size());
         Type[] argTypes = Type.getArgumentTypes(ctorDesc);
         if (argTypes.length != obj.size()) {
-            error("fml.modloading.enumextender.argument.constant.count_mismatch", mod, obj.size(), argTypes.length, ctorDesc, fieldName, enumName);
+            error("fml.modloadingissue.enumextender.argument.constant.count_mismatch", mod, obj.size(), argTypes.length, ctorDesc, fieldName, enumName);
             return null;
         }
 
@@ -129,7 +129,7 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
                 case "C" -> {
                     String param = element.getAsString();
                     if (param.length() != 1) {
-                        error("fml.modloading.enumextender.argument.constant.invalid_char", mod, param, idx, fieldName, enumName);
+                        error("fml.modloadingissue.enumextender.argument.constant.invalid_char", mod, param, idx, fieldName, enumName);
                         return null;
                     }
                     params.add(param.charAt(0));
@@ -143,7 +143,7 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
                 case "Ljava/lang/String;" -> params.add(element.isJsonNull() ? null : element.getAsString());
                 default -> {
                     if (!element.isJsonNull()) {
-                        error("fml.modloading.enumextender.argument.constant.unsupported_type", mod, argType, idx, fieldName, enumName);
+                        error("fml.modloadingissue.enumextender.argument.constant.unsupported_type", mod, argType, idx, fieldName, enumName);
                         return null;
                     }
                     params.add(null);

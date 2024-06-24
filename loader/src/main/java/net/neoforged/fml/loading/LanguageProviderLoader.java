@@ -58,11 +58,11 @@ public class LanguageProviderLoader {
         final ModLanguageWrapper mlw = languageProviderMap.get(modLoader);
         if (mlw == null) {
             LOGGER.error(LogMarkers.LOADING, "Missing language {} version {} wanted by {}", modLoader, modLoaderVersion, languageFileName);
-            throw new ModLoadingException(ModLoadingIssue.error("fml.language.missingversion", modLoader, modLoaderVersion, languageFileName, "-").withAffectedModFile(mf));
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.language.missingversion", modLoader, modLoaderVersion, "-").withAffectedModFile(mf));
         }
         if (!VersionSupportMatrix.testVersionSupportMatrix(modLoaderVersion, modLoader, "languageloader", (llid, range) -> range.containsVersion(mlw.version()))) {
             LOGGER.error(LogMarkers.LOADING, "Missing language {} version {} wanted by {}, found {}", modLoader, modLoaderVersion, languageFileName, mlw.version());
-            throw new ModLoadingException(ModLoadingIssue.error("fml.language.missingversion", modLoader, modLoaderVersion, languageFileName, mlw.version()).withAffectedModFile(mf));
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.language.missingversion", modLoader, modLoaderVersion, mlw.version()).withAffectedModFile(mf));
         }
 
         return mlw.modLanguageProvider();

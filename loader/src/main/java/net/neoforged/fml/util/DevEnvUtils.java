@@ -73,9 +73,9 @@ public final class DevEnvUtils {
         var paths = findFileSystemRootsOfFileOnClasspath(relativePath);
 
         if (paths.isEmpty()) {
-            throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failed_to_find_on_classpath", relativePath));
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.failed_to_find_on_classpath", relativePath));
         } else if (paths.size() > 1) {
-            throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.multiple_copies_on_classpath", relativePath, paths));
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.multiple_copies_on_classpath", relativePath, paths));
         }
 
         return paths.getFirst();

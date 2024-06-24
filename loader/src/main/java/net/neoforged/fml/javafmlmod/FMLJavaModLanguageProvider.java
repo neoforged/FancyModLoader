@@ -51,7 +51,7 @@ public class FMLJavaModLanguageProvider extends BuiltInLanguageLoader {
                 .forEach(data -> {
                     var modId = data.annotationData().get("value");
                     var entrypointClass = data.clazz().getClassName();
-                    var issue = ModLoadingIssue.error("fml.modloading.javafml.dangling_entrypoint", modId, entrypointClass, file.getFilePath()).withAffectedModFile(file);
+                    var issue = ModLoadingIssue.error("fml.modloadingissue.javafml.dangling_entrypoint", modId, entrypointClass, file.getFilePath()).withAffectedModFile(file);
                     reporter.addIssue(issue);
                 });
     }

@@ -57,14 +57,14 @@ public class ProductionClientProvider implements IModFileCandidateLocator {
 
             pipeline.addModFile(mcjar);
         } catch (Exception e) {
-            pipeline.addIssue(ModLoadingIssue.error("fml.modloading.corrupted_installation").withCause(e));
+            pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation").withCause(e));
         }
     }
 
     private static void addRequiredLibrary(MavenCoordinate coordinate, List<Path> content) {
         var path = LibraryFinder.findPathForMaven(coordinate);
         if (!Files.exists(path)) {
-            throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.corrupted_installation").withAffectedPath(path));
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation").withAffectedPath(path));
         } else {
             content.add(path);
         }

@@ -13,8 +13,8 @@ import org.junit.jupiter.api.Test;
 class ModLoadingExceptionTest {
     @Test
     void getMessage() {
-        var w = ModLoadingIssue.warning("fml.modloading.brokenfile.unknown", "XXXX");
-        var e1 = ModLoadingIssue.error("fml.modloading.brokenfile", "YYYY");
+        var w = ModLoadingIssue.warning("fml.modloadingissue.brokenfile.unknown", "XXXX");
+        var e1 = ModLoadingIssue.error("fml.modloadingissue.brokenfile", "YYYY");
         var e2 = ModLoadingIssue.error("Some untranslated text\nwhich has newlines in it");
 
         var message = new ModLoadingException(List.of(w, e1, e2)).getMessage();

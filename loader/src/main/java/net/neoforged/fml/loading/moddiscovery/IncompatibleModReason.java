@@ -32,7 +32,7 @@ public enum IncompatibleModReason {
     }
 
     public String getReason() {
-        return "fml.modloading.brokenfile." + StringUtils.toLowerCase(name());
+        return "fml.modloadingissue.brokenfile." + StringUtils.toLowerCase(name());
     }
 
     public static Optional<IncompatibleModReason> detect(JarContents jar) {

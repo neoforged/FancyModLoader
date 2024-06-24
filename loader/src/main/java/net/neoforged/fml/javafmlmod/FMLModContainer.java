@@ -63,7 +63,7 @@ public class FMLModContainer extends ModContainer {
                     LOGGER.trace(LOADING, "Loaded modclass {} with {}", cls.getName(), cls.getClassLoader());
                 } catch (Throwable e) {
                     LOGGER.error(LOADING, "Failed to load class {}", entrypoint, e);
-                    throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failedtoloadmodclass").withCause(e).withAffectedMod(info));
+                    throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.failedtoloadmodclass").withCause(e).withAffectedMod(info));
                 }
             }
         } finally {
@@ -118,7 +118,7 @@ public class FMLModContainer extends ModContainer {
             } catch (Throwable e) {
                 if (e instanceof InvocationTargetException) e = e.getCause(); // exceptions thrown when a reflected method call throws are wrapped in an InvocationTargetException. However, this isn't useful for the end user who has to dig through the logs to find the actual cause.
                 LOGGER.error(LOADING, "Failed to create mod instance. ModID: {}, class {}", getModId(), modClass.getName(), e);
-                throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failedtoloadmod").withCause(e).withAffectedMod(modInfo));
+                throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.failedtoloadmod").withCause(e).withAffectedMod(modInfo));
             }
         }
         try {
@@ -127,7 +127,7 @@ public class FMLModContainer extends ModContainer {
             LOGGER.trace(LOADING, "Completed Automatic event subscribers for {}", getModId());
         } catch (Throwable e) {
             LOGGER.error(LOADING, "Failed to register automatic subscribers. ModID: {}", getModId(), e);
-            throw new ModLoadingException(ModLoadingIssue.error("fml.modloading.failedtoloadmod").withCause(e).withAffectedMod(modInfo));
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.failedtoloadmod").withCause(e).withAffectedMod(modInfo));
         }
     }
 

@@ -95,7 +95,7 @@ public class LoadingModList {
                 .forEach(mod -> mod.getConfig().<String>getConfigElement("enumExtensions").ifPresent(file -> {
                     Path path = mod.getOwningFile().getFile().findResource(file);
                     if (!Files.isRegularFile(path)) {
-                        ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloading.enumextender.file_not_found", path).withAffectedMod(mod));
+                        ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloadingissue.enumextender.file_not_found", path).withAffectedMod(mod));
                         return;
                     }
                     pathPerMod.put(mod, path);

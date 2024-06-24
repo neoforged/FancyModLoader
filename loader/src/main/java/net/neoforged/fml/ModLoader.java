@@ -117,7 +117,7 @@ public final class ModLoader {
         if (!failedBounds.isEmpty()) {
             LOGGER.fatal(CORE, "Failed to validate feature bounds for mods: {}", failedBounds);
             for (var fb : failedBounds) {
-                loadingIssues.add(ModLoadingIssue.error("fml.modloading.feature.missing", fb, ForgeFeature.featureValue(fb)).withAffectedMod(fb.modInfo()));
+                loadingIssues.add(ModLoadingIssue.error("fml.modloadingissue.feature.missing", fb, ForgeFeature.featureValue(fb)).withAffectedMod(fb.modInfo()));
             }
             cancelLoading(modList);
             throw new ModLoadingException(loadingIssues);
@@ -297,7 +297,7 @@ public final class ModLoader {
         if (error instanceof ModLoadingException modLoadingException) {
             loadingIssues.addAll(modLoadingException.getIssues());
         } else {
-            loadingIssues.add(ModLoadingIssue.error("fml.modloading.uncaughterror", context).withCause(error));
+            loadingIssues.add(ModLoadingIssue.error("fml.modloadingissue.uncaughterror", context).withCause(error));
         }
     }
 
