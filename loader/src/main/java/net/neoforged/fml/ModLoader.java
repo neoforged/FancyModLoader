@@ -31,6 +31,7 @@ import net.neoforged.bus.api.EventPriority;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.event.lifecycle.FMLConstructModEvent;
 import net.neoforged.fml.event.lifecycle.ParallelDispatchEvent;
+import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
@@ -103,7 +104,7 @@ public final class ModLoader {
         if (hasErrors()) {
             var loadingErrors = getLoadingErrors();
             for (var loadingError : loadingErrors) {
-                LOGGER.fatal(CORE, "Error during pre-loading phase: {}", loadingError, loadingError.cause());
+                LOGGER.fatal(CORE, "Error during pre-loading phase: {}", FMLTranslations.translateIssueEnglish(loadingError), loadingError.cause());
             }
             cancelLoading(modList);
             throw new ModLoadingException(loadingIssues);

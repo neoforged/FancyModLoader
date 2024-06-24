@@ -34,7 +34,7 @@
   "fml.modloadingissue.brokenfile.optifine": "Súbor {0} je nekompatibilná verzia OptiFinu",
   "fml.modloadingissue.brokenfile.bukkit": "Súbor {0} je Bukkit alebo vetva Bukkitu (Spigot, Paper, atď.) plugin, a preto nemôže byť načítaný",
   "fml.modloadingissue.brokenfile.invalidzip": "Súbor {0} nie je jar súbor",
-  "fml.modloading.brokenresources": "Súbor {2} nenačítal validný ResourcePackInfo",
+  "fml.modloadingissue.brokenresources": "Súbor {101} nenačítal validný ResourcePackInfo",
   "fml.modloadingissue.technical_error": "Počas načítavania módu sa objavila technická chyba: {0}",
   "fml.modloadingissue.invalid_maven_coordinate": "Nasledujúca Maven súradnica je nesprávna: {0}",
   "fml.modloadingissue.maven_coordinate_not_found": "Žiadny mód s Maven súradnicou {0} nebol nájdený v {1}",

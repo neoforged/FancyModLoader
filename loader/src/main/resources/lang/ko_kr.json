@@ -35,7 +35,7 @@
   "fml.modloadingissue.brokenfile.optifine": "파일 {0}은 호환되지 않는 OptiFine 버전입니다",
   "fml.modloadingissue.brokenfile.bukkit": "{0} 파일은 버킷, 페이퍼와 같은 서버 플러그인이라 불러올 수 없습니다.",
   "fml.modloadingissue.brokenfile.invalidzip": "{0} 파일은 jar 파일이 아닙니다",
-  "fml.modloading.brokenresources": "{2} 파일에서 ResourcePackInfo를 불러오는데 실패했습니다",
+  "fml.modloadingissue.brokenresources": "{101} 파일에서 ResourcePackInfo를 불러오는데 실패했습니다",
   "fml.modloadingissue.technical_error": "모드 {0}을 불러오는 도중 문제가 발생했습니다",
   "fml.modloadingissue.invalid_maven_coordinate": "잘못된 Maven 좌표: {0}",
   "fml.modloadingissue.maven_coordinate_not_found": "Maven 좌표 {0}을(를) 가지는 모드가 {1}에 없습니다",

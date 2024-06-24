@@ -35,7 +35,7 @@
   "fml.modloadingissue.brokenfile.optifine": "ファイル{0}は互換性のないバージョンのOptiFineです",
   "fml.modloadingissue.brokenfile.bukkit": "ファイル{0}は、BukkitまたはBukkit系（Spigot、Paperなど）のプラグインであるため、読み込めません",
   "fml.modloadingissue.brokenfile.invalidzip": "File {0} is not a jar file",
-  "fml.modloading.brokenresources": "ファイル{2}のResourcePackInfoを読み込めません",
+  "fml.modloadingissue.brokenresources": "ファイル{101}のResourcePackInfoを読み込めません",
   "fml.modloadingissue.technical_error": "Modの読み込み中に技術的なエラーが発生しました：{0}",
   "fml.modloadingissue.invalid_maven_coordinate": "以下のMaven座標は無効です：{0}",
   "fml.modloadingissue.maven_coordinate_not_found": "Maven座標が{0}のModが{1}に見つかりませんでした",

@@ -34,7 +34,7 @@
   "fml.modloadingissue.brokenfile.optifine": "Plik {0} jest niekompatybilną wersją OptiFine",
   "fml.modloadingissue.brokenfile.bukkit": "Plik {0} jest wtyczką Bukkit lub Bukkit-implementor (Spigot, Paper, itp.) i nie może zostać załadowany",
   "fml.modloadingissue.brokenfile.invalidzip": "File {0} is not a jar file",
-  "fml.modloading.brokenresources": "Plik {2} nie mógł załadować poprawnie ResourcePackInfo",
+  "fml.modloadingissue.brokenresources": "Plik {101} nie mógł załadować poprawnie ResourcePackInfo",
   "fml.modloadingissue.technical_error": "A technical error occurred during mod loading: {0}",
   "fml.modloadingissue.invalid_maven_coordinate": "The following Maven coordinate is invalid: {0}",
   "fml.modloadingissue.maven_coordinate_not_found": "No mod with the Maven coordinate {0} could be found in {1}",

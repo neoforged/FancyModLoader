@@ -16,7 +16,11 @@ import org.jetbrains.annotations.Nullable;
 public interface IModFileReader extends IOrderedProvider {
     /**
      * Provides a mod from the given {@code jar}.
-     * Any thrown exception will be reported in relationship to the given jar contents.
+     * <p>
+     * Throwing {@link net.neoforged.fml.ModLoadingException} will report contained issues as the reason for
+     * incompatibility to players, unless another reader successfully reads the jar.
+     * <p>
+     * Other thrown exceptions will be reported as errors and cause loading to fail.
      *
      * @param jar        the mod jar contents
      * @param attributes The attributes relating to this mod files discovery.

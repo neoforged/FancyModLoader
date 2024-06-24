@@ -35,7 +35,7 @@
   "fml.modloadingissue.brokenfile.optifine": "文件 {0} 是不兼容的 OptiFine 版本",
   "fml.modloadingissue.brokenfile.bukkit": "文件 {0} 是 Bukkit 或其他 Bukkit 实现（Spigot、Paper 等）的插件，不能加载",
   "fml.modloadingissue.brokenfile.invalidzip": "文件 {0} 不是 jar 文件",
-  "fml.modloading.brokenresources": "文件 {2} 加载有效的 ResourcePackInfo 失败",
+  "fml.modloadingissue.brokenresources": "文件 {101} 加载有效的 ResourcePackInfo 失败",
   "fml.modloadingissue.technical_error": "加载模组时出现技术性错误：{0}",
   "fml.modloadingissue.invalid_maven_coordinate": "以下 Maven 坐标无效：{0}",
   "fml.modloadingissue.maven_coordinate_not_found": "{1} 内的 Maven 坐标 {0} 处找不到模组",
