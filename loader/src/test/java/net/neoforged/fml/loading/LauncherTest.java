@@ -22,6 +22,7 @@ import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
+import java.lang.invoke.MethodHandles;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.net.MalformedURLException;
@@ -39,6 +40,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import joptsimple.OptionParser;
 import joptsimple.OptionSpec;
+import net.bytebuddy.agent.ByteBuddyAgent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
@@ -46,6 +48,7 @@ import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -73,6 +76,19 @@ public abstract class LauncherTest {
     Set<Path> locatedPaths = new HashSet<>();
 
     protected TransformingClassLoader gameClassLoader;
+
+    @BeforeAll
+    static void ensureAddOpensForUnionFs() {
+        // We abuse the ByteBuddy agent that Mockito also uses to open java.lang to UnionFS
+        var instrumentation = ByteBuddyAgent.install();
+        instrumentation.redefineModule(
+                MethodHandles.class.getModule(),
+                Set.of(),
+                Map.of(),
+                Map.of("java.lang.invoke", Set.of(LauncherTest.class.getModule())),
+                Set.of(),
+                Map.of());
+    }
 
     @BeforeEach
     void setUp() throws Exception {
