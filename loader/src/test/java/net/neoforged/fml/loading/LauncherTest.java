@@ -22,6 +22,7 @@ import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
+import java.lang.invoke.MethodHandles;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.net.MalformedURLException;
@@ -39,6 +40,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import joptsimple.OptionParser;
 import joptsimple.OptionSpec;
+import net.bytebuddy.agent.ByteBuddyAgent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
@@ -76,6 +78,17 @@ public abstract class LauncherTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        // We abuse the ByteBuddy agent that Mockito also uses to open java.lang to UnionFS
+        var instrumentation = ByteBuddyAgent.getInstrumentation();
+        instrumentation.redefineModule(
+                MethodHandles.class.getModule(),
+                Set.of(),
+                Map.of(),
+                Map.of(
+                        "java.lang.invoke", Set.of(LauncherTest.class.getModule())),
+                Set.of(),
+                Map.of());
+
         Launcher.INSTANCE = launcher;
         when(launcher.findLayerManager()).thenReturn(Optional.of(moduleLayerManager));
         var environmentCtor = Environment.class.getDeclaredConstructor(Launcher.class);

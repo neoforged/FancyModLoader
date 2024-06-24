@@ -66,9 +66,6 @@ allprojects {
 
     test {
         useJUnitPlatform()
-
-        // Needed by UnionFS
-        jvmArgs("--add-opens=java.base/java.lang.invoke=ALL-UNNAMED")
     }
 }
 
