@@ -48,6 +48,7 @@ import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -76,19 +77,21 @@ public abstract class LauncherTest {
 
     protected TransformingClassLoader gameClassLoader;
 
-    @BeforeEach
-    void setUp() throws Exception {
+    @BeforeAll
+    public static void ensureAddOpensForUnionFs() {
         // We abuse the ByteBuddy agent that Mockito also uses to open java.lang to UnionFS
-        var instrumentation = ByteBuddyAgent.getInstrumentation();
+        var instrumentation = ByteBuddyAgent.install();
         instrumentation.redefineModule(
                 MethodHandles.class.getModule(),
                 Set.of(),
                 Map.of(),
-                Map.of(
-                        "java.lang.invoke", Set.of(LauncherTest.class.getModule())),
+                Map.of("java.lang.invoke", Set.of(LauncherTest.class.getModule())),
                 Set.of(),
                 Map.of());
+    }
 
+    @BeforeEach
+    void setUp() throws Exception {
         Launcher.INSTANCE = launcher;
         when(launcher.findLayerManager()).thenReturn(Optional.of(moduleLayerManager));
         var environmentCtor = Environment.class.getDeclaredConstructor(Launcher.class);
