@@ -6,38 +6,35 @@
 package net.neoforged.fml.config;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
+import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.electronwill.nightconfig.core.file.FileConfig;
 import com.electronwill.nightconfig.toml.TomlFormat;
 import java.io.ByteArrayInputStream;
 import java.nio.file.Path;
-import java.util.Locale;
 import java.util.function.Function;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.loading.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
-public class ModConfig {
+public final class ModConfig {
     private final Type type;
-    private final IConfigSpec<?> spec;
+    private final IConfigSpec spec;
     private final String fileName;
-    protected final ModContainer container;
-    private CommentedConfig configData;
+    private final ModContainer container;
+    /**
+     * When a file config is open: this is a {@link CommentedFileConfig}.
+     * When a config was loaded from the server: this is a plain config.
+     * Otherwise this is null.
+     */
+    @Nullable
+    CommentedConfig config;
 
-    public ModConfig(final Type type, final IConfigSpec<?> spec, final ModContainer container, final String fileName) {
+    ModConfig(Type type, IConfigSpec spec, ModContainer container, String fileName) {
         this.type = type;
         this.spec = spec;
         this.fileName = fileName;
         this.container = container;
-        ConfigTracker.INSTANCE.trackConfig(this);
-    }
-
-    public ModConfig(final Type type, final IConfigSpec<?> spec, final ModContainer activeContainer) {
-        this(type, spec, activeContainer, defaultConfigName(type, activeContainer.getModId()));
-    }
-
-    private static String defaultConfigName(Type type, String modId) {
-        // config file name would be "forge-client.toml" and "forge-server.toml"
-        return String.format(Locale.ROOT, "%s-%s.toml", modId, type.extension());
     }
 
     public Type getType() {
@@ -48,35 +45,21 @@ public class ModConfig {
         return fileName;
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends IConfigSpec<T>> IConfigSpec<T> getSpec() {
-        return (IConfigSpec<T>) spec;
+    public IConfigSpec getSpec() {
+        return spec;
     }
 
     public String getModId() {
         return container.getModId();
     }
 
-    public CommentedConfig getConfigData() {
-        return this.configData;
-    }
-
-    void setConfigData(final CommentedConfig configData) {
-        this.configData = configData;
-        this.spec.acceptConfig(this.configData);
-    }
-
-    public void save() {
-        ((FileConfig) this.configData).save();
-    }
-
+    // TODO: remove from public API
     public Path getFullPath() {
-        return ((FileConfig) this.configData).getNioPath();
-    }
-
-    public void acceptSyncedConfig(byte[] bytes) {
-        setConfigData(TomlFormat.instance().createParser().parse(new ByteArrayInputStream(bytes)));
-        postConfigEvent(ModConfigEvent.Reloading::new);
+        if (this.config instanceof FileConfig fileConfig) {
+            return fileConfig.getNioPath();
+        } else {
+            throw new IllegalStateException("Cannot call getFullPath() on non-file config " + this.config + " at path " + getFileName());
+        }
     }
 
     void postConfigEvent(Function<ModConfig, ModConfigEvent> constructor) {
