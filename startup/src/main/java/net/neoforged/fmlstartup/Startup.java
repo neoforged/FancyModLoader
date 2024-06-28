@@ -31,6 +31,15 @@ public class Startup {
     public static void main(String[] args) throws IOException {
         StartupLog.info("JVM Uptime: {}ms", ManagementFactory.getRuntimeMXBean().getUptime());
 
+        try {
+            run(args);
+        } catch (FatalStartupException e) {
+            FatalErrorReporting.reportFatalError(e.getMessage());
+            System.exit(1);
+        }
+    }
+
+    private static void run(String[] args) throws IOException {
         var gameDir = getGameDir(args);
         StartupLog.info("Game dir: {}", gameDir);
 
@@ -66,25 +75,36 @@ public class Startup {
                 metadata = readMetadata(file.file);
             }
 
-            if (metadata != null) {
-                // This also marks it as used
-                cache.set(file.cacheKey, metadata);
-                if (BootModules.isBootModule(metadata.moduleName())) {
-                    startupModulePaths.add(file.file.toPath());
-                    startupModules.add(metadata.moduleName());
-                }
+            // This also marks it as used
+            cache.set(file.cacheKey, metadata);
+            if (BootModules.isBootModule(metadata.moduleName())) {
+                startupModulePaths.add(file.file.toPath());
+                startupModules.add(metadata.moduleName());
             }
         }
         StartupLog.info("Metadata for {} files read in {}. Used cache for {}.", metaRead, elapsedMillis(start), files.size() - metaRead);
 
         cache.save();
 
+        var moduleFinder = ModuleFinder.of(startupModulePaths.toArray(Path[]::new));
+
+        var missingRequiredModules = BootModules.getMissingRequiredModules(startupModules);
+        if (!missingRequiredModules.isEmpty()) {
+            // In development: Try to recover from not finding the modules as files on the classpath by
+            // assembling them from directories
+            startupModules.addAll(missingRequiredModules);
+
+            var recoveredModuleFinder = BootModules.recoverRequiredModulesFromDirectories(missingRequiredModules, directories);
+            moduleFinder = ModuleFinder.compose(moduleFinder, recoveredModuleFinder);
+
+            // throw FatalStartupErrors.missingRequiredModules(missingRequiredModules);
+        }
+
         start = System.nanoTime();
 
-        var after = ModuleFinder.of(startupModulePaths.toArray(Path[]::new));
         Configuration startupConfiguration = ModuleLayer.boot().configuration().resolveAndBind(
                 ModuleFinder.of(),
-                after,
+                moduleFinder,
                 startupModules
         );
 
@@ -97,6 +117,16 @@ public class Startup {
                 ClassLoader.getPlatformClassLoader()
         );
         StartupLog.info("Built startup module layer in {}", elapsedMillis(start));
+
+        // Launch FML
+        try {
+            var fmlLoaderModule = startupLayerController.layer().findModule("fml_loader").get();
+            var fmlLoader = Class.forName(fmlLoaderModule, "net.neoforged.fml.loading.FMLLoader");
+            var startupMethod = fmlLoader.getMethod("startup");
+            startupMethod.invoke(null);
+        } catch (Exception e) {
+            throw new FatalStartupException("Failed to load FML: " + e);
+        }
 
         var instrumentation = obtainInstrumentation();
 

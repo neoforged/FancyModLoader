@@ -1,6 +1,5 @@
 plugins {
     id 'com.github.ben-manes.versions' version '0.39.0'
-    id 'org.javamodularity.moduleplugin' version '1.8.7'
     id 'net.neoforged.licenser' version '0.7.2' apply false
     id 'com.diffplug.spotless' version '6.25.0' apply false
     id 'net.neoforged.gradleutils' version "${gradleutils_version}"
@@ -26,7 +25,6 @@ allprojects {
     apply plugin: 'signing'
 
     apply plugin: 'com.github.ben-manes.versions'
-    apply plugin: 'org.javamodularity.moduleplugin'
     apply plugin: 'net.neoforged.licenser'
     apply plugin: 'com.diffplug.spotless'
     apply plugin: 'net.neoforged.gradleutils'
@@ -40,20 +38,6 @@ allprojects {
     version = rootProject.version
 
     spotlessUtils.configure(spotless)
-
-    repositories {
-        mavenCentral()
-
-        maven {
-            name = 'NeoForged'
-            url = 'https://maven.neoforged.net/releases'
-        }
-
-        maven {
-            name = 'Minecraft'
-            url = 'https://libraries.minecraft.net'
-        }
-    }
 
     dependencyUpdates.rejectVersionIf { isNonStable(it.candidate.version) }
 

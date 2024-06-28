@@ -1,0 +1,26 @@
+package net.neoforged.fmlstartup;
+
+import org.lwjgl.util.tinyfd.TinyFileDialogs;
+
+public final class FatalErrorReporting {
+    private FatalErrorReporting() {
+    }
+
+    /**
+     * Report a fatal startup error.
+     * At this point it doesn't matter if we double-classload from the system classloader, since we're about to exit.
+     */
+    public static void reportFatalError(String message) {
+        // TinyFD refuses to let us use quotes
+        message = message.replace('"', '`');
+        message = message.replace('\'', '`');
+
+        TinyFileDialogs.tinyfd_messageBox(
+                "NeoForge - Fatal Startup Error",
+                message,
+                "ok",
+                "error",
+                true
+        );
+    }
+}
