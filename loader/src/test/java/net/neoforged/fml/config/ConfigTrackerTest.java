@@ -129,6 +129,10 @@ public class ConfigTrackerTest {
         Assertions.assertThat(spec.loadedValue)
                 .isEqualTo(10);
 
+        // Wait for the file watcher to be registered by NightConfig.
+        // TODO: Reconsider when NightConfig supports waiting for the watcher registration.
+        Thread.sleep(250);
+
         Files.writeString(tempDir.resolve(modConfig.getFileName()), """
                 configEntry = 5
                 """);
@@ -152,6 +156,10 @@ public class ConfigTrackerTest {
 
         Assertions.assertThat(spec.loadedValue)
                 .isEqualTo(10);
+
+        // Wait for the file watcher to be registered by NightConfig.
+        // TODO: Reconsider when NightConfig supports waiting for the watcher registration.
+        Thread.sleep(250);
 
         Files.writeString(tempDir.resolve(modConfig.getFileName()), """
                 configEntry = 5invalidintegerliteral heh
