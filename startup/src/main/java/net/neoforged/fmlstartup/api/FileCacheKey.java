@@ -25,4 +25,16 @@ public record FileCacheKey(String filename, long size, long lastModified) implem
         out.writeLong(size);
         out.writeLong(lastModified);
     }
+
+    public Object[] parcel() {
+        return new Object[]{filename, size, lastModified};
+    }
+
+    public static FileCacheKey unparcel(Object[] parcel) {
+        return new FileCacheKey(
+                (String) parcel[0],
+                (long) parcel[1],
+                (long) parcel[2]
+        );
+    }
 }

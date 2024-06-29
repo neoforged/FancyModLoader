@@ -22,7 +22,13 @@ public interface ILaunchContext {
     /**
      * The Modlauncher environment.
      */
+    @Deprecated(forRemoval = true)
     IEnvironment environment();
+
+    /**
+     * The game directory.
+     */
+    Path gameDirectory();
 
     <T> Stream<ServiceLoader.Provider<T>> loadServices(Class<T> serviceClass);
 

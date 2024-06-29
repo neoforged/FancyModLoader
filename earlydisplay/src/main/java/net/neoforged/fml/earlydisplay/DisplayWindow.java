@@ -200,7 +200,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
      *
      * Nothing fancy, we just want to draw and render text.
      */
-    private void initRender(final @Nullable String mcVersion, final String forgeVersion) {
+    private void initRender(final @Nullable String mcVersion, final @Nullable String forgeVersion) {
         // This thread owns the GL render context now. We should make a note of that.
         glfwMakeContextCurrent(window);
         // Wait for one frame to be complete before swapping; enable vsync in other words.
@@ -228,10 +228,20 @@ public class DisplayWindow implements ImmediateWindowProvider {
             LOGGER.error("Crash during font initialization", t);
             crashElegantly("An error occurred initializing a font for rendering. " + t.getMessage());
         }
+        StringBuilder versionText = new StringBuilder();
+        if (mcVersion != null) {
+            versionText.append(mcVersion);
+        }
+        if (forgeVersion != null) {
+            if (!versionText.isEmpty()) {
+                versionText.append(" - ");
+            }
+            versionText.append(forgeVersion.split("-")[0]);
+        }
         this.elements = new ArrayList<>(Arrays.asList(
                 RenderElement.fox(font),
                 RenderElement.logMessageOverlay(font),
-                RenderElement.forgeVersionOverlay(font, mcVersion + "-" + forgeVersion.split("-")[0]),
+                RenderElement.forgeVersionOverlay(font, versionText.toString()),
                 RenderElement.performanceBar(font),
                 RenderElement.progressBars(font)));
 
@@ -288,7 +298,13 @@ public class DisplayWindow implements ImmediateWindowProvider {
             return thread;
         });
         initWindow(mcVersion);
-        this.initializationFuture = renderScheduler.schedule(() -> initRender(mcVersion, forgeVersion), 1, TimeUnit.MILLISECONDS);
+        this.initializationFuture = renderScheduler.schedule(() -> {
+            try {
+                initRender(mcVersion, forgeVersion);
+            } catch (Exception e) {
+                LOGGER.error("Failed to initialize DisplayWindow for early progress.", e);
+            }
+        }, 1, TimeUnit.MILLISECONDS);
         return this::periodicTick;
     }
 

@@ -16,14 +16,9 @@ import java.lang.module.Configuration;
 import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.RecordComponent;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -76,6 +71,7 @@ public class Startup {
         List<String> startupModules = new ArrayList<>();
         start = System.nanoTime();
         var metaRead = 0;
+        var unclaimedFiles = new ArrayList<DiscoveredFile>(files.size());
         for (var file : files) {
             var metadata = cache.get(file.cacheKey());
             if (metadata == null) {
@@ -88,6 +84,8 @@ public class Startup {
             if (BootModules.isBootModule(metadata.moduleName())) {
                 startupModulePaths.add(file.file().toPath());
                 startupModules.add(metadata.moduleName());
+            } else {
+                unclaimedFiles.add(file);
             }
         }
         StartupLog.info("Metadata for {} files read in {}. Used cache for {}.", metaRead, elapsedMillis(start), files.size() - metaRead);
@@ -124,6 +122,11 @@ public class Startup {
 
         var instrumentation = obtainInstrumentation();
 
+        // Disabling JMX for JUnit improves startup time
+        if (System.getProperty("log4j2.disable.jmx") == null) {
+            System.setProperty("log4j2.disable.jmx", "true");
+        }
+
         // Launch FML
         var previousClassLoader = Thread.currentThread().getContextClassLoader();
         try {
@@ -134,10 +137,19 @@ public class Startup {
             }
             Thread.currentThread().setContextClassLoader(fmlLoader.getClassLoader());
 
-            var startupArgs = new StartupArgs(instrumentation, gameDir, launchTarget, args);
-            var teleportedStartupArgs = teleportArg(startupArgs, fmlLoader.getClassLoader());
-            var startupMethod = fmlLoader.getMethod("startup", teleportedStartupArgs.getClass());
-            startupMethod.invoke(null, teleportedStartupArgs);
+            var startupArgs = new StartupArgs(
+                    gameDir,
+                    launchTarget,
+                    args,
+                    unclaimedFiles,
+                    directories
+            );
+
+            start = System.nanoTime();
+            var teleportedStartupArgs = teleport(startupArgs, fmlLoader.getClassLoader());
+            StartupLog.debug("Teleporting arguments took {}", elapsedMillis(start));
+            var startupMethod = fmlLoader.getMethod("startup", Instrumentation.class, teleportedStartupArgs.getClass());
+            startupMethod.invoke(null, instrumentation, teleportedStartupArgs);
         } catch (InvocationTargetException e) {
             e.getCause().printStackTrace();
             throw new FatalStartupException("Failed to load FML: " + e.getCause());
@@ -151,15 +163,6 @@ public class Startup {
 
         StartupLog.info("After FMLLoader.startup");
 
-        // Make UnionFS work
-        /*instrumentation.redefineModule(
-                MethodHandle.class.getModule(),
-                Set.of(),
-                Map.of(),
-                Map.of("java.lang.invoke", Set.of(Startup.class.getModule())),
-                Set.of(),
-                Map.of());*/
-
 //        instrumentation.addTransformer(new ClassFileTransformer() {
 //            @Override
 //            public byte[] transform(Module module, ClassLoader loader, String className, Class<?>
@@ -170,85 +173,15 @@ public class Startup {
 //        });
     }
 
-    private static Object teleportArg(Object obj, ClassLoader targetLoader) {
-        if (obj == null) {
-            return null;
-        }
+    private static Object teleport(StartupArgs startupArgs, ClassLoader targetLoader) {
+        try {
+            var targetClass = Class.forName(StartupArgs.class.getName(), false, targetLoader);
 
-        switch (obj) {
-            case Record ignored -> {
-                var sourceClass = obj.getClass();
-                var targetClass = loadInTargetLoader(obj.getClass(), targetLoader);
-
-                var sourceComponents = sourceClass.getRecordComponents();
-                var targetComponents = targetClass.getRecordComponents();
-
-                // Find the record constructor in the target classloader
-                Constructor<?> targetCtor;
-                try {
-                    targetCtor = targetClass.getDeclaredConstructor(Arrays.stream(targetComponents)
-                            .map(RecordComponent::getType)
-                            .toArray(Class<?>[]::new));
-                } catch (NoSuchMethodException e) {
-                    throw new RuntimeException("Cannot teleport " + sourceClass + " since no canonical ctor was found.");
-                }
-
-                // Teleport annotated record components
-                Object[] teleportedComponents = new Object[sourceComponents.length];
-                for (int i = 0; i < teleportedComponents.length; i++) {
-                    try {
-                        var sourceValue = sourceComponents[i].getAccessor().invoke(obj);
-                        if (sourceComponents[i].isAnnotationPresent(Teleport.class)) {
-                            teleportedComponents[i] = teleportArg(sourceValue, targetLoader);
-                        } else {
-                            teleportedComponents[i] = sourceValue;
-                        }
-                    } catch (IllegalAccessException | InvocationTargetException e) {
-                        throw new RuntimeException("Cannot teleport " + sourceClass + " since its record component is inaccesible", e);
-                    }
-                }
-
-                // Then construct the target class
-                try {
-                    return targetCtor.newInstance(teleportedComponents);
-                } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                    throw new RuntimeException("Cannot teleport " + sourceClass + " because the target ctor failed.", e);
-                }
-            }
-            case ArrayList<?> list -> {
-                var result = new ArrayList<Object>(list);
-                result.replaceAll(content -> teleportArg(content, targetLoader));
-                return result;
-            }
-            case HashSet<?> set -> {
-                var result = new HashSet<>(set.size());
-                for (Object o : set) {
-                    result.add(teleportArg(o, targetLoader));
-                }
-                return result;
-            }
-            case HashMap<?, ?> map -> {
-                var result = new HashMap<>(map.size());
-                for (var entry : map.entrySet()) {
-                    result.put(teleportArg(entry.getKey(), targetLoader), teleportArg(entry.getValue(), targetLoader));
-                }
-                return result;
-            }
-            default ->
-                    throw new IllegalArgumentException("Trying to teleport unsupported type " + obj.getClass().getName());
-        }
-    }
-
-    private static Class<?> loadInTargetLoader(Class<?> sourceClass, ClassLoader targetLoader) {
-        // Find the class of the same name in the target loader
-        if (sourceClass.isArray()) {
-            return loadInTargetLoader(sourceClass.componentType(), targetLoader).arrayType();
-        } else {
-            try {
-                return targetLoader.loadClass(sourceClass.getName());
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException("Failed to load class in target classloader: " + sourceClass);
-            }
+            var readMethod = targetClass.getMethod("unparcel", Object[].class);
+            return readMethod.invoke(null, (Object) startupArgs.parcel());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new FatalStartupException("Failed to teleport startup args to target classloader.");
         }
     }
 
@@ -331,14 +264,18 @@ public class Startup {
             }
         }
 
-        String modType = null;
+        // This is an early pass to find libraries that are not to be loaded on the game layer
+        boolean forceBootLayer = false;
         if (manifest != null) {
-            modType = manifest.getMainAttributes().getValue("FMLModType");
+            var modType = manifest.getMainAttributes().getValue("FMLModType");
+            if ("BOOTLIBRARY".equalsIgnoreCase(modType) || "LIBRARY".equalsIgnoreCase(modType)) {
+                forceBootLayer = true;
+            }
         }
 
         var moduleName = moduleDescriptor != null ? moduleDescriptor.name() : null;
 
-        return new CachedMetadata(moduleName, false);
+        return new CachedMetadata(moduleName, forceBootLayer);
     }
 
     private static final Attributes.Name AUTOMATIC_MODULE_NAME = new Attributes.Name("Automatic-Module-Name");

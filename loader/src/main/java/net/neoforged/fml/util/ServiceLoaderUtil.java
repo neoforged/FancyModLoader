@@ -111,7 +111,7 @@ public final class ServiceLoaderUtil {
     }
 
     private static String relativizePath(ILaunchContext context, Path path) {
-        var gameDir = context.environment().getProperty(IEnvironment.Keys.GAMEDIR.get()).orElse(null);
+        var gameDir = context.gameDirectory();
 
         String resultPath;
 

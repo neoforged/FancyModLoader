@@ -29,6 +29,11 @@ class TestLaunchContext implements ILaunchContext {
     }
 
     @Override
+    public Path gameDirectory() {
+        return this.launchContext.gameDirectory();
+    }
+
+    @Override
     public <T> Stream<ServiceLoader.Provider<T>> loadServices(Class<T> serviceClass) {
         return Stream.concat(
                 launchContext.loadServices(serviceClass),

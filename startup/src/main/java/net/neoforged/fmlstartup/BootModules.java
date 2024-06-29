@@ -37,8 +37,10 @@ final class BootModules {
      * The set of modules we add ourselves, that are needed by FML to work.
      */
     private static final List<String> REQUIRED_BOOT_MODULES = List.of(
+            "maven.artifact",
             "net.neoforged.accesstransformer",
             "net.neoforged.accesstransformer.parser",
+            "net.neoforged.accesstransformer.modlauncher",
             "com.electronwill.nightconfig.core",
             "com.electronwill.nightconfig.toml",
             "net.neoforged.mergetool.api",

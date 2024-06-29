@@ -10,6 +10,7 @@ import static net.neoforged.fml.loading.LogMarkers.LOADING;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.IEnvironment;
+import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -25,6 +27,7 @@ import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionSpecBuilder;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.loading.targets.CommonLaunchHandler;
 import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.Environment;
 import net.neoforged.neoforgespi.ILaunchContext;
@@ -68,12 +71,25 @@ public class FMLServiceProvider implements ITransformationService {
         FMLConfig.load();
         var moduleLayerManager = environment.findModuleLayerManager().orElseThrow();
         launchContext = new LaunchContext(environment,
+                FMLPaths.GAMEDIR.get(),
                 moduleLayerManager,
                 modListsArgumentList,
                 modsArgumentList,
                 mavenRootsArgumentList);
         LOGGER.debug(CORE, "Preparing launch handler");
-        FMLLoader.setupLaunchHandler(environment, versionInfo);
+        var launchTarget = environment.getProperty(IEnvironment.Keys.LAUNCHTARGET.get()).orElse("MISSING");
+        final Optional<ILaunchHandlerService> launchHandler = environment.findLaunchHandler(launchTarget);
+        LOGGER.debug(LogMarkers.CORE, "Using {} as launch service", launchTarget);
+        if (launchHandler.isEmpty()) {
+            LOGGER.error(LogMarkers.CORE, "Missing LaunchHandler {}, cannot continue", launchTarget);
+            throw new RuntimeException("Missing launch handler: " + launchTarget);
+        }
+
+        if (!(launchHandler.get() instanceof CommonLaunchHandler)) {
+            LOGGER.error(LogMarkers.CORE, "Incompatible Launch handler found - type {}, cannot continue", launchHandler.get().getClass().getName());
+            throw new RuntimeException("Incompatible launch handler found");
+        }
+        FMLLoader.setupLaunchHandler(versionInfo, (CommonLaunchHandler) launchHandler.get());
         FMLEnvironment.setupInteropEnvironment(environment);
         Environment.build(environment);
     }

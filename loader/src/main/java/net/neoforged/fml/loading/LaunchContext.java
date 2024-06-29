@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 final class LaunchContext implements ILaunchContext {
     private static final Logger LOG = LoggerFactory.getLogger(LaunchContext.class);
     private final IEnvironment environment;
+    private final Path gameDirectory;
     private final IModuleLayerManager moduleLayerManager;
     private final List<String> modLists;
     private final List<String> mods;
@@ -32,11 +33,13 @@ final class LaunchContext implements ILaunchContext {
 
     LaunchContext(
             IEnvironment environment,
+            Path gameDirectory,
             IModuleLayerManager moduleLayerManager,
             List<String> modLists,
             List<String> mods,
             List<String> mavenRoots) {
         this.environment = environment;
+        this.gameDirectory = gameDirectory;
         this.moduleLayerManager = moduleLayerManager;
         this.modLists = modLists;
         this.mods = mods;
@@ -55,6 +58,11 @@ final class LaunchContext implements ILaunchContext {
             });
         }
         LOG.debug(LogMarkers.SCAN, "Located paths when launch context was created: {}", locatedPaths);
+    }
+
+    @Override
+    public Path gameDirectory() {
+        return gameDirectory;
     }
 
     private Path unpackPath(Path path) {

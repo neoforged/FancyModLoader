@@ -42,6 +42,13 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
     @Nullable
     private String dist;
 
+    public RuntimeDistCleaner(@Nullable Dist dist) {
+        setDistribution(dist);
+    }
+
+    public RuntimeDistCleaner() {
+    }
+
     @Override
     public String name() {
         return "runtimedistcleaner";

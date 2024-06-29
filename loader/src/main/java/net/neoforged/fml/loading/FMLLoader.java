@@ -16,20 +16,23 @@ import cpw.mods.modlauncher.ModuleLayerHandler;
 import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformationServicesHandler;
 import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
+import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.accesstransformer.ml.AccessTransformerService;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.common.asm.RuntimeDistCleaner;
+import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModValidator;
 import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
+import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import net.neoforged.fml.loading.targets.CommonLaunchHandler;
+import net.neoforged.fml.loading.targets.NeoForgeClientUserdevLaunchHandler;
 import net.neoforged.fmlstartup.FatalStartupException;
 import net.neoforged.fmlstartup.api.StartupArgs;
 import net.neoforged.neoforgespi.ILaunchContext;
@@ -38,17 +41,25 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.lang.instrument.Instrumentation;
 import java.lang.invoke.MethodHandle;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static net.neoforged.fml.loading.LogMarkers.CORE;
 
 public class FMLLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -70,14 +81,7 @@ public class FMLLoader {
 
     // This is called by FML Startup
     @SuppressWarnings("unused")
-    public static void startup(StartupArgs startupArgs) {
-        FMLPaths.loadAbsolutePaths(startupArgs.gameDirectory().toPath());
-        FMLConfig.load();
-
-        // Start up early display
-        ImmediateWindowHandler.load(startupArgs.launchTarget(), startupArgs.programArgs());
-
-        var instrumentation = startupArgs.instrumentation();
+    public static void startup(Instrumentation instrumentation, StartupArgs startupArgs) {
         // Make UnionFS work
         // TODO: This should come from a manifest? Service-Loader? Something...
         instrumentation.redefineModule(
@@ -88,39 +92,82 @@ public class FMLLoader {
                 Set.of(),
                 Map.of());
 
-        // ML would usually handle these two arguments
         var moduleLayerHandler = new ModuleLayerHandler();
+        var environment = new Environment(
+                s -> Optional.empty(), // TODO
+                s -> Optional.empty(), // TODO
+                moduleLayerHandler
+        );
+
+        var launchContext = new LaunchContext(
+                environment,
+                startupArgs.gameDirectory().toPath(),
+                moduleLayerHandler,
+                List.of(), // TODO: Argparse
+                List.of(), // TODO: Argparse
+                List.of() // TODO: Argparse
+        );
+
+        FMLPaths.loadAbsolutePaths(startupArgs.gameDirectory().toPath());
+        FMLConfig.load();
+
+        LOGGER.debug(CORE, "Preparing launch handler");
+        FMLLoader.setupLaunchHandler(
+                new VersionInfo("", "", "", ""),
+                new NeoForgeClientUserdevLaunchHandler()
+        );
+        FMLEnvironment.setupInteropEnvironment(environment);
+        net.neoforged.neoforgespi.Environment.build(environment);
+
+        ImmediateWindowHandler.load(startupArgs.launchTarget(), startupArgs.programArgs());
+
+        var discoveryResult = runOffThread(() -> runDiscovery(launchContext));
+
+        // ML would usually handle these two arguments
         var launchService = new LaunchServiceHandler(moduleLayerHandler);
 
         var transformStore = new TransformStore();
         var transformationServicesHandler = new TransformationServicesHandler(transformStore, moduleLayerHandler);
         var argumentHandler = new ArgumentHandler();
-        var launchPlugins = new LaunchPluginHandler(moduleLayerHandler);
 
-        var environment = new Environment(
-                launchPlugins,
-                launchService,
-                moduleLayerHandler
-        );
-        Launcher launcher = new Launcher(
+        // Add our own launch plugins explicitly
+        var launchPlugins = new ArrayList<ILaunchPluginService>();
+        launchPlugins.add(new AccessTransformerService());
+        launchPlugins.add(new RuntimeEnumExtender());
+        launchPlugins.add(new RuntimeDistCleaner(commonLaunchHandler.getDist()));
+
+        var launchPluginHandler = new LaunchPluginHandler(launchPlugins.stream());
+
+        var launcher = new Launcher(
                 transformationServicesHandler,
                 environment,
                 transformStore,
                 argumentHandler,
                 launchService,
-                launchPlugins,
+                launchPluginHandler,
                 moduleLayerHandler
         );
         Launcher.INSTANCE = launcher;
 
         var discoveryData = argumentHandler.setArgs(startupArgs.programArgs());
         transformationServicesHandler.discoverServices(discoveryData);
+
+        // ITransformationService.class.getName(),
+        // IModFileCandidateLocator.class.getName(),
+        // IModFileReader.class.getName(),
+        // IDependencyLocator.class.getName(),
+        // TODO -> MANIFEST.MF declaration GraphicsBootstrapper.class.getName(),
+        // TODO -> MANIFEST.MF declaration net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider.class.getName()
+
+        // Add our services directly
+        new AccessTransformerService();
+
         final var scanResults = transformationServicesHandler.initializeTransformationServices(argumentHandler, environment)
                 .stream().collect(Collectors.groupingBy(ITransformationService.Resource::target));
         scanResults.getOrDefault(IModuleLayerManager.Layer.PLUGIN, List.of())
                 .stream()
                 .<SecureJar>mapMulti((resource, action) -> resource.resources().forEach(action))
-                .forEach(np-> moduleLayerHandler.addToLayer(IModuleLayerManager.Layer.PLUGIN, np));
+                .forEach(np -> moduleLayerHandler.addToLayer(IModuleLayerManager.Layer.PLUGIN, np));
         moduleLayerHandler.buildLayer(IModuleLayerManager.Layer.PLUGIN);
         final var gameResults = transformationServicesHandler.triggerScanCompletion(moduleLayerHandler)
                 .stream().collect(Collectors.groupingBy(ITransformationService.Resource::target));
@@ -128,13 +175,13 @@ public class FMLLoader {
                 .flatMap(m -> m.getOrDefault(IModuleLayerManager.Layer.GAME, List.of()).stream())
                 .<SecureJar>mapMulti((resource, action) -> resource.resources().forEach(action))
                 .toList();
-        gameContents.forEach(j->moduleLayerHandler.addToLayer(IModuleLayerManager.Layer.GAME, j));
+        gameContents.forEach(j -> moduleLayerHandler.addToLayer(IModuleLayerManager.Layer.GAME, j));
         transformationServicesHandler.initialiseServiceTransformers();
-        launchPlugins.offerScanResultsToPlugins(gameContents);
+        launchPluginHandler.offerScanResultsToPlugins(gameContents);
         // We do not do this: launchService.validateLaunchTarget(argumentHandler);
-        var classLoader = transformationServicesHandler.buildTransformingClassLoader(launchPlugins, environment, moduleLayerHandler);
+        var classLoader = transformationServicesHandler.buildTransformingClassLoader(launchPluginHandler, environment, moduleLayerHandler);
         Thread.currentThread().setContextClassLoader(classLoader);
-        launchService.launch(argumentHandler, moduleLayerHandler.getLayer(IModuleLayerManager.Layer.GAME).orElseThrow(), classLoader, launchPlugins);
+        launchService.launch(argumentHandler, moduleLayerHandler.getLayer(IModuleLayerManager.Layer.GAME).orElseThrow(), classLoader, launchPluginHandler);
 
         // ML would usually handle these two arguments
         environment.computePropertyIfAbsent(IEnvironment.Keys.MLSPEC_VERSION.get(), s -> IEnvironment.class.getPackage().getSpecificationVersion());
@@ -223,6 +270,46 @@ public class FMLLoader {
 //                (List<ITransformer<?>>) transformers);
     }
 
+    record DiscoveryResult() {
+    }
+
+    private static DiscoveryResult runDiscovery(ILaunchContext launchContext) {
+
+        var progress = StartupNotificationManager.prependProgressBar("Discovering mods...", 0);
+
+        beginModScan(launchContext);
+
+        completeScan(launchContext, List.of());
+
+        progress.complete();
+
+        return new DiscoveryResult();
+    }
+
+    private static <T> T runOffThread(Supplier<T> supplier) {
+        var future = CompletableFuture.supplyAsync(() -> {
+            try {
+                return supplier.get();
+            } catch (Exception e) {
+                LOGGER.error("Off-thread operation failed.", e);
+                throw new CompletionException(e);
+            }
+        });
+
+        while (true) {
+            ImmediateWindowHandler.renderTick();
+            try {
+                return future.get(10L, TimeUnit.MILLISECONDS);
+            } catch (ExecutionException e) {
+                throw new CompletionException(e.getCause());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Interrupted while waiting for future", e);
+            } catch (TimeoutException ignored) {
+            }
+        }
+    }
+
     static void onInitialLoad(IEnvironment environment) throws IncompatibleEnvironmentException {
         final String version = LauncherVersion.getVersion();
         LOGGER.debug(LogMarkers.CORE, "FML {} loading", version);
@@ -256,28 +343,18 @@ public class FMLLoader {
         }
     }
 
-    static void setupLaunchHandler(IEnvironment environment, VersionInfo versionInfo) {
-        var launchTarget = environment.getProperty(IEnvironment.Keys.LAUNCHTARGET.get()).orElse("MISSING");
-        final Optional<ILaunchHandlerService> launchHandler = environment.findLaunchHandler(launchTarget);
-        LOGGER.debug(LogMarkers.CORE, "Using {} as launch service", launchTarget);
-        if (launchHandler.isEmpty()) {
-            LOGGER.error(LogMarkers.CORE, "Missing LaunchHandler {}, cannot continue", launchTarget);
-            throw new RuntimeException("Missing launch handler: " + launchTarget);
-        }
-
-        if (!(launchHandler.get() instanceof CommonLaunchHandler)) {
-            LOGGER.error(LogMarkers.CORE, "Incompatible Launch handler found - type {}, cannot continue", launchHandler.get().getClass().getName());
-            throw new RuntimeException("Incompatible launch handler found");
-        }
-        commonLaunchHandler = (CommonLaunchHandler) launchHandler.get();
-        launchHandlerName = launchHandler.get().name();
-        gamePath = environment.getProperty(IEnvironment.Keys.GAMEDIR.get()).orElse(Paths.get(".").toAbsolutePath());
+    static void setupLaunchHandler(VersionInfo versionInfo, CommonLaunchHandler launchHandler) {
+        commonLaunchHandler = launchHandler;
+        launchHandlerName = launchHandler.name();
+        gamePath = FMLPaths.GAMEDIR.get();
         FMLLoader.versionInfo = versionInfo;
 
         dist = commonLaunchHandler.getDist();
         production = commonLaunchHandler.isProduction();
 
-        runtimeDistCleaner.setDistribution(dist);
+        if (runtimeDistCleaner != null) {
+            runtimeDistCleaner.setDistribution(dist);
+        }
     }
 
     public static List<ITransformationService.Resource> beginModScan(ILaunchContext launchContext) {
@@ -290,7 +367,8 @@ public class FMLLoader {
         return List.of(pluginResources);
     }
 
-    public static List<ITransformationService.Resource> completeScan(ILaunchContext launchContext, List<String> extraMixinConfigs) {
+    public static List<ITransformationService.Resource> completeScan(ILaunchContext
+                                                                             launchContext, List<String> extraMixinConfigs) {
         languageProviderLoader = new LanguageProviderLoader(launchContext);
         backgroundScanHandler = modValidator.stage2Validation();
         loadingModList = backgroundScanHandler.getLoadingModList();

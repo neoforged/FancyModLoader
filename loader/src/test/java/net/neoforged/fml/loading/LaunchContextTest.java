@@ -88,7 +88,7 @@ class LaunchContextTest {
                 };
             }
         };
-        context = new LaunchContext(environment, moduleLayerManager, List.of(), List.of(), List.of());
+        context = new LaunchContext(environment, tempDir, moduleLayerManager, List.of(), List.of(), List.of());
 
         // Create the plugin-layer after the ctor has already been called
         pluginLayer = createModuleLayer(otherJarPath, "test.other.jar");

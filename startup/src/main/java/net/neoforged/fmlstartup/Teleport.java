@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 /**
  * Marks record parameters as having to be teleported to the target classloader
  */
-@Target(ElementType.PARAMETER)
+@Target(ElementType.RECORD_COMPONENT)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Teleport {
 }

@@ -5,6 +5,8 @@
 
 package net.neoforged.fmlstartup;
 
+import net.neoforged.fmlstartup.api.FileCacheKey;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInput;
@@ -16,12 +18,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import net.neoforged.fmlstartup.api.FileCacheKey;
-import org.jetbrains.annotations.Nullable;
 
 class MetadataCache {
     private static final String FILENAME = "fml_startup_metadata.bin";
@@ -36,10 +35,11 @@ class MetadataCache {
             data = new HashMap<>(entryCount);
             for (var i = 0; i < entryCount; i++) {
                 var key = FileCacheKey.read(in);
-                var value = CachedMetadata.read(in);
+                var value = readMetadata(in);
                 data.put(key, value);
             }
-        } catch (FileNotFoundException ignored) {} catch (Exception e) {
+        } catch (FileNotFoundException ignored) {
+        } catch (Exception e) {
             System.err.println("Failed to load metadata cache from " + cacheFile + ": " + e);
         }
         if (data == null) {
@@ -62,27 +62,23 @@ class MetadataCache {
             out.writeInt(data.size());
             for (var entry : data.entrySet()) {
                 entry.getKey().write(out);
-                entry.getValue().write(out);
+                writeMetadata(entry.getValue(), out);
             }
         } catch (IOException e) {
             System.err.println("Failed to store metadata cache at " + cacheFile + ": " + e);
         }
     }
-}
 
-record CachedMetadata(@Nullable String moduleName, boolean hasDiscoveryServices) implements Serializable {
-    static CachedMetadata read(DataInput in) throws IOException {
+    private static CachedMetadata readMetadata(DataInput in) throws IOException {
         var moduleName = in.readUTF();
         if (moduleName.isEmpty()) {
             moduleName = null;
         }
-        return new CachedMetadata(
-                moduleName,
-                in.readBoolean());
+        return new CachedMetadata(moduleName, in.readBoolean());
     }
 
-    void write(DataOutput out) throws IOException {
-        out.writeUTF(Objects.requireNonNullElse(moduleName, ""));
-        out.writeBoolean(hasDiscoveryServices);
+    private static void writeMetadata(CachedMetadata metadata, DataOutput out) throws IOException {
+        out.writeUTF(Objects.requireNonNullElse(metadata.moduleName(), ""));
+        out.writeBoolean(metadata.forceBootLayer());
     }
 }
