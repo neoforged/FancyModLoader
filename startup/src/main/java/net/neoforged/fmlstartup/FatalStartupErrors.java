@@ -1,11 +1,14 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fmlstartup;
 
 import java.util.Collection;
-import java.util.List;
 
 public final class FatalStartupErrors {
-    private FatalStartupErrors() {
-    }
+    private FatalStartupErrors() {}
 
     public static FatalStartupException missingRequiredModules(Collection<String> missingModules) {
         var message = new StringBuilder("Failed to start because some required modules were missing:\n");

@@ -5,8 +5,6 @@
 
 package net.neoforged.fmlstartup;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInput;
@@ -22,6 +20,8 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import net.neoforged.fmlstartup.api.FileCacheKey;
+import org.jetbrains.annotations.Nullable;
 
 class MetadataCache {
     private static final String FILENAME = "fml_startup_metadata.bin";
@@ -39,8 +39,7 @@ class MetadataCache {
                 var value = CachedMetadata.read(in);
                 data.put(key, value);
             }
-        } catch (FileNotFoundException ignored) {
-        } catch (Exception e) {
+        } catch (FileNotFoundException ignored) {} catch (Exception e) {
             System.err.println("Failed to load metadata cache from " + cacheFile + ": " + e);
         }
         if (data == null) {
@@ -71,22 +70,6 @@ class MetadataCache {
     }
 }
 
-record FileCacheKey(String filename, long size, long lastModified) implements Serializable {
-    FileCacheKey {
-        filename = Objects.requireNonNull(filename, "filename");
-    }
-
-    static FileCacheKey read(DataInput in) throws IOException {
-        return new FileCacheKey(in.readUTF(), in.readLong(), in.readLong());
-    }
-
-    void write(DataOutput out) throws IOException {
-        out.writeUTF(filename);
-        out.writeLong(size);
-        out.writeLong(lastModified);
-    }
-}
-
 record CachedMetadata(@Nullable String moduleName, boolean hasDiscoveryServices) implements Serializable {
     static CachedMetadata read(DataInput in) throws IOException {
         var moduleName = in.readUTF();
@@ -95,8 +78,7 @@ record CachedMetadata(@Nullable String moduleName, boolean hasDiscoveryServices)
         }
         return new CachedMetadata(
                 moduleName,
-                in.readBoolean()
-        );
+                in.readBoolean());
     }
 
     void write(DataOutput out) throws IOException {

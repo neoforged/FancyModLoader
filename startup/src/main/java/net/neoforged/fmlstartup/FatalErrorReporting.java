@@ -1,10 +1,14 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fmlstartup;
 
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 public final class FatalErrorReporting {
-    private FatalErrorReporting() {
-    }
+    private FatalErrorReporting() {}
 
     /**
      * Report a fatal startup error.
@@ -20,7 +24,6 @@ public final class FatalErrorReporting {
                 message,
                 "ok",
                 "error",
-                true
-        );
+                true);
     }
 }

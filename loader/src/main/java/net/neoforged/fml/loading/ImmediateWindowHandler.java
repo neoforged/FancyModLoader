@@ -36,10 +36,7 @@ public class ImmediateWindowHandler {
     private static ProgressMeter earlyProgress;
 
     public static void load(final String launchTarget, final String[] arguments) {
-        final var layer = Launcher.INSTANCE.findLayerManager()
-                .flatMap(manager -> manager.getLayer(Layer.SERVICE))
-                .orElseThrow(() -> new IllegalStateException("Couldn't find SERVICE layer"));
-        ServiceLoader.load(layer, GraphicsBootstrapper.class)
+        ServiceLoader.load(GraphicsBootstrapper.class)
                 .stream()
                 .map(ServiceLoader.Provider::get)
                 .forEach(bootstrap -> {
@@ -55,7 +52,7 @@ public class ImmediateWindowHandler {
         } else {
             final var providername = FMLConfig.getConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER);
             LOGGER.info("Loading ImmediateWindowProvider {}", providername);
-            final var maybeProvider = ServiceLoader.load(layer, ImmediateWindowProvider.class)
+            final var maybeProvider = ServiceLoader.load(ImmediateWindowProvider.class)
                     .stream()
                     .map(ServiceLoader.Provider::get)
                     .filter(p -> Objects.equals(p.name(), providername))

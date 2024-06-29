@@ -1,9 +1,16 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fmlstartup;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.module.ModuleReader;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -70,10 +77,29 @@ final class LayeredDirectoryModuleReader implements ModuleReader {
 
     @Override
     public Stream<String> list() throws IOException {
-        return Stream.empty();
+        // This is not super optimized as it should not be called
+        var result = Stream.<String>empty();
+
+        for (File directory : directories) {
+            var dirPath = directory.toPath();
+            result = Stream.concat(result, Files.walk(dirPath, Integer.MAX_VALUE)
+                    .map(f -> toResourceName(dirPath, f))
+                    .filter(s -> !s.isEmpty()));
+        }
+
+        return result;
+    }
+
+    public static String toResourceName(Path dir, Path file) {
+        String s = dir.relativize(file)
+                .toString()
+                .replace('\\', '/');
+        if (!s.isEmpty() && Files.isDirectory(file)) {
+            s += "/";
+        }
+        return s;
     }
 
     @Override
-    public void close() {
-    }
+    public void close() {}
 }

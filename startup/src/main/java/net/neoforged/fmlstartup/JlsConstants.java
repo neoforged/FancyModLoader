@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fmlstartup;
 
 import java.util.Set;
@@ -60,8 +65,20 @@ final class JlsConstants {
             "false",
             // Not really a keyword, but the "null literal"
             "null",
-            "_"
-    );
+            "_");
+
+    // Same as jdk.internal.module.Checks.isClassName
+    // A string is a type name, if each of the segments delimited by '.' are valid identifiers
+    public static boolean isTypeName(String str) {
+        var lastIdx = 0;
+        for (var idx = str.indexOf('.'); idx != -1; idx = str.indexOf('.', lastIdx)) {
+            if (!isJavaIdentifier(str.substring(lastIdx, idx))) {
+                return false;
+            }
+            lastIdx = idx + 1;
+        }
+        return isJavaIdentifier(str.substring(lastIdx));
+    }
 
     // Same as jdk.internal.module.Checks.isJavaIdentifier
     public static boolean isJavaIdentifier(String str) {
@@ -85,5 +102,14 @@ final class JlsConstants {
     }
 
     private JlsConstants() {
+    }
+
+    public static String packageName(String line) {
+        var idx = line.lastIndexOf('.');
+        if (idx == -1) {
+            return "";
+        } else {
+            return line.substring(0, idx);
+        }
     }
 }

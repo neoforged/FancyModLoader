@@ -27,3 +27,6 @@ include 'loader'
 include 'earlydisplay'
 include 'junit'
 include 'startup'
+
+includeBuild '../modlauncher'
+

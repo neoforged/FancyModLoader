@@ -5,21 +5,27 @@
 
 package net.neoforged.fmlstartup;
 
+import net.neoforged.fmlstartup.api.DiscoveredFile;
+import net.neoforged.fmlstartup.api.StartupArgs;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
-import java.lang.invoke.MethodHandle;
 import java.lang.management.ManagementFactory;
 import java.lang.module.Configuration;
 import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.RecordComponent;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
@@ -41,7 +47,9 @@ public class Startup {
 
     private static void run(String[] args) throws IOException {
         var gameDir = getGameDir(args);
-        StartupLog.info("Game dir: {}", gameDir);
+        StartupLog.info("Game Directory: {}", gameDir);
+        var launchTarget = getLaunchTarget(args);
+        StartupLog.info("Launch Target: {}", launchTarget);
 
         var cacheDir = new File(gameDir, ".neoforgecache");
         if (!cacheDir.exists() && !cacheDir.mkdir()) {
@@ -69,16 +77,16 @@ public class Startup {
         start = System.nanoTime();
         var metaRead = 0;
         for (var file : files) {
-            var metadata = cache.get(file.cacheKey);
+            var metadata = cache.get(file.cacheKey());
             if (metadata == null) {
                 metaRead++;
-                metadata = readMetadata(file.file);
+                metadata = readMetadata(file.file());
             }
 
             // This also marks it as used
-            cache.set(file.cacheKey, metadata);
+            cache.set(file.cacheKey(), metadata);
             if (BootModules.isBootModule(metadata.moduleName())) {
-                startupModulePaths.add(file.file.toPath());
+                startupModulePaths.add(file.file().toPath());
                 startupModules.add(metadata.moduleName());
             }
         }
@@ -96,8 +104,6 @@ public class Startup {
 
             var recoveredModuleFinder = BootModules.recoverRequiredModulesFromDirectories(missingRequiredModules, directories);
             moduleFinder = ModuleFinder.compose(moduleFinder, recoveredModuleFinder);
-
-            // throw FatalStartupErrors.missingRequiredModules(missingRequiredModules);
         }
 
         start = System.nanoTime();
@@ -105,8 +111,7 @@ public class Startup {
         Configuration startupConfiguration = ModuleLayer.boot().configuration().resolveAndBind(
                 ModuleFinder.of(),
                 moduleFinder,
-                startupModules
-        );
+                startupModules);
 
         StartupLog.info("Built startup module layer configuration in {}", elapsedMillis(start));
 
@@ -114,32 +119,47 @@ public class Startup {
         var startupLayerController = ModuleLayer.defineModulesWithOneLoader(
                 startupConfiguration,
                 List.of(ModuleLayer.boot()),
-                ClassLoader.getPlatformClassLoader()
-        );
+                ClassLoader.getPlatformClassLoader());
         StartupLog.info("Built startup module layer in {}", elapsedMillis(start));
-
-        // Launch FML
-        try {
-            var fmlLoaderModule = startupLayerController.layer().findModule("fml_loader").get();
-            var fmlLoader = Class.forName(fmlLoaderModule, "net.neoforged.fml.loading.FMLLoader");
-            var startupMethod = fmlLoader.getMethod("startup");
-            startupMethod.invoke(null);
-        } catch (Exception e) {
-            throw new FatalStartupException("Failed to load FML: " + e);
-        }
 
         var instrumentation = obtainInstrumentation();
 
+        // Launch FML
+        var previousClassLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            var fmlLoaderModule = startupLayerController.layer().findModule("fml_loader").get();
+            var fmlLoader = Class.forName(fmlLoaderModule, "net.neoforged.fml.loading.FMLLoader");
+            if (fmlLoader == null) {
+                throw new FatalStartupException("Unable to find FMLLoader entrypoint class.");
+            }
+            Thread.currentThread().setContextClassLoader(fmlLoader.getClassLoader());
+
+            var startupArgs = new StartupArgs(instrumentation, gameDir, launchTarget, args);
+            var teleportedStartupArgs = teleportArg(startupArgs, fmlLoader.getClassLoader());
+            var startupMethod = fmlLoader.getMethod("startup", teleportedStartupArgs.getClass());
+            startupMethod.invoke(null, teleportedStartupArgs);
+        } catch (InvocationTargetException e) {
+            e.getCause().printStackTrace();
+            throw new FatalStartupException("Failed to load FML: " + e.getCause());
+        } catch (NoSuchMethodException e) {
+            throw new FatalStartupException("Failed to load FML. No startup method found." + e);
+        } catch (IllegalAccessException e) {
+            throw new FatalStartupException("Failed to load FML. Startup method has invalid access." + e);
+        } finally {
+            Thread.currentThread().setContextClassLoader(previousClassLoader);
+        }
+
+        StartupLog.info("After FMLLoader.startup");
+
         // Make UnionFS work
-        instrumentation.redefineModule(
+        /*instrumentation.redefineModule(
                 MethodHandle.class.getModule(),
                 Set.of(),
                 Map.of(),
                 Map.of("java.lang.invoke", Set.of(Startup.class.getModule())),
                 Set.of(),
-                Map.of());
+                Map.of());*/
 
-//
 //        instrumentation.addTransformer(new ClassFileTransformer() {
 //            @Override
 //            public byte[] transform(Module module, ClassLoader loader, String className, Class<?>
@@ -150,6 +170,88 @@ public class Startup {
 //        });
     }
 
+    private static Object teleportArg(Object obj, ClassLoader targetLoader) {
+        if (obj == null) {
+            return null;
+        }
+
+        switch (obj) {
+            case Record ignored -> {
+                var sourceClass = obj.getClass();
+                var targetClass = loadInTargetLoader(obj.getClass(), targetLoader);
+
+                var sourceComponents = sourceClass.getRecordComponents();
+                var targetComponents = targetClass.getRecordComponents();
+
+                // Find the record constructor in the target classloader
+                Constructor<?> targetCtor;
+                try {
+                    targetCtor = targetClass.getDeclaredConstructor(Arrays.stream(targetComponents)
+                            .map(RecordComponent::getType)
+                            .toArray(Class<?>[]::new));
+                } catch (NoSuchMethodException e) {
+                    throw new RuntimeException("Cannot teleport " + sourceClass + " since no canonical ctor was found.");
+                }
+
+                // Teleport annotated record components
+                Object[] teleportedComponents = new Object[sourceComponents.length];
+                for (int i = 0; i < teleportedComponents.length; i++) {
+                    try {
+                        var sourceValue = sourceComponents[i].getAccessor().invoke(obj);
+                        if (sourceComponents[i].isAnnotationPresent(Teleport.class)) {
+                            teleportedComponents[i] = teleportArg(sourceValue, targetLoader);
+                        } else {
+                            teleportedComponents[i] = sourceValue;
+                        }
+                    } catch (IllegalAccessException | InvocationTargetException e) {
+                        throw new RuntimeException("Cannot teleport " + sourceClass + " since its record component is inaccesible", e);
+                    }
+                }
+
+                // Then construct the target class
+                try {
+                    return targetCtor.newInstance(teleportedComponents);
+                } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                    throw new RuntimeException("Cannot teleport " + sourceClass + " because the target ctor failed.", e);
+                }
+            }
+            case ArrayList<?> list -> {
+                var result = new ArrayList<Object>(list);
+                result.replaceAll(content -> teleportArg(content, targetLoader));
+                return result;
+            }
+            case HashSet<?> set -> {
+                var result = new HashSet<>(set.size());
+                for (Object o : set) {
+                    result.add(teleportArg(o, targetLoader));
+                }
+                return result;
+            }
+            case HashMap<?, ?> map -> {
+                var result = new HashMap<>(map.size());
+                for (var entry : map.entrySet()) {
+                    result.put(teleportArg(entry.getKey(), targetLoader), teleportArg(entry.getValue(), targetLoader));
+                }
+                return result;
+            }
+            default ->
+                    throw new IllegalArgumentException("Trying to teleport unsupported type " + obj.getClass().getName());
+        }
+    }
+
+    private static Class<?> loadInTargetLoader(Class<?> sourceClass, ClassLoader targetLoader) {
+        // Find the class of the same name in the target loader
+        if (sourceClass.isArray()) {
+            return loadInTargetLoader(sourceClass.componentType(), targetLoader).arrayType();
+        } else {
+            try {
+                return targetLoader.loadClass(sourceClass.getName());
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("Failed to load class in target classloader: " + sourceClass);
+            }
+        }
+    }
+
     private static String getPathDisplayName(File gameDir, File path) {
         var gameDirPathStr = gameDir.getAbsolutePath();
         var pathStr = path.getAbsolutePath();
@@ -157,12 +259,6 @@ public class Startup {
             return pathStr.substring(gameDirPathStr.length());
         }
         return pathStr;
-    }
-
-    record DiscoveredFile(File file, FileCacheKey cacheKey) {
-        public static DiscoveredFile of(File file) {
-            return new DiscoveredFile(file, new FileCacheKey(file.getName(), file.length(), file.lastModified()));
-        }
     }
 
     private static void searchClassPath(List<DiscoveredFile> files, List<File> directories) {
@@ -298,7 +394,6 @@ public class Startup {
             builder.version(vs);
 
         return builder.build();
-
     }
 
     /**
@@ -369,17 +464,26 @@ public class Startup {
     }
 
     private static File getGameDir(String[] args) {
-        for (int i = 0; i < args.length; i++) {
-            if ("--gameDir".equals(args[i]) && i + 1 < args.length) {
-                var gameDir = new File(args[i + 1]);
-                if (!gameDir.isDirectory()) {
-                    throw new RuntimeException("The game directory passed on the command-line is not a directory: " + gameDir);
-                }
-                return gameDir;
+        var gameDir = new File(getArg(args, "gameDir", "")).getAbsoluteFile();
+        if (!gameDir.isDirectory()) {
+            throw new RuntimeException("The game directory passed on the command-line is not a directory: " + gameDir);
+        }
+        return gameDir;
+    }
+
+    private static String getLaunchTarget(String[] args) {
+        return getArg(args, "launchTarget", "forgeclient");
+    }
+
+    private static String getArg(String[] args, String name, String defaultValue) {
+        var argName = "--" + name;
+        for (int i = 0; i + 1 < args.length; i++) {
+            if (argName.equals(args[i])) {
+                return args[i + 1];
             }
         }
 
-        return new File("").getAbsoluteFile();
+        return defaultValue;
     }
 
     private static Instrumentation obtainInstrumentation() {

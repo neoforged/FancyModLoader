@@ -1,15 +1,24 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fmlstartup;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReader;
 import java.lang.module.ModuleReference;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,11 +33,27 @@ import java.util.Optional;
 import java.util.Set;
 
 final class BootModules {
+    /**
+     * The set of modules we add ourselves, that are needed by FML to work.
+     */
     private static final List<String> REQUIRED_BOOT_MODULES = List.of(
+            "net.neoforged.accesstransformer",
+            "net.neoforged.accesstransformer.parser",
+            "com.electronwill.nightconfig.core",
+            "com.electronwill.nightconfig.toml",
+            "net.neoforged.mergetool.api",
+            "org.objectweb.asm",
+            "org.objectweb.asm.tree",
+            "cpw.mods.securejarhandler",
+            "cpw.mods.modlauncher",
             "fml_earlydisplay",
-            "fml_loader"
+            "fml_loader",
+            "fml_startup"
     );
 
+    /**
+     * This is the set of platform modules that we expect Minecraft to add.
+     */
     private static final List<String> BOOT_MODULES = List.of(
             // Math library
             "org.joml",
@@ -46,9 +71,7 @@ final class BootModules {
             "com.sun.jna",
             "com.sun.jna.*",
             // GSON
-            "com.google.gson"
-            // TODO: ASM? Shade it?
-    );
+            "com.google.gson");
 
     private static final Set<String> DIRECT_MATCHES = new HashSet<>();
     private static final List<String> PREFIX_MATCHES = new ArrayList<>();
@@ -131,7 +154,29 @@ final class BootModules {
         }
 
         // Now find class roots
+        directoryLoop:
         for (var directory : directories) {
+            // If the director has a module-info.class, it's quite clear what we have to do
+            var moduleInfoFile = new File(directory, "module-info.class");
+            if (moduleInfoFile.isFile()) {
+                ModuleDescriptor moduleDescriptor;
+                try (InputStream in = new FileInputStream(moduleInfoFile)) {
+                    moduleDescriptor = ModuleDescriptor.read(in);
+                } catch (IOException e) {
+                    throw new FatalStartupException("Failed to read module descriptor " + moduleInfoFile);
+                }
+
+                // Does it match any of the modules we're loading?
+                for (var module : modules) {
+                    if (module.moduleName.equals(moduleDescriptor.name())) {
+                        // It does! Jackpot.
+                        module.classesDir = directory;
+                        module.moduleDescriptor = moduleDescriptor;
+                        continue directoryLoop;
+                    }
+                }
+            }
+
             // Scan for all java packages in this directory
             Set<String> javaPackages;
             try {
@@ -144,25 +189,22 @@ final class BootModules {
             // The logic is as follows: If a directory contains all packages expected by a module
             // we consider it the class root.
             for (var module : modules) {
-                if (module.classesDir != null) {
-                    continue; // Already found a classes dir
-                }
+                if (module.classesDir == null && module.expectedPackages != null && !module.expectedPackages.isEmpty()) {
+                    boolean allFound = true;
 
-                boolean allFound = true;
-                for (var expectedPackage : module.expectedPackages) {
-                    if (!javaPackages.contains(expectedPackage)) {
-                        allFound = false;
+                    for (var expectedPackage : module.expectedPackages) {
+                        if (!javaPackages.contains(expectedPackage)) {
+                            allFound = false;
+                            break;
+                        }
+                    }
+
+                    if (allFound) {
+                        // We consider this the classes root
+                        module.classesDir = directory;
+                        module.moduleDescriptor = buildInDevelopmentModuleDescriptor(module, javaPackages);
                         break;
                     }
-                }
-
-                if (allFound) {
-                    // We consider this the classes root
-                    module.classesDir = directory;
-                    module.moduleDescriptor = ModuleDescriptor.newAutomaticModule(module.moduleName)
-                            .packages(Set.copyOf(javaPackages))
-                            .build();
-                    break;
                 }
             }
         }
@@ -183,10 +225,12 @@ final class BootModules {
         for (var module : modules) {
             var layeredDirs = new ArrayList<File>();
             layeredDirs.add(module.classesDir);
-            if (!module.resourcesDir.equals(module.classesDir)) {
+            directories.remove(module.classesDir);
+
+            if (module.resourcesDir != null && !module.resourcesDir.equals(module.classesDir)) {
                 layeredDirs.add(module.resourcesDir);
+                directories.remove(module.resourcesDir);
             }
-            // TODO we have to mark these dirs as used so they do not get passed to FML
 
             var moduleReference = new ModuleReference(module.moduleDescriptor, module.classesDir.toURI()) {
                 @Override
@@ -210,6 +254,59 @@ final class BootModules {
         };
     }
 
+    /**
+     * The JDK does not expose the functionality that we need.
+     * Treat the given JAR file as a module as follows:
+     * 1. The value of the Automatic-Module-Name attribute is the module name
+     * We skip vesion: 2. The version, and the module name when the Automatic-Module-Name attribute is not present, is derived from the file ame of the JAR file
+     * 3. All packages are derived from the .class files in the JAR file
+     * 4. The contents of any META-INF/ services configuration files are mapped to "provides" declarations
+     * We skip: 5. The Main-Class attribute in the main attributes of the JAR manifest is mapped to the module descriptor mainClass if possible
+     * <p>
+     * See jdk.internal.module.ModulePath#deriveModuleDescriptor(java.util.jar.JarFile)
+     */
+    private static @NotNull ModuleDescriptor buildInDevelopmentModuleDescriptor(ReconstructedModule module, Set<String> javaPackages) {
+        var builder = ModuleDescriptor.newAutomaticModule(module.moduleName);
+        builder.packages(Set.copyOf(javaPackages));
+
+        var serviceFiles = new File(module.resourcesDir, "META-INF/services/").listFiles();
+        if (serviceFiles != null) {
+            for (var serviceFile : serviceFiles) {
+                // Only consider files having the name of valid Java types
+                if (JlsConstants.isTypeName(serviceFile.getName())) {
+                    var implementationClasses = new ArrayList<String>();
+                    try (var reader = new BufferedReader(new FileReader(serviceFile, StandardCharsets.UTF_8))) {
+                        String line;
+                        for (line = reader.readLine(); line != null; line = reader.readLine()) {
+                            var commentStart = line.indexOf('#');
+                            if (commentStart != -1) {
+                                line = line.substring(0, commentStart);
+                            }
+                            var implClassName = line.trim();
+                            if (!line.isEmpty()) {
+                                var implPackage = JlsConstants.packageName(implClassName);
+                                if (!javaPackages.contains(implPackage)) {
+                                    throw new FatalStartupException(
+                                            "Module " + module.moduleName + " provides service " + implClassName + " that is not in its own packages."
+                                    );
+                                }
+                                implementationClasses.add(implClassName);
+                            }
+                        }
+                    } catch (IOException e) {
+                        throw new FatalStartupException("Failed to read service descriptor " + serviceFile);
+                    }
+
+                    if (!implementationClasses.isEmpty()) {
+                        builder.provides(serviceFile.getName(), implementationClasses);
+                    }
+                }
+            }
+        }
+
+        return builder.build();
+    }
+
     private static List<String> getExpectedPackages(File resourceRootMarker) {
         var expectedPackages = new ArrayList<String>();
         try (var lineReader = new BufferedReader(new FileReader(resourceRootMarker))) {
@@ -221,10 +318,6 @@ final class BootModules {
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to read resource root marker " + resourceRootMarker, e);
-        }
-
-        if (expectedPackages.isEmpty()) {
-            throw new RuntimeException("The resource root marker " + resourceRootMarker + " was empty.");
         }
         return expectedPackages;
     }
