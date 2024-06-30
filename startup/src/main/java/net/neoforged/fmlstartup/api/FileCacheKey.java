@@ -27,14 +27,13 @@ public record FileCacheKey(String filename, long size, long lastModified) implem
     }
 
     public Object[] parcel() {
-        return new Object[]{filename, size, lastModified};
+        return new Object[] { filename, size, lastModified };
     }
 
     public static FileCacheKey unparcel(Object[] parcel) {
         return new FileCacheKey(
                 (String) parcel[0],
                 (long) parcel[1],
-                (long) parcel[2]
-        );
+                (long) parcel[2]);
     }
 }

@@ -87,11 +87,11 @@ final class JlsConstants {
         }
 
         // This iterates over the Unicode code points instead of UTF-16 characters
-        for (var i = 0; i < str.length(); ) {
+        for (var i = 0; i < str.length();) {
             int codePoint = Character.codePointAt(str, i);
 
             if (i == 0 && !Character.isJavaIdentifierStart(codePoint)
-                || !Character.isJavaIdentifierPart(codePoint)) {
+                    || !Character.isJavaIdentifierPart(codePoint)) {
                 return false;
             }
 
@@ -101,8 +101,7 @@ final class JlsConstants {
         return true;
     }
 
-    private JlsConstants() {
-    }
+    private JlsConstants() {}
 
     public static String packageName(String line) {
         var idx = line.lastIndexOf('.');

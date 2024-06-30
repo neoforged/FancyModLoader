@@ -1,0 +1,23 @@
+
+plugins {
+    id 'net.neoforged.moddev'
+}
+
+neoForge {
+    version = '21.0.42-beta'
+}
+
+configurations {
+    minecraftJars {
+        canBeConsumed = true
+    }
+}
+
+dependencies {
+    minecraftJars files(createMinecraftArtifacts.resourcesArtifact)
+    minecraftJars files(createMinecraftArtifacts.compiledWithSourcesArtifact)
+}
+
+repositories {
+    mavenCentral()
+}

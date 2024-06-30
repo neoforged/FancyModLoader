@@ -5,6 +5,7 @@
 
 package net.neoforged.fml.loading;
 
+import com.google.gson.Gson;
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.ArgumentHandler;
@@ -16,6 +17,7 @@ import cpw.mods.modlauncher.ModuleLayerHandler;
 import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformationServicesHandler;
 import cpw.mods.modlauncher.api.IEnvironment;
+import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
@@ -23,6 +25,7 @@ import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.accesstransformer.ml.AccessTransformerService;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.asm.RuntimeDistCleaner;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
@@ -36,16 +39,19 @@ import net.neoforged.fml.loading.targets.NeoForgeClientUserdevLaunchHandler;
 import net.neoforged.fmlstartup.FatalStartupException;
 import net.neoforged.fmlstartup.api.StartupArgs;
 import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.invoke.MethodHandle;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -82,6 +88,8 @@ public class FMLLoader {
     // This is called by FML Startup
     @SuppressWarnings("unused")
     public static void startup(Instrumentation instrumentation, StartupArgs startupArgs) {
+        LOGGER.info("Starting FancyModLoader version {}", JarVersionLookupHandler.getVersion(FMLLoader.class).orElse("UNKNOWN"));
+
         // Make UnionFS work
         // TODO: This should come from a manifest? Service-Loader? Something...
         instrumentation.redefineModule(
@@ -93,11 +101,14 @@ public class FMLLoader {
                 Map.of());
 
         var moduleLayerHandler = new ModuleLayerHandler();
+        var launchPlugins = new HashMap<String, ILaunchPluginService>();
+        var launchHandlers = new HashMap<String, ILaunchHandlerService>();
         var environment = new Environment(
-                s -> Optional.empty(), // TODO
-                s -> Optional.empty(), // TODO
-                moduleLayerHandler
-        );
+                s -> Optional.ofNullable(launchPlugins.get(s)),
+                s -> Optional.ofNullable(launchHandlers.get(s)),
+                moduleLayerHandler);
+
+        parseArgs(startupArgs.programArgs());
 
         var launchContext = new LaunchContext(
                 environment,
@@ -111,46 +122,65 @@ public class FMLLoader {
         FMLPaths.loadAbsolutePaths(startupArgs.gameDirectory().toPath());
         FMLConfig.load();
 
+        ImmediateWindowHandler.load(startupArgs.launchTarget(), startupArgs.programArgs());
+
         LOGGER.debug(CORE, "Preparing launch handler");
+        var launchHandler = switch (startupArgs.launchTarget()) {
+            case "" -> new NeoForgeClientUserdevLaunchHandler();
+            default -> {
+                LOGGER.error("Unknown launch target. Defaulting to start the client.");
+                yield new NeoForgeClientUserdevLaunchHandler();
+            }
+        };
+
         FMLLoader.setupLaunchHandler(
                 new VersionInfo("", "", "", ""),
-                new NeoForgeClientUserdevLaunchHandler()
-        );
+                launchHandler);
+        // Only register the one we already know is selected
+        launchHandlers.put(commonLaunchHandler.name(), commonLaunchHandler);
         FMLEnvironment.setupInteropEnvironment(environment);
         net.neoforged.neoforgespi.Environment.build(environment);
 
-        ImmediateWindowHandler.load(startupArgs.launchTarget(), startupArgs.programArgs());
-
         var discoveryResult = runOffThread(() -> runDiscovery(launchContext));
 
+        // TODO: There is no reason to defer this since we have much more control over startup now
+        if (!loadingModList.hasErrors()) {
+            // Add extra mixin configs
+            var extraMixinConfigs = System.getProperty("fml.extraMixinConfigs");
+            if (extraMixinConfigs != null) {
+                for (String s : extraMixinConfigs.split(File.pathSeparator)) {
+                    DeferredMixinConfigRegistration.addMixinConfig(s);
+                }
+            }
+        }
+
         // ML would usually handle these two arguments
-        var launchService = new LaunchServiceHandler(moduleLayerHandler);
+        var launchService = new LaunchServiceHandler(Stream.empty());
 
         var transformStore = new TransformStore();
         var transformationServicesHandler = new TransformationServicesHandler(transformStore, moduleLayerHandler);
         var argumentHandler = new ArgumentHandler();
 
         // Add our own launch plugins explicitly
-        var launchPlugins = new ArrayList<ILaunchPluginService>();
-        launchPlugins.add(new AccessTransformerService());
-        launchPlugins.add(new RuntimeEnumExtender());
-        launchPlugins.add(new RuntimeDistCleaner(commonLaunchHandler.getDist()));
+        accessTransformer = addLaunchPlugin(launchPlugins, new AccessTransformerService()).engine;
+        addLaunchPlugin(launchPlugins, new RuntimeEnumExtender());
+        runtimeDistCleaner = addLaunchPlugin(launchPlugins, new RuntimeDistCleaner(commonLaunchHandler.getDist()));
 
-        var launchPluginHandler = new LaunchPluginHandler(launchPlugins.stream());
+        var launchPluginHandler = new LaunchPluginHandler(launchPlugins.values().stream());
 
-        var launcher = new Launcher(
+        Launcher.INSTANCE = new Launcher(
                 transformationServicesHandler,
                 environment,
                 transformStore,
                 argumentHandler,
                 launchService,
                 launchPluginHandler,
-                moduleLayerHandler
-        );
-        Launcher.INSTANCE = launcher;
+                moduleLayerHandler);
 
-        var discoveryData = argumentHandler.setArgs(startupArgs.programArgs());
-        transformationServicesHandler.discoverServices(discoveryData);
+        argumentHandler.setArgs(startupArgs.programArgs());
+        transformationServicesHandler.discoverServices(new ArgumentHandler.DiscoveryData(
+                startupArgs.gameDirectory().toPath(), startupArgs.launchTarget(), startupArgs.programArgs()
+        ));
 
         // ITransformationService.class.getName(),
         // IModFileCandidateLocator.class.getName(),
@@ -158,9 +188,6 @@ public class FMLLoader {
         // IDependencyLocator.class.getName(),
         // TODO -> MANIFEST.MF declaration GraphicsBootstrapper.class.getName(),
         // TODO -> MANIFEST.MF declaration net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider.class.getName()
-
-        // Add our services directly
-        new AccessTransformerService();
 
         final var scanResults = transformationServicesHandler.initializeTransformationServices(argumentHandler, environment)
                 .stream().collect(Collectors.groupingBy(ITransformationService.Resource::target));
@@ -180,35 +207,13 @@ public class FMLLoader {
         launchPluginHandler.offerScanResultsToPlugins(gameContents);
         // We do not do this: launchService.validateLaunchTarget(argumentHandler);
         var classLoader = transformationServicesHandler.buildTransformingClassLoader(launchPluginHandler, environment, moduleLayerHandler);
+        // From here on out, try loading through the TCL
         Thread.currentThread().setContextClassLoader(classLoader);
-        launchService.launch(argumentHandler, moduleLayerHandler.getLayer(IModuleLayerManager.Layer.GAME).orElseThrow(), classLoader, launchPluginHandler);
 
-        // ML would usually handle these two arguments
-        environment.computePropertyIfAbsent(IEnvironment.Keys.MLSPEC_VERSION.get(), s -> IEnvironment.class.getPackage().getSpecificationVersion());
-        environment.computePropertyIfAbsent(IEnvironment.Keys.MLIMPL_VERSION.get(), s -> IEnvironment.class.getPackage().getImplementationVersion());
-        environment.computePropertyIfAbsent(IEnvironment.Keys.MODLIST.get(), s -> new ArrayList<>());
-        environment.computePropertyIfAbsent(IEnvironment.Keys.GAMEDIR.get(), ignored -> startupArgs.gameDirectory().toPath());
-        environment.computePropertyIfAbsent(IEnvironment.Keys.LAUNCHTARGET.get(), ignored -> startupArgs.launchTarget());
+        var gameLayer = moduleLayerHandler.getLayer(IModuleLayerManager.Layer.GAME).orElseThrow();
+        commonLaunchHandler.launchService(startupArgs.programArgs(), gameLayer);
 
-        moduleLayerHandler.buildLayer(IModuleLayerManager.Layer.SERVICE);
-
-        try {
-            FMLLoader.onInitialLoad(environment);
-        } catch (IncompatibleEnvironmentException e) {
-            throw new FatalStartupException(e.toString());
-        }
-
-        // Determine which Minecraft we're launching with
-        try {
-            var versionJsons = FMLLoader.class.getClassLoader().getResources("version.json");
-            while (versionJsons.hasMoreElements()) {
-                var versionJsonUri = versionJsons.nextElement();
-                System.out.println(versionJsonUri);
-            }
-        } catch (IOException e) {
-            throw new FatalStartupException(e.toString());
-        }
-
+        throw new FatalStartupException("x");
 //        serviceProvider.argumentValues(new ITransformationService.OptionResult() {
 //            @Override
 //            public <V> V value(OptionSpec<V> options) {
@@ -270,27 +275,72 @@ public class FMLLoader {
 //                (List<ITransformer<?>>) transformers);
     }
 
-    record DiscoveryResult() {
+    private static <T extends ILaunchPluginService> T addLaunchPlugin(Map<String, ILaunchPluginService> services,
+                                                                      T service) {
+        LOGGER.debug("Adding built-in launch plugin {}", service.name());
+        services.put(service.name(), service);
+        return service;
+    }
+
+    private static void parseArgs(String[] strings) {
+        String neoForgeVersion = null;
+        String mcVersion = null;
+        String neoFormVersion = null;
+
+        for (int i = 0; i < strings.length; i++) {
+            var arg = strings[i];
+
+            String option;
+            if (arg.startsWith("--")) {
+                option = arg.substring(2);
+            } else if (arg.startsWith("-")) {
+                option = arg.substring(1);
+            } else {
+                continue; // Unknown option
+            }
+
+            if (i + 1 < strings.length) {
+                switch (option) {
+                    case "neoForgeVersion" -> neoForgeVersion = strings[++i];
+                    case "fmlVersion" -> ++i;
+                    case "mcVersion" -> mcVersion = strings[++i];
+                    case "neoFormVersion" -> neoFormVersion = strings[++i];
+                }
+            }
+        }
+    }
+
+    record DiscoveryResult(List<ModFile> pluginContent, List<ModFile> gameContent) {
     }
 
     private static DiscoveryResult runDiscovery(ILaunchContext launchContext) {
-
         var progress = StartupNotificationManager.prependProgressBar("Discovering mods...", 0);
 
-        beginModScan(launchContext);
+        var additionalLocators = new ArrayList<IModFileCandidateLocator>();
+        commonLaunchHandler.collectAdditionalModFileLocators(versionInfo, additionalLocators::add);
 
-        completeScan(launchContext, List.of());
+        var modDiscoverer = new ModDiscoverer(launchContext, additionalLocators);
+        modValidator = modDiscoverer.discoverMods();
+        var pluginResources = modValidator.getPluginResources();
+
+        languageProviderLoader = new LanguageProviderLoader(launchContext);
+        backgroundScanHandler = modValidator.stage2Validation();
+        loadingModList = backgroundScanHandler.getLoadingModList();
+
+        var gameResources = modValidator.getModResources();
 
         progress.complete();
 
-        return new DiscoveryResult();
+        return new DiscoveryResult(
+                pluginResources,
+                gameResources);
     }
 
     private static <T> T runOffThread(Supplier<T> supplier) {
         var future = CompletableFuture.supplyAsync(() -> {
             try {
                 return supplier.get();
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 LOGGER.error("Off-thread operation failed.", e);
                 throw new CompletionException(e);
             }
@@ -320,19 +370,18 @@ public class FMLLoader {
             return new IncompatibleEnvironmentException("Missing AccessTransformer, cannot run");
         })).engine;
 
-        try {
-            var eventBus = Class.forName("net.neoforged.bus.api.IEventBus", false, environment.getClass().getClassLoader());
-            LOGGER.debug(LogMarkers.CORE, "FML found EventBus version : {}", eventBus.getPackage().getImplementationVersion());
-        } catch (ClassNotFoundException e) {
-            LOGGER.error(LogMarkers.CORE, "Event Bus library is missing, we need this to run");
-            throw new IncompatibleEnvironmentException("Missing EventBus, cannot run");
-        }
-
         runtimeDistCleaner = (RuntimeDistCleaner) environment.findLaunchPlugin("runtimedistcleaner").orElseThrow(() -> {
             LOGGER.error(LogMarkers.CORE, "Dist Cleaner is missing, we need this to run");
             return new IncompatibleEnvironmentException("Missing DistCleaner, cannot run!");
         });
         LOGGER.debug(LogMarkers.CORE, "Found Runtime Dist Cleaner");
+
+        try {
+            LOGGER.debug(LogMarkers.CORE, "FML found EventBus version : {}", JarVersionLookupHandler.getVersion(IEventBus.class).orElse("UNKNOWN"));
+        } catch (NoClassDefFoundError e) {
+            LOGGER.error(LogMarkers.CORE, "Event Bus library is missing, we need this to run");
+            throw new IncompatibleEnvironmentException("Missing EventBus, cannot run");
+        }
 
         try {
             Class.forName("com.electronwill.nightconfig.core.Config", false, environment.getClass().getClassLoader());
@@ -357,6 +406,7 @@ public class FMLLoader {
         }
     }
 
+    @Deprecated(forRemoval = true)
     public static List<ITransformationService.Resource> beginModScan(ILaunchContext launchContext) {
         var additionalLocators = new ArrayList<IModFileCandidateLocator>();
         commonLaunchHandler.collectAdditionalModFileLocators(versionInfo, additionalLocators::add);
@@ -364,11 +414,11 @@ public class FMLLoader {
         var modDiscoverer = new ModDiscoverer(launchContext, additionalLocators);
         modValidator = modDiscoverer.discoverMods();
         var pluginResources = modValidator.getPluginResources();
-        return List.of(pluginResources);
+        return List.of(new ITransformationService.Resource(IModuleLayerManager.Layer.PLUGIN, pluginResources.stream().map(IModFile::getSecureJar).toList()));
     }
 
-    public static List<ITransformationService.Resource> completeScan(ILaunchContext
-                                                                             launchContext, List<String> extraMixinConfigs) {
+    @Deprecated(forRemoval = true)
+    public static List<ITransformationService.Resource> completeScan(ILaunchContext launchContext, List<String> extraMixinConfigs) {
         languageProviderLoader = new LanguageProviderLoader(launchContext);
         backgroundScanHandler = modValidator.stage2Validation();
         loadingModList = backgroundScanHandler.getLoadingModList();
@@ -376,7 +426,8 @@ public class FMLLoader {
             // Add extra mixin configs
             extraMixinConfigs.forEach(DeferredMixinConfigRegistration::addMixinConfig);
         }
-        return List.of(modValidator.getModResources());
+        return List.of(
+                new ITransformationService.Resource(IModuleLayerManager.Layer.GAME, modValidator.getModResources().stream().map(ModFile::getSecureJar).toList()));
     }
 
     public static LanguageProviderLoader getLanguageLoadingProvider() {

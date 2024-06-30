@@ -6,8 +6,6 @@
 package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.modlauncher.api.IModuleLayerManager;
-import cpw.mods.modlauncher.api.ITransformationService;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -62,17 +60,18 @@ public class ModValidator {
         }
     }
 
-    public ITransformationService.Resource getPluginResources() {
-        return new ITransformationService.Resource(IModuleLayerManager.Layer.PLUGIN, this.candidatePlugins.stream().map(IModFile::getSecureJar).toList());
+    public List<ModFile> getPluginResources() {
+        return this.candidatePlugins;
     }
 
-    public ITransformationService.Resource getModResources() {
+    public List<ModFile> getModResources() {
         var modFilesToLoad = Stream.concat(
                 // mods
                 this.loadingModList.getModFiles().stream().map(ModFileInfo::getFile),
                 // game libraries
                 lst(this.modFiles.get(IModFile.Type.GAMELIBRARY)).stream());
-        return new ITransformationService.Resource(IModuleLayerManager.Layer.GAME, modFilesToLoad.map(ModFile::getSecureJar).toList());
+
+        return modFilesToLoad.toList();
     }
 
     private void validateLanguages() {

@@ -19,9 +19,7 @@ public record StartupArgs(
         String launchTarget,
         String[] programArgs,
         List<DiscoveredFile> files,
-        List<File> directories
-) {
-
+        List<File> directories) {
     public Object[] parcel() {
         Object[][] parceledFiles = new Object[files.size()][];
         for (int i = 0; i < files.size(); i++) {
@@ -37,7 +35,8 @@ public record StartupArgs(
         };
     }
 
-    @SuppressWarnings("unchecked")
+    // This is called via reflection
+    @SuppressWarnings({"unchecked", "unused"})
     public static StartupArgs unparcel(Object[] parcel) {
         var parcelledFiles = (Object[][]) parcel[3];
         List<DiscoveredFile> files = new ArrayList<>(parcelledFiles.length);
@@ -50,8 +49,6 @@ public record StartupArgs(
                 (String) parcel[1],
                 (String[]) parcel[2],
                 files,
-                (List<File>) parcel[4]
-        );
+                (List<File>) parcel[4]);
     }
-
 }

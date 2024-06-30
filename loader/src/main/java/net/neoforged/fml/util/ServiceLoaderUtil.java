@@ -5,8 +5,6 @@
 
 package net.neoforged.fml.util;
 
-import com.google.common.collect.Streams;
-import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.niofs.union.UnionFileSystem;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -18,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.ServiceConfigurationError;
+import java.util.stream.Stream;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.jarjar.nio.pathfs.PathFileSystem;
 import net.neoforged.neoforgespi.ILaunchContext;
@@ -49,7 +48,7 @@ public final class ServiceLoaderUtil {
             }
         }).filter(Objects::nonNull);
 
-        var servicesStream = Streams.concat(additionalServices.stream(), serviceLoaderServices).distinct();
+        var servicesStream = Stream.concat(additionalServices.stream(), serviceLoaderServices).distinct();
 
         var applyPriority = IOrderedProvider.class.isAssignableFrom(serviceClass);
         if (applyPriority) {

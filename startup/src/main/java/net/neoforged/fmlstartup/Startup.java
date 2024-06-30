@@ -16,11 +16,15 @@ import java.lang.module.Configuration;
 import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
@@ -67,8 +71,8 @@ public class Startup {
         StartupLog.info("Read metadata cache in {}", elapsedMillis(start));
 
         // Build the startup layer
-        List<Path> startupModulePaths = new ArrayList<>();
-        List<String> startupModules = new ArrayList<>();
+        List<Path> bootModulePaths = new ArrayList<>();
+        List<String> bootModules = new ArrayList<>();
         start = System.nanoTime();
         var metaRead = 0;
         var unclaimedFiles = new ArrayList<DiscoveredFile>(files.size());
@@ -82,8 +86,8 @@ public class Startup {
             // This also marks it as used
             cache.set(file.cacheKey(), metadata);
             if (BootModules.isBootModule(metadata.moduleName())) {
-                startupModulePaths.add(file.file().toPath());
-                startupModules.add(metadata.moduleName());
+                bootModulePaths.add(file.file().toPath());
+                bootModules.add(metadata.moduleName());
             } else {
                 unclaimedFiles.add(file);
             }
@@ -92,13 +96,13 @@ public class Startup {
 
         cache.save();
 
-        var moduleFinder = ModuleFinder.of(startupModulePaths.toArray(Path[]::new));
+        var moduleFinder = ModuleFinder.of(bootModulePaths.toArray(Path[]::new));
 
-        var missingRequiredModules = BootModules.getMissingRequiredModules(startupModules);
+        var missingRequiredModules = BootModules.getMissingRequiredModules(bootModules);
         if (!missingRequiredModules.isEmpty()) {
             // In development: Try to recover from not finding the modules as files on the classpath by
             // assembling them from directories
-            startupModules.addAll(missingRequiredModules);
+            bootModules.addAll(missingRequiredModules);
 
             var recoveredModuleFinder = BootModules.recoverRequiredModulesFromDirectories(missingRequiredModules, directories);
             moduleFinder = ModuleFinder.compose(moduleFinder, recoveredModuleFinder);
@@ -106,21 +110,26 @@ public class Startup {
 
         start = System.nanoTime();
 
-        Configuration startupConfiguration = ModuleLayer.boot().configuration().resolveAndBind(
+        Configuration startupConfiguration = Configuration.resolveAndBind(
                 ModuleFinder.of(),
+                List.of(ModuleLayer.boot().configuration()),
                 moduleFinder,
-                startupModules);
+                bootModules);
 
         StartupLog.info("Built startup module layer configuration in {}", elapsedMillis(start));
 
         start = System.nanoTime();
-        var startupLayerController = ModuleLayer.defineModulesWithOneLoader(
+        var systemClassLoader = ClassLoader.getSystemClassLoader();
+        var bootLayer = ModuleLayer.defineModules(
                 startupConfiguration,
                 List.of(ModuleLayer.boot()),
-                ClassLoader.getPlatformClassLoader());
+                s -> systemClassLoader);
         StartupLog.info("Built startup module layer in {}", elapsedMillis(start));
 
         var instrumentation = obtainInstrumentation();
+
+        // Use "loadModule" hacks to get the system CL to fully recognize our modules as if they were on the module path
+        loadModules(instrumentation, systemClassLoader, startupConfiguration);
 
         // Disabling JMX for JUnit improves startup time
         if (System.getProperty("log4j2.disable.jmx") == null) {
@@ -130,20 +139,14 @@ public class Startup {
         // Launch FML
         var previousClassLoader = Thread.currentThread().getContextClassLoader();
         try {
-            var fmlLoaderModule = startupLayerController.layer().findModule("fml_loader").get();
-            var fmlLoader = Class.forName(fmlLoaderModule, "net.neoforged.fml.loading.FMLLoader");
-            if (fmlLoader == null) {
-                throw new FatalStartupException("Unable to find FMLLoader entrypoint class.");
-            }
-            Thread.currentThread().setContextClassLoader(fmlLoader.getClassLoader());
+            var fmlLoader = Class.forName("net.neoforged.fml.loading.FMLLoader");
 
             var startupArgs = new StartupArgs(
                     gameDir,
                     launchTarget,
                     args,
                     unclaimedFiles,
-                    directories
-            );
+                    directories);
 
             start = System.nanoTime();
             var teleportedStartupArgs = teleport(startupArgs, fmlLoader.getClassLoader());
@@ -153,10 +156,8 @@ public class Startup {
         } catch (InvocationTargetException e) {
             e.getCause().printStackTrace();
             throw new FatalStartupException("Failed to load FML: " + e.getCause());
-        } catch (NoSuchMethodException e) {
-            throw new FatalStartupException("Failed to load FML. No startup method found." + e);
-        } catch (IllegalAccessException e) {
-            throw new FatalStartupException("Failed to load FML. Startup method has invalid access." + e);
+        } catch (Exception e) {
+            throw new FatalStartupException("Failed to load FML." + e);
         } finally {
             Thread.currentThread().setContextClassLoader(previousClassLoader);
         }
@@ -171,6 +172,35 @@ public class Startup {
 //                return null;
 //            }
 //        });
+    }
+
+    private static void loadModules(Instrumentation instrumentation, ClassLoader systemCl, Configuration cf) {
+        long start = System.nanoTime();
+        instrumentation.redefineModule(
+                systemCl.getClass().getModule(),
+                Set.of(),
+                Map.of(),
+                Map.of(
+                        systemCl.getClass().getPackageName(), Set.of(Startup.class.getModule())
+                ),
+                Set.of(),
+                Map.of()
+        );
+
+        Method loadModule;
+        try {
+            loadModule = systemCl.getClass().getMethod("loadModule", ModuleReference.class);
+        } catch (NoSuchMethodException e) {
+            throw new FatalStartupException("Failed to find method 'loadModule(ModuleReference)' in the system classloader (" + systemCl.getClass() + "). This may occur with an incompatible version of Java.");
+        }
+        try {
+            for (var module : cf.modules()) {
+                loadModule.invoke(systemCl, module.reference());
+            }
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new FatalStartupException("Failed to invoke method 'loadModule(ModuleReference)' in the system classloader (" + systemCl.getClass() + "). This may occur with an incompatible version of Java: " + e);
+        }
+        StartupLog.debug("Added modules to system classloader in {}", elapsedMillis(start));
     }
 
     private static Object teleport(StartupArgs startupArgs, ClassLoader targetLoader) {

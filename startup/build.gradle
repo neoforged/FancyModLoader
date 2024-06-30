@@ -1,5 +1,13 @@
 plugins {
     id "java-library"
+    id "net.neoforged.moddev.repositories"
+}
+
+java {
+    withSourcesJar()
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 jar {
@@ -11,6 +19,22 @@ jar {
                 "Main-Class"          : "net.neoforged.fmlstartup.Startup"
         ])
     }
+}
+
+sourceSets {
+    userdevTest {
+        compileClasspath += main.output
+        runtimeClasspath += main.output
+    }
+}
+
+configurations {
+    // Used to simulate a Minecraft client production environment
+    minecraftRuntime {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+    userDevRuntimeClasspath.extendsFrom runtimeClasspath
 }
 
 abstract class DistributionDisambiguation implements AttributeDisambiguationRule<String> {
@@ -41,16 +65,10 @@ abstract class OperatingSystemDisambiguation implements AttributeDisambiguationR
 
 var ATTRIBUTE_DISTRIBUTION = Attribute.of("net.neoforged.distribution", String.class);
 var ATTRIBUTE_OPERATING_SYSTEM = Attribute.of("net.neoforged.operatingsystem", String.class);
-configurations {
-    // Used to simulate a Minecraft client production environment
-    minecraftRuntime {
-        canBeConsumed = false
-        canBeResolved = false
-        withDependencies {
-            it.add(dependencyFactory.create("net.neoforged:minecraft-dependencies:1.21"))
-        }
-    }
-    runtimeClasspath.extendsFrom minecraftRuntime
+
+
+repositories {
+    mavenCentral()
 }
 
 dependencies {
@@ -59,17 +77,20 @@ dependencies {
         attributesSchema.attribute(ATTRIBUTE_OPERATING_SYSTEM).getDisambiguationRules().add(OperatingSystemDisambiguation.class);
     })
 
+    userdevTestRuntimeOnly project(path : ":minecraft", configuration : "minecraftJars")
+    userdevTestRuntimeOnly project(":loader")
+    userdevTestRuntimeOnly "net.neoforged:minecraft-dependencies:1.21"
+
     compileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
     compileOnly(platform("org.lwjgl:lwjgl-bom:3.3.3"))
     compileOnly("org.lwjgl:lwjgl-tinyfd")
     runtimeOnly(project(":loader"))
     runtimeOnly(project(":earlydisplay"))
-    minecraftRuntime project(":earlydisplay")
 
     testImplementation(platform("org.junit:junit-bom:$jupiter_version"))
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testImplementation("org.junit.jupiter:junit-jupiter-params")
-    testImplementation("org.assertj:assertj-bom:$assertj_version")
+    testImplementation(platform("org.assertj:assertj-bom:$assertj_version"))
     testImplementation("org.assertj:assertj-core")
 }
 
@@ -85,8 +106,16 @@ test {
 }
 
 tasks.register('testStartup', JavaExec) {
+    group = "FML test runs"
     classpath += sourceSets.main.runtimeClasspath
     classpath += sourceSets.main.output
+    mainClass = "net.neoforged.fmlstartup.Startup"
+    jvmArgs("-javaagent:" + file("devagent.jar").absolutePath)
+}
+
+tasks.register('testUserdevStartup', JavaExec) {
+    group = "FML test runs"
+    classpath = sourceSets.userdevTest.runtimeClasspath
     mainClass = "net.neoforged.fmlstartup.Startup"
     jvmArgs("-javaagent:" + file("devagent.jar").absolutePath)
 }

@@ -36,27 +36,36 @@ final class BootModules {
     /**
      * The set of modules we add ourselves, that are needed by FML to work.
      */
-    private static final List<String> REQUIRED_BOOT_MODULES = List.of(
+    private static final List<String> APP_MODULES = List.of(
             "maven.artifact",
             "net.neoforged.accesstransformer",
             "net.neoforged.accesstransformer.parser",
             "net.neoforged.accesstransformer.modlauncher",
+            "net.neoforged.bus",
+            // Transitive dep of bus:
+            "net.jodah.typetools",
             "com.electronwill.nightconfig.core",
             "com.electronwill.nightconfig.toml",
             "net.neoforged.mergetool.api",
             "org.objectweb.asm",
             "org.objectweb.asm.tree",
-            "cpw.mods.securejarhandler",
             "cpw.mods.modlauncher",
             "fml_earlydisplay",
             "fml_loader",
-            "fml_startup"
+            "JarJarSelector",
+            "JarJarMetadata"
     );
 
     /**
-     * This is the set of platform modules that we expect Minecraft to add.
+     * This is the set of platform modules that we expect Minecraft to add,
+     * as well as modules we expect to be on the boot module path such that
+     * they are loaded in the app classloader.
      */
     private static final List<String> BOOT_MODULES = List.of(
+            "JarJarFileSystems",
+            "cpw.mods.securejarhandler",
+            "org.objectweb.asm",
+            "org.objectweb.asm.tree",
             // Math library
             "org.joml",
             // OpenGL Access and various Natives
@@ -69,11 +78,11 @@ final class BootModules {
             "logging",
             // Argument parsing
             "jopt.simple",
-            // Arbitrary natives access
-            "com.sun.jna",
-            "com.sun.jna.*",
             // GSON
-            "com.google.gson");
+            "com.google.gson",
+            // Guava
+            "com.google.common"
+    );
 
     private static final Set<String> DIRECT_MATCHES = new HashSet<>();
     private static final List<String> PREFIX_MATCHES = new ArrayList<>();
@@ -87,12 +96,12 @@ final class BootModules {
             }
         }
 
-        DIRECT_MATCHES.addAll(REQUIRED_BOOT_MODULES);
+        DIRECT_MATCHES.addAll(APP_MODULES);
     }
 
     public static List<String> getMissingRequiredModules(List<String> startupModules) {
         var missingModules = new ArrayList<String>();
-        for (String requiredBootModule : REQUIRED_BOOT_MODULES) {
+        for (String requiredBootModule : APP_MODULES) {
             if (!startupModules.contains(requiredBootModule)) {
                 missingModules.add(requiredBootModule);
             }
@@ -225,6 +234,10 @@ final class BootModules {
         // Now for the painful work of constructing module finders
         var moduleRefs = new HashMap<String, ModuleReference>(modules.size());
         for (var module : modules) {
+            if (module.classesDir == null) {
+                continue;
+            }
+
             var layeredDirs = new ArrayList<File>();
             layeredDirs.add(module.classesDir);
             directories.remove(module.classesDir);
@@ -289,8 +302,7 @@ final class BootModules {
                                 var implPackage = JlsConstants.packageName(implClassName);
                                 if (!javaPackages.contains(implPackage)) {
                                     throw new FatalStartupException(
-                                            "Module " + module.moduleName + " provides service " + implClassName + " that is not in its own packages."
-                                    );
+                                            "Module " + module.moduleName + " provides service " + implClassName + " that is not in its own packages.");
                                 }
                                 implementationClasses.add(implClassName);
                             }

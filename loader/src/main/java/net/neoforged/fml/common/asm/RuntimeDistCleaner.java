@@ -46,8 +46,7 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
         setDistribution(dist);
     }
 
-    public RuntimeDistCleaner() {
-    }
+    public RuntimeDistCleaner() {}
 
     @Override
     public String name() {
