@@ -7,6 +7,7 @@ package net.neoforged.fmlstartup;
 
 import net.neoforged.fmlstartup.api.DiscoveredFile;
 import net.neoforged.fmlstartup.api.StartupArgs;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,6 +22,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -75,7 +77,7 @@ public class Startup {
         List<String> bootModules = new ArrayList<>();
         start = System.nanoTime();
         var metaRead = 0;
-        var unclaimedFiles = new ArrayList<DiscoveredFile>(files.size());
+        var claimedFiles = new HashSet<File>(files.size());
         for (var file : files) {
             var metadata = cache.get(file.cacheKey());
             if (metadata == null) {
@@ -85,11 +87,13 @@ public class Startup {
 
             // This also marks it as used
             cache.set(file.cacheKey(), metadata);
-            if (BootModules.isBootModule(metadata.moduleName())) {
+            if (isIncompatibleArchitecture(metadata.nativeArchitectures())) {
+                StartupLog.info("Skipping {} due to incompatible architecture", file.file());
+                claimedFiles.add(file.file());
+            } else if (BootModules.isBootModule(metadata.moduleName())) {
                 bootModulePaths.add(file.file().toPath());
                 bootModules.add(metadata.moduleName());
-            } else {
-                unclaimedFiles.add(file);
+                claimedFiles.add(file.file());
             }
         }
         StartupLog.info("Metadata for {} files read in {}. Used cache for {}.", metaRead, elapsedMillis(start), files.size() - metaRead);
@@ -104,7 +108,7 @@ public class Startup {
             // assembling them from directories
             bootModules.addAll(missingRequiredModules);
 
-            var recoveredModuleFinder = BootModules.recoverRequiredModulesFromDirectories(missingRequiredModules, directories);
+            var recoveredModuleFinder = BootModules.recoverRequiredModulesFromDirectories(missingRequiredModules, directories, claimedFiles);
             moduleFinder = ModuleFinder.compose(moduleFinder, recoveredModuleFinder);
         }
 
@@ -120,7 +124,7 @@ public class Startup {
 
         start = System.nanoTime();
         var systemClassLoader = ClassLoader.getSystemClassLoader();
-        var bootLayer = ModuleLayer.defineModules(
+        ModuleLayer.defineModules(
                 startupConfiguration,
                 List.of(ModuleLayer.boot()),
                 s -> systemClassLoader);
@@ -145,14 +149,10 @@ public class Startup {
                     gameDir,
                     launchTarget,
                     args,
-                    unclaimedFiles,
-                    directories);
+                    claimedFiles);
 
-            start = System.nanoTime();
-            var teleportedStartupArgs = teleport(startupArgs, fmlLoader.getClassLoader());
-            StartupLog.debug("Teleporting arguments took {}", elapsedMillis(start));
-            var startupMethod = fmlLoader.getMethod("startup", Instrumentation.class, teleportedStartupArgs.getClass());
-            startupMethod.invoke(null, instrumentation, teleportedStartupArgs);
+            var startupMethod = fmlLoader.getMethod("startup", Instrumentation.class, StartupArgs.class);
+            startupMethod.invoke(null, instrumentation, startupArgs);
         } catch (InvocationTargetException e) {
             e.getCause().printStackTrace();
             throw new FatalStartupException("Failed to load FML: " + e.getCause());
@@ -172,6 +172,24 @@ public class Startup {
 //                return null;
 //            }
 //        });
+    }
+
+    private static boolean isIncompatibleArchitecture(List<NativeArchitecture> nativeArchitectures) {
+        if (nativeArchitectures.isEmpty()) {
+            return false;
+        }
+
+        for (var nativeArchitecture : nativeArchitectures) {
+            if (nativeArchitecture.os() != NativeArchitectureOS.current()) {
+                continue;
+            }
+            if (nativeArchitecture.cpu() != null && nativeArchitecture.cpu() != NativeArchitectureCPU.current()) {
+                continue;
+            }
+            return false;
+        }
+
+        return true;
     }
 
     private static void loadModules(Instrumentation instrumentation, ClassLoader systemCl, Configuration cf) {
@@ -201,18 +219,6 @@ public class Startup {
             throw new FatalStartupException("Failed to invoke method 'loadModule(ModuleReference)' in the system classloader (" + systemCl.getClass() + "). This may occur with an incompatible version of Java: " + e);
         }
         StartupLog.debug("Added modules to system classloader in {}", elapsedMillis(start));
-    }
-
-    private static Object teleport(StartupArgs startupArgs, ClassLoader targetLoader) {
-        try {
-            var targetClass = Class.forName(StartupArgs.class.getName(), false, targetLoader);
-
-            var readMethod = targetClass.getMethod("unparcel", Object[].class);
-            return readMethod.invoke(null, (Object) startupArgs.parcel());
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new FatalStartupException("Failed to teleport startup args to target classloader.");
-        }
     }
 
     private static String getPathDisplayName(File gameDir, File path) {
@@ -275,9 +281,10 @@ public class Startup {
     }
 
     private static CachedMetadata readMetadata(File file) throws IOException {
+        var nativeArchitectures = new ArrayList<NativeArchitecture>(1);
         Manifest manifest;
         ModuleDescriptor moduleDescriptor = null;
-        try (var jarFile = new JarFile(file, false)) {
+        try (var jarFile = new JarFile(file, false, JarFile.OPEN_READ, JarFile.runtimeVersion())) {
             manifest = jarFile.getManifest();
             var moduleInfoEntry = jarFile.getEntry("module-info.class");
             if (moduleInfoEntry != null) {
@@ -297,15 +304,58 @@ public class Startup {
         // This is an early pass to find libraries that are not to be loaded on the game layer
         boolean forceBootLayer = false;
         if (manifest != null) {
-            var modType = manifest.getMainAttributes().getValue("FMLModType");
+            var mainAttributes = manifest.getMainAttributes();
+            var modType = mainAttributes.getValue("FMLModType");
             if ("BOOTLIBRARY".equalsIgnoreCase(modType) || "LIBRARY".equalsIgnoreCase(modType)) {
                 forceBootLayer = true;
+            }
+
+            // Handle Minecraft putting all LWJGL natives for an OS onto the CP, while LWJGL does not support that
+            // when in modular mode. We have to filter out the non-applicable natives.
+            // Example Manifest entry: LWJGL-Platform: windows/x64
+            var lwjglPlatform = mainAttributes.getValue("LWJGL-Platform");
+            if (lwjglPlatform != null) {
+                var arch = parseLwjglPlatform(file, lwjglPlatform);
+                if (arch != null) {
+                    nativeArchitectures.add(arch);
+                }
             }
         }
 
         var moduleName = moduleDescriptor != null ? moduleDescriptor.name() : null;
 
-        return new CachedMetadata(moduleName, forceBootLayer);
+        return new CachedMetadata(moduleName, nativeArchitectures, forceBootLayer);
+    }
+
+    private static @Nullable NativeArchitecture parseLwjglPlatform(File file, String lwjglPlatform) {
+        var parts = lwjglPlatform.split("/", 2);
+        var os = switch (parts[0]) {
+            case "windows" -> NativeArchitectureOS.WINDOWS;
+            case "macosx" -> NativeArchitectureOS.MACOSX;
+            case "linux" -> NativeArchitectureOS.LINUX;
+            default -> null;
+        };
+        NativeArchitectureCPU cpu = null;
+        boolean invalidCpu = false;
+        if (parts.length > 1) {
+            cpu = switch (parts[1]) {
+                case "x64" -> NativeArchitectureCPU.X64;
+                case "x86" -> NativeArchitectureCPU.X86;
+                case "arm64" -> NativeArchitectureCPU.ARM64;
+                default -> {
+                    invalidCpu = true;
+                    yield null;
+                }
+            };
+        }
+        NativeArchitecture arch;
+        if (os == null || invalidCpu) {
+            StartupLog.error("{} reference invalid LWJGL-Platform: {}", file, lwjglPlatform);
+            arch = null;
+        } else {
+            arch = new NativeArchitecture(os, cpu);
+        }
+        return arch;
     }
 
     private static final Attributes.Name AUTOMATIC_MODULE_NAME = new Attributes.Name("Automatic-Module-Name");

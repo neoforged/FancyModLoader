@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 import net.neoforged.fml.loading.VersionInfo;
 import net.neoforged.fml.loading.moddiscovery.locators.NeoForgeDevProvider;
 import net.neoforged.fml.loading.moddiscovery.locators.UserdevLocator;
-import net.neoforged.fml.util.DevEnvUtils;
+import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 
 /**
@@ -21,7 +21,7 @@ public abstract class CommonUserdevLaunchHandler extends CommonDevLaunchHandler 
     public void collectAdditionalModFileLocators(VersionInfo versionInfo, Consumer<IModFileCandidateLocator> output) {
         // Userdev is similar to neoforge dev with the only real difference being that the combined
         // output of the neoforge and patched mincraft sources are combined into a jar file
-        var classesRoot = DevEnvUtils.findFileSystemRootOfFileOnClasspath("net/minecraft/client/Minecraft.class");
+        var classesRoot = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath("net/minecraft/client/Minecraft.class");
 
         output.accept(new NeoForgeDevProvider(List.of(classesRoot)));
         output.accept(new UserdevLocator(getGroupedModFolders()));

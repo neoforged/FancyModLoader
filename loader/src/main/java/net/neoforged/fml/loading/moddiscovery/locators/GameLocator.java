@@ -1,18 +1,8 @@
-/*
- * Copyright (c) NeoForged and contributors
- * SPDX-License-Identifier: LGPL-2.1-only
- */
-
 package net.neoforged.fml.loading.moddiscovery.locators;
 
 import com.google.common.collect.Streams;
 import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
-import java.io.File;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Stream;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.util.ClasspathResourceUtils;
@@ -22,42 +12,58 @@ import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 
-/**
- * Provides the Minecraft and NeoForge mods in a NeoForge dev environment.
- */
-public class NeoForgeDevProvider implements IModFileCandidateLocator {
-    private final List<Path> paths;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Stream;
 
-    public NeoForgeDevProvider(List<Path> paths) {
-        this.paths = paths;
-    }
+public class GameLocator implements IModFileCandidateLocator {
+
+    public static final String LIBRARIES_DIRECTORY_PROPERTY = "libraryDirectory";
 
     @Override
     public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {
-        Path minecraftResourcesRoot = null;
 
-        // try finding client-extra jar explicitly first
-        var legacyClassPath = System.getProperty("legacyClassPath");
-        if (legacyClassPath != null) {
-            minecraftResourcesRoot = Arrays.stream(legacyClassPath.split(File.pathSeparator))
-                    .map(Path::of)
-                    .filter(path -> path.getFileName().toString().contains("client-extra"))
-                    .findFirst()
-                    .orElse(null);
-        }
-        // then fall back to finding it on the current classpath
-        if (minecraftResourcesRoot == null) {
-            minecraftResourcesRoot = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath("assets/.mcassetsroot");
+        // Three possible ways to find the game:
+        // 1a) It's exploded on the classpath
+        // 1b) It's on the classpath, but as a jar
+
+        var ourCl = getClass().getClassLoader();
+
+        var classesJar = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath(ourCl, "net/minecraft/client/Minecraft.class");
+        var resourceJar = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath(ourCl, "assets/.mcassetsroot");
+        if (classesJar != null && resourceJar != null) {
+            // Determine if we're dealing with a split jar-file situation (moddev)
+            if (Files.isRegularFile(classesJar) && Files.isRegularFile(resourceJar)) {
+                context.addLocated(classesJar);
+                context.addLocated(resourceJar);
+                addDevelopmentModFiles(List.of(classesJar), resourceJar, pipeline);
+                return;
+            }
+
+            // when the classesJar is a directory, we're assuming that we are in neo dev
+            // in that case, we also need to find the resource directory
+            if (Files.isRegularFile(classesJar) && Files.isRegularFile(resourceJar)) {
+                addDevelopmentModFiles(List.of(classesJar), resourceJar, pipeline);
+                return;
+            }
         }
 
+        // 2) It's neither, but a libraries directory and desired versions are given on the commandline
+        var librariesDirectory = System.getProperty(LIBRARIES_DIRECTORY_PROPERTY);
+        if (librariesDirectory != null) {
+
+        }
+    }
+
+    private void addDevelopmentModFiles(List<Path> paths, Path minecraftResourcesRoot, IDiscoveryPipeline pipeline) {
         var packages = getNeoForgeSpecificPathPrefixes();
-        var minecraftResourcesPrefix = minecraftResourcesRoot;
 
         var mcJarContents = new JarContentsBuilder()
                 .paths(Streams.concat(paths.stream(), Stream.of(minecraftResourcesRoot)).toArray(Path[]::new))
                 .pathFilter((entry, basePath) -> {
                     // We serve everything, except for things in the forge packages.
-                    if (basePath.equals(minecraftResourcesPrefix) || entry.endsWith("/")) {
+                    if (basePath.equals(minecraftResourcesRoot) || entry.endsWith("/")) {
                         return true;
                     }
                     // Any non-class file will be served from the client extra jar file mentioned above
@@ -93,11 +99,16 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
     }
 
     private static String[] getNeoForgeSpecificPathPrefixes() {
-        return new String[] { "net/neoforged/neoforge/", "META-INF/services/", "META-INF/coremods.json", JarModsDotTomlModFileReader.MODS_TOML };
+        return new String[]{"net/neoforged/neoforge/", "META-INF/services/", "META-INF/coremods.json", JarModsDotTomlModFileReader.MODS_TOML};
+    }
+
+    @Override
+    public int getPriority() {
+        return HIGHEST_SYSTEM_PRIORITY;
     }
 
     @Override
     public String toString() {
-        return "neoforge devenv provider (" + paths + ")";
+        return "game locator";
     }
 }

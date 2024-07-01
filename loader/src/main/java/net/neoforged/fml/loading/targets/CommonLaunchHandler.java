@@ -11,6 +11,7 @@ import cpw.mods.modlauncher.api.ServiceRunner;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -133,6 +134,10 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
     }
 
     protected void runTarget(final String target, final String[] arguments, final ModuleLayer layer) throws Throwable {
-        Class.forName(layer.findModule("minecraft").orElseThrow(), target).getMethod("main", String[].class).invoke(null, (Object) arguments);
+        try {
+            Class.forName(layer.findModule("minecraft").orElseThrow(), target).getMethod("main", String[].class).invoke(null, (Object) arguments);
+        } catch (InvocationTargetException e) {
+            throw e.getCause();
+        }
     }
 }

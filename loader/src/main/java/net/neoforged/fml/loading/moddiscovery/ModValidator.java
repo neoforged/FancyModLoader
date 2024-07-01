@@ -60,6 +60,10 @@ public class ModValidator {
         }
     }
 
+    public List<ModFile> getCandidateMods() {
+        return candidateMods;
+    }
+
     public List<ModFile> getPluginResources() {
         return this.candidatePlugins;
     }

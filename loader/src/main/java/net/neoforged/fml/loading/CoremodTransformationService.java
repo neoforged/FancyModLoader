@@ -1,0 +1,32 @@
+package net.neoforged.fml.loading;
+
+import cpw.mods.modlauncher.api.IEnvironment;
+import cpw.mods.modlauncher.api.ITransformationService;
+import cpw.mods.modlauncher.api.ITransformer;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
+import java.util.Set;
+
+@Deprecated(forRemoval = true)
+final class CoremodTransformationService implements ITransformationService {
+    static final CoremodTransformationService INSTANCE = new CoremodTransformationService();
+
+    @Override
+    public @NotNull String name() {
+        return "FML coremods";
+    }
+
+    @Override
+    public void initialize(IEnvironment environment) {
+    }
+
+    @Override
+    public void onLoad(IEnvironment env, Set<String> otherServices) {
+    }
+
+    @Override
+    public @NotNull List<? extends ITransformer<?>> transformers() {
+        return List.of();
+    }
+}

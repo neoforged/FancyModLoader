@@ -8,6 +8,8 @@ package net.neoforged.fml.loading.targets;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.VersionInfo;
 import net.neoforged.fml.loading.moddiscovery.locators.NeoForgeDevProvider;
 import net.neoforged.fml.loading.moddiscovery.locators.UserdevLocator;
@@ -63,6 +65,10 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
 
         if (!args.hasValue("accessToken")) {
             args.put("accessToken", "0");
+        }
+
+        if (!args.hasValue("version")) {
+            args.put("version", FMLLoader.versionInfo().mcVersion());
         }
 
         return args.getArguments();

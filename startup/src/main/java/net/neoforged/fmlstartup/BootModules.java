@@ -74,6 +74,7 @@ final class BootModules {
             // Logging, Commons
             "org.apache.*",
             "org.slf4j",
+            "org.slf4j.*",
             // This is Mojangs logging library
             "logging",
             // Argument parsing
@@ -144,7 +145,7 @@ final class BootModules {
      * First, we have to actually find all directories that make up a module.
      * Second, we have to build a module finder that is able to effectively build a union fs of these directories.
      */
-    public static ModuleFinder recoverRequiredModulesFromDirectories(Collection<String> missingModules, List<File> directories) {
+    public static ModuleFinder recoverRequiredModulesFromDirectories(Collection<String> missingModules, List<File> directories, Set<File> claimedFiles) {
         var modules = new ArrayList<ReconstructedModule>(missingModules.size());
         for (var moduleName : missingModules) {
             modules.add(new ReconstructedModule(moduleName));
@@ -240,11 +241,11 @@ final class BootModules {
 
             var layeredDirs = new ArrayList<File>();
             layeredDirs.add(module.classesDir);
-            directories.remove(module.classesDir);
+            claimedFiles.add(module.classesDir);
 
             if (module.resourcesDir != null && !module.resourcesDir.equals(module.classesDir)) {
                 layeredDirs.add(module.resourcesDir);
-                directories.remove(module.resourcesDir);
+                claimedFiles.add(module.resourcesDir);
             }
 
             var moduleReference = new ModuleReference(module.moduleDescriptor, module.classesDir.toURI()) {
