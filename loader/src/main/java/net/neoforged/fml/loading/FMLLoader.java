@@ -265,67 +265,6 @@ public class FMLLoader {
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
-
-        throw new FatalStartupException("x");
-//        serviceProvider.argumentValues(new ITransformationService.OptionResult() {
-//            @Override
-//            public <V> V value(OptionSpec<V> options) {
-//                return result.valueOf(options);
-//            }
-//
-//            @Override
-//            public <V> List<V> values(OptionSpec<V> options) {
-//                return result.valuesOf(options);
-//            }
-//        });
-//
-//        serviceProvider.initialize(environment);
-//
-//        // We need to redirect the launch context to add services reachable via the system classloader since
-//        // this unit test and the main code is not loaded in a modular fashion
-//        assertThat(serviceProvider.launchContext).isNotNull();
-//        assertSame(environment, serviceProvider.launchContext.environment());
-//        serviceProvider.launchContext = new TestLaunchContext(serviceProvider.launchContext, locatedPaths);
-//
-//        var pluginResources = serviceProvider.beginScanning(environment);
-//        // In this phase, FML should only return plugin libraries
-//        assertThat(pluginResources).extracting(ITransformationService.Resource::target).containsOnly(IModuleLayerManager.Layer.PLUGIN);
-//        createModuleLayer(IModuleLayerManager.Layer.PLUGIN, pluginResources.stream().flatMap(resource -> resource.resources().stream()).toList());
-//
-//        var gameLayerResources = serviceProvider.completeScan(moduleLayerManager);
-//        // In this phase, FML should only return game layer content
-//        assertThat(gameLayerResources).extracting(ITransformationService.Resource::target).containsOnly(IModuleLayerManager.Layer.GAME);
-//
-//        // Query transformers now, which ML does before building the transforming class loader and launching the game
-//        var transformers = serviceProvider.transformers();
-//
-//        var loadingModList = LoadingModList.get();
-//        var loadedMods = loadingModList.getModFiles();
-//
-//        var pluginSecureJars = pluginResources.stream()
-//                .flatMap(r -> r.resources().stream())
-//                .collect(Collectors.toMap(
-//                        SecureJar::name,
-//                        Function.identity()));
-//        var gameSecureJars = gameLayerResources.stream()
-//                .flatMap(r -> r.resources().stream())
-//                .collect(Collectors.toMap(
-//                        SecureJar::name,
-//                        Function.identity()));
-//
-//        // Wait for background scans of all mods to complete
-//        for (var modFile : loadingModList.getModFiles()) {
-//            modFile.getFile().getScanResult();
-//        }
-//
-//        return new LaunchResult(
-//                pluginSecureJars,
-//                gameSecureJars,
-//                loadingModList.getModLoadingIssues(),
-//                loadedMods.stream().collect(Collectors.toMap(
-//                        o -> o.getMods().getFirst().getModId(),
-//                        o -> o)),
-//                (List<ITransformer<?>>) transformers);
     }
 
     private static void processAddOpensDeclarations(Instrumentation instrumentation, ModuleLayer layer) {
