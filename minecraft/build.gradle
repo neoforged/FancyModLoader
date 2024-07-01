@@ -11,13 +11,16 @@ configurations {
     minecraftJars {
         canBeConsumed = true
     }
+    assetProperties {
+        canBeConsumed = true
+    }
+}
+
+artifacts {
+    assetProperties downloadAssets.assetPropertiesFile
 }
 
 dependencies {
     minecraftJars files(createMinecraftArtifacts.resourcesArtifact)
     minecraftJars files(createMinecraftArtifacts.compiledWithSourcesArtifact)
-}
-
-repositories {
-    mavenCentral()
 }

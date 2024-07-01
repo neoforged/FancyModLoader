@@ -8,6 +8,7 @@ package net.neoforged.fml.loading;
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.ArgumentHandler;
+import cpw.mods.modlauncher.DiscoveryData;
 import cpw.mods.modlauncher.Environment;
 import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.LaunchServiceHandler;
@@ -193,7 +194,7 @@ public class FMLLoader {
 
         var transformStore = new TransformStore();
         var transformationServicesHandler = new TransformationServicesHandler(transformStore, moduleLayerHandler);
-        var argumentHandler = new ArgumentHandler();
+        var argumentHandler = new ArgumentHandler(startupArgs.programArgs());
 
         var launchPluginHandler = new LaunchPluginHandler(launchPlugins.values().stream());
 
@@ -201,13 +202,11 @@ public class FMLLoader {
                 transformationServicesHandler,
                 environment,
                 transformStore,
-                argumentHandler,
                 launchService,
                 launchPluginHandler,
                 moduleLayerHandler);
 
-        argumentHandler.setArgs(startupArgs.programArgs());
-        transformationServicesHandler.discoverServices(new ArgumentHandler.DiscoveryData(
+        transformationServicesHandler.discoverServices(new DiscoveryData(
                 startupArgs.gameDirectory().toPath(), startupArgs.launchTarget(), startupArgs.programArgs()
         ));
 

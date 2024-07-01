@@ -1,6 +1,5 @@
 plugins {
     id "java-library"
-    id "net.neoforged.moddev.repositories"
 }
 
 java {
@@ -65,11 +64,6 @@ abstract class OperatingSystemDisambiguation implements AttributeDisambiguationR
 
 var ATTRIBUTE_DISTRIBUTION = Attribute.of("net.neoforged.distribution", String.class);
 var ATTRIBUTE_OPERATING_SYSTEM = Attribute.of("net.neoforged.operatingsystem", String.class);
-
-
-repositories {
-    mavenCentral()
-}
 
 dependencies {
     attributesSchema(attributesSchema -> {

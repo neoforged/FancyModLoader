@@ -7,24 +7,22 @@ pluginManagement {
         maven { url = 'https://maven.neoforged.net/releases' }
     }
 
-    //plugins {
-    //    id 'net.neoforged.moddev' version '0.1.120-pr-73-fix-include-builds'
-    //    id 'net.neoforged.moddev.repositories' version '0.1.120-pr-73-fix-include-builds'
-    //}
+    plugins {
+        id 'net.neoforged.moddev' version '0.1.120'
+        id 'net.neoforged.moddev.repositories' version '0.1.120'
+    }
 }
 
 plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
-    //id 'net.neoforged.moddev.repositories'
+    id 'net.neoforged.moddev.repositories'
 }
 
 dependencyResolutionManagement {
-    //repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
-    //rulesMode = RulesMode.FAIL_ON_PROJECT_RULES
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+    rulesMode = RulesMode.FAIL_ON_PROJECT_RULES
     repositories {
         mavenCentral()
-        maven { url = 'https://maven.neoforged.net/releases' }
-        maven { url = 'https://libraries.minecraft.net' }
     }
 }
 
@@ -37,5 +35,4 @@ include 'startup'
 include 'minecraft'
 
 includeBuild '../modlauncher'
-includeBuild '../ModDevGradle'
 
