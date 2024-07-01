@@ -5,14 +5,13 @@
 
 package net.neoforged.fml.loading.moddiscovery.locators;
 
-import net.neoforged.neoforgespi.ILaunchContext;
-import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
-import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
+import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 
 /**
  * Any file that remains will just be added to the library set.

@@ -7,12 +7,9 @@ package net.neoforged.fml.loading;
 
 public record VersionInfo(
         String neoForgeVersion,
-        @Deprecated(forRemoval = true)
-        String fmlVersion,
+        @Deprecated(forRemoval = true) String fmlVersion,
         String mcVersion,
-        @Deprecated(forRemoval = true)
-        String neoFormVersion
-) {
+        @Deprecated(forRemoval = true) String neoFormVersion) {
     public String mcAndFmlVersion() {
         return mcVersion + "-" + fmlVersion;
     }

@@ -8,6 +8,16 @@ package net.neoforged.fml.loading.moddiscovery;
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.SecureJar;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.zip.ZipException;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
@@ -26,17 +36,6 @@ import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.zip.ZipException;
-
 public class ModDiscoverer {
     private static final Logger LOGGER = LogUtils.getLogger();
     private final List<IModFileCandidateLocator> modFileLocators;
@@ -49,7 +48,7 @@ public class ModDiscoverer {
     }
 
     public ModDiscoverer(ILaunchContext launchContext,
-                         Collection<IModFileCandidateLocator> additionalModFileLocators) {
+            Collection<IModFileCandidateLocator> additionalModFileLocators) {
         this.launchContext = launchContext;
 
         modFileLocators = ServiceLoaderUtil.loadServices(launchContext, IModFileCandidateLocator.class, additionalModFileLocators);
@@ -149,8 +148,8 @@ public class ModDiscoverer {
         private int skipCount;
 
         public DiscoveryPipeline(ModFileDiscoveryAttributes defaultAttributes,
-                                 List<ModFile> loadedFiles,
-                                 List<ModLoadingIssue> issues) {
+                List<ModFile> loadedFiles,
+                List<ModLoadingIssue> issues) {
             this.defaultAttributes = defaultAttributes;
             this.loadedFiles = loadedFiles;
             this.issues = issues;
@@ -168,8 +167,7 @@ public class ModDiscoverer {
                     SecureJar.from(path),
                     JarModsDotTomlModFileReader::manifestParser,
                     IModFile.Type.LIBRARY,
-                    defaultAttributes
-            );
+                    defaultAttributes);
             addModFile(modFile);
         }
 

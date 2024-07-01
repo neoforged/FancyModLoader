@@ -8,21 +8,18 @@ package net.neoforged.fml.loading.moddiscovery.locators;
 import com.electronwill.nightconfig.core.Config;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import net.neoforged.fml.loading.FMLLoader;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.List;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.NightConfigWrapper;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.List;
-
 final class MinecraftModInfo {
-    private MinecraftModInfo() {
-    }
+    private MinecraftModInfo() {}
 
     public static IModFileInfo buildMinecraftModInfo(final IModFile iModFile) {
         final ModFile modFile = (ModFile) iModFile;

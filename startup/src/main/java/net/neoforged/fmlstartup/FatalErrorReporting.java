@@ -5,15 +5,13 @@
 
 package net.neoforged.fmlstartup;
 
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
-
+import java.awt.GraphicsEnvironment;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
-import java.awt.GraphicsEnvironment;
+import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 public final class FatalErrorReporting {
-    private FatalErrorReporting() {
-    }
+    private FatalErrorReporting() {}
 
     /**
      * Report a fatal startup error.
@@ -24,10 +22,9 @@ public final class FatalErrorReporting {
         if (!GraphicsEnvironment.isHeadless()) {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception ignored) {
-            }
+            } catch (Exception ignored) {}
             String html = "<html><body width='400'><strong>Fatal Startup Error</strong>"
-                          + "<p>";
+                    + "<p>";
             html += message.replace("<", "&lt;").replace("\n", "<br>");
             JOptionPane.showMessageDialog(null, html, "Fatal Error", JOptionPane.ERROR_MESSAGE);
         } else {

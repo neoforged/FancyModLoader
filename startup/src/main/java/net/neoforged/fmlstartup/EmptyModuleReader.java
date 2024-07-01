@@ -23,6 +23,5 @@ public class EmptyModuleReader implements ModuleReader {
     }
 
     @Override
-    public void close() throws IOException {
-    }
+    public void close() throws IOException {}
 }

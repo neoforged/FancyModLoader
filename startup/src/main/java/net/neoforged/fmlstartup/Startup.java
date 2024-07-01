@@ -5,10 +5,6 @@
 
 package net.neoforged.fmlstartup;
 
-import net.neoforged.fmlstartup.api.DiscoveredFile;
-import net.neoforged.fmlstartup.api.StartupArgs;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
@@ -33,6 +29,9 @@ import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.neoforged.fmlstartup.api.DiscoveredFile;
+import net.neoforged.fmlstartup.api.StartupArgs;
+import org.jetbrains.annotations.Nullable;
 
 public class Startup {
     public static void main(String[] args) throws IOException {
@@ -199,11 +198,9 @@ public class Startup {
                 Set.of(),
                 Map.of(),
                 Map.of(
-                        systemCl.getClass().getPackageName(), Set.of(Startup.class.getModule())
-                ),
+                        systemCl.getClass().getPackageName(), Set.of(Startup.class.getModule())),
                 Set.of(),
-                Map.of()
-        );
+                Map.of());
 
         Method loadModule;
         try {
@@ -387,8 +384,7 @@ public class Startup {
                 String tail = basename.substring(start + 1);
                 ModuleDescriptor.Version.parse(tail);
                 vs = tail;
-            } catch (IllegalArgumentException ignore) {
-            }
+            } catch (IllegalArgumentException ignore) {}
 
             basename = basename.substring(0, start);
         }

@@ -5,9 +5,6 @@
 
 package net.neoforged.fmlstartup;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,6 +28,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 final class BootModules {
     /**
@@ -53,8 +52,7 @@ final class BootModules {
             "fml_earlydisplay",
             "fml_loader",
             "JarJarSelector",
-            "JarJarMetadata"
-    );
+            "JarJarMetadata");
 
     /**
      * This is the set of platform modules that we expect Minecraft to add,
@@ -82,8 +80,7 @@ final class BootModules {
             // GSON
             "com.google.gson",
             // Guava
-            "com.google.common"
-    );
+            "com.google.common");
 
     private static final Set<String> DIRECT_MATCHES = new HashSet<>();
     private static final List<String> PREFIX_MATCHES = new ArrayList<>();

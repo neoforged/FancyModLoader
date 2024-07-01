@@ -5,8 +5,6 @@
 
 package net.neoforged.fmlstartup;
 
-import net.neoforged.fmlstartup.api.FileCacheKey;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInput;
@@ -22,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import net.neoforged.fmlstartup.api.FileCacheKey;
 
 class MetadataCache {
     private static final String FILENAME = "fml_startup_metadata.bin";
@@ -53,8 +52,7 @@ class MetadataCache {
                 data.put(key, value);
             }
             return data;
-        } catch (FileNotFoundException ignored) {
-        } catch (Exception e) {
+        } catch (FileNotFoundException ignored) {} catch (Exception e) {
             StartupLog.error("Failed to load metadata cache from {}: {}", cacheFile, e);
         }
         return new HashMap<>();
@@ -100,8 +98,7 @@ class MetadataCache {
             var cpu = in.readByte();
             onlyForArchitectures.add(new NativeArchitecture(
                     NativeArchitectureOS.values()[os],
-                    cpu == -1 ? null : NativeArchitectureCPU.values()[cpu]
-            ));
+                    cpu == -1 ? null : NativeArchitectureCPU.values()[cpu]));
         }
 
         return new CachedMetadata(moduleName, onlyForArchitectures, in.readBoolean());

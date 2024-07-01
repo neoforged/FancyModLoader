@@ -8,6 +8,10 @@ package net.neoforged.fml.loading.moddiscovery.locators;
 import com.google.common.collect.Streams;
 import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Stream;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.util.ClasspathResourceUtils;
@@ -17,18 +21,11 @@ import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.stream.Stream;
-
 public class GameLocator implements IModFileCandidateLocator {
-
     public static final String LIBRARIES_DIRECTORY_PROPERTY = "libraryDirectory";
 
     @Override
     public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {
-
         // Three possible ways to find the game:
         // 1a) It's exploded on the classpath
         // 1b) It's on the classpath, but as a jar
@@ -104,7 +101,7 @@ public class GameLocator implements IModFileCandidateLocator {
     }
 
     private static String[] getNeoForgeSpecificPathPrefixes() {
-        return new String[]{"net/neoforged/neoforge/", "META-INF/services/", "META-INF/coremods.json", JarModsDotTomlModFileReader.MODS_TOML};
+        return new String[] { "net/neoforged/neoforge/", "META-INF/services/", "META-INF/coremods.json", JarModsDotTomlModFileReader.MODS_TOML };
     }
 
     @Override

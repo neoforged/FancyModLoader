@@ -5,9 +5,8 @@
 
 package net.neoforged.fmlstartup;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.util.List;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @param moduleName
@@ -17,14 +16,10 @@ import java.util.List;
 public record CachedMetadata(
         @Nullable String moduleName,
         List<NativeArchitecture> nativeArchitectures,
-        boolean forceBootLayer
-) {
-}
+        boolean forceBootLayer) {}
 
 /**
  * @param os
  * @param cpu Null if usable on any CPU architecture.
  */
-record NativeArchitecture(NativeArchitectureOS os, @Nullable NativeArchitectureCPU cpu) {
-}
-
+record NativeArchitecture(NativeArchitectureOS os, @Nullable NativeArchitectureCPU cpu) {}

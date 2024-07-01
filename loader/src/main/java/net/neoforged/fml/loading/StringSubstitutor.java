@@ -5,15 +5,9 @@
 
 package net.neoforged.fml.loading;
 
-import com.google.common.base.Suppliers;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Supplier;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import org.apache.commons.lang3.text.StrLookup;
 import org.apache.commons.lang3.text.StrSubstitutor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("deprecation")
 public class StringSubstitutor {

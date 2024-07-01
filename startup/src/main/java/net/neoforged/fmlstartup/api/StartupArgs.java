@@ -12,5 +12,4 @@ public record StartupArgs(
         File gameDirectory,
         String launchTarget,
         String[] programArgs,
-        Set<File> claimedFiles) {
-}
+        Set<File> claimedFiles) {}
