@@ -8,7 +8,7 @@
   "fml.modloadingissue.failedtoloadmod": "{100,modinfo,name} ({100,modinfo,id}) konnte nicht korrekt geladen werden\n§7{102,exc,msg}",
   "fml.modloadingissue.feature.missing": "{100,modinfo,name}({100,modinfo,id}) fehlt ein Feature das es zum Funktionieren benötigt \n§7Es benötigt {0,featurebound} aber {1} ist verfügbar",
   "fml.modloadingissue.uncaughterror": "Ein nicht abgefangener paralleler Verarbeitungsfehler ist aufgetreten.\n§7{102,exc,msg}",
-  "fml.modloadingissue.errorduringevent": "{100,modinfo,name} ({100,modinfo,id}) encountered an error while dispatching the {0} event\n§7{102,exc,msg}",
+  "fml.modloadingissue.errorduringevent": "{100,modinfo,name} ({100,modinfo,id}) ist auf einen Fehler während des Versendens von Event {0} gestoßen\n§7{102,exc,msg}",
   "fml.modloading.failedtoloadforge": "Laden von NeoForge fehlgeschlagen",
   "fml.modloadingissue.javafml.dangling_entrypoint": "Datei {2} beinhaltet die Klasse §6{1}§r mit einem Mod-Einstiegspunkt für eine Mod mit Id §e{0}§r, die nicht existiert oder sich nicht in derselben Datei befindet. Hast du vergessen, die Mod-Id im Einstiegspunkt anzupassen?",
   "fml.modloadingissue.missingdependency": "Mod §e{1}§r benötigt §6{0}§r §o{2,vr}§r\n§7Aktuell, §6{0}§r§7 ist §o{3,i18n,fml.messages.artifactversion.ornotinstalled}§r\n{4,optional,§7Grund für die Abhängigkeit: §r}",
