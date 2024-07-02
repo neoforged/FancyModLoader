@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipException;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.UniqueModListBuilder;
@@ -168,9 +169,9 @@ public class ModDiscoverer {
                 jarContents = JarContents.of(groupedPaths);
             } catch (Exception e) {
                 if (causeChainContains(e, ZipException.class)) {
-                    addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile.invalidzip", primaryPath).withAffectedPath(primaryPath).withCause(e));
+                    addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile.invalidzip").withAffectedPath(primaryPath).withCause(e));
                 } else {
-                    addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile", primaryPath).withAffectedPath(primaryPath).withCause(e));
+                    addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile").withAffectedPath(primaryPath).withCause(e));
                 }
                 return Optional.empty();
             }
@@ -194,6 +195,8 @@ public class ModDiscoverer {
         public Optional<IModFile> addJarContent(JarContents jarContents, ModFileDiscoveryAttributes attributes, IncompatibleFileReporting reporting) {
             attributes = defaultAttributes.merge(attributes);
 
+            List<ModLoadingIssue> incompatibilityIssues = new ArrayList<>();
+
             for (var reader : modFileReaders) {
                 try {
                     var provided = reader.read(jarContents, attributes);
@@ -203,8 +206,13 @@ public class ModDiscoverer {
                         }
                         return Optional.empty();
                     }
+                } catch (ModLoadingException e) {
+                    // The reader didn't outright crash but reported reasons for incompatibility.
+                    // We'll stash them here in case no other reader successfully reads the file.
+                    incompatibilityIssues.addAll(e.getIssues());
                 } catch (Exception e) {
-                    addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile", jarContents.getPrimaryPath()).withAffectedPath(jarContents.getPrimaryPath()).withCause(e));
+                    // When a reader just outright crashes while reading the file, we do error intentionally.
+                    addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile").withAffectedPath(jarContents.getPrimaryPath()).withCause(e));
                     return Optional.empty();
                 }
             }
@@ -212,18 +220,26 @@ public class ModDiscoverer {
             // If a jar file was found in a subdirectory of the game directory, but could not be loaded,
             // it might be an incompatible mod type. We do not perform this validation for jars that we
             // found on the classpath or other locations since these are usually not under user control.
-            if (reporting == IncompatibleFileReporting.ERROR) {
-                addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile", jarContents.getPrimaryPath()));
-            } else if (reporting == IncompatibleFileReporting.WARN_ON_KNOWN_INCOMPATIBILITY || reporting == IncompatibleFileReporting.WARN_ALWAYS) {
+            if (reporting != IncompatibleFileReporting.IGNORE) {
+                // Detect additional, potential reasons for the jar being incompatible
                 var reason = IncompatibleModReason.detect(jarContents);
                 if (reason.isPresent()) {
-                    LOGGER.warn(LogMarkers.SCAN, "Found incompatible jar {} with reason {}. Skipping.", jarContents.getPrimaryPath(), reason.get());
-                    addIssue(ModLoadingIssue.warning(reason.get().getReason(), jarContents.getPrimaryPath()).withAffectedPath(jarContents.getPrimaryPath()));
-                } else if (reporting == IncompatibleFileReporting.WARN_ALWAYS) {
-                    LOGGER.warn(LogMarkers.SCAN, "Ignoring incompatible jar {} for an unknown reason.", jarContents.getPrimaryPath());
-                    addIssue(ModLoadingIssue.warning("fml.modloadingissue.brokenfile.unknown", jarContents.getPrimaryPath()).withAffectedPath(jarContents.getPrimaryPath()));
+                    incompatibilityIssues.add(ModLoadingIssue.error(reason.get().getReason()).withAffectedPath(jarContents.getPrimaryPath()));
+                } else if (reporting != IncompatibleFileReporting.WARN_ON_KNOWN_INCOMPATIBILITY && incompatibilityIssues.isEmpty()) {
+                    incompatibilityIssues.add(ModLoadingIssue.error("fml.modloadingissue.brokenfile.unknown").withAffectedPath(jarContents.getPrimaryPath()));
+                }
+
+                for (var issue : incompatibilityIssues) {
+                    // Convert the issue to the desired reporting severity
+                    issue = issue.withSeverity(reporting.getIssueSeverity());
+
+                    LOGGER.atLevel(reporting.getLogLevel())
+                            .addMarker(LogMarkers.SCAN)
+                            .log("Skipping jar. {}", FMLTranslations.translateIssueEnglish(issue));
+                    addIssue(issue);
                 }
             }
+
             return Optional.empty();
         }
 

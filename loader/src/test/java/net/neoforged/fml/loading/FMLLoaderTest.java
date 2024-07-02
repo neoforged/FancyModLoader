@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingException;
-import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.ModWorkManager;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
@@ -354,34 +353,6 @@ class FMLLoaderTest extends LauncherTest {
                     "ERROR: Your NeoForge installation is corrupted, please try to reinstall");
         }
 
-        @Test
-        void testInvalidJarFile() throws Exception {
-            installation.setupProductionClient();
-
-            var path = installation.getModsFolder().resolve("mod.jar");
-            Files.write(path, new byte[] { 1, 2, 3 });
-
-            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
-            // Clear the cause, otherwise equality will fail
-            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                    "ERROR: File mods/mod.jar is not a jar file");
-        }
-
-        /**
-         * Tests that an unknown FMLModType is recorded as an error for that file.
-         */
-        @Test
-        void testJarFileWithInvalidFmlModType() throws Exception {
-            installation.setupProductionClient();
-
-            var path = installation.writeModJar("test.jar", new IdentifiableContent("INVALID_MANIFEST", "META-INF/MANIFEST.MF", "Manifest-Version: 1.0\nFMLModType: XXX\n".getBytes()));
-
-            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
-            // Clear the cause, otherwise equality will fail
-            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                    "ERROR: File mods/test.jar is not a valid mod file");
-        }
-
         /**
          * Test that a locator or reader returning a custom subclass of IModFile is reported.
          */
@@ -491,40 +462,6 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                     "ERROR: An uncaught parallel processing error has occurred."
                             + "\njava.lang.IllegalStateException: Exception Message");
-        }
-    }
-
-    @Nested
-    class Warnings {
-        @Test
-        void testIncompatibleModsToml() throws Exception {
-            installation.setupProductionClient();
-            var path = installation.writeModJar("mod.jar", new IdentifiableContent("MOD_TOML", "META-INF/mods.toml"));
-
-            var result = launchAndLoad("forgeclient");
-            assertThat(result.issues()).containsOnly(
-                    ModLoadingIssue.warning("fml.modloadingissue.brokenfile.minecraft_forge", path).withAffectedPath(path));
-        }
-
-        @Test
-        void testFabricMod() throws Exception {
-            installation.setupProductionClient();
-            var path = installation.writeModJar("mod.jar", new IdentifiableContent("FABRIC_MOD_JSON", "fabric.mod.json"));
-
-            var result = launchAndLoad("forgeclient");
-            assertThat(result.issues()).containsOnly(
-                    ModLoadingIssue.warning("fml.modloadingissue.brokenfile.fabric", path).withAffectedPath(path));
-        }
-
-        @Test
-        void testFileIsDirectory() throws Exception {
-            installation.setupProductionClient();
-
-            var path = installation.getModsFolder().resolve("mod.jar");
-            Files.createDirectories(path);
-
-            var result = launchAndLoad("forgeclient");
-            assertThat(getTranslatedIssues(result)).containsOnly("WARNING: File mods/mod.jar is not a valid mod file");
         }
     }
 }

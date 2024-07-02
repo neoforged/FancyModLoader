@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import net.neoforged.fml.ModLoadingException;
+import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileParser;
@@ -55,7 +57,12 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
     @Nullable
     private static IModFile.Type getModType(JarContents jar) {
         var typeString = jar.getManifest().getMainAttributes().getValue(ModFile.TYPE);
-        return typeString != null ? IModFile.Type.valueOf(typeString) : null;
+        try {
+            return typeString != null ? IModFile.Type.valueOf(typeString) : null;
+        } catch (IllegalArgumentException e) {
+            throw new ModLoadingException(ModLoadingIssue.error(
+                    "fml.modloadingissue.brokenfile.unknownfmlmodtype", typeString).withAffectedPath(jar.getPrimaryPath()));
+        }
     }
 
     public static IModFileInfo manifestParser(final IModFile mod) {
