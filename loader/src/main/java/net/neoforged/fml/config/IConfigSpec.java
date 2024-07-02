@@ -7,7 +7,6 @@ package net.neoforged.fml.config;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.UnmodifiableCommentedConfig;
-import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 
 /**
  * A config spec is responsible for interpreting (loading, correcting) raw {@link CommentedConfig}s from NightConfig.
@@ -22,7 +21,8 @@ public interface IConfigSpec {
 
     /**
      * Checks that a config is correct.
-     * If this function returns {@code false}, a backup is made then the config is fed through {@link #correct}.
+     * If this function returns {@code false},
+     * a backup is made (except for initial creation) then the config is fed through {@link #correct}.
      */
     boolean isCorrect(UnmodifiableCommentedConfig config);
 
@@ -36,12 +36,12 @@ public interface IConfigSpec {
      *
      * <p>The config should not be saved yet. FML will take care of that after this method.
      */
-    void correct(CommentedFileConfig config);
+    void correct(CommentedConfig config);
 
     /**
      * Updates the spec's data to a config.
      * This is called on loading and on reloading.
      * The config is guaranteed to be valid according to {@link #isCorrect}.
      */
-    void load(UnmodifiableCommentedConfig config);
+    void load(CommentedConfig config);
 }

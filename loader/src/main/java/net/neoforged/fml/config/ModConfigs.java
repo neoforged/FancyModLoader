@@ -1,10 +1,9 @@
 package net.neoforged.fml.config;
 
-import net.neoforged.fml.ModContainer;
-
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import net.neoforged.fml.ModContainer;
 
 /**
  * This class provides access to all mod configs known to FML.

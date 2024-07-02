@@ -8,9 +8,9 @@ package net.neoforged.fml.config;
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.electronwill.nightconfig.core.file.FileConfig;
-import com.electronwill.nightconfig.toml.TomlFormat;
-import java.io.ByteArrayInputStream;
 import java.nio.file.Path;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.event.config.ModConfigEvent;
@@ -29,6 +29,11 @@ public final class ModConfig {
      */
     @Nullable
     CommentedConfig config;
+    /**
+     * NightConfig's own configs are threadsafe, but mod code is not necessarily.
+     * This lock is used to prevent multiple concurrent config reloads or event dispatches.
+     */
+    final Lock lock = new ReentrantLock();
 
     ModConfig(Type type, IConfigSpec spec, ModContainer container, String fileName) {
         this.type = type;
@@ -53,7 +58,7 @@ public final class ModConfig {
         return container.getModId();
     }
 
-    // TODO: remove from public API
+    // TODO: remove from public API?
     public Path getFullPath() {
         if (this.config instanceof FileConfig fileConfig) {
             return fileConfig.getNioPath();
@@ -62,8 +67,27 @@ public final class ModConfig {
         }
     }
 
+    /**
+     * To be called when the config changed in code, for example via {@code ModConfigSpec.ConfigValue#set}.
+     * This function will update the config on disk, and fire the reloading event.
+     */
+    public void onConfigChanged() {
+        if (!(this.config instanceof FileConfig fileConfig)) {
+            throw new IllegalStateException("Cannot call onConfigChanged on non-file config " + this.config + " at path " + getFileName());
+        }
+
+        fileConfig.save();
+        postConfigEvent(ModConfigEvent.Reloading::new);
+    }
+
     void postConfigEvent(Function<ModConfig, ModConfigEvent> constructor) {
-        container.acceptEvent(constructor.apply(this));
+        lock.lock();
+
+        try {
+            container.acceptEvent(constructor.apply(this));
+        } finally {
+            lock.unlock();
+        }
     }
 
     public enum Type {

@@ -13,7 +13,6 @@ import com.electronwill.nightconfig.core.io.ParsingException;
 import com.electronwill.nightconfig.core.io.WritingMode;
 import com.electronwill.nightconfig.toml.TomlFormat;
 import com.mojang.logging.LogUtils;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,10 +22,8 @@ import java.util.EnumMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.loading.FMLConfig;

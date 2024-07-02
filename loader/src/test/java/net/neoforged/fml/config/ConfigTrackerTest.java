@@ -1,25 +1,19 @@
 package net.neoforged.fml.config;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
-import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.core.UnmodifiableCommentedConfig;
-import com.electronwill.nightconfig.core.UnmodifiableConfig;
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
-import com.electronwill.nightconfig.core.utils.UnmodifiableConfigWrapper;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
 import org.assertj.core.api.Assertions;
-import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 public class ConfigTrackerTest {
     @TempDir
@@ -212,7 +206,7 @@ public class ConfigTrackerTest {
         }
 
         @Override
-        public void correct(CommentedFileConfig config) {
+        public void correct(CommentedConfig config) {
             correct(config, false);
         }
 
@@ -233,7 +227,7 @@ public class ConfigTrackerTest {
         }
 
         @Override
-        public void load(UnmodifiableCommentedConfig config) {
+        public void load(CommentedConfig config) {
             loadedValue = config.getInt("configEntry");
         }
     }
