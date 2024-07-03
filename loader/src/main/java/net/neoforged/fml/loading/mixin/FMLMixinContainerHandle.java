@@ -23,4 +23,14 @@ public class FMLMixinContainerHandle implements IContainerHandle {
     public Collection<IContainerHandle> getNestedContainers() {
         return List.of();
     }
+
+    @Override
+    public String getId() {
+        return "fml";
+    }
+
+    @Override
+    public String getDescription() {
+        return "FancyModLoader";
+    }
 }
