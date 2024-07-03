@@ -185,19 +185,11 @@ public class ConfigTrackerTest {
     }
 
     private static class SimpleConfigSpec implements IConfigSpec {
-        private final UnmodifiableCommentedConfig defaultConfig;
         private int loadedValue = 4;
 
-        public SimpleConfigSpec() {
-            var defaultConfig = CommentedConfig.inMemory();
-            defaultConfig.set("configEntry", 4);
-            defaultConfig.setComment("configEntry", "Test comment:");
-            this.defaultConfig = defaultConfig.unmodifiable();
-        }
-
         @Override
-        public UnmodifiableCommentedConfig getDefaultConfig() {
-            return defaultConfig;
+        public boolean isEmpty() {
+            return false;
         }
 
         @Override
@@ -227,7 +219,7 @@ public class ConfigTrackerTest {
         }
 
         @Override
-        public void load(CommentedConfig config) {
+        public void acceptConfig(CommentedConfig config) {
             loadedValue = config.getInt("configEntry");
         }
     }

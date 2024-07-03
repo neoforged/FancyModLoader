@@ -111,7 +111,7 @@ public abstract class ModContainer {
      * @param configSpec A config spec
      */
     public void registerConfig(ModConfig.Type type, IConfigSpec configSpec) {
-        if (configSpec.getDefaultConfig().isEmpty()) {
+        if (configSpec.isEmpty()) {
             // This handles the case where a mod tries to register a config, without any options configured inside it.
             LOGGER.debug("Attempted to register an empty config for type {} on mod {}", type, modId);
             return;
@@ -128,7 +128,7 @@ public abstract class ModContainer {
      * @param configSpec A config spec
      */
     public void registerConfig(ModConfig.Type type, IConfigSpec configSpec, String fileName) {
-        if (configSpec.getDefaultConfig().isEmpty()) {
+        if (configSpec.isEmpty()) {
             // This handles the case where a mod tries to register a config, without any options configured inside it.
             LOGGER.debug("Attempted to register an empty config for type {} on mod {} using file name {}", type, modId, fileName);
             return;

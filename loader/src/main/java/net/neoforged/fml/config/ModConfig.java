@@ -69,7 +69,7 @@ public final class ModConfig {
 
     /**
      * To be called when the config changed in code, for example via {@code ModConfigSpec.ConfigValue#set}.
-     * This function will update the config on disk, and fire the reloading event.
+     * This function will update the config on disk, and fire the reloading event, taking the appropriate lock first.
      */
     public void onConfigChanged() {
         if (!(this.config instanceof FileConfig fileConfig)) {

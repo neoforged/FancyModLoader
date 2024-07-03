@@ -159,7 +159,7 @@ public class ConfigTracker {
                 throw new RuntimeException("Failed to recreate config file " + modConfig.getFileName() + " of type " + modConfig.getType() + " for modid " + modConfig.getModId(), ex);
             }
         }
-        modConfig.getSpec().load(config);
+        modConfig.getSpec().acceptConfig(config);
     }
 
     public void acceptSyncedConfig(ModConfig modConfig, byte[] bytes) {
@@ -168,7 +168,7 @@ public class ConfigTracker {
         }
         modConfig.config = TomlFormat.instance().createParser().parse(new ByteArrayInputStream(bytes));
         // TODO: do we want to do any validation? (what do we do if it fails?)
-        modConfig.getSpec().load(modConfig.config);
+        modConfig.getSpec().acceptConfig(modConfig.config);
         modConfig.postConfigEvent(ModConfigEvent.Reloading::new); // TODO: should maybe be Loading on the first load?
     }
 
@@ -177,10 +177,16 @@ public class ConfigTracker {
             if (modConfig.config != null) {
                 LOGGER.warn("Overwriting non-null config {} at path {} with default server config", modConfig.config, modConfig.getFileName());
             }
-            modConfig.config = CommentedConfig.copy(modConfig.getSpec().getDefaultConfig());
-            modConfig.getSpec().load(modConfig.config);
+            modConfig.config = createDefaultConfig(modConfig.getSpec());
+            modConfig.getSpec().acceptConfig(modConfig.config);
             modConfig.postConfigEvent(ModConfigEvent.Loading::new);
         });
+    }
+
+    private static CommentedConfig createDefaultConfig(IConfigSpec spec) {
+        var commentedConfig = CommentedConfig.inMemory();
+        spec.correct(commentedConfig);
+        return commentedConfig;
     }
 
     private void closeConfig(final ModConfig config) {
@@ -214,7 +220,7 @@ public class ConfigTracker {
             LOGGER.info(CONFIG, "Loading default config file from path {}", p);
             Files.copy(p, file);
         } else {
-            conf.createWriter().write(modConfig.getSpec().getDefaultConfig(), file, WritingMode.REPLACE_ATOMIC);
+            conf.createWriter().write(createDefaultConfig(modConfig.getSpec()), file, WritingMode.REPLACE_ATOMIC);
         }
         return true;
     }
