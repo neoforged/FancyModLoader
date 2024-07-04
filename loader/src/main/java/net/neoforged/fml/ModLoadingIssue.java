@@ -58,6 +58,10 @@ public record ModLoadingIssue(
         return new ModLoadingIssue(severity, translationKey, translationArgs, cause, affectedPath, affectedModFile, affectedMod);
     }
 
+    public ModLoadingIssue withSeverity(Severity severity) {
+        return new ModLoadingIssue(severity, translationKey, translationArgs, cause, affectedPath, affectedModFile, affectedMod);
+    }
+
     @Override
     public String toString() {
         var result = new StringBuilder(severity + ": " + translationKey);
