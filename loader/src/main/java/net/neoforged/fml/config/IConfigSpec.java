@@ -8,6 +8,7 @@ package net.neoforged.fml.config;
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.core.UnmodifiableCommentedConfig;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A config spec is responsible for interpreting (loading, correcting) raw {@link CommentedConfig}s from NightConfig.
@@ -52,5 +53,5 @@ public interface IConfigSpec {
      * This is called on loading and on reloading.
      * The config is guaranteed to be valid according to {@link #isCorrect}.
      */
-    void acceptConfig(CommentedConfig config);
+    void acceptConfig(@Nullable CommentedConfig config);
 }

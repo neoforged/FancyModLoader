@@ -195,6 +195,7 @@ public class ConfigTracker {
                 LOGGER.trace(CONFIG, "Closing config file type {} at {} for {}", config.getType(), config.getFileName(), config.getModId());
                 unload(config);
                 config.config = null;
+                config.getSpec().acceptConfig(null);
                 config.postConfigEvent(ModConfigEvent.Unloading::new);
             } else {
                 LOGGER.warn(CONFIG, "Closing non-file config {} at path {}", config.config, config.getFileName());
