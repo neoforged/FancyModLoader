@@ -16,7 +16,6 @@ import net.neoforged.fml.ModContainer;
  * Configs are registered via {@link ModContainer#registerConfig(ModConfig.Type, IConfigSpec)}.
  */
 public final class ModConfigs {
-    // TODO: why is this a string return instead of a File or Path? Suspicious!
     public static String getConfigFileName(String modId, ModConfig.Type type) {
         var config = ConfigTracker.INSTANCE.configsByMod.getOrDefault(modId, Map.of()).get(type);
         return config == null ? null : config.getFullPath().toString();

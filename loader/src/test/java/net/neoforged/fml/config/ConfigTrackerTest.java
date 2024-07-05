@@ -38,11 +38,6 @@ public class ConfigTrackerTest {
         configTracker = new ConfigTracker();
     }
 
-//    @AfterEach()
-//    void unloadConfigs() {
-//        configTracker.unloadConfigs(ModConfig.Type.CLIENT);
-//    }
-
     @Test
     void testOpenNewConfig() {
         var modConfig = configTracker.registerConfig(ModConfig.Type.CLIENT, new SimpleConfigSpec(), modContainer, "testOpenNewConfig.toml");
