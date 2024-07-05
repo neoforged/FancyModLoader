@@ -10,9 +10,7 @@ import static org.lwjgl.opengl.GL.createCapabilities;
 import static org.lwjgl.opengl.GL32C.*;
 
 import java.awt.Desktop;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URI;
@@ -34,6 +32,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -299,13 +298,10 @@ public class DisplayWindow implements ImmediateWindowProvider {
         return this.glVersion;
     }
 
+    private final ReentrantLock crashLock = new ReentrantLock();
+
     private void crashElegantly(String errorDetails) {
-        String qrText;
-        try (var is = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream("/glfailure.txt")))) {
-            qrText = is.lines().collect(Collectors.joining("\n"));
-        } catch (IOException ioe) {
-            qrText = "";
-        }
+        crashLock.lock(); // Crash at most once!
 
         StringBuilder msgBuilder = new StringBuilder(2000);
         msgBuilder.append("Failed to initialize the mod loading system and display.\n");
@@ -314,9 +310,9 @@ public class DisplayWindow implements ImmediateWindowProvider {
         msgBuilder.append(errorDetails);
         msgBuilder.append("\n\n");
         msgBuilder.append("If you click yes, we will try and open " + ERROR_URL + " in your default browser");
-        LOGGER.error("ERROR DISPLAY\n" + msgBuilder);
+        LOGGER.error("ERROR DISPLAY\n{}", msgBuilder);
         // we show the display on a new dedicated thread
-        Executors.newSingleThreadExecutor().submit(() -> {
+        var thread = new Thread(() -> {
             var res = TinyFileDialogs.tinyfd_messageBox("Minecraft: NeoForge", msgBuilder.toString(), "yesno", "error", false);
             if (res) {
                 try {
@@ -325,8 +321,14 @@ public class DisplayWindow implements ImmediateWindowProvider {
                     TinyFileDialogs.tinyfd_messageBox("Minecraft: NeoForge", "Sadly, we couldn't open your browser.\nVisit " + ERROR_URL, "ok", "error", false);
                 }
             }
-            System.exit(1);
-        });
+        }, "crash-report");
+        thread.setDaemon(true);
+        thread.start();
+        try {
+            thread.join();
+        } catch (InterruptedException ignored) {}
+
+        System.exit(1);
     }
 
     /**
