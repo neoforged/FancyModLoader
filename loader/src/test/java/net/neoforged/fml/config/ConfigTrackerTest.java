@@ -207,12 +207,12 @@ public class ConfigTrackerTest {
             if (!config.contains("configEntry") || !(config.get("configEntry") instanceof Integer)) {
                 ok = false;
                 if (!dryRun) {
-                    ((CommentedFileConfig) config).set("configEntry", 4);
+                    ((CommentedConfig) config).set("configEntry", 4);
                 }
             }
             if (!dryRun) {
                 if (!config.containsComment("configEntry")) {
-                    ((CommentedFileConfig) config).setComment("configEntry", "Test comment:");
+                    ((CommentedConfig) config).setComment("configEntry", "Test comment:");
                 }
             }
             return ok;
