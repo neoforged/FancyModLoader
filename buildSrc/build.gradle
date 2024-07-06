@@ -1,0 +1,18 @@
+plugins {
+    id 'java'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+dependencies {
+    implementation "gradle.plugin.org.jetbrains.gradle.plugin.idea-ext:gradle-idea-ext:1.1.8"
+    implementation "com.google.code.gson:gson:2.10.1"
+}
+
+repositories {
+    gradlePluginPortal()
+}
