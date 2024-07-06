@@ -5,7 +5,10 @@
 
 package net.neoforged.fml.loading.moddiscovery;
 
+import com.electronwill.nightconfig.core.UnmodifiableConfig;
+import com.electronwill.nightconfig.core.concurrent.ConcurrentConfig;
 import com.electronwill.nightconfig.core.file.FileConfig;
+import com.electronwill.nightconfig.toml.TomlFormat;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.mojang.logging.LogUtils;
@@ -44,8 +47,21 @@ public class ModFileParser {
         final FileConfig fileConfig = FileConfig.builder(modsjson).build();
         fileConfig.load();
         fileConfig.close();
-        final NightConfigWrapper configWrapper = new NightConfigWrapper(fileConfig);
+        // Make an immutable copy of the config. A FileConfig is a ConcurrentConfig,
+        // and we don't want to leak the complexities of ConcurrentConfigs
+        // (such as not supporting `valueMap`) into this read-only code.
+        final NightConfigWrapper configWrapper = new NightConfigWrapper(copyConfig(fileConfig));
         return new ModFileInfo(modFile, configWrapper, configWrapper::setFile);
+    }
+
+    /**
+     * Creates an immutable copy of a concurrent config.
+     */
+    private static UnmodifiableConfig copyConfig(ConcurrentConfig config) {
+        var format = TomlFormat.instance();
+        // The best I could do given that Config.copy(...) only performs a shallow copy,
+        // and does not work for StampedConfigs anyway.
+        return format.createParser().parse(format.createWriter().writeToString(config)).unmodifiable();
     }
 
     protected static List<CoreModFile> getCoreMods(final ModFile modFile) {

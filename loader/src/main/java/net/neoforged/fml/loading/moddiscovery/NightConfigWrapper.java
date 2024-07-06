@@ -8,6 +8,7 @@ package net.neoforged.fml.loading.moddiscovery;
 import static java.util.Arrays.asList;
 
 import com.electronwill.nightconfig.core.UnmodifiableConfig;
+import com.electronwill.nightconfig.core.concurrent.ConcurrentConfig;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -22,6 +23,9 @@ public class NightConfigWrapper implements IConfigurable {
     private IModFileInfo file;
 
     public NightConfigWrapper(final UnmodifiableConfig config) {
+        if (config instanceof ConcurrentConfig) {
+            throw new IllegalArgumentException("Cannot create a NightConfigWrapper with a ConcurrentConfig! Use bulkRead to make a copy.");
+        }
         this.config = config;
     }
 

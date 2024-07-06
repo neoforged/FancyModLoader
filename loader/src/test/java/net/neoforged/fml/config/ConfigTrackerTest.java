@@ -7,7 +7,6 @@ package net.neoforged.fml.config;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.UnmodifiableCommentedConfig;
-import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
