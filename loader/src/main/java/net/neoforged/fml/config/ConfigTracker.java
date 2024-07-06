@@ -17,13 +17,17 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.loading.FMLConfig;
@@ -94,13 +98,17 @@ public class ConfigTracker {
         LOGGER.debug(CONFIG, "Config file {} for {} tracking", config.getFileName(), config.getModId());
     }
 
-    public void loadConfigs(ModConfig.Type type, Path configBasePath) {
-        loadConfigs(type, configBasePath, null);
+    public void loadConfigs(ModConfig.Type type, Executor executor, Path configBasePath) {
+        loadConfigs(type, configBasePath, executor, null);
     }
 
-    public void loadConfigs(ModConfig.Type type, Path configBasePath, @Nullable Path configOverrideBasePath) {
+    public void loadConfigs(ModConfig.Type type, Path configBasePath, Executor executor, @Nullable Path configOverrideBasePath) {
         LOGGER.debug(CONFIG, "Loading configs type {}", type);
-        this.configSets.get(type).forEach(config -> openConfig(config, configBasePath, configOverrideBasePath));
+        var futures = new ArrayList<CompletableFuture<?>>();
+        this.configSets.get(type).forEach(config -> {
+            futures.add(CompletableFuture.runAsync(() -> openConfig(config, configBasePath, configOverrideBasePath), executor));
+        });
+        CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
     }
 
     public void unloadConfigs(ModConfig.Type type) {
@@ -113,9 +121,9 @@ public class ConfigTracker {
         if (config.config != null) {
             LOGGER.warn("Opening a config that was already loaded with value {} at path {}", config.config, config.getFileName());
         }
-        final Path basePath = resolveBasePath(config, configBasePath, configOverrideBasePath);
-        final Path configPath = basePath.resolve(config.getFileName());
-        final CommentedFileConfig configData = CommentedFileConfig.builder(configPath)
+        var basePath = resolveBasePath(config, configBasePath, configOverrideBasePath);
+        var configPath = basePath.resolve(config.getFileName());
+        var configData = CommentedFileConfig.builder(configPath)
                 .sync()
                 .preserveInsertionOrder()
                 .autosave()
@@ -124,15 +132,31 @@ public class ConfigTracker {
                 .build();
         LOGGER.debug(CONFIG, "Built TOML config for {}", configPath);
 
-        if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DISABLE_CONFIG_WATCHER)) {
-            FileWatcher.defaultInstance().addWatch(configPath, new ConfigWatcher(config, configData, Thread.currentThread().getContextClassLoader()));
-            LOGGER.debug(CONFIG, "Watching TOML config file {} for changes", configPath);
-        }
+        // We have to lock the config here to prevent the config watcher from starting to reload the config
+        // before we have performed the initial load!
+        config.lock.lock();
+        try {
+            if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DISABLE_CONFIG_WATCHER)) {
+                // Ensure that the watcher is actually registered before proceeding
+                var watcher = new ConfigWatcher(config, configData, Thread.currentThread().getContextClassLoader());
+                try {
+                    FileWatcher.defaultInstance().addWatchFuture(configPath, watcher).get();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException(e);
+                } catch (ExecutionException e) {
+                    throw new RuntimeException(e.getCause());
+                }
+                LOGGER.debug(CONFIG, "Watching TOML config file {} for changes", configPath);
+            }
 
-        loadConfig(config, configData);
-        LOGGER.debug(CONFIG, "Loaded TOML config file {}", configPath);
-        config.config = configData;
-        config.postConfigEvent(ModConfigEvent.Loading::new);
+            loadConfig(config, configData);
+            LOGGER.debug(CONFIG, "Loaded TOML config file {}", configPath);
+            config.config = configData;
+            config.postConfigEvent(ModConfigEvent.Loading::new);
+        } finally {
+            config.lock.unlock();
+        }
     }
 
     private static Path resolveBasePath(ModConfig config, Path configBasePath, @Nullable Path configOverrideBasePath) {
