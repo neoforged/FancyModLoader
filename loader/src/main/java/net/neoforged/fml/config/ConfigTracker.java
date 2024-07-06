@@ -73,7 +73,7 @@ public class ConfigTracker {
         return String.format(Locale.ROOT, "%s-%s.toml", modId, type.extension());
     }
 
-    void trackConfig(final ModConfig config) {
+    void trackConfig(ModConfig config) {
         if (this.fileMap.containsKey(config.getFileName())) {
             LOGGER.error(CONFIG, "Detected config file conflict {} between {} and {}", config.getFileName(), this.fileMap.get(config.getFileName()).getModId(), config.getModId());
             throw new RuntimeException("Config conflict detected!");
@@ -98,7 +98,7 @@ public class ConfigTracker {
         this.configSets.get(type).forEach(this::closeConfig);
     }
 
-    public void openConfig(final ModConfig config, final Path configBasePath, @Nullable Path configOverrideBasePath) {
+    public void openConfig(ModConfig config, Path configBasePath, @Nullable Path configOverrideBasePath) {
         LOGGER.trace(CONFIG, "Loading config file type {} at {} for {}", config.getType(), config.getFileName(), config.getModId());
         if (config.config != null) {
             LOGGER.warn("Opening a config that was already loaded with value {} at path {}", config.config, config.getFileName());
@@ -189,7 +189,7 @@ public class ConfigTracker {
         return commentedConfig;
     }
 
-    private void closeConfig(final ModConfig config) {
+    private void closeConfig(ModConfig config) {
         if (config.config != null) {
             if (config.config instanceof CommentedFileConfig) {
                 LOGGER.trace(CONFIG, "Closing config file type {} at {} for {}", config.getType(), config.getFileName(), config.getModId());
@@ -214,7 +214,7 @@ public class ConfigTracker {
         }
     }
 
-    private static boolean setupConfigFile(final ModConfig modConfig, final Path file, final ConfigFormat<?> conf) throws IOException {
+    private static boolean setupConfigFile(ModConfig modConfig, Path file, ConfigFormat<?> conf) throws IOException {
         Files.createDirectories(file.getParent());
         Path p = defaultConfigPath.resolve(modConfig.getFileName());
         if (Files.exists(p)) {
@@ -226,15 +226,15 @@ public class ConfigTracker {
         return true;
     }
 
-    private static void backUpConfig(final CommentedFileConfig commentedFileConfig) {
+    private static void backUpConfig(CommentedFileConfig commentedFileConfig) {
         backUpConfig(commentedFileConfig, 5); //TODO: Think of a way for mods to set their own preference (include a sanity check as well, no disk stuffing)
     }
 
-    private static void backUpConfig(final CommentedFileConfig commentedFileConfig, final int maxBackups) {
+    private static void backUpConfig(CommentedFileConfig commentedFileConfig, int maxBackups) {
         backUpConfig(commentedFileConfig.getNioPath(), maxBackups);
     }
 
-    private static void backUpConfig(final Path commentedFileConfig, final int maxBackups) {
+    private static void backUpConfig(Path commentedFileConfig, int maxBackups) {
         Path bakFileLocation = commentedFileConfig.getParent();
         String bakFileName = FilenameUtils.removeExtension(commentedFileConfig.getFileName().toString());
         String bakFileExtension = FilenameUtils.getExtension(commentedFileConfig.getFileName().toString()) + ".bak";
