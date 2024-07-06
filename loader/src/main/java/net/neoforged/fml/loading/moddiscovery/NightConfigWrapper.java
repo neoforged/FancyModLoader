@@ -24,7 +24,7 @@ public class NightConfigWrapper implements IConfigurable {
 
     public NightConfigWrapper(final UnmodifiableConfig config) {
         if (config instanceof ConcurrentConfig) {
-            throw new IllegalArgumentException("Cannot create a NightConfigWrapper with a ConcurrentConfig! Use bulkRead to make a copy.");
+            throw new IllegalArgumentException("Cannot create a NightConfigWrapper with a ConcurrentConfig!");
         }
         this.config = config;
     }
