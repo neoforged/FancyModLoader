@@ -36,32 +36,42 @@ import org.slf4j.Logger;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
 
+/**
+ * The configuration tracker manages various types of mod configurations.
+ * Due to the parallel nature of mod initialization, modifying the configuration state must be <strong>thread-safe</strong>.
+ */
 @ApiStatus.Internal
 public class ConfigTracker {
-    private static final Logger LOGGER = LogUtils.getLogger();
-    static final Marker CONFIG = MarkerFactory.getMarker("CONFIG");
     public static final ConfigTracker INSTANCE = new ConfigTracker();
+    static final Marker CONFIG = MarkerFactory.getMarker("CONFIG");
+    private static final Logger LOGGER = LogUtils.getLogger();
     private static final Path defaultConfigPath = FMLPaths.GAMEDIR.get().resolve(FMLConfig.defaultConfigPath());
 
-    final ConcurrentHashMap<String, ModConfig> fileMap;
-    final EnumMap<ModConfig.Type, Set<ModConfig>> configSets;
-    final ConcurrentHashMap<String, Map<ModConfig.Type, ModConfig>> configsByMod;
+    final ConcurrentHashMap<String, ModConfig> fileMap = new ConcurrentHashMap<>();
+    final EnumMap<ModConfig.Type, Set<ModConfig>> configSets = new EnumMap<>(ModConfig.Type.class);
+    final ConcurrentHashMap<String, Map<ModConfig.Type, ModConfig>> configsByMod = new ConcurrentHashMap<>();
 
     @VisibleForTesting
     public ConfigTracker() {
-        this.fileMap = new ConcurrentHashMap<>();
-        this.configSets = new EnumMap<>(ModConfig.Type.class);
-        this.configsByMod = new ConcurrentHashMap<>();
-        this.configSets.put(ModConfig.Type.CLIENT, Collections.synchronizedSet(new LinkedHashSet<>()));
-        this.configSets.put(ModConfig.Type.COMMON, Collections.synchronizedSet(new LinkedHashSet<>()));
-        this.configSets.put(ModConfig.Type.SERVER, Collections.synchronizedSet(new LinkedHashSet<>()));
-        this.configSets.put(ModConfig.Type.STARTUP, Collections.synchronizedSet(new LinkedHashSet<>()));
+        for (var type : ModConfig.Type.values()) {
+            this.configSets.put(type, Collections.synchronizedSet(new LinkedHashSet<>()));
+        }
     }
 
+    /**
+     * Registers a new configuration of the given type for a mod, using the default filename for this type of config.
+     * <p>
+     * Registering a configuration is required to receive configuration events.
+     */
     public ModConfig registerConfig(ModConfig.Type type, IConfigSpec spec, ModContainer container) {
         return registerConfig(type, spec, container, defaultConfigName(type, container.getModId()));
     }
 
+    /**
+     * Registers a new configuration of the given type for a mod, using a custom filename.
+     * <p>
+     * Registering a configuration is required to receive configuration events.
+     */
     public ModConfig registerConfig(ModConfig.Type type, IConfigSpec spec, ModContainer container, String fileName) {
         var modConfig = new ModConfig(type, spec, container, fileName);
         trackConfig(modConfig);
@@ -69,16 +79,16 @@ public class ConfigTracker {
     }
 
     private static String defaultConfigName(ModConfig.Type type, String modId) {
-        // config file name would be "forge-client.toml" and "forge-server.toml"
+        // for mod-id "forge", config file name would be "forge-client.toml" and "forge-server.toml"
         return String.format(Locale.ROOT, "%s-%s.toml", modId, type.extension());
     }
 
     void trackConfig(ModConfig config) {
-        if (this.fileMap.containsKey(config.getFileName())) {
-            LOGGER.error(CONFIG, "Detected config file conflict {} between {} and {}", config.getFileName(), this.fileMap.get(config.getFileName()).getModId(), config.getModId());
+        var previousValue = this.fileMap.putIfAbsent(config.getFileName(), config);
+        if (previousValue != null) {
+            LOGGER.error(CONFIG, "Detected config file conflict {} between {} and {}", config.getFileName(), previousValue.getModId(), config.getModId());
             throw new RuntimeException("Config conflict detected!");
         }
-        this.fileMap.put(config.getFileName(), config);
         this.configSets.get(config.getType()).add(config);
         this.configsByMod.computeIfAbsent(config.getModId(), (k) -> new EnumMap<>(ModConfig.Type.class)).put(config.getType(), config);
         LOGGER.debug(CONFIG, "Config file {} for {} tracking", config.getFileName(), config.getModId());
@@ -95,10 +105,10 @@ public class ConfigTracker {
 
     public void unloadConfigs(ModConfig.Type type) {
         LOGGER.debug(CONFIG, "Unloading configs type {}", type);
-        this.configSets.get(type).forEach(this::closeConfig);
+        this.configSets.get(type).forEach(ConfigTracker::closeConfig);
     }
 
-    public void openConfig(ModConfig config, Path configBasePath, @Nullable Path configOverrideBasePath) {
+    public static void openConfig(ModConfig config, Path configBasePath, @Nullable Path configOverrideBasePath) {
         LOGGER.trace(CONFIG, "Loading config file type {} at {} for {}", config.getType(), config.getFileName(), config.getModId());
         if (config.config != null) {
             LOGGER.warn("Opening a config that was already loaded with value {} at path {}", config.config, config.getFileName());
@@ -125,7 +135,7 @@ public class ConfigTracker {
         config.postConfigEvent(ModConfigEvent.Loading::new);
     }
 
-    private Path resolveBasePath(ModConfig config, Path configBasePath, @Nullable Path configOverrideBasePath) {
+    private static Path resolveBasePath(ModConfig config, Path configBasePath, @Nullable Path configOverrideBasePath) {
         if (configOverrideBasePath != null) {
             Path overrideFilePath = configOverrideBasePath.resolve(config.getFileName());
             if (Files.exists(overrideFilePath)) {
@@ -162,7 +172,7 @@ public class ConfigTracker {
         modConfig.getSpec().acceptConfig(config);
     }
 
-    public void acceptSyncedConfig(ModConfig modConfig, byte[] bytes) {
+    public static void acceptSyncedConfig(ModConfig modConfig, byte[] bytes) {
         if (modConfig.config != null) {
             LOGGER.warn("Overwriting non-null config {} at path {} with synced config", modConfig.config, modConfig.getFileName());
         }
@@ -189,7 +199,7 @@ public class ConfigTracker {
         return commentedConfig;
     }
 
-    private void closeConfig(ModConfig config) {
+    private static void closeConfig(ModConfig config) {
         if (config.config != null) {
             if (config.config instanceof CommentedFileConfig) {
                 LOGGER.trace(CONFIG, "Closing config file type {} at {} for {}", config.getType(), config.getFileName(), config.getModId());
