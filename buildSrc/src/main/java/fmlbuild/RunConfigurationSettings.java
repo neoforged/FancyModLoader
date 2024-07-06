@@ -26,6 +26,7 @@ public abstract class RunConfigurationSettings implements Named {
     @Inject
     public RunConfigurationSettings(Project project, String name) {
         this.name = name;
+        getIdeName().convention(name);
         getWorkingDirectory().convention(project.getLayout().getProjectDirectory());
     }
 
@@ -38,6 +39,11 @@ public abstract class RunConfigurationSettings implements Named {
      * The Gradle group to put the task into.
      */
     public abstract Property<String> getTaskGroup();
+
+    /**
+     * Name for the run configuration in the IDE.
+     */
+    public abstract Property<String> getIdeName();
 
     /**
      * The main class to launch.

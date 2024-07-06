@@ -5,8 +5,6 @@
 
 package net.neoforged.fml.loading;
 
-import cpw.mods.modlauncher.Launcher;
-import cpw.mods.modlauncher.api.IModuleLayerManager.Layer;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -30,16 +28,14 @@ import org.apache.logging.log4j.Logger;
 
 public class ImmediateWindowHandler {
     private static final Logger LOGGER = LogManager.getLogger();
+    private static final String HANDOFF_CLASS = "net.neoforged.neoforge.client.loading.NoVizFallback";
 
     private static ImmediateWindowProvider provider;
 
     private static ProgressMeter earlyProgress;
 
     public static void load(final String launchTarget, final String[] arguments) {
-        final var layer = Launcher.INSTANCE.findLayerManager()
-                .flatMap(manager -> manager.getLayer(Layer.SERVICE))
-                .orElseThrow(() -> new IllegalStateException("Couldn't find SERVICE layer"));
-        ServiceLoader.load(layer, GraphicsBootstrapper.class)
+        ServiceLoader.load(GraphicsBootstrapper.class)
                 .stream()
                 .map(ServiceLoader.Provider::get)
                 .forEach(bootstrap -> {
@@ -55,7 +51,7 @@ public class ImmediateWindowHandler {
         } else {
             final var providername = FMLConfig.getConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER);
             LOGGER.info("Loading ImmediateWindowProvider {}", providername);
-            final var maybeProvider = ServiceLoader.load(layer, ImmediateWindowProvider.class)
+            final var maybeProvider = ServiceLoader.load(ImmediateWindowProvider.class)
                     .stream()
                     .map(ServiceLoader.Provider::get)
                     .filter(p -> Objects.equals(p.name(), providername))
@@ -166,16 +162,22 @@ public class ImmediateWindowHandler {
         }
 
         @Override
-        public void updateModuleReads(final ModuleLayer layer) {
-            var fm = layer.findModule("neoforge");
-            if (fm.isPresent()) {
-                getClass().getModule().addReads(fm.get());
-                var clz = fm.map(l -> Class.forName(l, "net.neoforged.neoforge.client.loading.NoVizFallback")).orElseThrow();
-                var methods = Arrays.stream(clz.getMethods()).filter(m -> Modifier.isStatic(m.getModifiers())).collect(Collectors.toMap(Method::getName, Function.identity()));
-                NV_HANDOFF = methods.get("windowHandoff");
-                NV_OVERLAY = methods.get("loadingOverlay");
-                NV_POSITION = methods.get("windowPositioning");
-                NV_VERSION = methods.get("glVersion");
+        public void updateModuleReads(ModuleLayer layer) {
+            var nfModule = layer.findModule("neoforge").orElse(null);
+            if (nfModule != null) {
+                getClass().getModule().addReads(nfModule);
+                var clz = Class.forName(nfModule, HANDOFF_CLASS);
+                if (clz != null) {
+                    var methods = Arrays.stream(clz.getMethods()).filter(m -> Modifier.isStatic(m.getModifiers())).collect(Collectors.toMap(Method::getName, Function.identity()));
+                    NV_HANDOFF = methods.get("windowHandoff");
+                    NV_OVERLAY = methods.get("loadingOverlay");
+                    NV_POSITION = methods.get("windowPositioning");
+                    NV_VERSION = methods.get("glVersion");
+                } else {
+                    LOGGER.error("Cannot hand over Minecraft window to NeoForge, since class {} wasn't found in {}.", HANDOFF_CLASS, nfModule);
+                }
+            } else {
+                LOGGER.error("Cannot hand over Minecraft window to NeoForge, since module 'neoforge' wasn't found in {}.", layer);
             }
         }
 

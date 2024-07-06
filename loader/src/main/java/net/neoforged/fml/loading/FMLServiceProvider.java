@@ -5,32 +5,29 @@
 
 package net.neoforged.fml.loading;
 
-import static net.neoforged.fml.loading.LogMarkers.CORE;
-import static net.neoforged.fml.loading.LogMarkers.LOADING;
-
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.IEnvironment;
+import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
-import java.util.ArrayList;
+import joptsimple.ArgumentAcceptingOptionSpec;
+import joptsimple.OptionSpecBuilder;
+import net.neoforged.fml.loading.targets.CommonLaunchHandler;
+import net.neoforged.neoforgespi.Environment;
+import net.neoforged.neoforgespi.ILaunchContext;
+import org.jetbrains.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
-import joptsimple.ArgumentAcceptingOptionSpec;
-import joptsimple.OptionSpecBuilder;
-import net.neoforged.fml.ModLoader;
-import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.util.ServiceLoaderUtil;
-import net.neoforged.neoforgespi.Environment;
-import net.neoforged.neoforgespi.ILaunchContext;
-import net.neoforged.neoforgespi.coremod.ICoreMod;
-import org.jetbrains.annotations.VisibleForTesting;
-import org.slf4j.Logger;
+
+import static net.neoforged.fml.loading.LogMarkers.CORE;
 
 public class FMLServiceProvider implements ITransformationService {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -66,14 +63,31 @@ public class FMLServiceProvider implements ITransformationService {
         FMLPaths.setup(environment);
         LOGGER.debug(CORE, "Loading configuration");
         FMLConfig.load();
+        LOGGER.debug(CORE, "Preparing launch handler");
+        var launchTarget = environment.getProperty(IEnvironment.Keys.LAUNCHTARGET.get()).orElse("MISSING");
+        final Optional<ILaunchHandlerService> launchHandler = environment.findLaunchHandler(launchTarget);
+        LOGGER.debug(LogMarkers.CORE, "Using {} as launch service", launchTarget);
+        if (launchHandler.isEmpty()) {
+            LOGGER.error(LogMarkers.CORE, "Missing LaunchHandler {}, cannot continue", launchTarget);
+            throw new RuntimeException("Missing launch handler: " + launchTarget);
+        }
+
+        if (!(launchHandler.get() instanceof CommonLaunchHandler commonLaunchHandler)) {
+            LOGGER.error(LogMarkers.CORE, "Incompatible Launch handler found - type {}, cannot continue", launchHandler.get().getClass().getName());
+            throw new RuntimeException("Incompatible launch handler found");
+        }
         var moduleLayerManager = environment.findModuleLayerManager().orElseThrow();
-        launchContext = new LaunchContext(environment,
+        launchContext = new LaunchContext(
+                environment,
+                commonLaunchHandler.getDist(),
+                FMLPaths.GAMEDIR.get(),
                 moduleLayerManager,
                 modListsArgumentList,
                 modsArgumentList,
-                mavenRootsArgumentList);
-        LOGGER.debug(CORE, "Preparing launch handler");
-        FMLLoader.setupLaunchHandler(environment, versionInfo);
+                mavenRootsArgumentList,
+                List.of()
+        );
+        FMLLoader.setupLaunchHandler(versionInfo, commonLaunchHandler);
         FMLEnvironment.setupInteropEnvironment(environment);
         Environment.build(environment);
     }
@@ -86,7 +100,6 @@ public class FMLServiceProvider implements ITransformationService {
 
     @Override
     public List<Resource> completeScan(final IModuleLayerManager layerManager) {
-        Supplier<ModuleLayer> gameLayerSupplier = () -> layerManager.getLayer(IModuleLayerManager.Layer.GAME).orElseThrow();
         return FMLLoader.completeScan(launchContext, mixinConfigsArgumentList);
     }
 
@@ -123,50 +136,6 @@ public class FMLServiceProvider implements ITransformationService {
 
     @Override
     public List<? extends ITransformer<?>> transformers() {
-        LOGGER.debug(LOADING, "Loading coremod transformers");
-
-        var result = new ArrayList<>(loadCoreModScripts());
-
-        // Find all Java core mods
-        for (var coreMod : ServiceLoaderUtil.loadServices(launchContext, ICoreMod.class)) {
-            // Try to identify the mod-file this is from
-            var sourceFile = ServiceLoaderUtil.identifySourcePath(launchContext, coreMod);
-
-            try {
-                for (var transformer : coreMod.getTransformers()) {
-                    LOGGER.debug(CORE, "Adding {} transformer from core-mod {} in {}", transformer.targets(), coreMod, sourceFile);
-                    result.add(transformer);
-                }
-            } catch (Exception e) {
-                // Throwing here would cause the game to immediately crash without a proper error screen,
-                // since this method is called by ModLauncher directly.
-                ModLoader.addLoadingIssue(
-                        ModLoadingIssue.error("fml.modloadingissue.coremod_error", coreMod.getClass().getName(), sourceFile).withCause(e));
-            }
-        }
-
-        return result;
-    }
-
-    private List<ITransformer<?>> loadCoreModScripts() {
-        var filesWithCoreModScripts = LoadingModList.get().getModFiles()
-                .stream()
-                .filter(mf -> !mf.getFile().getCoreMods().isEmpty())
-                .toList();
-
-        if (filesWithCoreModScripts.isEmpty()) {
-            // Don't even bother starting the scripting engine if no mod contains scripting core mods
-            LOGGER.debug(LogMarkers.CORE, "Not loading coremod script-engine since no mod requested it");
-            return List.of();
-        }
-
-        LOGGER.info(LogMarkers.CORE, "Loading coremod script-engine for {}", filesWithCoreModScripts);
-        try {
-            return CoreModScriptLoader.loadCoreModScripts(filesWithCoreModScripts);
-        } catch (NoClassDefFoundError e) {
-            var message = "Could not find the coremod script-engine, but the following mods require it: " + filesWithCoreModScripts;
-            ImmediateWindowHandler.crash(message);
-            throw new IllegalStateException(message, e);
-        }
+        return FMLLoader.getCoreModTransformers(launchContext);
     }
 }

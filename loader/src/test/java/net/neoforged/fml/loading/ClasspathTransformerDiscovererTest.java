@@ -7,13 +7,19 @@ package net.neoforged.fml.loading;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.NamedPath;
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import net.bytebuddy.agent.ByteBuddyAgent;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -24,6 +30,21 @@ class ClasspathTransformerDiscovererTest {
     SimulatedInstallation simulatedInstallation;
     private Path mlServicesJar;
     private List<Path> gradleModule;
+
+    @BeforeAll
+    static void openJavaInvoke() {
+        ByteBuddyAgent.install().redefineModule(
+                MethodHandle.class.getModule(),
+                Set.of(),
+                Map.of(),
+                Map.of(
+                        MethodHandle.class.getPackageName(),
+                        Set.of(SecureJar.class.getModule())
+                ),
+                Set.of(),
+                Map.of()
+        );
+    }
 
     @BeforeEach
     void setUp() throws IOException {

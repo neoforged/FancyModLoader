@@ -21,10 +21,10 @@
     <Appenders>
         <TerminalConsole name="Console">
             <PatternLayout>
-                <LoggerNamePatternSelector defaultPattern="%highlightForge{[%d{HH:mm:ss}] [%t/%level] [%c{2.}/%markerSimpleName]: %minecraftFormatting{%msg{nolookup}}%n%tEx}">
+                <LoggerNamePatternSelector defaultPattern="%highlight{[%d{HH:mm:ss}] [%t/%level] [%c{2.}/%markerSimpleName]: %minecraftFormatting{%msg{nolookup}}%n%tEx}">
                     <!-- don't include the full logger name for Mojang's logs since they use full class names and it's very verbose -->
-                    <PatternMatch key="net.minecraft." pattern="%highlightForge{[%d{HH:mm:ss}] [%t/%level] [minecraft/%logger{1}]: %minecraftFormatting{%msg{nolookup}}%n%tEx}"/>
-                    <PatternMatch key="com.mojang." pattern="%highlightForge{[%d{HH:mm:ss}] [%t/%level] [mojang/%logger{1}]: %minecraftFormatting{%msg{nolookup}}%n%tEx}"/>
+                    <PatternMatch key="net.minecraft." pattern="%highlight{[%d{HH:mm:ss}] [%t/%level] [minecraft/%logger{1}]: %minecraftFormatting{%msg{nolookup}}%n%tEx}"/>
+                    <PatternMatch key="com.mojang." pattern="%highlight{[%d{HH:mm:ss}] [%t/%level] [mojang/%logger{1}]: %minecraftFormatting{%msg{nolookup}}%n%tEx}"/>
                 </LoggerNamePatternSelector>
             </PatternLayout>
         </TerminalConsole>
@@ -68,7 +68,7 @@
             </filters>
         </Logger>
 
-        <Root level="all">
+        <Root level="debug">
             <AppenderRef ref="Console" level="${sys:forge.logging.console.level:-info}"/>
             <AppenderRef ref="ServerGuiConsole" level="${sys:forge.logging.console.level:-info}"/>
             <AppenderRef ref="File" level="${sys:forge.logging.file.level:-info}"/>

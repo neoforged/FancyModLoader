@@ -47,7 +47,7 @@ public class ModList {
 
     private ModList(final List<ModFile> modFiles, final List<ModInfo> sortedList) {
         this.modFiles = modFiles.stream().map(ModFile::getModFileInfo).map(ModFileInfo.class::cast).collect(Collectors.toList());
-        this.sortedList = sortedList.stream().map(ModInfo.class::cast).collect(Collectors.toList());
+        this.sortedList = new ArrayList<>(sortedList);
         this.fileById = this.modFiles.stream().map(IModFileInfo::getMods).flatMap(Collection::stream).map(ModInfo.class::cast).collect(Collectors.toMap(ModInfo::getModId, ModInfo::getOwningFile));
         CrashReportCallables.registerCrashCallable("Mod List", this::crashReport);
     }

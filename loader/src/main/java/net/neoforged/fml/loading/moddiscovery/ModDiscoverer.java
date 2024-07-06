@@ -7,23 +7,14 @@ package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.JarContents;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.zip.ZipException;
+import cpw.mods.jarhandling.SecureJar;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.UniqueModListBuilder;
+import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IDependencyLocator;
@@ -35,6 +26,18 @@ import net.neoforged.neoforgespi.locating.IncompatibleFileReporting;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
+
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.zip.ZipException;
 
 public class ModDiscoverer {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -48,7 +51,7 @@ public class ModDiscoverer {
     }
 
     public ModDiscoverer(ILaunchContext launchContext,
-            Collection<IModFileCandidateLocator> additionalModFileLocators) {
+                         Collection<IModFileCandidateLocator> additionalModFileLocators) {
         this.launchContext = launchContext;
 
         modFileLocators = ServiceLoaderUtil.loadServices(launchContext, IModFileCandidateLocator.class, additionalModFileLocators);
@@ -56,7 +59,13 @@ public class ModDiscoverer {
         dependencyLocators = ServiceLoaderUtil.loadServices(launchContext, IDependencyLocator.class);
     }
 
-    public ModValidator discoverMods() {
+    public record Result(
+            List<ModFile> modFiles,
+            List<ModLoadingIssue> discoveryIssues
+    ) {
+    }
+
+    public Result discoverMods() {
         LOGGER.debug(LogMarkers.SCAN, "Scanning for mods and other resources to load. We know {} ways to find mods", modFileLocators.size());
         List<ModFile> loadedFiles = new ArrayList<>();
         List<ModLoadingIssue> discoveryIssues = new ArrayList<>();
@@ -74,14 +83,14 @@ public class ModDiscoverer {
             } catch (ModLoadingException e) {
                 discoveryIssues.addAll(e.getIssues());
             } catch (Exception e) {
-                discoveryIssues.add(ModLoadingIssue.error("fml.modloadingissue.technical_error", locator.toString() + "failed").withCause(e));
+                discoveryIssues.add(ModLoadingIssue.error("fml.modloadingissue.technical_error", locator.toString() + " failed").withCause(e));
             }
 
             LOGGER.debug(LogMarkers.SCAN, "Locator {} found {} mods, {} warnings, {} errors and skipped {} candidates", locator,
                     pipeline.successCount, pipeline.warningCount, pipeline.errorCount, pipeline.skipCount);
         }
 
-        //First processing run of the mod list. Any duplicates will cause resolution failure and dependency loading will be skipped.
+        // First processing run of the mod list. Any duplicates will cause resolution failure and dependency loading will be skipped.
         Map<IModFile.Type, List<ModFile>> modFilesMap = Collections.emptyMap();
         try {
             final UniqueModListBuilder modsUniqueListBuilder = new UniqueModListBuilder(loadedFiles);
@@ -98,7 +107,7 @@ public class ModDiscoverer {
             successfullyLoadedMods = false;
         }
 
-        //We can continue loading if prime mods loaded successfully.
+        // We can continue loading if prime mods loaded successfully.
         if (successfullyLoadedMods) {
             LOGGER.debug(LogMarkers.SCAN, "Successfully Loaded {} mods. Attempting to load dependencies...", loadedFiles.size());
             for (var locator : dependencyLocators) {
@@ -126,17 +135,14 @@ public class ModDiscoverer {
                 modFilesMap = loadedFiles.stream().collect(Collectors.groupingBy(IModFile::getType));
             }
         } else {
-            //Failure notify the listeners.
             LOGGER.error(LogMarkers.SCAN, "Mod Discovery failed. Skipping dependency discovery.");
         }
 
         LOGGER.info("\n     Mod List:\n\t\tName Version (Mod Id)\n\n{}", logReport(modFilesMap.values()));
 
-        //Validate the loading. With a deduplicated list, we can now successfully process the artifacts and load
-        //transformer plugins.
-        var validator = new ModValidator(modFilesMap, discoveryIssues);
-        validator.stage1Validation();
-        return validator;
+        var modFiles = new ArrayList<ModFile>();
+        modFilesMap.values().forEach(modFiles::addAll);
+        return new Result(modFiles, discoveryIssues);
     }
 
     private String logReport(Collection<List<ModFile>> modFiles) {
@@ -168,11 +174,27 @@ public class ModDiscoverer {
         private int skipCount;
 
         public DiscoveryPipeline(ModFileDiscoveryAttributes defaultAttributes,
-                List<ModFile> loadedFiles,
-                List<ModLoadingIssue> issues) {
+                                 List<ModFile> loadedFiles,
+                                 List<ModLoadingIssue> issues) {
             this.defaultAttributes = defaultAttributes;
             this.loadedFiles = loadedFiles;
             this.issues = issues;
+        }
+
+        @Override
+        public void addLibrary(Path path) {
+            if (!launchContext.addLocated(path)) {
+                LOGGER.debug(LogMarkers.SCAN, "Skipping {} because it was already located earlier", path);
+                skipCount++;
+                return;
+            }
+
+            var modFile = new ModFile(
+                    SecureJar.from(path),
+                    JarModsDotTomlModFileReader::manifestParser,
+                    IModFile.Type.LIBRARY,
+                    defaultAttributes);
+            addModFile(modFile);
         }
 
         @Override
@@ -180,7 +202,7 @@ public class ModDiscoverer {
             var primaryPath = groupedPaths.getFirst();
 
             if (!launchContext.addLocated(primaryPath)) {
-                LOGGER.debug("Skipping {} because it was already located earlier", primaryPath);
+                LOGGER.debug(LogMarkers.SCAN, "Skipping {} because it was already located earlier", primaryPath);
                 skipCount++;
                 return Optional.empty();
             }

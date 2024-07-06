@@ -45,7 +45,7 @@ public class LanguageProviderLoader {
             String version = lp.version();
             if (version == null || version.isBlank()) {
                 LOGGER.error(LogMarkers.CORE, "Found unversioned language provider {}", lp.name());
-                throw new RuntimeException("Failed to find implementation version for language provider " + lp.name());
+                throw new RuntimeException("Failed to determine version of language provider " + lp.name());
             }
             LOGGER.debug(LogMarkers.CORE, "Found language provider {}, version {}", lp.name(), version);
             ImmediateWindowHandler.updateProgress("Loaded language provider " + lp.name() + " " + version);

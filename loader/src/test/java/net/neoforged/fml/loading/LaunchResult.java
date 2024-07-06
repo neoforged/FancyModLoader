@@ -11,9 +11,10 @@ import java.util.List;
 import java.util.Map;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
+import net.neoforged.neoforgespi.locating.IModFile;
 
-public record LaunchResult(Map<String, SecureJar> pluginLayerModules,
-        Map<String, SecureJar> gameLayerModules,
+public record LaunchResult(Map<String, IModFile> pluginContent,
+        Map<String, IModFile> gameContent,
         List<ModLoadingIssue> issues,
         Map<String, ModFileInfo> loadedMods,
         List<ITransformer<?>> transformers) {}

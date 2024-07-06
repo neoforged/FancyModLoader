@@ -20,6 +20,11 @@ import org.jetbrains.annotations.Nullable;
 @ApiStatus.NonExtendable
 public interface IDiscoveryPipeline extends IIssueReporting {
     /**
+     * Adds a file to be loaded as a library and not subject to bytecode transforms.
+     */
+    void addLibrary(Path path);
+
+    /**
      * Adds a single file or folder to the discovery pipeline,
      * to be further processed by registered {@linkplain IModFileReader readers} into a {@linkplain IModFile mod file}.
      *

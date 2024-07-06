@@ -18,6 +18,10 @@ gradleutils.version {
 
 println "Version: ${project.version = gradleutils.version}"
 
+tasks.named('updateDaemonJvm') {
+    jvmVersion = JavaVersion.VERSION_21
+}
+
 allprojects {
     apply plugin: 'java-library'
     apply plugin: 'jacoco'
@@ -55,6 +59,8 @@ allprojects {
 
 subprojects { subProject ->
     subProject.version = rootProject.version
+
+    apply plugin : fmlbuild.InDevModulePlugin
 
     jar {
         manifest.attributes(

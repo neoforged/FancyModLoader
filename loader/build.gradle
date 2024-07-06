@@ -6,6 +6,46 @@ checkJarCompatibility {
     isAPI = true
 }
 
+configurations {
+    devagent
+    localRuntime {
+        canBeResolved = false
+        canBeConsumed = false
+    }
+    runtimeClasspath.extendsFrom(localRuntime)
+}
+
+abstract class WriteVirtualJarManifestTask extends DefaultTask {
+    // String-based to avoid Gradle trying to fingerprint these
+    @Input
+    abstract MapProperty<String, List<String>> getVirtualJars()
+
+    @OutputFile
+    abstract RegularFileProperty getOutputFile()
+
+    @TaskAction
+    def write() {
+        var p = new Properties()
+
+        for (var entry in getVirtualJars().get().entrySet()) {
+            p.setProperty(entry.key, String.join(File.pathSeparator, entry.value))
+        }
+
+        getOutputFile().get().asFile.withWriter("utf-8") { writer ->
+            p.store(writer, "")
+        }
+    }
+}
+
+tasks.register("createVirtualJarManifest", WriteVirtualJarManifestTask.class) {
+    it.group = "build"
+    it.outputFile.set(project.layout.buildDirectory.file("virtualJarManifest.properties"))
+    it.virtualJars.put(
+            "main",
+            sourceSets.main.output.elements.map { it.collect { loc -> loc.asFile.absolutePath.replace('\\', '/') } }
+    )
+}
+
 dependencies {
     compileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
 
@@ -36,7 +76,6 @@ dependencies {
         exclude module: 'modlauncher'
     }
     implementation("net.fabricmc:sponge-mixin:${mixin_version}")
-    implementation("net.minecrell:terminalconsoleappender:${terminalconsoleappender_version}")
     implementation("commons-io:commons-io:${commons_io_version}")
 
     implementation("org.apache.logging.log4j:log4j-core:${log4j_version}")
@@ -45,17 +84,25 @@ dependencies {
     testCompileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
     testRuntimeOnly("cpw.mods:bootstraplauncher:${bootstraplauncher_version}")
     testRuntimeOnly("org.apache.logging.log4j:log4j-core:$log4j_version")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:$jupiter_version")
-    testImplementation("org.junit.jupiter:junit-jupiter-params:$jupiter_version")
+    testImplementation(platform("org.junit:junit-bom:$jupiter_version"))
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testImplementation("org.junit.jupiter:junit-jupiter-params")
     testImplementation("org.mockito:mockito-junit-jupiter:$mockito_version")
-    testImplementation("org.assertj:assertj-core:3.25.3")
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:$jupiter_version")
+    testImplementation(platform("org.assertj:assertj-bom:$assertj_version"))
+    testImplementation("org.assertj:assertj-core")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine")
     testImplementation('com.google.jimfs:jimfs:1.3.0')
+    testImplementation('net.bytebuddy:byte-buddy-agent:1.14.12')
+    // For Testing purposes only
+    localRuntime('net.bytebuddy:byte-buddy-agent:1.14.12')
+    implementation(project(":startup"))
 
     // Provides the JUnit project as a BOM entry
     constraints {
         api(project(':junit'))
     }
+
+    devagent project(":startup")
 }
 
 spotless {

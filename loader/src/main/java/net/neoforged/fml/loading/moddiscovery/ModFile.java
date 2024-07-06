@@ -37,6 +37,7 @@ import net.neoforged.neoforgespi.locating.ModFileInfoParser;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 @ApiStatus.Internal
@@ -44,15 +45,13 @@ public class ModFile implements IModFile {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private final String jarVersion;
-    private final ModFileInfoParser parser;
     private ModFileDiscoveryAttributes discoveryAttributes;
     private Map<String, Object> fileProperties;
     private List<IModLanguageLoader> loaders;
     private Throwable scanError;
     private final SecureJar jar;
     private final Type modFileType;
-    private final Manifest manifest;
-    private IModFileInfo modFileInfo;
+    private final IModFileInfo modFileInfo;
     private ModFileScanData fileModFileScanData;
     private volatile CompletableFuture<ModFileScanData> futureScanResult;
     private List<CoreModFile> coreMods;
@@ -60,7 +59,6 @@ public class ModFile implements IModFile {
     private List<Path> accessTransformers;
 
     public static final Attributes.Name TYPE = new Attributes.Name("FMLModType");
-    private SecureJar.Status securityStatus;
 
     public ModFile(SecureJar jar, final ModFileInfoParser parser, ModFileDiscoveryAttributes attributes) {
         this(jar, parser, parseType(jar), attributes);
@@ -68,13 +66,13 @@ public class ModFile implements IModFile {
 
     public ModFile(SecureJar jar, ModFileInfoParser parser, Type type, ModFileDiscoveryAttributes discoveryAttributes) {
         this.jar = Objects.requireNonNull(jar, "jar");
-        this.parser = Objects.requireNonNull(parser, "parser");
         this.discoveryAttributes = Objects.requireNonNull(discoveryAttributes, "discoveryAttributes");
 
-        manifest = this.jar.moduleDataProvider().getManifest();
+        var manifest = this.jar.moduleDataProvider().getManifest();
         modFileType = Objects.requireNonNull(type, "type");
         jarVersion = Optional.ofNullable(manifest.getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION)).orElse("0.0NONE");
-        this.modFileInfo = ModFileParser.readModList(this, this.parser);
+
+        this.modFileInfo = ModFileParser.readModList(this, Objects.requireNonNull(parser, "parser"));
     }
 
     @Override
@@ -106,13 +104,19 @@ public class ModFile implements IModFile {
         return modFileInfo.getMods();
     }
 
+    @Nullable
+    public String getPrimaryModId() {
+        return modFileInfo.getMods().isEmpty() ? null : modFileInfo.getMods().getFirst().getModId();
+    }
+
     public List<Path> getAccessTransformers() {
         return accessTransformers;
     }
 
     public boolean identifyMods() {
-        this.modFileInfo = ModFileParser.readModList(this, this.parser);
-        if (this.modFileInfo == null) return this.getType() != Type.MOD;
+        if (this.modFileInfo == null) {
+            return this.getType() != Type.MOD;
+        }
         LOGGER.debug(LogMarkers.LOADING, "Loading mod file {} with languages {}", this.getFilePath(), this.modFileInfo.requiredLanguageLoaders());
         this.coreMods = ModFileParser.getCoreMods(this);
         this.mixinConfigs = ModFileParser.getMixinConfigs(this.modFileInfo);
@@ -229,9 +233,9 @@ public class ModFile implements IModFile {
         return modFileInfo;
     }
 
+    @Deprecated(forRemoval = true)
     @Override
     public void setSecurityStatus(final SecureJar.Status status) {
-        this.securityStatus = status;
     }
 
     public ArtifactVersion getJarVersion() {

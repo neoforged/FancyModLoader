@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 import net.neoforged.fml.loading.VersionInfo;
 import net.neoforged.fml.loading.moddiscovery.locators.NeoForgeDevProvider;
 import net.neoforged.fml.loading.moddiscovery.locators.UserdevLocator;
-import net.neoforged.fml.util.DevEnvUtils;
+import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +54,7 @@ public abstract class NeoForgeDevLaunchHandler extends CommonLaunchHandler {
         if (neoForgeProvider == null) {
             // Userdev is similar to neoforge dev with the only real difference being that the combined
             // output of the neoforge and patched mincraft sources are combined into a jar file
-            var classesRoot = DevEnvUtils.findFileSystemRootOfFileOnClasspath(MINECRAFT_CLASS_PATH);
+            var classesRoot = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath(MINECRAFT_CLASS_PATH);
             LOG.debug("Launching with NeoForge from {}", classesRoot);
             neoForgeProvider = new NeoForgeDevProvider(List.of(classesRoot));
         }
