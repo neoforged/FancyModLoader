@@ -115,10 +115,9 @@ public class CoreModTest extends LauncherTest {
                 })
                 .build();
 
-        var transformers = launchAndLoad("neoforgeclient").transformers();
-        assertThat(transformers).containsOnly(TEST_TRANSFORMER);
+        var launchResult = launchAndLoad("neoforgeclient");
 
-        var testClass = Class.forName("testmod.TestClass", true, gameClassLoader);
+        var testClass = Class.forName("testmod.TestClass", true, launchResult.launchClassLoader());
         assertThat(testClass).hasAnnotation(Deprecated.class); // This is added by the transformer
     }
 
@@ -153,12 +152,7 @@ public class CoreModTest extends LauncherTest {
                         """)
                 .build();
 
-        var transformers = launchAndLoad("neoforgeclient").transformers();
-        assertThat(transformers).hasSize(1);
-        var transformer = (ITransformer<ClassNode>) transformers.getFirst();
-        assertThat(transformer.getTargetType()).isEqualTo(TargetType.CLASS);
-        assertThat(transformer.targets()).containsOnly(
-                ITransformer.Target.targetClass("net.minecraft.world.level.biome.Biome"));
+        launchAndLoad("neoforgeclient");
 
         var testClass = Class.forName("net.minecraft.world.level.biome.Biome", true, gameClassLoader);
         assertThat(testClass).hasAnnotation(Deprecated.class); // This is added by the transformer

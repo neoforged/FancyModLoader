@@ -1,30 +1,37 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- * Copyright (C) 2017-2019 cpw
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, version 3 of the License.
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Lesser General Public License for more details.
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ *     Copyright (C) 2017-2019 cpw
+ *
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU Lesser General Public License as published by
+ *     the Free Software Foundation, version 3 of the License.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU Lesser General Public License for more details.
+ *
+ *     You should have received a copy of the GNU Lesser General Public License
+ *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher.api;
 
-import java.util.Set;
+import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
+
+import java.util.*;
 
 /**
  * A transformer is injected into the modding ClassLoader. It can manipulate any item
  * it is designated to target.
  */
 public interface ITransformer<T> {
-    String[] DEFAULT_LABEL = { "default" };
+
+    String[] DEFAULT_LABEL = {"default"};
 
     /**
      * Transform the input to the ITransformer's desire. The context from the last vote is
@@ -33,8 +40,9 @@ public interface ITransformer<T> {
      * @param input   The ASM input node, which can be mutated directly
      * @param context The voting context
      * @return An ASM node of the same type as that supplied. It will be used for subsequent
-     *         rounds of voting.
+     * rounds of voting.
      */
+    @NotNull
     T transform(T input, ITransformerVotingContext context);
 
     /**
@@ -61,6 +69,7 @@ public interface ITransformer<T> {
      * @param context The context of the vote
      * @return A TransformerVoteResult indicating the desire of this transformer
      */
+    @NotNull
     TransformerVoteResult castVote(ITransformerVotingContext context);
 
     /**
@@ -70,8 +79,10 @@ public interface ITransformer<T> {
      *
      * @return The set of targets this transformer wishes to apply to
      */
+    @NotNull
     Set<Target<T>> targets();
-
+    
+    @NotNull
     TargetType<T> getTargetType();
 
     /**
@@ -83,7 +94,6 @@ public interface ITransformer<T> {
 
     /**
      * Simple data holder indicating where the {@link ITransformer} can target.
-     * 
      * @param className         The name of the class being targetted
      * @param elementName       The name of the element being targetted. This is the field name for a field,
      *                          the method name for a method. Empty string for other types
@@ -98,6 +108,7 @@ public interface ITransformer<T> {
          * @param className The name of the class
          * @return A target for the named class
          */
+        @NotNull
         public static Target<ClassNode> targetClass(String className) {
             return new Target<>(className, "", "", TargetType.CLASS);
         }
@@ -108,10 +119,10 @@ public interface ITransformer<T> {
          * @param className The name of the class
          * @return A target for the named class
          */
+        @NotNull
         public static Target<ClassNode> targetPreClass(String className) {
             return new Target<>(className, "", "", TargetType.PRE_CLASS);
         }
-
         /**
          * Convenience method return a {@link Target} for a method
          *
@@ -120,6 +131,7 @@ public interface ITransformer<T> {
          * @param methodDescriptor The method's descriptor string
          * @return A target for the named method
          */
+        @NotNull
         public static Target<MethodNode> targetMethod(String className, String methodName, String methodDescriptor) {
             return new Target<>(className, methodName, methodDescriptor, TargetType.METHOD);
         }
@@ -131,6 +143,7 @@ public interface ITransformer<T> {
          * @param fieldName The name of the field
          * @return A target for the named field
          */
+        @NotNull
         public static Target<FieldNode> targetField(String className, String fieldName) {
             return new Target<>(className, fieldName, "", TargetType.FIELD);
         }

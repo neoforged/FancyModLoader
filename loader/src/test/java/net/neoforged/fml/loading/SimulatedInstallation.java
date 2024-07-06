@@ -10,6 +10,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import cpw.mods.jarhandling.SecureJar;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -32,10 +34,12 @@ import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import net.neoforged.fml.test.RuntimeCompiler;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.Metadata;
 import net.neoforged.jarjar.metadata.MetadataIOHandler;
 import net.neoforged.jarjar.selection.util.Constants;
+import net.neoforged.neoforgespi.locating.IModFile;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -69,6 +73,10 @@ public class SimulatedInstallation implements AutoCloseable {
     private static final IdentifiableContent NEOFORGE_MANIFEST = new IdentifiableContent("NEOFORGE_MANIFEST", JarFile.MANIFEST_NAME, writeNeoForgeManifest());
     private static final IdentifiableContent NEOFORGE_ASSETS = new IdentifiableContent("NEOFORGE_ASSETS", "neoforged_logo.png");
 
+    private static final IdentifiableContent CLIENT_ENTRYPOINT = generateMainClass("ENTRYPOINT_CLIENT", "net.minecraft.client.main.Main");
+    private static final IdentifiableContent SERVER_ENTRYPOINT = generateMainClass("ENTRYPOINT_CLIENT", "net.minecraft.server.Main");
+    private static final IdentifiableContent DATA_ENTRYPOINT = generateMainClass("ENTRYPOINT_CLIENT", "net.minecraft.data.Main");
+
     public static final String LIBRARIES_DIRECTORY_PROPERTY = "libraryDirectory";
     public static final String MOD_FOLDERS_PROPERTIES = "fml.modFolders";
     public static final String NEOFORGE_VERSION = "20.4.9999";
@@ -85,7 +93,7 @@ public class SimulatedInstallation implements AutoCloseable {
     private static final IdentifiableContent[] SERVER_EXTRA_JAR_CONTENT = { SHARED_ASSETS };
     private static final IdentifiableContent[] CLIENT_EXTRA_JAR_CONTENT = { CLIENT_ASSETS, SHARED_ASSETS };
     private static final IdentifiableContent[] NEOFORGE_UNIVERSAL_JAR_CONTENT = { NEOFORGE_ASSETS, NEOFORGE_CLASSES, NEOFORGE_MODS_TOML, NEOFORGE_MANIFEST };
-    private static final IdentifiableContent[] USERDEV_CLIENT_JAR_CONTENT = { PATCHED_CLIENT, PATCHED_SHARED };
+    private static final IdentifiableContent[] USERDEV_CLIENT_JAR_CONTENT = { CLIENT_ENTRYPOINT, PATCHED_CLIENT, SERVER_ENTRYPOINT, DATA_ENTRYPOINT, PATCHED_SHARED };
 
     // For a production client: Simulates the "libraries" directory found in the Vanilla Minecraft installation directory (".minecraft")
     // For a production server: The NF installer creates a "libraries" directory in the server root
@@ -135,7 +143,7 @@ public class SimulatedInstallation implements AutoCloseable {
     public void setupProductionClient() throws IOException {
         System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
 
-        writeLibrary("net.minecraft", "client", MC_VERSION + "-" + NEOFORM_VERSION, "srg", RENAMED_CLIENT, RENAMED_SHARED);
+        writeLibrary("net.minecraft", "client", MC_VERSION + "-" + NEOFORM_VERSION, "srg", CLIENT_ENTRYPOINT, SERVER_ENTRYPOINT, DATA_ENTRYPOINT, RENAMED_CLIENT, RENAMED_SHARED);
         writeLibrary("net.minecraft", "client", MC_VERSION + "-" + NEOFORM_VERSION, "extra", CLIENT_ASSETS, SHARED_ASSETS);
         writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "client", PATCHED_CLIENT);
         writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "universal", NEOFORGE_UNIVERSAL_JAR_CONTENT);
@@ -144,7 +152,7 @@ public class SimulatedInstallation implements AutoCloseable {
     public void setupProductionServer() throws IOException {
         System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
 
-        writeLibrary("net.minecraft", "server", MC_VERSION + "-" + NEOFORM_VERSION, "srg", RENAMED_SHARED);
+        writeLibrary("net.minecraft", "server", MC_VERSION + "-" + NEOFORM_VERSION, "srg", SERVER_ENTRYPOINT, DATA_ENTRYPOINT, RENAMED_SHARED);
         writeLibrary("net.minecraft", "server", MC_VERSION + "-" + NEOFORM_VERSION, "extra", SERVER_EXTRA_JAR_CONTENT);
         writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "server", PATCHED_SHARED);
         writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "universal", NEOFORGE_UNIVERSAL_JAR_CONTENT);
@@ -160,7 +168,7 @@ public class SimulatedInstallation implements AutoCloseable {
         // In dev, we have a joined distribution containing both dedicated server and client
         var classesDir = projectRoot.resolve("projects/neoforge/build/classes/java/main");
         additionalClasspath.add(classesDir);
-        writeFiles(classesDir, PATCHED_CLIENT, PATCHED_SHARED, NEOFORGE_CLASSES);
+        writeFiles(classesDir, PATCHED_CLIENT, PATCHED_SHARED, NEOFORGE_CLASSES, SERVER_ENTRYPOINT, CLIENT_ENTRYPOINT, DATA_ENTRYPOINT);
 
         var resourcesDir = projectRoot.resolve("projects/neoforge/build/resources/main");
         additionalClasspath.add(resourcesDir);
@@ -224,6 +232,24 @@ public class SimulatedInstallation implements AutoCloseable {
         classWriter.visitAnnotation("Lfake/ClassAnnotation;", true);
         classWriter.visit(Opcodes.V21, 0, className, null, null, null);
         return new IdentifiableContent(id, relativePath, classWriter.toByteArray());
+    }
+
+    private static IdentifiableContent generateMainClass(String id, String fullClassName) {
+        try (var jimfs = Jimfs.newFileSystem(Configuration.unix()); var compiler = new RuntimeCompiler(jimfs)) {
+            var className = Arrays.asList(fullClassName.split("\\.")).getLast();
+            compiler.builder()
+                    .addClass(fullClassName, "public class " + className + " { public static void main(String[] args) {} }")
+                    .compile();
+
+            var relativePath = fullClassName.replace('.', '/') + ".class";
+            var p = jimfs.getPath("/" + relativePath);
+            return new IdentifiableContent(
+                    id,
+                    relativePath,
+                    Files.readAllBytes(p));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static byte[] writeNeoForgeManifest() {
@@ -374,6 +400,8 @@ public class SimulatedInstallation implements AutoCloseable {
         var expectedContent = new ArrayList<IdentifiableContent>();
         Collections.addAll(expectedContent, SERVER_EXTRA_JAR_CONTENT);
         expectedContent.add(PATCHED_SHARED);
+        expectedContent.add(SERVER_ENTRYPOINT);
+        expectedContent.add(DATA_ENTRYPOINT);
 
         assertModContent(launchResult, "minecraft", expectedContent);
     }
@@ -383,6 +411,9 @@ public class SimulatedInstallation implements AutoCloseable {
         Collections.addAll(expectedContent, CLIENT_EXTRA_JAR_CONTENT);
         expectedContent.add(PATCHED_CLIENT);
         expectedContent.add(PATCHED_SHARED);
+        expectedContent.add(SERVER_ENTRYPOINT);
+        expectedContent.add(CLIENT_ENTRYPOINT);
+        expectedContent.add(DATA_ENTRYPOINT);
 
         assertModContent(launchResult, "minecraft", expectedContent);
     }
@@ -403,11 +434,11 @@ public class SimulatedInstallation implements AutoCloseable {
         var modFileInfo = launchResult.loadedMods().get(modId);
         assertNotNull(modFileInfo, "mod " + modId + " is missing");
 
-        assertSecureJarContent(modFileInfo.getFile().getSecureJar(), content);
+        assertContent(modFileInfo.getFile(), content);
     }
 
-    public void assertSecureJarContent(SecureJar jar, Collection<IdentifiableContent> content) throws IOException {
-        var paths = listFilesRecursively(jar);
+    public void assertContent(IModFile modFile, Collection<IdentifiableContent> content) throws IOException {
+        var paths = listFilesRecursively(modFile.getSecureJar());
 
         assertThat(paths.keySet()).containsOnly(content.stream().map(IdentifiableContent::relativePath).toArray(String[]::new));
 

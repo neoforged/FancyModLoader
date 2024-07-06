@@ -41,16 +41,23 @@ public class LanguageProviderLoader {
     LanguageProviderLoader(ILaunchContext launchContext) {
         languageProviders = ServiceLoaderUtil.loadServices(launchContext, IModLanguageLoader.class);
         ImmediateWindowHandler.updateProgress("Loading language providers");
-        languageProviders.forEach(lp -> {
+        for (var lp : languageProviders) {
             String version = lp.version();
             if (version == null || version.isBlank()) {
-                LOGGER.error(LogMarkers.CORE, "Found unversioned language provider {}", lp.name());
-                throw new RuntimeException("Failed to find implementation version for language provider " + lp.name());
+                // TODO: We do this because of this: https://github.com/Kotori316/SLP/blob/6cd99700f3466963c5ab8bfd6010518fbcd4a8ce/neoforge/src/main/java/com/kotori316/scala_lib/ScalaLanguageProvider.java#L34
+                var fallbackVersion = JarVersionLookupHandler.getVersion(lp.getClass());
+                if (fallbackVersion.isPresent()) {
+                    version = fallbackVersion.get();
+                    LOGGER.error(LogMarkers.CORE, "Failed to retrieve version for language provider {}, but determined fallback: {}", lp.name(), version);
+                } else {
+                    LOGGER.error(LogMarkers.CORE, "Found unversioned language provider {}", lp.name());
+                    throw new RuntimeException("Failed to determine version of language provider " + lp.name());
+                }
             }
             LOGGER.debug(LogMarkers.CORE, "Found language provider {}, version {}", lp.name(), version);
             ImmediateWindowHandler.updateProgress("Loaded language provider " + lp.name() + " " + version);
             languageProviderMap.put(lp.name(), new ModLanguageWrapper(lp, new DefaultArtifactVersion(version)));
-        });
+        }
     }
 
     public IModLanguageLoader findLanguage(ModFile mf, String modLoader, VersionRange modLoaderVersion) {

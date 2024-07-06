@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.modlauncher.api.IModuleLayerManager;
+
 import java.io.IOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.test.RuntimeCompiler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,17 +79,7 @@ class LaunchContextTest {
         serviceLayer = createModuleLayer(jarPath, "fancymodule");
 
         var environment = mock(IEnvironment.class);
-        var moduleLayerManager = new IModuleLayerManager() {
-            @Override
-            public Optional<ModuleLayer> getLayer(Layer layer) {
-                return switch (layer) {
-                    case SERVICE -> Optional.ofNullable(serviceLayer);
-                    case PLUGIN -> Optional.ofNullable(pluginLayer);
-                    default -> Optional.empty();
-                };
-            }
-        };
-        context = new LaunchContext(environment, moduleLayerManager, List.of(), List.of(), List.of());
+        context = new LaunchContext(environment, Dist.CLIENT, tempDir, List.of(), List.of(), List.of(), List.of());
 
         // Create the plugin-layer after the ctor has already been called
         pluginLayer = createModuleLayer(otherJarPath, "test.other.jar");

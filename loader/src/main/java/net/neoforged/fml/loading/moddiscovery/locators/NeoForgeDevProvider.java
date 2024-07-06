@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.stream.Stream;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
-import net.neoforged.fml.util.DevEnvUtils;
+import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFile;
@@ -47,7 +47,7 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
         }
         // then fall back to finding it on the current classpath
         if (minecraftResourcesRoot == null) {
-            minecraftResourcesRoot = DevEnvUtils.findFileSystemRootOfFileOnClasspath("assets/.mcassetsroot");
+            minecraftResourcesRoot = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath("assets/.mcassetsroot");
         }
 
         var packages = getNeoForgeSpecificPathPrefixes();

@@ -1,29 +1,28 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- * Copyright (C) 2017-2019 cpw
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, version 3 of the License.
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Lesser General Public License for more details.
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ *     Copyright (C) 2017-2019 cpw
+ *
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU Lesser General Public License as published by
+ *     the Free Software Foundation, version 3 of the License.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU Lesser General Public License for more details.
+ *
+ *     You should have received a copy of the GNU Lesser General Public License
+ *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher;
 
-import cpw.mods.modlauncher.api.ITransformerActivity;
-import cpw.mods.modlauncher.api.ITransformerVotingContext;
+import cpw.mods.modlauncher.api.*;
+import org.objectweb.asm.tree.*;
+
 import java.util.List;
 import java.util.function.Supplier;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
 
 /**
  * The internal vote context structure.
@@ -112,11 +111,11 @@ class VotingContext implements ITransformerVotingContext {
     private Object[] toObjectArray(final AbstractInsnNode insnNode) {
         if (insnNode instanceof MethodInsnNode) {
             final MethodInsnNode methodInsnNode = (MethodInsnNode) insnNode;
-            return new Object[] { methodInsnNode.name, methodInsnNode.desc, methodInsnNode.owner, methodInsnNode.itf };
+            return new Object[] {methodInsnNode.name, methodInsnNode.desc, methodInsnNode.owner, methodInsnNode.itf};
         }
         if (insnNode instanceof FieldInsnNode) {
             final FieldInsnNode fieldInsnNode = (FieldInsnNode) insnNode;
-            return new Object[] { fieldInsnNode.name, fieldInsnNode.desc, fieldInsnNode.owner };
+            return new Object[] {fieldInsnNode.name, fieldInsnNode.desc, fieldInsnNode.owner};
         }
         return EMPTY;
     }

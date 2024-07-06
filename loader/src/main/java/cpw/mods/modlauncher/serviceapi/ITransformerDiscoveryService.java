@@ -1,20 +1,25 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- * Copyright (C) 2017-2021 cpw
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, version 3 of the License.
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Lesser General Public License for more details.
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ *     Copyright (C) 2017-2021 cpw
+ *
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU Lesser General Public License as published by
+ *     the Free Software Foundation, version 3 of the License.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU Lesser General Public License for more details.
+ *
+ *     You should have received a copy of the GNU Lesser General Public License
+ *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher.serviceapi;
 
 import cpw.mods.modlauncher.api.NamedPath;
+
 import java.nio.file.Path;
 import java.util.List;
 
@@ -25,7 +30,6 @@ import java.util.List;
 public interface ITransformerDiscoveryService {
     /**
      * Return a list of additional paths to be added to transformer service discovery during loading.
-     * 
      * @param gameDirectory The root game directory
      * @return The list of services
      */
@@ -37,7 +41,7 @@ public interface ITransformerDiscoveryService {
      * Defaults to calling {@link #candidates(Path)}
      *
      * @param gameDirectory The root game directory
-     * @param launchTarget  The launch target
+     * @param launchTarget The launch target
      * @return The list of services
      */
     default List<NamedPath> candidates(final Path gameDirectory, final String launchTarget) {
@@ -49,7 +53,9 @@ public interface ITransformerDiscoveryService {
      * been built.
      *
      * @param launchTarget The launch target
-     * @param arguments    The full command arguments to the game
+     * @param arguments The full command arguments to the game
      */
-    default void earlyInitialization(final String launchTarget, final String[] arguments) {}
+    default void earlyInitialization(final String launchTarget, final String[] arguments) {
+
+    }
 }

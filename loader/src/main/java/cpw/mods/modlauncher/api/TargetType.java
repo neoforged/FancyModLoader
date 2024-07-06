@@ -1,12 +1,13 @@
 package cpw.mods.modlauncher.api;
 
 import cpw.mods.modlauncher.TransformList;
-import java.util.Map;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
+
+import java.util.Map;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * Specifies the target type for the {@link ITransformer.Target}. Note that the type of the transformer T
@@ -30,7 +31,7 @@ public final class TargetType<T> {
      * Target a field. The {@link ITransformer} T variable must refer to {@link org.objectweb.asm.tree.FieldNode}
      */
     public static final TargetType<FieldNode> FIELD = new TargetType<>("FIELD", FieldNode.class);
-
+    
     public static final TargetType<?>[] VALUES = new TargetType<?>[] { PRE_CLASS, CLASS, METHOD, FIELD };
 
     private final String name;
@@ -44,12 +45,12 @@ public final class TargetType<T> {
     public Class<T> getNodeType() {
         return this.nodeType;
     }
-
+    
     public static TargetType<?> byName(String name) {
         return Stream.of(VALUES)
-                .filter(type -> type.name.equals(name))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("No TargetType of name " + name + " found"));
+            .filter(type -> type.name.equals(name))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("No TargetType of name " + name + " found"));
     }
 
     @SuppressWarnings("unchecked")

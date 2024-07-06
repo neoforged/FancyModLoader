@@ -10,6 +10,7 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -70,6 +71,13 @@ public abstract class InstallProductionServerTask extends DefaultTask {
     @OutputFile
     public abstract RegularFileProperty getNeoForgeMainClassArgFile();
 
+    /**
+     * Allows the main class from the version profile to be overridden to be something else.
+     */
+    @Input
+    @Optional
+    public abstract Property<String> getMainClass();
+
     @Inject
     public InstallProductionServerTask(ExecOperations execOperations) {
         this.execOperations = execOperations;
@@ -92,7 +100,7 @@ public abstract class InstallProductionServerTask extends DefaultTask {
         });
 
         // We need to know the name of the main class to split the arg-file into JVM and program arguments
-        var mainClass = getMainClass();
+        var mainClass = getEffectiveMainClass();
         // The difference here is only really in path separators...
         var argFileName = File.pathSeparatorChar == ':' ? "unix_args.txt" : "win_args.txt";
         var argFilePath = installDir.resolve("libraries/net/neoforged/neoforge/" + getNeoForgeVersion().get() + "/" + argFileName);
@@ -122,7 +130,11 @@ public abstract class InstallProductionServerTask extends DefaultTask {
         Files.writeString(getNeoForgeProgramArgFile().getAsFile().get().toPath(), programArgs, StandardCharsets.UTF_8);
     }
 
-    private String getMainClass() throws IOException {
+    private String getEffectiveMainClass() throws IOException {
+        if (getMainClass().isPresent()) {
+            return getMainClass().get();
+        }
+
         String versionContent;
         try (var zf = new ZipFile(getInstaller().getSingleFile())) {
             var entry = zf.getEntry("version.json");

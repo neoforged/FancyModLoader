@@ -1,26 +1,25 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- * Copyright (C) 2017-2019 cpw
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, version 3 of the License.
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Lesser General Public License for more details.
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ *     Copyright (C) 2017-2019 cpw
+ *
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU Lesser General Public License as published by
+ *     the Free Software Foundation, version 3 of the License.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU Lesser General Public License for more details.
+ *
+ *     You should have received a copy of the GNU Lesser General Public License
+ *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher;
 
 import cpw.mods.modlauncher.api.ITransformerActivity;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.ClassReader;
@@ -29,25 +28,28 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
 class TransformerClassWriter extends ClassWriter {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Map<String, String> CLASS_PARENTS = new ConcurrentHashMap<>();
     private static final Map<String, Set<String>> CLASS_HIERARCHIES = new ConcurrentHashMap<>();
     private static final Map<String, Boolean> IS_INTERFACE = new ConcurrentHashMap<>();
-    private final ClassTransformer classTransformer;
+    private final TransformingClassLoader transformingClassLoader;
     private final ClassNode clazzAccessor;
     private boolean computedThis = false;
 
-    public static ClassWriter createClassWriter(final int mlFlags, final ClassTransformer classTransformer, final ClassNode clazzAccessor) {
+    public static ClassWriter createClassWriter(final int mlFlags, TransformingClassLoader transformingClassLoader, final ClassNode clazzAccessor) {
         final int writerFlag = mlFlags & ~ILaunchPluginService.ComputeFlags.SIMPLE_REWRITE; //Strip any modlauncher-custom fields
 
         //Only use the TransformerClassWriter when needed as it's slower, and only COMPUTE_FRAMES calls getCommonSuperClass
-        return (writerFlag & ILaunchPluginService.ComputeFlags.COMPUTE_FRAMES) != 0 ? new TransformerClassWriter(writerFlag, classTransformer, clazzAccessor) : new ClassWriter(writerFlag);
+        return (writerFlag & ILaunchPluginService.ComputeFlags.COMPUTE_FRAMES) != 0 ? new TransformerClassWriter(writerFlag, transformingClassLoader, clazzAccessor) : new ClassWriter(writerFlag);
     }
 
-    private TransformerClassWriter(final int writerFlags, final ClassTransformer classTransformer, final ClassNode clazzAccessor) {
+    private TransformerClassWriter(final int writerFlags, TransformingClassLoader transformingClassLoader, final ClassNode clazzAccessor) {
         super(writerFlags);
-        this.classTransformer = classTransformer;
+        this.transformingClassLoader = transformingClassLoader;
         this.clazzAccessor = clazzAccessor;
     }
 
@@ -76,6 +78,7 @@ class TransformerClassWriter extends ClassWriter {
         return type;
     }
 
+
     private Set<String> getSupers(final String typeName) {
         computeHierarchy(typeName);
         return CLASS_HIERARCHIES.get(typeName);
@@ -102,7 +105,7 @@ class TransformerClassWriter extends ClassWriter {
      */
     private void computeHierarchy(final String className) {
         if (CLASS_HIERARCHIES.containsKey(className)) return; //already computed
-        Class<?> clz = classTransformer.getTransformingClassLoader().getLoadedClass(className.replace('/', '.'));
+        Class<?> clz = transformingClassLoader.getLoadedClass(className.replace('/', '.'));
         if (clz != null) {
             computeHierarchyFromClass(className, clz);
         } else {
@@ -128,7 +131,7 @@ class TransformerClassWriter extends ClassWriter {
             hierarchies.add("java/lang/Object");
         }
         IS_INTERFACE.put(name, clazz.isInterface());
-        Arrays.stream(clazz.getInterfaces()).forEach(c -> {
+        Arrays.stream(clazz.getInterfaces()).forEach(c->{
             String n = c.getName().replace('.', '/');
             if (!CLASS_HIERARCHIES.containsKey(n))
                 computeHierarchyFromClass(n, c);
@@ -143,7 +146,7 @@ class TransformerClassWriter extends ClassWriter {
      */
     private void computeHierarchyFromFile(final String className) {
         try {
-            byte[] classData = classTransformer.getTransformingClassLoader().buildTransformedClassNodeFor(className.replace('/', '.'), ITransformerActivity.COMPUTING_FRAMES_REASON);
+            byte[] classData = transformingClassLoader.buildTransformedClassNodeFor(className.replace('/', '.'), ITransformerActivity.COMPUTING_FRAMES_REASON);
             ClassReader classReader = new ClassReader(classData);
             classReader.accept(new SuperCollectingVisitor(), ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
         } catch (ClassNotFoundException e) {
@@ -151,7 +154,7 @@ class TransformerClassWriter extends ClassWriter {
             //This is safe, as the TCL can't find the class, so it has to be on the super classloader, and it can't cause circulation,
             //as classes from the parent classloader cannot reference classes from the TCL, as the parent only contains libraries and std lib
             try {
-                computeHierarchyFromClass(className, Class.forName(className.replace('/', '.'), false, classTransformer.getTransformingClassLoader()));
+                computeHierarchyFromClass(className, Class.forName(className.replace('/', '.'), false, transformingClassLoader));
             } catch (ClassNotFoundException classNotFoundException) {
                 classNotFoundException.addSuppressed(e);
                 LOGGER.fatal("Failed to find class {} ", className, classNotFoundException);
@@ -161,6 +164,7 @@ class TransformerClassWriter extends ClassWriter {
     }
 
     private class SuperCollectingVisitor extends ClassVisitor {
+
         public SuperCollectingVisitor() {
             super(Opcodes.ASM9);
         }
@@ -177,7 +181,7 @@ class TransformerClassWriter extends ClassWriter {
                 hierarchies.add("java/lang/Object");
             }
             IS_INTERFACE.put(name, (access & Opcodes.ACC_INTERFACE) != 0);
-            Arrays.stream(interfaces).forEach(n -> {
+            Arrays.stream(interfaces).forEach(n->{
                 computeHierarchy(n);
                 hierarchies.add(n);
                 hierarchies.addAll(CLASS_HIERARCHIES.get(n));

@@ -12,20 +12,15 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
-import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
-import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
-import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 
@@ -34,7 +29,6 @@ import net.neoforged.neoforgespi.language.IModInfo;
  * loading package</em>
  */
 public class LoadingModList {
-    private static LoadingModList INSTANCE;
     private final List<IModFileInfo> plugins;
     private final List<ModFileInfo> modFiles;
     private final List<ModInfo> sortedList;
@@ -42,7 +36,7 @@ public class LoadingModList {
     private final Map<String, ModFileInfo> fileById;
     private final List<ModLoadingIssue> modLoadingIssues;
 
-    private LoadingModList(final List<ModFile> plugins, final List<ModFile> modFiles, final List<ModInfo> sortedList, Map<ModInfo, List<ModInfo>> modDependencies) {
+    public LoadingModList(List<ModFile> plugins, List<ModFile> modFiles, List<ModInfo> sortedList, Map<ModInfo, List<ModInfo>> modDependencies, List<ModLoadingIssue> issues) {
         this.plugins = plugins.stream()
                 .map(ModFile::getModFileInfo)
                 .collect(Collectors.toList());
@@ -50,64 +44,14 @@ public class LoadingModList {
                 .map(ModFile::getModFileInfo)
                 .map(ModFileInfo.class::cast)
                 .collect(Collectors.toList());
-        this.sortedList = sortedList.stream()
-                .map(ModInfo.class::cast)
-                .collect(Collectors.toList());
+        this.sortedList = new ArrayList<>(sortedList);
         this.modDependencies = modDependencies;
         this.fileById = this.modFiles.stream()
                 .map(ModFileInfo::getMods)
                 .flatMap(Collection::stream)
                 .map(ModInfo.class::cast)
                 .collect(Collectors.toMap(ModInfo::getModId, ModInfo::getOwningFile));
-        this.modLoadingIssues = new ArrayList<>();
-    }
-
-    public static LoadingModList of(List<ModFile> plugins, List<ModFile> modFiles, List<ModInfo> sortedList, List<ModLoadingIssue> issues, Map<ModInfo, List<ModInfo>> modDependencies) {
-        INSTANCE = new LoadingModList(plugins, modFiles, sortedList, modDependencies);
-        INSTANCE.modLoadingIssues.addAll(issues);
-        return INSTANCE;
-    }
-
-    public static LoadingModList get() {
-        return INSTANCE;
-    }
-
-    public void addMixinConfigs() {
-        modFiles.stream()
-                .map(ModFileInfo::getFile)
-                .forEach(file -> {
-                    final String modId = file.getModInfos().get(0).getModId();
-                    file.getMixinConfigs().forEach(cfg -> DeferredMixinConfigRegistration.addMixinConfig(cfg, modId));
-                });
-    }
-
-    public void addAccessTransformers() {
-        modFiles.stream()
-                .map(ModFileInfo::getFile)
-                .forEach(mod -> mod.getAccessTransformers().forEach(path -> FMLLoader.addAccessTransformer(path, mod)));
-    }
-
-    public void addEnumExtenders() {
-        Map<IModInfo, Path> pathPerMod = new HashMap<>();
-        modFiles.stream()
-                .map(ModFileInfo::getMods)
-                .flatMap(List::stream)
-                .forEach(mod -> mod.getConfig().<String>getConfigElement("enumExtensions").ifPresent(file -> {
-                    Path path = mod.getOwningFile().getFile().findResource(file);
-                    if (!Files.isRegularFile(path)) {
-                        ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloadingissue.enumextender.file_not_found", path).withAffectedMod(mod));
-                        return;
-                    }
-                    pathPerMod.put(mod, path);
-                }));
-        RuntimeEnumExtender.loadEnumPrototypes(pathPerMod);
-    }
-
-    public void addForScanning(BackgroundScanHandler backgroundScanHandler) {
-        backgroundScanHandler.setLoadingModList(this);
-        modFiles.stream()
-                .map(ModFileInfo::getFile)
-                .forEach(backgroundScanHandler::submitForScanning);
+        this.modLoadingIssues = new ArrayList<>(issues);
     }
 
     public List<IModFileInfo> getPlugins() {
@@ -118,6 +62,12 @@ public class LoadingModList {
         return modFiles;
     }
 
+    @Deprecated(forRemoval = true)
+    public static LoadingModList get() {
+        return FMLLoader.getLoadingModList();
+    }
+
+    @Deprecated(forRemoval = true)
     public Path findResource(final String className) {
         for (ModFileInfo mf : modFiles) {
             final Path resource = mf.getFile().findResource(className);
@@ -126,6 +76,7 @@ public class LoadingModList {
         return null;
     }
 
+    @Deprecated(forRemoval = true)
     public Enumeration<URL> findAllURLsForResource(final String resName) {
         final String resourceName;
         // strip a leading slash
@@ -185,7 +136,11 @@ public class LoadingModList {
      * or because the dependency has a {@link IModInfo.Ordering#BEFORE} constraint on the given mod.
      */
     public List<ModInfo> getDependencies(IModInfo mod) {
-        return this.modDependencies.getOrDefault(mod, List.of());
+        var dependencies = this.modDependencies.get(mod);
+        if (dependencies == null) {
+            throw new IllegalArgumentException("The given mod info is not part of the loading mod list: " + mod);
+        }
+        return dependencies;
     }
 
     public boolean hasErrors() {

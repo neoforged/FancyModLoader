@@ -1,39 +1,28 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- * Copyright (C) 2017-2019 cpw
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, version 3 of the License.
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Lesser General Public License for more details.
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ *     Copyright (C) 2017-2019 cpw
+ *
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU Lesser General Public License as published by
+ *     the Free Software Foundation, version 3 of the License.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU Lesser General Public License for more details.
+ *
+ *     You should have received a copy of the GNU Lesser General Public License
+ *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher;
-
-import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.ITransformerActivity;
 import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,6 +36,22 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
+
 /**
  * Transforms classes using the supplied launcher services
  */
@@ -56,21 +61,19 @@ public class ClassTransformer {
     private final Marker CLASSDUMP = MarkerManager.getMarker("CLASSDUMP");
     private final TransformStore transformers;
     private final LaunchPluginHandler pluginHandler;
-    private final TransformingClassLoader transformingClassLoader;
     private final TransformerAuditTrail auditTrail;
 
-    ClassTransformer(TransformStore transformStore, LaunchPluginHandler pluginHandler, final TransformingClassLoader transformingClassLoader) {
-        this(transformStore, pluginHandler, transformingClassLoader, new TransformerAuditTrail());
+    public ClassTransformer(TransformStore transformStore, LaunchPluginHandler pluginHandler) {
+        this(transformStore, pluginHandler, new TransformerAuditTrail());
     }
 
-    ClassTransformer(final TransformStore transformStore, final LaunchPluginHandler pluginHandler, final TransformingClassLoader transformingClassLoader, final TransformerAuditTrail tat) {
+    public ClassTransformer(final TransformStore transformStore, final LaunchPluginHandler pluginHandler, final TransformerAuditTrail tat) {
         this.transformers = transformStore;
         this.pluginHandler = pluginHandler;
-        this.transformingClassLoader = transformingClassLoader;
         this.auditTrail = tat;
     }
 
-    byte[] transform(byte[] inputClass, String className, final String reason) {
+    byte[] transform(TransformingClassLoader loader, byte[] inputClass, String className, String reason) {
         final String internalName = className.replace('.', '/');
         final Type classDesc = Type.getObjectType(internalName);
 
@@ -142,7 +145,7 @@ public class ClassTransformer {
         if (reason.equals(ITransformerActivity.COMPUTING_FRAMES_REASON))
             mergedFlags &= ~ILaunchPluginService.ComputeFlags.COMPUTE_FRAMES;
 
-        final ClassWriter cw = TransformerClassWriter.createClassWriter(mergedFlags, this, clazz);
+        final ClassWriter cw = TransformerClassWriter.createClassWriter(mergedFlags, loader, clazz);
         clazz.accept(cw);
         if (LOGGER.isEnabled(Level.TRACE) && ITransformerActivity.CLASSLOADING_REASON.equals(reason) && LOGGER.isEnabled(Level.TRACE, CLASSDUMP)) {
             dumpClass(cw.toByteArray(), className);
@@ -199,7 +202,8 @@ public class ClassTransformer {
             if (results.containsKey(TransformerVoteResult.DEFER)) {
                 throw new VoteDeadlockException(results.get(TransformerVoteResult.DEFER), node.getClass());
             }
-        } while (!transformers.isEmpty());
+        }
+        while (!transformers.isEmpty());
         return node;
     }
 
@@ -216,7 +220,7 @@ public class ClassTransformer {
         }
     }
 
-    TransformingClassLoader getTransformingClassLoader() {
-        return transformingClassLoader;
+    public TransformerAuditTrail getAuditTrail() {
+        return auditTrail;
     }
 }
