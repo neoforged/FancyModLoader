@@ -33,13 +33,14 @@ public final class ModConfig {
      * NightConfig's own configs are threadsafe, but mod code is not necessarily.
      * This lock is used to prevent multiple concurrent config reloads or event dispatches.
      */
-    final Lock lock = new ReentrantLock();
+    final Lock lock;
 
-    ModConfig(Type type, IConfigSpec spec, ModContainer container, String fileName) {
+    ModConfig(Type type, IConfigSpec spec, ModContainer container, String fileName, ReentrantLock lock) {
         this.type = type;
         this.spec = spec;
         this.fileName = fileName;
         this.container = container;
+        this.lock = lock;
     }
 
     public Type getType() {

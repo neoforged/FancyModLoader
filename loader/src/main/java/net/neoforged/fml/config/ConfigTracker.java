@@ -24,6 +24,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.loading.FMLConfig;
@@ -50,6 +51,7 @@ public class ConfigTracker {
     final ConcurrentHashMap<String, ModConfig> fileMap = new ConcurrentHashMap<>();
     final EnumMap<ModConfig.Type, Set<ModConfig>> configSets = new EnumMap<>(ModConfig.Type.class);
     final ConcurrentHashMap<String, Map<ModConfig.Type, ModConfig>> configsByMod = new ConcurrentHashMap<>();
+    private final Map<String, ReentrantLock> locksByMod = new ConcurrentHashMap<>();
 
     @VisibleForTesting
     public ConfigTracker() {
@@ -73,7 +75,8 @@ public class ConfigTracker {
      * Registering a configuration is required to receive configuration events.
      */
     public ModConfig registerConfig(ModConfig.Type type, IConfigSpec spec, ModContainer container, String fileName) {
-        var modConfig = new ModConfig(type, spec, container, fileName);
+        var lock = locksByMod.computeIfAbsent(container.getModId(), m -> new ReentrantLock());
+        var modConfig = new ModConfig(type, spec, container, fileName, lock);
         trackConfig(modConfig);
         return modConfig;
     }
