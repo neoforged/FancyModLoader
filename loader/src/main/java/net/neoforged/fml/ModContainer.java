@@ -95,7 +95,7 @@ public abstract class ModContainer {
         extensionPoints.put(point, extension);
     }
 
-    public void addConfig(final ModConfig modConfig) {
+    private void addConfig(final ModConfig modConfig) {
         configs.put(modConfig.getType(), modConfig);
 
         if (modConfig.getType() == ModConfig.Type.STARTUP) {
@@ -110,14 +110,14 @@ public abstract class ModContainer {
      * @param type       The type of config
      * @param configSpec A config spec
      */
-    public void registerConfig(ModConfig.Type type, IConfigSpec<?> configSpec) {
+    public void registerConfig(ModConfig.Type type, IConfigSpec configSpec) {
         if (configSpec.isEmpty()) {
             // This handles the case where a mod tries to register a config, without any options configured inside it.
             LOGGER.debug("Attempted to register an empty config for type {} on mod {}", type, modId);
             return;
         }
 
-        addConfig(new ModConfig(type, configSpec, this));
+        addConfig(ConfigTracker.INSTANCE.registerConfig(type, configSpec, this));
     }
 
     /**
@@ -127,14 +127,14 @@ public abstract class ModContainer {
      * @param type       The type of config
      * @param configSpec A config spec
      */
-    public void registerConfig(ModConfig.Type type, IConfigSpec<?> configSpec, String fileName) {
+    public void registerConfig(ModConfig.Type type, IConfigSpec configSpec, String fileName) {
         if (configSpec.isEmpty()) {
             // This handles the case where a mod tries to register a config, without any options configured inside it.
             LOGGER.debug("Attempted to register an empty config for type {} on mod {} using file name {}", type, modId, fileName);
             return;
         }
 
-        addConfig(new ModConfig(type, configSpec, this, fileName));
+        addConfig(ConfigTracker.INSTANCE.registerConfig(type, configSpec, this, fileName));
     }
 
     /**
