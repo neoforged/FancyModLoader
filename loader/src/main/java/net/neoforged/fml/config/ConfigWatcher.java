@@ -31,7 +31,6 @@ class ConfigWatcher implements Runnable {
         try {
             modConfig.lock.lock();
             try {
-
                 LOGGER.debug(ConfigTracker.CONFIG, "Config file {} changed, re-loading", modConfig.getFileName());
                 if (this.modConfig.config != this.commentedFileConfig) {
                     LOGGER.warn(ConfigTracker.CONFIG, "Config file {} has a mismatched loaded config. Expected {} but was {}.", modConfig.getFileName(), commentedFileConfig, modConfig.config);

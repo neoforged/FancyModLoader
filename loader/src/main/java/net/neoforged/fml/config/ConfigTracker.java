@@ -17,17 +17,13 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.loading.FMLConfig;
@@ -98,17 +94,13 @@ public class ConfigTracker {
         LOGGER.debug(CONFIG, "Config file {} for {} tracking", config.getFileName(), config.getModId());
     }
 
-    public void loadConfigs(ModConfig.Type type, Executor executor, Path configBasePath) {
-        loadConfigs(type, configBasePath, executor, null);
+    public void loadConfigs(ModConfig.Type type, Path configBasePath) {
+        loadConfigs(type, configBasePath, null);
     }
 
-    public void loadConfigs(ModConfig.Type type, Path configBasePath, Executor executor, @Nullable Path configOverrideBasePath) {
+    public void loadConfigs(ModConfig.Type type, Path configBasePath, @Nullable Path configOverrideBasePath) {
         LOGGER.debug(CONFIG, "Loading configs type {}", type);
-        var futures = new ArrayList<CompletableFuture<?>>();
-        this.configSets.get(type).forEach(config -> {
-            futures.add(CompletableFuture.runAsync(() -> openConfig(config, configBasePath, configOverrideBasePath), executor));
-        });
-        CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
+        this.configSets.get(type).forEach(config -> openConfig(config, configBasePath, configOverrideBasePath));
     }
 
     public void unloadConfigs(ModConfig.Type type) {
@@ -137,16 +129,7 @@ public class ConfigTracker {
         config.lock.lock();
         try {
             if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DISABLE_CONFIG_WATCHER)) {
-                // Ensure that the watcher is actually registered before proceeding
-                var watcher = new ConfigWatcher(config, configData, Thread.currentThread().getContextClassLoader());
-                try {
-                    FileWatcher.defaultInstance().addWatchFuture(configPath, watcher).get();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new RuntimeException(e);
-                } catch (ExecutionException e) {
-                    throw new RuntimeException(e.getCause());
-                }
+                FileWatcher.defaultInstance().addWatch(configPath, new ConfigWatcher(config, configData, Thread.currentThread().getContextClassLoader()));
                 LOGGER.debug(CONFIG, "Watching TOML config file {} for changes", configPath);
             }
 
