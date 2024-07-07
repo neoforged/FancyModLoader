@@ -129,21 +129,14 @@ public class ConfigTracker {
                 .build();
         LOGGER.debug(CONFIG, "Built TOML config for {}", configPath);
 
-        // We have to lock the config here to prevent the config watcher from starting to reload the config
-        // before we have performed the initial load!
-        config.lock.lock();
-        try {
-            if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DISABLE_CONFIG_WATCHER)) {
-                FileWatcher.defaultInstance().addWatch(configPath, new ConfigWatcher(config, configData, Thread.currentThread().getContextClassLoader()));
-                LOGGER.debug(CONFIG, "Watching TOML config file {} for changes", configPath);
-            }
+        loadConfig(config, configData);
+        LOGGER.debug(CONFIG, "Loaded TOML config file {}", configPath);
+        config.config = configData;
+        config.postConfigEvent(ModConfigEvent.Loading::new);
 
-            loadConfig(config, configData);
-            LOGGER.debug(CONFIG, "Loaded TOML config file {}", configPath);
-            config.config = configData;
-            config.postConfigEvent(ModConfigEvent.Loading::new);
-        } finally {
-            config.lock.unlock();
+        if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DISABLE_CONFIG_WATCHER)) {
+            FileWatcher.defaultInstance().addWatch(configPath, new ConfigWatcher(config, configData, Thread.currentThread().getContextClassLoader()));
+            LOGGER.debug(CONFIG, "Watching TOML config file {} for changes", configPath);
         }
     }
 
