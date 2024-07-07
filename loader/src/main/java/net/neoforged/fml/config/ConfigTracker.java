@@ -17,9 +17,11 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -50,7 +52,7 @@ public class ConfigTracker {
 
     final ConcurrentHashMap<String, ModConfig> fileMap = new ConcurrentHashMap<>();
     final EnumMap<ModConfig.Type, Set<ModConfig>> configSets = new EnumMap<>(ModConfig.Type.class);
-    final ConcurrentHashMap<String, Map<ModConfig.Type, ModConfig>> configsByMod = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<String, List<ModConfig>> configsByMod = new ConcurrentHashMap<>();
     private final Map<String, ReentrantLock> locksByMod = new ConcurrentHashMap<>();
 
     @VisibleForTesting
@@ -93,7 +95,7 @@ public class ConfigTracker {
             throw new RuntimeException("Config conflict detected!");
         }
         this.configSets.get(config.getType()).add(config);
-        this.configsByMod.computeIfAbsent(config.getModId(), (k) -> new EnumMap<>(ModConfig.Type.class)).put(config.getType(), config);
+        this.configsByMod.computeIfAbsent(config.getModId(), (k) -> Collections.synchronizedList(new ArrayList<>())).add(config);
         LOGGER.debug(CONFIG, "Config file {} for {} tracking", config.getFileName(), config.getModId());
     }
 

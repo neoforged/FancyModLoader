@@ -6,6 +6,7 @@
 package net.neoforged.fml.config;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.neoforged.fml.ModContainer;
@@ -16,9 +17,14 @@ import net.neoforged.fml.ModContainer;
  * Configs are registered via {@link ModContainer#registerConfig(ModConfig.Type, IConfigSpec)}.
  */
 public final class ModConfigs {
-    public static String getConfigFileName(String modId, ModConfig.Type type) {
-        var config = ConfigTracker.INSTANCE.configsByMod.getOrDefault(modId, Map.of()).get(type);
-        return config == null ? null : config.getFullPath().toString();
+    public static List<String> getConfigFileNames(String modId, ModConfig.Type type) {
+        var config = ConfigTracker.INSTANCE.configsByMod.getOrDefault(modId, List.of());
+        synchronized (config) { // Synchronized list: requires explicit synchronization for stream
+            return config.stream()
+                    .filter(c -> c.getType() == type)
+                    .map(ModConfig::getFileName)
+                    .toList();
+        }
     }
 
     public static Set<ModConfig> getConfigSet(ModConfig.Type type) {
