@@ -21,6 +21,7 @@ import com.mojang.logging.LogUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -156,36 +157,37 @@ public class ConfigTracker {
     static void loadConfig(ModConfig modConfig, Path path, Function<ModConfig, ModConfigEvent> eventConstructor) {
         CommentedConfig config;
 
-        if (Files.exists(path)) {
-            try {
-                config = readConfig(path);
+        try {
+            // Load existing config
+            config = readConfig(path);
 
-                if (!modConfig.getSpec().isCorrect(config)) {
-                    LOGGER.warn(CONFIG, "Configuration file {} is not correct. Correcting", path);
-                    backUpConfig(path);
-                    modConfig.getSpec().correct(config);
-                    writeConfig(path, config);
-                }
-            } catch (IOException | ParsingException ex) {
-                LOGGER.warn(CONFIG, "Failed to load config {}: {}. Attempting to recreate", modConfig.getFileName(), ex);
-                try {
-                    backUpConfig(path);
-                    Files.delete(path);
-
-                    setupConfigFile(modConfig, path);
-                    config = readConfig(path);
-                } catch (Throwable t) {
-                    ex.addSuppressed(t);
-
-                    throw new RuntimeException("Failed to recreate config file " + modConfig.getFileName() + " of type " + modConfig.getType() + " for modid " + modConfig.getModId(), ex);
-                }
+            if (!modConfig.getSpec().isCorrect(config)) {
+                LOGGER.warn(CONFIG, "Configuration file {} is not correct. Correcting", path);
+                backUpConfig(path);
+                modConfig.getSpec().correct(config);
+                writeConfig(path, config);
             }
-        } else {
+        } catch (NoSuchFileException ignored) {
+            // Config file does not exist yet
             try {
                 setupConfigFile(modConfig, path);
                 config = readConfig(path);
             } catch (IOException | ParsingException ex) {
                 throw new RuntimeException("Failed to create default config file " + modConfig.getFileName() + " of type " + modConfig.getType() + " for modid " + modConfig.getModId(), ex);
+            }
+        } catch (IOException | ParsingException ex) {
+            // Failed to read existing file
+            LOGGER.warn(CONFIG, "Failed to load config {}: {}. Attempting to recreate", modConfig.getFileName(), ex);
+            try {
+                backUpConfig(path);
+                Files.delete(path);
+
+                setupConfigFile(modConfig, path);
+                config = readConfig(path);
+            } catch (Throwable t) {
+                ex.addSuppressed(t);
+
+                throw new RuntimeException("Failed to recreate config file " + modConfig.getFileName() + " of type " + modConfig.getType() + " for modid " + modConfig.getModId(), ex);
             }
         }
 
