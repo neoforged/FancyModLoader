@@ -7,7 +7,6 @@ package net.neoforged.fml;
 
 import static net.neoforged.fml.Logging.LOADING;
 
-import java.util.EnumMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -21,7 +20,6 @@ import net.neoforged.fml.config.IConfigSpec;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.event.lifecycle.FMLConstructModEvent;
-import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforgespi.language.IModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,7 +46,6 @@ public abstract class ModContainer {
     protected final String namespace;
     protected final IModInfo modInfo;
     protected final Map<Class<? extends IExtensionPoint>, Supplier<?>> extensionPoints = new IdentityHashMap<>();
-    protected final EnumMap<ModConfig.Type, ModConfig> configs = new EnumMap<>(ModConfig.Type.class);
 
     public ModContainer(IModInfo info) {
         this.modId = info.getModId();
@@ -95,14 +92,6 @@ public abstract class ModContainer {
         extensionPoints.put(point, extension);
     }
 
-    private void addConfig(final ModConfig modConfig) {
-        configs.put(modConfig.getType(), modConfig);
-
-        if (modConfig.getType() == ModConfig.Type.STARTUP) {
-            ConfigTracker.INSTANCE.openConfig(modConfig, FMLPaths.CONFIGDIR.get(), null);
-        }
-    }
-
     /**
      * Adds a {@link ModConfig} with the given type and spec. An empty config spec will be ignored and a debug line will
      * be logged.
@@ -117,7 +106,7 @@ public abstract class ModContainer {
             return;
         }
 
-        addConfig(ConfigTracker.INSTANCE.registerConfig(type, configSpec, this));
+        ConfigTracker.INSTANCE.registerConfig(type, configSpec, this);
     }
 
     /**
@@ -134,7 +123,7 @@ public abstract class ModContainer {
             return;
         }
 
-        addConfig(ConfigTracker.INSTANCE.registerConfig(type, configSpec, this, fileName));
+        ConfigTracker.INSTANCE.registerConfig(type, configSpec, this, fileName);
     }
 
     /**

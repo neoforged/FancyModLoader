@@ -18,8 +18,7 @@ import org.jetbrains.annotations.Nullable;
  * <h3>Thread-safety</h3>
  * <p>The {@link Config} objects themselves are thread-safe, but mod config code should not be assumed to be thread-safe in general.
  * FML will guard event dispatches behind a lock when necessary.
- * A spec can safely mutate {@code Config} objects, but should let FML fire events,
- * for example using {@link ModConfig#onConfigChanged()}.
+ * A spec can safely mutate {@code Config} objects, but should let FML fire events and saving the file by calling {@link ILoadedConfig#save()}.
  */
 public interface IConfigSpec {
     /**
@@ -53,5 +52,20 @@ public interface IConfigSpec {
      * This is called on loading and on reloading.
      * The config is guaranteed to be valid according to {@link #isCorrect}.
      */
-    void acceptConfig(@Nullable CommentedConfig config);
+    void acceptConfig(@Nullable ILoadedConfig config);
+
+    sealed interface ILoadedConfig permits LoadedConfig {
+        /**
+         * Accesses the current config.
+         *
+         * <p>The config locks internally, and is therefore safe to
+         * read/write across multiple threads without additional synchronization.
+         */
+        CommentedConfig config();
+
+        /**
+         * Saves the current value of the {@link #config} and dispatches a config reloading event.
+         */
+        void save();
+    }
 }

@@ -14,6 +14,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
 import org.assertj.core.api.Assertions;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -218,8 +219,8 @@ public class ConfigTrackerTest {
         }
 
         @Override
-        public void acceptConfig(CommentedConfig config) {
-            loadedValue = config.getInt("configEntry");
+        public void acceptConfig(@Nullable ILoadedConfig config) {
+            loadedValue = config == null ? 4 : config.config().getInt("configEntry");
         }
     }
 }
