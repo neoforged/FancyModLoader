@@ -87,6 +87,11 @@ public class ConfigTracker {
         var lock = locksByMod.computeIfAbsent(container.getModId(), m -> new ReentrantLock());
         var modConfig = new ModConfig(type, spec, container, fileName, lock);
         trackConfig(modConfig);
+
+        if (modConfig.getType() == ModConfig.Type.STARTUP) {
+            openConfig(modConfig, FMLPaths.CONFIGDIR.get(), null);
+        }
+
         return modConfig;
     }
 
@@ -120,7 +125,7 @@ public class ConfigTracker {
         this.configSets.get(type).forEach(ConfigTracker::closeConfig);
     }
 
-    public static void openConfig(ModConfig config, Path configBasePath, @Nullable Path configOverrideBasePath) {
+    static void openConfig(ModConfig config, Path configBasePath, @Nullable Path configOverrideBasePath) {
         LOGGER.trace(CONFIG, "Loading config file type {} at {} for {}", config.getType(), config.getFileName(), config.getModId());
         if (config.loadedConfig != null) {
             LOGGER.warn("Opening a config that was already loaded with value {} at path {}", config.loadedConfig, config.getFileName());
