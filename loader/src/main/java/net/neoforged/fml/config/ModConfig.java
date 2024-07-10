@@ -5,9 +5,6 @@
 
 package net.neoforged.fml.config;
 
-import com.electronwill.nightconfig.core.CommentedConfig;
-import com.electronwill.nightconfig.core.file.CommentedFileConfig;
-import com.electronwill.nightconfig.core.file.FileConfig;
 import java.nio.file.Path;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -21,14 +18,9 @@ public final class ModConfig {
     private final Type type;
     private final IConfigSpec spec;
     private final String fileName;
-    private final ModContainer container;
-    /**
-     * When a file config is open: this is a {@link CommentedFileConfig}.
-     * When a config was loaded from the server: this is a plain config.
-     * Otherwise this is null.
-     */
+    final ModContainer container;
     @Nullable
-    CommentedConfig config;
+    LoadedConfig loadedConfig;
     /**
      * NightConfig's own configs are threadsafe, but mod code is not necessarily.
      * This lock is used to prevent multiple concurrent config reloads or event dispatches.
@@ -61,31 +53,20 @@ public final class ModConfig {
 
     // TODO: remove from public API?
     public Path getFullPath() {
-        if (this.config instanceof FileConfig fileConfig) {
-            return fileConfig.getNioPath();
+        if (this.loadedConfig != null && loadedConfig.path() != null) {
+            return loadedConfig.path();
         } else {
-            throw new IllegalStateException("Cannot call getFullPath() on non-file config " + this.config + " at path " + getFileName());
+            throw new IllegalStateException("Cannot call getFullPath() on non-file config " + this.loadedConfig + " at path " + getFileName());
         }
     }
 
-    /**
-     * To be called when the config changed in code, for example via {@code ModConfigSpec.ConfigValue#set}.
-     * This function will update the config on disk, and fire the reloading event, taking the appropriate lock first.
-     */
-    public void onConfigChanged() {
-        if (!(this.config instanceof FileConfig fileConfig)) {
-            throw new IllegalStateException("Cannot call onConfigChanged on non-file config " + this.config + " at path " + getFileName());
-        }
-
-        fileConfig.save();
-        postConfigEvent(ModConfigEvent.Reloading::new);
-    }
-
-    void postConfigEvent(Function<ModConfig, ModConfigEvent> constructor) {
+    void setConfig(@Nullable LoadedConfig loadedConfig, Function<ModConfig, ModConfigEvent> eventConstructor) {
         lock.lock();
 
         try {
-            container.acceptEvent(constructor.apply(this));
+            this.loadedConfig = loadedConfig;
+            spec.acceptConfig(loadedConfig);
+            container.acceptEvent(eventConstructor.apply(this));
         } finally {
             lock.unlock();
         }

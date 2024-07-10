@@ -6,12 +6,17 @@
 package net.neoforged.fml.config;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
-import com.electronwill.nightconfig.core.ConfigFormat;
-import com.electronwill.nightconfig.core.file.CommentedFileConfig;
+import com.electronwill.nightconfig.core.InMemoryCommentedFormat;
+import com.electronwill.nightconfig.core.UnmodifiableCommentedConfig;
+import com.electronwill.nightconfig.core.concurrent.ConcurrentCommentedConfig;
+import com.electronwill.nightconfig.core.concurrent.SynchronizedConfig;
 import com.electronwill.nightconfig.core.file.FileWatcher;
 import com.electronwill.nightconfig.core.io.ParsingException;
+import com.electronwill.nightconfig.core.io.ParsingMode;
 import com.electronwill.nightconfig.core.io.WritingMode;
 import com.electronwill.nightconfig.toml.TomlFormat;
+import com.electronwill.nightconfig.toml.TomlParser;
+import com.electronwill.nightconfig.toml.TomlWriter;
 import com.mojang.logging.LogUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -20,6 +25,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -27,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.loading.FMLConfig;
@@ -115,27 +122,17 @@ public class ConfigTracker {
 
     public static void openConfig(ModConfig config, Path configBasePath, @Nullable Path configOverrideBasePath) {
         LOGGER.trace(CONFIG, "Loading config file type {} at {} for {}", config.getType(), config.getFileName(), config.getModId());
-        if (config.config != null) {
-            LOGGER.warn("Opening a config that was already loaded with value {} at path {}", config.config, config.getFileName());
+        if (config.loadedConfig != null) {
+            LOGGER.warn("Opening a config that was already loaded with value {} at path {}", config.loadedConfig, config.getFileName());
         }
         var basePath = resolveBasePath(config, configBasePath, configOverrideBasePath);
         var configPath = basePath.resolve(config.getFileName());
-        var configData = CommentedFileConfig.builder(configPath)
-                .sync()
-                .preserveInsertionOrder()
-                .autosave()
-                .onFileNotFound((newfile, configFormat) -> setupConfigFile(config, newfile, configFormat))
-                .writingMode(WritingMode.REPLACE_ATOMIC)
-                .build();
-        LOGGER.debug(CONFIG, "Built TOML config for {}", configPath);
 
-        loadConfig(config, configData);
+        loadConfig(config, configPath, ModConfigEvent.Loading::new);
         LOGGER.debug(CONFIG, "Loaded TOML config file {}", configPath);
-        config.config = configData;
-        config.postConfigEvent(ModConfigEvent.Loading::new);
 
         if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DISABLE_CONFIG_WATCHER)) {
-            FileWatcher.defaultInstance().addWatch(configPath, new ConfigWatcher(config, configData, Thread.currentThread().getContextClassLoader()));
+            FileWatcher.defaultInstance().addWatch(configPath, new ConfigWatcher(config, configPath, Thread.currentThread().getContextClassLoader()));
             LOGGER.debug(CONFIG, "Watching TOML config file {} for changes", configPath);
         }
     }
@@ -151,102 +148,122 @@ public class ConfigTracker {
         return configBasePath;
     }
 
-    static void loadConfig(ModConfig modConfig, CommentedFileConfig config) {
-        try {
-            config.load();
-            if (!modConfig.getSpec().isCorrect(config)) {
-                LOGGER.warn(CONFIG, "Configuration file {} is not correct. Correcting", config.getFile().getAbsolutePath());
-                backUpConfig(config);
-                modConfig.getSpec().correct(config);
-                config.save();
-            }
-        } catch (ParsingException ex) {
-            LOGGER.warn(CONFIG, "Failed to parse {}: {}. Attempting to recreate", modConfig.getFileName(), ex);
+    static void loadConfig(ModConfig modConfig, Path path, Function<ModConfig, ModConfigEvent> eventConstructor) {
+        CommentedConfig config;
+
+        if (Files.exists(path)) {
             try {
-                backUpConfig(config);
-                Files.delete(config.getNioPath());
+                config = readConfig(path);
 
-                setupConfigFile(modConfig, config.getNioPath(), config.configFormat());
-                config.load();
-            } catch (Throwable t) {
-                ex.addSuppressed(t);
+                if (!modConfig.getSpec().isCorrect(config)) {
+                    LOGGER.warn(CONFIG, "Configuration file {} is not correct. Correcting", path);
+                    backUpConfig(path);
+                    modConfig.getSpec().correct(config);
+                    writeConfig(path, config);
+                }
+            } catch (IOException | ParsingException ex) {
+                LOGGER.warn(CONFIG, "Failed to load config {}: {}. Attempting to recreate", modConfig.getFileName(), ex);
+                try {
+                    backUpConfig(path);
+                    Files.delete(path);
 
-                throw new RuntimeException("Failed to recreate config file " + modConfig.getFileName() + " of type " + modConfig.getType() + " for modid " + modConfig.getModId(), ex);
+                    setupConfigFile(modConfig, path);
+                    config = readConfig(path);
+                } catch (Throwable t) {
+                    ex.addSuppressed(t);
+
+                    throw new RuntimeException("Failed to recreate config file " + modConfig.getFileName() + " of type " + modConfig.getType() + " for modid " + modConfig.getModId(), ex);
+                }
+            }
+        } else {
+            try {
+                setupConfigFile(modConfig, path);
+                config = readConfig(path);
+            } catch (IOException | ParsingException ex) {
+                throw new RuntimeException("Failed to create default config file " + modConfig.getFileName() + " of type " + modConfig.getType() + " for modid " + modConfig.getModId(), ex);
             }
         }
-        modConfig.getSpec().acceptConfig(config);
+
+        modConfig.setConfig(new LoadedConfig(config, path, modConfig), eventConstructor);
     }
 
     public static void acceptSyncedConfig(ModConfig modConfig, byte[] bytes) {
-        if (modConfig.config != null) {
-            LOGGER.warn("Overwriting non-null config {} at path {} with synced config", modConfig.config, modConfig.getFileName());
+        if (modConfig.loadedConfig != null) {
+            LOGGER.warn("Overwriting non-null config {} at path {} with synced config", modConfig.loadedConfig, modConfig.getFileName());
         }
-        modConfig.config = TomlFormat.instance().createParser().parse(new ByteArrayInputStream(bytes));
-        // TODO: do we want to do any validation? (what do we do if it fails?)
-        modConfig.getSpec().acceptConfig(modConfig.config);
-        modConfig.postConfigEvent(ModConfigEvent.Reloading::new); // TODO: should maybe be Loading on the first load?
+        var newConfig = new SynchronizedConfig(InMemoryCommentedFormat.defaultInstance(), LinkedHashMap::new);
+        newConfig.bulkCommentedUpdate(view -> {
+            TomlFormat.instance().createParser().parse(new ByteArrayInputStream(bytes), view, ParsingMode.REPLACE);
+        });
+        // TODO: do we want to do any validation? (what do we do if acceptConfig fails?)
+        modConfig.setConfig(new LoadedConfig(newConfig, null, modConfig), ModConfigEvent.Reloading::new); // TODO: should maybe be Loading on the first load?
     }
 
     public void loadDefaultServerConfigs() {
         configSets.get(ModConfig.Type.SERVER).forEach(modConfig -> {
-            if (modConfig.config != null) {
-                LOGGER.warn("Overwriting non-null config {} at path {} with default server config", modConfig.config, modConfig.getFileName());
+            if (modConfig.loadedConfig != null) {
+                LOGGER.warn("Overwriting non-null config {} at path {} with default server config", modConfig.loadedConfig, modConfig.getFileName());
             }
-            modConfig.config = createDefaultConfig(modConfig.getSpec());
-            modConfig.getSpec().acceptConfig(modConfig.config);
-            modConfig.postConfigEvent(ModConfigEvent.Loading::new);
+
+            modConfig.setConfig(new LoadedConfig(createDefaultConfig(modConfig.getSpec()), null, modConfig), ModConfigEvent.Loading::new);
         });
     }
 
     private static CommentedConfig createDefaultConfig(IConfigSpec spec) {
-        var commentedConfig = CommentedConfig.inMemory();
-        spec.correct(commentedConfig);
+        var commentedConfig = new SynchronizedConfig(InMemoryCommentedFormat.defaultInstance(), LinkedHashMap::new);
+        commentedConfig.bulkCommentedUpdate(spec::correct);
         return commentedConfig;
     }
 
     private static void closeConfig(ModConfig config) {
-        if (config.config != null) {
-            if (config.config instanceof CommentedFileConfig) {
+        if (config.loadedConfig != null) {
+            if (config.loadedConfig.path() != null) {
                 LOGGER.trace(CONFIG, "Closing config file type {} at {} for {}", config.getType(), config.getFileName(), config.getModId());
-                unload(config);
-                config.config = null;
-                config.getSpec().acceptConfig(null);
-                config.postConfigEvent(ModConfigEvent.Unloading::new);
+                unload(config.loadedConfig.path());
+                config.setConfig(null, ModConfigEvent.Unloading::new);
             } else {
-                LOGGER.warn(CONFIG, "Closing non-file config {} at path {}", config.config, config.getFileName());
+                LOGGER.warn(CONFIG, "Closing non-file config {} at path {}", config.loadedConfig, config.getFileName());
             }
         }
     }
 
-    private static void unload(ModConfig config) {
+    private static void unload(Path path) {
         if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DISABLE_CONFIG_WATCHER))
             return;
-        Path configPath = config.getFullPath();
         try {
-            FileWatcher.defaultInstance().removeWatch(configPath);
+            FileWatcher.defaultInstance().removeWatch(path);
         } catch (RuntimeException e) {
-            LOGGER.error("Failed to remove config {} from tracker!", configPath, e);
+            LOGGER.error("Failed to remove config {} from tracker!", path, e);
         }
     }
 
-    private static boolean setupConfigFile(ModConfig modConfig, Path file, ConfigFormat<?> conf) throws IOException {
+    private static void setupConfigFile(ModConfig modConfig, Path file) throws IOException {
         Files.createDirectories(file.getParent());
         Path p = defaultConfigPath.resolve(modConfig.getFileName());
         if (Files.exists(p)) {
             LOGGER.info(CONFIG, "Loading default config file from path {}", p);
             Files.copy(p, file);
         } else {
-            conf.createWriter().write(createDefaultConfig(modConfig.getSpec()), file, WritingMode.REPLACE_ATOMIC);
+            writeConfig(file, createDefaultConfig(modConfig.getSpec()));
         }
-        return true;
     }
 
-    private static void backUpConfig(CommentedFileConfig commentedFileConfig) {
+    private static ConcurrentCommentedConfig readConfig(Path path) throws IOException, ParsingException {
+        try (var reader = Files.newBufferedReader(path)) {
+            var config = new SynchronizedConfig(TomlFormat.instance(), LinkedHashMap::new);
+            config.bulkCommentedUpdate(view -> {
+                new TomlParser().parse(reader, view, ParsingMode.REPLACE);
+            });
+            return config;
+        }
+    }
+
+    static void writeConfig(Path file, UnmodifiableCommentedConfig config) {
+        new TomlWriter().write(config, file, WritingMode.REPLACE_ATOMIC);
+    }
+
+    private static void backUpConfig(Path commentedFileConfig) {
         backUpConfig(commentedFileConfig, 5); //TODO: Think of a way for mods to set their own preference (include a sanity check as well, no disk stuffing)
-    }
-
-    private static void backUpConfig(CommentedFileConfig commentedFileConfig, int maxBackups) {
-        backUpConfig(commentedFileConfig.getNioPath(), maxBackups);
     }
 
     private static void backUpConfig(Path commentedFileConfig, int maxBackups) {
