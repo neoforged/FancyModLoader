@@ -7,15 +7,10 @@ package net.neoforged.fml.loading.toposort;
 
 import com.google.common.base.Preconditions;
 import com.google.common.graph.Graph;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.PriorityQueue;
-import java.util.Queue;
 import java.util.Set;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,7 +21,8 @@ import org.jetbrains.annotations.Nullable;
  * utilized in other fashions, e.g. topology-based registry loading, prioritization
  * for renderers, and even mod module loading.
  */
-public final class TopologicalSort {
+public final class TopologicalSort<T> {
+    // TODO: this comment here needs updating, in particular the complexity is now O(VE) I believe
     /**
      * A breath-first-search based topological sort.
      *
@@ -61,42 +57,65 @@ public final class TopologicalSort {
         Preconditions.checkArgument(graph.isDirected(), "Cannot topologically sort an undirected graph!");
         Preconditions.checkArgument(!graph.allowsSelfLoops(), "Cannot topologically sort a graph with self loops!");
 
-        final Queue<T> queue = comparator == null ? new ArrayDeque<>() : new PriorityQueue<>(comparator);
-        final Map<T, Integer> degrees = new HashMap<>();
-        final List<T> results = new ArrayList<>();
-
-        for (final T node : graph.nodes()) {
-            final int degree = graph.inDegree(node);
-            if (degree == 0) {
-                queue.add(node);
-            } else {
-                degrees.put(node, degree);
-            }
+        // Check for cycles
+        Set<Set<T>> components = new StronglyConnectedComponentDetector<>(graph).getComponents();
+        components.removeIf(set -> set.size() < 2);
+        if (!components.isEmpty()) {
+            //noinspection unchecked
+            throw new CyclePresentException((Set<Set<?>>) (Set<?>) components);
         }
 
-        while (!queue.isEmpty()) {
-            final T current = queue.remove();
-            results.add(current);
-            for (final T successor : graph.successors(current)) {
-                final int updated = degrees.compute(successor, (node, degree) -> Objects.requireNonNull(degree, () -> "Invalid degree present for " + node) - 1);
-                if (updated == 0) {
-                    queue.add(successor);
-                    degrees.remove(successor);
-                }
-            }
-        }
-
-        if (!degrees.isEmpty()) {
-            Set<Set<T>> components = new StronglyConnectedComponentDetector<>(graph).getComponents();
-            components.removeIf(set -> set.size() < 2);
-            throwCyclePresentException(components);
-        }
-
-        return results;
+        var toposort = new TopologicalSort<>(graph, comparator);
+        toposort.resolveSubgraph(new ArrayList<>(graph.nodes()));
+        return toposort.result;
     }
 
-    @SuppressWarnings("unchecked") // for unchecked annotation
-    private static <T> void throwCyclePresentException(Set<Set<T>> components) {
-        throw new CyclePresentException((Set<Set<?>>) (Set<?>) components);
+    private final Graph<T> graph;
+    @Nullable
+    private final Comparator<? super T> comparator;
+    private final Set<T> taken = new HashSet<>(); // nodes that have been added to `result` already
+    private final List<T> result = new ArrayList<>();
+
+    private TopologicalSort(Graph<T> graph, @Nullable Comparator<? super T> comparator) {
+        this.graph = graph;
+        this.comparator = comparator;
+    }
+
+    private void resolveSubgraph(List<T> nodes) {
+        while (!nodes.isEmpty()) {
+            var min = removeMin(nodes);
+            if (!taken.contains(min)) {
+                // Process all dependencies of `min`
+                var subGraph = new ArrayList<T>();
+                collectChildren(min, subGraph);
+                resolveSubgraph(subGraph);
+                // Add `min`
+                result.add(min);
+                taken.add(min);
+            }
+        }
+    }
+
+    private T removeMin(List<T> nodes) {
+        if (this.comparator == null) {
+            return nodes.removeFirst();
+        }
+
+        int minIndex = 0;
+        for (int i = 1; i < nodes.size(); ++i) {
+            if (this.comparator.compare(nodes.get(i), nodes.get(minIndex)) < 0) {
+                minIndex = i;
+            }
+        }
+        return nodes.remove(minIndex);
+    }
+
+    private void collectChildren(T node, List<T> out) {
+        for (var child : this.graph.predecessors(node)) {
+            if (!this.taken.contains(child)) {
+                out.add(child);
+                collectChildren(child, out);
+            }
+        }
     }
 }
