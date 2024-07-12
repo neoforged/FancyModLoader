@@ -84,15 +84,14 @@ public final class TopologicalSort<T> {
     private void resolveSubgraph(List<T> nodes) {
         while (!nodes.isEmpty()) {
             var min = removeMin(nodes);
-            if (!taken.contains(min)) {
-                // Process all dependencies of `min`
-                var subGraph = new ArrayList<T>();
-                collectChildren(min, subGraph);
-                resolveSubgraph(subGraph);
-                // Add `min`
-                result.add(min);
-                taken.add(min);
-            }
+            // Process all dependencies of `min`
+            var subGraph = new ArrayList<T>();
+            collectChildren(min, subGraph);
+            resolveSubgraph(subGraph);
+            nodes.removeIf(taken::contains);
+            // Add `min`
+            result.add(min);
+            taken.add(min);
         }
     }
 
