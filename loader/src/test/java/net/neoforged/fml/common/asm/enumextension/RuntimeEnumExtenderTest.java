@@ -7,6 +7,7 @@ package net.neoforged.fml.common.asm.enumextension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -313,8 +314,80 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                 2);
     }
 
+    @Test
+    void testExtensionInfoNonExtended() throws Exception {
+        installation.setupProductionClient();
+
+        installation.buildModJar("enum_ext_test.jar")
+                .withModsToml(builder -> builder.unlicensedJavaMod()
+                        .addMod("testmod", "1.0"))
+                .addClass("testmod.SomeEnum", """
+                        import net.neoforged.fml.common.asm.enumextension.IExtensibleEnum;
+                        import net.neoforged.fml.common.asm.enumextension.ExtensionInfo;
+                        import net.neoforged.fml.common.asm.enumextension.NetworkedEnum;
+                        @NetworkedEnum(NetworkedEnum.NetworkCheck.CLIENTBOUND)
+                        enum SomeEnum implements IExtensibleEnum {
+                            LITERAL;
+                            public static ExtensionInfo getExtensionInfo() {
+                                return ExtensionInfo.nonExtended(SomeEnum.class);
+                            }
+                        }
+                        """)
+                .build();
+        launchAndLoad("forgeclient");
+
+        var extensibleEnum = getEnumClass("testmod.SomeEnum");
+        var extensionInfo = getExtensionInfo(extensibleEnum);
+        assertFalse(extensionInfo.extended());
+        assertEquals(0, extensionInfo.vanillaCount());
+        assertEquals(0, extensionInfo.totalCount());
+        assertEquals(NetworkedEnum.NetworkCheck.CLIENTBOUND, extensionInfo.netCheck());
+    }
+
+    @Test
+    void testExtensionInfoExtended() throws Exception {
+        installation.setupProductionClient();
+
+        installation.buildModJar("enum_ext_test.jar")
+                .withModsToml(getModsTomlBuilderConsumer("extensions.json"))
+                .addTextFile("extensions.json", """
+                        {
+                            "entries": [
+                                {
+                                    "enum": "testmod/SomeEnum",
+                                    "name": "TESTMOD_NEW_CONSTANT",
+                                    "constructor": "()V",
+                                    "parameters": []
+                                }
+                            ]
+                        }
+                        """)
+                .addClass("testmod.SomeEnum", """
+                        import net.neoforged.fml.common.asm.enumextension.IExtensibleEnum;
+                        import net.neoforged.fml.common.asm.enumextension.ExtensionInfo;
+                        import net.neoforged.fml.common.asm.enumextension.NetworkedEnum;
+                        @NetworkedEnum(NetworkedEnum.NetworkCheck.CLIENTBOUND)
+                        enum SomeEnum implements IExtensibleEnum {
+                            LITERAL;
+                            public static ExtensionInfo getExtensionInfo() {
+                                return ExtensionInfo.nonExtended(SomeEnum.class);
+                            }
+                        }
+                        """)
+                .build();
+        launchAndLoad("forgeclient");
+
+        var extensibleEnum = getEnumClass("testmod.SomeEnum");
+        var extensionInfo = getExtensionInfo(extensibleEnum);
+        assertTrue(extensionInfo.extended());
+        assertEquals(1, extensionInfo.vanillaCount());
+        assertEquals(2, extensionInfo.totalCount());
+        assertEquals(NetworkedEnum.NetworkCheck.CLIENTBOUND, extensionInfo.netCheck());
+    }
+
     private ExtensionInfo getExtensionInfo(Class<?> enumClass) throws Exception {
         var getExtensionInfo = enumClass.getMethod("getExtensionInfo");
+        getExtensionInfo.setAccessible(true);
         return (ExtensionInfo) getExtensionInfo.invoke(null);
     }
 
