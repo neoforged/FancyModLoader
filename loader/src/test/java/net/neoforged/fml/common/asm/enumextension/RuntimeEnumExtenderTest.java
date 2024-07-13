@@ -326,7 +326,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                         import net.neoforged.fml.common.asm.enumextension.ExtensionInfo;
                         import net.neoforged.fml.common.asm.enumextension.NetworkedEnum;
                         @NetworkedEnum(NetworkedEnum.NetworkCheck.CLIENTBOUND)
-                        enum SomeEnum implements IExtensibleEnum {
+                        public enum SomeEnum implements IExtensibleEnum {
                             LITERAL;
                             public static ExtensionInfo getExtensionInfo() {
                                 return ExtensionInfo.nonExtended(SomeEnum.class);
@@ -367,7 +367,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                         import net.neoforged.fml.common.asm.enumextension.ExtensionInfo;
                         import net.neoforged.fml.common.asm.enumextension.NetworkedEnum;
                         @NetworkedEnum(NetworkedEnum.NetworkCheck.CLIENTBOUND)
-                        enum SomeEnum implements IExtensibleEnum {
+                        public enum SomeEnum implements IExtensibleEnum {
                             LITERAL;
                             public static ExtensionInfo getExtensionInfo() {
                                 return ExtensionInfo.nonExtended(SomeEnum.class);
@@ -387,7 +387,6 @@ class RuntimeEnumExtenderTest extends LauncherTest {
 
     private ExtensionInfo getExtensionInfo(Class<?> enumClass) throws Exception {
         var getExtensionInfo = enumClass.getMethod("getExtensionInfo");
-        getExtensionInfo.setAccessible(true);
         return (ExtensionInfo) getExtensionInfo.invoke(null);
     }
 
