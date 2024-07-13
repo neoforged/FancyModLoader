@@ -376,8 +376,8 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
 
     private static void buildExtensionInfo(ClassNode classNode, Type classType, ListGeneratorAdapter generator, FieldNode infoField, int vanillaCount, int moddedCount) {
         String netCheckValue = null;
-        if (classNode.invisibleAnnotations != null) {
-            netCheckValue = classNode.invisibleAnnotations.stream()
+        if (classNode.visibleAnnotations != null) {
+            netCheckValue = classNode.visibleAnnotations.stream()
                     .filter(anno -> anno.desc.equals(NETWORKED_ANNOTATION.getDescriptor()))
                     .findFirst()
                     .flatMap(anno -> {
