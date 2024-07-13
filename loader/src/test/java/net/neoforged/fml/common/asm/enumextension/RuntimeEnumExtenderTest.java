@@ -8,6 +8,7 @@ package net.neoforged.fml.common.asm.enumextension;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -50,7 +51,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                 .addClass("testmod.SomeEnum", """
                         import net.neoforged.fml.common.asm.enumextension.IExtensibleEnum;
                         import net.neoforged.fml.common.asm.enumextension.ExtensionInfo;
-                        enum SomeEnum implements IExtensibleEnum {
+                        public enum SomeEnum implements IExtensibleEnum {
                             LITERAL;
                             public static ExtensionInfo getExtensionInfo() {
                                 return ExtensionInfo.nonExtended(SomeEnum.class);
@@ -70,6 +71,14 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                 0, 1);
         assertThat(Enum.valueOf(enumClass, "LITERAL")).isInstanceOf(enumClass);
         assertThat(Enum.valueOf(enumClass, "TESTMOD_NEW_CONSTANT")).isInstanceOf(enumClass);
+
+        // Grab the enum info
+        var extensionInfo = getExtensionInfo(enumClass);
+        assertTrue(extensionInfo.extended());
+        assertEquals(1, extensionInfo.vanillaCount());
+        assertEquals(2, extensionInfo.totalCount());
+        assertNull(extensionInfo.netCheck());
+
     }
 
     @Test
