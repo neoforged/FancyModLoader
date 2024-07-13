@@ -78,7 +78,6 @@ class RuntimeEnumExtenderTest extends LauncherTest {
         assertEquals(1, extensionInfo.vanillaCount());
         assertEquals(2, extensionInfo.totalCount());
         assertNull(extensionInfo.netCheck());
-
     }
 
     @Test
