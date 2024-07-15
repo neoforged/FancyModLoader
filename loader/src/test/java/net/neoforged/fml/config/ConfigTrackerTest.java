@@ -205,9 +205,7 @@ public class ConfigTrackerTest {
         }
 
         @Override
-        public void validateSpec(ModConfig config) {
-
-        }
+        public void validateSpec(ModConfig config) {}
 
         @Override
         public boolean isCorrect(UnmodifiableCommentedConfig config) {
