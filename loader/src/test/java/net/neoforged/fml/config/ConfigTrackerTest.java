@@ -171,6 +171,18 @@ public class ConfigTrackerTest {
         });
     }
 
+    @Test
+    void testValidation() {
+        var spec = new SimpleConfigSpec() {
+            @Override
+            public void validateSpec(ModConfig config) {
+                throw new IllegalArgumentException("Config is bad.");
+            }
+        };
+        Assertions.assertThatIllegalArgumentException()
+                .isThrownBy(() -> configTracker.registerConfig(ModConfig.Type.COMMON, spec, modContainer, "test.toml"));
+    }
+
     private void waitUntil(Runnable assertion) throws InterruptedException {
         for (int i = 0; i < 1000; ++i) {
             try {
@@ -190,6 +202,11 @@ public class ConfigTrackerTest {
         @Override
         public boolean isEmpty() {
             return false;
+        }
+
+        @Override
+        public void validateSpec(ModConfig config) {
+
         }
 
         @Override
