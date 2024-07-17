@@ -87,6 +87,8 @@ public class ConfigTracker {
     public ModConfig registerConfig(ModConfig.Type type, IConfigSpec spec, ModContainer container, String fileName) {
         var lock = locksByMod.computeIfAbsent(container.getModId(), m -> new ReentrantLock());
         var modConfig = new ModConfig(type, spec, container, fileName, lock);
+        spec.validateSpec(modConfig);
+
         trackConfig(modConfig);
 
         if (modConfig.getType() == ModConfig.Type.STARTUP) {
