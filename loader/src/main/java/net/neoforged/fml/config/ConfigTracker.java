@@ -104,7 +104,7 @@ public class ConfigTracker {
     void trackConfig(ModConfig config) {
         var previousValue = this.fileMap.putIfAbsent(config.getFileName(), config);
         if (previousValue != null) {
-            String errorMessage = "Detected config file conflict on %s from %s (already registered by %s)".formatted(config.getFileName(), config.getModId(), previousValue.getModId());
+            String errorMessage = String.format(Locale.ROOT, "Detected config file conflict on %s from %s (already registered by %s)", config.getFileName(), config.getModId(), previousValue.getModId());
             LOGGER.error(CONFIG, "{}", errorMessage);
             throw new RuntimeException(errorMessage);
         }
