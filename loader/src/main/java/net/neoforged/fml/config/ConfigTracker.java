@@ -106,8 +106,9 @@ public class ConfigTracker {
     void trackConfig(ModConfig config) {
         var previousValue = this.fileMap.putIfAbsent(config.getFileName(), config);
         if (previousValue != null) {
-            LOGGER.error(CONFIG, "Detected config file conflict {} between {} and {}", config.getFileName(), previousValue.getModId(), config.getModId());
-            throw new RuntimeException("Config conflict detected!");
+            String errorMessage = String.format(Locale.ROOT, "Detected config file conflict on %s from %s (already registered by %s)", config.getFileName(), config.getModId(), previousValue.getModId());
+            LOGGER.error(CONFIG, "{}", errorMessage);
+            throw new RuntimeException(errorMessage);
         }
         this.configSets.get(config.getType()).add(config);
         this.configsByMod.computeIfAbsent(config.getModId(), (k) -> Collections.synchronizedList(new ArrayList<>())).add(config);
