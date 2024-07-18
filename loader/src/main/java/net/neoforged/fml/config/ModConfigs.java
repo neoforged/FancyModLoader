@@ -17,6 +17,10 @@ import net.neoforged.fml.ModContainer;
  * Configs are registered via {@link ModContainer#registerConfig(ModConfig.Type, IConfigSpec)}.
  */
 public final class ModConfigs {
+    public static List<ModConfig> getModConfigs(String modId) {
+        return List.copyOf(ConfigTracker.INSTANCE.configsByMod.getOrDefault(modId, List.of()));
+    }
+
     public static List<String> getConfigFileNames(String modId, ModConfig.Type type) {
         var config = ConfigTracker.INSTANCE.configsByMod.getOrDefault(modId, List.of());
         synchronized (config) { // Synchronized list: requires explicit synchronization for stream
