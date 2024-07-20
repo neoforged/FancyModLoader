@@ -8,7 +8,7 @@
   "fml.modloadingissue.failedtoloadmod": "{100,modinfo,name} ({100,modinfo,id}) n'a pas réussi à se charger correctement\n§7{102,exc,msg}",
   "fml.modloadingissue.feature.missing": "{100,modinfo,name} ({100,modinfo,id}) a besoin d'une fonctionnalité manquante nécessaire pour s'exécuter\n§7Il nécessite {0,featurebound} mais {1} est disponible",
   "fml.modloadingissue.uncaughterror": "Une erreur de traitement parallèle non capturée est survenue.\n§7{102,exc,msg}",
-  "fml.modloadingissue.errorduringevent": "{100,modinfo,name} ({100,modinfo,id}) encountered an error while dispatching the {0} event\n§7{102,exc,msg}",
+  "fml.modloadingissue.errorduringevent": "{100,modinfo,name} ({100,modinfo,id}) a rencontré une erreur lors de l'envoi de l'évènement {0}\n§7{102,exc,msg}",
   "fml.modloading.failedtoloadforge": "Échec du chargement de NeoForge",
   "fml.modloadingissue.javafml.dangling_entrypoint": "File {2} contains mod entrypoint class §6{1}§r for mod with id §e{0}§r, which does not exist or is not in the same file.\nDid you forget to update the mod id in the entrypoint?",
   "fml.modloadingissue.missingdependency": "Le mod §e{1}§r requiert §6{0}§r §o{2,vr}§r\nactuellement §6{0}§r§7 est §o{3,i18n,fml.messages.artifactversion.ornotinstalled}§r\n{4,optionnel,§7Raison pour la dépendance : §r}",
