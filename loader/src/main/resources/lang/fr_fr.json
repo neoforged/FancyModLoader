@@ -10,7 +10,7 @@
   "fml.modloadingissue.uncaughterror": "Une erreur de traitement parallèle non capturée est survenue.\n§7{102,exc,msg}",
   "fml.modloadingissue.errorduringevent": "{100,modinfo,name} ({100,modinfo,id}) a rencontré une erreur lors de l'envoi de l'évènement {0}\n§7{102,exc,msg}",
   "fml.modloading.failedtoloadforge": "Échec du chargement de NeoForge",
-  "fml.modloadingissue.javafml.dangling_entrypoint": "File {2} contains mod entrypoint class §6{1}§r for mod with id §e{0}§r, which does not exist or is not in the same file.\nDid you forget to update the mod id in the entrypoint?",
+  "fml.modloadingissue.javafml.dangling_entrypoint": "Le fichier {2} contient la classe de point d'entrée du mod §6{1}§r pour le mod ayant pour identifiant §e{0}§r, qui n'existe pas ou n'est pas dans le même fichier.\nAvez-vous oublié de mettre à jour l'identifiant du mod dans le point d'entrée ?\n",
   "fml.modloadingissue.missingdependency": "Le mod §e{1}§r requiert §6{0}§r §o{2,vr}§r\nactuellement §6{0}§r§7 est §o{3,i18n,fml.messages.artifactversion.ornotinstalled}§r\n{4,optionnel,§7Raison pour la dépendance : §r}",
   "fml.modloadingissue.missingdependency.optional": "Le mod §e{1}§r ne prend en charge que §3{0}§r{2,vr}§r\n§7Actuellement, §3{0}§r§7 est §o{3}",
   "fml.modloadingissue.incompatiblemod": "Le mod §e{1}§r est §cincompatible§r avec §3{0}§r §o{2,vr}§r\n§7Actuellement, §3{0}§r§7 est §o{3}§r\n§7La raison est :§r §o{4,i18ntranslate}§r",
