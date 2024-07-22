@@ -331,6 +331,22 @@ public class DisplayWindow implements ImmediateWindowProvider {
         System.exit(1);
     }
 
+    protected void glfwWindowHints(String mcVersion) {
+        glfwDefaultWindowHints();
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+        glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        if (mcVersion != null) {
+            // this emulates what we would get without early progress window
+            // as vanilla never sets these, so GLFW uses the first window title
+            // set them explicitly to avoid it using "FML early loading progress" as the class
+            String vanillaWindowTitle = "Minecraft* " + mcVersion;
+            glfwWindowHintString(GLFW_X11_CLASS_NAME, vanillaWindowTitle);
+            glfwWindowHintString(GLFW_X11_INSTANCE_NAME, vanillaWindowTitle);
+        }
+    }
+
     /**
      * Called to initialize the window when preparing for the Render Thread.
      *
@@ -360,19 +376,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         handleLastGLFWError((error, description) -> LOGGER.error(String.format("Suppressing Last GLFW error: [0x%X]%s", error, description)));
 
         // Set window hints for the new window we're gonna create.
-        glfwDefaultWindowHints();
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-        glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-        if (mcVersion != null) {
-            // this emulates what we would get without early progress window
-            // as vanilla never sets these, so GLFW uses the first window title
-            // set them explicitly to avoid it using "FML early loading progress" as the class
-            String vanillaWindowTitle = "Minecraft* " + mcVersion;
-            glfwWindowHintString(GLFW_X11_CLASS_NAME, vanillaWindowTitle);
-            glfwWindowHintString(GLFW_X11_INSTANCE_NAME, vanillaWindowTitle);
-        }
+        glfwWindowHints(mcVersion);
 
         long primaryMonitor = glfwGetPrimaryMonitor();
         if (primaryMonitor == 0) {

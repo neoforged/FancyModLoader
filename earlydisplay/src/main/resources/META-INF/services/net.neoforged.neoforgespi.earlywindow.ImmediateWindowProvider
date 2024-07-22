@@ -1,1 +1,2 @@
 net.neoforged.fml.earlydisplay.DisplayWindow
+net.neoforged.fml.earlydisplay.wayland.WaylandDisplayWindow
