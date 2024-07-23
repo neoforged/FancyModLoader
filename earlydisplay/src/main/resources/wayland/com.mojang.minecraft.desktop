@@ -1,9 +1,0 @@
-[Desktop Entry]
-Name=Minecraft %s
-Comment=Minecraft (NeoForge FML)
-Icon=%s
-Exec=true
-Hidden=true
-Terminal=false
-Type=Application
-Categories=Game;

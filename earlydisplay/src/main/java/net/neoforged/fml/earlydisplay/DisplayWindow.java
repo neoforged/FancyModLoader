@@ -8,6 +8,7 @@ package net.neoforged.fml.earlydisplay;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL.createCapabilities;
 import static org.lwjgl.opengl.GL32C.*;
+import static org.lwjgl.system.MemoryUtil.memAllocInt;
 
 import java.awt.Desktop;
 import java.io.IOException;
@@ -75,6 +76,7 @@ import org.slf4j.LoggerFactory;
 public class DisplayWindow implements ImmediateWindowProvider {
     private static final int[][] GL_VERSIONS = new int[][] { { 4, 6 }, { 4, 5 }, { 4, 4 }, { 4, 3 }, { 4, 2 }, { 4, 1 }, { 4, 0 }, { 3, 3 }, { 3, 2 } };
     private static final Logger LOGGER = LoggerFactory.getLogger("EARLYDISPLAY");
+    private static final int GLFW_WAYLAND_APP_ID = 0x26001;
     private final AtomicBoolean animationTimerTrigger = new AtomicBoolean(true);
 
     private ColourScheme colourScheme;
@@ -103,6 +105,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     private final Semaphore renderLock = new Semaphore(1);
     private boolean maximized;
+    private boolean waylandEnabled;
     private String glVersion;
     private SimpleFont font;
     private Runnable repaintTick = () -> {};
@@ -124,6 +127,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
                 .withRequiredArg().ofType(Integer.class)
                 .defaultsTo(FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_HEIGHT));
         var maximizedopt = parser.accepts("earlywindow.maximized");
+        var waylandopt = parser.accepts("earlywindow.wayland");
         parser.allowsUnrecognizedOptions();
         var parsed = parser.parse(arguments);
         winWidth = parsed.valueOf(widthopt);
@@ -145,6 +149,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
             }
         }
         this.maximized = parsed.has(maximizedopt) || FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_MAXIMIZED);
+        this.waylandEnabled = parsed.has(waylandopt);
 
         var forgeVersion = parsed.valueOf(forgeversionopt);
         StartupNotificationManager.modLoaderConsumer().ifPresent(c -> c.accept("NeoForge loading " + forgeVersion));
@@ -331,22 +336,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
         System.exit(1);
     }
 
-    protected void glfwWindowHints(String mcVersion) {
-        glfwDefaultWindowHints();
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-        glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-        if (mcVersion != null) {
-            // this emulates what we would get without early progress window
-            // as vanilla never sets these, so GLFW uses the first window title
-            // set them explicitly to avoid it using "FML early loading progress" as the class
-            String vanillaWindowTitle = "Minecraft* " + mcVersion;
-            glfwWindowHintString(GLFW_X11_CLASS_NAME, vanillaWindowTitle);
-            glfwWindowHintString(GLFW_X11_INSTANCE_NAME, vanillaWindowTitle);
-        }
-    }
-
     /**
      * Called to initialize the window when preparing for the Render Thread.
      *
@@ -360,6 +349,11 @@ public class DisplayWindow implements ImmediateWindowProvider {
      * @return The selected GL profile as an integer pair
      */
     public void initWindow(@Nullable String mcVersion) {
+        // Set the platform to wayland if enabled & supported
+        if (waylandEnabled && glfwPlatformSupported(GLFW_PLATFORM_WAYLAND)) {
+            glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_WAYLAND);
+        }
+
         // Initialize GLFW with a time guard, in case something goes wrong
         long glfwInitBegin = System.nanoTime();
         if (!glfwInit()) {
@@ -376,7 +370,28 @@ public class DisplayWindow implements ImmediateWindowProvider {
         handleLastGLFWError((error, description) -> LOGGER.error(String.format("Suppressing Last GLFW error: [0x%X]%s", error, description)));
 
         // Set window hints for the new window we're gonna create.
-        glfwWindowHints(mcVersion);
+        glfwDefaultWindowHints();
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+        glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+
+        if (waylandEnabled && (glfwGetPlatform() == GLFW_PLATFORM_WAYLAND)) {
+            var major = memAllocInt(1);
+            var minor = memAllocInt(1);
+            var rev = memAllocInt(1);
+            glfwGetVersion(major, minor, rev);
+            if (major.get(0) >= 3 && minor.get(0) >= 4) {
+                glfwWindowHintString(GLFW_WAYLAND_APP_ID, "com.mojang.minecraft");
+            }
+        } else if (mcVersion != null) {
+            // this emulates what we would get without early progress window
+            // as vanilla never sets these, so GLFW uses the first window title
+            // set them explicitly to avoid it using "FML early loading progress" as the class
+            String vanillaWindowTitle = "Minecraft* " + mcVersion;
+            glfwWindowHintString(GLFW_X11_CLASS_NAME, vanillaWindowTitle);
+            glfwWindowHintString(GLFW_X11_INSTANCE_NAME, vanillaWindowTitle);
+        }
 
         long primaryMonitor = glfwGetPrimaryMonitor();
         if (primaryMonitor == 0) {
