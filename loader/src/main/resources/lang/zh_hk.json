@@ -8,7 +8,7 @@
   "fml.modloadingissue.failedtoloadmod": "{100,modinfo,name}（{100,modinfo,id}）無法正確載入\n§7{102,exc,msg}",
   "fml.modloadingissue.feature.missing": "{100,modinfo,name}（{100,modinfo,id}）缺少執行所需的功能\n§7它需要 {0,featurebound}，但 {1} 可用",
   "fml.modloadingissue.uncaughterror": "發生未捕獲的平行處理錯誤。\n§7{102,exc,msg}",
-  "fml.modloadingissue.errorduringevent": "{100,modinfo,name} ({100,modinfo,id}) encountered an error while dispatching the {0} event\n§7{102,exc,msg}",
+  "fml.modloadingissue.errorduringevent": "{100,modinfo,name} ({100,modinfo,id})在 {0}的時候遇到了一個問題§7{102,exc,msg}",
   "fml.modloading.failedtoloadforge": "載入 NeoForge 失敗",
   "fml.modloadingissue.javafml.dangling_entrypoint": "File {2} contains mod entrypoint class §6{1}§r for mod with id §e{0}§r, which does not exist or is not in the same file.\nDid you forget to update the mod id in the entrypoint?",
   "fml.modloadingissue.missingdependency": "模組 §e{1}§r 需要 §6{0}§r §o{2,vr}§r\n§7目前 §6{0}§r§7 是 §o{3,i18n,fml.messages.artifactversion.ornotinstalled}§r\n{4,optional,§7使用此前置項的原因：§r}",
