@@ -131,7 +131,7 @@ public class ModDiscoverer {
         }
 
         LOGGER.info("\n     Mod List:\n\t\t{}\n\n{}",
-                String.format(Locale.ENGLISH, "%-30.30s|  %s  (%s)", "Name", "Mod Id", "Version"),
+                String.format(Locale.ENGLISH, "%s (%s) %s", "Name", "Mod Id", "Version"),
                 logReport(modFilesMap.values()));
 
         //Validate the loading. With a deduplicated list, we can now successfully process the artifacts and load
