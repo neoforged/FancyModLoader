@@ -144,7 +144,7 @@ public class ModDiscoverer {
     private String logReport(Collection<List<ModFile>> modFiles) {
         return modFiles.stream()
                 .flatMap(Collection::stream)
-                .filter(modFile -> !modFile.getModInfos().isEmpty() && modFile.getType() == IModFile.Type.MOD)
+                .filter(modFile -> !modFile.getModInfos().isEmpty())
                 .sorted(Comparator.comparing(modFile -> modFile.getModInfos().getFirst().getDisplayName(), String.CASE_INSENSITIVE_ORDER))
                 .map(this::fileToLine)
                 .collect(Collectors.joining("\n\t\t", "\t\t", ""));
