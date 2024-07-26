@@ -61,7 +61,7 @@ public class ModList {
         var mainMod = mf.getModInfos().getFirst();
 
         if (reducedInfo) {
-            return String.format(Locale.ENGLISH, "%s (%s) (%s)",
+            return String.format(Locale.ENGLISH, "%-30.30s|%s - %s",
                     mainMod.getDisplayName(),
                     mainMod.getModId(),
                     mainMod.getVersion());
