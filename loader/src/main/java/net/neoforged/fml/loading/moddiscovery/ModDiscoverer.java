@@ -144,7 +144,7 @@ public class ModDiscoverer {
     private String logReport(Collection<List<ModFile>> modFiles) {
         return modFiles.stream()
                 .flatMap(Collection::stream)
-                .filter(modFile -> !modFile.getModInfos().isEmpty())
+                .filter(modFile -> !modFile.getModInfos().isEmpty() && modFile.getType() == IModFile.Type.MOD)
                 .sorted(Comparator.comparing(modFile -> modFile.getModInfos().getFirst().getDisplayName(), String.CASE_INSENSITIVE_ORDER))
                 .map(this::fileToLine)
                 .collect(Collectors.joining("\n\t\t", "\t\t", ""));
@@ -153,7 +153,7 @@ public class ModDiscoverer {
     private String fileToLine(IModFile mf) {
         var mainMod = mf.getModInfos().getFirst();
 
-        return String.format(Locale.ENGLISH, "%-30.30s| %s - %s",
+        return String.format(Locale.ENGLISH, "%-30.30s|  %s  (%s)",
                 mainMod.getDisplayName(),
                 mainMod.getModId(),
                 mainMod.getVersion());
