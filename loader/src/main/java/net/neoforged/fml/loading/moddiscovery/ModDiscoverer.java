@@ -130,7 +130,7 @@ public class ModDiscoverer {
             LOGGER.error(LogMarkers.SCAN, "Mod Discovery failed. Skipping dependency discovery.");
         }
 
-        LOGGER.info("\n     Mod List:{}{}",
+        LOGGER.info("\n     Mod List:\n{}{}",
                 String.format(Locale.ENGLISH, "%-30.30s| %s - %s", "Name", "Mod Id", "Version"),
                 logReport(modFilesMap.values()));
 
@@ -144,6 +144,7 @@ public class ModDiscoverer {
     private String logReport(Collection<List<ModFile>> modFiles) {
         return "\n" + modFiles.stream()
                 .flatMap(Collection::stream)
+                .filter(modFile -> !modFile.getModInfos().isEmpty())
                 .sorted(Comparator.comparing(modFile -> modFile.getModInfos().getFirst().getDisplayName()))
                 .map(this::fileToLine)
                 .collect(Collectors.joining("\n\t\t", "\t\t", ""));
