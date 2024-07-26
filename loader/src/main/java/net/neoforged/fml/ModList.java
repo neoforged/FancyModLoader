@@ -53,33 +53,20 @@ public class ModList {
         this.sortedList = sortedList.stream().map(ModInfo.class::cast).collect(Collectors.toList());
         this.fileById = this.modFiles.stream().map(IModFileInfo::getMods).flatMap(Collection::stream).map(ModInfo.class::cast).collect(Collectors.toMap(ModInfo::getModId, ModInfo::getOwningFile));
         CrashReportCallables.registerCrashCallable("Mod List", this::crashReport);
-
-        LOGGER.info("\n     Mod List:{}", logReport());
     }
 
-    private String fileToLine(IModFile mf, boolean reducedInfo) {
+    private String fileToLine(IModFile mf) {
         var mainMod = mf.getModInfos().getFirst();
 
-        if (reducedInfo) {
-            return String.format(Locale.ENGLISH, "%-30.30s|%s - %s",
-                    mainMod.getDisplayName(),
-                    mainMod.getModId(),
-                    mainMod.getVersion());
-        } else {
-            return String.format(Locale.ENGLISH, "%-50.50s|%-30.30s|%-30.30s|%-20.20s|Manifest: %s", mf.getFileName(),
-                    mainMod.getDisplayName(),
-                    mainMod.getModId(),
-                    mainMod.getVersion(),
-                    ((ModFileInfo) mf.getModFileInfo()).getCodeSigningFingerprint().orElse("NOSIGNATURE"));
-        }
+        return String.format(Locale.ENGLISH, "%-50.50s|%-30.30s|%-30.30s|%-20.20s|Manifest: %s", mf.getFileName(),
+                mainMod.getDisplayName(),
+                mainMod.getModId(),
+                mainMod.getVersion(),
+                ((ModFileInfo) mf.getModFileInfo()).getCodeSigningFingerprint().orElse("NOSIGNATURE"));
     }
 
     private String crashReport() {
-        return "\n" + applyForEachModFileAlphabetical((iModFile) -> fileToLine(iModFile, false)).collect(Collectors.joining("\n\t\t", "\t\t", ""));
-    }
-
-    private String logReport() {
-        return "\n" + applyForEachModFileAlphabetical((iModFile) -> fileToLine(iModFile, true)).collect(Collectors.joining("\n\t\t", "\t\t", ""));
+        return "\n" + applyForEachModFileAlphabetical((iModFile) -> fileToLine(iModFile)).collect(Collectors.joining("\n\t\t", "\t\t", ""));
     }
 
     public static ModList of(List<ModFile> modFiles, List<ModInfo> sortedList) {
