@@ -130,7 +130,6 @@ public class ModDiscoverer {
             LOGGER.error(LogMarkers.SCAN, "Mod Discovery failed. Skipping dependency discovery.");
         }
 
-
         LOGGER.info("\n     Mod List:{}{}",
                 String.format(Locale.ENGLISH, "%-30.30s|%s - %s", "Name", "Mod Id", "Version"),
                 logReport(modFilesMap.values()));
