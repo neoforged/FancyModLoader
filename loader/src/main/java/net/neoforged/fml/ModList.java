@@ -38,7 +38,6 @@ import org.apache.logging.log4j.Logger;
  * can dispatch game level events as a result.
  */
 public class ModList {
-    private static final Logger LOGGER = LogManager.getLogger();
     private static ModList INSTANCE;
     private final List<IModFileInfo> modFiles;
     private final List<IModInfo> sortedList;
@@ -57,7 +56,6 @@ public class ModList {
 
     private String fileToLine(IModFile mf) {
         var mainMod = mf.getModInfos().getFirst();
-
         return String.format(Locale.ENGLISH, "%-50.50s|%-30.30s|%-30.30s|%-20.20s|Manifest: %s", mf.getFileName(),
                 mainMod.getDisplayName(),
                 mainMod.getModId(),
