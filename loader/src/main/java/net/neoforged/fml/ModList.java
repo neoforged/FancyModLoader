@@ -54,14 +54,14 @@ public class ModList {
         this.fileById = this.modFiles.stream().map(IModFileInfo::getMods).flatMap(Collection::stream).map(ModInfo.class::cast).collect(Collectors.toMap(ModInfo::getModId, ModInfo::getOwningFile));
         CrashReportCallables.registerCrashCallable("Mod List", this::crashReport);
 
-        LOGGER.info("Mod List:\n{}", logReport());
+        LOGGER.info("\n     Mod List:{}", logReport());
     }
 
     private String fileToLine(IModFile mf, boolean reducedInfo) {
         var mainMod = mf.getModInfos().getFirst();
 
         if (reducedInfo) {
-            return String.format(Locale.ENGLISH, "%-30.30s|%-30.30s|%-20.20s",
+            return String.format(Locale.ENGLISH, "%s (%s) (%s)",
                     mainMod.getDisplayName(),
                     mainMod.getModId(),
                     mainMod.getVersion());
