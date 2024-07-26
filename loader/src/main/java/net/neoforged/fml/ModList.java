@@ -61,7 +61,7 @@ public class ModList {
         var mainMod = mf.getModInfos().getFirst();
 
         if (reducedInfo) {
-            return String.format(Locale.ENGLISH, "%-40.40s|%-40.40s|%-30.30s",
+            return String.format(Locale.ENGLISH, "%-30.30s|%-30.30s|%-20.20s",
                     mainMod.getDisplayName(),
                     mainMod.getModId(),
                     mainMod.getVersion());
@@ -76,7 +76,7 @@ public class ModList {
     }
 
     private String crashReport() {
-        return "\n" + applyForEachModFile((iModFile) -> fileToLine(iModFile, false)).collect(Collectors.joining("\n\t\t", "\t\t", ""));
+        return "\n" + applyForEachModFileAlphabetical((iModFile) -> fileToLine(iModFile, false)).collect(Collectors.joining("\n\t\t", "\t\t", ""));
     }
 
     private String logReport() {
