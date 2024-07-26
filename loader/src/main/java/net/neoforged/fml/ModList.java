@@ -30,12 +30,15 @@ import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.IModFile;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Master list of all mods - game-side version. This is classloaded in the game scope and
  * can dispatch game level events as a result.
  */
 public class ModList {
+    private static final Logger LOGGER = LogManager.getLogger();
     private static ModList INSTANCE;
     private final List<IModFileInfo> modFiles;
     private final List<IModInfo> sortedList;
@@ -50,19 +53,34 @@ public class ModList {
         this.sortedList = sortedList.stream().map(ModInfo.class::cast).collect(Collectors.toList());
         this.fileById = this.modFiles.stream().map(IModFileInfo::getMods).flatMap(Collection::stream).map(ModInfo.class::cast).collect(Collectors.toMap(ModInfo::getModId, ModInfo::getOwningFile));
         CrashReportCallables.registerCrashCallable("Mod List", this::crashReport);
+
+        LOGGER.info("Mod List:\n{}", logReport());
     }
 
-    private String fileToLine(IModFile mf) {
+    private String fileToLine(IModFile mf, boolean reducedInfo) {
         var mainMod = mf.getModInfos().getFirst();
-        return String.format(Locale.ENGLISH, "%-50.50s|%-30.30s|%-30.30s|%-20.20s|Manifest: %s", mf.getFileName(),
-                mainMod.getDisplayName(),
-                mainMod.getModId(),
-                mainMod.getVersion(),
-                ((ModFileInfo) mf.getModFileInfo()).getCodeSigningFingerprint().orElse("NOSIGNATURE"));
+
+        if (reducedInfo) {
+            return String.format(Locale.ENGLISH, "%-40.40s|%-40.40s|%-30.30s",
+                    mainMod.getDisplayName(),
+                    mainMod.getModId(),
+                    mainMod.getVersion());
+        }
+        else {
+            return String.format(Locale.ENGLISH, "%-50.50s|%-30.30s|%-30.30s|%-20.20s|Manifest: %s", mf.getFileName(),
+                    mainMod.getDisplayName(),
+                    mainMod.getModId(),
+                    mainMod.getVersion(),
+                    ((ModFileInfo) mf.getModFileInfo()).getCodeSigningFingerprint().orElse("NOSIGNATURE"));
+        }
     }
 
     private String crashReport() {
-        return "\n" + applyForEachModFile(this::fileToLine).collect(Collectors.joining("\n\t\t", "\t\t", ""));
+        return "\n" + applyForEachModFile((iModFile) -> fileToLine(iModFile, false)).collect(Collectors.joining("\n\t\t", "\t\t", ""));
+    }
+
+    private String logReport() {
+        return "\n" + applyForEachModFileAlphabetical((iModFile) -> fileToLine(iModFile, true)).collect(Collectors.joining("\n\t\t", "\t\t", ""));
     }
 
     public static ModList of(List<ModFile> modFiles, List<ModInfo> sortedList) {
@@ -150,6 +168,13 @@ public class ModList {
 
     public <T> Stream<T> applyForEachModFile(Function<IModFile, T> function) {
         return modFiles.stream().map(IModFileInfo::getFile).map(function);
+    }
+
+    /**
+     * Stream sorted by Mod Name in alphabetical order
+     */
+    public <T> Stream<T> applyForEachModFileAlphabetical(Function<IModFile, T> function) {
+        return modFiles.stream().map(IModFileInfo::getFile).sorted(Comparator.comparing(modFile -> modFile.getModInfos().getFirst().getDisplayName())).map(function);
     }
 
     public void forEachModContainer(BiConsumer<String, ModContainer> modContainerConsumer) {
