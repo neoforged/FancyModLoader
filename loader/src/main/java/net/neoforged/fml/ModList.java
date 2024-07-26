@@ -160,7 +160,7 @@ public class ModList {
      * Stream sorted by Mod Name in alphabetical order
      */
     public <T> Stream<T> applyForEachModFileAlphabetical(Function<IModFile, T> function) {
-        return modFiles.stream().map(IModFileInfo::getFile).sorted(Comparator.comparing(modFile -> modFile.getModInfos().getFirst().getDisplayName())).map(function);
+        return modFiles.stream().map(IModFileInfo::getFile).sorted(Comparator.comparing(modFile -> modFile.getModInfos().getFirst().getDisplayName(), String.CASE_INSENSITIVE_ORDER)).map(function);
     }
 
     public void forEachModContainer(BiConsumer<String, ModContainer> modContainerConsumer) {
