@@ -153,7 +153,7 @@ public class ModDiscoverer {
     private String fileToLine(IModFile mf) {
         var mainMod = mf.getModInfos().getFirst();
 
-        return String.format(Locale.ENGLISH, "%s (%s) version %s",
+        return String.format(Locale.ENGLISH, "%s (%s) %s",
                 mainMod.getDisplayName(),
                 mainMod.getModId(),
                 mainMod.getVersion());
