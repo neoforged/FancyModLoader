@@ -65,8 +65,7 @@ public class ModList {
                     mainMod.getDisplayName(),
                     mainMod.getModId(),
                     mainMod.getVersion());
-        }
-        else {
+        } else {
             return String.format(Locale.ENGLISH, "%-50.50s|%-30.30s|%-30.30s|%-20.20s|Manifest: %s", mf.getFileName(),
                     mainMod.getDisplayName(),
                     mainMod.getModId(),
