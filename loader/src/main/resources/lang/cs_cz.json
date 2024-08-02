@@ -22,7 +22,7 @@
   "fml.modloading.discouragedmod.noreason": "§eDůvod nebyl poskytnut§r",
   "fml.modloadingissue.dependencyloading.conflictingdependencies": "Některé módy požádaly konfliktní verze: §6{0}§r. Požádáno od: §e{1}§r.",
   "fml.modloadingissue.dependencyloading.mismatchedcontaineddependencies": "Některé mody se dohodly na přijatelném rozsahu verzí: §6{0}§r, ale nebyl poskytnut žádný jar, který by odpovídal tomuto rozsahu. Vyžádáno od: §e{1}§r.",
-  "fml.modloadingissue.coremod_error": "Došlo k chybě při načítání módu {0} z {1}",
+  "fml.modloadingissue.coremod_error": "Došlo k chybě při načítání zdrojového módu {0} z {1}",
   "fml.modloadingissue.corrupted_installation": "Vaše instalace NeoForge je poškozena, zkuste ho prosím přeinstalovat",
   "fml.modloadingissue.cycle": "U módů byl detekován cyklus závislostí: {0}",
   "fml.modloading.failedtoprocesswork": "{0,modinfo,name} ({0,modinfo,id}) narazil na chybu při zpracovávání odložené práce\n§7{2,exc,msg}",
