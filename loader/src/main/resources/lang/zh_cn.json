@@ -71,6 +71,6 @@
   "fml.modloadingissue.enumextender.loading_error": "Failed to load enum extension data at {0} in mod {100,modinfo,id}: {102,exc,msg}",
   "fml.modloadingissue.enumextender.argument.constant.count_mismatch": "Parameter count {0} does not match argument count {1} of constructor {2} for field {3} in enum {4}, specified by mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.invalid_char": "Invalid character {0} at parameter index {1} for field {2} in enum {3}, specified by mod {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Unsupported immediate argument type {0} at parameter index {1} for field {2} in enum {3}, specified by mod {100,modinfo,id}",
+  "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "在模组{100,modinfo,id}中由枚举类{3}定义的{2}中索引{1}不支持参数类型{0}",
   "fml.modloadingissue.enumextender.duplicate": "找到由mod {2} 和 {3} 枚举提供的 {1} 的重复字段 {0}"
 }
