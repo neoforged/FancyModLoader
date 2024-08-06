@@ -4,6 +4,7 @@ plugins {
 
 apply plugin: fmlbuild.NeoForgeInstallationsPlugin
 apply plugin: fmlbuild.RunConfigurationsPlugin
+apply plugin: fmlbuild.AttributesPlugin
 
 neoForge {
     version = test_neoforge_version
@@ -77,48 +78,10 @@ runConfigurations {
     }
 }
 
-// The production server configuration has to be given the attribute to get server dependencies
-
-abstract class DistributionDisambiguation implements AttributeDisambiguationRule<String> {
-    @Override
-    void execute(MultipleCandidatesDetails<String> details) {
-        details.closestMatch("client");
-    }
-}
-
-abstract class OperatingSystemDisambiguation implements AttributeDisambiguationRule<String> {
-    @Override
-    void execute(MultipleCandidatesDetails<String> details) {
-        var osName = System.getProperty("os.name");
-        // The following matches the logic in Apache Commons Lang 3 SystemUtils
-        if (osName.startsWith("Linux") || osName.startsWith("LINUX")) {
-            osName = "linux";
-        } else if (osName.startsWith("Mac OS X")) {
-            osName = "macosx";
-        } else if (osName.startsWith("Windows")) {
-            osName = "windows";
-        } else {
-            throw new GradleException("Unsupported operating system: " + osName);
-        }
-
-        details.closestMatch(osName);
-    }
-}
-
-var ATTRIBUTE_DISTRIBUTION = Attribute.of("net.neoforged.distribution", String.class);
-var ATTRIBUTE_OPERATING_SYSTEM = Attribute.of("net.neoforged.operatingsystem", String.class);
-
 // Since the neoforge-dependencies use strict resolution, we're kinda lost and have to force.
 configurations.configureEach {
     resolutionStrategy.dependencySubstitution {
         substitute module("net.neoforged.fancymodloader:loader") using project(":loader")
         substitute module("net.neoforged.fancymodloader:earlydisplay") using project(":earlydisplay")
     }
-}
-
-dependencies {
-    attributesSchema(attributesSchema -> {
-        attributesSchema.attribute(ATTRIBUTE_DISTRIBUTION).getDisambiguationRules().add(DistributionDisambiguation.class);
-        attributesSchema.attribute(ATTRIBUTE_OPERATING_SYSTEM).getDisambiguationRules().add(OperatingSystemDisambiguation.class);
-    })
 }
