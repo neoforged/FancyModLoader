@@ -55,23 +55,25 @@ runConfigurations {
         }
     }
     productionClient {
-        ideName = "Client (Production)"
         workingDirectory = neoForgeInstallations.client.directory
         jvmArguments.add(neoForgeInstallations.client.vanillaJvmArgFile.map { "@" + it })
         jvmArguments.add(neoForgeInstallations.client.neoForgeJvmArgFile.map { "@" + it })
         programArguments.add(neoForgeInstallations.client.neoForgeMainClassArgFile.map { "@" + it })
         programArguments.add(neoForgeInstallations.client.vanillaProgramArgFile.map { "@" + it })
         programArguments.add(neoForgeInstallations.client.neoForgeProgramArgFile.map { "@" + it })
+        // While FML does not yet make use of it, for consistency with the vanilla launcher,
+        // the obfuscated client jar should be on the classpath.
         dependencies {
             classpath files(tasks.named("installNeoForgeClient").map { it.obfuscatedClientJar })
         }
+        taskBefore tasks.named("installNeoForgeClient")
     }
     productionServer {
-        ideName = "Server (Production)"
         workingDirectory = neoForgeInstallations.server.directory
         jvmArguments.add(neoForgeInstallations.server.neoForgeJvmArgFile.map { "@" + it })
         programArguments.add(neoForgeInstallations.server.neoForgeMainClassArgFile.map { "@" + it })
         programArguments.add(neoForgeInstallations.server.neoForgeProgramArgFile.map { "@" + it })
+        taskBefore tasks.named("installNeoForgeServer")
     }
 }
 

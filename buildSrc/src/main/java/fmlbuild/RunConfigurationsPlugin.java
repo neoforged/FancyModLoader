@@ -6,26 +6,17 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.FileSystemLocation;
-import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.jvm.toolchain.JavaToolchainService;
-import org.gradle.plugins.ide.idea.model.IdeaModel;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.gradle.ext.Application;
-import org.jetbrains.gradle.ext.ModuleRef;
-import org.jetbrains.gradle.ext.ProjectSettings;
-import org.jetbrains.gradle.ext.RunConfigurationContainer;
 
 import javax.inject.Inject;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public abstract class RunConfigurationsPlugin implements Plugin<Project> {
-
     @Inject
     public abstract JavaToolchainService getJavaToolchainService();
 
@@ -58,8 +49,8 @@ public abstract class RunConfigurationsPlugin implements Plugin<Project> {
             });
             runtimeModulesConfig.fromDependencyCollector(runConfiguration.getDependencies().getModulepath());
 
-
             project.getTasks().create("run" + capitalizedName, JavaExec.class, task -> {
+                task.getOutputs().upToDateWhen(ignored -> false);
                 task.classpath(sourceSet.getRuntimeClasspath());
                 task.getMainClass().set(runConfiguration.getMainClass());
                 var jvmArguments = task.getJvmArguments();
@@ -93,46 +84,12 @@ public abstract class RunConfigurationsPlugin implements Plugin<Project> {
                 taskInputs.property("runWorkingDirectory", runConfiguration.getWorkingDirectory().map(Directory::getAsFile).map(File::getAbsolutePath));
                 taskInputs.property("runProgramArgs", runConfiguration.getProgramArguments());
                 task.doFirst(RunConfigurationsPlugin::configureJavaExec);
+
+                task.dependsOn(runConfiguration.getTasksBefore());
             });
         });
         runConfigurations.whenObjectRemoved(installation -> {
             throw new GradleException("Cannot remove installations once they have been registered");
-        });
-
-        project.afterEvaluate(ignored -> {
-            var ijRunConfigs = getIntelliJRunConfigurations(project);
-            if (ijRunConfigs == null) {
-                return;
-            }
-
-            for (var settings : runConfigurations) {
-                var sourceSet = sourceSets.getByName(settings.getName());
-
-                var runtimeModulesConfig = project.getConfigurations().getByName(getRuntimeModuleConfigName(settings));
-
-                var app = new Application(settings.getIdeName().get(), project);
-                app.setModuleRef(new ModuleRef(project, sourceSet)); // TODO: Use MDG utility since idea-ext is just wrong
-                app.setMainClass(settings.getMainClass().get());
-                var effectiveJvmArgs = new ArrayList<>(settings.getJvmArguments().get());
-                for (var entry : settings.getSystemProperties().get().entrySet()) {
-                    effectiveJvmArgs.add("-D" + entry.getKey() + "=" + entry.getValue());
-                }
-
-                if (!runtimeModulesConfig.isEmpty()) {
-                    effectiveJvmArgs.add("-p");
-                    var modulePath = runtimeModulesConfig.getFiles().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator));
-                    effectiveJvmArgs.add(modulePath);
-                }
-
-                app.setJvmArgs(
-                        effectiveJvmArgs.stream().map(RunUtils::escapeJvmArg).collect(Collectors.joining(" "))
-                );
-                app.setProgramParameters(
-                        settings.getProgramArguments().get().stream().map(RunUtils::escapeJvmArg).collect(Collectors.joining(" "))
-                );
-                app.setWorkingDirectory(settings.getWorkingDirectory().getAsFile().get().getAbsolutePath());
-                ijRunConfigs.add(app);
-            }
         });
     }
 
@@ -145,23 +102,5 @@ public abstract class RunConfigurationsPlugin implements Plugin<Project> {
         var inputProps = task.getInputs().getProperties();
         javaExec.workingDir(inputProps.get("runWorkingDirectory"));
         javaExec.args((List<?>) inputProps.get("runProgramArgs"));
-    }
-
-    private static @Nullable RunConfigurationContainer getIntelliJRunConfigurations(Project project) {
-        var rootProject = project.getRootProject();
-
-        var ideaModel = (IdeaModel) rootProject.getExtensions().findByName("idea");
-        if (ideaModel == null) {
-            return null;
-        }
-        var ideaProject = ideaModel.getProject();
-        if (ideaProject == null) {
-            return null;
-        }
-        var projectSettings = ((ExtensionAware) ideaProject).getExtensions().findByType(ProjectSettings.class);
-        if (projectSettings == null) {
-            return null;
-        }
-        return (RunConfigurationContainer) ((ExtensionAware) projectSettings).getExtensions().findByName("runConfigurations");
     }
 }

@@ -2,6 +2,28 @@
 
 The mod loader used by [NeoForge](https://github.com/neoforged/NeoForge).
 
+## Testing
+
+The `tests` subproject provides several tasks to test FML in various usage scenarios without having to include
+it in a NeoForge working directory.
+
+The Gradle property `test_neoforge_version` controls, which NeoForge version is used for these tests.
+
+### Production Client
+
+Run the `:tests:runProductionClient` task to start FML in an environment resembling a client launched through the
+Vanilla launcher.
+
+### Production Server
+
+Run the `:tests:runProductionServer` task to start FML in an environment resembling a server launched through one of
+the NeoForge provided startup scripts.
+
+### Mod-Development
+
+Run the `:tests:runClient` or `:tests:runServer` tasks to start FML in an environment resembling a mod development
+environment.
+
 ## Extension Points
 
 ### Mod File Candidate Locators
