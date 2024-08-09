@@ -7,7 +7,7 @@
   "fml.modloadingissue.failedtoloadmodclass": "{100,modinfo,name} ({100,modinfo,id}) ma błędy wczytywania klas\n§7{102,exc,msg}",
   "fml.modloadingissue.failedtoloadmod": "{100,modinfo,name} ({100,modinfo,id}) nie załadował się poprawnie\n§7{102,exc,msg}",
   "fml.modloadingissue.feature.missing": "{100,modinfo,name} ({100,modinfo,id}) nie posiada funkcji której, wymaga, żeby się uruchomić\n§7It wymaga {0,featurebound} ale {1} jest dostępne",
-  "fml.modloadingissue.uncaughterror": "An uncaught parallel processing error has occurred.\n§7{102,exc,msg}",
+  "fml.modloadingissue.uncaughterror": "Wystąpił niezłapany błąd przetwarzania równoległego.\n§7{102,exc,msg}",
   "fml.modloadingissue.errorduringevent": "{100,modinfo,name} ({100,modinfo,id}) encountered an error while dispatching the {0} event\n§7{102,exc,msg}",
   "fml.modloading.failedtoloadforge": "Nie udało się załadować NeoForge",
   "fml.modloadingissue.javafml.dangling_entrypoint": "File {2} contains mod entrypoint class §6{1}§r for mod with id §e{0}§r, which does not exist or is not in the same file.\nDid you forget to update the mod id in the entrypoint?",
