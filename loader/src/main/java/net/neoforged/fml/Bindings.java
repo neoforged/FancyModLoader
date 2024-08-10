@@ -7,8 +7,11 @@ package net.neoforged.fml;
 
 import java.util.ServiceLoader;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.config.IConfigSpec;
+import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.loading.FMLLoader;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 @ApiStatus.Internal
 public class Bindings {
@@ -25,5 +28,9 @@ public class Bindings {
 
     public static IEventBus getGameBus() {
         return provider.getGameBus();
+    }
+
+    public static void fireConfigChanged(ModConfig modConfig, @Nullable IConfigSpec.ILoadedConfig loadedConfig) {
+        provider.onConfigChanged(modConfig, loadedConfig);
     }
 }

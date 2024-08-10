@@ -7,6 +7,7 @@ package net.neoforged.fml.config;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
 import java.nio.file.Path;
+import net.neoforged.fml.Bindings;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,5 +23,6 @@ record LoadedConfig(CommentedConfig config, @Nullable Path path, ModConfig modCo
         } finally {
             modConfig.lock.unlock();
         }
+        Bindings.fireConfigChanged(modConfig, this);
     }
 }
