@@ -18,11 +18,11 @@ public class VersionSupportMatrix {
     private static final HashMap<String, List<ArtifactVersion>> overrideVersions = new HashMap<>();
     static {
         final ArtifactVersion version = new DefaultArtifactVersion(FMLLoader.versionInfo().mcVersion());
-        if (MavenVersionAdapter.createFromVersionSpec("[1.19.2]").containsVersion(version)) {
-            // 1.19.2 is Compatible with 1.19.1
-            add("languageloader.javafml", "42");
-            add("mod.minecraft", "1.19.1");
-            add("mod.forge", "42.0.9");
+        // If the MC version is 1.21.1 and any default version constraint fails,
+        // we'll also pass the version check if the versions below match
+        if (MavenVersionAdapter.createFromVersionSpec("[1.21.1]").containsVersion(version)) {
+            add("mod.minecraft", "1.21");
+            add("mod.neoforge", "21.0.166");
         }
     }
 
@@ -30,9 +30,11 @@ public class VersionSupportMatrix {
         overrideVersions.computeIfAbsent(key, k -> new ArrayList<>()).add(new DefaultArtifactVersion(value));
     }
 
-    public static <T> boolean testVersionSupportMatrix(VersionRange declaredRange, String lookupId, String type, BiPredicate<String, VersionRange> standardLookup) {
-        if (standardLookup.test(lookupId, declaredRange)) return true;
-        List<ArtifactVersion> custom = overrideVersions.get(type + "." + lookupId);
-        return custom == null ? false : custom.stream().anyMatch(declaredRange::containsVersion);
+    public static boolean testVersionSupportMatrix(VersionRange declaredRange, String lookupId, String type, BiPredicate<String, VersionRange> standardLookup) {
+        if (standardLookup.test(lookupId, declaredRange)) {
+            return true;
+        }
+        var custom = overrideVersions.get(type + "." + lookupId);
+        return custom != null && custom.stream().anyMatch(declaredRange::containsVersion);
     }
 }
