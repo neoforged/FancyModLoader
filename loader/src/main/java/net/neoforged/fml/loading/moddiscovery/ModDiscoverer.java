@@ -130,7 +130,7 @@ public class ModDiscoverer {
             LOGGER.error(LogMarkers.SCAN, "Mod Discovery failed. Skipping dependency discovery.");
         }
 
-        LOGGER.info(LogMarkers.SCAN, "\n     Mod List:\n\t\tName Version (Mod Id)\n\n{}", logReport(modFilesMap.values()));
+        LOGGER.info("\n     Mod List:\n\t\tName Version (Mod Id)\n\n{}", logReport(modFilesMap.values()));
 
         //Validate the loading. With a deduplicated list, we can now successfully process the artifacts and load
         //transformer plugins.
