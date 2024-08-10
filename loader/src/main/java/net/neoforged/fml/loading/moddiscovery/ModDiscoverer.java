@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -129,11 +130,31 @@ public class ModDiscoverer {
             LOGGER.error(LogMarkers.SCAN, "Mod Discovery failed. Skipping dependency discovery.");
         }
 
+        LOGGER.info("\n     Mod List:\n\t\tName Version (Mod Id)\n\n{}", logReport(modFilesMap.values()));
+
         //Validate the loading. With a deduplicated list, we can now successfully process the artifacts and load
         //transformer plugins.
         var validator = new ModValidator(modFilesMap, discoveryIssues);
         validator.stage1Validation();
         return validator;
+    }
+
+    private String logReport(Collection<List<ModFile>> modFiles) {
+        return modFiles.stream()
+                .flatMap(Collection::stream)
+                .filter(modFile -> !modFile.getModInfos().isEmpty())
+                .sorted(Comparator.comparing(modFile -> modFile.getModInfos().getFirst().getDisplayName(), String.CASE_INSENSITIVE_ORDER))
+                .map(this::fileToLine)
+                .collect(Collectors.joining("\n\t\t", "\t\t", ""));
+    }
+
+    private String fileToLine(IModFile mf) {
+        var mainMod = mf.getModInfos().getFirst();
+
+        return String.format(Locale.ENGLISH, "%s %s (%s)",
+                mainMod.getDisplayName(),
+                mainMod.getVersion(),
+                mainMod.getModId());
     }
 
     private class DiscoveryPipeline implements IDiscoveryPipeline {
