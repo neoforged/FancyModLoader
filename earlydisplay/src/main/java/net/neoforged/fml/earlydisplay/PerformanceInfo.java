@@ -9,7 +9,6 @@ import com.sun.management.OperatingSystemMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
-import net.neoforged.fml.loading.FMLLoader;
 
 public class PerformanceInfo {
     private final OperatingSystemMXBean osBean;
@@ -33,11 +32,7 @@ public class PerformanceInfo {
             cpuText = String.format("CPU: %.1f%%", cpuLoad * 100f);
         }
 
-        if (FMLLoader.isProduction()) {
-            text = String.format("Memory: %d/%d MB (%.1f%%)  %s", heapusage.getUsed() >> 20, heapusage.getMax() >> 20, memory * 100.0, cpuText);
-        } else {
-            text = String.format("Memory: %d/%d MB (%.1f%%) OffHeap: %d MB  %s", heapusage.getUsed() >> 20, heapusage.getMax() >> 20, memory * 100.0, memoryBean.getNonHeapMemoryUsage().getUsed() >> 20, cpuText);
-        }
+        text = String.format("Memory: %d/%d MB (%.1f%%)  %s", heapusage.getUsed() >> 20, heapusage.getMax() >> 20, memory * 100.0, cpuText);
     }
 
     String text() {
