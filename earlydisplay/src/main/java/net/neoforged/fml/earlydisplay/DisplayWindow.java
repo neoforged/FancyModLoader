@@ -394,6 +394,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         }, 10, TimeUnit.SECONDS);
         int versidx = 0;
         var skipVersions = FMLConfig.<String>getListConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_SKIP_GL_VERSIONS);
+        var debugContext = FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_DEBUG);
         final String[] lastGLError = new String[GL_VERSIONS.length];
         do {
             final var glVersionToTry = GL_VERSIONS[versidx][0] + "." + GL_VERSIONS[versidx][1];
@@ -407,6 +408,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GL_VERSIONS[versidx][1]);
             glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
             glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+            glfwWindowHint(GLFW_CONTEXT_DEBUG, debugContext ? GLFW_TRUE : GLFW_FALSE);
             window = glfwCreateWindow(winWidth, winHeight, "Minecraft: NeoForge Loading...", 0L, 0L);
             var erridx = versidx;
             handleLastGLFWError((error, description) -> lastGLError[erridx] = String.format("Trying %d.%d: GLFW error: [0x%X]%s", GL_VERSIONS[erridx][0], GL_VERSIONS[erridx][1], error, description));
