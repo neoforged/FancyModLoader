@@ -31,9 +31,9 @@ public interface IModInfo {
      * {@return the mod id}
      * Mod IDs must satisfy the following requirements:
      * <ul>
-     *     <li>be from 2 to 64 characters long
-     *     <li>contain only lowercase letters, digits, underscores, and periods
-     *     <li>each dot-separated section must start with a lowercase letter
+     * <li>be from 2 to 64 characters long
+     * <li>contain only lowercase letters, digits, underscores, and periods
+     * <li>each dot-separated section must start with a lowercase letter
      * </ul>
      */
     String getModId();
