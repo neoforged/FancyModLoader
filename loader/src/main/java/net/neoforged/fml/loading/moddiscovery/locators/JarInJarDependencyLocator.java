@@ -109,8 +109,13 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
     }
 
     protected String identifyMod(final IModFile modFile) {
-        if (modFile.getModFileInfo() == null || modFile.getModInfos().isEmpty()) {
+        if (modFile.getModFileInfo() == null) {
             return modFile.getFileName();
+        }
+        // If this is a library, it won't have any mod IDs, so we use the module name instead.
+        if (modFile.getModInfos().isEmpty()) {
+            // Prefix to ensure this cannot collide with any true mod ID.
+            return "library:" + modFile.getModFileInfo().moduleName();
         }
 
         return modFile.getModInfos().stream().map(IModInfo::getModId).collect(Collectors.joining());

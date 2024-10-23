@@ -140,12 +140,12 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
             return configurable;
         }
 
-        // These Should never be called as it's only called from ModJarMetadata.version and we bypass that
         @Override
         public String moduleName() {
             return mod.getSecureJar().name();
         }
 
+        // These Should never be called as it's only called from ModJarMetadata.version and we bypass that
         @Override
         public String versionString() {
             return null;
