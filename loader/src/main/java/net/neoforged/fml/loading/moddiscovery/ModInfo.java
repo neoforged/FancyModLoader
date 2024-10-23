@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 public class ModInfo implements IModInfo, IConfigurable {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final DefaultArtifactVersion DEFAULT_VERSION = new DefaultArtifactVersion("1");
-    private static final Pattern VALID_MODID = Pattern.compile("^[a-z][a-z0-9_]{1,63}$");
+    private static final Pattern VALID_MODID = Pattern.compile("^(?=.{2,64}$)[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$");
     private static final Pattern VALID_NAMESPACE = Pattern.compile("^[a-z][a-z0-9_.-]{1,63}$");
     private static final Pattern VALID_VERSION = Pattern.compile("^\\d+.*");
 
