@@ -7,6 +7,7 @@ package net.neoforged.fml.earlydisplay;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL.createCapabilities;
+import static org.lwjgl.opengl.GL.getCapabilities;
 import static org.lwjgl.opengl.GL32C.*;
 
 import java.awt.Desktop;
@@ -52,6 +53,7 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -73,7 +75,6 @@ import org.slf4j.LoggerFactory;
  * Based on the prior ClientVisualization, with some personal touches.
  */
 public class DisplayWindow implements ImmediateWindowProvider {
-    private static final int[][] GL_VERSIONS = new int[][] { { 4, 6 }, { 4, 5 }, { 4, 4 }, { 4, 3 }, { 4, 2 }, { 4, 1 }, { 4, 0 }, { 3, 3 }, { 3, 2 } };
     private static final Logger LOGGER = LoggerFactory.getLogger("EARLYDISPLAY");
     private final AtomicBoolean animationTimerTrigger = new AtomicBoolean(true);
 
@@ -392,48 +393,16 @@ public class DisplayWindow implements ImmediateWindowProvider {
         var windowFailFuture = renderScheduler.schedule(() -> {
             if (!successfulWindow.get()) crashElegantly("Timed out trying to setup the Game Window.");
         }, 10, TimeUnit.SECONDS);
-        int versidx = 0;
-        var skipVersions = FMLConfig.<String>getListConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_SKIP_GL_VERSIONS);
-        final String[] lastGLError = new String[GL_VERSIONS.length];
-        do {
-            final var glVersionToTry = GL_VERSIONS[versidx][0] + "." + GL_VERSIONS[versidx][1];
-            if (skipVersions.contains(glVersionToTry)) {
-                LOGGER.info("Skipping GL version " + glVersionToTry + " because of configuration");
-                versidx++;
-                continue;
-            }
-            LOGGER.info("Trying GL version " + glVersionToTry);
-            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GL_VERSIONS[versidx][0]); // we try our versions one at a time
-            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GL_VERSIONS[versidx][1]);
-            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-            glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-            window = glfwCreateWindow(winWidth, winHeight, "Minecraft: NeoForge Loading...", 0L, 0L);
-            var erridx = versidx;
-            handleLastGLFWError((error, description) -> lastGLError[erridx] = String.format("Trying %d.%d: GLFW error: [0x%X]%s", GL_VERSIONS[erridx][0], GL_VERSIONS[erridx][1], error, description));
-            if (lastGLError[versidx] != null) {
-                LOGGER.trace(lastGLError[versidx]);
-            }
-            versidx++;
-        } while (window == 0 && versidx < GL_VERSIONS.length);
-//        LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(12));
-        if (versidx == GL_VERSIONS.length && window == 0) {
-            LOGGER.error("Failed to find any valid GLFW profile. " + lastGLError[0]);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_DEBUG) ? GLFW_TRUE : GLFW_FALSE);
+        window = glfwCreateWindow(winWidth, winHeight, "Minecraft: NeoForge Loading...", 0L, 0L);
+        handleLastGLFWError((error, description) -> crashElegantly("Failed to initialize GLFW window with error " + error + ": " + description));
 
-            crashElegantly("Failed to find a valid GLFW profile.\nWe tried " +
-                    Arrays.stream(GL_VERSIONS).map(p -> p[0] + "." + p[1]).filter(o -> !skipVersions.contains(o))
-                            .collect(Collector.of(() -> new StringJoiner(", ").setEmptyValue("no versions"), StringJoiner::add, StringJoiner::merge, StringJoiner::toString))
-                    +
-                    " but none of them worked.\n" + Arrays.stream(lastGLError).filter(Objects::nonNull).collect(Collectors.joining("\n")));
-            throw new IllegalStateException("Failed to create a GLFW window with any profile");
-        }
         successfulWindow.set(true);
         if (!windowFailFuture.cancel(true)) throw new IllegalStateException("We died but didn't somehow?");
-        var requestedVersion = GL_VERSIONS[versidx - 1][0] + "." + GL_VERSIONS[versidx - 1][1];
-        var maj = glfwGetWindowAttrib(window, GLFW_CONTEXT_VERSION_MAJOR);
-        var min = glfwGetWindowAttrib(window, GLFW_CONTEXT_VERSION_MINOR);
-        var gotVersion = maj + "." + min;
-        LOGGER.info("Requested GL version " + requestedVersion + " got version " + gotVersion);
-        this.glVersion = gotVersion;
         this.window = window;
 
         int[] x = new int[1];
@@ -445,6 +414,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
         if (this.maximized) {
             glfwMaximizeWindow(window);
         }
+
+        this.glVersion = computeGLVersion(getCapabilities());
 
         glfwGetWindowSize(window, x, y);
         this.winWidth = x[0];
@@ -482,6 +453,28 @@ public class DisplayWindow implements ImmediateWindowProvider {
         this.fbWidth = x[0];
         this.fbHeight = y[0];
         glfwPollEvents();
+    }
+
+    private String computeGLVersion(GLCapabilities capabilities) {
+        if (capabilities.OpenGL46) {
+            return "4.6";
+        } else if (capabilities.OpenGL45) {
+            return "4.5";
+        } else if (capabilities.OpenGL44) {
+            return "4.4";
+        } else if (capabilities.OpenGL43) {
+            return "4.3";
+        } else if (capabilities.OpenGL42) {
+            return "4.2";
+        } else if (capabilities.OpenGL41) {
+            return "4.1";
+        } else if (capabilities.OpenGL40) {
+            return "4.0";
+        } else if (capabilities.OpenGL33) {
+            return "3.3";
+        }
+
+        return "3.2";
     }
 
     private void badWindowHandler(final int code, final long desc) {

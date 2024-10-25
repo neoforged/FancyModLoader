@@ -32,7 +32,7 @@ public class FMLConfig {
         EARLY_WINDOW_HEIGHT("earlyWindowHeight", 480, "Early window height"),
         EARLY_WINDOW_FBSCALE("earlyWindowFBScale", 1, "Early window framebuffer scale"),
         EARLY_WINDOW_MAXIMIZED("earlyWindowMaximized", Boolean.FALSE, "Early window starts maximized"),
-        EARLY_WINDOW_SKIP_GL_VERSIONS("earlyWindowSkipGLVersions", List.of(), "Skip specific GL versions, may help with buggy graphics card drivers"),
+        EARLY_WINDOW_DEBUG("earlyWindowDebug", Boolean.FALSE, "Early window initializes GLFW Window with a debuggable OpenGL Context, allowing for better debugging of OpenGL calls"),
         EARLY_WINDOW_SQUIR("earlyWindowSquir", Boolean.FALSE, "Squir?");
 
         private final String entry;
