@@ -202,7 +202,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private void initRender(final @Nullable String mcVersion, final String forgeVersion) {
         // This thread owns the GL render context now. We should make a note of that.
         glfwMakeContextCurrent(window);
-
+        // Wait for one frame to be complete before swapping; enable vsync in other words.
+        glfwSwapInterval(1);
         createCapabilities();
 
         LOGGER.info("GL info: " + glGetString(GL_RENDERER) + " GL version " + glGetString(GL_VERSION) + ", " + glGetString(GL_VENDOR));
