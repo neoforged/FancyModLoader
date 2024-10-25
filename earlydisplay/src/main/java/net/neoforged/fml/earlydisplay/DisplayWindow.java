@@ -7,7 +7,6 @@ package net.neoforged.fml.earlydisplay;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL.createCapabilities;
-import static org.lwjgl.opengl.GL.getCapabilities;
 import static org.lwjgl.opengl.GL32C.*;
 
 import java.awt.Desktop;
@@ -203,9 +202,9 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private void initRender(final @Nullable String mcVersion, final String forgeVersion) {
         // This thread owns the GL render context now. We should make a note of that.
         glfwMakeContextCurrent(window);
-        // Wait for one frame to be complete before swapping; enable vsync in other words.
-        glfwSwapInterval(1);
+
         createCapabilities();
+
         LOGGER.info("GL info: " + glGetString(GL_RENDERER) + " GL version " + glGetString(GL_VERSION) + ", " + glGetString(GL_VENDOR));
 
         elementShader = new ElementShader();
@@ -415,8 +414,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
             glfwMaximizeWindow(window);
         }
 
-        this.glVersion = computeGLVersion(getCapabilities());
-
         glfwGetWindowSize(window, x, y);
         this.winWidth = x[0];
         this.winHeight = y[0];
@@ -453,6 +450,15 @@ public class DisplayWindow implements ImmediateWindowProvider {
         this.fbWidth = x[0];
         this.fbHeight = y[0];
         glfwPollEvents();
+
+        glfwMakeContextCurrent(window);
+        // Wait for one frame to be complete before swapping; enable vsync in other words.
+        glfwSwapInterval(1);
+        GLCapabilities capabilities = createCapabilities();
+
+        this.glVersion = computeGLVersion(capabilities);
+
+        glfwMakeContextCurrent(0);
     }
 
     private String computeGLVersion(GLCapabilities capabilities) {
