@@ -13,6 +13,7 @@ changelog {
 gradleutils.version {
     branches {
         suffixBranch()
+        suffixExemptedBranches = [ "main", "1.21.1" ]
     }
 }
 
