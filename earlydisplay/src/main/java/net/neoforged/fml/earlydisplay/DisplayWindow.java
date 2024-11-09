@@ -459,6 +459,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
             try (GLFWImage glfwImages = GLFWImage.malloc()) {
                 imgBuffer = STBHelper.loadImageFromClasspath("neoforged_icon.png", 20000, x, y, channels);
                 glfwImgBuffer.put(glfwImages.set(x[0], y[0], imgBuffer));
+                glfwImgBuffer.flip();
                 glfwSetWindowIcon(window, glfwImgBuffer);
                 STBImage.stbi_image_free(imgBuffer);
             }
