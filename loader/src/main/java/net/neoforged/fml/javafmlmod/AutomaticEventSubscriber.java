@@ -7,6 +7,7 @@ package net.neoforged.fml.javafmlmod;
 
 import static net.neoforged.fml.Logging.LOADING;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.Bindings;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.ChainDependency;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -47,7 +49,9 @@ public class AutomaticEventSubscriber {
             final String modId = (String) ad.annotationData().getOrDefault("modid", modids.getOrDefault(ad.clazz().getClassName(), mod.getModId()));
             final ModAnnotation.EnumHolder busTargetHolder = (ModAnnotation.EnumHolder) ad.annotationData().getOrDefault("bus", new ModAnnotation.EnumHolder(null, EventBusSubscriber.Bus.GAME.name()));
             final EventBusSubscriber.Bus busTarget = EventBusSubscriber.Bus.valueOf(busTargetHolder.value());
-            if (Objects.equals(mod.getModId(), modId) && sides.contains(FMLEnvironment.dist)) {
+            final List<ChainDependency> chain = Arrays.stream(((ChainDependency[]) ad.annotationData().getOrDefault("dependencies", new ChainDependency[] {}))).toList();
+            var allDepsMatch = DependencyUtil.evaluateChain(chain, modids.values());
+            if (Objects.equals(mod.getModId(), modId) && sides.contains(FMLEnvironment.dist) && allDepsMatch) {
                 try {
                     IEventBus bus = switch (busTarget) {
                         case GAME -> Bindings.getGameBus();

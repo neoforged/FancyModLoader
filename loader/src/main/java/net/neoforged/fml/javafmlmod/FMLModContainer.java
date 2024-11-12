@@ -5,8 +5,10 @@
 
 package net.neoforged.fml.javafmlmod;
 
+import java.lang.annotation.ElementType;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +24,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforgespi.language.IModInfo;
@@ -112,9 +115,16 @@ public class FMLModContainer extends ModContainer {
                 }
 
                 // All arguments are found
-                constructor.newInstance(constructorArgs);
+                var chain = Arrays.stream(modClass.getAnnotation(Mod.class).dependencies()).toList();
+                var loadedMods = scanResults.getAnnotatedBy(Mod.class, ElementType.TYPE)
+                        .map(data -> (String) data.annotationData().get("value"))
+                        .toList();
 
-                LOGGER.trace(LOADING, "Loaded mod instance {} of type {}", getModId(), modClass.getName());
+                var dependenciesMatch = DependencyUtil.evaluateChain(chain, loadedMods);
+                if (dependenciesMatch) {
+                    constructor.newInstance(constructorArgs);
+                    LOGGER.trace(LOADING, "Loaded mod instance {} of type {}", getModId(), modClass.getName());
+                } else LOGGER.trace(LOADING, "Didn't load mod instance {} of type {} because of non-matching dependencies", modClass, getModId());
             } catch (Throwable e) {
                 if (e instanceof InvocationTargetException) e = e.getCause(); // exceptions thrown when a reflected method call throws are wrapped in an InvocationTargetException. However, this isn't useful for the end user who has to dig through the logs to find the actual cause.
                 LOGGER.error(LOADING, "Failed to create mod instance. ModID: {}, class {}", getModId(), modClass.getName(), e);

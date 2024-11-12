@@ -62,6 +62,11 @@ public @interface EventBusSubscriber {
      */
     Bus bus() default Bus.GAME;
 
+    /**
+     * @return the array of dependencies required for contained events to be auto-subscribed (all dependencies must match)
+     */
+    ChainDependency[] dependencies() default {};
+
     enum Bus {
         /**
          * The main NeoForge Event Bus, used after the game has started up.
