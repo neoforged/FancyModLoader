@@ -62,7 +62,7 @@ public class ModList {
     }
 
     private String crashReport() {
-        return "\n" + applyForEachModFile(this::fileToLine).collect(Collectors.joining("\n\t\t", "\t\t", ""));
+        return "\n" + applyForEachModFileAlphabetical(this::fileToLine).collect(Collectors.joining("\n\t\t", "\t\t", ""));
     }
 
     public static ModList of(List<ModFile> modFiles, List<ModInfo> sortedList) {
@@ -150,6 +150,16 @@ public class ModList {
 
     public <T> Stream<T> applyForEachModFile(Function<IModFile, T> function) {
         return modFiles.stream().map(IModFileInfo::getFile).map(function);
+    }
+
+    /**
+     * Stream sorted by Mod Name in alphabetical order
+     */
+    public <T> Stream<T> applyForEachModFileAlphabetical(Function<IModFile, T> function) {
+        return modFiles.stream()
+                .map(IModFileInfo::getFile)
+                .sorted(Comparator.comparing(modFile -> modFile.getModInfos().getFirst().getDisplayName(), String.CASE_INSENSITIVE_ORDER))
+                .map(function);
     }
 
     public void forEachModContainer(BiConsumer<String, ModContainer> modContainerConsumer) {

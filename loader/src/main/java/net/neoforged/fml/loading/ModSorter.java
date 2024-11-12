@@ -319,8 +319,10 @@ public class ModSorter {
                 modVersions.get(dependency.getModId()).toString());
     }
 
-    private boolean modVersionNotContained(final IModInfo.ModVersion mv, final Map<String, ArtifactVersion> modVersions) {
-        return !(VersionSupportMatrix.testVersionSupportMatrix(mv.getVersionRange(), mv.getModId(), "mod", (modId, range) -> modVersions.containsKey(modId) &&
-                (range.containsVersion(modVersions.get(modId)) || modVersions.get(modId).toString().equals("0.0NONE"))));
+    private boolean modVersionNotContained(IModInfo.ModVersion mv, Map<String, ArtifactVersion> modVersions) {
+        return !(VersionSupportMatrix.testVersionSupportMatrix(mv.getVersionRange(), mv.getModId(), "mod", (modId, range) -> {
+            return modVersions.containsKey(modId) &&
+                    (range.containsVersion(modVersions.get(modId)) || modVersions.get(modId).toString().equals("0.0NONE"));
+        }));
     }
 }

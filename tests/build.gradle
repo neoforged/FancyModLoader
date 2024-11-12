@@ -1,0 +1,87 @@
+plugins {
+    id 'net.neoforged.moddev'
+}
+
+apply plugin: fmlbuild.NeoForgeInstallationsPlugin
+apply plugin: fmlbuild.RunConfigurationsPlugin
+apply plugin: fmlbuild.AttributesPlugin
+
+neoForge {
+    version = test_neoforge_version
+    runs {
+        client {
+            client()
+            gameDirectory = file("build/runs/client")
+        }
+        server {
+            server()
+            gameDirectory = file("build/runs/server")
+        }
+        data {
+            data()
+            gameDirectory = file("build/runs/data")
+        }
+    }
+}
+
+runClient.group = "fml/test runs"
+runServer.group = "fml/test runs"
+
+neoForgeInstallations {
+    register("client", fmlbuild.NeoForgeClientInstallation) {
+        version = test_neoforge_version
+        minecraftVersion = test_minecraft_version
+    }
+    register("server", fmlbuild.NeoForgeServerInstallation) {
+        version = test_neoforge_version
+        minecraftVersion = test_minecraft_version
+    }
+}
+
+runConfigurations {
+    configureEach {
+        taskGroup = "fml/test runs"
+        mainClass = "net.neoforged.devlaunch.Main"
+        dependencies {
+            classpath project(":earlydisplay")
+            classpath project(":loader")
+            classpath "net.neoforged:minecraft-dependencies:$test_minecraft_version"
+            // Needed to support arg-files for program arguments
+            classpath "net.neoforged:DevLaunch:1.0.1"
+            modulepath("net.neoforged:neoforge:$test_neoforge_version") {
+                capabilities {
+                    requireCapability("net.neoforged:neoforge-moddev-module-path")
+                }
+            }
+        }
+    }
+    productionClient {
+        workingDirectory = neoForgeInstallations.client.directory
+        jvmArguments.add(neoForgeInstallations.client.vanillaJvmArgFile.map { "@" + it })
+        jvmArguments.add(neoForgeInstallations.client.neoForgeJvmArgFile.map { "@" + it })
+        programArguments.add(neoForgeInstallations.client.neoForgeMainClassArgFile.map { "@" + it })
+        programArguments.add(neoForgeInstallations.client.vanillaProgramArgFile.map { "@" + it })
+        programArguments.add(neoForgeInstallations.client.neoForgeProgramArgFile.map { "@" + it })
+        // While FML does not yet make use of it, for consistency with the vanilla launcher,
+        // the obfuscated client jar should be on the classpath.
+        dependencies {
+            classpath files(tasks.named("installNeoForgeClient").map { it.obfuscatedClientJar })
+        }
+        taskBefore tasks.named("installNeoForgeClient")
+    }
+    productionServer {
+        workingDirectory = neoForgeInstallations.server.directory
+        jvmArguments.add(neoForgeInstallations.server.neoForgeJvmArgFile.map { "@" + it })
+        programArguments.add(neoForgeInstallations.server.neoForgeMainClassArgFile.map { "@" + it })
+        programArguments.add(neoForgeInstallations.server.neoForgeProgramArgFile.map { "@" + it })
+        taskBefore tasks.named("installNeoForgeServer")
+    }
+}
+
+// Since the neoforge-dependencies use strict resolution, we're kinda lost and have to force.
+configurations.configureEach {
+    resolutionStrategy.dependencySubstitution {
+        substitute module("net.neoforged.fancymodloader:loader") using project(":loader")
+        substitute module("net.neoforged.fancymodloader:earlydisplay") using project(":earlydisplay")
+    }
+}

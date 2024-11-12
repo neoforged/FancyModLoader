@@ -5,6 +5,7 @@
 
 package net.neoforged.fml.config;
 
+import com.electronwill.nightconfig.core.CommentedConfig;
 import java.nio.file.Path;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -49,6 +50,15 @@ public final class ModConfig {
 
     public String getModId() {
         return container.getModId();
+    }
+
+    /**
+     * Retrieve the currently loaded config, for direct manipulation of the underlying {@link CommentedConfig}.
+     * Note that the config will change on reloads, and will be {@code null} when the config is not loaded.
+     */
+    @Nullable
+    public IConfigSpec.ILoadedConfig getLoadedConfig() {
+        return loadedConfig;
     }
 
     // TODO: remove from public API?
