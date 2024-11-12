@@ -7,7 +7,6 @@ package net.neoforged.fml.javafmlmod;
 
 import static net.neoforged.fml.Logging.LOADING;
 
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +16,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.Bindings;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.ChainDependency;
+import net.neoforged.fml.common.DependsOn;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -36,6 +35,7 @@ public class AutomaticEventSubscriber {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Type AUTO_SUBSCRIBER = Type.getType(EventBusSubscriber.class);
     private static final Type MOD_TYPE = Type.getType(Mod.class);
+    private static final Type DEPENDS_ON_LIST_TYPE = Type.getType(DependsOn.List.class);
 
     public static void inject(final ModContainer mod, final ModFileScanData scanData, final Module layer) {
         if (scanData == null) return;
@@ -49,8 +49,16 @@ public class AutomaticEventSubscriber {
             final String modId = (String) ad.annotationData().getOrDefault("modid", modids.getOrDefault(ad.clazz().getClassName(), mod.getModId()));
             final ModAnnotation.EnumHolder busTargetHolder = (ModAnnotation.EnumHolder) ad.annotationData().getOrDefault("bus", new ModAnnotation.EnumHolder(null, EventBusSubscriber.Bus.GAME.name()));
             final EventBusSubscriber.Bus busTarget = EventBusSubscriber.Bus.valueOf(busTargetHolder.value());
-            final List<ChainDependency> chain = Arrays.stream(((ChainDependency[]) ad.annotationData().getOrDefault("dependencies", new ChainDependency[] {}))).toList();
-            var allDepsMatch = DependencyUtil.evaluateChain(chain, modids.values());
+            final List<ModFileScanData.AnnotationData> chainData = scanData.getAnnotations().stream()
+                    .filter(annotationData -> DEPENDS_ON_LIST_TYPE.equals(annotationData.annotationType()) && ad.clazz().equals(annotationData.clazz())).toList();
+
+            final boolean allDepsMatch;
+            if (chainData.isEmpty()) allDepsMatch = true;
+            else {
+                var chain = (DependsOn[]) chainData.getFirst().annotationData().getOrDefault("value", new DependsOn[0]);
+                allDepsMatch = DependencyUtil.evaluateChain(chain, modids.values());
+            }
+
             if (Objects.equals(mod.getModId(), modId) && sides.contains(FMLEnvironment.dist) && allDepsMatch) {
                 try {
                     IEventBus bus = switch (busTarget) {

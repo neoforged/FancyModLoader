@@ -34,9 +34,4 @@ public @interface Mod {
      * {@return the side to load this mod entrypoint on}
      */
     Dist[] dist() default { Dist.CLIENT, Dist.DEDICATED_SERVER };
-
-    /**
-     * {@return the array of dependencies required for this class to be loaded (all dependencies must match for this class to be loaded)}
-     */
-    ChainDependency[] dependencies() default {};
 }
