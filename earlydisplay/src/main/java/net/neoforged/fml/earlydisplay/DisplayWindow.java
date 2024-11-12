@@ -381,8 +381,9 @@ public class DisplayWindow implements ImmediateWindowProvider {
             var minor = memAllocInt(1);
             var rev = memAllocInt(1);
             glfwGetVersion(major, minor, rev);
-            if (major.get(0) >= 3 && minor.get(0) >= 4) {
-                glfwWindowHintString(GLFW_WAYLAND_APP_ID, "com.mojang.minecraft");
+            if (major.get(0) >= 3 && minor.get(0) >= 3) {
+                glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+                if (minor.get(0) >= 4) glfwWindowHintString(GLFW_WAYLAND_APP_ID, "com.mojang.minecraft");
             }
         } else if (mcVersion != null) {
             // this emulates what we would get without early progress window
