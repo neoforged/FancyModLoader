@@ -11,6 +11,8 @@ import net.neoforged.fml.common.DependsOn;
 
 public final class DependencyUtil {
     public static Boolean evaluateChain(DependsOn.List chain, Collection<String> loadedMods) {
+        if (chain == null) return true;
+
         return evaluateChain(chain.value(), loadedMods);
     }
 
