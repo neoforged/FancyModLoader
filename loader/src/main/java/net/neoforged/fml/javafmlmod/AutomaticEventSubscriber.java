@@ -11,16 +11,19 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.Bindings;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.DependsOn;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.modscan.ModAnnotation;
+import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,7 +38,7 @@ public class AutomaticEventSubscriber {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Type AUTO_SUBSCRIBER = Type.getType(EventBusSubscriber.class);
     private static final Type MOD_TYPE = Type.getType(Mod.class);
-    private static final Type DEPENDS_ON_LIST_TYPE = Type.getType(DependsOn.List.class);
+    private static final Type DEPENDS_ON_LIST_TYPE = Type.getType(DependsOn.class);
 
     public static void inject(final ModContainer mod, final ModFileScanData scanData, final Module layer) {
         if (scanData == null) return;
@@ -49,17 +52,19 @@ public class AutomaticEventSubscriber {
             final String modId = (String) ad.annotationData().getOrDefault("modid", modids.getOrDefault(ad.clazz().getClassName(), mod.getModId()));
             final ModAnnotation.EnumHolder busTargetHolder = (ModAnnotation.EnumHolder) ad.annotationData().getOrDefault("bus", new ModAnnotation.EnumHolder(null, EventBusSubscriber.Bus.GAME.name()));
             final EventBusSubscriber.Bus busTarget = EventBusSubscriber.Bus.valueOf(busTargetHolder.value());
-            final List<ModFileScanData.AnnotationData> chainData = scanData.getAnnotations().stream()
+            final List<ModFileScanData.AnnotationData> depData = scanData.getAnnotations().stream()
                     .filter(annotationData -> DEPENDS_ON_LIST_TYPE.equals(annotationData.annotationType()) && ad.clazz().equals(annotationData.clazz())).toList();
 
-            final boolean allDepsMatch;
-            if (chainData.isEmpty()) allDepsMatch = true;
+            final Set<String> loadedModIds = ModList.get().getMods().stream().map(IModInfo::getModId).collect(Collectors.toSet());
+
+            final boolean allDepsPresent;
+            if (depData.isEmpty()) allDepsPresent = true;
             else {
-                var chain = (DependsOn[]) chainData.getFirst().annotationData().getOrDefault("value", new DependsOn[0]);
-                allDepsMatch = DependencyUtil.evaluateChain(chain, modids.values());
+                var deps = (String[]) depData.getFirst().annotationData().getOrDefault("value", new DependsOn[0]);
+                allDepsPresent = loadedModIds.containsAll(List.of(deps));
             }
 
-            if (Objects.equals(mod.getModId(), modId) && sides.contains(FMLEnvironment.dist) && allDepsMatch) {
+            if (Objects.equals(mod.getModId(), modId) && sides.contains(FMLEnvironment.dist) && allDepsPresent) {
                 try {
                     IEventBus bus = switch (busTarget) {
                         case GAME -> Bindings.getGameBus();

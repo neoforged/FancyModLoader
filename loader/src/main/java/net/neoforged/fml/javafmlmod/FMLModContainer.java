@@ -8,6 +8,7 @@ package net.neoforged.fml.javafmlmod;
 import java.lang.annotation.ElementType;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -20,11 +21,11 @@ import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.EventListener;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.DependsOn;
-import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforgespi.language.IModInfo;
@@ -61,9 +62,23 @@ public class FMLModContainer extends ModContainer {
 
             for (var entrypoint : entrypoints) {
                 try {
-                    var cls = Class.forName(layer, entrypoint);
-                    modClasses.add(cls);
-                    LOGGER.trace(LOADING, "Loaded modclass {} with {}", cls.getName(), cls.getClassLoader());
+                    var dependencyData = modFileScanResults.getAnnotatedBy(DependsOn.class, ElementType.TYPE).filter(ad -> ad.clazz().getClassName().equals(entrypoint)).toList();
+                    //ModList is set before containers are constructed
+                    var loadedMods = ModList.get().getMods().stream().map(IModInfo::getModId).collect(Collectors.toSet());
+                    List<String> deps;
+                    if (dependencyData.isEmpty()) {
+                        deps = Collections.emptyList();
+                    } else deps = List.of((String[]) dependencyData.getFirst().annotationData().get("value"));
+
+                    //Only load entrypoint class if all dependencies are in the ModList
+                    if (loadedMods.containsAll(deps)) {
+                        var cls = Class.forName(layer, entrypoint);
+                        modClasses.add(cls);
+                        LOGGER.trace(LOADING, "Loaded modclass {} with {}", cls.getName(), cls.getClassLoader());
+                    } else {
+                        var missingDeps = deps.stream().filter(dep -> !loadedMods.contains(dep)).toList();
+                        LOGGER.trace(LOADING, "Didn't load modclass with name {} because of missing dependencies {}", entrypoint, missingDeps);
+                    }
                 } catch (Throwable e) {
                     LOGGER.error(LOADING, "Failed to load class {}", entrypoint, e);
                     throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.failedtoloadmodclass").withCause(e).withAffectedMod(info));
@@ -115,16 +130,8 @@ public class FMLModContainer extends ModContainer {
                 }
 
                 // All arguments are found
-                var chain = modClass.getAnnotation(DependsOn.List.class);
-                var loadedMods = scanResults.getAnnotatedBy(Mod.class, ElementType.TYPE)
-                        .map(data -> (String) data.annotationData().get("value"))
-                        .toList();
-
-                var dependenciesMatch = DependencyUtil.evaluateChain(chain, loadedMods);
-                if (dependenciesMatch) {
-                    constructor.newInstance(constructorArgs);
-                    LOGGER.trace(LOADING, "Loaded mod instance {} of type {}", getModId(), modClass.getName());
-                } else LOGGER.trace(LOADING, "Didn't load mod instance {} of type {} because of non-matching dependencies", getModId(), modClass.getName());
+                constructor.newInstance(constructorArgs);
+                LOGGER.trace(LOADING, "Loaded mod instance {} of type {}", getModId(), modClass.getName());
             } catch (Throwable e) {
                 if (e instanceof InvocationTargetException) e = e.getCause(); // exceptions thrown when a reflected method call throws are wrapped in an InvocationTargetException. However, this isn't useful for the end user who has to dig through the logs to find the actual cause.
                 LOGGER.error(LOADING, "Failed to create mod instance. ModID: {}, class {}", getModId(), modClass.getName(), e);
