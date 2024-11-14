@@ -6,13 +6,18 @@
 package net.neoforged.fml.loading;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.in;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import com.electronwill.nightconfig.core.Config;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModWorkManager;
@@ -390,6 +395,29 @@ class FMLLoaderTest extends LauncherTest {
 
             var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly("ERROR: Mod testproject requires neoforge 999.6 or above\nCurrently, neoforge is 1\n");
+        }
+
+        @Test
+        void testDependencyOverride() throws Exception {
+            installation.setupProductionClient();
+            installation.appendToConfig("dependencyOverrides.targetmod = [\"-depmod\"]");
+            installation.buildModJar("depmod.jar")
+                    .withModsToml(builder -> {
+                        builder.unlicensedJavaMod();
+                        builder.addMod("depmod", "1.0");
+                    });
+            installation.buildModJar("targetmod.jar")
+                    .withModsToml(builder -> {
+                        builder.unlicensedJavaMod();
+                        builder.addMod("targetmod", "1.0", c -> {
+                            var sub = Config.inMemory();
+                            sub.set("modId", "depmod");
+                            sub.set("versionRange", "[2,)");
+                            sub.set("type", "required");
+                            c.set("dependencies.targetmod", new ArrayList<>(Arrays.asList(sub)));
+                        });
+                    });
+            assertThat(launchAndLoad("forgeclient").issues()).isEmpty();
         }
 
         @Test

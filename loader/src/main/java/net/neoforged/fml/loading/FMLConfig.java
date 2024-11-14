@@ -6,6 +6,7 @@
 package net.neoforged.fml.loading;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
+import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.core.ConfigSpec;
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.electronwill.nightconfig.core.file.FileNotFoundAction;
@@ -14,7 +15,11 @@ import com.electronwill.nightconfig.core.io.WritingMode;
 import com.mojang.logging.LogUtils;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -81,12 +86,14 @@ public class FMLConfig {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final FMLConfig INSTANCE = new FMLConfig();
+    private static final Map<String, List<DependencyOverride>> DEPENDENCY_OVERRIDES = new HashMap<>();
     private static final ConfigSpec configSpec = new ConfigSpec();
     private static final CommentedConfig configComments = CommentedConfig.inMemory();
     static {
         for (ConfigValue cv : ConfigValue.values()) {
             cv.buildConfigEntry(configSpec, configComments);
         }
+        configSpec.define("dependencyOverrides", () -> null, object -> true);
     }
 
     private CommentedFileConfig configData;
@@ -119,6 +126,32 @@ public class FMLConfig {
             }
         }
         FMLPaths.getOrCreateGameRelativePath(Paths.get(FMLConfig.getConfigValue(ConfigValue.DEFAULT_CONFIG_PATH)));
+
+        DEPENDENCY_OVERRIDES.clear();
+        var overridesObject = INSTANCE.configData.get("dependencyOverrides");
+        if (overridesObject != null) {
+            if (!(overridesObject instanceof Config cfg)) {
+                LOGGER.error("Invalid dependency overrides declaration in config. Expected object but found {}", overridesObject);
+                return;
+            }
+
+            cfg.valueMap().forEach((modId, object) -> {
+                var asList = object instanceof List<?> ls ? ls : List.of(object);
+                var overrides = DEPENDENCY_OVERRIDES.computeIfAbsent(modId, k -> new ArrayList<>());
+                for (Object o : asList) {
+                    var str = (String) o;
+                    var start = str.charAt(0);
+                    if (start != '+' && start != '-') {
+                        LOGGER.error("Found invalid dependency override for mod '{}'. Expected +/- in override '{}'. Did you forget to specify the override type?", modId, str);
+                    } else {
+                        var removal = start == '-';
+                        var depMod = str.substring(1);
+                        LOGGER.warn("Found dependency override for mod '{}': {} '{}'", modId, removal ? "softening dependency constraints against" : "adding explicit AFTER ordering against", depMod);
+                        overrides.add(new DependencyOverride(depMod, removal));
+                    }
+                }
+            });
+        }
     }
 
     public static String getConfigValue(ConfigValue v) {
@@ -147,4 +180,16 @@ public class FMLConfig {
     public static String defaultConfigPath() {
         return getConfigValue(ConfigValue.DEFAULT_CONFIG_PATH);
     }
+
+    public static List<DependencyOverride> getOverrides(String modId) {
+        var ov = DEPENDENCY_OVERRIDES.get(modId);
+        if (ov == null) return List.of();
+        return ov;
+    }
+
+    public static Map<String, List<DependencyOverride>> getDependencyOverrides() {
+        return Collections.unmodifiableMap(DEPENDENCY_OVERRIDES);
+    }
+
+    public record DependencyOverride(String modId, boolean remove) {}
 }

@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
@@ -314,6 +315,15 @@ public class SimulatedInstallation implements AutoCloseable {
     public ModFileBuilder buildModJar(String filename) throws IOException {
         var path = getModsFolder().resolve(filename);
         return new ModFileBuilder(path);
+    }
+
+    public void appendToConfig(String text) throws IOException {
+        var in = Objects.requireNonNull(FMLConfig.class.getResourceAsStream("/META-INF/defaultfmlconfig.toml"));
+        text = new String(in.readAllBytes()) + '\n' + text;
+        in.close();
+        var file = getGameDir().resolve("config/fml.toml");
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, text);
     }
 
     public static void writeJarFile(Path file, IdentifiableContent... content) throws IOException {

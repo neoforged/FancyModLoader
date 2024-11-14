@@ -120,6 +120,14 @@ public class ModSorter {
                 .map(IModInfo::getDependencies).<IModInfo.ModVersion>mapMulti(Iterable::forEach)
                 .forEach(dep -> addDependency(graph, dep));
 
+        FMLConfig.getDependencyOverrides().forEach((id, overrides) -> {
+            for (FMLConfig.DependencyOverride override : overrides) {
+                if (!override.remove()) {
+                    graph.putEdge((ModInfo) modIdNameLookup.get(override.modId()), (ModInfo) modIdNameLookup.get(id));
+                }
+            }
+        });
+
         final List<ModInfo> sorted;
         try {
             sorted = TopologicalSort.topologicalSort(graph, Comparator.comparing(infos::get));
@@ -237,7 +245,18 @@ public class ModSorter {
         final var modVersionDependencies = modFiles.stream()
                 .map(ModFile::getModInfos)
                 .<IModInfo>mapMulti(Iterable::forEach)
-                .collect(groupingBy(Function.identity(), flatMapping(e -> e.getDependencies().stream(), toList())));
+                .collect(groupingBy(Function.identity(), flatMapping(e -> {
+                    var overrides = FMLConfig.getOverrides(e.getModId());
+                    if (!overrides.isEmpty()) {
+                        var ids = overrides.stream()
+                                .filter(FMLConfig.DependencyOverride::remove)
+                                .map(FMLConfig.DependencyOverride::modId)
+                                .collect(toSet());
+                        return e.getDependencies().stream()
+                                .filter(v -> !ids.contains(v.getModId()));
+                    }
+                    return e.getDependencies().stream();
+                }, toList())));
 
         final var modRequirements = modVersionDependencies.values().stream().<IModInfo.ModVersion>mapMulti(Iterable::forEach)
                 .filter(mv -> mv.getSide().isCorrectSide())
