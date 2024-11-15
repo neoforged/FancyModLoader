@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -318,12 +319,17 @@ public class SimulatedInstallation implements AutoCloseable {
     }
 
     public void appendToConfig(String text) throws IOException {
-        var in = Objects.requireNonNull(FMLConfig.class.getResourceAsStream("/META-INF/defaultfmlconfig.toml"));
-        text = new String(in.readAllBytes()) + '\n' + text;
-        in.close();
         var file = getGameDir().resolve("config/fml.toml");
-        Files.createDirectories(file.getParent());
-        Files.writeString(file, text);
+
+        try {
+            Files.writeString(file, Files.readString(file) + '\n' + text);
+        } catch (NoSuchFileException ex) {
+            var in = Objects.requireNonNull(FMLConfig.class.getResourceAsStream("/META-INF/defaultfmlconfig.toml"));
+            text = new String(in.readAllBytes()) + '\n' + text;
+            in.close();
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, text);
+        }
     }
 
     public static void writeJarFile(Path file, IdentifiableContent... content) throws IOException {

@@ -399,8 +399,8 @@ class FMLLoaderTest extends LauncherTest {
         void testDependencyOverride() throws Exception {
             installation.setupProductionClient();
             installation.appendToConfig("dependencyOverrides.targetmod = [\"-depmod\", \"-incompatiblemod\"]");
-            installation.buildModJar("depmod.jar").withMod("depmod", "1.0");
-            installation.buildModJar("incompatiblemod.jar").withMod("incompatiblemod", "1.0");
+            installation.buildModJar("depmod.jar").withMod("depmod", "1.0").build();
+            installation.buildModJar("incompatiblemod.jar").withMod("incompatiblemod", "1.0").build();
             installation.buildModJar("targetmod.jar")
                     .withModsToml(builder -> {
                         builder.unlicensedJavaMod();
@@ -416,8 +416,24 @@ class FMLLoaderTest extends LauncherTest {
                             sub2.set("type", "incompatible");
                             c.set("dependencies.targetmod", new ArrayList<>(Arrays.asList(sub, sub2)));
                         });
-                    });
+                    })
+                    .build();
             assertThat(launchAndLoad("forgeclient").issues()).isEmpty();
+        }
+
+        @Test
+        void testInvalidDependencyOverride() throws Exception {
+            installation.setupProductionClient();
+
+            // Test that invalid targets and dependencies warn
+            installation.appendToConfig("dependencyOverrides.unknownmod = [\"-testmod\"]");
+            installation.appendToConfig("dependencyOverrides.testmod = [\"+depdoesntexist\"]");
+            installation.buildModJar("testmod.jar").withMod("testmod", "1.0").build();
+
+            var r = launchAndLoad("forgeclient");
+            assertThat(getTranslatedIssues(r.issues())).containsOnly(
+                    "WARNING: Unknown dependency override target with id unknownmod",
+                    "WARNING: Unknown mod depdoesntexist referenced in dependency overrides for mod testmod");
         }
 
         @Test

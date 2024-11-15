@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.Unmodifiable;
+import org.jetbrains.annotations.UnmodifiableView;
 import org.slf4j.Logger;
 
 public class FMLConfig {
@@ -87,13 +89,16 @@ public class FMLConfig {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final FMLConfig INSTANCE = new FMLConfig();
-    private static final Map<String, List<DependencyOverride>> DEPENDENCY_OVERRIDES = new HashMap<>();
+    private static Map<String, List<DependencyOverride>> dependencyOverrides;
     private static final ConfigSpec configSpec = new ConfigSpec();
     private static final CommentedConfig configComments = CommentedConfig.inMemory();
     static {
         for (ConfigValue cv : ConfigValue.values()) {
             cv.buildConfigEntry(configSpec, configComments);
         }
+
+        // Make sure that we don't end up "correcting" the config and removing dependency overrides
+        // Since we're not writing them by default, the default value can be null and we accept any objects (parsing and validation is done when the config is loaded)
         configSpec.define("dependencyOverrides", () -> null, object -> true);
     }
 
@@ -128,7 +133,8 @@ public class FMLConfig {
         }
         FMLPaths.getOrCreateGameRelativePath(Paths.get(FMLConfig.getConfigValue(ConfigValue.DEFAULT_CONFIG_PATH)));
 
-        DEPENDENCY_OVERRIDES.clear();
+        // load dependency overrides
+        Map<String, List<DependencyOverride>> dependencyOverrides = new HashMap<>();
         var overridesObject = INSTANCE.configData.get("dependencyOverrides");
         if (overridesObject != null) {
             if (!(overridesObject instanceof Config cfg)) {
@@ -137,8 +143,9 @@ public class FMLConfig {
             }
 
             cfg.valueMap().forEach((modId, object) -> {
+                // We accept both dependencyOverrides.target = "-dep" and dependencyOverrides.target = ["-dep"]
                 var asList = object instanceof List<?> ls ? ls : List.of(object);
-                var overrides = DEPENDENCY_OVERRIDES.computeIfAbsent(modId, k -> new ArrayList<>());
+                var overrides = dependencyOverrides.computeIfAbsent(modId, k -> new ArrayList<>());
                 for (Object o : asList) {
                     var str = (String) o;
                     var start = str.charAt(0);
@@ -153,11 +160,15 @@ public class FMLConfig {
             });
         }
 
-        if (!DEPENDENCY_OVERRIDES.isEmpty()) {
+        if (!dependencyOverrides.isEmpty()) {
             LOGGER.warn("*".repeat(30) + " Found dependency overrides " + "*".repeat(30));
-            DEPENDENCY_OVERRIDES.forEach((modId, ov) -> LOGGER.warn("Dependency overrides for mod '{}': {}", modId, ov.stream().map(DependencyOverride::getMessage).collect(Collectors.joining(", "))));
+            dependencyOverrides.forEach((modId, ov) -> LOGGER.warn("Dependency overrides for mod '{}': {}", modId, ov.stream().map(DependencyOverride::getMessage).collect(Collectors.joining(", "))));
             LOGGER.warn("*".repeat(88));
         }
+
+        // Make the overrides immutable
+        dependencyOverrides.replaceAll((id, list) -> List.copyOf(list));
+        FMLConfig.dependencyOverrides = Collections.unmodifiableMap(dependencyOverrides);
     }
 
     public static String getConfigValue(ConfigValue v) {
@@ -187,14 +198,16 @@ public class FMLConfig {
         return getConfigValue(ConfigValue.DEFAULT_CONFIG_PATH);
     }
 
+    @Unmodifiable
     public static List<DependencyOverride> getOverrides(String modId) {
-        var ov = DEPENDENCY_OVERRIDES.get(modId);
+        var ov = dependencyOverrides.get(modId);
         if (ov == null) return List.of();
         return ov;
     }
 
+    @UnmodifiableView
     public static Map<String, List<DependencyOverride>> getDependencyOverrides() {
-        return Collections.unmodifiableMap(DEPENDENCY_OVERRIDES);
+        return Collections.unmodifiableMap(dependencyOverrides);
     }
 
     public record DependencyOverride(String modId, boolean remove) {
