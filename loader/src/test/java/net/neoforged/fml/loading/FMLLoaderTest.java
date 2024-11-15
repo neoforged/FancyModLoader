@@ -398,12 +398,9 @@ class FMLLoaderTest extends LauncherTest {
         @Test
         void testDependencyOverride() throws Exception {
             installation.setupProductionClient();
-            installation.appendToConfig("dependencyOverrides.targetmod = [\"-depmod\"]");
-            installation.buildModJar("depmod.jar")
-                    .withModsToml(builder -> {
-                        builder.unlicensedJavaMod();
-                        builder.addMod("depmod", "1.0");
-                    });
+            installation.appendToConfig("dependencyOverrides.targetmod = [\"-depmod\", \"-incompatiblemod\"]");
+            installation.buildModJar("depmod.jar").withMod("depmod", "1.0");
+            installation.buildModJar("incompatiblemod.jar").withMod("incompatiblemod", "1.0");
             installation.buildModJar("targetmod.jar")
                     .withModsToml(builder -> {
                         builder.unlicensedJavaMod();
@@ -412,7 +409,12 @@ class FMLLoaderTest extends LauncherTest {
                             sub.set("modId", "depmod");
                             sub.set("versionRange", "[2,)");
                             sub.set("type", "required");
-                            c.set("dependencies.targetmod", new ArrayList<>(Arrays.asList(sub)));
+
+                            var sub2 = Config.inMemory();
+                            sub2.set("modId", "incompatiblemod");
+                            sub2.set("versionRange", "[1,");
+                            sub2.set("type", "incompatible");
+                            c.set("dependencies.targetmod", new ArrayList<>(Arrays.asList(sub, sub2)));
                         });
                     });
             assertThat(launchAndLoad("forgeclient").issues()).isEmpty();

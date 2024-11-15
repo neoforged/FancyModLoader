@@ -64,6 +64,10 @@ public class ModFileBuilder {
         });
     }
 
+    public ModFileBuilder withMod(String id, String version) {
+        return withModsToml(builder -> builder.unlicensedJavaMod().addMod(id, version));
+    }
+
     public ModFileBuilder withModTypeManifest(IModFile.Type type) {
         return withManifest(Map.of(
                 "FMLModType", type.name()));

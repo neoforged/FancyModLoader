@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public class FMLConfig {
@@ -146,11 +147,16 @@ public class FMLConfig {
                     } else {
                         var removal = start == '-';
                         var depMod = str.substring(1);
-                        LOGGER.warn("Found dependency override for mod '{}': {} '{}'", modId, removal ? "softening dependency constraints against" : "adding explicit AFTER ordering against", depMod);
                         overrides.add(new DependencyOverride(depMod, removal));
                     }
                 }
             });
+        }
+
+        if (!DEPENDENCY_OVERRIDES.isEmpty()) {
+            LOGGER.warn("*".repeat(30) + " Found dependency overrides " + "*".repeat(30));
+            DEPENDENCY_OVERRIDES.forEach((modId, ov) -> LOGGER.warn("Dependency overrides for mod '{}': {}", modId, ov.stream().map(DependencyOverride::getMessage).collect(Collectors.joining(", "))));
+            LOGGER.warn("*".repeat(88));
         }
     }
 
@@ -191,5 +197,9 @@ public class FMLConfig {
         return Collections.unmodifiableMap(DEPENDENCY_OVERRIDES);
     }
 
-    public record DependencyOverride(String modId, boolean remove) {}
+    public record DependencyOverride(String modId, boolean remove) {
+        public String getMessage() {
+            return (remove ? "softening dependency constraints against" : "adding explicit AFTER ordering against") + " '" + modId + "'";
+        }
+    }
 }
