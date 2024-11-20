@@ -6,12 +6,16 @@
 package net.neoforged.fml.loading.targets;
 
 import net.neoforged.api.distmarker.Dist;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @deprecated Use {@link NeoForgeClientDevLaunchHandler} instead.
  */
 @Deprecated(forRemoval = true)
 public class NeoForgeClientUserdevLaunchHandler extends CommonDevLaunchHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(NeoForgeClientUserdevLaunchHandler.class);
+
     @Override
     public String name() {
         return "forgeclientuserdev";
@@ -24,6 +28,7 @@ public class NeoForgeClientUserdevLaunchHandler extends CommonDevLaunchHandler {
 
     @Override
     public void runService(String[] arguments, ModuleLayer layer) throws Throwable {
+        LOG.warn("Using deprecated launch target forgeclientuserdev. Use forgeclientdev instead.");
         clientService(arguments, layer);
     }
 }
