@@ -7,7 +7,11 @@ package net.neoforged.fml.loading.targets;
 
 import net.neoforged.api.distmarker.Dist;
 
-public class NeoForgeServerUserdevLaunchHandler extends NeoForgeUserdevLaunchHandler {
+/**
+ * @deprecated Use {@link NeoForgeServerDevLaunchHandler} instead.
+ */
+@Deprecated(forRemoval = true)
+public class NeoForgeServerUserdevLaunchHandler extends CommonDevLaunchHandler {
     @Override
     public String name() {
         return "forgeserveruserdev";
