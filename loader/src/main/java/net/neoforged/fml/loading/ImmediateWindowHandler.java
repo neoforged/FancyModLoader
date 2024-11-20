@@ -46,7 +46,7 @@ public class ImmediateWindowHandler {
                     LOGGER.debug("Invoking bootstrap method {}", bootstrap.name());
                     bootstrap.bootstrap(arguments);
                 });
-        if (!List.of("forgeclient", "forgeclientuserdev", "forgeclientdev").contains(launchTarget)) {
+        if (!List.of("neoforgeclient", "neoforgeclientdev").contains(launchTarget)) {
             provider = new DummyProvider();
             LOGGER.info("ImmediateWindowProvider not loading because launch target is {}", launchTarget);
         } else if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)) {

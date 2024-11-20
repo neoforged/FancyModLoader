@@ -29,7 +29,7 @@ public class InvalidModFileTests extends LauncherTest {
         // In production we expect these to be warnings
         expectedError = "WARNING: " + expectedError;
 
-        var result = launchAndLoad("forgeclient");
+        var result = launchAndLoad("neoforgeclient");
         assertThat(getTranslatedIssues(result)).containsOnly(expectedError);
     }
 
@@ -49,7 +49,7 @@ public class InvalidModFileTests extends LauncherTest {
         // Tell FML that the classes and resources directory belong together
         SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
 
-        var e = assertThrows(ModLoadingException.class, () -> launchAndLoadWithAdditionalClasspath("forgeclientuserdev", classpath));
+        var e = assertThrows(ModLoadingException.class, () -> launchAndLoadWithAdditionalClasspath("neoforgeclientdev", classpath));
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(expectedError);
     }
 
@@ -60,7 +60,7 @@ public class InvalidModFileTests extends LauncherTest {
         var path = installation.getModsFolder().resolve("mod.jar");
         Files.write(path, new byte[] { 1, 2, 3 });
 
-        var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
+        var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
         // Clear the cause, otherwise equality will fail
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                 "ERROR: File mods/mod.jar is not a jar file");
@@ -73,7 +73,7 @@ public class InvalidModFileTests extends LauncherTest {
         var path = installation.getModsFolder().resolve("mod.jar");
         Files.createDirectories(path);
 
-        var result = launchAndLoad("forgeclient");
+        var result = launchAndLoad("neoforgeclient");
         assertThat(getTranslatedIssues(result)).containsOnly("WARNING: File mods/mod.jar is not a valid mod file");
     }
 
@@ -89,7 +89,7 @@ public class InvalidModFileTests extends LauncherTest {
         Files.createDirectories(folder);
         classpath.add(folder);
 
-        var result = launchAndLoadWithAdditionalClasspath("forgeclientuserdev", classpath);
+        var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdev", classpath);
         assertThat(result.issues()).isEmpty();
     }
 
