@@ -27,7 +27,7 @@ public abstract class CommonDevLaunchHandler extends CommonLaunchHandler {
     /**
      * A file we expect to find in the classpath entry that contains the Minecraft code.
      */
-    private static final String MINECRAFT_CLASS_PATH = "net/minecraft/DetectedVersion.class";
+    private static final String MINECRAFT_CLASS_PATH = "net/minecraft/server/MinecraftServer.class";
 
     @Override
     public boolean isProduction() {
