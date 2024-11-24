@@ -15,7 +15,7 @@ public class NeoForgeServerDataDevLaunchHandler extends NeoForgeDevLaunchHandler
 
     @Override
     public Dist getDist() {
-        return Dist.CLIENT;
+        return Dist.DEDICATED_SERVER;
     }
 
     @Override
