@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
@@ -318,18 +316,11 @@ public class SimulatedInstallation implements AutoCloseable {
         return new ModFileBuilder(path);
     }
 
-    public void appendToConfig(String text) throws IOException {
+    public void writeConfig(String... lines) throws IOException {
         var file = getGameDir().resolve("config/fml.toml");
 
-        try {
-            Files.writeString(file, Files.readString(file) + '\n' + text);
-        } catch (NoSuchFileException ex) {
-            var in = Objects.requireNonNull(FMLConfig.class.getResourceAsStream("/META-INF/defaultfmlconfig.toml"));
-            text = new String(in.readAllBytes()) + '\n' + text;
-            in.close();
-            Files.createDirectories(file.getParent());
-            Files.writeString(file, text);
-        }
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, String.join("\n", lines));
     }
 
     public static void writeJarFile(Path file, IdentifiableContent... content) throws IOException {

@@ -89,7 +89,7 @@ public class FMLConfig {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final FMLConfig INSTANCE = new FMLConfig();
-    private static Map<String, List<DependencyOverride>> dependencyOverrides;
+    private static Map<String, List<DependencyOverride>> dependencyOverrides = Map.of();
     private static final ConfigSpec configSpec = new ConfigSpec();
     private static final CommentedConfig configComments = CommentedConfig.inMemory();
     static {

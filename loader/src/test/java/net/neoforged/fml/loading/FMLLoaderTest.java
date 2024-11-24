@@ -398,7 +398,7 @@ class FMLLoaderTest extends LauncherTest {
         @Test
         void testDependencyOverride() throws Exception {
             installation.setupProductionClient();
-            installation.appendToConfig("dependencyOverrides.targetmod = [\"-depmod\", \"-incompatiblemod\"]");
+            installation.writeConfig("[dependencyOverrides]", "targetmod = [\"-depmod\", \"-incompatiblemod\"]");
             installation.buildModJar("depmod.jar").withMod("depmod", "1.0").build();
             installation.buildModJar("incompatiblemod.jar").withMod("incompatiblemod", "1.0").build();
             installation.buildModJar("targetmod.jar")
@@ -426,8 +426,7 @@ class FMLLoaderTest extends LauncherTest {
             installation.setupProductionClient();
 
             // Test that invalid targets and dependencies warn
-            installation.appendToConfig("dependencyOverrides.unknownmod = [\"-testmod\"]");
-            installation.appendToConfig("dependencyOverrides.testmod = [\"+depdoesntexist\"]");
+            installation.writeConfig("[dependencyOverrides]", "unknownmod = [\"-testmod\"]", "testmod = [\"+depdoesntexist\"]");
             installation.buildModJar("testmod.jar").withMod("testmod", "1.0").build();
 
             var r = launchAndLoad("forgeclient");
