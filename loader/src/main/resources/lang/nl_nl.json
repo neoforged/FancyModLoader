@@ -17,6 +17,8 @@
   "fml.modloadingissue.discouragedmod": "Mod §e{1}§r §draadt§r het gebruik van §3{0}§r §o{2,vr}§r af\n§7Momenteel, §3{0}§r§7 is §o{3}§r\n§7De reden is:§r §o{4,i18ntranslate}§r",
   "fml.modloadingissue.discouragedmod.proceed": "Ga verder op eigen risico",
   "fml.modloadingissue.duplicate_mod": "Mod §e{0}§r is present in multiple files: {1}",
+  "fml.modloadingissue.depoverride.unknown_target": "Unknown dependency override target with id §e{0}§r",
+  "fml.modloadingissue.depoverride.unknown_dependency": "Unknown mod §e{0}§r referenced in dependency overrides for mod §e{1}§r",
   "fml.modloading.duplicate_library": "Library §e{3}§r is present in multiple files: {4}",
   "fml.modloading.incompatiblemod.noreason": "§eGeen reden gegeven§r",
   "fml.modloading.discouragedmod.noreason": "§eGeen reden gegeven§r",
