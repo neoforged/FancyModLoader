@@ -17,6 +17,8 @@
   "fml.modloadingissue.discouragedmod": "Mód §e{1}§r §odrádza§r použitie §3{0}§r §o{2,vr}§r\n§7Aktuálne, §3{0}§r§7 is §o{3}§r\n§7Dôvodom je:§r §o{4,i18ntranslate}§r",
   "fml.modloadingissue.discouragedmod.proceed": "Pokračujte na vlastné riziko",
   "fml.modloadingissue.duplicate_mod": "Mód §e{0}§r je prítomný vo viacerých súboroch: {1}",
+  "fml.modloadingissue.depoverride.unknown_target": "Unknown dependency override target with id §e{0}§r",
+  "fml.modloadingissue.depoverride.unknown_dependency": "Unknown mod §e{0}§r referenced in dependency overrides for mod §e{1}§r",
   "fml.modloading.duplicate_library": "Knižnica §e{3}§r je prítomná vo viacerých súboroch: {4}",
   "fml.modloading.incompatiblemod.noreason": "§eNeuvedený žiadny dôvod§r",
   "fml.modloading.discouragedmod.noreason": "§eNeuvedený žiadny dôvod§r",
