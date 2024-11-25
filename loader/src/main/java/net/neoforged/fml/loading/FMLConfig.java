@@ -7,15 +7,20 @@ package net.neoforged.fml.loading;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.ConfigSpec;
+import com.electronwill.nightconfig.core.InMemoryFormat;
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
-import com.electronwill.nightconfig.core.file.FileNotFoundAction;
-import com.electronwill.nightconfig.core.io.ParsingException;
+import com.electronwill.nightconfig.core.io.ParsingMode;
 import com.electronwill.nightconfig.core.io.WritingMode;
+import com.electronwill.nightconfig.toml.TomlFormat;
+import com.electronwill.nightconfig.toml.TomlParser;
+import com.electronwill.nightconfig.toml.TomlWriter;
 import com.mojang.logging.LogUtils;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Function;
 import org.slf4j.Logger;
 
@@ -64,11 +69,20 @@ public class FMLConfig {
         }
 
         @SuppressWarnings("unchecked")
-        private <T> T getConfigValue(CommentedFileConfig config) {
+        private <T> T getConfigValue(CommentedConfig config) {
             return (T) this.entryFunction.apply(config != null ? config.get(this.entry) : this.defaultValue);
         }
 
+        /**
+         * @deprecated Use {@link FMLConfig#updateConfig(ConfigValue, Object)} instead.
+         */
+        @Deprecated(forRemoval = true)
         public <T> void updateValue(final CommentedFileConfig configData, final T value) {
+            setConfigValue(configData, value);
+            FMLConfig.INSTANCE.saveConfig(FMLPaths.FMLCONFIG.get());
+        }
+
+        private <T> void setConfigValue(CommentedConfig configData, final T value) {
             configData.set(this.entry, value);
         }
     }
@@ -81,7 +95,9 @@ public class FMLConfig {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final FMLConfig INSTANCE = new FMLConfig();
-    private static final ConfigSpec configSpec = new ConfigSpec();
+    private static final ConfigSpec configSpec = new ConfigSpec(
+            // Make sure the values are written in the same order as the enum.
+            InMemoryFormat.withUniversalSupport().createConfig(LinkedHashMap::new));
     private static final CommentedConfig configComments = CommentedConfig.inMemory();
     static {
         for (ConfigValue cv : ConfigValue.values()) {
@@ -89,24 +105,33 @@ public class FMLConfig {
         }
     }
 
-    private CommentedFileConfig configData;
+    private CommentedConfig configData;
 
-    private void loadFrom(final Path configFile) {
-        configData = CommentedFileConfig.builder(configFile).sync()
-                .onFileNotFound(FileNotFoundAction.copyData(Objects.requireNonNull(getClass().getResourceAsStream("/META-INF/defaultfmlconfig.toml"))))
-                .writingMode(WritingMode.REPLACE)
-                .build();
-        try {
-            configData.load();
-        } catch (ParsingException e) {
-            throw new RuntimeException("Failed to load FML config from " + configFile, e);
+    private void loadFrom(Path configFile) {
+        this.configData = CommentedConfig.of(LinkedHashMap::new, TomlFormat.instance());
+
+        if (Files.exists(configFile)) {
+            try (var configStream = Files.newInputStream(configFile)) {
+                new TomlParser().parse(configStream, configData, ParsingMode.REPLACE);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to read FML config", e);
+            }
+
+            if (!configSpec.isCorrect(this.configData)) {
+                LOGGER.warn(LogMarkers.CORE, "Configuration file {} is not correct. Correcting", configFile);
+                configSpec.correct(this.configData, (action, path, incorrectValue, correctedValue) -> LOGGER.warn(LogMarkers.CORE, "Incorrect key {} was corrected from {} to {}", path, incorrectValue, correctedValue));
+            }
+        } else {
+            // This populates the config with the default values.
+            configSpec.correct(this.configData);
         }
-        if (!configSpec.isCorrect(configData)) {
-            LOGGER.warn(LogMarkers.CORE, "Configuration file {} is not correct. Correcting", configFile);
-            configSpec.correct(configData, (action, path, incorrectValue, correctedValue) -> LOGGER.info(LogMarkers.CORE, "Incorrect key {} was corrected from {} to {}", path, incorrectValue, correctedValue));
-        }
-        configData.putAllComments(configComments);
-        configData.save();
+
+        this.configData.putAllComments(configComments);
+        saveConfig(configFile);
+    }
+
+    private void saveConfig(Path configFile) {
+        new TomlWriter().write(this.configData, configFile, WritingMode.REPLACE);
     }
 
     public static void load() {
@@ -139,8 +164,8 @@ public class FMLConfig {
 
     public static <T> void updateConfig(ConfigValue v, T value) {
         if (INSTANCE.configData != null) {
-            v.updateValue(INSTANCE.configData, value);
-            INSTANCE.configData.save();
+            v.setConfigValue(INSTANCE.configData, value);
+            INSTANCE.saveConfig(FMLPaths.FMLCONFIG.get());
         }
     }
 
