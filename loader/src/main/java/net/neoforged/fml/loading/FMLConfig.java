@@ -114,8 +114,8 @@ public class FMLConfig {
         }
 
         // Make sure that we don't end up "correcting" the config and removing dependency overrides
-        // Since we're not writing them by default, the default value can be null and we accept any objects (parsing and validation is done when the config is loaded)
-        configSpec.define("dependencyOverrides", Map::of, object -> true);
+        // We accept any objects (parsing and validation is done when the config is loaded)
+        configSpec.define("dependencyOverrides", () -> null, object -> true);
         configComments.set("dependencyOverrides", configComments.createSubConfig());
         configComments.setComment("dependencyOverrides", """
                 Define dependency overrides below
@@ -144,6 +144,10 @@ public class FMLConfig {
         } else {
             // This populates the config with the default values.
             configSpec.correct(this.configData);
+
+            // Since dependency overrides have an empty validator, they need to be added manually.
+            // (Correct doesn't correct an absent value since it's valid).
+            this.configData.set("dependencyOverrides", this.configData.createSubConfig());
         }
 
         this.configData.putAllComments(configComments);
