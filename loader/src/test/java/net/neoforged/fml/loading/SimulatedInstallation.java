@@ -316,6 +316,13 @@ public class SimulatedInstallation implements AutoCloseable {
         return new ModFileBuilder(path);
     }
 
+    public void writeConfig(String... lines) throws IOException {
+        var file = getGameDir().resolve("config/fml.toml");
+
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, String.join("\n", lines));
+    }
+
     public static void writeJarFile(Path file, IdentifiableContent... content) throws IOException {
         try (var fout = Files.newOutputStream(file)) {
             writeJarFile(fout, content);
