@@ -91,6 +91,26 @@ public class ModSorter
                 .<IModInfo.ModVersion>mapMulti(Iterable::forEach)
                 .forEach(dep -> addDependency(graph, dep));
 
+        // now consider dependency overrides
+        // we also check their validity here, and report unknown mods as warnings
+        FMLConfig.getDependencyOverrides().forEach((id, overrides) -> {
+            var target = (ModInfo) modIdNameLookup.get(id);
+            if (target == null) {
+//                issues.add(ModLoadingIssue.warning("fml.modloadingissue.depoverride.unknown_target", id));
+            } else {
+                for (FMLConfig.DependencyOverride override : overrides) {
+                    var dep = (ModInfo) modIdNameLookup.get(override.modId());
+                    if (dep == null) {
+//                        issues.add(ModLoadingIssue.warning("fml.modloadingissue.depoverride.unknown_dependency", override.modId(), id));
+                    } else if (!override.remove()) {
+                        // Add ordering dependency overrides (random order -> target AFTER dependency)
+                        // We do not need to check for overrides that attempt to change the declared order as the sorter will detect the cycle itself and error
+                        graph.putEdge(dep.getOwningFile(), target.getOwningFile());
+                    }
+                }
+            }
+        });
+
         final List<ModFileInfo> sorted;
         try
         {
@@ -193,7 +213,19 @@ public class ModSorter
         final var modVersionDependencies = modFiles.stream()
                 .map(ModFile::getModInfos)
                 .<IModInfo>mapMulti(Iterable::forEach)
-                .collect(groupingBy(Function.identity(), flatMapping(e -> e.getDependencies().stream(), toList())));
+                .collect(groupingBy(Function.identity(), flatMapping(e -> {
+                    var overrides = FMLConfig.getOverrides(e.getModId());
+                    // consider overrides and invalidate dependencies that are removed
+                    if (!overrides.isEmpty()) {
+                        var ids = overrides.stream()
+                                .filter(FMLConfig.DependencyOverride::remove)
+                                .map(FMLConfig.DependencyOverride::modId)
+                                .collect(toSet());
+                        return e.getDependencies().stream()
+                                .filter(v -> !ids.contains(v.getModId()));
+                    }
+                    return e.getDependencies().stream();
+                }, toList())));
 
         final var modRequirements = modVersionDependencies.values().stream()
                 .<IModInfo.ModVersion>mapMulti(Iterable::forEach)
