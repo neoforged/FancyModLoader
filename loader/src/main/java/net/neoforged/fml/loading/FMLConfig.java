@@ -6,6 +6,7 @@
 package net.neoforged.fml.loading;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
+import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.core.ConfigSpec;
 import com.electronwill.nightconfig.core.InMemoryFormat;
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
@@ -19,9 +20,16 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.jetbrains.annotations.Unmodifiable;
+import org.jetbrains.annotations.UnmodifiableView;
 import org.slf4j.Logger;
 
 public class FMLConfig {
@@ -95,6 +103,7 @@ public class FMLConfig {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final FMLConfig INSTANCE = new FMLConfig();
+    private static Map<String, List<DependencyOverride>> dependencyOverrides = Map.of();
     private static final ConfigSpec configSpec = new ConfigSpec(
             // Make sure the values are written in the same order as the enum.
             InMemoryFormat.withUniversalSupport().createConfig(LinkedHashMap::new));
@@ -103,6 +112,17 @@ public class FMLConfig {
         for (ConfigValue cv : ConfigValue.values()) {
             cv.buildConfigEntry(configSpec, configComments);
         }
+
+        // Make sure that we don't end up "correcting" the config and removing dependency overrides
+        // We accept any objects (parsing and validation is done when the config is loaded)
+        configSpec.define("dependencyOverrides", () -> null, object -> true);
+        configComments.set("dependencyOverrides", configComments.createSubConfig());
+        configComments.setComment("dependencyOverrides", """
+                Define dependency overrides below
+                Dependency overrides can be used to forcibly remove a dependency constraint from a mod or to force a mod to load AFTER another mod
+                Using dependency overrides can cause issues. Use at your own risk.
+                Example dependency override for the mod with the id 'targetMod': dependency constraints (incompatibility clauses or restrictive version ranges) against mod 'dep1' are removed, and the mod will now load after the mod 'dep2'
+                dependencyOverrides.targetMod = ["-dep1", "+dep2"]""");
     }
 
     private CommentedConfig configData;
@@ -124,6 +144,10 @@ public class FMLConfig {
         } else {
             // This populates the config with the default values.
             configSpec.correct(this.configData);
+
+            // Since dependency overrides have an empty validator, they need to be added manually.
+            // (Correct doesn't correct an absent value since it's valid).
+            this.configData.set("dependencyOverrides", this.configData.createSubConfig());
         }
 
         this.configData.putAllComments(configComments);
@@ -144,6 +168,43 @@ public class FMLConfig {
             }
         }
         FMLPaths.getOrCreateGameRelativePath(Paths.get(FMLConfig.getConfigValue(ConfigValue.DEFAULT_CONFIG_PATH)));
+
+        // load dependency overrides
+        Map<String, List<DependencyOverride>> dependencyOverrides = new HashMap<>();
+        var overridesObject = INSTANCE.configData.get("dependencyOverrides");
+        if (overridesObject != null) {
+            if (!(overridesObject instanceof Config cfg)) {
+                LOGGER.error("Invalid dependency overrides declaration in config. Expected object but found {}", overridesObject);
+                return;
+            }
+
+            cfg.valueMap().forEach((modId, object) -> {
+                // We accept both dependencyOverrides.target = "-dep" and dependencyOverrides.target = ["-dep"]
+                var asList = object instanceof List<?> ls ? ls : List.of(object);
+                var overrides = dependencyOverrides.computeIfAbsent(modId, k -> new ArrayList<>());
+                for (Object o : asList) {
+                    var str = (String) o;
+                    var start = str.charAt(0);
+                    if (start != '+' && start != '-') {
+                        LOGGER.error("Found invalid dependency override for mod '{}'. Expected +/- in override '{}'. Did you forget to specify the override type?", modId, str);
+                    } else {
+                        var removal = start == '-';
+                        var depMod = str.substring(1);
+                        overrides.add(new DependencyOverride(depMod, removal));
+                    }
+                }
+            });
+        }
+
+        if (!dependencyOverrides.isEmpty()) {
+            LOGGER.warn("*".repeat(30) + " Found dependency overrides " + "*".repeat(30));
+            dependencyOverrides.forEach((modId, ov) -> LOGGER.warn("Dependency overrides for mod '{}': {}", modId, ov.stream().map(DependencyOverride::getMessage).collect(Collectors.joining(", "))));
+            LOGGER.warn("*".repeat(88));
+        }
+
+        // Make the overrides immutable
+        dependencyOverrides.replaceAll((id, list) -> List.copyOf(list));
+        FMLConfig.dependencyOverrides = Collections.unmodifiableMap(dependencyOverrides);
     }
 
     public static String getConfigValue(ConfigValue v) {
@@ -171,5 +232,23 @@ public class FMLConfig {
 
     public static String defaultConfigPath() {
         return getConfigValue(ConfigValue.DEFAULT_CONFIG_PATH);
+    }
+
+    @Unmodifiable
+    public static List<DependencyOverride> getOverrides(String modId) {
+        var ov = dependencyOverrides.get(modId);
+        if (ov == null) return List.of();
+        return ov;
+    }
+
+    @UnmodifiableView
+    public static Map<String, List<DependencyOverride>> getDependencyOverrides() {
+        return Collections.unmodifiableMap(dependencyOverrides);
+    }
+
+    public record DependencyOverride(String modId, boolean remove) {
+        public String getMessage() {
+            return (remove ? "softening dependency constraints against" : "adding explicit AFTER ordering against") + " '" + modId + "'";
+        }
     }
 }

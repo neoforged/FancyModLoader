@@ -10,7 +10,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.electronwill.nightconfig.core.Config;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import net.neoforged.fml.ModLoader;
@@ -390,6 +393,46 @@ class FMLLoaderTest extends LauncherTest {
 
             var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly("ERROR: Mod testproject requires neoforge 999.6 or above\nCurrently, neoforge is 1\n");
+        }
+
+        @Test
+        void testDependencyOverride() throws Exception {
+            installation.setupProductionClient();
+            installation.writeConfig("[dependencyOverrides]", "targetmod = [\"-depmod\", \"-incompatiblemod\"]");
+            installation.buildModJar("depmod.jar").withMod("depmod", "1.0").build();
+            installation.buildModJar("incompatiblemod.jar").withMod("incompatiblemod", "1.0").build();
+            installation.buildModJar("targetmod.jar")
+                    .withModsToml(builder -> {
+                        builder.unlicensedJavaMod();
+                        builder.addMod("targetmod", "1.0", c -> {
+                            var sub = Config.inMemory();
+                            sub.set("modId", "depmod");
+                            sub.set("versionRange", "[2,)");
+                            sub.set("type", "required");
+
+                            var sub2 = Config.inMemory();
+                            sub2.set("modId", "incompatiblemod");
+                            sub2.set("versionRange", "[1,");
+                            sub2.set("type", "incompatible");
+                            c.set("dependencies.targetmod", new ArrayList<>(Arrays.asList(sub, sub2)));
+                        });
+                    })
+                    .build();
+            assertThat(launchAndLoad("forgeclient").issues()).isEmpty();
+        }
+
+        @Test
+        void testInvalidDependencyOverride() throws Exception {
+            installation.setupProductionClient();
+
+            // Test that invalid targets and dependencies warn
+            installation.writeConfig("[dependencyOverrides]", "unknownmod = [\"-testmod\"]", "testmod = [\"+depdoesntexist\"]");
+            installation.buildModJar("testmod.jar").withMod("testmod", "1.0").build();
+
+            var r = launchAndLoad("forgeclient");
+            assertThat(getTranslatedIssues(r.issues())).containsOnly(
+                    "WARNING: Unknown dependency override target with id unknownmod",
+                    "WARNING: Unknown mod depdoesntexist referenced in dependency overrides for mod testmod");
         }
 
         @Test
