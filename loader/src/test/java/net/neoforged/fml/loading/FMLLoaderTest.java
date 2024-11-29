@@ -444,7 +444,7 @@ class FMLLoaderTest extends LauncherTest {
                         });
                     })
                     .build();
-            assertThat(launchAndLoad("forgeclient").issues()).isEmpty();
+            assertThat(launchAndLoad("neoforgeclient").issues()).isEmpty();
         }
 
         @Test
@@ -455,7 +455,7 @@ class FMLLoaderTest extends LauncherTest {
             installation.writeConfig("[dependencyOverrides]", "unknownmod = [\"-testmod\"]", "testmod = [\"+depdoesntexist\"]");
             installation.buildModJar("testmod.jar").withMod("testmod", "1.0").build();
 
-            var r = launchAndLoad("forgeclient");
+            var r = launchAndLoad("neoforgeclient");
             assertThat(getTranslatedIssues(r.issues())).containsOnly(
                     "WARNING: Unknown dependency override target with id unknownmod",
                     "WARNING: Unknown mod depdoesntexist referenced in dependency overrides for mod testmod");
