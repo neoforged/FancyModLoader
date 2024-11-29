@@ -7,10 +7,10 @@ package net.neoforged.fml.loading.targets;
 
 import net.neoforged.api.distmarker.Dist;
 
-public class NeoForgeServerDevLaunchHandler extends NeoForgeDevLaunchHandler {
+public class NeoForgeServerDataDevLaunchHandler extends NeoForgeDevLaunchHandler {
     @Override
     public String name() {
-        return "neoforgeserverdev";
+        return "neoforgeserverdatadev";
     }
 
     @Override
@@ -20,6 +20,6 @@ public class NeoForgeServerDevLaunchHandler extends NeoForgeDevLaunchHandler {
 
     @Override
     public void runService(String[] arguments, ModuleLayer layer) throws Throwable {
-        serverService(arguments, layer);
+        runTarget("net.minecraft.data.Main", arguments, layer);
     }
 }
