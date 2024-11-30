@@ -41,7 +41,7 @@ public class NeoForgeClientDevLaunchHandler extends NeoForgeDevLaunchHandler {
             args.put("accessToken", "0");
         }
 
-        return super.preLaunch(arguments, layer);
+        return super.preLaunch(args.getArguments(), layer);
     }
 
     @Override
