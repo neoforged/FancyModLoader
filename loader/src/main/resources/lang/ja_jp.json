@@ -17,7 +17,7 @@
   "fml.modloadingissue.discouragedmod": "Mod §e{1}§rは§3{0}§rの使用を§c§r妨げています §r{2,vr}§r\n§7現在の§3{0}§r§7は§o{3}§rです。\n§7原因：§r §o{4,i18ntranslate}§r",
   "fml.modloadingissue.discouragedmod.proceed": "自己責任で続行してください",
   "fml.modloadingissue.duplicate_mod": "Mod §e{0}§r が複数のファイルに存在します: {1}",
-  "fml.modloadingissue.depoverride.unknown_target": "Unknown dependency override target with id §e{0}§r",
+  "fml.modloadingissue.depoverride.unknown_target": "不明な依存関係がID §e{0}§r を上書きします",
   "fml.modloadingissue.depoverride.unknown_dependency": "Unknown mod §e{0}§r referenced in dependency overrides for mod §e{1}§r",
   "fml.modloading.duplicate_library": "ライブラリ§e{3}§r は複数のファイルに存在します: {4}",
   "fml.modloading.incompatiblemod.noreason": "§e原因がありません§r",
