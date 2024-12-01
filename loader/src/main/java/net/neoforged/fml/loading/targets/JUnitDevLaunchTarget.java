@@ -23,6 +23,6 @@ public class JUnitDevLaunchTarget extends NeoForgeDevLaunchHandler {
 
     @Override
     public String name() {
-        return "forgejunitdev";
+        return "neoforgejunitdev";
     }
 }
