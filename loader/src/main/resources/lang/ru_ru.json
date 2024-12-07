@@ -61,7 +61,7 @@
   "fml.messages.version.restriction.bounded.lowerexclusive": "выше {0}, и {1} или ниже",
   "fml.messages.version.restriction.bounded.upperexclusive": "{0} или выше, и ниже {1}",
   "fml.modloadingissue.enumextender.file_not_found": "Enum extender файл {0}, предоставленный модом {100,modinfo,id}, не существует",
-  "fml.modloadingissue.enumextender.invalid_enum_name": "Enum {0}, specified by mod {100,modinfo,id}, is not a valid class descriptor",
+  "fml.modloadingissue.enumextender.invalid_enum_name": "Enum {0}, указанный модом {100,modinfo,id}, не является допустимым дескриптором класса",
   "fml.modloadingissue.enumextender.field_name.missing_prefix": "Enum constant name {0} for enum {1}, specified by mod {100,modinfo,id},must be prefixed with the mod ID",
   "fml.modloadingissue.enumextender.field_name.invalid": "Enum constant name {0} for enum {1}, specified by mod {100,modinfo,id}, is invalid",
   "fml.modloadingissue.enumextender.invalid_constructor": "Constructor {0} for enum {1}, specified by mod {100,modinfo,id}, is not a valid constructor descriptor",
