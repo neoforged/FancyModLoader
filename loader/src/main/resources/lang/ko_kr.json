@@ -17,6 +17,8 @@
   "fml.modloadingissue.discouragedmod": "모드 §e{1}§r를 §3{0}§r(§o{2,vr}§r)§c와(과) 같이 사용하는 것은 권장하지 않습니다§r\n§7설치된 §3{0}§r§7 버전: §o{3}§r\n§7이유:§r §o{4,i18ntranslate}§r",
   "fml.modloadingissue.discouragedmod.proceed": "위험을 감수하고 계속하기",
   "fml.modloadingissue.duplicate_mod": "모드 아이디 §e{0}§r가 여러 파일에서 검출되었습니다: {1}",
+  "fml.modloadingissue.depoverride.unknown_target": "Unknown dependency override target with id §e{0}§r",
+  "fml.modloadingissue.depoverride.unknown_dependency": "Unknown mod §e{0}§r referenced in dependency overrides for mod §e{1}§r",
   "fml.modloading.duplicate_library": "라이브러리 §e{3}§r가 여러 파일에서 검출되었습니다: {4}",
   "fml.modloading.incompatiblemod.noreason": "§e알 수 없는 이유§r",
   "fml.modloading.discouragedmod.noreason": "§e알 수 없는 이유§r",

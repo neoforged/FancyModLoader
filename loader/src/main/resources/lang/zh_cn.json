@@ -17,6 +17,8 @@
   "fml.modloadingissue.discouragedmod": "模组 §e{1}§r §d不推荐§r 使用 §3{0}§r §o{2,vr}§r\n§7目前 §3{0}§r§7 是 §o{3}\n§7因为：§r §o{4,i18ntranslate}§r",
   "fml.modloadingissue.discouragedmod.proceed": "若继续，自行承担风险",
   "fml.modloadingissue.duplicate_mod": "模组 §e{0}§r 存在于多个文件：{1}",
+  "fml.modloadingissue.depoverride.unknown_target": "Unknown dependency override target with id §e{0}§r",
+  "fml.modloadingissue.depoverride.unknown_dependency": "Unknown mod §e{0}§r referenced in dependency overrides for mod §e{1}§r",
   "fml.modloading.duplicate_library": "库 §e{3}§r 存在于多个文件：{4}",
   "fml.modloading.incompatiblemod.noreason": "§e未提供理由§r",
   "fml.modloading.discouragedmod.noreason": "§e未提供理由§r",
