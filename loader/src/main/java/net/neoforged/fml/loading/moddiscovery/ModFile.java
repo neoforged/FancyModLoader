@@ -6,10 +6,12 @@
 package net.neoforged.fml.loading.moddiscovery;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.Hashing;
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.SecureJar;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -37,11 +39,13 @@ import net.neoforged.neoforgespi.locating.ModFileInfoParser;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 @ApiStatus.Internal
 public class ModFile implements IModFile {
     private static final Logger LOGGER = LogUtils.getLogger();
+    private static final String[] EMPTY_ARRAY = new String[0];
 
     private final String jarVersion;
     private final ModFileInfoParser parser;
@@ -62,19 +66,48 @@ public class ModFile implements IModFile {
     public static final Attributes.Name TYPE = new Attributes.Name("FMLModType");
     private SecureJar.Status securityStatus;
 
-    public ModFile(SecureJar jar, final ModFileInfoParser parser, ModFileDiscoveryAttributes attributes) {
-        this(jar, parser, parseType(jar), attributes);
+    private final String[] cacheKeyComponents;
+
+    private volatile boolean cacheComputed;
+    private String cacheKey;
+
+    public ModFile(SecureJar jar, final ModFileInfoParser parser, ModFileDiscoveryAttributes attributes, String... cacheKeyComponents) {
+        this(jar, parser, parseType(jar), attributes, cacheKeyComponents);
     }
 
-    public ModFile(SecureJar jar, ModFileInfoParser parser, Type type, ModFileDiscoveryAttributes discoveryAttributes) {
+    public ModFile(SecureJar jar, ModFileInfoParser parser, Type type, ModFileDiscoveryAttributes discoveryAttributes, String... cacheKeyComponents) {
         this.jar = Objects.requireNonNull(jar, "jar");
         this.parser = Objects.requireNonNull(parser, "parser");
         this.discoveryAttributes = Objects.requireNonNull(discoveryAttributes, "discoveryAttributes");
+        this.cacheKeyComponents = Objects.requireNonNull(cacheKeyComponents, "cache key components").length == 0 ? EMPTY_ARRAY : cacheKeyComponents;
 
         manifest = this.jar.moduleDataProvider().getManifest();
         modFileType = Objects.requireNonNull(type, "type");
         jarVersion = Optional.ofNullable(manifest.getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION)).orElse("0.0NONE");
         this.modFileInfo = ModFileParser.readModList(this, this.parser);
+    }
+
+    @Nullable
+    public String getCacheKey() {
+        if (!cacheComputed) {
+            synchronized (this) {
+                if (this.cacheKey == null && Files.isRegularFile(jar.getPrimaryPath())) {
+                    try {
+                        var hasher = Hashing.sha256().newHasher()
+                                .putBytes(Files.readAllBytes(jar.getPrimaryPath()));
+                        for (int i = 0; i < cacheKeyComponents.length; i++) {
+                            hasher.putString(cacheKeyComponents[i], StandardCharsets.UTF_8);
+                        }
+                        this.cacheKey = hasher.hash().toString();
+
+                        cacheComputed = true;
+                    } catch (Exception exception) {
+                        throw new RuntimeException(exception);
+                    }
+                }
+            }
+        }
+        return cacheKey;
     }
 
     @Override
@@ -143,7 +176,7 @@ public class ModFile implements IModFile {
      * Run in an executor thread to harvest the class and annotation list
      */
     public ModFileScanData compileContent() {
-        return new Scanner(this).scan();
+        return new Scanner(this).scanCached();
     }
 
     public void scanFile(Consumer<Path> pathConsumer) {

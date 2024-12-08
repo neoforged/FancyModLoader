@@ -6,16 +6,45 @@
 package net.neoforged.neoforgespi.language;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.annotation.ElementType;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import cpw.mods.jarhandling.SecureJar;
+import net.bytebuddy.agent.ByteBuddyAgent;
+import net.neoforged.fml.loading.LauncherTest;
+import net.neoforged.fml.loading.moddiscovery.ModFile;
+import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.loading.modscan.ModAnnotation;
+import net.neoforged.fml.loading.modscan.Scanner;
 import net.neoforged.fml.test.TestModFile;
+import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.objectweb.asm.Type;
 
 public class ScanDataTest {
+    @BeforeAll
+    static void ensureAddOpensForUnionFs() {
+        // We abuse the ByteBuddy agent that Mockito also uses to open java.lang to UnionFS
+        var instrumentation = ByteBuddyAgent.install();
+        instrumentation.redefineModule(
+                MethodHandles.class.getModule(),
+                Set.of(),
+                Map.of(),
+                Map.of("java.lang.invoke", Set.of(LauncherTest.class.getModule())),
+                Set.of(),
+                Map.of());
+    }
+
     @Test
     void testSimpleAnnotations() throws IOException {
         try (final var mod = modFile()) {
@@ -159,6 +188,47 @@ public class ScanDataTest {
                     .containsOnly(
                             new ModFileScanData.AnnotationData(
                                     type, ElementType.FIELD, Type.getObjectType("com/example/FieldTest"), "counter", Map.of()));
+        }
+    }
+
+    @Test
+    void testRoundTrip(@TempDir Path temp) throws IOException {
+        var path = temp.resolve("metadata");
+
+        try (var mod = modFile()) {
+            mod.classBuilder()
+                    .addClass("com.example.Test", """
+                            @interface SomeAnn {
+                            }
+
+                            class FieldTest {
+                                @SomeAnn
+                                public int counter;
+                            }""")
+                    .addClass("com.anotherexample.Test2", """
+                            @Deprecated
+                            public class Test2 implements Runnable {
+                                @Override public void run() {}
+                            }""")
+                    .compile();
+            var res = mod.scan();
+
+            try (var out = new ObjectOutputStream(Files.newOutputStream(path))) {
+                res.write(out);
+            }
+
+            ModFileScanData newRes;
+            try (var in = new ObjectInputStream(Files.newInputStream(path))) {
+                newRes = ModFileScanData.read(in);
+            }
+
+            Assertions.assertThat(newRes).isNotNull();
+
+            Assertions.assertThat(res.getAnnotations())
+                    .isEqualTo(newRes.getAnnotations());
+
+            Assertions.assertThat(res.getClasses())
+                    .isEqualTo(newRes.getClasses());
         }
     }
 

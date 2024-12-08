@@ -9,6 +9,7 @@ import com.electronwill.nightconfig.toml.TomlFormat;
 import com.electronwill.nightconfig.toml.TomlParser;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.CheckReturnValue;
 import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
@@ -19,6 +20,7 @@ import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.NightConfigWrapper;
 import net.neoforged.fml.loading.modscan.Scanner;
+import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import net.neoforged.neoforgespi.locating.ModFileInfoParser;
 import org.intellij.lang.annotations.Language;
@@ -51,8 +53,10 @@ public class TestModFile extends ModFile implements AutoCloseable {
         return compiler.builder();
     }
 
-    public void scan() {
+    @CanIgnoreReturnValue
+    public ModFileScanData scan() {
         setScanResult(new Scanner(this).scan(), null);
+        return getScanResult();
     }
 
     @CheckReturnValue

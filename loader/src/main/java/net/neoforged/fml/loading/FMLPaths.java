@@ -21,6 +21,7 @@ public enum FMLPaths {
     GAMEDIR(),
     MODSDIR("mods"),
     CONFIGDIR("config"),
+    CACHEDIR(".fml/cache"),
     FMLCONFIG(false, CONFIGDIR, "fml.toml");
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -88,5 +89,9 @@ public enum FMLPaths {
 
     public Path get() {
         return absolutePath;
+    }
+
+    public Path resolve(String path) {
+        return absolutePath.resolve(path);
     }
 }
