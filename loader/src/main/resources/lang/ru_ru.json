@@ -69,9 +69,9 @@
   "fml.modloadingissue.enumextender.argument.reference.invalid_src_method": "Метод источника параметра {0} для поля {1} в перечислении {2}, указанный модом {100,modinfo,id}, не является допустимым именем метода",
   "fml.modloadingissue.enumextender.argument.reference.invalid_src_field": "Поле источник параметра {0} для поля {1} в перечислении {2}, указанное модом {100,modinfo,id}, не является допустимым именем поля",
   "fml.modloadingissue.enumextender.argument.reference.unexpected_decl": "Неожиданное объявление ссылочного параметра {0} для поля {1} в перечислении {2}, указанном модом {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.argument.unexpected_decl": "Unexpected parameter declaration {0} for field {1} in enum {2}, specified by mod {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.loading_error": "Failed to load enum extension data at {0} in mod {100,modinfo,id}: {102,exc,msg}",
-  "fml.modloadingissue.enumextender.argument.constant.count_mismatch": "Parameter count {0} does not match argument count {1} of constructor {2} for field {3} in enum {4}, specified by mod {100,modinfo,id}",
+  "fml.modloadingissue.enumextender.argument.unexpected_decl": "Неожиданное объявление параметра {0} для поля {1} в перечислении {2}, заданном модом {100,modinfo,id}",
+  "fml.modloadingissue.enumextender.loading_error": "Не удалось загрузить данные расширения перечисления по адресу {0} в моде {100,modinfo,id}: {102,exc,msg}",
+  "fml.modloadingissue.enumextender.argument.constant.count_mismatch": "Количество параметров {0} не соответствует количеству аргументов {1} конструктора {2} для поля {3} в перечислении {4}, указанном модом {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.invalid_char": "Invalid character {0} at parameter index {1} for field {2} in enum {3}, specified by mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Unsupported immediate argument type {0} at parameter index {1} for field {2} in enum {3}, specified by mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.duplicate": "Found duplicate field {0} for enum {1}, provided by mods {2} and {3}"
