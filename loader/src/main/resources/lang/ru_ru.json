@@ -72,7 +72,7 @@
   "fml.modloadingissue.enumextender.argument.unexpected_decl": "Неожиданное объявление параметра {0} для поля {1} в перечислении {2}, заданном модом {100,modinfo,id}",
   "fml.modloadingissue.enumextender.loading_error": "Не удалось загрузить данные расширения перечисления по адресу {0} в моде {100,modinfo,id}: {102,exc,msg}",
   "fml.modloadingissue.enumextender.argument.constant.count_mismatch": "Количество параметров {0} не соответствует количеству аргументов {1} конструктора {2} для поля {3} в перечислении {4}, указанном модом {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.argument.constant.invalid_char": "Invalid character {0} at parameter index {1} for field {2} in enum {3}, specified by mod {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Unsupported immediate argument type {0} at parameter index {1} for field {2} in enum {3}, specified by mod {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.duplicate": "Found duplicate field {0} for enum {1}, provided by mods {2} and {3}"
+  "fml.modloadingissue.enumextender.argument.constant.invalid_char": "Недопустимый символ {0} в индексе параметра {1} для поля {2} в перечислении {3}, указанном модом {100,modinfo,id}",
+  "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Неподдерживаемый тип непосредственного аргумента {0} в индексе параметра {1} для поля {2} в перечислении {3}, указанном модом {100,modinfo,id}",
+  "fml.modloadingissue.enumextender.duplicate": "Найдено дубликат поля {0} для перечисления {1}, предоставляемое модами {2} и {3}"
 }
