@@ -127,6 +127,9 @@ public class ConfigTracker {
     public void unloadConfigs(ModConfig.Type type) {
         LOGGER.debug(CONFIG, "Unloading configs type {}", type);
         this.configSets.get(type).forEach(ConfigTracker::closeConfig);
+        if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DISABLE_CONFIG_WATCHER)) {
+            FileWatcher.defaultInstance().stop();
+        }
     }
 
     static void openConfig(ModConfig config, Path configBasePath, @Nullable Path configOverrideBasePath) {
