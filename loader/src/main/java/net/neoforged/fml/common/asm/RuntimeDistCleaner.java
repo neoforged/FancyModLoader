@@ -7,14 +7,18 @@ package net.neoforged.fml.common.asm;
 
 import com.google.common.collect.Streams;
 import com.mojang.logging.LogUtils;
+import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.jar.Attributes;
 import java.util.stream.Collectors;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -38,9 +42,18 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
     private static final Marker DISTXFORM = MarkerFactory.getMarker("DISTXFORM");
     private static final String ONLYIN = Type.getDescriptor(OnlyIn.class);
     private static final String ONLYINS = Type.getDescriptor(OnlyIns.class);
+    private static final Attributes.Name NAME_DISTS = new Attributes.Name("NeoForm-Minecraft-Dists");
+    private static final Attributes.Name NAME_DIST = new Attributes.Name("NeoForm-Minecraft-Dist");
 
     @Nullable
     private String dist;
+
+    /**
+     * Records which files were masked in a joined distribution because the user requested to run
+     * in client or server explicitly. The key is the class name while the value is the dist it originally
+     * comes from.
+     */
+    private final Map<String, String> maskedClasses = new HashMap<>();
 
     @Override
     public String name() {
@@ -52,6 +65,12 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
         if (dist == null) {
             // If no distribution was ever set, don't do anything
             return ComputeFlags.NO_REWRITE;
+        }
+
+        // See if the class we're trying to load was masked
+        var sourceDist = maskedClasses.get(classNode.name);
+        if (sourceDist != null && !dist.equals(sourceDist)) {
+            throw new RuntimeException("Attempted to load class " + classNode.name + " for invalid dist " + dist);
         }
 
         AtomicBoolean changes = new AtomicBoolean();
@@ -142,6 +161,32 @@ public class RuntimeDistCleaner implements ILaunchPluginService {
 
     private boolean remove(final List<AnnotationNode> anns, final String side) {
         return unpack(anns).stream().filter(ann -> Objects.equals(ann.desc, ONLYIN)).filter(ann -> !ann.values.contains("_interface")).anyMatch(ann -> !Objects.equals(((String[]) ann.values.get(ann.values.indexOf("value") + 1))[1], side));
+    }
+
+    @Override
+    public void addResources(List<SecureJar> resources) {
+        for (var resource : resources) {
+            var manifest = resource.moduleDataProvider().getManifest();
+            // Only process manifests of jars that indicate they have multiple source distributions
+            if (manifest.getMainAttributes().getValue(NAME_DISTS) != null) {
+                for (var entry : manifest.getEntries().entrySet()) {
+                    String sourceDist = switch (entry.getValue().getValue(NAME_DIST)) {
+                        case "client" -> Dist.CLIENT.name();
+                        case "server" -> Dist.DEDICATED_SERVER.name();
+                        case null, default -> null;
+                    };
+                    if (sourceDist == null) {
+                        continue;
+                    }
+
+                    var path = entry.getKey();
+                    if (path.endsWith(".class")) {
+                        var key = path.substring(0, path.length() - ".class".length());
+                        maskedClasses.put(key, sourceDist);
+                    }
+                }
+            }
+        }
     }
 
     public void setDistribution(@Nullable Dist dist) {
