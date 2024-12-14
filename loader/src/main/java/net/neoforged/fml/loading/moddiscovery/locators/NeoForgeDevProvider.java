@@ -34,8 +34,8 @@ import org.slf4j.LoggerFactory;
  */
 public class NeoForgeDevProvider implements IModFileCandidateLocator {
     private static final Logger LOG = LoggerFactory.getLogger(NeoForgeDevProvider.class);
-    private static final Attributes.Name NAME_DISTS = new Attributes.Name("NeoForm-Minecraft-Dists");
-    private static final Attributes.Name NAME_DIST = new Attributes.Name("NeoForm-Minecraft-Dist");
+    private static final Attributes.Name NAME_DISTS = new Attributes.Name("Minecraft-Dists");
+    private static final Attributes.Name NAME_DIST = new Attributes.Name("Minecraft-Dist");
 
     private final List<Path> paths;
 
