@@ -6,13 +6,10 @@
 package net.neoforged.fml.loading.moddiscovery.locators;
 
 import com.google.common.collect.Streams;
+import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
-import java.io.File;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Stream;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.util.DevEnvUtils;
@@ -21,11 +18,26 @@ import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.jar.Attributes;
+import java.util.stream.Stream;
 
 /**
  * Provides the Minecraft and NeoForge mods in a NeoForge dev environment.
  */
 public class NeoForgeDevProvider implements IModFileCandidateLocator {
+    private static final Logger LOG = LoggerFactory.getLogger(NeoForgeDevProvider.class);
+    private static final Attributes.Name NAME_DISTS = new Attributes.Name("NeoForm-Minecraft-Dists");
+    private static final Attributes.Name NAME_DIST = new Attributes.Name("NeoForm-Minecraft-Dist");
+
     private final List<Path> paths;
 
     public NeoForgeDevProvider(List<Path> paths) {
@@ -53,9 +65,14 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
         var packages = getNeoForgeSpecificPathPrefixes();
         var minecraftResourcesPrefix = minecraftResourcesRoot;
 
+        var maskedPaths = new HashSet<String>();
         var mcJarContents = new JarContentsBuilder()
                 .paths(Streams.concat(paths.stream(), Stream.of(minecraftResourcesRoot)).toArray(Path[]::new))
                 .pathFilter((entry, basePath) -> {
+                    if (maskedPaths.contains(entry)) {
+                        LOG.debug("Masking access to {} since it's from a different Minecraft distribution.", entry);
+                        return false;
+                    }
                     // We serve everything, except for things in the forge packages.
                     if (basePath.equals(minecraftResourcesPrefix) || entry.endsWith("/")) {
                         return true;
@@ -72,6 +89,8 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
                     return true;
                 })
                 .build();
+
+        loadMaskedFiles(mcJarContents, maskedPaths);
 
         var mcJarMetadata = new ModJarMetadata(mcJarContents);
         var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);
@@ -92,8 +111,31 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
         pipeline.addModFile(JarModsDotTomlModFileReader.createModFile(neoforgeJarContents, ModFileDiscoveryAttributes.DEFAULT));
     }
 
+    private void loadMaskedFiles(JarContents minecraftJar, Set<String> maskedPaths) {
+        var manifest = minecraftJar.getManifest();
+        String dists = manifest.getMainAttributes().getValue(NAME_DISTS);
+        if (dists == null) {
+            return; // Jar has no masking attributes
+        }
+        var dist = switch (FMLLoader.getDist()) {
+            case CLIENT -> "client";
+            case DEDICATED_SERVER -> "server";
+        };
+        if (Arrays.stream(dists.split("\\s+")).allMatch(s -> s.equals(dist))) {
+            return; // Jar contains only markers for the current dist anyway
+        }
+
+        for (var entry : manifest.getEntries().entrySet()) {
+            var filePath = entry.getKey();
+            var fileDist = entry.getValue().getValue(NAME_DIST);
+            if (fileDist != null && !fileDist.equals(dist)) {
+                maskedPaths.add(filePath);
+            }
+        }
+    }
+
     private static String[] getNeoForgeSpecificPathPrefixes() {
-        return new String[] { "net/neoforged/neoforge/", "META-INF/services/", "META-INF/coremods.json", JarModsDotTomlModFileReader.MODS_TOML };
+        return new String[]{"net/neoforged/neoforge/", "META-INF/services/", "META-INF/coremods.json", JarModsDotTomlModFileReader.MODS_TOML};
     }
 
     @Override
