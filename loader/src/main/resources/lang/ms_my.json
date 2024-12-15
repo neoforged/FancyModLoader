@@ -17,6 +17,8 @@
   "fml.modloadingissue.discouragedmod": "Mod §e{1}§r §dtidak menggalakkan§r penggunaan §3{0}§r §o{2,vr}§r\n§7Kini, §3{0}§r§7 adalah §o{3}§r\n§7Sebabnya ialah:§r §o{4,i18ntranslate}§r",
   "fml.modloadingissue.discouragedmod.proceed": "Teruskan atas risiko anda sendiri",
   "fml.modloadingissue.duplicate_mod": "Mod §e{0}§r terdapat dalam berbilang fail: {1}",
+  "fml.modloadingissue.depoverride.unknown_target": "Unknown dependency override target with id §e{0}§r",
+  "fml.modloadingissue.depoverride.unknown_dependency": "Unknown mod §e{0}§r referenced in dependency overrides for mod §e{1}§r",
   "fml.modloading.duplicate_library": "Pustaka §e{3}§r terdapat dalam berbilang fail: {4}",
   "fml.modloading.incompatiblemod.noreason": "§eTiada alasan diberikan§r",
   "fml.modloading.discouragedmod.noreason": "§eTiada alasan diberikan§r",
