@@ -7,16 +7,6 @@ package net.neoforged.fml.loading;
 
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.TransformingClassLoader;
-import net.bytebuddy.agent.ByteBuddyAgent;
-import net.neoforged.fml.ModLoader;
-import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.i18n.FMLTranslations;
-import net.neoforged.fmlstartup.api.StartupArgs;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.mockito.junit.jupiter.MockitoSettings;
-
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -27,6 +17,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import net.bytebuddy.agent.ByteBuddyAgent;
+import net.neoforged.fml.ModLoader;
+import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.i18n.FMLTranslations;
+import net.neoforged.fmlstartup.api.StartupArgs;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.platform.commons.util.ReflectionUtils;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.spongepowered.asm.service.MixinService;
+import org.spongepowered.asm.service.ServiceNotAvailableError;
+import org.spongepowered.asm.service.modlauncher.MixinServiceModLauncher;
 
 @MockitoSettings
 public abstract class LauncherTest {
@@ -135,6 +138,8 @@ public abstract class LauncherTest {
     }
 
     private LaunchResult launch(String launchTarget, List<Path> additionalClassPath) {
+        resetMixin();
+
         ModLoader.clearLoadingIssues();
 
         System.setProperty("fml.earlyWindowControl", "false");
@@ -143,7 +148,7 @@ public abstract class LauncherTest {
         var startupArgs = new StartupArgs(
                 installation.getGameDir().toFile(),
                 launchTarget,
-                new String[]{
+                new String[] {
                         "--fml.fmlVersion", SimulatedInstallation.FML_VERSION,
                         "--fml.mcVersion", SimulatedInstallation.MC_VERSION,
                         "--fml.neoForgeVersion", SimulatedInstallation.NEOFORGE_VERSION,
@@ -152,16 +157,14 @@ public abstract class LauncherTest {
                 locatedPaths.stream().map(Path::toFile).collect(Collectors.toSet()),
                 additionalClassPath.stream().map(Path::toFile).toList(),
                 true,
-                classLoader
-        );
+                classLoader);
 
         ClassLoader launchClassLoader;
         try {
             var instrumentation = ByteBuddyAgent.install();
             FMLLoader.startup(
                     instrumentation,
-                    startupArgs
-            );
+                    startupArgs);
             launchClassLoader = Thread.currentThread().getContextClassLoader();
         } finally {
             Thread.currentThread().setContextClassLoader(classLoader);
@@ -249,21 +252,34 @@ public abstract class LauncherTest {
                         o -> o.getMods().getFirst().getModId(),
                         o -> o)),
                 List.of(),
-                launchClassLoader
-        );
+                launchClassLoader);
+    }
+
+    private static void resetMixin() {
+        // There is sadly no way to "reset" Mixin once it's loaded. So, we use this hack.
+        try {
+            var serviceInstance = ReflectionUtils.tryToReadFieldValue(MixinService.class, "instance", null);
+            if (serviceInstance.get() != null) {
+                var f = MixinServiceModLauncher.class.getDeclaredField("initialised");
+                f.setAccessible(true);
+                try {
+                    f.set(MixinService.getService(), false);
+                } catch (ServiceNotAvailableError ignored) {}
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void loadMods() {
-        FMLLoader.progressWindowTick = () -> {
-        };
+        FMLLoader.progressWindowTick = () -> {};
 
         gameClassLoader = FMLLoader.gameClassLoader;
 
         ModLoader.gatherAndInitializeMods(
                 Runnable::run,
                 Runnable::run,
-                () -> {
-                });
+                () -> {});
     }
 
     protected static List<String> getTranslatedIssues(LaunchResult launchResult) {

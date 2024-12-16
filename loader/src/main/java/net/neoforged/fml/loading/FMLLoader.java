@@ -269,7 +269,7 @@ public class FMLLoader {
         // TODO -> MANIFEST.MF declaration net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider.class.getName()
 
         // BUILD SERVICES LAYER
-        buildUntransformedLayer(instrumentation, moduleLayerHandler, IModuleLayerManager.Layer.SERVICE);
+        buildUntransformedLayer(instrumentation, moduleLayerHandler, IModuleLayerManager.Layer.SERVICE, startupArgs.parentClassLoader());
 
         // BUILD PLUGIN LAYER
         var scanResults = transformationServicesHandler.initializeTransformationServices(argumentHandler, environment)
@@ -285,7 +285,7 @@ public class FMLLoader {
         for (var modFileInfo : loadingModList.getPlugins()) {
             moduleLayerHandler.addToLayer(IModuleLayerManager.Layer.PLUGIN, modFileInfo.getFile().getSecureJar());
         }
-        buildUntransformedLayer(instrumentation, moduleLayerHandler, IModuleLayerManager.Layer.PLUGIN);
+        buildUntransformedLayer(instrumentation, moduleLayerHandler, IModuleLayerManager.Layer.PLUGIN, startupArgs.parentClassLoader());
 
         // Now go and build the language providers and let mods discover theirs
         languageProviderLoader = new LanguageProviderLoader(launchContext);
@@ -325,6 +325,9 @@ public class FMLLoader {
                     return new TransformingClassLoader(transformStore, launchPluginHandler, environment, cf, parents);
                 });
         gameClassLoader = (TransformingClassLoader) gameLayerInfo.cl();
+        if (startupArgs.parentClassLoader() != null) {
+            gameClassLoader.setFallbackClassLoader(startupArgs.parentClassLoader());
+        }
         // TODO: No idea why this is here
         moduleLayerHandler.updateLayer(IModuleLayerManager.Layer.PLUGIN, li -> li.cl().setFallbackClassLoader(gameClassLoader));
 
@@ -350,15 +353,17 @@ public class FMLLoader {
         }
     }
 
-    private static void buildUntransformedLayer(Instrumentation instrumentation,
+    private static void buildUntransformedLayer(
+            Instrumentation instrumentation,
             ModuleLayerHandler moduleLayerHandler,
-            IModuleLayerManager.Layer layer) {
+            IModuleLayerManager.Layer layer,
+            ClassLoader parentClassloader) {
         var li = moduleLayerHandler.buildLayer(
                 layer,
                 (cf, p) -> {
                     var moduleNames = getModuleNameList(cf);
                     LOGGER.info("Building module layer {}:\n{}", layer.name(), moduleNames);
-                    return new ModuleClassLoader("LAYER " + layer.name(), cf, p);
+                    return new ModuleClassLoader("LAYER " + layer.name(), cf, p, parentClassloader);
                 });
         ModuleAccessDeclarations.apply(instrumentation, li.layer());
     }
