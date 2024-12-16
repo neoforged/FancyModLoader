@@ -1,16 +1,11 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fml.loading.moddiscovery.locators;
 
 import cpw.mods.jarhandling.JarContents;
-import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.loading.LogMarkers;
-import net.neoforged.neoforgespi.ILaunchContext;
-import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
-import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
-import net.neoforged.neoforgespi.locating.IncompatibleFileReporting;
-import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,6 +24,15 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
+import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.loading.LogMarkers;
+import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
+import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
+import net.neoforged.neoforgespi.locating.IncompatibleFileReporting;
+import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This locator finds mods and services that are passed via the classpath and are grouped explicitly.
@@ -42,8 +46,7 @@ public class InDevLocator implements IModFileCandidateLocator {
     private final Map<File, VirtualJarManifestEntry> virtualJarMemberIndex = new HashMap<>();
     private boolean manifestLoaded;
 
-    record VirtualJarManifestEntry(String name, List<File> files) {
-    }
+    record VirtualJarManifestEntry(String name, List<File> files) {}
 
     @Override
     public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {
@@ -142,8 +145,7 @@ public class InDevLocator implements IModFileCandidateLocator {
                                 } else {
                                     return "defaultmodid";
                                 }
-                            }
-                            ,
+                            },
                             Collectors.mapping(inp -> {
                                 var splitIdx = inp.indexOf("%%");
                                 if (splitIdx != -1) {
@@ -154,8 +156,7 @@ public class InDevLocator implements IModFileCandidateLocator {
             for (var group : groupedEntries.entrySet()) {
                 var virtualJar = new VirtualJarManifestEntry(
                         group.getKey(),
-                        group.getValue()
-                );
+                        group.getValue());
                 for (var file : group.getValue()) {
                     virtualJarMemberIndex.put(file, virtualJar);
                 }

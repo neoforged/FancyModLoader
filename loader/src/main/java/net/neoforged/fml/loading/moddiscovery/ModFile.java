@@ -235,8 +235,7 @@ public class ModFile implements IModFile {
 
     @Deprecated(forRemoval = true)
     @Override
-    public void setSecurityStatus(final SecureJar.Status status) {
-    }
+    public void setSecurityStatus(final SecureJar.Status status) {}
 
     public ArtifactVersion getJarVersion() {
         return new DefaultArtifactVersion(this.jarVersion);

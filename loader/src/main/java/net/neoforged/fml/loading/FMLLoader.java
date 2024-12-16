@@ -5,6 +5,9 @@
 
 package net.neoforged.fml.loading;
 
+import static net.neoforged.fml.loading.LogMarkers.CORE;
+import static net.neoforged.fml.loading.LogMarkers.LOADING;
+
 import com.mojang.logging.LogUtils;
 import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.SecureJar;
@@ -25,6 +28,34 @@ import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
+import java.io.File;
+import java.io.IOException;
+import java.lang.instrument.Instrumentation;
+import java.lang.invoke.MethodHandle;
+import java.lang.module.Configuration;
+import java.lang.module.ModuleReference;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.ServiceLoader;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.accesstransformer.ml.AccessTransformerService;
 import net.neoforged.api.distmarker.Dist;
@@ -74,38 +105,6 @@ import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.launch.MixinLaunchPlugin;
 import org.spongepowered.asm.launch.MixinLaunchPluginLegacy;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.instrument.Instrumentation;
-import java.lang.invoke.MethodHandle;
-import java.lang.module.Configuration;
-import java.lang.module.ModuleReference;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.ServiceLoader;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static net.neoforged.fml.loading.LogMarkers.CORE;
-import static net.neoforged.fml.loading.LogMarkers.LOADING;
-
 public class FMLLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static AccessTransformerEngine accessTransformer;
@@ -129,16 +128,16 @@ public class FMLLoader {
 
     @VisibleForTesting
     record DiscoveryResult(List<ModFile> pluginContent,
-                           List<ModFile> gameContent,
-                           List<ModLoadingIssue> discoveryIssues) {
-    }
+            List<ModFile> gameContent,
+            List<ModLoadingIssue> discoveryIssues) {}
 
     // This is called by FML Startup
     @SuppressWarnings("unused")
     public static void startup(Instrumentation instrumentation, StartupArgs startupArgs) {
         // In dev, do not overwrite the logging configuration if the user explicitly set another one.
         // In production, always overwrite the vanilla configuration.
-        if (isProduction() || System.getProperty("log4j2.configurationFile") == null) {
+        // TODO: Update this comment and coordinate with launchers to determine how to use THEIR logging config
+        if (System.getProperty("log4j2.configurationFile") == null) {
             overwriteLoggingConfiguration();
         }
 
@@ -190,8 +189,7 @@ public class FMLLoader {
                 List.of(), // TODO: Argparse
                 List.of(), // TODO: Argparse
                 List.of(), // TODO: Argparse
-                startupArgs.unclaimedClassPathEntries()
-        );
+                startupArgs.unclaimedClassPathEntries());
         for (var claimedFile : startupArgs.claimedFiles()) {
             launchContext.addLocated(claimedFile.toPath());
         }
@@ -248,8 +246,7 @@ public class FMLLoader {
                 transformStore,
                 launchService,
                 launchPluginHandler,
-                moduleLayerHandler
-        );
+                moduleLayerHandler);
 
         // Add extra mixin configs from command line
         var extraMixinConfigs = System.getProperty("fml.extraMixinConfigs");
@@ -354,16 +351,15 @@ public class FMLLoader {
     }
 
     private static void buildUntransformedLayer(Instrumentation instrumentation,
-                                                ModuleLayerHandler moduleLayerHandler,
-                                                IModuleLayerManager.Layer layer) {
+            ModuleLayerHandler moduleLayerHandler,
+            IModuleLayerManager.Layer layer) {
         var li = moduleLayerHandler.buildLayer(
                 layer,
                 (cf, p) -> {
                     var moduleNames = getModuleNameList(cf);
                     LOGGER.info("Building module layer {}:\n{}", layer.name(), moduleNames);
                     return new ModuleClassLoader("LAYER " + layer.name(), cf, p);
-                }
-        );
+                });
         ModuleAccessDeclarations.apply(instrumentation, li.layer());
     }
 
@@ -430,8 +426,8 @@ public class FMLLoader {
     }
 
     private static <T extends ILaunchPluginService> T addLaunchPlugin(ILaunchContext launchContext,
-                                                                      Map<String, ILaunchPluginService> services,
-                                                                      T service) {
+            Map<String, ILaunchPluginService> services,
+            T service) {
         LOGGER.debug("Adding launch plugin {}", service.name());
         var previous = services.put(service.name(), service);
         if (previous != null) {
@@ -439,7 +435,7 @@ public class FMLLoader {
             var source2 = ServiceLoaderUtil.identifySourcePath(launchContext, previous);
 
             throw new FatalStartupException("Multiple launch plugin services of the same name '"
-                                            + previous.name() + "' are present: " + source1 + " and " + source2);
+                    + previous.name() + "' are present: " + source1 + " and " + source2);
         }
         return service;
     }
@@ -448,8 +444,7 @@ public class FMLLoader {
             @Nullable String neoForgeVersion,
             @Deprecated(forRemoval = true) @Nullable String fmlVersion,
             @Nullable String mcVersion,
-            @Nullable String neoFormVersion) {
-    }
+            @Nullable String neoFormVersion) {}
 
     private static FMLExternalOptions parseArgs(String[] strings) {
         String neoForgeVersion = null;
@@ -543,8 +538,7 @@ public class FMLLoader {
                 neoForgeVersion,
                 versionInfo().fmlVersion(),
                 minecraftVersion,
-                versionInfo().neoFormVersion()
-        );
+                versionInfo().neoFormVersion());
 
         progress.complete();
 
@@ -597,8 +591,7 @@ public class FMLLoader {
         return new DiscoveryResult(
                 pluginContent,
                 gameContent,
-                issues
-        );
+                issues);
     }
 
     private static <T> T runOffThread(Supplier<T> supplier) {
@@ -625,8 +618,7 @@ public class FMLLoader {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Interrupted while waiting for future", e);
-            } catch (TimeoutException ignored) {
-            }
+            } catch (TimeoutException ignored) {}
         }
     }
 
@@ -829,5 +821,4 @@ public class FMLLoader {
             Configurator.reconfigure(ConfigurationFactory.getInstance().getConfiguration(LoggerContext.getContext(), configSource));
         }
     }
-
 }

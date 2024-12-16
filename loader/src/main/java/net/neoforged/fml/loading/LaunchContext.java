@@ -8,7 +8,6 @@ package net.neoforged.fml.loading;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.niofs.union.UnionFileSystem;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,7 +19,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.ILaunchContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

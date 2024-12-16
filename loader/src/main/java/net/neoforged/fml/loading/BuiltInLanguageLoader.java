@@ -5,8 +5,6 @@
 
 package net.neoforged.fml.loading;
 
-import net.neoforged.neoforgespi.language.IModLanguageLoader;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -14,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.jar.JarInputStream;
+import net.neoforged.neoforgespi.language.IModLanguageLoader;
 
 public abstract class BuiltInLanguageLoader implements IModLanguageLoader {
     @Override
@@ -36,8 +35,7 @@ public abstract class BuiltInLanguageLoader implements IModLanguageLoader {
                         if (manifest != null) {
                             return manifest.getMainAttributes().getValue("Implementation-Version"); // May be null
                         }
-                    } catch (IOException ignored) {
-                    }
+                    } catch (IOException ignored) {}
 
                     return null;
                 });

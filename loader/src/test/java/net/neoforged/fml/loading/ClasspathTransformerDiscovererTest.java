@@ -17,7 +17,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import net.bytebuddy.agent.ByteBuddyAgent;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,11 +38,9 @@ class ClasspathTransformerDiscovererTest {
                 Map.of(),
                 Map.of(
                         MethodHandle.class.getPackageName(),
-                        Set.of(SecureJar.class.getModule())
-                ),
+                        Set.of(SecureJar.class.getModule())),
                 Set.of(),
-                Map.of()
-        );
+                Map.of());
     }
 
     @BeforeEach

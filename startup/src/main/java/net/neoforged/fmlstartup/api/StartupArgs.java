@@ -5,11 +5,10 @@
 
 package net.neoforged.fmlstartup.api;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.io.File;
 import java.util.List;
 import java.util.Set;
+import org.jetbrains.annotations.Nullable;
 
 public record StartupArgs(
         File gameDirectory,
@@ -18,5 +17,4 @@ public record StartupArgs(
         Set<File> claimedFiles,
         List<File> unclaimedClassPathEntries,
         boolean skipEntryPoint,
-        @Nullable ClassLoader parentClassLoader) {
-}
+        @Nullable ClassLoader parentClassLoader) {}

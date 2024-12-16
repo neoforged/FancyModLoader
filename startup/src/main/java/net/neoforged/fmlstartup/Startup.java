@@ -5,10 +5,6 @@
 
 package net.neoforged.fmlstartup;
 
-import net.neoforged.fmlstartup.api.DiscoveredFile;
-import net.neoforged.fmlstartup.api.StartupArgs;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
@@ -37,6 +33,9 @@ import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.neoforged.fmlstartup.api.DiscoveredFile;
+import net.neoforged.fmlstartup.api.StartupArgs;
+import org.jetbrains.annotations.Nullable;
 
 public class Startup {
     public static void main(String[] args) throws IOException {
@@ -65,8 +64,7 @@ public class Startup {
                     MethodType.methodType(StartupEntrypoint.class),
                     methodType,
                     handle,
-                    methodType
-            );
+                    methodType);
 
             return (StartupEntrypoint) site.getTarget().invokeExact();
         } catch (ClassNotFoundException e) {
@@ -212,8 +210,7 @@ public class Startup {
                     claimedFiles,
                     unclaimedClassPathEntries,
                     false,
-                    ClassLoader.getSystemClassLoader()
-            );
+                    ClassLoader.getSystemClassLoader());
 
             entrypoint.get().start(instrumentation, startupArgs);
         } catch (Exception e) {
@@ -283,8 +280,8 @@ public class Startup {
     }
 
     private static void splitClasspathIntoFilesAndDirectories(List<File> classpathEntries,
-                                                              List<DiscoveredFile> files,
-                                                              List<File> directories) {
+            List<DiscoveredFile> files,
+            List<File> directories) {
         var start = System.nanoTime();
 
         // Find entries on the classpath
@@ -440,8 +437,7 @@ public class Startup {
                 String tail = basename.substring(start + 1);
                 ModuleDescriptor.Version.parse(tail);
                 vs = tail;
-            } catch (IllegalArgumentException ignore) {
-            }
+            } catch (IllegalArgumentException ignore) {}
 
             basename = basename.substring(0, start);
         }

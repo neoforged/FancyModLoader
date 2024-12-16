@@ -1,12 +1,16 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fml.loading;
 
-import com.electronwill.nightconfig.core.Config;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.electronwill.nightconfig.core.Config;
 import java.util.List;
 import java.util.concurrent.Callable;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 public class MixinTest extends LauncherTest {
     @Test

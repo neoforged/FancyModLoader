@@ -5,9 +5,6 @@
 
 package net.neoforged.fmlstartup;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,6 +28,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 final class BootModules {
     /**
@@ -54,8 +53,7 @@ final class BootModules {
             "fml_loader",
             "JarJarSelector",
             "JarJarMetadata",
-            "org.spongepowered.mixin"
-    );
+            "org.spongepowered.mixin");
 
     /**
      * This is the set of platform modules that we expect Minecraft to add,

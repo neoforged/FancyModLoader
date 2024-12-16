@@ -6,15 +6,14 @@
 package net.neoforged.neoforgespi;
 
 import cpw.mods.modlauncher.api.IEnvironment;
-import net.neoforged.api.distmarker.Dist;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.Stream;
+import net.neoforged.api.distmarker.Dist;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides context for various FML plugins about the current launch operation.

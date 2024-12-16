@@ -1,10 +1,14 @@
-package net.neoforged.fml.loading.mixin;
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
 
-import org.spongepowered.asm.launch.platform.container.IContainerHandle;
-import org.spongepowered.asm.util.Constants;
+package net.neoforged.fml.loading.mixin;
 
 import java.util.Collection;
 import java.util.List;
+import org.spongepowered.asm.launch.platform.container.IContainerHandle;
+import org.spongepowered.asm.util.Constants;
 
 public class FMLCommandLineMixinContainer implements IContainerHandle {
     private final List<String> mixinConfigs;

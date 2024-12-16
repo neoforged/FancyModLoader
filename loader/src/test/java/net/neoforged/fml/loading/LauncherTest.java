@@ -56,7 +56,6 @@ public abstract class LauncherTest {
 
     @BeforeEach
     void setUp() throws Exception {
-
 //        var launchPlugins = new HashMap<String, ILaunchPluginService>();
 //        var launchHandlers = new HashMap<String, ILaunchHandlerService>();
 //        var environment = new Environment(
@@ -135,11 +134,12 @@ public abstract class LauncherTest {
         return launch(launchTarget, List.of());
     }
 
-    private LaunchResult launch(String launchTarget, List<Path> additionalClassPath) throws Exception {
+    private LaunchResult launch(String launchTarget, List<Path> additionalClassPath) {
         ModLoader.clearLoadingIssues();
 
         System.setProperty("fml.earlyWindowControl", "false");
 
+        var classLoader = Thread.currentThread().getContextClassLoader();
         var startupArgs = new StartupArgs(
                 installation.getGameDir().toFile(),
                 launchTarget,
@@ -152,14 +152,20 @@ public abstract class LauncherTest {
                 locatedPaths.stream().map(Path::toFile).collect(Collectors.toSet()),
                 additionalClassPath.stream().map(Path::toFile).toList(),
                 true,
-                Thread.currentThread().getContextClassLoader()
+                classLoader
         );
 
-        var instrumentation = ByteBuddyAgent.install();
-        FMLLoader.startup(
-                instrumentation,
-                startupArgs
-        );
+        ClassLoader launchClassLoader;
+        try {
+            var instrumentation = ByteBuddyAgent.install();
+            FMLLoader.startup(
+                    instrumentation,
+                    startupArgs
+            );
+            launchClassLoader = Thread.currentThread().getContextClassLoader();
+        } finally {
+            Thread.currentThread().setContextClassLoader(classLoader);
+        }
 //
 //        // ML would usually handle these two arguments
 //        environment.computePropertyIfAbsent(IEnvironment.Keys.GAMEDIR.get(), ignored -> installation.getGameDir());
@@ -233,20 +239,18 @@ public abstract class LauncherTest {
                 discoveryResult.pluginContent().stream().collect(
                         Collectors.toMap(
                                 mf -> mf.getModFileInfo().moduleName(),
-                                mf -> mf
-                        )
-                ),
+                                mf -> mf)),
                 discoveryResult.gameContent().stream().collect(
                         Collectors.toMap(
                                 mf -> mf.getModFileInfo().moduleName(),
-                                mf -> mf
-                        )
-                ),
+                                mf -> mf)),
                 loadingModList.getModLoadingIssues(),
                 loadedMods.stream().collect(Collectors.toMap(
                         o -> o.getMods().getFirst().getModId(),
                         o -> o)),
-                List.of());
+                List.of(),
+                launchClassLoader
+        );
     }
 
     private void loadMods() {

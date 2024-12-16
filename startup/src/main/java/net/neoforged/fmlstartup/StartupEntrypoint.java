@@ -1,8 +1,12 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fmlstartup;
 
-import net.neoforged.fmlstartup.api.StartupArgs;
-
 import java.lang.instrument.Instrumentation;
+import net.neoforged.fmlstartup.api.StartupArgs;
 
 @FunctionalInterface
 public interface StartupEntrypoint {

@@ -6,13 +6,6 @@
 package net.neoforged.fml.loading;
 
 import cpw.mods.modlauncher.api.LambdaExceptionUtils;
-import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.loading.moddiscovery.ModFile;
-import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
-import net.neoforged.fml.loading.moddiscovery.ModInfo;
-import net.neoforged.neoforgespi.language.IModFileInfo;
-import net.neoforged.neoforgespi.language.IModInfo;
-
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,6 +17,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
+import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.loading.moddiscovery.ModFile;
+import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
+import net.neoforged.fml.loading.moddiscovery.ModInfo;
+import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.language.IModInfo;
 
 /**
  * Master list of all mods <em>in the loading context. This class cannot refer outside the
