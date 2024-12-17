@@ -5,13 +5,7 @@
 
 package net.neoforged.fml.util;
 
-import net.neoforged.fml.ModLoadingException;
-import net.neoforged.fml.ModLoadingIssue;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -21,11 +15,14 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import net.neoforged.fml.ModLoadingException;
+import net.neoforged.fml.ModLoadingIssue;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 @ApiStatus.Internal
 public final class ClasspathResourceUtils {
-    private ClasspathResourceUtils() {
-    }
+    private ClasspathResourceUtils() {}
 
     public static List<Path> findFileSystemRootsOfFileOnClasspath(String relativePath) {
         // If we're loaded through a module, it means the original classpath is inaccessible through the context CL

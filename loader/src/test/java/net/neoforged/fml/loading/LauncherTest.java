@@ -7,6 +7,16 @@ package net.neoforged.fml.loading;
 
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.TransformingClassLoader;
+import java.lang.invoke.MethodHandles;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import net.bytebuddy.agent.ByteBuddyAgent;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
@@ -20,17 +30,6 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.spongepowered.asm.service.MixinService;
 import org.spongepowered.asm.service.ServiceNotAvailableError;
 import org.spongepowered.asm.service.modlauncher.MixinServiceModLauncher;
-
-import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @MockitoSettings
 public abstract class LauncherTest {
@@ -89,12 +88,7 @@ public abstract class LauncherTest {
         try (var cl = new URLClassLoader(urls, getClass().getClassLoader())) {
             Thread.currentThread().setContextClassLoader(cl);
             // launch represents the modlauncher portion
-            LaunchResult result;
-            try {
-                result = launch(launchTarget, additionalClassPath);
-            } catch (Exception e) {
-                throw new LaunchException(e);
-            }
+            var result = launch(launchTarget, additionalClassPath);
             // while loadMods is usually triggered from NeoForge
             loadMods();
             return result;
@@ -103,14 +97,9 @@ public abstract class LauncherTest {
         }
     }
 
-    protected LaunchResult launchAndLoad(String launchTarget) throws Exception {
+    protected LaunchResult launchAndLoad(String launchTarget) {
         // launch represents the modlauncher portion
-        LaunchResult result;
-        try {
-            result = launch(launchTarget);
-        } catch (Exception e) {
-            throw new LaunchException(e);
-        }
+        LaunchResult result = launch(launchTarget);
         // while loadMods is usually triggered from NeoForge
         loadMods();
         return result;
@@ -135,7 +124,7 @@ public abstract class LauncherTest {
         var startupArgs = new StartupArgs(
                 installation.getGameDir().toFile(),
                 launchTarget,
-                new String[]{
+                new String[] {
                         "--fml.fmlVersion", SimulatedInstallation.FML_VERSION,
                         "--fml.mcVersion", SimulatedInstallation.MC_VERSION,
                         "--fml.neoForgeVersion", SimulatedInstallation.NEOFORGE_VERSION,
@@ -190,8 +179,7 @@ public abstract class LauncherTest {
                 f.setAccessible(true);
                 try {
                     f.set(MixinService.getService(), false);
-                } catch (ServiceNotAvailableError ignored) {
-                }
+                } catch (ServiceNotAvailableError ignored) {}
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -199,16 +187,14 @@ public abstract class LauncherTest {
     }
 
     private void loadMods() {
-        FMLLoader.progressWindowTick = () -> {
-        };
+        FMLLoader.progressWindowTick = () -> {};
 
         gameClassLoader = FMLLoader.gameClassLoader;
 
         ModLoader.gatherAndInitializeMods(
                 Runnable::run,
                 Runnable::run,
-                () -> {
-                });
+                () -> {});
     }
 
     protected static List<String> getTranslatedIssues(LaunchResult launchResult) {
@@ -232,16 +218,5 @@ public abstract class LauncherTest {
         text = text.replace("\\", "/");
 
         return text;
-    }
-
-    /**
-     * When an exception occurs during the ModLauncher controller portion of Startup (represented by {@link #launch},
-     * that exception will not result in a user-friendly error screen. Those errors should instead - if possible -
-     * be recorded in {@link LoadingModList} to then later be reported by {@link ModLoader#gatherAndInitializeMods}.
-     */
-    public static class LaunchException extends Exception {
-        public LaunchException(Throwable cause) {
-            super(cause);
-        }
     }
 }
