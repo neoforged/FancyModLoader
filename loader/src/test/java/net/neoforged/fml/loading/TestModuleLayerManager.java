@@ -12,9 +12,6 @@ import java.util.List;
 import java.util.Optional;
 
 public class TestModuleLayerManager implements IModuleLayerManager {
-    public static final ModuleLayer SERVICE_LAYER = createEmptyLayer();
-    public static final ModuleLayer PLUGIN_LAYER = createEmptyLayer();
-
     private final EnumMap<Layer, ModuleLayer> layers = new EnumMap<>(Layer.class);
 
     public void setLayer(Layer layer, ModuleLayer moduleLayer) {

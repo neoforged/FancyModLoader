@@ -5,6 +5,7 @@
 
 package net.neoforged.fml.loading;
 
+import cpw.mods.modlauncher.ModuleLayerHandler;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
@@ -22,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class TestEnvironment implements IEnvironment {
     private final TypesafeMap map = new TypesafeMap(IEnvironment.class);
-    private final TestModuleLayerManager moduleLayerManager;
+    private final ModuleLayerHandler moduleLayerManager;
     @Nullable
     public AccessTransformerService accessTransformerService = new AccessTransformerService();
     @Nullable
@@ -30,7 +31,7 @@ public class TestEnvironment implements IEnvironment {
     @Nullable
     public RuntimeEnumExtender runtimeEnumExtender = new RuntimeEnumExtender();
 
-    public TestEnvironment(TestModuleLayerManager moduleLayerManager) {
+    public TestEnvironment(ModuleLayerHandler moduleLayerManager) {
         this.moduleLayerManager = moduleLayerManager;
     }
 

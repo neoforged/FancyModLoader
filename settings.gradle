@@ -29,7 +29,10 @@ dependencyResolutionManagement {
 rootProject.name = 'FancyModLoader'
 
 include 'loader'
+include 'startup'
 include 'earlydisplay'
 include 'junit'
 include 'tests'
 enableFeaturePreview "STABLE_CONFIGURATION_CACHE"
+
+includeBuild "../modlauncher"

@@ -71,11 +71,12 @@ public abstract class NeoForgeInstallationsPlugin implements Plugin<Project> {
             task.setGroup("fml/installations");
             task.getInstaller().from(installerConfig);
             task.getNfrt().from(nfrtCliConfig);
-            task.getMinecraftVersion().set(installation.getMinecraftVersion());
             task.getNeoForgeVersion().set(installation.getVersion());
             task.getInstallDir().set(installation.getDirectory());
             task.getAssetsDir().set(task.getInstallDir().dir("assets"));
             task.getLibrariesDir().set(task.getInstallDir().dir("libraries"));
+            task.getMainClass().set(installation.getMainClass());
+            task.getGameDir().set(installation.getGameDir());
 
             // Write the JVM args to files
             task.getVanillaJvmArgFile().set(installation.getVanillaJvmArgFile());
@@ -102,14 +103,12 @@ public abstract class NeoForgeInstallationsPlugin implements Plugin<Project> {
             config.setCanBeResolved(true);
             config.setCanBeConsumed(false);
             config.setTransitive(false);
-            config.withDependencies(dependencies -> {
-                dependencies.addLater(installation
-                        .getVersion()
-                        .map(v -> depFactory
-                                .create("net.neoforged:neoforge:" + v).capabilities(caps -> {
-                                    caps.requireCapability("net.neoforged:neoforge-installer");
-                                })));
-            });
+            config.getDependencies().addLater(installation
+                    .getVersion()
+                    .map(v -> depFactory
+                            .create("net.neoforged:neoforge:" + v).capabilities(caps -> {
+                                caps.requireCapability("net.neoforged:neoforge-installer");
+                            })));
         });
 
         project.getTasks().register("installNeoForge" + capitalizedName, InstallProductionServerTask.class, task -> {
@@ -117,6 +116,7 @@ public abstract class NeoForgeInstallationsPlugin implements Plugin<Project> {
             task.getInstaller().from(installerConfig);
             task.getInstallDir().set(installation.getDirectory());
             task.getNeoForgeVersion().set(installation.getVersion());
+            task.getMainClass().set(installation.getMainClass());
 
             // Write the JVM args to files
             task.getNeoForgeJvmArgFile().set(installation.getNeoForgeJvmArgFile());

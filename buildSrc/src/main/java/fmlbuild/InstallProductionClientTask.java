@@ -3,12 +3,14 @@ package fmlbuild;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.GradleException;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -53,12 +55,6 @@ public abstract class InstallProductionClientTask extends DefaultTask {
      */
     @InputFiles
     public abstract ConfigurableFileCollection getNfrt();
-
-    /**
-     * The Minecraft version matching the NeoForge version to install.
-     */
-    @Input
-    public abstract Property<String> getMinecraftVersion();
 
     /**
      * The NeoForge version, used for placeholders when launching the game.
@@ -132,6 +128,20 @@ public abstract class InstallProductionClientTask extends DefaultTask {
     @OutputFile
     public abstract RegularFileProperty getNeoForgeProgramArgFile();
 
+    /**
+     * Allows the main class from the version profile to be overridden to be something else.
+     */
+    @Input
+    @Optional
+    public abstract Property<String> getMainClass();
+
+    /**
+     * Allows the game directory written to the argument to be overridden.
+     */
+    @Input
+    @Optional
+    public abstract Property<String> getGameDir();
+
     @Inject
     public InstallProductionClientTask(ExecOperations execOperations) {
         this.execOperations = execOperations;
@@ -157,8 +167,11 @@ public abstract class InstallProductionClientTask extends DefaultTask {
             }
         });
 
-        var minecraftVersion = getMinecraftVersion().get();
         var neoForgeVersion = getNeoForgeVersion().get();
+        var manifests = loadVersionManifests(installDir, "neoforge-" + neoForgeVersion);
+        var minecraftManifest = manifests.getFirst();
+        var neoForgeManifest = manifests.getLast();
+        var minecraftVersion = minecraftManifest.getAsJsonPrimitive("id").getAsString();
 
         // Download Minecraft Assets and read the asset index id and root for the program arguments
         var assetPropertiesFile = new File(getTemporaryDir(), "asset.properties");
@@ -183,11 +196,13 @@ public abstract class InstallProductionClientTask extends DefaultTask {
         var nativesDir = installDir.resolve("natives");
         Files.createDirectories(nativesDir);
 
+        var gameDir = getGameDir().orElse(getInstallDir().getAsFile().map(File::getAbsolutePath));
+
         // Set up the placeholders generally used by Vanilla profiles in their argument definitions.
         var placeholders = new HashMap<String, String>();
         placeholders.put("auth_player_name", "FMLDev");
         placeholders.put("version_name", minecraftVersion);
-        placeholders.put("game_directory", getInstallDir().getAsFile().get().getAbsolutePath());
+        placeholders.put("game_directory", gameDir.get());
         placeholders.put("auth_uuid", "00000000-0000-4000-8000-000000000000");
         placeholders.put("auth_access_token", "0");
         placeholders.put("clientid", "0");
@@ -203,21 +218,20 @@ public abstract class InstallProductionClientTask extends DefaultTask {
         placeholders.put("library_directory", getLibrariesDir().get().getAsFile().getAbsolutePath());
         placeholders.put("classpath_separator", File.pathSeparator);
 
-        writeArgFiles(installDir, minecraftVersion, placeholders, getVanillaJvmArgFile(), getVanillaMainClassArgFile(), getVanillaProgramArgFile());
-        writeArgFiles(installDir, "neoforge-" + neoForgeVersion, placeholders, getNeoForgeJvmArgFile(), getNeoForgeMainClassArgFile(), getNeoForgeProgramArgFile());
+        writeArgFiles(minecraftManifest, placeholders, getVanillaJvmArgFile(), getVanillaMainClassArgFile(), getVanillaProgramArgFile());
+        writeArgFiles(neoForgeManifest, placeholders, getNeoForgeJvmArgFile(), getNeoForgeMainClassArgFile(), getNeoForgeProgramArgFile());
     }
 
-    private void writeArgFiles(Path installDir,
-                               String profileName,
+    private void writeArgFiles(JsonObject manifest,
                                HashMap<String, String> placeholders,
                                RegularFileProperty jvmArgFileDestination,
                                RegularFileProperty mainClassArgFileDestination,
                                RegularFileProperty programArgFileDestination) throws IOException {
-        // Read back the version manifest and get the startup arguments
-        var manifestPath = installDir.resolve("versions").resolve(profileName).resolve(profileName + ".json");
-        var manifest = readJson(manifestPath);
 
-        var mainClass = manifest.getAsJsonPrimitive("mainClass").getAsString();
+        var mainClass = Objects.requireNonNullElse(
+                getMainClass().getOrNull(),
+                manifest.getAsJsonPrimitive("mainClass").getAsString()
+        );
 
         // Vanilla Arguments
         var programArgs = getArguments(manifest, "game");
@@ -313,6 +327,28 @@ public abstract class InstallProductionClientTask extends DefaultTask {
             case "x86" -> System.getProperty("os.arch").equals("x86");
             default -> false;
         };
+    }
+
+    // Returns the inherited manifests first
+    private static List<JsonObject> loadVersionManifests(Path installDir, String versionId) {
+        // Read back the version manifest and get the startup arguments
+        var manifestPath = installDir.resolve("versions").resolve(versionId).resolve(versionId + ".json");
+        JsonObject manifest;
+        try {
+            manifest = readJson(manifestPath);
+        } catch (IOException e) {
+            throw new GradleException("Failed to read launcher profile " + manifestPath, e);
+        }
+
+        var result = new ArrayList<JsonObject>();
+        var inheritsFrom = manifest.getAsJsonPrimitive("inheritsFrom");
+        if (inheritsFrom != null) {
+            result.addAll(loadVersionManifests(installDir, inheritsFrom.getAsString()));
+        }
+
+        result.add(manifest);
+
+        return result;
     }
 
     private static JsonObject readJson(Path path) throws IOException {

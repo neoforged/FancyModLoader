@@ -41,16 +41,16 @@ public class LanguageProviderLoader {
     LanguageProviderLoader(ILaunchContext launchContext) {
         languageProviders = ServiceLoaderUtil.loadServices(launchContext, IModLanguageLoader.class);
         ImmediateWindowHandler.updateProgress("Loading language providers");
-        languageProviders.forEach(lp -> {
+        for (var lp : languageProviders) {
             String version = lp.version();
             if (version == null || version.isBlank()) {
                 LOGGER.error(LogMarkers.CORE, "Found unversioned language provider {}", lp.name());
-                throw new RuntimeException("Failed to find implementation version for language provider " + lp.name());
+                throw new RuntimeException("Failed to determine version of language provider " + lp.name());
             }
             LOGGER.debug(LogMarkers.CORE, "Found language provider {}, version {}", lp.name(), version);
             ImmediateWindowHandler.updateProgress("Loaded language provider " + lp.name() + " " + version);
             languageProviderMap.put(lp.name(), new ModLanguageWrapper(lp, new DefaultArtifactVersion(version)));
-        });
+        }
     }
 
     public IModLanguageLoader findLanguage(ModFile mf, String modLoader, VersionRange modLoaderVersion) {
