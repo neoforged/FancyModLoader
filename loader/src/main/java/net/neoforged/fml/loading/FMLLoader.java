@@ -248,20 +248,6 @@ public class FMLLoader {
                 launchPluginHandler,
                 moduleLayerHandler);
 
-        // Add extra mixin configs from command line
-        var extraMixinConfigs = System.getProperty("fml.extraMixinConfigs");
-        if (extraMixinConfigs != null) {
-            var extraMixinConfigList = Arrays.asList(extraMixinConfigs.split(File.pathSeparator));
-            MixinBootstrap.getPlatform().addContainer(new FMLCommandLineMixinContainer(extraMixinConfigList));
-        }
-
-        for (var modFile : loadingModList.getModFiles()) {
-            var modMixins = modFile.getFile().getMixinConfigs();
-            if (!modMixins.isEmpty()) {
-                MixinBootstrap.getPlatform().addContainer(new FMLModFileMixinContainer(modFile.getFile()));
-            }
-        }
-
         // IModFileCandidateLocator.class.getName(),
         // IModFileReader.class.getName(),
         // IDependencyLocator.class.getName(),
@@ -338,6 +324,12 @@ public class FMLLoader {
         // From here on out, try loading through the TCL
         Thread.currentThread().setContextClassLoader(gameClassLoader);
 
+        // We're adding mixins *after* setting the Thread context classloader since
+        // Mixin stubbornly loads Mixin Configs via its ModLauncher environment using the TCL.
+        // Adding containers beforehand will try to load Mixin configs using the app classloader and fail.
+        // TODO: When we have our own mixinservice, make it use the loading modlist to load resources directly, bypassing the TCL. Then we can move it up again.
+        addMixins(loadingModList);
+
         // This will initialize Mixins, for example
         launchPluginHandler.announceLaunch(gameClassLoader, new NamedPath[0]);
 
@@ -350,6 +342,22 @@ public class FMLLoader {
             gameRunner.run();
         } catch (Throwable e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static void addMixins(LoadingModList loadingModList) {
+        // Add extra mixin configs from command line
+        var extraMixinConfigs = System.getProperty("fml.extraMixinConfigs");
+        if (extraMixinConfigs != null) {
+            var extraMixinConfigList = Arrays.asList(extraMixinConfigs.split(File.pathSeparator));
+            MixinBootstrap.getPlatform().addContainer(new FMLCommandLineMixinContainer(extraMixinConfigList));
+        }
+
+        for (var modFile : loadingModList.getModFiles()) {
+            var modMixins = modFile.getFile().getMixinConfigs();
+            if (!modMixins.isEmpty()) {
+                MixinBootstrap.getPlatform().addContainer(new FMLModFileMixinContainer(modFile.getFile()));
+            }
         }
     }
 
