@@ -76,6 +76,7 @@ dependencies {
         exclude module: 'modlauncher'
     }
     implementation("net.fabricmc:sponge-mixin:${mixin_version}")
+    implementation("net.minecrell:terminalconsoleappender:${terminalconsoleappender_version}")
     implementation("commons-io:commons-io:${commons_io_version}")
 
     implementation("org.apache.logging.log4j:log4j-core:${log4j_version}")

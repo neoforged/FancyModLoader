@@ -7,16 +7,6 @@ package net.neoforged.fml.loading;
 
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.TransformingClassLoader;
-import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import net.bytebuddy.agent.ByteBuddyAgent;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
@@ -31,11 +21,20 @@ import org.spongepowered.asm.service.MixinService;
 import org.spongepowered.asm.service.ServiceNotAvailableError;
 import org.spongepowered.asm.service.modlauncher.MixinServiceModLauncher;
 
+import java.lang.invoke.MethodHandles;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @MockitoSettings
 public abstract class LauncherTest {
     protected SimulatedInstallation installation;
-
-    protected Launcher launcher;
 
     // can be used to mark paths as already being located before, i.e. if they were loaded
     // by the two early ModLoader discovery interfaces ClasspathTransformerDiscoverer
@@ -59,25 +58,9 @@ public abstract class LauncherTest {
 
     @BeforeEach
     void setUp() throws Exception {
-//        var launchPlugins = new HashMap<String, ILaunchPluginService>();
-//        var launchHandlers = new HashMap<String, ILaunchHandlerService>();
-//        var environment = new Environment(
-//                s -> Optional.ofNullable(launchPlugins.get(s)),
-//                s -> Optional.ofNullable(launchHandlers.get(s)),
-//                moduleLayerManager);
-//        launcher = new Launcher(
-//                null,
-//                environment,
-//                null,
-//                null,
-//                null,
-//                moduleLayerManager
-//        );
-//        Launcher.INSTANCE = launcher;
-
+        // Clear in case other tests have set it and failed to reset it
+        SimulatedInstallation.setModFoldersProperty(Map.of());
         installation = new SimulatedInstallation();
-//
-//        environment.computePropertyIfAbsent(IEnvironment.Keys.GAMEDIR.get(), ignored -> installation.getGameDir());
     }
 
     @AfterEach
@@ -133,7 +116,7 @@ public abstract class LauncherTest {
         return result;
     }
 
-    private LaunchResult launch(String launchTarget) throws Exception {
+    private LaunchResult launch(String launchTarget) {
         return launch(launchTarget, List.of());
     }
 
@@ -141,6 +124,10 @@ public abstract class LauncherTest {
         resetMixin();
 
         ModLoader.clearLoadingIssues();
+        var lml = FMLLoader.getLoadingModList();
+        if (lml != null) {
+            lml.getModLoadingIssues().clear();
+        }
 
         System.setProperty("fml.earlyWindowControl", "false");
 
@@ -148,7 +135,7 @@ public abstract class LauncherTest {
         var startupArgs = new StartupArgs(
                 installation.getGameDir().toFile(),
                 launchTarget,
-                new String[] {
+                new String[]{
                         "--fml.fmlVersion", SimulatedInstallation.FML_VERSION,
                         "--fml.mcVersion", SimulatedInstallation.MC_VERSION,
                         "--fml.neoForgeVersion", SimulatedInstallation.NEOFORGE_VERSION,
@@ -162,74 +149,14 @@ public abstract class LauncherTest {
         ClassLoader launchClassLoader;
         try {
             var instrumentation = ByteBuddyAgent.install();
-            FMLLoader.startup(
-                    instrumentation,
-                    startupArgs);
+            FMLLoader.startup(instrumentation, startupArgs);
             launchClassLoader = Thread.currentThread().getContextClassLoader();
         } finally {
             Thread.currentThread().setContextClassLoader(classLoader);
         }
-//
-//        // ML would usually handle these two arguments
-//        environment.computePropertyIfAbsent(IEnvironment.Keys.GAMEDIR.get(), ignored -> installation.getGameDir());
-//        environment.computePropertyIfAbsent(IEnvironment.Keys.LAUNCHTARGET.get(), ignored -> launchTarget);
-//
-//        createModuleLayer(IModuleLayerManager.Layer.SERVICE, List.of());
-//
-//        serviceProvider.onLoad(environment, Set.of());
-//
-//        OptionParser parser = new OptionParser();
-//        serviceProvider.arguments((a, b) -> parser.accepts(serviceProvider.name() + "." + a, b));
-//        var result = parser.parse(
-//                "--fml.fmlVersion", SimulatedInstallation.FML_VERSION,
-//                "--fml.mcVersion", SimulatedInstallation.MC_VERSION,
-//                "--fml.neoForgeVersion", SimulatedInstallation.NEOFORGE_VERSION,
-//                "--fml.neoFormVersion", SimulatedInstallation.NEOFORM_VERSION);
-//        serviceProvider.argumentValues(new ITransformationService.OptionResult() {
-//            @Override
-//            public <V> V value(OptionSpec<V> options) {
-//                return result.valueOf(options);
-//            }
-//
-//            @Override
-//            public <V> List<V> values(OptionSpec<V> options) {
-//                return result.valuesOf(options);
-//            }
-//        });
-//
-//        serviceProvider.initialize(environment);
-//
-//        // We need to redirect the launch context to add services reachable via the system classloader since
-//        // this unit test and the main code is not loaded in a modular fashion
-//        assertThat(serviceProvider.launchContext).isNotNull();
-//        assertSame(environment, serviceProvider.launchContext.environment());
-//        serviceProvider.launchContext = new TestLaunchContext(serviceProvider.launchContext, locatedPaths);
-//
-//        var pluginResources = serviceProvider.beginScanning(environment);
-//        // In this phase, FML should only return plugin libraries
-//        assertThat(pluginResources).extracting(ITransformationService.Resource::target).containsOnly(IModuleLayerManager.Layer.PLUGIN);
-//        createModuleLayer(IModuleLayerManager.Layer.PLUGIN, pluginResources.stream().flatMap(resource -> resource.resources().stream()).toList());
-//
-//        var gameLayerResources = serviceProvider.completeScan(moduleLayerManager);
-//        // In this phase, FML should only return game layer content
-//        assertThat(gameLayerResources).extracting(ITransformationService.Resource::target).containsOnly(IModuleLayerManager.Layer.GAME);
-//
-//        // Query transformers now, which ML does before building the transforming class loader and launching the game
-//        var transformers = serviceProvider.transformers();
-//
-        var loadingModList = LoadingModList.get();
+
+        var loadingModList = FMLLoader.getLoadingModList();
         var loadedMods = loadingModList.getModFiles();
-//
-//        var pluginSecureJars = pluginResources.stream()
-//                .flatMap(r -> r.resources().stream())
-//                .collect(Collectors.toMap(
-//                        SecureJar::name,
-//                        Function.identity()));
-//        var gameSecureJars = gameLayerResources.stream()
-//                .flatMap(r -> r.resources().stream())
-//                .collect(Collectors.toMap(
-//                        SecureJar::name,
-//                        Function.identity()));
 
         // Wait for background scans of all mods to complete
         for (var modFile : loadingModList.getModFiles()) {
@@ -251,7 +178,6 @@ public abstract class LauncherTest {
                 loadedMods.stream().collect(Collectors.toMap(
                         o -> o.getMods().getFirst().getModId(),
                         o -> o)),
-                List.of(),
                 launchClassLoader);
     }
 
@@ -264,7 +190,8 @@ public abstract class LauncherTest {
                 f.setAccessible(true);
                 try {
                     f.set(MixinService.getService(), false);
-                } catch (ServiceNotAvailableError ignored) {}
+                } catch (ServiceNotAvailableError ignored) {
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -272,14 +199,16 @@ public abstract class LauncherTest {
     }
 
     private void loadMods() {
-        FMLLoader.progressWindowTick = () -> {};
+        FMLLoader.progressWindowTick = () -> {
+        };
 
         gameClassLoader = FMLLoader.gameClassLoader;
 
         ModLoader.gatherAndInitializeMods(
                 Runnable::run,
                 Runnable::run,
-                () -> {});
+                () -> {
+                });
     }
 
     protected static List<String> getTranslatedIssues(LaunchResult launchResult) {

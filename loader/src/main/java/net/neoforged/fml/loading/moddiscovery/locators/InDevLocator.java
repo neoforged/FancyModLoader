@@ -51,8 +51,6 @@ public class InDevLocator implements IModFileCandidateLocator {
     @Override
     public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {
         // Prioritize the "old" way of specifying a grouping
-        System.getProperty("fml.modFolders");
-
         loadFromSystemProperty();
 
         // Try to find the groupings based on CWD
@@ -82,6 +80,15 @@ public class InDevLocator implements IModFileCandidateLocator {
                 paths.add(path);
             }
             pipeline.addJarContent(JarContents.of(paths), ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.ERROR);
+        }
+
+        // Add groups that remain but are not on the classpath at all to support legacy configurations
+        // TODO: Decide whether to keep this or not
+        for (var entry : new HashSet<>(virtualJarMemberIndex.values())) {
+            var paths = entry.files.stream().map(File::toPath).toList();
+            if (paths.stream().noneMatch(context::isLocated)) {
+                pipeline.addJarContent(JarContents.of(paths), ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.ERROR);
+            }
         }
     }
 
@@ -134,7 +141,7 @@ public class InDevLocator implements IModFileCandidateLocator {
         var modFolders = Optional.ofNullable(System.getenv("MOD_CLASSES"))
                 .orElse(System.getProperty("fml.modFolders", ""));
         if (!modFolders.isEmpty()) {
-            LOGGER.debug(LogMarkers.CORE, "Got mod coordinates {} from env", modFolders);
+            LOGGER.info(LogMarkers.CORE, "Got mod coordinates {} from env", modFolders);
             // "a/b/;c/d/;" ->"modid%%c:\fish\pepper;modid%%c:\fish2\pepper2\;modid2%%c:\fishy\bums;modid2%%c:\hmm"
             var groupedEntries = Arrays.stream(modFolders.split(File.pathSeparator))
                     .collect(Collectors.groupingBy(

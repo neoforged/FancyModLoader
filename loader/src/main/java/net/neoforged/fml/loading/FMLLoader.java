@@ -153,7 +153,7 @@ public class FMLLoader {
                 Set.of(),
                 Map.of());
 
-        var moduleLayerHandler = new ModuleLayerHandler();
+        var moduleLayerHandler = new ModuleLayerHandler(startupArgs.parentClassLoader());
         var launchPlugins = new HashMap<String, ILaunchPluginService>();
         var launchHandlers = new HashMap<String, ILaunchHandlerService>();
         var environment = new Environment(
@@ -787,7 +787,7 @@ public class FMLLoader {
     }
 
     private static List<ITransformer<?>> loadCoreModScripts() {
-        var filesWithCoreModScripts = LoadingModList.get().getModFiles()
+        var filesWithCoreModScripts = loadingModList.getModFiles()
                 .stream()
                 .filter(mf -> !mf.getFile().getCoreMods().isEmpty())
                 .toList();

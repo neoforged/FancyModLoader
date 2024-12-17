@@ -5,14 +5,21 @@
 
 package net.neoforged.fml.loading;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import cpw.mods.jarhandling.SecureJar;
+import net.neoforged.fml.test.RuntimeCompiler;
+import net.neoforged.jarjar.metadata.ContainedJarMetadata;
+import net.neoforged.jarjar.metadata.Metadata;
+import net.neoforged.jarjar.metadata.MetadataIOHandler;
+import net.neoforged.jarjar.selection.util.Constants;
+import net.neoforged.neoforgespi.locating.IModFile;
+import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -34,15 +41,9 @@ import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import net.neoforged.fml.test.RuntimeCompiler;
-import net.neoforged.jarjar.metadata.ContainedJarMetadata;
-import net.neoforged.jarjar.metadata.Metadata;
-import net.neoforged.jarjar.metadata.MetadataIOHandler;
-import net.neoforged.jarjar.selection.util.Constants;
-import net.neoforged.neoforgespi.locating.IModFile;
-import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Opcodes;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Simulates various installation types for NeoForge
@@ -90,10 +91,10 @@ public class SimulatedInstallation implements AutoCloseable {
     // Used for testing running out of a Gradle project. Is the simulated Gradle project root directory.
     private final Path projectRoot;
 
-    private static final IdentifiableContent[] SERVER_EXTRA_JAR_CONTENT = { SHARED_ASSETS };
-    private static final IdentifiableContent[] CLIENT_EXTRA_JAR_CONTENT = { CLIENT_ASSETS, SHARED_ASSETS };
-    private static final IdentifiableContent[] NEOFORGE_UNIVERSAL_JAR_CONTENT = { NEOFORGE_ASSETS, NEOFORGE_CLASSES, NEOFORGE_MODS_TOML, NEOFORGE_MANIFEST };
-    private static final IdentifiableContent[] USERDEV_CLIENT_JAR_CONTENT = { CLIENT_ENTRYPOINT, PATCHED_CLIENT, SERVER_ENTRYPOINT, DATA_ENTRYPOINT, PATCHED_SHARED };
+    private static final IdentifiableContent[] SERVER_EXTRA_JAR_CONTENT = {SHARED_ASSETS};
+    private static final IdentifiableContent[] CLIENT_EXTRA_JAR_CONTENT = {CLIENT_ASSETS, SHARED_ASSETS};
+    private static final IdentifiableContent[] NEOFORGE_UNIVERSAL_JAR_CONTENT = {NEOFORGE_ASSETS, NEOFORGE_CLASSES, NEOFORGE_MODS_TOML, NEOFORGE_MANIFEST};
+    private static final IdentifiableContent[] USERDEV_CLIENT_JAR_CONTENT = {CLIENT_ENTRYPOINT, PATCHED_CLIENT, SERVER_ENTRYPOINT, DATA_ENTRYPOINT, PATCHED_SHARED};
 
     // For a production client: Simulates the "libraries" directory found in the Vanilla Minecraft installation directory (".minecraft")
     // For a production server: The NF installer creates a "libraries" directory in the server root
@@ -168,7 +169,7 @@ public class SimulatedInstallation implements AutoCloseable {
         // In dev, we have a joined distribution containing both dedicated server and client
         var classesDir = projectRoot.resolve("projects/neoforge/build/classes/java/main");
         additionalClasspath.add(classesDir);
-        writeFiles(classesDir, PATCHED_CLIENT, PATCHED_SHARED, NEOFORGE_CLASSES);
+        writeFiles(classesDir, PATCHED_CLIENT, PATCHED_SHARED, NEOFORGE_CLASSES, SERVER_ENTRYPOINT, CLIENT_ENTRYPOINT, DATA_ENTRYPOINT);
 
         var resourcesDir = projectRoot.resolve("projects/neoforge/build/resources/main");
         additionalClasspath.add(resourcesDir);
@@ -261,7 +262,7 @@ public class SimulatedInstallation implements AutoCloseable {
                 modLoader = "javafml"
                 loaderVersion = "[3,]"
                 license = "LICENSE"
-
+                
                 [[mods]]
                 modId="neoforge"
                 """.getBytes();
@@ -285,7 +286,7 @@ public class SimulatedInstallation implements AutoCloseable {
                 modLoader = "javafml"
                 loaderVersion = "[3,]"
                 license = "LICENSE"
-
+                
                 [[mods]]
                 modId="%s"
                 version="%s"
@@ -298,11 +299,11 @@ public class SimulatedInstallation implements AutoCloseable {
                 modLoader = "javafml"
                 loaderVersion = "[3,]"
                 license = "LICENSE"
-
+                
                 [[mods]]
                 modId="%s"
                 version="%s"
-
+                
                 [[mods]]
                 modId="%s"
                 version="%s"

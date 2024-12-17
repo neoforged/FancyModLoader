@@ -9,14 +9,6 @@ import com.google.common.collect.Streams;
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.stream.Stream;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.ClasspathLocatorUtils;
 import net.neoforged.fml.loading.FMLLoader;
@@ -34,6 +26,17 @@ import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.jar.Manifest;
+import java.util.stream.Stream;
+
 public class GameLocator implements IModFileCandidateLocator {
     private static final Logger LOG = LoggerFactory.getLogger(GameLocator.class);
 
@@ -50,26 +53,52 @@ public class GameLocator implements IModFileCandidateLocator {
         // 1b) It's on the classpath, but as a jar
         var ourCl = Thread.currentThread().getContextClassLoader();
 
-        var classesJar = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath(ourCl, "net/minecraft/client/Minecraft.class");
-        var resourceJar = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath(ourCl, "assets/.mcassetsroot");
-        if (classesJar != null && resourceJar != null) {
+        var mcClassesRoot = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath(ourCl, "net/minecraft/client/Minecraft.class");
+        var mcResourceRoot = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath(ourCl, "assets/.mcassetsroot");
+        if (mcClassesRoot != null && mcResourceRoot != null) {
             // Determine if we're dealing with a split jar-file situation (moddev)
-            if (Files.isRegularFile(classesJar) && Files.isRegularFile(resourceJar)) {
-                context.addLocated(classesJar);
-                context.addLocated(resourceJar);
-                addDevelopmentModFiles(List.of(classesJar), resourceJar, pipeline);
+            if (Files.isRegularFile(mcClassesRoot) && Files.isRegularFile(mcResourceRoot)) {
+                context.addLocated(mcClassesRoot);
+                context.addLocated(mcResourceRoot);
+                addDevelopmentModFiles(List.of(mcClassesRoot), mcResourceRoot, pipeline);
                 return;
             }
 
             // when the classesJar is a directory, we're assuming that we are in neo dev
             // in that case, we also need to find the resource directory
-            if (Files.isRegularFile(classesJar) && Files.isRegularFile(resourceJar)) {
-                addDevelopmentModFiles(List.of(classesJar), resourceJar, pipeline);
-                return;
+            if (Files.isDirectory(mcClassesRoot) && Files.isRegularFile(mcResourceRoot)) {
+                // We look for all MANIFEST.MF directly on the classpath and try to find the one for NeoForge
+                var manifestRoots = ClasspathResourceUtils.findFileSystemRootsOfFileOnClasspath(ourCl, JarModsDotTomlModFileReader.MANIFEST);
+                Path resourcesRoot;
+                for (var manifestRoot : manifestRoots) {
+                    if (!Files.isDirectory(manifestRoot)) {
+                        continue; // We're only interested in directories
+                    }
+
+                    if (isNeoForgeManifest(manifestRoot.resolve(JarModsDotTomlModFileReader.MANIFEST))) {
+                        context.addLocated(mcClassesRoot);
+                        context.addLocated(manifestRoot);
+                        context.addLocated(mcResourceRoot);
+                        addDevelopmentModFiles(List.of(mcClassesRoot, manifestRoot), mcResourceRoot, pipeline);
+                        return;
+                    }
+                }
             }
         }
 
+        // 2) In production it's in the libraries directory
         locateProductionMinecraft(context, pipeline);
+    }
+
+    private boolean isNeoForgeManifest(Path path) {
+        // TODO: We should use some other build-time-only approach of marking the directories, same as we do for userdev
+        try (var in = new BufferedInputStream(Files.newInputStream(path))) {
+            var manifest = new Manifest(in);
+            return "neoforge".equals(manifest.getMainAttributes().getValue("FML-System-Mods"));
+        } catch (IOException e) {
+            LOG.debug("Failed to read manifest at {}: {}", path, e);
+            return false;
+        }
     }
 
     /**
@@ -147,7 +176,7 @@ public class GameLocator implements IModFileCandidateLocator {
     private static MavenCoordinate[] getClientJarCoordinates(VersionInfo versionInfo) {
         // THE ORDER OF THESE ARTIFACTS MATTERS!
         // Classes in 'client' overwrite classes in 'srg'!
-        return new MavenCoordinate[] {
+        return new MavenCoordinate[]{
                 new MavenCoordinate("net.minecraft", "client", "", "srg", versionInfo.mcAndNeoFormVersion()),
                 new MavenCoordinate("net.minecraft", "client", "", "extra", versionInfo.mcAndNeoFormVersion()),
                 // This jar-file contains only the Minecraft classes patched by NeoForge
@@ -158,7 +187,7 @@ public class GameLocator implements IModFileCandidateLocator {
     private static MavenCoordinate[] getServerJarCoordinates(VersionInfo versionInfo) {
         // THE ORDER OF THESE ARTIFACTS MATTERS!
         // Classes in 'client' overwrite classes in 'srg'!
-        return new MavenCoordinate[] {
+        return new MavenCoordinate[]{
                 new MavenCoordinate("net.minecraft", "server", "", "srg", versionInfo.mcAndNeoFormVersion()),
                 new MavenCoordinate("net.minecraft", "server", "", "extra", versionInfo.mcAndNeoFormVersion()),
                 // This jar-file contains only the Minecraft classes patched by NeoForge
@@ -188,7 +217,8 @@ public class GameLocator implements IModFileCandidateLocator {
                 context.addLocated(path);
             }
 
-        } catch (IOException ignored) {}
+        } catch (IOException ignored) {
+        }
     }
 
     private static boolean resolveLibraries(Path libraryDirectory, List<Path> paths, IDiscoveryPipeline pipeline, MavenCoordinate... coordinates) {
@@ -244,11 +274,15 @@ public class GameLocator implements IModFileCandidateLocator {
                     return false;
                 })
                 .build();
-        pipeline.addModFile(JarModsDotTomlModFileReader.createModFile(neoforgeJarContents, ModFileDiscoveryAttributes.DEFAULT));
+        var modFile = JarModsDotTomlModFileReader.createModFile(neoforgeJarContents, ModFileDiscoveryAttributes.DEFAULT);
+        if (modFile == null) {
+            throw new IllegalStateException("Failed to construct a mod from the NeoForge classes and resources directories.");
+        }
+        pipeline.addModFile(modFile);
     }
 
     private static String[] getNeoForgeSpecificPathPrefixes() {
-        return new String[] { "net/neoforged/neoforge/", "META-INF/services/", "META-INF/coremods.json", JarModsDotTomlModFileReader.MODS_TOML };
+        return new String[]{"net/neoforged/neoforge/", "META-INF/services/", "META-INF/coremods.json", JarModsDotTomlModFileReader.MODS_TOML};
     }
 
     @Override

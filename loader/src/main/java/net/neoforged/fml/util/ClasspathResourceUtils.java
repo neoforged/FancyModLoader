@@ -5,7 +5,13 @@
 
 package net.neoforged.fml.util;
 
+import net.neoforged.fml.ModLoadingException;
+import net.neoforged.fml.ModLoadingIssue;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -13,15 +19,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
-import net.neoforged.fml.ModLoadingException;
-import net.neoforged.fml.ModLoadingIssue;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
 
 @ApiStatus.Internal
 public final class ClasspathResourceUtils {
-    private ClasspathResourceUtils() {}
+    private ClasspathResourceUtils() {
+    }
 
     public static List<Path> findFileSystemRootsOfFileOnClasspath(String relativePath) {
         // If we're loaded through a module, it means the original classpath is inaccessible through the context CL
@@ -30,21 +34,7 @@ public final class ClasspathResourceUtils {
             classLoader = ClassLoader.getSystemClassLoader();
         }
 
-        // Find the directory that contains the Minecraft classes via the system classpath
-        Iterator<URL> resourceIt;
-        try {
-            resourceIt = classLoader.getResources(relativePath).asIterator();
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Failed to enumerate classpath locations of " + relativePath);
-        }
-
-        List<Path> result = new ArrayList<>();
-        while (resourceIt.hasNext()) {
-            var resourceUrl = resourceIt.next();
-            result.add(getRootFromResourceUrl(relativePath, resourceUrl));
-        }
-
-        return result;
+        return findFileSystemRootsOfFileOnClasspath(classLoader, relativePath);
     }
 
     public static Path getRootFromResourceUrl(String relativePath, URL resourceUrl) {
@@ -81,6 +71,24 @@ public final class ClasspathResourceUtils {
         }
 
         return getRootFromResourceUrl(relativePath, resource);
+    }
+
+    public static List<Path> findFileSystemRootsOfFileOnClasspath(ClassLoader classLoader, String relativePath) {
+        // Find the directory that contains the Minecraft classes via the system classpath
+        Iterator<URL> resourceIt;
+        try {
+            resourceIt = classLoader.getResources(relativePath).asIterator();
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Failed to enumerate classpath locations of " + relativePath);
+        }
+
+        var result = new LinkedHashSet<Path>();
+        while (resourceIt.hasNext()) {
+            var resourceUrl = resourceIt.next();
+            result.add(getRootFromResourceUrl(relativePath, resourceUrl));
+        }
+
+        return new ArrayList<>(result);
     }
 
     public static Path findFileSystemRootOfFileOnClasspath(String relativePath) {
