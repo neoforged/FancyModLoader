@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
+import net.neoforged.fml.Bindings;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.loading.StringUtils;
@@ -80,6 +81,8 @@ public final class ModConfig {
         } finally {
             lock.unlock();
         }
+
+        Bindings.fireConfigChanged(this, loadedConfig);
     }
 
     public enum Type {
