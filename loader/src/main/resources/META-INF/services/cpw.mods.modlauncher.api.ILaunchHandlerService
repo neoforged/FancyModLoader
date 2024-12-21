@@ -5,3 +5,5 @@ net.neoforged.fml.loading.targets.NeoForgeServerLaunchHandler
 net.neoforged.fml.loading.targets.NeoForgeServerDevLaunchHandler
 net.neoforged.fml.loading.targets.NeoForgeServerDataDevLaunchHandler
 net.neoforged.fml.loading.targets.JUnitDevLaunchTarget
+cpw.mods.modlauncher.DefaultLaunchHandlerService
+cpw.mods.modlauncher.TestingLaunchHandlerService
