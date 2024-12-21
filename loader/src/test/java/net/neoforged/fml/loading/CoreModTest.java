@@ -68,7 +68,7 @@ public class CoreModTest extends LauncherTest {
                 })
                 .build();
 
-        var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
+        var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                 "ERROR: An error occurred while loading core-mod testmod.coremods.TestCoreMod from mods/testmod.jar > coremod-1.0.jar");
     }
@@ -88,7 +88,7 @@ public class CoreModTest extends LauncherTest {
                         }}""")
                 .build();
 
-        var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
+        var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                 "ERROR: An error occurred while loading core-mod testmod.coremods.TestCoreMod from mods/coremod.jar");
     }
@@ -115,7 +115,7 @@ public class CoreModTest extends LauncherTest {
                 })
                 .build();
 
-        var transformers = launchAndLoad("forgeclient").transformers();
+        var transformers = launchAndLoad("neoforgeclient").transformers();
         assertThat(transformers).containsOnly(TEST_TRANSFORMER);
 
         var testClass = Class.forName("testmod.TestClass", true, gameClassLoader);
@@ -153,7 +153,7 @@ public class CoreModTest extends LauncherTest {
                         """)
                 .build();
 
-        var transformers = launchAndLoad("forgeclient").transformers();
+        var transformers = launchAndLoad("neoforgeclient").transformers();
         assertThat(transformers).hasSize(1);
         var transformer = (ITransformer<ClassNode>) transformers.getFirst();
         assertThat(transformer.getTargetType()).isEqualTo(TargetType.CLASS);

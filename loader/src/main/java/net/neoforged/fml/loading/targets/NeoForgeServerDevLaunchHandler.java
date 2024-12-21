@@ -7,10 +7,10 @@ package net.neoforged.fml.loading.targets;
 
 import net.neoforged.api.distmarker.Dist;
 
-public class NeoForgeServerDevLaunchHandler extends CommonDevLaunchHandler {
+public class NeoForgeServerDevLaunchHandler extends NeoForgeDevLaunchHandler {
     @Override
     public String name() {
-        return "forgeserverdev";
+        return "neoforgeserverdev";
     }
 
     @Override

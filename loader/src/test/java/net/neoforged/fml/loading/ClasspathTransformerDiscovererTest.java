@@ -38,7 +38,7 @@ class ClasspathTransformerDiscovererTest {
 
     @Test
     void testLocateTransformerServiceInDev() throws Exception {
-        var candidates = runLocator("forgeclientdev");
+        var candidates = runLocator("neoforgeclientdev");
 
         assertThat(candidates)
                 .anySatisfy(candidate -> {
@@ -53,7 +53,7 @@ class ClasspathTransformerDiscovererTest {
 
     @Test
     void testLocateTransformerServiceNotInDev() throws Exception {
-        var candidates = runLocator("forgeclient");
+        var candidates = runLocator("neoforgeclient");
         assertThat(candidates).isEmpty();
     }
 

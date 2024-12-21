@@ -41,10 +41,6 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
 
     public abstract boolean isProduction();
 
-    public boolean isData() {
-        return false;
-    }
-
     /**
      * Return additional locators to be used for locating mods when this launch handler is used.
      */
@@ -126,10 +122,6 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
 
     protected void serverService(final String[] arguments, final ModuleLayer layer) throws Throwable {
         runTarget("net.minecraft.server.Main", arguments, layer);
-    }
-
-    protected void dataService(final String[] arguments, final ModuleLayer layer) throws Throwable {
-        runTarget("net.minecraft.data.Main", arguments, layer);
     }
 
     protected void runTarget(final String target, final String[] arguments, final ModuleLayer layer) throws Throwable {

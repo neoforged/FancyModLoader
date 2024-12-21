@@ -7,24 +7,19 @@ package net.neoforged.fml.loading.targets;
 
 import net.neoforged.api.distmarker.Dist;
 
-public class NeoForgeDataUserdevLaunchHandler extends NeoForgeUserdevLaunchHandler {
+public class NeoForgeServerDataDevLaunchHandler extends NeoForgeDevLaunchHandler {
     @Override
     public String name() {
-        return "forgedatauserdev";
+        return "neoforgeserverdatadev";
     }
 
     @Override
     public Dist getDist() {
-        return Dist.CLIENT;
-    }
-
-    @Override
-    public boolean isData() {
-        return true;
+        return Dist.DEDICATED_SERVER;
     }
 
     @Override
     public void runService(String[] arguments, ModuleLayer layer) throws Throwable {
-        dataService(arguments, layer);
+        runTarget("net.minecraft.data.Main", arguments, layer);
     }
 }
