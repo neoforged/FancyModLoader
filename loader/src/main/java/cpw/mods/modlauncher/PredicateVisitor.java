@@ -1,19 +1,15 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- *
- *     Copyright (C) 2017-2019 cpw
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, version 3 of the License.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (C) 2017-2019 cpw
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher;
@@ -26,7 +22,7 @@ import org.objectweb.asm.Opcodes;
 
 public class PredicateVisitor extends ClassVisitor {
     private static final int ASM_API = Opcodes.ASM9;
-    
+
     private ITransformerVotingContext.MethodPredicate methodPredicate;
     private ITransformerVotingContext.FieldPredicate fieldPredicate;
     private ITransformerVotingContext.ClassPredicate classPredicate;
@@ -67,5 +63,4 @@ public class PredicateVisitor extends ClassVisitor {
     public void visit(final int version, final int access, final String name, final String signature, final String superName, final String[] interfaces) {
         result = classPredicate == null || classPredicate.test(version, access, name, signature, superName, interfaces);
     }
-
 }

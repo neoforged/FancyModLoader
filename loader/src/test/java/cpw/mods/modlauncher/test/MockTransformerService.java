@@ -1,35 +1,41 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- *
- *     Copyright (C) 2017-2019 cpw
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, version 3 of the License.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (C) 2017-2019 cpw
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher.test;
 
 import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.modlauncher.api.*;
-import joptsimple.*;
-import org.jetbrains.annotations.NotNull;
-import org.objectweb.asm.*;
-import org.objectweb.asm.tree.*;
-
+import cpw.mods.modlauncher.api.IEnvironment;
+import cpw.mods.modlauncher.api.IModuleLayerManager;
+import cpw.mods.modlauncher.api.ITransformationService;
+import cpw.mods.modlauncher.api.ITransformer;
+import cpw.mods.modlauncher.api.ITransformerVotingContext;
+import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
+import cpw.mods.modlauncher.api.TargetType;
+import cpw.mods.modlauncher.api.TransformerVoteResult;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.util.*;
-import java.util.function.*;
-import java.util.stream.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import joptsimple.ArgumentAcceptingOptionSpec;
+import joptsimple.OptionSpecBuilder;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
 
 /**
  * Test Launcher Service
@@ -40,7 +46,6 @@ public class MockTransformerService implements ITransformationService {
     private List<String> modList;
     private String state;
 
-    @NotNull
     @Override
     public String name() {
         return "test";
@@ -62,21 +67,19 @@ public class MockTransformerService implements ITransformationService {
     }
 
     @Override
-    public void onLoad(IEnvironment env, Set<String> otherServices) throws IncompatibleEnvironmentException {
-
-    }
+    public void onLoad(IEnvironment env, Set<String> otherServices) throws IncompatibleEnvironmentException {}
 
     @Override
     public List<Resource> beginScanning(IEnvironment environment) {
-        if (System.getProperty("testJars.location")!=null) {
+        if (System.getProperty("testJars.location") != null) {
             SecureJar testjar = SecureJar.from(Path.of(System.getProperty("testJars.location")));
             return List.of(new Resource(IModuleLayerManager.Layer.PLUGIN, List.of(testjar)));
-        } else if (System.getProperty("test.harness")!=null) {
+        } else if (System.getProperty("test.harness") != null) {
             return List.of(new Resource(IModuleLayerManager.Layer.PLUGIN,
                     Arrays.stream(System.getProperty("test.harness").split(","))
-                    .map(FileSystems.getDefault()::getPath)
-                    .map(SecureJar::from)
-                    .toList()));
+                            .map(FileSystems.getDefault()::getPath)
+                            .map(SecureJar::from)
+                            .toList()));
         } else {
             return List.of();
         }
@@ -84,7 +87,7 @@ public class MockTransformerService implements ITransformationService {
 
     @Override
     public List<Resource> completeScan(IModuleLayerManager layerManager) {
-        if (System.getProperty("testJars.location")!=null) {
+        if (System.getProperty("testJars.location") != null) {
             SecureJar testjar = SecureJar.from(Path.of(System.getProperty("testJars.location")));
             return List.of(new Resource(IModuleLayerManager.Layer.GAME, List.of(testjar)));
         } else {
@@ -92,7 +95,6 @@ public class MockTransformerService implements ITransformationService {
         }
     }
 
-    @NotNull
     @Override
     public List<? extends ITransformer<?>> transformers() {
         return Stream.of(new ClassNodeTransformer(modList)).collect(Collectors.toList());
@@ -105,7 +107,6 @@ public class MockTransformerService implements ITransformationService {
             this.classNames = classNames;
         }
 
-        @NotNull
         @Override
         public ClassNode transform(ClassNode input, ITransformerVotingContext context) {
             FieldNode fn = new FieldNode(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "testfield", "Ljava/lang/String;", null, "CHEESE!");
@@ -113,13 +114,11 @@ public class MockTransformerService implements ITransformationService {
             return input;
         }
 
-        @NotNull
         @Override
         public TransformerVoteResult castVote(ITransformerVotingContext context) {
             return TransformerVoteResult.YES;
         }
 
-        @NotNull
         @Override
         public Set<Target<ClassNode>> targets() {
             return classNames.stream().map(Target::targetClass).collect(Collectors.toSet());
@@ -130,5 +129,4 @@ public class MockTransformerService implements ITransformationService {
             return TargetType.CLASS;
         }
     }
-
 }

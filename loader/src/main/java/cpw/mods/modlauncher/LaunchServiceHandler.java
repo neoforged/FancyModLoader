@@ -1,32 +1,34 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- *
- *     Copyright (C) 2017-2019 cpw
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, version 3 of the License.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (C) 2017-2019 cpw
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher;
 
-import cpw.mods.modlauncher.api.*;
+import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
+
+import cpw.mods.modlauncher.api.ILaunchHandlerService;
+import cpw.mods.modlauncher.api.IModuleLayerManager;
+import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.ServiceLoader;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.*;
-import java.util.stream.*;
-
-import static cpw.mods.modlauncher.LogMarkers.*;
 
 /**
  * Identifies the launch target and dispatches to it
@@ -36,9 +38,9 @@ class LaunchServiceHandler {
     private final Map<String, LaunchServiceHandlerDecorator> launchHandlerLookup;
 
     public LaunchServiceHandler(final ModuleLayerHandler layerHandler) {
-        this.launchHandlerLookup = ServiceLoaderUtils.streamServiceLoader(()->ServiceLoader.load(layerHandler.getLayer(IModuleLayerManager.Layer.BOOT).orElseThrow(), ILaunchHandlerService.class), sce -> LOGGER.fatal("Encountered serious error loading transformation service, expect problems", sce))
+        this.launchHandlerLookup = ServiceLoaderUtils.streamServiceLoader(() -> ServiceLoader.load(layerHandler.getLayer(IModuleLayerManager.Layer.BOOT).orElseThrow(), ILaunchHandlerService.class), sce -> LOGGER.fatal("Encountered serious error loading transformation service, expect problems", sce))
                 .collect(Collectors.toMap(ILaunchHandlerService::name, LaunchServiceHandlerDecorator::new));
-        LOGGER.debug(MODLAUNCHER,"Found launch services [{}]", () -> String.join(",",launchHandlerLookup.keySet()));
+        LOGGER.debug(MODLAUNCHER, "Found launch services [{}]", () -> String.join(",", launchHandlerLookup.keySet()));
     }
 
     public Optional<ILaunchHandlerService> findLaunchHandler(final String name) {
@@ -56,7 +58,7 @@ class LaunchServiceHandler {
     static List<String> hideAccessToken(String[] arguments) {
         final ArrayList<String> output = new ArrayList<>();
         for (int i = 0; i < arguments.length; i++) {
-            if (i > 0 && Objects.equals(arguments[i-1], "--accessToken")) {
+            if (i > 0 && Objects.equals(arguments[i - 1], "--accessToken")) {
                 output.add("❄❄❄❄❄❄❄❄");
             } else {
                 output.add(arguments[i]);

@@ -1,19 +1,15 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- *
- *     Copyright (C) 2017-2019 cpw
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, version 3 of the License.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (C) 2017-2019 cpw
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher;
@@ -23,8 +19,10 @@ import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.ITransformerActivity;
 import cpw.mods.modlauncher.api.ITransformerAuditTrail;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -56,7 +54,7 @@ public class TransformerAuditTrail implements ITransformerAuditTrail {
         }
 
         public String getActivityString() {
-            return this.type.getLabel() + ":"+ String.join(":",this.context);
+            return this.type.getLabel() + ":" + String.join(":", this.context);
         }
     }
 
@@ -69,7 +67,7 @@ public class TransformerAuditTrail implements ITransformerAuditTrail {
     }
 
     public void addPluginAuditTrail(String clazz, ILaunchPluginService plugin, ILaunchPluginService.Phase phase) {
-        getTransformerActivities(clazz).add(new TransformerActivity(ITransformerActivity.Type.PLUGIN, plugin.name(), phase.name().substring(0,1)));
+        getTransformerActivities(clazz).add(new TransformerActivity(ITransformerActivity.Type.PLUGIN, plugin.name(), phase.name().substring(0, 1)));
     }
 
     public void addTransformerAuditTrail(String clazz, ITransformationService transformService, ITransformer<?> transformer) {
@@ -82,8 +80,9 @@ public class TransformerAuditTrail implements ITransformerAuditTrail {
         System.arraycopy(rest, 0, res, 1, rest.length);
         return res;
     }
+
     private List<ITransformerActivity> getTransformerActivities(final String clazz) {
-        return audit.computeIfAbsent(clazz, k->new ArrayList<>());
+        return audit.computeIfAbsent(clazz, k -> new ArrayList<>());
     }
 
     @Override

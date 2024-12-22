@@ -1,31 +1,30 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- *
- *     Copyright (C) 2017-2019 cpw
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, version 3 of the License.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (C) 2017-2019 cpw
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher.log;
 
+import java.util.Collections;
 import joptsimple.internal.Strings;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.impl.ThrowableProxy;
-import org.apache.logging.log4j.core.pattern.*;
-
-import java.util.Collections;
+import org.apache.logging.log4j.core.pattern.ConverterKeys;
+import org.apache.logging.log4j.core.pattern.PatternConverter;
+import org.apache.logging.log4j.core.pattern.PlainTextRenderer;
+import org.apache.logging.log4j.core.pattern.TextRenderer;
+import org.apache.logging.log4j.core.pattern.ThrowablePatternConverter;
 
 /**
  * Started as a copy of {@link org.apache.logging.log4j.core.pattern.ExtendedThrowablePatternConverter} because
@@ -34,12 +33,13 @@ import java.util.Collections;
 @Plugin(name = "TransformingThrowablePatternConverter", category = PatternConverter.CATEGORY)
 @ConverterKeys({ "tEx" })
 public class TransformingThrowablePatternConverter extends ThrowablePatternConverter {
-    static final String SUFFIXFLAG="☃☃☃☃☃SUFFIXFLAG☃☃☃☃☃";
+    static final String SUFFIXFLAG = "☃☃☃☃☃SUFFIXFLAG☃☃☃☃☃";
+
     /**
      * @param name    Name of converter.
      * @param style   CSS style for output.
      * @param options options, may be null.
-     * @param config config.
+     * @param config  config.
      */
     protected TransformingThrowablePatternConverter(final Configuration config, final String[] options) {
         super("TransformingThrowable", "throwable", options, config);
@@ -70,15 +70,14 @@ public class TransformingThrowablePatternConverter extends ThrowablePatternConve
     /**
      * Gets an instance of the class.
      *
-     * @param config The current Configuration.
-     * @param options pattern options, may be null.  If first element is "short",
+     * @param config  The current Configuration.
+     * @param options pattern options, may be null. If first element is "short",
      *                only the first line of the throwable will be formatted.
      * @return instance of class.
      */
     public static TransformingThrowablePatternConverter newInstance(final Configuration config, final String[] options) {
         return new TransformingThrowablePatternConverter(config, options);
     }
-
 
     public static String generateEnhancedStackTrace(final Throwable throwable) {
         final ThrowableProxy proxy = new ThrowableProxy(throwable);
