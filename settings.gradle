@@ -32,4 +32,5 @@ include 'loader'
 include 'earlydisplay'
 include 'junit'
 include 'tests'
+include 'sjh-jmh'
 enableFeaturePreview "STABLE_CONFIGURATION_CACHE"
