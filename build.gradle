@@ -41,6 +41,12 @@ allprojects {
 
     dependencyUpdates.rejectVersionIf { isNonStable(it.candidate.version) }
 
+    configurations {
+        all.collect { configuration ->
+            configuration.exclude group: 'cpw.mods', module: 'modlauncher'
+        }
+    }
+
     java {
         withSourcesJar()
         toolchain {
@@ -103,6 +109,6 @@ subprojects { subProject ->
     }
 
     changelog {
-        from "1.0"
+        from "6.0"
     }
 }
