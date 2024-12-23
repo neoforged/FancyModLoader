@@ -12,7 +12,11 @@ changelog {
 
 gradleutils.version {
     branches {
+        suffixExemptedBranches.add("7.x")
         suffixBranch()
+    }
+    tags {
+        label = 'alpha'
     }
 }
 
@@ -32,6 +36,9 @@ allprojects {
 
     gradleutils {
         setupSigning(signAllPublications: true)
+        changelog {
+            from '7.0'
+        }
     }
 
     group = 'net.neoforged.fancymodloader'
@@ -100,9 +107,5 @@ subprojects { subProject ->
         repositories {
             maven gradleutils.publishingMaven
         }
-    }
-
-    changelog {
-        from "1.0"
     }
 }
