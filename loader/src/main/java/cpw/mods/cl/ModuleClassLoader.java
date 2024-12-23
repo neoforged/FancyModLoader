@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -279,7 +280,16 @@ public class ModuleClassLoader extends ClassLoader {
 
     @Override
     public Enumeration<URL> getResources(final String name) throws IOException {
-        return Collections.enumeration(findResourceList(name));
+        var result = Collections.enumeration(findResourceList(name));
+        if (fallbackClassLoader != null) {
+            // Matching behavior from getResource, we prioritize our own loader
+            // JDK loaders do the opposite.
+            return new CompoundEnumeration(
+                    result,
+                    fallbackClassLoader.getResources(name));
+        } else {
+            return result;
+        }
     }
 
     private List<URL> findResourceList(final String name) throws IOException {
@@ -352,5 +362,50 @@ public class ModuleClassLoader extends ClassLoader {
 
     public void setFallbackClassLoader(final ClassLoader fallbackClassLoader) {
         this.fallbackClassLoader = fallbackClassLoader;
+    }
+}
+
+/*
+ * Combines the resource list from our CL with the parents.
+ */
+final class CompoundEnumeration implements Enumeration<URL> {
+    private final Enumeration<URL> first;
+    private final Enumeration<URL> second;
+    private int index;
+
+    public CompoundEnumeration(Enumeration<URL> first, Enumeration<URL> second) {
+        this.first = first;
+        this.second = second;
+    }
+
+    private boolean next() {
+        if (index == 0) {
+            if (first.hasMoreElements()) {
+                return true;
+            }
+            index++;
+        }
+        if (index == 1) {
+            if (second.hasMoreElements()) {
+                return true;
+            }
+            index++;
+        }
+        return false;
+    }
+
+    public boolean hasMoreElements() {
+        return next();
+    }
+
+    public URL nextElement() {
+        if (!next()) {
+            throw new NoSuchElementException();
+        }
+        return switch (index) {
+            case 0 -> first.nextElement();
+            case 1 -> second.nextElement();
+            default -> throw new NoSuchElementException();
+        };
     }
 }

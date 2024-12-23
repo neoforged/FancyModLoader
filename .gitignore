@@ -29,3 +29,5 @@ changelog.txt
 
 # Our tests produce this...
 /loader/logs/
+/loader/src/jmh/generated/
+/sjh-jmh/src/main/generated/

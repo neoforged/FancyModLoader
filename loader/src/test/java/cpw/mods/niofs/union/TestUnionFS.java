@@ -55,9 +55,9 @@ public class TestUnionFS {
 
     @Test
     void testUnionFileSystemJar() throws Throwable {
-        final var jar1 = Paths.get("sjh-jmh", "src", "testjars", "testjar1.jar").toAbsolutePath().normalize();
-        final var jar2 = Paths.get("sjh-jmh", "src", "testjars", "testjar2.jar").toAbsolutePath().normalize();
-        final var jar3 = Paths.get("sjh-jmh", "src", "testjars", "testjar3.jar").toAbsolutePath().normalize();
+        final var jar1 = Paths.get("src", "testjars", "testjar1.jar").toAbsolutePath().normalize();
+        final var jar2 = Paths.get("src", "testjars", "testjar2.jar").toAbsolutePath().normalize();
+        final var jar3 = Paths.get("src", "testjars", "testjar3.jar").toAbsolutePath().normalize();
 
         final var fileSystem = UFSP.newFileSystem(jar1, Map.of("additional", List.of(jar2, jar3)));
         assertAll(
@@ -243,9 +243,9 @@ public class TestUnionFS {
 
     @Test
     public void testDirectoryVisitorJar() throws Exception {
-        final var jar1 = Paths.get("sjh-jmh", "src", "testjars", "testjar1.jar").toAbsolutePath().normalize();
-        final var jar2 = Paths.get("sjh-jmh", "src", "testjars", "testjar2.jar").toAbsolutePath().normalize();
-        final var jar3 = Paths.get("sjh-jmh", "src", "testjars", "testjar3.jar").toAbsolutePath().normalize();
+        final var jar1 = Paths.get("src", "testjars", "testjar1.jar").toAbsolutePath().normalize();
+        final var jar2 = Paths.get("src", "testjars", "testjar2.jar").toAbsolutePath().normalize();
+        final var jar3 = Paths.get("src", "testjars", "testjar3.jar").toAbsolutePath().normalize();
 
         final var fileSystem = UFSP.newFileSystem(jar1, Map.of("additional", List.of(jar2, jar3)));
         var root = fileSystem.getPath("/");
@@ -259,7 +259,7 @@ public class TestUnionFS {
                                     throw new NoSuchFileException(p.toString());
                                 }
                             }));
-            assertEquals(foundFiles, List.of(
+            assertEquals(List.of(
                     "log4j2.xml",
                     "module-info.class",
                     "cpw",
@@ -276,7 +276,7 @@ public class TestUnionFS {
                     "data",
                     "coremods",
                     "assets",
-                    "net"));
+                    "net"), foundFiles);
         }
     }
 

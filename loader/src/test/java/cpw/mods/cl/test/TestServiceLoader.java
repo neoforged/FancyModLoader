@@ -1,5 +1,6 @@
 package cpw.mods.cl.test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -17,23 +18,18 @@ public class TestServiceLoader {
     @Test
     public void testLoadServiceFromBootLayer() throws Exception {
         TestjarUtil.withTestjar1Setup(cl -> {
-            // We expect to find at least the unionfs provider
+            // We expect to find at least the JDK JFRT provider from the boot layer
             ServiceLoader<FileSystemProvider> sl = TestjarUtil.loadTestjar1(cl, FileSystemProvider.class);
-            boolean foundUnionFsProvider = sl.stream().map(ServiceLoader.Provider::get).anyMatch(p -> p.getScheme().equals("union"));
-
-            assertTrue(foundUnionFsProvider, "Expected to be able to find the UFS provider");
+            assertThat(sl).extracting(FileSystemProvider::getScheme).contains("jrt");
         });
     }
 
     @Test
     public void testLoadServiceFromBootLayerNested() throws Exception {
         TestjarUtil.withTestjar2Setup(cl -> {
-            // Try to find service from boot layer
-            // We expect to find at least the unionfs provider
+            // We expect to find at least the JDK JFRT provider from the boot layer
             ServiceLoader<FileSystemProvider> sl = TestjarUtil.loadTestjar2(cl, FileSystemProvider.class);
-            boolean foundUnionFsProvider = sl.stream().map(ServiceLoader.Provider::get).anyMatch(p -> p.getScheme().equals("union"));
-
-            assertTrue(foundUnionFsProvider, "Expected to be able to find the UFS provider");
+            assertThat(sl).extracting(FileSystemProvider::getScheme).contains("jrt");
 
             // Try to find service from testjar1 layer
             var foundService = TestjarUtil.loadTestjar2(cl, URLStreamHandlerProvider.class)

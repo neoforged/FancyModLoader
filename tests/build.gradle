@@ -84,4 +84,7 @@ configurations.configureEach {
         substitute module("net.neoforged.fancymodloader:loader") using project(":loader")
         substitute module("net.neoforged.fancymodloader:earlydisplay") using project(":earlydisplay")
     }
+    // These have been inlined into FML and should be ignored in the Manifests when using old NF versions
+    exclude(group: "cpw.mods", module: "securejarhandler")
+    exclude(group: "cpw.mods", module: "modlauncher")
 }

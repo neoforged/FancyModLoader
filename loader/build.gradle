@@ -1,6 +1,10 @@
+import fmlbuild.JmhTask
+
 plugins {
     id 'net.neoforged.jarcompatibilitychecker' version '0.1.13'
 }
+
+apply plugin : fmlbuild.JmhPlugin
 
 checkJarCompatibility {
     isAPI = true
@@ -9,6 +13,15 @@ checkJarCompatibility {
 sourceSets {
     jmh
     testJars
+
+    // Additional test JARs, to be loaded via SecureJar.from(...)
+    testjar1
+    testjar2
+    // Test classpath code, to make sure that ModuleClassLoader is properly isolated from the classpath
+    testjar_cp
+    test {
+        runtimeClasspath += sourceSets.testjar_cp.output
+    }
 }
 
 dependencies {
@@ -36,7 +49,6 @@ dependencies {
     implementation("net.neoforged:JarJarFileSystems:$jarjar_version")
 
     implementation("net.sf.jopt-simple:jopt-simple:${jopt_simple_version}")
-    implementation("cpw.mods:securejarhandler:${securejarhandler_version}")
     implementation("net.neoforged:accesstransformers:${accesstransformers_version}")
     implementation("net.neoforged.accesstransformers:at-modlauncher:${accesstransformers_version}") {
         exclude module: 'modlauncher'
@@ -86,6 +98,12 @@ test {
     useJUnitPlatform()
 
     systemProperty 'testJars.location', testJars.map(tj -> tj.archiveFile.get().asFile).get()
+    dependsOn tasks.compileTestjar1Java
+    dependsOn tasks.processTestjar1Resources
+    dependsOn tasks.compileTestjar2Java
+    dependsOn tasks.processTestjar2Resources
+    environment "sjh.testjar1", sourceSets.testjar1.output.classesDirs.asPath + File.pathSeparator + sourceSets.testjar1.output.resourcesDir.absolutePath
+    environment "sjh.testjar2", sourceSets.testjar2.output.classesDirs.asPath + File.pathSeparator + sourceSets.testjar2.output.resourcesDir.absolutePath
 
     jvmArgs(
             '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
@@ -93,42 +111,56 @@ test {
     )
 }
 
-tasks.register('jmh', JavaExec) {
-    dependsOn('jmhClasses')
-    classpath.from(sourceSets.jmh.runtimeClasspath)
-    mainClass = 'org.openjdk.jmh.Main'
-    jvmArgs('--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED')
+final jmh = tasks.register('jmh') {
+    group = "benchmark"
+}
+for (var benchmark in [
+        "jarmodulefinder": "cpw.mods.cl.benchmarks.JarModuleFinder",
+        "unionfs": "cpw.mods.cl.benchmarks.UnionFileSystemBenchmark",
+        "transformer": "cpw.mods.modlauncher.benchmarks.TransformBenchmark"
+]) {
+    final benchmarkId = benchmark.key
+    final benchmarkClass = benchmark.value
 
-    final results = file("${project.reportsDir}/jmh/result.json")
-    doFirst {
-        results.parentFile.mkdirs()
-    }
+    final benchmarkTask = tasks.register('jmh' + benchmarkId, JmhTask) {
+        group = "benchmark"
+        dependsOn('jmhClasses')
+        classpath.from(sourceSets.jmh.runtimeClasspath)
+        mainClass = 'org.openjdk.jmh.Main'
+        jvmArgs('--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED')
 
-    args = [
-            'cpw.mods.modlauncher.benchmarks.TransformBenchmark',
-            '-bm', 'avgt',
-            '-prof', 'stack',
-            '-prof', 'jfr',
-            '-r', '3s',
-            '-w', '3s',
-            '-wi', '3',
-            '-i', '3',
-            '-f', '3',
-            '-tu', 'us',
-            '-rf', 'json',
-            '-rff', results
-    ]
-    if (project.hasProperty('jmhVendor') && project.hasProperty('jmhVersion')) {
-        final specifiedVendor = project.property('jmhVendor').toString()
-        final actualVendor = specifiedVendor.endsWith('-J9') ? specifiedVendor.substring(0, specifiedVendor.length() - 3) : specifiedVendor
-        javaLauncher.set(javaToolchains.launcherFor {
-            it.vendor.set(JvmVendorSpec."${actualVendor.toUpperCase(Locale.ROOT)}" as JvmVendorSpec)
-            it.languageVersion.set(JavaLanguageVersion.of(project.property('jmhVersion') as int))
-            it.implementation.set(specifiedVendor.endsWith('-J9') ? JvmImplementation.J9 : JvmImplementation.VENDOR_SPECIFIC)
-        })
-    } else {
-        javaLauncher.set(javaToolchains.launcherFor(java.toolchain))
+        final results = file("${project.reportsDir}/jmh/${benchmarkId}.json")
+        doFirst {
+            results.parentFile.mkdirs()
+        }
+
+        args = [
+                benchmarkClass,
+                '-bm', 'avgt',
+                '-prof', 'stack',
+                '-prof', 'jfr:dir=' + file("${project.reportsDir}/jmh/").absolutePath,
+                '-r', '3s',
+                '-w', '3s',
+                '-wi', '3',
+                '-i', '3',
+                '-f', '3',
+                '-tu', 'us',
+                '-rf', 'json',
+                '-rff', results
+        ]
+        if (project.hasProperty('jmhVendor') && project.hasProperty('jmhVersion')) {
+            final specifiedVendor = project.property('jmhVendor').toString()
+            final actualVendor = specifiedVendor.endsWith('-J9') ? specifiedVendor.substring(0, specifiedVendor.length() - 3) : specifiedVendor
+            javaLauncher.set(javaToolchains.launcherFor {
+                it.vendor.set(JvmVendorSpec."${actualVendor.toUpperCase(Locale.ROOT)}" as JvmVendorSpec)
+                it.languageVersion.set(JavaLanguageVersion.of(project.property('jmhVersion') as int))
+                it.implementation.set(specifiedVendor.endsWith('-J9') ? JvmImplementation.J9 : JvmImplementation.VENDOR_SPECIFIC)
+            })
+        } else {
+            javaLauncher.set(javaToolchains.launcherFor(java.toolchain))
+        }
     }
+    jmh.configure { dependsOn benchmarkTask }
 }
 
 spotless {
