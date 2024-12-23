@@ -55,9 +55,9 @@ public class TestUnionFS {
 
     @Test
     void testUnionFileSystemJar() throws Throwable {
-        final var jar1 = Paths.get("src", "testjars", "testjar1.jar").toAbsolutePath().normalize();
-        final var jar2 = Paths.get("src", "testjars", "testjar2.jar").toAbsolutePath().normalize();
-        final var jar3 = Paths.get("src", "testjars", "testjar3.jar").toAbsolutePath().normalize();
+        final var jar1 = Paths.get("src", "testJars", "testjar1.jar").toAbsolutePath().normalize();
+        final var jar2 = Paths.get("src", "testJars", "testjar2.jar").toAbsolutePath().normalize();
+        final var jar3 = Paths.get("src", "testJars", "testjar3.jar").toAbsolutePath().normalize();
 
         final var fileSystem = UFSP.newFileSystem(jar1, Map.of("additional", List.of(jar2, jar3)));
         assertAll(
@@ -243,9 +243,9 @@ public class TestUnionFS {
 
     @Test
     public void testDirectoryVisitorJar() throws Exception {
-        final var jar1 = Paths.get("src", "testjars", "testjar1.jar").toAbsolutePath().normalize();
-        final var jar2 = Paths.get("src", "testjars", "testjar2.jar").toAbsolutePath().normalize();
-        final var jar3 = Paths.get("src", "testjars", "testjar3.jar").toAbsolutePath().normalize();
+        final var jar1 = Paths.get("src", "testJars", "testjar1.jar").toAbsolutePath().normalize();
+        final var jar2 = Paths.get("src", "testJars", "testjar2.jar").toAbsolutePath().normalize();
+        final var jar3 = Paths.get("src", "testJars", "testjar3.jar").toAbsolutePath().normalize();
 
         final var fileSystem = UFSP.newFileSystem(jar1, Map.of("additional", List.of(jar2, jar3)));
         var root = fileSystem.getPath("/");
