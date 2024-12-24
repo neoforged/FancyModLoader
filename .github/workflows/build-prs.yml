@@ -23,4 +23,4 @@ jobs:
       java: 21
       # --info allows seeing STDOUT of tests
       gradle_tasks: check --info
-      jar_compatibility: false # Until 7.0.0 is tagged
+      jar_compatibility: true
