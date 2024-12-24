@@ -53,7 +53,6 @@ final class LaunchContext implements ILaunchContext {
         this.mavenRoots = mavenRoots;
         this.requiredDistribution = requiredDistribution;
         this.unclaimedClassPathEntries = unclaimedClassPathEntries;
-        LOG.debug(LogMarkers.SCAN, "Located paths when launch context was created: {}", locatedPaths);
     }
 
     @Override

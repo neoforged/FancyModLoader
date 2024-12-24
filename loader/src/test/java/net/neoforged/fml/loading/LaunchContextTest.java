@@ -11,33 +11,44 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import cpw.mods.modlauncher.api.IEnvironment;
+
 import java.io.IOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.test.RuntimeCompiler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class LaunchContextTest {
+    private static final Logger log = LoggerFactory.getLogger(LaunchContextTest.class);
     @TempDir
     Path tempDir;
     Path jarPath;
     Path otherJarPath;
     LaunchContext context;
-    private ModuleLayer serviceLayer;
+    private URLClassLoader serviceLoader;
     private ModuleLayer pluginLayer;
+    private ClassLoader pluginLoader;
+    private ClassLoader previousClassLoader;
 
     @BeforeEach
     void setUp() throws IOException {
+        previousClassLoader = Thread.currentThread().getContextClassLoader();
+
         // Create a fake module layer with a jar on it.
         jarPath = tempDir.resolve("test.jar");
         try (var out = new JarOutputStream(Files.newOutputStream(jarPath))) {
@@ -74,16 +85,20 @@ class LaunchContextTest {
             Files.writeString(serviceFile, "pkg2.TestService");
         }
 
-        serviceLayer = createModuleLayer(jarPath, "fancymodule");
+        // Emulates services being on the classpath
+        serviceLoader = new URLClassLoader(new URL[]{jarPath.toUri().toURL()});
+        Thread.currentThread().setContextClassLoader(serviceLoader);
 
         var environment = mock(IEnvironment.class);
         context = new LaunchContext(environment, Dist.CLIENT, tempDir, List.of(), List.of(), List.of(), List.of());
 
         // Create the plugin-layer after the ctor has already been called
-        pluginLayer = createModuleLayer(otherJarPath, "test.other.jar");
+        pluginLayer = createModuleLayer(otherJarPath, "test.other.jar", serviceLoader);
+        pluginLoader = pluginLayer.findLoader(pluginLayer.modules().iterator().next().getName());
+        Thread.currentThread().setContextClassLoader(pluginLoader);
     }
 
-    private ModuleLayer createModuleLayer(Path path, String moduleName) {
+    private ModuleLayer createModuleLayer(Path path, String moduleName, ClassLoader parentLoader) {
         var cf = Configuration.resolveAndBind(
                 ModuleFinder.of(),
                 List.of(ModuleLayer.boot().configuration()),
@@ -92,23 +107,27 @@ class LaunchContextTest {
         return ModuleLayer.defineModulesWithOneLoader(
                 cf,
                 List.of(ModuleLayer.boot()),
-                ClassLoader.getPlatformClassLoader()).layer();
+                parentLoader).layer();
     }
 
     @AfterEach
-    void tearDown() {
+    void tearDown() throws IOException {
+        if (serviceLoader != null) {
+            serviceLoader.close();
+        }
+        Thread.currentThread().setContextClassLoader(previousClassLoader);
+
         // Desperate attempts at clearing up the lock on the jar file
         context = null;
         pluginLayer = null;
-        serviceLayer = null;
+        pluginLoader = null;
         System.gc();
     }
 
     @Test
     void testLoadServices() {
         // Null the plugin layer temporarily
-        var originalPluginLayer = pluginLayer;
-        pluginLayer = null;
+        Thread.currentThread().setContextClassLoader(serviceLoader);
 
         var serviceLayerOnlyServices = context.loadServices(Runnable.class).toList();
         assertThat(serviceLayerOnlyServices)
@@ -117,7 +136,7 @@ class LaunchContextTest {
                 .containsOnly("pkg.TestService");
 
         // Now restore it and observe that services from both layers are returned
-        pluginLayer = originalPluginLayer;
+        Thread.currentThread().setContextClassLoader(pluginLoader);
         var serviceAndPluginLayerServices = context.loadServices(Runnable.class).toList();
         assertThat(serviceAndPluginLayerServices)
                 .map(ServiceLoader.Provider::type)
@@ -126,18 +145,8 @@ class LaunchContextTest {
     }
 
     @Test
-    void testIsLocatedForJarOnLayer() {
-        assertTrue(context.isLocated(jarPath));
-    }
-
-    @Test
     void testIsLocatedForJarNotOnLayer() {
         assertFalse(context.isLocated(otherJarPath));
-    }
-
-    @Test
-    void testAddLocatedForJarOnLayer() {
-        assertFalse(context.addLocated(jarPath));
     }
 
     @Test

@@ -65,30 +65,32 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
 
     @Override
     public boolean processClass(Phase phase, ClassNode classNode, Type classType, String reason) {
-        // Only track the classload if the reason is actually classloading
-        if (ITransformerActivity.CLASSLOADING_REASON.equals(reason)) {
-            classTracker.addLoadedClass(classType.getClassName());
-        }
+        try {
+            if (phase == Phase.BEFORE) {
+                return false;
+            }
 
-        if (phase == Phase.BEFORE) {
-            return false;
-        }
+            // Don't transform when the reason is mixin (side-loading in progress)
+            if (FMLMixinLaunchPlugin.NAME.equals(reason)) {
+                return false;
+            }
 
-        // Don't transform when the reason is mixin (side-loading in progress)
-        if (FMLMixinLaunchPlugin.NAME.equals(reason)) {
-            return false;
-        }
+            if (this.generatesClass(classType)) {
+                return this.generateClass(classType, classNode);
+            }
 
-        if (this.generatesClass(classType)) {
-            return this.generateClass(classType, classNode);
-        }
+            MixinEnvironment environment = MixinEnvironment.getCurrentEnvironment();
+            if (ITransformerActivity.COMPUTING_FRAMES_REASON.equals(reason)) {
+                return this.transformer.computeFramesForClass(environment, classType.getClassName(), classNode);
+            }
 
-        MixinEnvironment environment = MixinEnvironment.getCurrentEnvironment();
-        if (ITransformerActivity.COMPUTING_FRAMES_REASON.equals(reason)) {
-            return this.transformer.computeFramesForClass(environment, classType.getClassName(), classNode);
+            return this.transformer.transformClass(environment, classType.getClassName(), classNode);
+        } finally {
+            // Only track the classload if the reason is actually classloading
+            if (ITransformerActivity.CLASSLOADING_REASON.equals(reason)) {
+                classTracker.addLoadedClass(classType.getClassName());
+            }
         }
-
-        return this.transformer.transformClass(environment, classType.getClassName(), classNode);
     }
 
     @Override
