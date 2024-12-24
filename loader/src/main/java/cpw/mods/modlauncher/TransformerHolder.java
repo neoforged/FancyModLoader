@@ -20,6 +20,7 @@ import cpw.mods.modlauncher.api.ITransformerVotingContext;
 import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
 import java.util.Set;
+import org.jetbrains.annotations.VisibleForTesting;
 
 public class TransformerHolder<T> implements ITransformer<T> {
     private final ITransformer<T> wrapped;
@@ -57,5 +58,10 @@ public class TransformerHolder<T> implements ITransformer<T> {
 
     public ITransformationService owner() {
         return owner;
+    }
+
+    @VisibleForTesting
+    ITransformer<T> getWrapped() {
+        return wrapped;
     }
 }

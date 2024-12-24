@@ -98,4 +98,12 @@ public class TransformStore {
     boolean needsTransforming(String internalClassName) {
         return classNeedsTransforming.contains(internalClassName);
     }
+
+    Set<String> getClassNeedsTransforming() {
+        return classNeedsTransforming;
+    }
+
+    Map<TargetType<?>, TransformList<?>> getTransformers() {
+        return transformers;
+    }
 }

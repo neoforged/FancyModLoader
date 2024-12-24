@@ -111,14 +111,11 @@ dependencies {
     testImplementation("org.assertj:assertj-core")
     testImplementation("org.junit.jupiter:junit-jupiter-engine")
     testImplementation('com.google.jimfs:jimfs:1.3.0')
-    testImplementation("org.powermock:powermock-core:${powermock_version}")
-    testImplementation("org.powermock:powermock-reflect:${powermock_version}")
     testCompileOnly(sourceSets.testJars.output)
 
     jmhImplementation(sourceSets.main.output)
     jmhImplementation(sourceSets.testJars.output)
     jmhImplementation("org.openjdk.jmh:jmh-core:${jmh_version}")
-    jmhImplementation("org.powermock:powermock-core:${powermock_version}")
     jmhAnnotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:${jmh_version}")
     testImplementation('net.bytebuddy:byte-buddy-agent:1.14.12')
     // For Testing purposes only

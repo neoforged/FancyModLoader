@@ -12,7 +12,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package cpw.mods.modlauncher.test;
+package cpw.mods.modlauncher;
 
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ITransformationService;

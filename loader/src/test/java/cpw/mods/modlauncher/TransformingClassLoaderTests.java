@@ -12,31 +12,21 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package cpw.mods.modlauncher.test;
+package cpw.mods.modlauncher;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.modlauncher.Environment;
-import cpw.mods.modlauncher.LaunchPluginHandler;
-import cpw.mods.modlauncher.Launcher;
-import cpw.mods.modlauncher.TransformStore;
-import cpw.mods.modlauncher.TransformationServiceDecorator;
-import cpw.mods.modlauncher.TransformingClassLoader;
-import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ITransformer;
-import cpw.mods.modlauncher.api.TypesafeMap;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
-import java.lang.reflect.Constructor;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
-import org.powermock.reflect.Whitebox;
 
 /**
  * Test class loader
@@ -55,19 +45,17 @@ class TransformingClassLoaderTests {
 
         TransformStore transformStore = new TransformStore();
         LaunchPluginHandler lph = new LaunchPluginHandler(Stream.empty());
-        TransformationServiceDecorator sd = Whitebox.invokeConstructor(TransformationServiceDecorator.class, mockTransformerService);
+        TransformationServiceDecorator sd = new TransformationServiceDecorator(mockTransformerService);
         sd.gatherTransformers(transformStore);
+        var classTransformer = new ClassTransformer(transformStore, lph);
 
-        Environment environment = Whitebox.invokeConstructor(Environment.class, new Class[] { Launcher.class }, new Object[] { null });
-        new TypesafeMap(IEnvironment.class);
-        Constructor<TransformingClassLoader> constructor = Whitebox.getConstructor(TransformingClassLoader.class, TransformStore.class, LaunchPluginHandler.class, Environment.class, Configuration.class, List.class);
         Configuration configuration = createTestJarsConfiguration();
-        TransformingClassLoader tcl = constructor.newInstance(transformStore, lph, environment, configuration, List.of(ModuleLayer.boot()));
+        TransformingClassLoader tcl = new TransformingClassLoader(classTransformer, configuration, List.of(ModuleLayer.boot()), null);
         ModuleLayer.boot().defineModules(configuration, s -> tcl);
 
         final Class<?> aClass = Class.forName(TARGET_CLASS, true, tcl);
-        assertEquals(Whitebox.getField(aClass, "testfield").getType(), String.class);
-        assertEquals(Whitebox.getField(aClass, "testfield").get(null), "CHEESE!");
+        assertEquals(String.class, aClass.getField("testfield").getType());
+        assertEquals("CHEESE!", aClass.getField("testfield").get(null));
 
         final Class<?> newClass = tcl.loadClass(TARGET_CLASS);
         assertEquals(aClass, newClass, "Class instance is the same from Class.forName and tcl.loadClass");

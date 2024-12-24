@@ -12,14 +12,13 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package cpw.mods.modlauncher.test;
+package cpw.mods.modlauncher;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import cpw.mods.modlauncher.EnumerationHelper;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
