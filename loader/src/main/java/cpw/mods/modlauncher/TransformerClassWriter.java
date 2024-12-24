@@ -1,25 +1,26 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- *
- *     Copyright (C) 2017-2019 cpw
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, version 3 of the License.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (C) 2017-2019 cpw
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher;
 
 import cpw.mods.modlauncher.api.ITransformerActivity;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.ClassReader;
@@ -27,9 +28,6 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 class TransformerClassWriter extends ClassWriter {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -77,7 +75,6 @@ class TransformerClassWriter extends ClassWriter {
         } while (!getSupers(type2).contains(type));
         return type;
     }
-
 
     private Set<String> getSupers(final String typeName) {
         computeHierarchy(typeName);
@@ -131,7 +128,7 @@ class TransformerClassWriter extends ClassWriter {
             hierarchies.add("java/lang/Object");
         }
         IS_INTERFACE.put(name, clazz.isInterface());
-        Arrays.stream(clazz.getInterfaces()).forEach(c->{
+        Arrays.stream(clazz.getInterfaces()).forEach(c -> {
             String n = c.getName().replace('.', '/');
             if (!CLASS_HIERARCHIES.containsKey(n))
                 computeHierarchyFromClass(n, c);
@@ -164,7 +161,6 @@ class TransformerClassWriter extends ClassWriter {
     }
 
     private class SuperCollectingVisitor extends ClassVisitor {
-
         public SuperCollectingVisitor() {
             super(Opcodes.ASM9);
         }
@@ -181,7 +177,7 @@ class TransformerClassWriter extends ClassWriter {
                 hierarchies.add("java/lang/Object");
             }
             IS_INTERFACE.put(name, (access & Opcodes.ACC_INTERFACE) != 0);
-            Arrays.stream(interfaces).forEach(n->{
+            Arrays.stream(interfaces).forEach(n -> {
                 computeHierarchy(n);
                 hierarchies.add(n);
                 hierarchies.addAll(CLASS_HIERARCHIES.get(n));

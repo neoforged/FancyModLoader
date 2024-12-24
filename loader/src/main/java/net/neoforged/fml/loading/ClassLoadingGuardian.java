@@ -1,7 +1,9 @@
-package net.neoforged.fml.loading;
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
 
-import net.neoforged.fml.loading.moddiscovery.ModFile;
-import org.jetbrains.annotations.Nullable;
+package net.neoforged.fml.loading;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
@@ -9,6 +11,8 @@ import java.security.ProtectionDomain;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import net.neoforged.fml.loading.moddiscovery.ModFile;
+import org.jetbrains.annotations.Nullable;
 
 public final class ClassLoadingGuardian {
     private final Instrumentation instrumentation;
@@ -27,11 +31,11 @@ public final class ClassLoadingGuardian {
 
             @Override
             public byte[] transform(Module module,
-                                    ClassLoader loader,
-                                    String className,
-                                    Class<?> classBeingRedefined,
-                                    ProtectionDomain protectionDomain,
-                                    byte[] classfileBuffer) {
+                    ClassLoader loader,
+                    String className,
+                    Class<?> classBeingRedefined,
+                    ProtectionDomain protectionDomain,
+                    byte[] classfileBuffer) {
                 if (uninstalled) {
                     return null; // This can happen due to multi-threaded class-loading
                 }

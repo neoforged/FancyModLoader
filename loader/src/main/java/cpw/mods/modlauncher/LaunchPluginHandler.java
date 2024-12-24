@@ -1,40 +1,42 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- *
- *     Copyright (C) 2017-2019 cpw
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, version 3 of the License.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (C) 2017-2019 cpw
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher;
 
+import static cpw.mods.modlauncher.LogMarkers.LAUNCHPLUGIN;
+import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
+
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.NamedPath;
+import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
-import org.objectweb.asm.*;
-import org.objectweb.asm.tree.*;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static cpw.mods.modlauncher.LogMarkers.*;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.ClassNode;
 
 public class LaunchPluginHandler {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -43,7 +45,7 @@ public class LaunchPluginHandler {
     @VisibleForTesting
     public LaunchPluginHandler(Stream<ILaunchPluginService> plugins) {
         this.plugins = plugins.collect(Collectors.toMap(ILaunchPluginService::name, Function.identity()));
-        final var modlist = this.plugins.entrySet().stream().map(e->Map.of(
+        final var modlist = this.plugins.entrySet().stream().map(e -> Map.of(
                 "name", e.getKey(),
                 "type", "PLUGINSERVICE",
                 "file", ServiceLoaderUtils.fileNameFor(e.getValue().getClass())))
@@ -54,7 +56,7 @@ public class LaunchPluginHandler {
         // TODO                 throw new RuntimeException("The MODLIST isn't set, huh?");
         // TODO             });
         // TODO }
-        LOGGER.debug(MODLAUNCHER,"Found launch plugins: [{}]", ()-> String.join(",", this.plugins.keySet()));
+        LOGGER.debug(MODLAUNCHER, "Found launch plugins: [{}]", () -> String.join(",", this.plugins.keySet()));
     }
 
     public Optional<ILaunchPluginService> get(final String name) {
@@ -72,12 +74,12 @@ public class LaunchPluginHandler {
                 }
             }
         }
-        LOGGER.debug(LAUNCHPLUGIN, "LaunchPluginService {}", ()->phaseObjectEnumMap);
+        LOGGER.debug(LAUNCHPLUGIN, "LaunchPluginService {}", () -> phaseObjectEnumMap);
         return phaseObjectEnumMap;
     }
 
     public void offerScanResultsToPlugins(List<SecureJar> scanResults) {
-        plugins.forEach((n,p)->p.addResources(scanResults));
+        plugins.forEach((n, p) -> p.addResources(scanResults));
     }
 
     int offerClassNodeToPlugins(final ILaunchPluginService.Phase phase, final List<ILaunchPluginService> plugins, @Nullable final ClassNode node, final Type className, TransformerAuditTrail auditTrail, final String reason) {
@@ -96,6 +98,6 @@ public class LaunchPluginHandler {
     }
 
     public void announceLaunch(final TransformingClassLoader transformerLoader, final NamedPath[] specialPaths) {
-        plugins.forEach((k, p)->p.initializeLaunch((s->transformerLoader.buildTransformedClassNodeFor(s, k)), specialPaths));
+        plugins.forEach((k, p) -> p.initializeLaunch((s -> transformerLoader.buildTransformedClassNodeFor(s, k)), specialPaths));
     }
 }

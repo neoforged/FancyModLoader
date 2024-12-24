@@ -1,34 +1,28 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- *
- *     Copyright (C) 2017-2021 cpw
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, version 3 of the License.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (C) 2017-2021 cpw
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher.serviceapi;
 
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.NamedPath;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
-
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.ClassNode;
 
 /**
  * Loaded from the initial classpath of the system to identify plugins that wish to work across the system.
@@ -92,20 +86,22 @@ public interface ILaunchPluginService {
 
     /**
      * If this plugin wants to receive the {@link ClassNode} into {@link #processClass}
+     * 
      * @param classType the class to consider
-     * @param isEmpty if the class is empty at present (indicates no backing file found)
+     * @param isEmpty   if the class is empty at present (indicates no backing file found)
      * @return the set of Phases the plugin wishes to be called back with
      */
     EnumSet<Phase> handlesClass(Type classType, final boolean isEmpty);
 
     /**
      * If this plugin wants to receive the {@link ClassNode} into {@link #processClass}
+     * 
      * @param classType the class to consider
-     * @param isEmpty if the class is empty at present (indicates no backing file found)
-     * @param reason Reason for transformation request.
-     *               "classloading" - cpw.mods.modlauncher.api.ITransformerActivity#CLASSLOADING_REASON
-     *               "computing_frames" - cpw.mods.modlauncher.api.ITransformerActivity#COMPUTING_FRAMES_REASON
-     *               or the name of an {@link ILaunchPluginService}
+     * @param isEmpty   if the class is empty at present (indicates no backing file found)
+     * @param reason    Reason for transformation request.
+     *                  "classloading" - cpw.mods.modlauncher.api.ITransformerActivity#CLASSLOADING_REASON
+     *                  "computing_frames" - cpw.mods.modlauncher.api.ITransformerActivity#COMPUTING_FRAMES_REASON
+     *                  or the name of an {@link ILaunchPluginService}
      * @return the set of Phases the plugin wishes to be called back with
      */
     default EnumSet<Phase> handlesClass(Type classType, final boolean isEmpty, final String reason) {
@@ -119,7 +115,7 @@ public interface ILaunchPluginService {
      * One of {@link #processClass(Phase, ClassNode, Type)}, {@link #processClass(Phase, ClassNode, Type, String)}
      * or {@link #processClassWithFlags(Phase, ClassNode, Type, String)} <em>must</em> be implemented.
      *
-     * @param phase The phase of the supplied class node
+     * @param phase     The phase of the supplied class node
      * @param classNode the classnode to process
      * @param classType the name of the class
      * @return true if the classNode needs rewriting using COMPUTE_FRAMES or false if it needs no NO_REWRITE
@@ -132,10 +128,10 @@ public interface ILaunchPluginService {
      * Each class loaded is offered to the plugin for processing.
      * Ordering between plugins is not known.
      *
-     * @param phase The phase of the supplied class node
+     * @param phase     The phase of the supplied class node
      * @param classNode the classnode to process
      * @param classType the name of the class
-     * @param reason Reason for transformation. "classloading" or the name of an {@link ILaunchPluginService}
+     * @param reason    Reason for transformation. "classloading" or the name of an {@link ILaunchPluginService}
      * @return true if the classNode needs rewriting using COMPUTE_FRAMES or false if it needs no NO_REWRITE
      */
     default boolean processClass(final Phase phase, ClassNode classNode, final Type classType, String reason) {
@@ -146,10 +142,10 @@ public interface ILaunchPluginService {
      * Each class loaded is offered to the plugin for processing.
      * Ordering between plugins is not known.
      *
-     * @param phase The phase of the supplied class node
+     * @param phase     The phase of the supplied class node
      * @param classNode the classnode to process
      * @param classType the name of the class
-     * @param reason Reason for transformation. "classloading" or the name of an {@link ILaunchPluginService}
+     * @param reason    Reason for transformation. "classloading" or the name of an {@link ILaunchPluginService}
      * @return The {@link ComputeFlags} for this class
      */
     default int processClassWithFlags(final Phase phase, ClassNode classNode, final Type classType, String reason) {
@@ -161,7 +157,7 @@ public interface ILaunchPluginService {
      * for example.
      *
      * @param resource The resource to be considered by this plugin.
-     * @param name A name for this resource.
+     * @param name     A name for this resource.
      */
     default void offerResource(Path resource, String name) {}
 
@@ -172,7 +168,8 @@ public interface ILaunchPluginService {
      */
     default void addResources(List<SecureJar> resources) {}
 
-    default void initializeLaunch(ITransformerLoader transformerLoader,  NamedPath[] specialPaths) {}
+    default void initializeLaunch(ITransformerLoader transformerLoader, NamedPath[] specialPaths) {}
+
     /**
      * Get a plugin specific extension object from the plugin. This can be used to expose proprietary interfaces
      * to Launchers without ModLauncher needing to understand them.
@@ -180,18 +177,19 @@ public interface ILaunchPluginService {
      * @param <T> The type of the extension
      * @return An extension object
      */
-    default <T> T getExtension() {return null;}
+    default <T> T getExtension() {
+        return null;
+    }
 
     /**
      * Receives a call immediately after handlesClass for any transformer that declares an interest.
      *
      * the consumer can be called repeatedly to generate new AuditTrail entries in the audit log.
      *
-     * @param className className that is being transformed
+     * @param className         className that is being transformed
      * @param auditDataAcceptor accepts an array of strings to add a new audit trail record with the data
      */
-    default void customAuditConsumer(String className, Consumer<String[]> auditDataAcceptor) {
-    }
+    default void customAuditConsumer(String className, Consumer<String[]> auditDataAcceptor) {}
 
     interface ITransformerLoader {
         byte[] buildTransformedClassNodeFor(final String className) throws ClassNotFoundException;

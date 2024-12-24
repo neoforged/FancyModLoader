@@ -1,31 +1,31 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- *
- *     Copyright (C) 2017-2019 cpw
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, version 3 of the License.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (C) 2017-2019 cpw
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher;
 
-import cpw.mods.modlauncher.api.*;
+import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
+
+import cpw.mods.modlauncher.api.IEnvironment;
+import cpw.mods.modlauncher.api.ITransformationService;
+import cpw.mods.modlauncher.api.ITransformer;
+import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.VisibleForTesting;
-
-import java.util.*;
-
-import static cpw.mods.modlauncher.LogMarkers.*;
 
 /**
  * Decorates {@link cpw.mods.modlauncher.api.ITransformationService} to track state and other runtime metadata.
@@ -42,12 +42,12 @@ public class TransformationServiceDecorator {
 
     void onLoad(IEnvironment env, Set<String> otherServices) {
         try {
-            LOGGER.debug(MODLAUNCHER,"Loading service {}", this.service::name);
+            LOGGER.debug(MODLAUNCHER, "Loading service {}", this.service::name);
             this.service.onLoad(env, otherServices);
             this.isValid = true;
-            LOGGER.debug(MODLAUNCHER,"Loaded service {}", this.service::name);
+            LOGGER.debug(MODLAUNCHER, "Loaded service {}", this.service::name);
         } catch (IncompatibleEnvironmentException e) {
-            LOGGER.error(MODLAUNCHER,"Service failed to load {}", this.service.name(), e);
+            LOGGER.error(MODLAUNCHER, "Service failed to load {}", this.service.name(), e);
             this.isValid = false;
         }
     }
@@ -57,19 +57,19 @@ public class TransformationServiceDecorator {
     }
 
     void onInitialize(IEnvironment environment) {
-        LOGGER.debug(MODLAUNCHER,"Initializing transformation service {}", this.service::name);
+        LOGGER.debug(MODLAUNCHER, "Initializing transformation service {}", this.service::name);
         this.service.initialize(environment);
-        LOGGER.debug(MODLAUNCHER,"Initialized transformation service {}", this.service::name);
+        LOGGER.debug(MODLAUNCHER, "Initialized transformation service {}", this.service::name);
     }
 
     public void gatherTransformers(TransformStore transformStore) {
-        LOGGER.debug(MODLAUNCHER,"Initializing transformers for transformation service {}", this.service::name);
+        LOGGER.debug(MODLAUNCHER, "Initializing transformers for transformation service {}", this.service::name);
         final List<? extends ITransformer<?>> transformers = this.service.transformers();
         Objects.requireNonNull(transformers, "The transformers list should not be null");
         for (ITransformer<?> xform : transformers) {
             transformStore.addTransformer(xform, service);
         }
-        LOGGER.debug(MODLAUNCHER,"Initialized transformers for transformation service {}", this.service::name);
+        LOGGER.debug(MODLAUNCHER, "Initialized transformers for transformation service {}", this.service::name);
     }
 
     ITransformationService getService() {

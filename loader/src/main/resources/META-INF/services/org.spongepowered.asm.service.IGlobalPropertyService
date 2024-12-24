@@ -1,1 +1,1 @@
-net.neoforged.fml.loading.mixin.Blackboard
+net.neoforged.fml.loading.mixin.FMLMixinGlobalProperties

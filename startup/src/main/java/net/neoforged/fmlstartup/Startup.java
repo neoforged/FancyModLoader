@@ -5,8 +5,6 @@
 
 package net.neoforged.fmlstartup;
 
-import net.neoforged.fmlstartup.api.StartupArgs;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -20,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.function.Supplier;
+import net.neoforged.fmlstartup.api.StartupArgs;
 
 public class Startup {
     public static void main(String[] args) throws IOException {
@@ -90,8 +89,7 @@ public class Startup {
                     new HashSet<>(),
                     listClasspathEntries(),
                     false,
-                    Startup.class.getClassLoader()
-            );
+                    Startup.class.getClassLoader());
 
             entrypoint.get().start(instrumentation, startupArgs);
         } catch (Exception e) {

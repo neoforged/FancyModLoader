@@ -5,17 +5,11 @@
 
 package net.neoforged.fml.loading;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.jar.JarInputStream;
 
 /**
  * Finds Version data from a package, with possible default values

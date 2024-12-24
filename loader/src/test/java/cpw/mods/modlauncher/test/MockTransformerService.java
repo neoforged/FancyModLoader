@@ -14,18 +14,13 @@
 
 package cpw.mods.modlauncher.test;
 
-import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.ITransformerVotingContext;
 import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
 import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -68,32 +63,6 @@ public class MockTransformerService implements ITransformationService {
 
     @Override
     public void onLoad(IEnvironment env, Set<String> otherServices) throws IncompatibleEnvironmentException {}
-
-    @Override
-    public List<Resource> beginScanning(IEnvironment environment) {
-        if (System.getProperty("testJars.location") != null) {
-            SecureJar testjar = SecureJar.from(Path.of(System.getProperty("testJars.location")));
-            return List.of(new Resource(IModuleLayerManager.Layer.PLUGIN, List.of(testjar)));
-        } else if (System.getProperty("test.harness") != null) {
-            return List.of(new Resource(IModuleLayerManager.Layer.PLUGIN,
-                    Arrays.stream(System.getProperty("test.harness").split(","))
-                            .map(FileSystems.getDefault()::getPath)
-                            .map(SecureJar::from)
-                            .toList()));
-        } else {
-            return List.of();
-        }
-    }
-
-    @Override
-    public List<Resource> completeScan(IModuleLayerManager layerManager) {
-        if (System.getProperty("testJars.location") != null) {
-            SecureJar testjar = SecureJar.from(Path.of(System.getProperty("testJars.location")));
-            return List.of(new Resource(IModuleLayerManager.Layer.GAME, List.of(testjar)));
-        } else {
-            return List.of();
-        }
-    }
 
     @Override
     public List<? extends ITransformer<?>> transformers() {

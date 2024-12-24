@@ -5,7 +5,6 @@
 
 package net.neoforged.fml.loading;
 
-
 import cpw.mods.modlauncher.TransformingClassLoader;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;

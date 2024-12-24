@@ -1,25 +1,27 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fml.loading.mixin;
 
 import com.google.common.io.Resources;
 import cpw.mods.modlauncher.TransformingClassLoader;
+import java.io.IOException;
+import java.net.URL;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
-import org.spongepowered.asm.launch.IClassProcessor;
 import org.spongepowered.asm.service.IClassBytecodeProvider;
 import org.spongepowered.asm.transformers.MixinClassReader;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.Collection;
-
 class FMLClassBytecodeProvider implements IClassBytecodeProvider {
     private final TransformingClassLoader classLoader;
-    private final Collection<IClassProcessor> processors;
+    private final FMLMixinLaunchPlugin launchPlugin;
 
-    FMLClassBytecodeProvider(TransformingClassLoader classLoader, Collection<IClassProcessor> processors) {
+    FMLClassBytecodeProvider(TransformingClassLoader classLoader, FMLMixinLaunchPlugin launchPlugin) {
         this.classLoader = classLoader;
-        this.processors = processors;
+        this.launchPlugin = launchPlugin;
     }
 
     @Override
@@ -66,13 +68,9 @@ class FMLClassBytecodeProvider implements IClassBytecodeProvider {
         }
 
         Type classType = Type.getObjectType(internalName);
-        for (var processor : processors) {
-            if (!processor.generatesClass(classType)) {
-                continue;
-            }
-
+        if (launchPlugin.generatesClass(classType)) {
             ClassNode classNode = new ClassNode();
-            if (processor.generateClass(classType, classNode)) {
+            if (launchPlugin.generateClass(classType, classNode)) {
                 return classNode;
             }
         }

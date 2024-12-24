@@ -11,14 +11,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import cpw.mods.modlauncher.api.IEnvironment;
-
 import java.io.IOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;

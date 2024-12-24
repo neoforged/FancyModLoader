@@ -1,32 +1,37 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- *
- *     Copyright (C) 2017-2019 cpw
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, version 3 of the License.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (C) 2017-2019 cpw
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher;
 
-import cpw.mods.modlauncher.api.*;
+import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
+
+import cpw.mods.modlauncher.api.ITransformationService;
+import cpw.mods.modlauncher.api.ITransformer;
+import cpw.mods.modlauncher.api.TargetType;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.objectweb.asm.tree.*;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static cpw.mods.modlauncher.LogMarkers.*;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.MethodNode;
 
 /**
  * Transformer store - holds all the transformers
@@ -81,7 +86,7 @@ public class TransformStore {
 
     @SuppressWarnings("unchecked")
     public <T> void addTransformer(TransformTargetLabel targetLabel, ITransformer<T> transformer, ITransformationService owner) {
-        LOGGER.debug(MODLAUNCHER,"Adding transformer {} to {}", () -> transformer, () -> targetLabel);
+        LOGGER.debug(MODLAUNCHER, "Adding transformer {} to {}", () -> transformer, () -> targetLabel);
         classNeedsTransforming.add(targetLabel.getClassName().getInternalName());
         final TransformList<T> transformList = (TransformList<T>) this.transformers.get(targetLabel.getTargetType());
         transformList.addTransformer(targetLabel, new TransformerHolder<>(transformer, owner));

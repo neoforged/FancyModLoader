@@ -1,8 +1,18 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fml.loading.mixin;
 
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.jarhandling.VirtualJar;
 import cpw.mods.modlauncher.TransformingClassLoader;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
@@ -15,12 +25,6 @@ import org.spongepowered.asm.mixin.Mixins;
 import org.spongepowered.asm.mixin.injection.invoke.arg.ArgsClassGenerator;
 import org.spongepowered.asm.mixin.transformer.Config;
 import org.spongepowered.asm.service.MixinService;
-
-import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Encapsulates the code required to interact with Mixin.
@@ -59,7 +63,7 @@ public final class MixinFacade {
         gotoPhase(MixinEnvironment.Phase.INIT);
         gotoPhase(MixinEnvironment.Phase.DEFAULT);
 
-        service.setBytecodeProvider(new FMLClassBytecodeProvider(classLoader, service.getProcessors()));
+        service.setBytecodeProvider(new FMLClassBytecodeProvider(classLoader, this.launchPlugin));
         MixinBootstrap.init();
         MixinBootstrap.getPlatform().inject();
     }

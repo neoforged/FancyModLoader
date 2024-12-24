@@ -21,7 +21,6 @@ import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.Environment;
 import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.Launcher;
-import cpw.mods.modlauncher.ModuleLayerHandler;
 import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformationServiceDecorator;
 import cpw.mods.modlauncher.TransformingClassLoader;
@@ -55,8 +54,7 @@ class TransformingClassLoaderTests {
         };
 
         TransformStore transformStore = new TransformStore();
-        ModuleLayerHandler layerHandler = Whitebox.invokeConstructor(ModuleLayerHandler.class);
-        LaunchPluginHandler lph = new LaunchPluginHandler(layerHandler);
+        LaunchPluginHandler lph = new LaunchPluginHandler(Stream.empty());
         TransformationServiceDecorator sd = Whitebox.invokeConstructor(TransformationServiceDecorator.class, mockTransformerService);
         sd.gatherTransformers(transformStore);
 

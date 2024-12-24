@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import cpw.mods.modlauncher.ClassTransformer;
 import cpw.mods.modlauncher.LaunchPluginHandler;
-import cpw.mods.modlauncher.ModuleLayerHandler;
 import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformTargetLabel;
 import cpw.mods.modlauncher.TransformingClassLoader;
@@ -32,6 +31,7 @@ import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
 import java.util.Collections;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -52,8 +52,7 @@ class ClassTransformerTests {
         MarkerManager.getMarker("CLASSDUMP");
         Configurator.setLevel(ClassTransformer.class.getName(), Level.TRACE);
         final TransformStore transformStore = new TransformStore();
-        final ModuleLayerHandler layerHandler = Whitebox.invokeConstructor(ModuleLayerHandler.class);
-        final LaunchPluginHandler lph = new LaunchPluginHandler(layerHandler);
+        final LaunchPluginHandler lph = new LaunchPluginHandler(Stream.empty());
         final ClassTransformer classTransformer = Whitebox.invokeConstructor(ClassTransformer.class, new Class[] { transformStore.getClass(), lph.getClass(), TransformingClassLoader.class }, new Object[] { transformStore, lph, null });
         final ITransformationService dummyService = new MockTransformerService();
         Whitebox.invokeMethod(transformStore, "addTransformer", new TransformTargetLabel("test.MyClass", TargetType.CLASS), classTransformer(), dummyService);
