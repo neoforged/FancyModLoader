@@ -5,14 +5,15 @@
 
 package net.neoforged.fml.loading;
 
+import net.neoforged.fml.loading.moddiscovery.ModFile;
+import org.jetbrains.annotations.Nullable;
+
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import net.neoforged.fml.loading.moddiscovery.ModFile;
-import org.jetbrains.annotations.Nullable;
 
 public final class ClassLoadingGuardian {
     private final Instrumentation instrumentation;
@@ -31,11 +32,11 @@ public final class ClassLoadingGuardian {
 
             @Override
             public byte[] transform(Module module,
-                    ClassLoader loader,
-                    String className,
-                    Class<?> classBeingRedefined,
-                    ProtectionDomain protectionDomain,
-                    byte[] classfileBuffer) {
+                                    ClassLoader loader,
+                                    String className,
+                                    Class<?> classBeingRedefined,
+                                    ProtectionDomain protectionDomain,
+                                    byte[] classfileBuffer) {
                 if (uninstalled) {
                     return null; // This can happen due to multi-threaded class-loading
                 }
@@ -61,7 +62,7 @@ public final class ClassLoadingGuardian {
         return protectedPackages;
     }
 
-    public void end() {
+    public void end(ClassLoader classLoader) {
         if (!this.uninstalled) {
             this.uninstalled = true;
             this.instrumentation.removeTransformer(guardianTransformer);
@@ -73,10 +74,25 @@ public final class ClassLoadingGuardian {
                 }
                 var physicalPackage = loadedClass.getPackageName().replace('.', '/');
                 if (protectedPackages.contains(physicalPackage)) {
-                    throw new IllegalArgumentException("Class " + loadedClass + " is incorrectly class-loaded!");
+                    // It's ok if the class is not reachable from the now current class-loader,
+                    // since we get reported ALL loaded classes, they may be unrelated class-loader hierarchies,
+                    // especially in testing scenarios.
+                    if (isReachableFrom(loadedClass.getClassLoader(), classLoader)) {
+                        throw new IllegalArgumentException("Class " + loadedClass + " is incorrectly class-loaded in " + loadedClass.getClassLoader() + "!");
+                    }
                 }
             }
         }
+    }
+
+    private boolean isReachableFrom(ClassLoader classLoader, ClassLoader origin) {
+        if (classLoader == origin) {
+            return true;
+        }
+        if (origin.getParent() != null) {
+            return isReachableFrom(classLoader, origin.getParent());
+        }
+        return false;
     }
 
     @Nullable

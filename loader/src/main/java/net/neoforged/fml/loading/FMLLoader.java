@@ -5,9 +5,6 @@
 
 package net.neoforged.fml.loading;
 
-import static net.neoforged.fml.loading.LogMarkers.CORE;
-import static net.neoforged.fml.loading.LogMarkers.LOADING;
-
 import com.mojang.logging.LogUtils;
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
@@ -27,38 +24,6 @@ import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import cpw.mods.niofs.union.UnionFileSystem;
-import java.io.IOException;
-import java.lang.instrument.Instrumentation;
-import java.lang.invoke.MethodHandle;
-import java.lang.module.Configuration;
-import java.lang.module.ModuleFinder;
-import java.lang.module.ModuleReference;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HexFormat;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.ServiceLoader;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.accesstransformer.ml.AccessTransformerService;
 import net.neoforged.api.distmarker.Dist;
@@ -102,6 +67,42 @@ import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
 
+import java.io.IOException;
+import java.lang.instrument.Instrumentation;
+import java.lang.invoke.MethodHandle;
+import java.lang.module.Configuration;
+import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HexFormat;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.ServiceLoader;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import static net.neoforged.fml.loading.LogMarkers.CORE;
+import static net.neoforged.fml.loading.LogMarkers.LOADING;
+
 public class FMLLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static AccessTransformerEngine accessTransformer;
@@ -125,12 +126,13 @@ public class FMLLoader {
 
     @VisibleForTesting
     record DiscoveryResult(List<ModFile> pluginContent,
-            List<ModFile> gameContent,
-            List<ModLoadingIssue> discoveryIssues) {}
+                           List<ModFile> gameContent,
+                           List<ModLoadingIssue> discoveryIssues) {
+    }
 
     // This is called by FML Startup
     @SuppressWarnings("unused")
-    public static void startup(@Nullable Instrumentation instrumentation, StartupArgs startupArgs) {
+    public static List<AutoCloseable> startup(@Nullable Instrumentation instrumentation, StartupArgs startupArgs) {
         // In dev, do not overwrite the logging configuration if the user explicitly set another one.
         // In production, always overwrite the vanilla configuration.
         // TODO: Update this comment and coordinate with launchers to determine how to use THEIR logging config
@@ -251,9 +253,14 @@ public class FMLLoader {
         // TODO -> MANIFEST.MF declaration net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider.class.getName()
 
         // Load Plugins
+        var resourcesToClose = new ArrayList<AutoCloseable>();
         var parentLoader = Objects.requireNonNullElse(startupArgs.parentClassLoader(), ClassLoader.getSystemClassLoader());
-        parentLoader = loadPlugins(startupArgs.cacheRoot(), parentLoader, loadingModList.getPlugins());
-        Thread.currentThread().setContextClassLoader(parentLoader);
+        if (!loadingModList.getPlugins().isEmpty()) {
+            var pluginLoader = loadPlugins(launchContext, startupArgs.cacheRoot(), parentLoader, loadingModList.getPlugins());
+            resourcesToClose.add(pluginLoader);
+            Thread.currentThread().setContextClassLoader(pluginLoader);
+            parentLoader = pluginLoader;
+        }
 
         // Now go and build the language providers and let mods discover theirs
         languageProviderLoader = new LanguageProviderLoader(launchContext);
@@ -291,7 +298,7 @@ public class FMLLoader {
 
         // From here on out, try loading through the TCL
         if (classLoadingGuardian != null) {
-            classLoadingGuardian.end();
+            classLoadingGuardian.end(gameClassLoader);
         }
         Thread.currentThread().setContextClassLoader(gameClassLoader);
 
@@ -303,22 +310,36 @@ public class FMLLoader {
         // This will initialize Mixins, for example
         launchPluginHandler.announceLaunch(gameClassLoader, new NamedPath[0]);
 
-        var gameRunner = commonLaunchHandler.launchService(programArgs, gameLayer);
         if (startupArgs.skipEntryPoint()) {
-            return;
+            return resourcesToClose;
         }
 
+        var gameRunner = commonLaunchHandler.launchService(programArgs, gameLayer);
         try {
             gameRunner.run();
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Throwable e) {
             throw new RuntimeException(e);
+        } finally {
+            for (var resource : resourcesToClose) {
+                try {
+                    resource.close();
+                } catch (Exception e) {
+                    LOGGER.error("Failed to close resource after running game.", e);
+                }
+            }
         }
+        return List.of();
     }
 
     /**
      * Loads the given plugin into a URL classloader.
      */
-    private static URLClassLoader loadPlugins(Path cacheDir, ClassLoader parentLoader, List<IModFileInfo> plugins) {
+    private static URLClassLoader loadPlugins(ILaunchContext launchContext,
+                                              Path cacheDir,
+                                              ClassLoader parentLoader,
+                                              List<IModFileInfo> plugins) {
         // Causes URL handler to be initialized
         new ModuleClassLoader("dummy", Configuration.empty(), List.of(ModuleLayer.empty()));
 
@@ -347,11 +368,17 @@ public class FMLLoader {
                             long existingSize = -1;
                             try {
                                 existingSize = Files.size(cachedFile);
-                            } catch (IOException ignored) {}
+                            } catch (IOException ignored) {
+                            }
                             if (existingSize != expectedSize) {
                                 // TODO atomic move crap
                                 Files.write(cachedFile, jarInMemory);
                             }
+
+                            launchContext.setJarSourceDescription(
+                                    cachedFile,
+                                    formatModFileLocation(launchContext, plugin.getFile())
+                            );
 
                             rootUrls.add(cachedFile.toUri().toURL());
                         } catch (Exception e) {
@@ -368,6 +395,17 @@ public class FMLLoader {
                 "FML Plugins",
                 rootUrls.toArray(URL[]::new),
                 parentLoader);
+    }
+
+    private static String formatModFileLocation(ILaunchContext launchContext, IModFile file) {
+        var info = launchContext.relativizePath(file.getFilePath());
+
+        var parentFile = file.getDiscoveryAttributes().parent();
+        if (parentFile != null) {
+            info = formatModFileLocation(launchContext, parentFile) + " > " + info;
+        }
+
+        return info;
     }
 
     private static List<Path> getBasePaths(SecureJar jar) {
@@ -387,9 +425,9 @@ public class FMLLoader {
     }
 
     private static GameLayerResult buildGameModuleLayer(ClassTransformer classTransformer,
-            List<SecureJar> content,
-            List<ModuleLayer> parentLayers,
-            ClassLoader parentLoader) {
+                                                        List<SecureJar> content,
+                                                        List<ModuleLayer> parentLayers,
+                                                        ClassLoader parentLoader) {
         long start = System.currentTimeMillis();
 
         var cf = Configuration.resolveAndBind(
@@ -413,7 +451,8 @@ public class FMLLoader {
         return new GameLayerResult(layer, loader);
     }
 
-    record GameLayerResult(ModuleLayer gameLayer, TransformingClassLoader classLoader) {}
+    record GameLayerResult(ModuleLayer gameLayer, TransformingClassLoader classLoader) {
+    }
 
     private static String getModuleNameList(Configuration cf) {
         return cf.modules().stream()
@@ -485,8 +524,8 @@ public class FMLLoader {
     }
 
     private static <T extends ILaunchPluginService> T addLaunchPlugin(ILaunchContext launchContext,
-            Map<String, ILaunchPluginService> services,
-            T service) {
+                                                                      Map<String, ILaunchPluginService> services,
+                                                                      T service) {
         LOGGER.debug("Adding launch plugin {}", service.name());
         var previous = services.put(service.name(), service);
         if (previous != null) {
@@ -494,7 +533,7 @@ public class FMLLoader {
             var source2 = ServiceLoaderUtil.identifySourcePath(launchContext, previous);
 
             throw new FatalStartupException("Multiple launch plugin services of the same name '"
-                    + previous.name() + "' are present: " + source1 + " and " + source2);
+                                            + previous.name() + "' are present: " + source1 + " and " + source2);
         }
         return service;
     }
@@ -503,7 +542,8 @@ public class FMLLoader {
             @Nullable String neoForgeVersion,
             @Deprecated(forRemoval = true) @Nullable String fmlVersion,
             @Nullable String mcVersion,
-            @Nullable String neoFormVersion) {}
+            @Nullable String neoFormVersion) {
+    }
 
     private static FMLExternalOptions parseArgs(String[] strings) {
         String neoForgeVersion = null;
@@ -673,7 +713,8 @@ public class FMLLoader {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Interrupted while waiting for future", e);
-            } catch (TimeoutException ignored) {}
+            } catch (TimeoutException ignored) {
+            }
         }
     }
 

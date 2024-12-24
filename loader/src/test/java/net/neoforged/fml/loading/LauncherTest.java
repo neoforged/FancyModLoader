@@ -11,6 +11,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -24,11 +25,7 @@ import net.neoforged.fmlstartup.api.StartupArgs;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.platform.commons.util.ReflectionUtils;
 import org.mockito.junit.jupiter.MockitoSettings;
-import org.spongepowered.asm.service.MixinService;
-import org.spongepowered.asm.service.ServiceNotAvailableError;
-import org.spongepowered.asm.service.modlauncher.MixinServiceModLauncher;
 
 @MockitoSettings
 public abstract class LauncherTest {
@@ -38,6 +35,8 @@ public abstract class LauncherTest {
     // by the two early ModLoader discovery interfaces ClasspathTransformerDiscoverer
     // and ModDirTransformerDiscoverer, which pick up files like mixin.
     Set<Path> locatedPaths = new HashSet<>();
+
+    private List<AutoCloseable> resourcesToClose = new ArrayList<>();
 
     protected TransformingClassLoader gameClassLoader;
 
@@ -63,6 +62,10 @@ public abstract class LauncherTest {
 
     @AfterEach
     void clearSystemProperties() throws Exception {
+        for (var resource : resourcesToClose) {
+            resource.close();
+        }
+
         gameClassLoader = null;
         installation.close();
     }
@@ -108,8 +111,6 @@ public abstract class LauncherTest {
     }
 
     private LaunchResult launch(String launchTarget, List<Path> additionalClassPath) {
-        resetMixin();
-
         ModLoader.clearLoadingIssues();
         var lml = FMLLoader.getLoadingModList();
         if (lml != null) {
@@ -136,7 +137,7 @@ public abstract class LauncherTest {
         ClassLoader launchClassLoader;
         try {
             var instrumentation = ByteBuddyAgent.install();
-            FMLLoader.startup(instrumentation, startupArgs);
+            resourcesToClose.addAll(FMLLoader.startup(instrumentation, startupArgs));
             launchClassLoader = Thread.currentThread().getContextClassLoader();
         } finally {
             Thread.currentThread().setContextClassLoader(classLoader);
@@ -166,22 +167,6 @@ public abstract class LauncherTest {
                         o -> o.getMods().getFirst().getModId(),
                         o -> o)),
                 launchClassLoader);
-    }
-
-    private static void resetMixin() {
-        // There is sadly no way to "reset" Mixin once it's loaded. So, we use this hack.
-        try {
-            var serviceInstance = ReflectionUtils.tryToReadFieldValue(MixinService.class, "instance", null);
-            if (serviceInstance.get() != null) {
-                var f = MixinServiceModLauncher.class.getDeclaredField("initialised");
-                f.setAccessible(true);
-                try {
-                    f.set(MixinService.getService(), false);
-                } catch (ServiceNotAvailableError ignored) {}
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private void loadMods() {

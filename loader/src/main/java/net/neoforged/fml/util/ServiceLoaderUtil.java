@@ -118,31 +118,19 @@ public final class ServiceLoaderUtil {
      * while maintaining context in the return (such as "&lt;nested path>" from "&lt;outer jar>").
      */
     private static String unwrapPath(ILaunchContext context, Path path) {
+        var sourceInfo = context.getJarSourceDescription(path);
+        if (sourceInfo != null) {
+            return sourceInfo;
+        }
+
         if (path.getFileSystem() instanceof PathFileSystem pathFileSystem) {
             return unwrapPath(context, pathFileSystem.getTarget());
         } else if (path.getFileSystem() instanceof UnionFileSystem unionFileSystem) {
             if (path.equals(unionFileSystem.getRoot())) {
                 return unwrapPath(context, unionFileSystem.getPrimaryPath());
             }
-            return unwrapPath(context, unionFileSystem.getPrimaryPath()) + " > " + relativizePath(context, path);
+            return unwrapPath(context, unionFileSystem.getPrimaryPath()) + " > " + context.relativizePath(path);
         }
-        return relativizePath(context, path);
-    }
-
-    private static String relativizePath(ILaunchContext context, Path path) {
-        var gameDir = context.gameDirectory();
-
-        String resultPath;
-
-        if (gameDir != null && path.startsWith(gameDir)) {
-            resultPath = gameDir.relativize(path).toString();
-        } else if (Files.isDirectory(path)) {
-            resultPath = path.toAbsolutePath().toString();
-        } else {
-            resultPath = path.getFileName().toString();
-        }
-
-        // Unify separators to ensure it is easier to test
-        return resultPath.replace('\\', '/');
+        return context.relativizePath(path);
     }
 }

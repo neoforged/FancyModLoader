@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -62,10 +63,10 @@ public class ClassTransformer {
         this(transformStore, pluginHandler, new TransformerAuditTrail());
     }
 
-    public ClassTransformer(final TransformStore transformStore, final LaunchPluginHandler pluginHandler, final TransformerAuditTrail tat) {
-        this.transformers = transformStore;
-        this.pluginHandler = pluginHandler;
-        this.auditTrail = tat;
+    public ClassTransformer(final TransformStore transformStore, final LaunchPluginHandler pluginHandler, final TransformerAuditTrail auditTrail) {
+        this.transformers = Objects.requireNonNull(transformStore, "transformStore");
+        this.pluginHandler = Objects.requireNonNull(pluginHandler, "pluginHandler");
+        this.auditTrail = Objects.requireNonNull(auditTrail, "auditTrail");
     }
 
     public byte[] transform(TransformingClassLoader loader, byte[] inputClass, String className, String reason) {

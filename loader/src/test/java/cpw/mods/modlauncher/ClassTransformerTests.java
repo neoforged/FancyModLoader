@@ -47,7 +47,7 @@ class ClassTransformerTests {
         Configurator.setLevel(ClassTransformer.class.getName(), Level.TRACE);
         final TransformStore transformStore = new TransformStore();
         final LaunchPluginHandler lph = new LaunchPluginHandler(Stream.empty());
-        final ClassTransformer classTransformer = new ClassTransformer(transformStore, lph, null);
+        final ClassTransformer classTransformer = new ClassTransformer(transformStore, lph, new TransformerAuditTrail());
         final ITransformationService dummyService = new MockTransformerService();
         transformStore.addTransformer(new TransformTargetLabel("test.MyClass", TargetType.CLASS), classTransformer(), dummyService);
         byte[] result = classTransformer.transform(null, new byte[0], "test.MyClass", "testing");
