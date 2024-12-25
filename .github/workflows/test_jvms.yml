@@ -39,7 +39,7 @@ jobs:
           cache-disabled: true
           add-job-summary: never
       - name: Run Jmh with Gradle Wrapper
-        run: ./gradlew :jmh -PjmhVendor=${{ matrix.jdk }} -PjmhVersion=${{ matrix.jvm_version }}
+        run: ./gradlew :loader:jmh -PjmhVendor=${{ matrix.jdk }} -PjmhVersion=${{ matrix.jvm_version }}
       - uses: actions/upload-artifact@v3
         name: Upload Results
         with:
