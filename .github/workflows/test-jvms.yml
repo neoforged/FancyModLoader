@@ -1,4 +1,4 @@
-name: Test JVMs and publish JMH results
+name: Test Java Versions and Vendors
 
 on:
   push:
@@ -37,6 +37,7 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
+          distribution: temurin
           java-version: 21
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -51,34 +52,3 @@ jobs:
         with:
           name: test_${{ matrix.jdk }}-${{ matrix.jvm_version }}
           path: "**/build/reports/tests/**/*"
-      - name: Run JMH with Gradle Wrapper
-        run: ./gradlew :loader:jmh -PjmhVendor=${{ matrix.jdk }} -PjmhVersion=${{ matrix.jvm_version }}
-      - uses: actions/upload-artifact@v4
-        name: Upload JMH Results
-        with:
-          name: jmh_${{ matrix.jdk }}-${{ matrix.jvm_version }}
-          path: loader/build/reports/jmh/**/*
-
-  upload_results:
-    name: Collect and Upload JMH results
-    needs: [testjdks]
-    runs-on: ubuntu-latest
-    if: ${{ always() }}
-    steps:
-      - name: Setup Groovy
-        uses: wtfjoke/setup-groovy@v1
-        with:
-          groovy-version: '4.x'
-      - name: Checkout repository
-        uses: actions/checkout@main
-      - name: Downloads results
-        uses: actions/download-artifact@v4
-        id: download
-        with:
-          path: jmh_results
-      - name: Show available result files
-        run: find jmh_results
-      - name: Collect results
-        run: groovy .github/workflows/collect_jmh_results.groovy
-      - name: Upload Final Results
-        run: cat jmh_results.md >> $GITHUB_STEP_SUMMARY
