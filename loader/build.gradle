@@ -107,6 +107,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testImplementation("org.junit.jupiter:junit-jupiter-params")
     testImplementation("org.mockito:mockito-junit-jupiter:$mockito_version")
+    testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine')
     testImplementation(platform("org.assertj:assertj-bom:$assertj_version"))
     testImplementation("org.assertj:assertj-core")
     testImplementation("org.junit.jupiter:junit-jupiter-engine")
