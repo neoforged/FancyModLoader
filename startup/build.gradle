@@ -1,0 +1,40 @@
+plugins {
+    id "java-library"
+}
+
+java {
+    withSourcesJar()
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+                "Launcher-Agent-Class": "net.neoforged.fmlstartup.DevAgent",
+                "Premain-Class"       : "net.neoforged.fmlstartup.DevAgent",
+                "Main-Class"          : "net.neoforged.fmlstartup.Startup"
+        ])
+    }
+}
+
+dependencies {
+    compileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
+    compileOnly(platform("org.lwjgl:lwjgl-bom:3.3.3"))
+    compileOnly("org.lwjgl:lwjgl-tinyfd")
+    runtimeOnly(project(":loader"))
+    runtimeOnly(project(":earlydisplay"))
+
+    testImplementation(platform("org.junit:junit-bom:$jupiter_version"))
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testImplementation("org.junit.jupiter:junit-jupiter-params")
+    testImplementation(platform("org.assertj:assertj-bom:$assertj_version"))
+    testImplementation("org.assertj:assertj-core")
+}
+
+test {
+    useJUnitPlatform()
+
+    jvmArgs("-javaagent:" + file("devagent.jar").absolutePath)
+}

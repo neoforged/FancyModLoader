@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
-import net.neoforged.fml.util.DevEnvUtils;
+import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
@@ -35,8 +35,8 @@ public class UserdevLocator implements IModFileCandidateLocator {
         }
 
         var fromClasspath = new ArrayList<Path>();
-        fromClasspath.addAll(DevEnvUtils.findFileSystemRootsOfFileOnClasspath(JarModsDotTomlModFileReader.MODS_TOML));
-        fromClasspath.addAll(DevEnvUtils.findFileSystemRootsOfFileOnClasspath(JarModsDotTomlModFileReader.MANIFEST));
+        fromClasspath.addAll(ClasspathResourceUtils.findFileSystemRootsOfFileOnClasspath(JarModsDotTomlModFileReader.MODS_TOML));
+        fromClasspath.addAll(ClasspathResourceUtils.findFileSystemRootsOfFileOnClasspath(JarModsDotTomlModFileReader.MANIFEST));
         for (var path : fromClasspath) {
             if (claimed.add(path)) {
                 pipeline.addPath(List.of(path), ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.WARN_ON_KNOWN_INCOMPATIBILITY);

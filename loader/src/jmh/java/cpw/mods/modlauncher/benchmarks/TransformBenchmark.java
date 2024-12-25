@@ -14,23 +14,13 @@
 
 package cpw.mods.modlauncher.benchmarks;
 
-import static cpw.mods.modlauncher.api.LambdaExceptionUtils.uncheck;
-
 import cpw.mods.modlauncher.ClassTransformer;
 import cpw.mods.modlauncher.LaunchPluginHandler;
-import cpw.mods.modlauncher.ModuleLayerHandler;
 import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformerAuditTrail;
-import cpw.mods.modlauncher.TransformingClassLoader;
-import cpw.mods.modlauncher.api.ITransformerActivity;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
+import java.util.stream.Stream;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -39,34 +29,19 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
-import org.powermock.reflect.Whitebox;
 
 @State(Scope.Benchmark)
 public class TransformBenchmark {
     public volatile ClassTransformer classTransformer;
-    static Method transform;
     byte[] classBytes;
 
     @Setup
     public void setup() throws Exception {
         final TransformStore transformStore = new TransformStore();
-        final ModuleLayerHandler layerHandler = Whitebox.invokeConstructor(ModuleLayerHandler.class);
-        final LaunchPluginHandler lph = new LaunchPluginHandler(layerHandler);
-        classTransformer = uncheck(() -> Whitebox.invokeConstructor(ClassTransformer.class, new Class[] { transformStore.getClass(), lph.getClass(), TransformingClassLoader.class }, new Object[] { transformStore, lph, null }));
-        transform = uncheck(() -> classTransformer.getClass().getDeclaredMethod("transform", byte[].class, String.class, String.class));
-        transform.setAccessible(true);
-        Map<String, ILaunchPluginService> plugins = Whitebox.getInternalState(lph, "plugins");
-        try (InputStream is = getClass().getClassLoader().getResourceAsStream("cpw/mods/modlauncher/testjar/TestClass.class")) {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            byte[] buf = new byte[2048];
-            while (is.read(buf) >= 0) {
-                bos.write(buf);
-            }
-            classBytes = bos.toByteArray();
-        } catch (IOException e) {
-            e.printStackTrace();
+        try (var is = getClass().getClassLoader().getResourceAsStream("cpw/mods/modlauncher/testjar/TestClass.class")) {
+            classBytes = is.readAllBytes();
         }
-        plugins.put("dummy1", new ILaunchPluginService() {
+        var plugin = new ILaunchPluginService() {
             @Override
             public String name() {
                 return "dummy1";
@@ -86,25 +61,26 @@ public class TransformBenchmark {
             public EnumSet<Phase> handlesClass(final Type classType, final boolean isEmpty) {
                 return EnumSet.of(Phase.BEFORE, Phase.AFTER);
             }
-        });
+        };
+        final LaunchPluginHandler lph = new LaunchPluginHandler(Stream.of(plugin));
+        classTransformer = new ClassTransformer(transformStore, lph);
     }
 
     @Benchmark
     public int transformNoop() {
-        byte[] result = uncheck(() -> (byte[]) transform.invoke(classTransformer, new byte[0], "test.MyClass", "jmh"));
+        byte[] result = classTransformer.transform(null, new byte[0], "test.MyClass", "jmh");
         return result.length + 1;
     }
 
     @TearDown(Level.Iteration)
     public void clearLog() {
-        TransformerAuditTrail auditTrail = Whitebox.getInternalState(classTransformer, "auditTrail");
-        Map<String, List<ITransformerActivity>> map = Whitebox.getInternalState(auditTrail, "audit");
-        map.clear();
+        TransformerAuditTrail auditTrail = classTransformer.getAuditTrail();
+        auditTrail.clear();
     }
 
     @Benchmark
     public int transformDummyClass() {
-        byte[] result = uncheck(() -> (byte[]) transform.invoke(classTransformer, classBytes, "cpw.mods.modlauncher.testjar.TestClass", "jmh"));
+        byte[] result = classTransformer.transform(null, classBytes, "cpw.mods.modlauncher.testjar.TestClass", "jmh");
         return result.length + 1;
     }
 }

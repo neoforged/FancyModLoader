@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -56,21 +57,19 @@ public class ClassTransformer {
     private final Marker CLASSDUMP = MarkerManager.getMarker("CLASSDUMP");
     private final TransformStore transformers;
     private final LaunchPluginHandler pluginHandler;
-    private final TransformingClassLoader transformingClassLoader;
     private final TransformerAuditTrail auditTrail;
 
-    ClassTransformer(TransformStore transformStore, LaunchPluginHandler pluginHandler, final TransformingClassLoader transformingClassLoader) {
-        this(transformStore, pluginHandler, transformingClassLoader, new TransformerAuditTrail());
+    public ClassTransformer(TransformStore transformStore, LaunchPluginHandler pluginHandler) {
+        this(transformStore, pluginHandler, new TransformerAuditTrail());
     }
 
-    ClassTransformer(final TransformStore transformStore, final LaunchPluginHandler pluginHandler, final TransformingClassLoader transformingClassLoader, final TransformerAuditTrail tat) {
-        this.transformers = transformStore;
-        this.pluginHandler = pluginHandler;
-        this.transformingClassLoader = transformingClassLoader;
-        this.auditTrail = tat;
+    public ClassTransformer(final TransformStore transformStore, final LaunchPluginHandler pluginHandler, final TransformerAuditTrail auditTrail) {
+        this.transformers = Objects.requireNonNull(transformStore, "transformStore");
+        this.pluginHandler = Objects.requireNonNull(pluginHandler, "pluginHandler");
+        this.auditTrail = Objects.requireNonNull(auditTrail, "auditTrail");
     }
 
-    byte[] transform(byte[] inputClass, String className, final String reason) {
+    public byte[] transform(TransformingClassLoader loader, byte[] inputClass, String className, String reason) {
         final String internalName = className.replace('.', '/');
         final Type classDesc = Type.getObjectType(internalName);
 
@@ -142,7 +141,7 @@ public class ClassTransformer {
         if (reason.equals(ITransformerActivity.COMPUTING_FRAMES_REASON))
             mergedFlags &= ~ILaunchPluginService.ComputeFlags.COMPUTE_FRAMES;
 
-        final ClassWriter cw = TransformerClassWriter.createClassWriter(mergedFlags, this, clazz);
+        final ClassWriter cw = TransformerClassWriter.createClassWriter(mergedFlags, loader, clazz);
         clazz.accept(cw);
         if (LOGGER.isEnabled(Level.TRACE) && ITransformerActivity.CLASSLOADING_REASON.equals(reason) && LOGGER.isEnabled(Level.TRACE, CLASSDUMP)) {
             dumpClass(cw.toByteArray(), className);
@@ -216,7 +215,7 @@ public class ClassTransformer {
         }
     }
 
-    TransformingClassLoader getTransformingClassLoader() {
-        return transformingClassLoader;
+    public TransformerAuditTrail getAuditTrail() {
+        return auditTrail;
     }
 }

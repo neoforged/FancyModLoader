@@ -86,6 +86,7 @@ public class BackgroundScanHandler {
         this.loadingModList = loadingModList;
     }
 
+    @Deprecated(forRemoval = true)
     public LoadingModList getLoadingModList() {
         return loadingModList;
     }

@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * Holds onto a specific list of transformers targetting a particular node type
@@ -32,12 +33,8 @@ public class TransformList<T> {
         this.nodeType = nodeType;
     }
 
-    /**
-     * Testing only
-     * 
-     * @return a map
-     */
-    private Map<TransformTargetLabel, List<ITransformer<T>>> getTransformers() {
+    @VisibleForTesting
+    Map<TransformTargetLabel, List<ITransformer<T>>> getTransformers() {
         return transformers;
     }
 

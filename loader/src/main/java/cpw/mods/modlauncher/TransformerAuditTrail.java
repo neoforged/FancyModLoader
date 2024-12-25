@@ -25,9 +25,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TransformerAuditTrail implements ITransformerAuditTrail {
-    private Map<String, List<ITransformerActivity>> audit = new ConcurrentHashMap<>();
+    private static final Logger LOG = LoggerFactory.getLogger(TransformerAuditTrail.class);
+
+    private final Map<String, List<ITransformerActivity>> audit = new ConcurrentHashMap<>();
 
     @Override
     public List<ITransformerActivity> getActivityFor(final String className) {
@@ -88,5 +93,10 @@ public class TransformerAuditTrail implements ITransformerAuditTrail {
     @Override
     public String getAuditString(final String clazz) {
         return audit.getOrDefault(clazz, Collections.emptyList()).stream().map(ITransformerActivity::getActivityString).collect(Collectors.joining(","));
+    }
+
+    @VisibleForTesting
+    public void clear() {
+        audit.clear();
     }
 }

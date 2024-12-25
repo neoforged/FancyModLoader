@@ -17,15 +17,11 @@ package cpw.mods.modlauncher;
 import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 
 import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
-import cpw.mods.modlauncher.api.NamedPath;
-import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import joptsimple.OptionParser;
@@ -33,29 +29,21 @@ import joptsimple.OptionSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-class TransformationServicesHandler {
+public class TransformationServicesHandler {
     private static final Logger LOGGER = LogManager.getLogger();
     private Map<String, TransformationServiceDecorator> serviceLookup;
     private final TransformStore transformStore;
-    private final ModuleLayerHandler layerHandler;
 
-    TransformationServicesHandler(TransformStore transformStore, ModuleLayerHandler layerHandler) {
+    public TransformationServicesHandler(TransformStore transformStore, Environment environment, Collection<ITransformationService> services) {
         this.transformStore = transformStore;
-        this.layerHandler = layerHandler;
+        setTransformationServices(services, environment);
     }
 
-    List<ITransformationService.Resource> initializeTransformationServices(ArgumentHandler argumentHandler, Environment environment) {
+    public void initializeTransformationServices(ArgumentHandler argumentHandler, Environment environment) {
         loadTransformationServices(environment);
         validateTransformationServices();
         processArguments(argumentHandler, environment);
         initialiseTransformationServices(environment);
-        return runScanningTransformationServices(environment);
-    }
-
-    TransformingClassLoader buildTransformingClassLoader(final LaunchPluginHandler pluginHandler, final Environment environment, final ModuleLayerHandler layerHandler) {
-        final var layerInfo = layerHandler.buildLayer(IModuleLayerManager.Layer.GAME, (cf, parents) -> new TransformingClassLoader(transformStore, pluginHandler, environment, cf, parents));
-        layerHandler.updateLayer(IModuleLayerManager.Layer.PLUGIN, li -> li.cl().setFallbackClassLoader(layerInfo.cl()));
-        return (TransformingClassLoader) layerInfo.cl();
     }
 
     private void processArguments(ArgumentHandler argumentHandler, Environment environment) {
@@ -76,7 +64,7 @@ class TransformationServicesHandler {
                 .forEach(service -> service.argumentValues(resultHandler.apply(service.name(), optionSet)));
     }
 
-    void initialiseServiceTransformers() {
+    public void initialiseServiceTransformers() {
         LOGGER.debug(MODLAUNCHER, "Transformation services loading transformers");
 
         serviceLookup.values().forEach(s -> s.gatherTransformers(transformStore));
@@ -86,15 +74,6 @@ class TransformationServicesHandler {
         LOGGER.debug(MODLAUNCHER, "Transformation services initializing");
 
         serviceLookup.values().forEach(s -> s.onInitialize(environment));
-    }
-
-    private List<ITransformationService.Resource> runScanningTransformationServices(Environment environment) {
-        LOGGER.debug(MODLAUNCHER, "Transformation services begin scanning");
-
-        return serviceLookup.values()
-                .stream()
-                .map(s -> s.runScan(environment)).<ITransformationService.Resource>mapMulti(Iterable::forEach)
-                .toList();
     }
 
     private void validateTransformationServices() {
@@ -111,32 +90,13 @@ class TransformationServicesHandler {
         serviceLookup.values().forEach(s -> s.onLoad(environment, serviceLookup.keySet()));
     }
 
-    void discoverServices(final ArgumentHandler.DiscoveryData discoveryData) {
-        LOGGER.debug(MODLAUNCHER, "Discovering transformation services");
-        var bootLayer = layerHandler.getLayer(IModuleLayerManager.Layer.BOOT).orElseThrow();
-        var earlyDiscoveryServices = ServiceLoaderUtils.streamServiceLoader(() -> ServiceLoader.load(bootLayer, ITransformerDiscoveryService.class), sce -> LOGGER.fatal(MODLAUNCHER, "Encountered serious error loading transformation discoverer, expect problems", sce))
-                .toList();
-        var additionalPaths = earlyDiscoveryServices.stream()
-                .map(s -> s.candidates(discoveryData.gameDir(), discoveryData.launchTarget()))
-                .<NamedPath>mapMulti(Iterable::forEach)
-                .toList();
-        LOGGER.debug(MODLAUNCHER, "Found additional transformation services from discovery services: {}", () -> additionalPaths.stream().map(ap -> Arrays.toString(ap.paths())).collect(Collectors.joining()));
-        additionalPaths.forEach(np -> layerHandler.addToLayer(IModuleLayerManager.Layer.SERVICE, np));
-        var serviceLayer = layerHandler.buildLayer(IModuleLayerManager.Layer.SERVICE);
-        earlyDiscoveryServices.forEach(s -> s.earlyInitialization(discoveryData.launchTarget(), discoveryData.arguments()));
-        serviceLookup = ServiceLoaderUtils.streamServiceLoader(() -> ServiceLoader.load(serviceLayer.layer(), ITransformationService.class), sce -> LOGGER.fatal(MODLAUNCHER, "Encountered serious error loading transformation service, expect problems", sce))
-                .collect(Collectors.toMap(ITransformationService::name, TransformationServiceDecorator::new));
+    private void setTransformationServices(Collection<ITransformationService> services, Environment environment) {
+        serviceLookup = services.stream().collect(Collectors.toMap(ITransformationService::name, TransformationServiceDecorator::new));
         var modlist = serviceLookup.entrySet().stream().map(e -> Map.of(
                 "name", e.getKey(),
                 "type", "TRANSFORMATIONSERVICE",
                 "file", ServiceLoaderUtils.fileNameFor(e.getValue().getClass()))).toList();
-        Launcher.INSTANCE.environment().getProperty(IEnvironment.Keys.MODLIST.get()).ifPresent(ml -> ml.addAll(modlist));
+        environment.getProperty(IEnvironment.Keys.MODLIST.get()).ifPresent(ml -> ml.addAll(modlist));
         LOGGER.debug(MODLAUNCHER, "Found transformer services : [{}]", () -> String.join(",", serviceLookup.keySet()));
-    }
-
-    public List<ITransformationService.Resource> triggerScanCompletion(IModuleLayerManager moduleLayerManager) {
-        return serviceLookup.values().stream()
-                .map(tsd -> tsd.onCompleteScan(moduleLayerManager)).<ITransformationService.Resource>mapMulti(Iterable::forEach)
-                .toList();
     }
 }

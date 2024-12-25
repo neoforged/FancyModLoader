@@ -62,8 +62,6 @@ public interface IEnvironment {
      */
     Optional<ILaunchHandlerService> findLaunchHandler(String name);
 
-    Optional<IModuleLayerManager> findModuleLayerManager();
-
     final class Keys {
         /**
          * Version passed in through arguments

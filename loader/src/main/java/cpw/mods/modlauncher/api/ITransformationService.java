@@ -14,7 +14,6 @@
 
 package cpw.mods.modlauncher.api;
 
-import cpw.mods.jarhandling.SecureJar;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -52,22 +51,6 @@ public interface ITransformationService {
      * @param environment environment - query state from here to determine viability
      */
     void initialize(IEnvironment environment);
-
-    record Resource(IModuleLayerManager.Layer target, List<SecureJar> resources) {}
-
-    /**
-     * Scan for mods (but don't classload them), identify metadata that might drive
-     * game functionality, return list of elements and target module layer (One of PLUGIN or GAME)
-     *
-     * @param environment environment
-     */
-    default List<Resource> beginScanning(IEnvironment environment) {
-        return List.of();
-    }
-
-    default List<Resource> completeScan(IModuleLayerManager layerManager) {
-        return List.of();
-    }
 
     /**
      * Load your service. Called immediately on loading with a list of other services found.

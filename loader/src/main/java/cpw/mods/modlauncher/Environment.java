@@ -16,7 +16,6 @@ package cpw.mods.modlauncher;
 
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ILaunchHandlerService;
-import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.TypesafeMap;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.util.Optional;
@@ -26,32 +25,29 @@ import java.util.function.Function;
  * Environment implementation class
  */
 public final class Environment implements IEnvironment {
-    private final TypesafeMap environment;
-    private final Launcher launcher;
+    private final TypesafeMap environment = new TypesafeMap(IEnvironment.class);
+    private final Function<String, Optional<ILaunchPluginService>> launchPlugins;
+    private final Function<String, Optional<ILaunchHandlerService>> launchService;
 
-    Environment(Launcher launcher) {
-        environment = new TypesafeMap(IEnvironment.class);
-        this.launcher = launcher;
+    public Environment(Function<String, Optional<ILaunchPluginService>> launchPlugins,
+            Function<String, Optional<ILaunchHandlerService>> launchService) {
+        this.launchPlugins = launchPlugins;
+        this.launchService = launchService;
     }
 
     @Override
-    public final <T> Optional<T> getProperty(TypesafeMap.Key<T> key) {
+    public <T> Optional<T> getProperty(TypesafeMap.Key<T> key) {
         return environment.get(key);
     }
 
     @Override
     public Optional<ILaunchPluginService> findLaunchPlugin(final String name) {
-        return launcher.findLaunchPlugin(name);
+        return launchPlugins.apply(name);
     }
 
     @Override
     public Optional<ILaunchHandlerService> findLaunchHandler(final String name) {
-        return launcher.findLaunchHandler(name);
-    }
-
-    @Override
-    public Optional<IModuleLayerManager> findModuleLayerManager() {
-        return launcher.findLayerManager();
+        return launchService.apply(name);
     }
 
     @Override
