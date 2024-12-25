@@ -7,7 +7,6 @@ package net.neoforged.fml.util;
 
 import cpw.mods.niofs.union.UnionFileSystem;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;

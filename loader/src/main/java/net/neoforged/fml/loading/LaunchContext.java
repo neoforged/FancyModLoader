@@ -7,11 +7,6 @@ package net.neoforged.fml.loading;
 
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.niofs.union.UnionFileSystem;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.neoforgespi.ILaunchContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,6 +17,10 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Stream;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforgespi.ILaunchContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class LaunchContext implements ILaunchContext {
     private static final Logger LOG = LoggerFactory.getLogger(LaunchContext.class);

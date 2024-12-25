@@ -5,15 +5,14 @@
 
 package net.neoforged.fml.loading;
 
-import net.neoforged.fml.loading.moddiscovery.ModFile;
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import net.neoforged.fml.loading.moddiscovery.ModFile;
+import org.jetbrains.annotations.Nullable;
 
 public final class ClassLoadingGuardian {
     private final Instrumentation instrumentation;
@@ -32,11 +31,11 @@ public final class ClassLoadingGuardian {
 
             @Override
             public byte[] transform(Module module,
-                                    ClassLoader loader,
-                                    String className,
-                                    Class<?> classBeingRedefined,
-                                    ProtectionDomain protectionDomain,
-                                    byte[] classfileBuffer) {
+                    ClassLoader loader,
+                    String className,
+                    Class<?> classBeingRedefined,
+                    ProtectionDomain protectionDomain,
+                    byte[] classfileBuffer) {
                 if (uninstalled) {
                     return null; // This can happen due to multi-threaded class-loading
                 }
