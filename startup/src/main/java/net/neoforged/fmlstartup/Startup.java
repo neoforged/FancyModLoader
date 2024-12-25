@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 import net.neoforged.fmlstartup.api.StartupArgs;
 
 public class Startup {
+    // TODO: this needs testing!
     public static void main(String[] args) throws IOException {
         StartupLog.info("JVM Uptime: {}ms", ManagementFactory.getRuntimeMXBean().getUptime());
 
@@ -38,7 +39,7 @@ public class Startup {
         try {
             var fmlLoader = Class.forName("net.neoforged.fml.loading.FMLLoader");
             var lookup = MethodHandles.lookup();
-            var methodType = MethodType.methodType(void.class, Instrumentation.class, StartupArgs.class);
+            var methodType = MethodType.methodType(List.class, Instrumentation.class, StartupArgs.class);
             var handle = lookup.findStatic(fmlLoader, "startup", methodType);
 
             var site = LambdaMetafactory.metafactory(

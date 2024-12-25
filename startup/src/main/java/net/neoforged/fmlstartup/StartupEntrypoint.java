@@ -6,9 +6,11 @@
 package net.neoforged.fmlstartup;
 
 import java.lang.instrument.Instrumentation;
+import java.util.List;
+
 import net.neoforged.fmlstartup.api.StartupArgs;
 
 @FunctionalInterface
 public interface StartupEntrypoint {
-    void start(Instrumentation instrumentation, StartupArgs args);
+    List<AutoCloseable> start(Instrumentation instrumentation, StartupArgs args);
 }

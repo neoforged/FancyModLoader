@@ -64,7 +64,12 @@ public class SelfAttach {
      * Gets a Java class-path item that allows the JVM to load this class.
      */
     public static String getClassPathItem() throws Exception {
-        var location = SelfAttach.class.getProtectionDomain().getCodeSource().getLocation().toURI();
+        var relativeClassPath = "/" + SelfAttach.class.getName().replace('.', '/') + ".class";
+        var locationUrl = SelfAttach.class.getResource(relativeClassPath);
+        if (locationUrl == null) {
+            throw new IllegalStateException("Couldn't find SelfAttach class on class-path at " + relativeClassPath);
+        }
+        var location = locationUrl.toURI();
         if ("file".equals(location.getScheme())) {
             var classpathDir = Paths.get(location);
 
@@ -78,7 +83,7 @@ public class SelfAttach {
             int lastExcl = location.getRawSchemeSpecificPart().lastIndexOf("!/");
             return Paths.get(new URI(location.getRawSchemeSpecificPart().substring(0, lastExcl))).toAbsolutePath().toString();
         } else {
-            throw new IllegalStateException("Code source for SelfAttach uses unknown scheme: " + location.getScheme());
+            throw new IllegalStateException("Class path resource for SelfAttach uses unknown scheme: " + location.getScheme());
         }
     }
 }
