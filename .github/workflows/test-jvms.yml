@@ -17,14 +17,21 @@ jobs:
       max-parallel: 10
       fail-fast: false
       matrix:
-        # We should test the latest LTS in use by Minecraft
-        # and additionally, the latest Java in general.
-        jvm_version: [ 21, 23 ]
-        jdk: [ Temurin, Graal_VM ]
+        # We use the latest LTS available by Microsoft since that is used in Minecraft
+        # We also test J9 and the latest versions of Graal and Adoptium, since users have
+        # to explicitly download these, we do not check the LTS versions.
         include:
-          - jdk: IBM
+          - jdk: Adoptium
+            distribution: temurin
+            jvm_version: 23
+          - jdk: Graal_VM
+            distribution: graalvm
+            jvm_version: 23
+          - jdk: IBM # J9
+            distribution: semeru
             jvm_version: 21 # IBM only has 21
           - jdk: Microsoft
+            distribution: microsoft
             jvm_version: 21 # MS OpenJDK only has LTS versions (21)
     steps:
       - name: Checkout repository
@@ -74,6 +81,8 @@ jobs:
         id: download
         with:
           path: jmh_results
+      - name: Show available result files
+        run: find jmh_results
       - name: Collect results
         run: groovy .github/workflows/collect_jmh_results.groovy
       - name: Upload Final Results
