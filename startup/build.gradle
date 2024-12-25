@@ -2,16 +2,6 @@ plugins {
     id "java-library"
 }
 
-java {
-    withSourcesJar()
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(Integer.valueOf(java_version))
-        if (java_vendor) {
-            vendor = JvmVendorSpec.matching(java_vendor)
-        }
-    }
-}
-
 jar {
     manifest {
         attributes([
