@@ -194,17 +194,7 @@ for (var benchmark in [
                 '-rf', 'json',
                 '-rff', results
         ]
-        if (project.hasProperty('jmhVendor') && project.hasProperty('jmhVersion')) {
-            final specifiedVendor = project.property('jmhVendor').toString()
-            final actualVendor = specifiedVendor.endsWith('-J9') ? specifiedVendor.substring(0, specifiedVendor.length() - 3) : specifiedVendor
-            javaLauncher.set(javaToolchains.launcherFor {
-                it.vendor.set(JvmVendorSpec."${actualVendor.toUpperCase(Locale.ROOT)}" as JvmVendorSpec)
-                it.languageVersion.set(JavaLanguageVersion.of(project.property('jmhVersion') as int))
-                it.implementation.set(specifiedVendor.endsWith('-J9') ? JvmImplementation.J9 : JvmImplementation.VENDOR_SPECIFIC)
-            })
-        } else {
-            javaLauncher.set(javaToolchains.launcherFor(java.toolchain))
-        }
+        javaLauncher.set(javaToolchains.launcherFor(java.toolchain))
     }
     jmh.configure { dependsOn benchmarkTask }
 }

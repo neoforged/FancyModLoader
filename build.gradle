@@ -59,6 +59,9 @@ allprojects {
             if (java_vendor) {
                 vendor = JvmVendorSpec.matching(java_vendor)
             }
+            final actualVendor = java_vendor.endsWith('-J9') ? java_vendor.substring(0, java_vendor.length() - 3) : java_vendor
+            vendor = JvmVendorSpec."${actualVendor.toUpperCase(Locale.ROOT)}" as JvmVendorSpec
+            implementation = java_vendor.endsWith('-J9') ? JvmImplementation.J9 : JvmImplementation.VENDOR_SPECIFIC
         }
     }
 
