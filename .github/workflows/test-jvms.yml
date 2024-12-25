@@ -22,16 +22,12 @@ jobs:
         # to explicitly download these, we do not check the LTS versions.
         include:
           - jdk: Adoptium
-            distribution: temurin
             jvm_version: 23
           - jdk: Graal_VM
-            distribution: graalvm
             jvm_version: 23
           - jdk: IBM # J9
-            distribution: semeru
             jvm_version: 21 # IBM only has 21
           - jdk: Microsoft
-            distribution: microsoft
             jvm_version: 21 # MS OpenJDK only has LTS versions (21)
     steps:
       - name: Checkout repository
@@ -41,15 +37,14 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: ${{ matrix.distribution }}
-          java-version: ${{ matrix.jvm_version }}
+          java-version: 21
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           cache-disabled: true
           add-job-summary: never
       - name: Run Tests
-        run: ./gradlew check
+        run: ./gradlew check -Pjava_vendor=${{ matrix.jdk }} -Pjava_version=${{ matrix.jvm_version }}
       - uses: actions/upload-artifact@v4
         name: Upload Test Results
         if: always()

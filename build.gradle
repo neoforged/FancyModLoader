@@ -55,7 +55,10 @@ allprojects {
     java {
         withSourcesJar()
         toolchain {
-            languageVersion = JavaLanguageVersion.of(21)
+            languageVersion = JavaLanguageVersion.of(Integer.valueOf(java_version))
+            if (java_vendor) {
+                vendor = JvmVendorSpec.matching(java_vendor)
+            }
         }
     }
 
