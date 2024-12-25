@@ -45,7 +45,7 @@ jobs:
           cache-disabled: true
           add-job-summary: never
       - name: Run Tests
-        run: ./gradlew check -Pjava_vendor=${{ matrix.jdk }} -Pjava_version=${{ matrix.jvm_version }}
+        run: ./gradlew test -Pjava_vendor=${{ matrix.jdk }} -Pjava_version=${{ matrix.jvm_version }}
       - uses: actions/upload-artifact@v4
         name: Upload Test Results
         if: always()
