@@ -21,7 +21,7 @@ import net.bytebuddy.agent.ByteBuddyAgent;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.i18n.FMLTranslations;
-import net.neoforged.fmlstartup.api.StartupArgs;
+import net.neoforged.fml.startup.StartupArgs;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;

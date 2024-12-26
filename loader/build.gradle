@@ -25,7 +25,6 @@ sourceSets {
 }
 
 configurations {
-    devagent
     localRuntime {
         canBeResolved = false
         canBeConsumed = false
@@ -97,6 +96,10 @@ dependencies {
     implementation("net.minecrell:terminalconsoleappender:${terminalconsoleappender_version}")
     implementation("commons-io:commons-io:${commons_io_version}")
 
+    // This is for fatal startup error reporting only
+    compileOnly(platform("org.lwjgl:lwjgl-bom:3.3.3"))
+    compileOnly("org.lwjgl:lwjgl-tinyfd")
+
     implementation("org.apache.logging.log4j:log4j-core:${log4j_version}")
     annotationProcessor("org.apache.logging.log4j:log4j-core:${log4j_version}")
 
@@ -121,14 +124,11 @@ dependencies {
     testImplementation('net.bytebuddy:byte-buddy-agent:1.14.12')
     // For Testing purposes only
     localRuntime('net.bytebuddy:byte-buddy-agent:1.14.12')
-    implementation(project(":startup"))
 
     // Provides the JUnit project as a BOM entry
     constraints {
         api(project(':junit'))
     }
-
-    devagent project(":startup")
 }
 
 configurations.jmhImplementation.extendsFrom(configurations.implementation)
@@ -153,7 +153,8 @@ test {
 
     jvmArgs(
             '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
-            '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED'
+            '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED',
+            '-javaagent:' + file('devagent.jar').absolutePath
     )
 }
 

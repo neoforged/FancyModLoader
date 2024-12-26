@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fmlstartup.api;
+package net.neoforged.fml.startup;
 
 import java.io.File;
 import java.nio.file.Path;

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fmlstartup;
+package net.neoforged.fml.startup;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.function.Supplier;
-import net.neoforged.fmlstartup.api.StartupArgs;
 
 public class Startup {
     // TODO: this needs testing!
@@ -62,7 +61,7 @@ public class Startup {
         }
     }
 
-    private static void run(String[] args, Supplier<StartupEntrypoint> entrypoint) throws IOException {
+    private static void run(String[] args, Supplier<StartupEntrypoint> entrypoint) {
         var gameDir = getGameDir(args);
         StartupLog.info("Game Directory: {}", gameDir);
         var launchTarget = getLaunchTarget(args);
@@ -196,7 +195,7 @@ public class Startup {
         // This code may be surprising, but the DevAgent is *always* loaded on the system classloader.
         // If we have been loaded somewhere beneath, our copy of DevAgent may not be the same. To ensure we actually
         // get the "real" agent, we specifically grab the class from the system CL.
-        var devAgent = Class.forName("net.neoforged.fmlstartup.DevAgent", true, ClassLoader.getSystemClassLoader());
+        var devAgent = Class.forName("net.neoforged.fml.startup.DevAgent", true, ClassLoader.getSystemClassLoader());
         var instrumentation = (Instrumentation) devAgent.getMethod("getInstrumentation").invoke(null);
         StartupLog.info("Using our own agent");
         if (instrumentation == null) {

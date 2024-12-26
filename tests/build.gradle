@@ -31,23 +31,22 @@ neoForgeInstallations {
     register("client", fmlbuild.NeoForgeClientInstallation) {
         version = test_neoforge_version
         minecraftVersion = test_minecraft_version
-        mainClass = "net.neoforged.fmlstartup.Startup"
-        gameDir = "C:\\Users\\Sebastian\\AppData\\Roaming\\PrismLauncher\\instances\\All the Mods 10 - ATM10\\minecraft"
-        // gameDir = "C:\\Users\\Sebastian\\AppData\\Roaming\\PrismLauncher\\instances\\Enigmatica 10 - E10\\minecraft"
+        mainClass = "net.neoforged.fml.startup.Startup"
+        gameDir = "D:\\PrismInstances\\All the Mods 10 - ATM10\\minecraft"
+        // gameDir = "D:\\PrismInstances\\Enigmatica 10 - E10\\minecraft"
     }
     register("server", fmlbuild.NeoForgeServerInstallation) {
         version = test_neoforge_version
         minecraftVersion = test_minecraft_version
-        mainClass = "net.neoforged.fmlstartup.Startup"
+        mainClass = "net.neoforged.fml.startup.Startup"
     }
 }
 
 runConfigurations {
     configureEach {
         taskGroup = "fml/test runs"
-        mainClass = "net.neoforged.fmlstartup.Startup"
+        mainClass = "net.neoforged.fml.startup.Startup"
         dependencies {
-            classpath project(":startup")
             classpath("net.neoforged:neoforge:$test_neoforge_version") {
                 capabilities {
                     requireCapability("net.neoforged:neoforge-dependencies")
@@ -55,13 +54,8 @@ runConfigurations {
             }
             // Needed to support arg-files for program arguments
             classpath "net.neoforged:DevLaunch:1.0.1"
-            //modulepath("net.neoforged:neoforge:$test_neoforge_version") {
-            //    capabilities {
-            //        requireCapability("net.neoforged:neoforge-moddev-module-path")
-            //    }
-            //}
         }
-        jvmArguments.add("-javaagent:" + file("../startup/devagent.jar").absolutePath)
+        jvmArguments.add("-javaagent:" + file("../loader/devagent.jar").absolutePath)
     }
     productionClient {
         ideName = "Client (Production)"

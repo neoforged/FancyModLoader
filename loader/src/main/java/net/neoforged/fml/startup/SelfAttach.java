@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fmlstartup;
+package net.neoforged.fml.startup;
 
 import com.sun.tools.attach.VirtualMachine;
 import java.net.URI;
