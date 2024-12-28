@@ -26,7 +26,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                 .withModsToml(getModsTomlBuilderConsumer("xyz"))
                 .build();
 
-        var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
+        var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                 "ERROR: Enum extender file xyz, provided by mod testmod, does not exist");
     }
@@ -60,7 +60,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                         """)
                 .build();
 
-        launchAndLoad("forgeclient");
+        launchAndLoad("neoforgeclient");
 
         Class<T> enumClass = getEnumClass("testmod.SomeEnum");
 
@@ -143,7 +143,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                         }
                         """)
                 .build();
-        launchAndLoad("forgeclient");
+        launchAndLoad("neoforgeclient");
 
         var noArgEnum = getEnumClass("testmod.NoArgEnum");
         var stringArgEnum = getEnumClass("testmod.StringArgEnum");
@@ -218,7 +218,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                         }
                         """)
                 .build();
-        launchAndLoad("forgeclient");
+        launchAndLoad("neoforgeclient");
 
         var extensibleEnum = getEnumClass("enumtestmod.ExtensibleEnum");
         assertThat(extensibleEnum.getEnumConstants()).extracting(Enum::name).containsExactly(
@@ -304,7 +304,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                         }
                         """)
                 .build();
-        launchAndLoad("forgeclient");
+        launchAndLoad("neoforgeclient");
 
         var enumWithId = getEnumClass("enumtestmod.EnumWithId");
         assertThat(enumWithId.getEnumConstants()).extracting(Enum::name).containsExactly(
@@ -342,7 +342,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                         }
                         """)
                 .build();
-        launchAndLoad("forgeclient");
+        launchAndLoad("neoforgeclient");
 
         var extensibleEnum = getEnumClass("testmod.SomeEnum");
         var extensionInfo = getExtensionInfo(extensibleEnum);
@@ -383,7 +383,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                         }
                         """)
                 .build();
-        launchAndLoad("forgeclient");
+        launchAndLoad("neoforgeclient");
 
         var extensibleEnum = getEnumClass("testmod.SomeEnum");
         var extensionInfo = getExtensionInfo(extensibleEnum);

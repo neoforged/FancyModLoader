@@ -127,7 +127,7 @@ class RuntimeDistCleanerTest extends LauncherTest {
                 .addClass("test.Test", classContent)
                 .build();
 
-        launchAndLoad(dist.isClient() ? "forgeclient" : "forgeserver");
+        launchAndLoad(dist.isClient() ? "neoforgeclient" : "neoforgeserver");
 
         var testClass = Class.forName("test.Test", true, gameClassLoader);
         asserter.accept(testClass);
