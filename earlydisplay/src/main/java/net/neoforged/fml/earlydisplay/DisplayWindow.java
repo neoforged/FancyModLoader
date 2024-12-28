@@ -107,13 +107,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private SimpleFont font;
     private Runnable repaintTick = () -> {};
 
-    @Override
-    public String name() {
-        return "fmlearlywindow";
-    }
-
-    @Override
-    public Runnable initialize(String[] arguments) {
+    public DisplayWindow(String[] arguments) {
         final OptionParser parser = new OptionParser();
         var mcversionopt = parser.accepts("fml.mcVersion").withRequiredArg().ofType(String.class);
         var forgeversionopt = parser.accepts("fml.neoForgeVersion").withRequiredArg().ofType(String.class);
@@ -149,7 +143,20 @@ public class DisplayWindow implements ImmediateWindowProvider {
         var forgeVersion = parsed.valueOf(forgeversionopt);
         StartupNotificationManager.modLoaderConsumer().ifPresent(c -> c.accept("NeoForge loading " + forgeVersion));
         performanceInfo = new PerformanceInfo();
-        return start(parsed.valueOf(mcversionopt), forgeVersion);
+        var mcVersion = parsed.valueOf(mcversionopt);
+        renderScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            final var thread = Executors.defaultThreadFactory().newThread(r);
+            thread.setDaemon(true);
+            return thread;
+        });
+        initWindow(mcVersion);
+        this.initializationFuture = renderScheduler.schedule(() -> {
+            try {
+                initRender(mcVersion, forgeVersion);
+            } catch (Exception e) {
+                LOGGER.error("Failed to initialize DisplayWindow for early progress.", e);
+            }
+        }, 1, TimeUnit.MILLISECONDS);
     }
 
     private static final long MINFRAMETIME = TimeUnit.MILLISECONDS.toNanos(10); // This is the FPS cap on the window - note animation is capped at 20FPS via the tickTimer
@@ -285,26 +292,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
         framebuffer.deactivate();
         glBindVertexArray(currentVAO);
         glBindFramebuffer(GL_FRAMEBUFFER, currentFB);
-    }
-
-    /**
-     * Start the window and Render Thread; we're ready to go.
-     */
-    public Runnable start(@Nullable String mcVersion, final String forgeVersion) {
-        renderScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-            final var thread = Executors.defaultThreadFactory().newThread(r);
-            thread.setDaemon(true);
-            return thread;
-        });
-        initWindow(mcVersion);
-        this.initializationFuture = renderScheduler.schedule(() -> {
-            try {
-                initRender(mcVersion, forgeVersion);
-            } catch (Exception e) {
-                LOGGER.error("Failed to initialize DisplayWindow for early progress.", e);
-            }
-        }, 1, TimeUnit.MILLISECONDS);
-        return this::periodicTick;
     }
 
     private static final String ERROR_URL = "https://links.neoforged.net/early-display-errors";
