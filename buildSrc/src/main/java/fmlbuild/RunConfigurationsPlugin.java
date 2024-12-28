@@ -4,22 +4,25 @@ import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.file.Directory;
-import org.gradle.api.file.FileSystemLocation;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.jvm.toolchain.JavaToolchainService;
+import org.gradle.plugins.ide.idea.model.IdeaModel;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.gradle.ext.Application;
+import org.jetbrains.gradle.ext.ModuleRef;
+import org.jetbrains.gradle.ext.ProjectSettings;
+import org.jetbrains.gradle.ext.RunConfigurationContainer;
 
 import javax.inject.Inject;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.gradle.plugins.ide.idea.model.*;
-import org.jetbrains.annotations.Nullable;
-import  org.jetbrains.gradle.ext.*;
 
 public abstract class RunConfigurationsPlugin implements Plugin<Project> {
     @Inject
@@ -54,7 +57,7 @@ public abstract class RunConfigurationsPlugin implements Plugin<Project> {
             });
             runtimeModulesConfig.fromDependencyCollector(runConfiguration.getDependencies().getModulepath());
 
-            project.getTasks().create("run" + capitalizedName, JavaExec.class, task -> {
+            var runTask = project.getTasks().register("run" + capitalizedName, JavaExec.class, task -> {
                 task.getOutputs().upToDateWhen(ignored -> false);
                 task.classpath(sourceSet.getRuntimeClasspath());
                 task.getMainClass().set(runConfiguration.getMainClass());
@@ -63,21 +66,17 @@ public abstract class RunConfigurationsPlugin implements Plugin<Project> {
                 jvmArguments.addAll(runConfiguration.getSystemProperties().map(properties -> {
                     return properties.entrySet().stream().map(entry -> "-D" + entry.getKey() + "=" + entry.getValue()).toList();
                 }));
-                jvmArguments.addAll(runtimeModulesConfig.getElements().map(elements -> {
+                jvmArguments.addAll(runtimeModulesConfig.getIncoming().getArtifacts().getResolvedArtifacts().map(elements -> {
                     if (elements.isEmpty()) {
                         return List.of();
                     }
                     return List.of("-p", elements.stream()
-                            .map(FileSystemLocation::getAsFile)
+                            .map(ResolvedArtifactResult::getFile)
                             .map(File::getAbsolutePath)
                             .collect(Collectors.joining(File.pathSeparator))
                     );
                 }));
 
-                // I don't see a way to avoid querying this provider eagerly...
-                project.afterEvaluate(ignored -> {
-                    task.setGroup(runConfiguration.getTaskGroup().get());
-                });
                 // Use the project java version to launch
                 task.getJavaLauncher().set(getJavaToolchainService().launcherFor(javaSpec -> {
                     javaSpec.getLanguageVersion().set(java.getToolchain().getLanguageVersion());
@@ -91,6 +90,10 @@ public abstract class RunConfigurationsPlugin implements Plugin<Project> {
                 task.doFirst(RunConfigurationsPlugin::configureJavaExec);
 
                 task.dependsOn(runConfiguration.getTasksBefore());
+            });
+            // I don't see a way to avoid querying this provider eagerly...
+            project.afterEvaluate(ignored -> {
+                runTask.configure(t -> t.setGroup(runConfiguration.getTaskGroup().get()));
             });
         });
         runConfigurations.whenObjectRemoved(installation -> {
