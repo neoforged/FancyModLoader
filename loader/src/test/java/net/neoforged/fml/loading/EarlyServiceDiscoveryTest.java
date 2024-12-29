@@ -5,28 +5,26 @@
 
 package net.neoforged.fml.loading;
 
-import cpw.mods.jarhandling.SecureJar;
-import net.bytebuddy.agent.ByteBuddyAgent;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import cpw.mods.jarhandling.SecureJar;
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import net.bytebuddy.agent.ByteBuddyAgent;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class EarlyServiceDiscoveryTest {
     // A service locator file that should be picked up by the locator
     private static final IdentifiableContent FML_SERVICE_FILE = new IdentifiableContent(
             "FML_SERVICE",
             "META-INF/services/net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper",
-            "some.Class".getBytes()
-    );
+            "some.Class".getBytes());
 
     SimulatedInstallation simulatedInstallation;
     private Path earlyServiceJar;

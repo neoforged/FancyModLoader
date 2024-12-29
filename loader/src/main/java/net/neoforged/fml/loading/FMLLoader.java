@@ -16,40 +16,6 @@ import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import cpw.mods.niofs.union.UnionFileSystem;
-import net.neoforged.accesstransformer.api.AccessTransformerEngine;
-import net.neoforged.accesstransformer.ml.AccessTransformerService;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.ModLoader;
-import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.common.asm.RuntimeDistCleaner;
-import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
-import net.neoforged.fml.i18n.FMLTranslations;
-import net.neoforged.fml.loading.mixin.MixinFacade;
-import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
-import net.neoforged.fml.loading.moddiscovery.ModFile;
-import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
-import net.neoforged.fml.loading.moddiscovery.locators.ClasspathLibrariesLocator;
-import net.neoforged.fml.loading.moddiscovery.locators.GameLocator;
-import net.neoforged.fml.loading.moddiscovery.locators.InDevLocator;
-import net.neoforged.fml.loading.moddiscovery.locators.MavenDirectoryLocator;
-import net.neoforged.fml.loading.moddiscovery.locators.ModsFolderLocator;
-import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
-import net.neoforged.fml.loading.progress.StartupNotificationManager;
-import net.neoforged.fml.startup.FMLStartupContext;
-import net.neoforged.fml.startup.FatalStartupException;
-import net.neoforged.fml.startup.StartupArgs;
-import net.neoforged.fml.util.ServiceLoaderUtil;
-import net.neoforged.neoforgespi.ILaunchContext;
-import net.neoforged.neoforgespi.language.IModFileInfo;
-import net.neoforged.neoforgespi.language.IModInfo;
-import net.neoforged.neoforgespi.locating.IModFile;
-import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
-import net.neoforged.neoforgespi.locating.ModFileInfoParser;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.VisibleForTesting;
-import org.slf4j.Logger;
-import org.slf4j.event.Level;
-
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.invoke.MethodHandle;
@@ -79,6 +45,37 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import net.neoforged.accesstransformer.api.AccessTransformerEngine;
+import net.neoforged.accesstransformer.ml.AccessTransformerService;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.ModLoader;
+import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.common.asm.RuntimeDistCleaner;
+import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
+import net.neoforged.fml.i18n.FMLTranslations;
+import net.neoforged.fml.loading.mixin.MixinFacade;
+import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
+import net.neoforged.fml.loading.moddiscovery.ModFile;
+import net.neoforged.fml.loading.moddiscovery.locators.ClasspathLibrariesLocator;
+import net.neoforged.fml.loading.moddiscovery.locators.GameLocator;
+import net.neoforged.fml.loading.moddiscovery.locators.InDevLocator;
+import net.neoforged.fml.loading.moddiscovery.locators.MavenDirectoryLocator;
+import net.neoforged.fml.loading.moddiscovery.locators.ModsFolderLocator;
+import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
+import net.neoforged.fml.loading.progress.StartupNotificationManager;
+import net.neoforged.fml.startup.FMLStartupContext;
+import net.neoforged.fml.startup.FatalStartupException;
+import net.neoforged.fml.startup.StartupArgs;
+import net.neoforged.fml.util.ServiceLoaderUtil;
+import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.locating.IModFile;
+import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.event.Level;
 
 public class FMLLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -100,9 +97,8 @@ public class FMLLoader {
 
     @VisibleForTesting
     record DiscoveryResult(List<ModFile> pluginContent,
-                           List<ModFile> gameContent,
-                           List<ModLoadingIssue> discoveryIssues) {
-    }
+            List<ModFile> gameContent,
+            List<ModLoadingIssue> discoveryIssues) {}
 
     // This is called by FML Startup
     public static FMLStartupContext startup(@Nullable Instrumentation instrumentation, StartupArgs startupArgs) {
@@ -333,8 +329,7 @@ public class FMLLoader {
                             long existingSize = -1;
                             try {
                                 existingSize = Files.size(cachedFile);
-                            } catch (IOException ignored) {
-                            }
+                            } catch (IOException ignored) {}
                             if (existingSize != expectedSize) {
                                 // TODO atomic move crap
                                 Files.write(cachedFile, jarInMemory);
@@ -389,9 +384,9 @@ public class FMLLoader {
     }
 
     private static GameLayerResult buildGameModuleLayer(ClassTransformer classTransformer,
-                                                        List<SecureJar> content,
-                                                        List<ModuleLayer> parentLayers,
-                                                        ClassLoader parentLoader) {
+            List<SecureJar> content,
+            List<ModuleLayer> parentLayers,
+            ClassLoader parentLoader) {
         long start = System.currentTimeMillis();
 
         var cf = Configuration.resolveAndBind(
@@ -415,8 +410,7 @@ public class FMLLoader {
         return new GameLayerResult(layer, loader);
     }
 
-    record GameLayerResult(ModuleLayer gameLayer, TransformingClassLoader classLoader) {
-    }
+    record GameLayerResult(ModuleLayer gameLayer, TransformingClassLoader classLoader) {}
 
     private static String getModuleNameList(Configuration cf) {
         return cf.modules().stream()
@@ -446,8 +440,8 @@ public class FMLLoader {
     }
 
     private static <T extends ILaunchPluginService> T addLaunchPlugin(ILaunchContext launchContext,
-                                                                      Map<String, ILaunchPluginService> services,
-                                                                      T service) {
+            Map<String, ILaunchPluginService> services,
+            T service) {
         LOGGER.debug("Adding launch plugin {}", service.name());
         var previous = services.put(service.name(), service);
         if (previous != null) {
@@ -464,8 +458,7 @@ public class FMLLoader {
             @Nullable String neoForgeVersion,
             @Deprecated(forRemoval = true) @Nullable String fmlVersion,
             @Nullable String mcVersion,
-            @Nullable String neoFormVersion) {
-    }
+            @Nullable String neoFormVersion) {}
 
     private static FMLExternalOptions parseArgs(String[] strings) {
         String neoForgeVersion = null;
@@ -635,8 +628,7 @@ public class FMLLoader {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Interrupted while waiting for future", e);
-            } catch (TimeoutException ignored) {
-            }
+            } catch (TimeoutException ignored) {}
         }
     }
 
@@ -657,8 +649,7 @@ public class FMLLoader {
         return dist;
     }
 
-    public static void beforeStart(ModuleLayer gameLayer) {
-    }
+    public static void beforeStart(ModuleLayer gameLayer) {}
 
     public static LoadingModList getLoadingModList() {
         return loadingModList;
