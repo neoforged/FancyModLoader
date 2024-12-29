@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.loading.targets;
+package net.neoforged.fml.startup;
 
 import com.mojang.logging.LogUtils;
 import java.util.ArrayList;
@@ -18,10 +18,10 @@ import org.slf4j.Logger;
  * A class that attempts to parse command line arguments into key value pairs to allow addition and editing.
  * Can not use JOptSimple as that doesn't parse out the values for keys unless the spec says it has a value.
  */
-class ArgumentList {
+final class ArgumentList {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private List<Supplier<String[]>> entries = new ArrayList<>();
-    private Map<String, EntryValue> values = new HashMap<>();
+    private final List<Supplier<String[]>> entries = new ArrayList<>();
+    private final Map<String, EntryValue> values = new HashMap<>();
 
     public static ArgumentList from(String... args) {
         ArgumentList ret = new ArgumentList();
@@ -64,7 +64,7 @@ class ArgumentList {
         String key = raw.substring(idx);
         EntryValue entry = new EntryValue(split, prefix, key, value);
         if (values.containsKey(key)) {
-            LOGGER.info("Duplicate entries for " + key + " Unindexable");
+            LOGGER.info("Duplicate entries for {} Unindexable", key);
         } else {
             values.put(key, entry);
         }
@@ -73,8 +73,8 @@ class ArgumentList {
 
     public String[] getArguments() {
         return entries.stream()
-                .flatMap(e -> Arrays.asList(e.get()).stream())
-                .toArray(size -> new String[size]);
+                .flatMap(e -> Arrays.stream(e.get()))
+                .toArray(String[]::new);
     }
 
     public boolean hasValue(String key) {
@@ -118,7 +118,7 @@ class ArgumentList {
         return ent.getValue();
     }
 
-    private class EntryValue implements Supplier<String[]> {
+    private static class EntryValue implements Supplier<String[]> {
         private final String prefix;
         private final String key;
         private final boolean split;

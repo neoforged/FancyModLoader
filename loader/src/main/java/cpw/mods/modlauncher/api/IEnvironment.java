@@ -14,7 +14,6 @@
 
 package cpw.mods.modlauncher.api;
 
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -45,22 +44,6 @@ public interface IEnvironment {
      * @return The value of the key
      */
     <T> T computePropertyIfAbsent(TypesafeMap.Key<T> key, final Function<? super TypesafeMap.Key<T>, ? extends T> valueFunction);
-
-    /**
-     * Find the named {@link ILaunchPluginService}
-     *
-     * @param name name to lookup
-     * @return the launch plugin
-     */
-    Optional<ILaunchPluginService> findLaunchPlugin(String name);
-
-    /**
-     * Find the named {@link ILaunchHandlerService}
-     *
-     * @param name name to lookup
-     * @return the launch handler
-     */
-    Optional<ILaunchHandlerService> findLaunchHandler(String name);
 
     final class Keys {
         /**

@@ -31,21 +31,20 @@ neoForgeInstallations {
     register("client", fmlbuild.NeoForgeClientInstallation) {
         version = test_neoforge_version
         minecraftVersion = test_minecraft_version
-        mainClass = "net.neoforged.fml.startup.Startup"
+        mainClass = "net.neoforged.fml.startup.Client"
         gameDir = "D:\\PrismInstances\\All the Mods 10 - ATM10\\minecraft"
         // gameDir = "D:\\PrismInstances\\Enigmatica 10 - E10\\minecraft"
     }
     register("server", fmlbuild.NeoForgeServerInstallation) {
         version = test_neoforge_version
         minecraftVersion = test_minecraft_version
-        mainClass = "net.neoforged.fml.startup.Startup"
+        mainClass = "net.neoforged.fml.startup.Server"
     }
 }
 
 runConfigurations {
     configureEach {
         taskGroup = "fml/test runs"
-        mainClass = "net.neoforged.fml.startup.Startup"
         dependencies {
             classpath("net.neoforged:neoforge:$test_neoforge_version") {
                 capabilities {
@@ -72,6 +71,7 @@ runConfigurations {
             classpath files(tasks.named("installNeoForgeClient").map { it.obfuscatedClientJar })
         }
         taskBefore tasks.named("installNeoForgeClient")
+        mainClass = "net.neoforged.fml.startup.Client"
     }
     productionServer {
         ideName = "Server (Production)"
@@ -80,6 +80,7 @@ runConfigurations {
         programArguments.add(neoForgeInstallations.server.neoForgeMainClassArgFile.map { "@" + it })
         programArguments.add(neoForgeInstallations.server.neoForgeProgramArgFile.map { "@" + it })
         taskBefore tasks.named("installNeoForgeServer")
+        mainClass = "net.neoforged.fml.startup.Server"
     }
 }
 

@@ -56,7 +56,7 @@ public class MixinTest extends LauncherTest {
                         """)
                 .build();
 
-        launchAndLoad("neoforgeclient");
+        launchAndLoad(LaunchMode.PROD_CLIENT);
         var targetClass = Class.forName("testmod.MixinTargetClass", true, gameClassLoader);
         var targetObject = (Callable<?>) targetClass.getConstructor().newInstance();
         assertEquals("mixin did apply!", targetObject.call());

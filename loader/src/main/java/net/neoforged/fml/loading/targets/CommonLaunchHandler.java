@@ -6,7 +6,6 @@
 package net.neoforged.fml.loading.targets;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.ServiceRunner;
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +29,9 @@ import net.neoforged.fml.loading.VersionInfo;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import org.slf4j.Logger;
 
-public abstract class CommonLaunchHandler implements ILaunchHandlerService {
+public abstract class CommonLaunchHandler {
+    public abstract String name();
+
     protected static final Logger LOGGER = LogUtils.getLogger();
 
     public abstract Dist getDist();
@@ -82,7 +83,6 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
         return result;
     }
 
-    @Override
     public ServiceRunner launchService(final String[] arguments, final ModuleLayer gameLayer) {
         FMLLoader.beforeStart(gameLayer);
         var args = preLaunch(arguments, gameLayer);

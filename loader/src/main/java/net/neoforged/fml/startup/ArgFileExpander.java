@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Expands "@"-files in a given command line.
  */
-public final class ArgFileExpander {
+final class ArgFileExpander {
     private ArgFileExpander() {}
 
     public static String[] expandArgFiles(String[] args) {

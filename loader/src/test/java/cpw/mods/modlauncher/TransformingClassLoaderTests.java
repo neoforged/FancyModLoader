@@ -18,13 +18,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.modlauncher.api.ITransformer;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
@@ -36,17 +34,9 @@ class TransformingClassLoaderTests {
 
     @Test
     void testClassLoader() throws Exception {
-        MockTransformerService mockTransformerService = new MockTransformerService() {
-            @Override
-            public List<? extends ITransformer<?>> transformers() {
-                return Stream.of(new ClassNodeTransformer(List.of(TARGET_CLASS))).collect(Collectors.toList());
-            }
-        };
-
         TransformStore transformStore = new TransformStore();
+        transformStore.addTransformer(new MockTransformerService.ClassNodeTransformer(List.of(TARGET_CLASS)), "");
         LaunchPluginHandler lph = new LaunchPluginHandler(Stream.empty());
-        TransformationServiceDecorator sd = new TransformationServiceDecorator(mockTransformerService);
-        sd.gatherTransformers(transformStore);
         var classTransformer = new ClassTransformer(transformStore, lph);
 
         Configuration configuration = createTestJarsConfiguration();

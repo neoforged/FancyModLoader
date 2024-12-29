@@ -14,22 +14,20 @@
 
 package cpw.mods.modlauncher;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.ITransformerVotingContext;
 import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
-import java.util.Collections;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -41,25 +39,28 @@ import org.objectweb.asm.tree.FieldNode;
  * Test core transformer functionality
  */
 class ClassTransformerTests {
-    @Test
-    void testClassTransformer() throws Exception {
+    private ClassTransformer classTransformer;
+    private TransformStore transformStore;
+
+    @BeforeEach
+    void setup() {
         MarkerManager.getMarker("CLASSDUMP");
         Configurator.setLevel(ClassTransformer.class.getName(), Level.TRACE);
-        final TransformStore transformStore = new TransformStore();
-        final LaunchPluginHandler lph = new LaunchPluginHandler(Stream.empty());
-        final ClassTransformer classTransformer = new ClassTransformer(transformStore, lph, new TransformerAuditTrail());
-        final ITransformationService dummyService = new MockTransformerService();
-        transformStore.addTransformer(new TransformTargetLabel("test.MyClass", TargetType.CLASS), classTransformer(), dummyService);
-        byte[] result = classTransformer.transform(null, new byte[0], "test.MyClass", "testing");
-        assertAll("Class loads and is valid",
-                () -> assertNotNull(result),
-                () -> {
-                    ClassReader cr = new ClassReader(result);
-                    ClassNode cn = new ClassNode();
-                    cr.accept(cn, 0);
-                    assertTrue(cn.fields.stream().anyMatch(f -> f.name.equals("testfield")));
-                });
+        transformStore = new TransformStore();
+        classTransformer = new ClassTransformer(transformStore, new LaunchPluginHandler(Stream.empty()), new TransformerAuditTrail());
+    }
 
+    @Test
+    void testClassTransformer() {
+        transformStore.addTransformer(classTransformer(), "test");
+        byte[] result = classTransformer.transform(null, new byte[0], "test.MyClass", "testing");
+        assertOnClassNode(result, cn -> {
+            assertThat(cn.fields).extracting(f -> f.name).containsOnly("testfield");
+        });
+    }
+
+    @Test
+    void testFieldTransformer() {
         ClassNode dummyClass = new ClassNode();
         dummyClass.superName = "java/lang/Object";
         dummyClass.version = 52;
@@ -67,16 +68,16 @@ class ClassTransformerTests {
         dummyClass.fields.add(new FieldNode(Opcodes.ACC_PUBLIC, "dummyfield", "Ljava/lang/String;", null, null));
         ClassWriter cw = new ClassWriter(Opcodes.ASM5);
         dummyClass.accept(cw);
-        transformStore.addTransformer(new TransformTargetLabel("test.DummyClass", "dummyfield"), fieldNodeTransformer1(), dummyService);
+        transformStore.addTransformer(fieldNodeTransformer1(), "test");
         byte[] result1 = classTransformer.transform(null, cw.toByteArray(), "test.DummyClass", "testing");
-        assertAll("Class loads and is valid",
-                () -> assertNotNull(result1),
-                () -> {
-                    ClassReader cr = new ClassReader(result1);
-                    ClassNode cn = new ClassNode();
-                    cr.accept(cn, 0);
-                    assertEquals("CHEESE", cn.fields.get(0).value);
-                });
+        assertOnClassNode(result1, cn -> assertEquals("CHEESE", cn.fields.getFirst().value));
+    }
+
+    private static void assertOnClassNode(byte[] bytecode, Consumer<ClassNode> asserter) {
+        ClassReader cr = new ClassReader(bytecode);
+        ClassNode cn = new ClassNode();
+        cr.accept(cn, 0);
+        asserter.accept(cn);
     }
 
     private ITransformer<FieldNode> fieldNodeTransformer1() {
@@ -94,7 +95,7 @@ class ClassTransformerTests {
 
             @Override
             public Set<Target<FieldNode>> targets() {
-                return Collections.emptySet();
+                return Set.of(Target.targetField("test.DummyClass", "dummyfield", "Ljava/lang/String;"));
             }
 
             @Override
@@ -121,7 +122,7 @@ class ClassTransformerTests {
 
             @Override
             public Set<Target<ClassNode>> targets() {
-                return Collections.emptySet();
+                return Set.of(Target.targetClass("test.MyClass"));
             }
 
             @Override

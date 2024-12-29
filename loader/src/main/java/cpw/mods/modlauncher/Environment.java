@@ -15,39 +15,20 @@
 package cpw.mods.modlauncher;
 
 import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.TypesafeMap;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.util.Optional;
 import java.util.function.Function;
 
 /**
  * Environment implementation class
  */
+@Deprecated(forRemoval = true)
 public final class Environment implements IEnvironment {
     private final TypesafeMap environment = new TypesafeMap(IEnvironment.class);
-    private final Function<String, Optional<ILaunchPluginService>> launchPlugins;
-    private final Function<String, Optional<ILaunchHandlerService>> launchService;
-
-    public Environment(Function<String, Optional<ILaunchPluginService>> launchPlugins,
-            Function<String, Optional<ILaunchHandlerService>> launchService) {
-        this.launchPlugins = launchPlugins;
-        this.launchService = launchService;
-    }
 
     @Override
     public <T> Optional<T> getProperty(TypesafeMap.Key<T> key) {
         return environment.get(key);
-    }
-
-    @Override
-    public Optional<ILaunchPluginService> findLaunchPlugin(final String name) {
-        return launchPlugins.apply(name);
-    }
-
-    @Override
-    public Optional<ILaunchHandlerService> findLaunchHandler(final String name) {
-        return launchService.apply(name);
     }
 
     @Override

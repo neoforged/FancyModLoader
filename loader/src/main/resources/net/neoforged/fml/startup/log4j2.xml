@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Copyright (c) NeoForged and contributors
+    SPDX-License-Identifier: LGPL-2.1-only
+-->
+
 <Configuration status="warn" shutdownHook="disable">
     <filters>
         <ThresholdFilter level="WARN" onMatch="ACCEPT" onMismatch="NEUTRAL"/>

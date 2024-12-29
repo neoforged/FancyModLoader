@@ -6,12 +6,23 @@
 package net.neoforged.fml.startup;
 
 import java.awt.GraphicsEnvironment;
+import java.lang.reflect.InvocationTargetException;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 public final class FatalErrorReporting {
     private FatalErrorReporting() {}
+
+    public static void reportFatalError(Throwable t) {
+        if (t instanceof InvocationTargetException e && e.getCause() != null) {
+            reportFatalError(e.getCause());
+        } else if (t instanceof FatalStartupException e) {
+            reportFatalError(e.getMessage());
+        } else {
+            reportFatalError(t.toString());
+        }
+    }
 
     /**
      * Report a fatal startup error.

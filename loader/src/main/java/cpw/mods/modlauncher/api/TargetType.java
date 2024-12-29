@@ -1,8 +1,5 @@
 package cpw.mods.modlauncher.api;
 
-import cpw.mods.modlauncher.TransformList;
-import java.util.Map;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -50,15 +47,5 @@ public final class TargetType<T> {
                 .filter(type -> type.name.equals(name))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No TargetType of name " + name + " found"));
-    }
-
-    @SuppressWarnings("unchecked")
-    public TransformList<T> get(Map<TargetType<?>, TransformList<?>> transformers) {
-        return (TransformList<T>) transformers.get(this);
-    }
-
-    @SuppressWarnings("unchecked")
-    public Supplier<TransformList<T>> mapSupplier(Map<TargetType<?>, TransformList<?>> transformers) {
-        return () -> (TransformList<T>) transformers.get(this);
     }
 }

@@ -11,13 +11,12 @@ import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.NamedPath;
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.bytebuddy.agent.ByteBuddyAgent;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,7 +55,7 @@ class ClasspathTransformerDiscovererTest {
 
     @Test
     void testLocateTransformerServiceInDev() throws Exception {
-        var candidates = runLocator("neoforgeclientdev");
+        var candidates = runLocator(LauncherTest.LaunchMode.DEV_CLIENT);
 
         assertThat(candidates)
                 .anySatisfy(candidate -> {
@@ -71,26 +70,29 @@ class ClasspathTransformerDiscovererTest {
 
     @Test
     void testLocateTransformerServiceNotInDev() throws Exception {
-        var candidates = runLocator("neoforgeclient");
+        var candidates = runLocator(LauncherTest.LaunchMode.PROD_CLIENT);
         assertThat(candidates).isEmpty();
+        Assertions.fail();
     }
 
-    private List<NamedPath> runLocator(String launchTarget) throws IOException {
-        var locator = new ClasspathTransformerDiscoverer();
+    private List<NamedPath> runLocator(LauncherTest.LaunchMode launchTarget) throws IOException {
+        return List.of();
 
-        SimulatedInstallation.writeJarFile(mlServicesJar, ML_SERVICE_FILE);
-        SimulatedInstallation.setModFoldersProperty(Map.of("ML_SERVICES_FROM_DIR", gradleModule));
+//        var locator = new ClasspathTransformerDiscoverer();
 
-        List<NamedPath> candidates;
-        var cl = new URLClassLoader(new URL[] {
-                mlServicesJar.toUri().toURL()
-        });
-        var previousCl = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(cl);
-        try {
-            return locator.candidates(simulatedInstallation.getGameDir(), launchTarget);
-        } finally {
-            Thread.currentThread().setContextClassLoader(previousCl);
-        }
+//        SimulatedInstallation.writeJarFile(mlServicesJar, ML_SERVICE_FILE);
+//        SimulatedInstallation.setModFoldersProperty(Map.of("ML_SERVICES_FROM_DIR", gradleModule));
+
+//        List<NamedPath> candidates;
+//        var cl = new URLClassLoader(new URL[] {
+//                mlServicesJar.toUri().toURL()
+//        });
+//        var previousCl = Thread.currentThread().getContextClassLoader();
+//        Thread.currentThread().setContextClassLoader(cl);
+//        try {
+//            return locator.candidates(simulatedInstallation.getGameDir(), launchTarget);
+//        } finally {
+//            Thread.currentThread().setContextClassLoader(previousCl);
+//        }
     }
 }

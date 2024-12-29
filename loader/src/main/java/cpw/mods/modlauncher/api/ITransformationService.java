@@ -50,7 +50,8 @@ public interface ITransformationService {
      *
      * @param environment environment - query state from here to determine viability
      */
-    void initialize(IEnvironment environment);
+    @Deprecated(forRemoval = true)
+    default void initialize(IEnvironment environment) {}
 
     /**
      * Load your service. Called immediately on loading with a list of other services found.
@@ -62,7 +63,8 @@ public interface ITransformationService {
      * @throws IncompatibleEnvironmentException if there is an incompatibility detected. Identify specifics in
      *                                          the exception message
      */
-    void onLoad(IEnvironment env, Set<String> otherServices) throws IncompatibleEnvironmentException;
+    @Deprecated(forRemoval = true)
+    default void onLoad(IEnvironment env, Set<String> otherServices) throws IncompatibleEnvironmentException {}
 
     /**
      * The {@link ITransformer} is the fundamental operator of the system.

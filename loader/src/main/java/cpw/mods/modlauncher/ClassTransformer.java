@@ -18,7 +18,6 @@ import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.ITransformerActivity;
-import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.io.IOException;
@@ -75,8 +74,8 @@ public class ClassTransformer {
 
         final EnumMap<ILaunchPluginService.Phase, List<ILaunchPluginService>> launchPluginTransformerSet = pluginHandler.computeLaunchPluginTransformerSet(classDesc, inputClass.length == 0, reason, this.auditTrail);
 
-        final boolean needsTransforming = transformers.needsTransforming(internalName);
-        if (!needsTransforming && launchPluginTransformerSet.isEmpty()) {
+        var classTransforms = transformers.getClassTransforms(className);
+        if (classTransforms == null && launchPluginTransformerSet.isEmpty()) {
             return inputClass;
         }
 
@@ -98,44 +97,42 @@ public class ClassTransformer {
         auditTrail.addReason(classDesc.getClassName(), reason);
 
         final int preFlags = pluginHandler.offerClassNodeToPlugins(ILaunchPluginService.Phase.BEFORE, launchPluginTransformerSet.getOrDefault(ILaunchPluginService.Phase.BEFORE, Collections.emptyList()), clazz, classDesc, auditTrail, reason);
-        if (preFlags == ILaunchPluginService.ComputeFlags.NO_REWRITE && !needsTransforming && launchPluginTransformerSet.getOrDefault(ILaunchPluginService.Phase.AFTER, Collections.emptyList()).isEmpty()) {
+        if (preFlags == ILaunchPluginService.ComputeFlags.NO_REWRITE && classTransforms == null && launchPluginTransformerSet.getOrDefault(ILaunchPluginService.Phase.AFTER, Collections.emptyList()).isEmpty()) {
             // Shortcut if there's no further work to do
             return inputClass;
         }
 
-        if (needsTransforming) {
+        if (classTransforms != null) {
             VotingContext context = new VotingContext(className, empty, digest, auditTrail.getActivityFor(className), reason);
 
-            List<ITransformer<ClassNode>> preClassTransformers = new ArrayList<>(transformers.getTransformersFor(className, TargetType.PRE_CLASS));
-            clazz = this.performVote(preClassTransformers, clazz, context);
+            clazz = this.performVote(classTransforms.preTransformers, clazz, context);
 
             List<FieldNode> fieldList = new ArrayList<>(clazz.fields.size());
             // it's probably possible to inject "dummy" fields into this list for spawning new fields without class transform
             for (FieldNode field : clazz.fields) {
-                List<ITransformer<FieldNode>> fieldTransformers = new ArrayList<>(transformers.getTransformersFor(className, field));
+                var fieldTransformers = classTransforms.getForField(field.name, field.desc);
                 fieldList.add(this.performVote(fieldTransformers, field, context));
             }
 
             // it's probably possible to inject "dummy" methods into this list for spawning new methods without class transform
             List<MethodNode> methodList = new ArrayList<>(clazz.methods.size());
             for (MethodNode method : clazz.methods) {
-                List<ITransformer<MethodNode>> methodTransformers = new ArrayList<>(transformers.getTransformersFor(className, method));
+                var methodTransformers = classTransforms.getForMethod(method.name, method.desc);
                 methodList.add(this.performVote(methodTransformers, method, context));
             }
 
             clazz.fields = fieldList;
             clazz.methods = methodList;
-            List<ITransformer<ClassNode>> classTransformers = new ArrayList<>(transformers.getTransformersFor(className, TargetType.CLASS));
-            clazz = this.performVote(classTransformers, clazz, context);
+            clazz = this.performVote(classTransforms.postTransformers, clazz, context);
         }
 
         final int postFlags = pluginHandler.offerClassNodeToPlugins(ILaunchPluginService.Phase.AFTER, launchPluginTransformerSet.getOrDefault(ILaunchPluginService.Phase.AFTER, Collections.emptyList()), clazz, classDesc, auditTrail, reason);
-        if (preFlags == ILaunchPluginService.ComputeFlags.NO_REWRITE && postFlags == ILaunchPluginService.ComputeFlags.NO_REWRITE && !needsTransforming) {
+        if (preFlags == ILaunchPluginService.ComputeFlags.NO_REWRITE && postFlags == ILaunchPluginService.ComputeFlags.NO_REWRITE && classTransforms == null) {
             return inputClass;
         }
 
         //Transformers always get compute_frames
-        int mergedFlags = needsTransforming ? ILaunchPluginService.ComputeFlags.COMPUTE_FRAMES : (postFlags | preFlags);
+        int mergedFlags = classTransforms != null ? ILaunchPluginService.ComputeFlags.COMPUTE_FRAMES : (postFlags | preFlags);
 
         //Don't compute frames when loading for frame computation to avoid cycles. The byte data will only be used for computing frames anyway
         if (reason.equals(ITransformerActivity.COMPUTING_FRAMES_REASON))
@@ -174,6 +171,12 @@ public class ClassTransformer {
     }
 
     private <T> T performVote(List<ITransformer<T>> transformers, T node, VotingContext context) {
+        if (transformers.isEmpty()) {
+            return node;
+        }
+
+        transformers = new ArrayList<>(transformers);
+
         context.setNode(node);
         do {
             final Stream<TransformerVote<T>> voteResultStream = transformers.stream().map(t -> gatherVote(t, context));
@@ -188,9 +191,10 @@ public class ClassTransformer {
             }
             // If there's at least one YES voter, let's apply the first one we find, remove them, and continue.
             if (results.containsKey(TransformerVoteResult.YES)) {
-                final ITransformer<T> transformer = results.get(TransformerVoteResult.YES).get(0).getTransformer();
+                var transformer = results.get(TransformerVoteResult.YES).get(0).getTransformer();
                 node = transformer.transform(node, context);
-                auditTrail.addTransformerAuditTrail(context.getClassName(), ((TransformerHolder<?>) transformer).owner(), transformer);
+                var owner = Objects.requireNonNullElse(this.transformers.getOwner(transformer), "unknown");
+                auditTrail.addTransformerAuditTrail(context.getClassName(), owner, transformer);
                 transformers.remove(transformer);
                 continue;
             }

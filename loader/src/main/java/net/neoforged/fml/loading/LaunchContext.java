@@ -5,7 +5,6 @@
 
 package net.neoforged.fml.loading;
 
-import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.niofs.union.UnionFileSystem;
 import java.io.File;
 import java.nio.file.Files;
@@ -19,12 +18,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforgespi.ILaunchContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 final class LaunchContext implements ILaunchContext {
-    private static final Logger LOG = LoggerFactory.getLogger(LaunchContext.class);
-    private final IEnvironment environment;
     private final Path gameDirectory;
     private final List<String> modLists;
     private final List<String> mods;
@@ -38,14 +33,12 @@ final class LaunchContext implements ILaunchContext {
     private final Map<Path, String> jarSourceInfo = new HashMap<>();
 
     LaunchContext(
-            IEnvironment environment,
             Dist requiredDistribution,
             Path gameDirectory,
             List<String> modLists,
             List<String> mods,
             List<String> mavenRoots,
             List<File> unclaimedClassPathEntries) {
-        this.environment = environment;
         this.gameDirectory = gameDirectory;
         this.modLists = modLists;
         this.mods = mods;
@@ -90,11 +83,6 @@ final class LaunchContext implements ILaunchContext {
         return unclaimedClassPathEntries.stream()
                 .filter(p -> !isLocated(p.toPath()))
                 .toList();
-    }
-
-    @Override
-    public IEnvironment environment() {
-        return environment;
     }
 
     @Override

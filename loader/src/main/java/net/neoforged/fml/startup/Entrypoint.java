@@ -6,66 +6,41 @@
 package net.neoforged.fml.startup;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.instrument.Instrumentation;
-import java.lang.invoke.LambdaMetafactory;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.management.ManagementFactory;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.function.Supplier;
+import net.neoforged.fml.loading.FMLLoader;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.ConfigurationFactory;
+import org.apache.logging.log4j.core.config.ConfigurationSource;
+import org.apache.logging.log4j.core.config.Configurator;
 
-public class Startup {
-    // TODO: this needs testing!
-    public static void main(String[] args) throws IOException {
-        StartupLog.info("JVM Uptime: {}ms", ManagementFactory.getRuntimeMXBean().getUptime());
+public abstract class Entrypoint {
+    Entrypoint() {}
 
-        try {
-            args = ArgFileExpander.expandArgFiles(args);
+    protected static FMLStartupContext startup(String[] args) {
+        StartupLog.debug("JVM Uptime: {}ms", ManagementFactory.getRuntimeMXBean().getUptime());
 
-            run(args, Startup::createFmlLoaderEntrypoint);
-        } catch (FatalStartupException e) {
-            FatalErrorReporting.reportFatalError(e.getMessage());
-            System.exit(1);
+        args = ArgFileExpander.expandArgFiles(args);
+
+        // In dev, do not overwrite the logging configuration if the user explicitly set another one.
+        // In production, always overwrite the vanilla configuration.
+        // TODO: Update this comment and coordinate with launchers to determine how to use THEIR logging config
+        if (System.getProperty("log4j2.configurationFile") == null) {
+            overwriteLoggingConfiguration();
         }
-    }
 
-    private static StartupEntrypoint createFmlLoaderEntrypoint() {
-        try {
-            var fmlLoader = Class.forName("net.neoforged.fml.loading.FMLLoader");
-            var lookup = MethodHandles.lookup();
-            var methodType = MethodType.methodType(List.class, Instrumentation.class, StartupArgs.class);
-            var handle = lookup.findStatic(fmlLoader, "startup", methodType);
-
-            var site = LambdaMetafactory.metafactory(
-                    lookup,
-                    "start",
-                    MethodType.methodType(StartupEntrypoint.class),
-                    methodType,
-                    handle,
-                    methodType);
-
-            return (StartupEntrypoint) site.getTarget().invokeExact();
-        } catch (ClassNotFoundException e) {
-            throw new FatalStartupException("Missing net.neoforged.fml.loading.FMLLoader class on the classpath.");
-        } catch (NoSuchMethodException e) {
-            throw new FatalStartupException("net.neoforged.fml.loading.FMLLoader is missing method 'startup'.");
-        } catch (IllegalAccessException e) {
-            throw new FatalStartupException("net.neoforged.fml.loading.FMLLoader or its method startup have wrong access level.");
-        } catch (Throwable e) {
-            throw new FatalStartupException("Failed to create FML entrypoint object: " + e);
-        }
-    }
-
-    private static void run(String[] args, Supplier<StartupEntrypoint> entrypoint) {
         var gameDir = getGameDir(args);
         StartupLog.info("Game Directory: {}", gameDir);
-        var launchTarget = getLaunchTarget(args);
-        StartupLog.info("Launch Target: {}", launchTarget);
 
         var cacheDir = new File(gameDir, ".neoforgecache");
         if (!cacheDir.exists() && !cacheDir.mkdir()) {
@@ -79,29 +54,24 @@ public class Startup {
             System.setProperty("log4j2.disable.jmx", "true");
         }
 
-        // Launch FML
-        var previousClassLoader = Thread.currentThread().getContextClassLoader();
-        try {
-            var startupArgs = new StartupArgs(
-                    gameDir,
-                    launchTarget,
-                    args,
-                    new HashSet<>(),
-                    listClasspathEntries(),
-                    false,
-                    Startup.class.getClassLoader());
+        var startupArgs = new StartupArgs(
+                gameDir,
+                false,
+                null,
+                args,
+                new HashSet<>(),
+                listClasspathEntries(),
+                Thread.currentThread().getContextClassLoader());
 
-            entrypoint.get().start(instrumentation, startupArgs);
+        // Launch FML
+        try {
+            return FMLLoader.startup(instrumentation, startupArgs);
         } catch (Exception e) {
             var sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
-            StartupLog.error("Failed to load FML: {}", sw);
-            throw new FatalStartupException("Failed to load FML: " + e);
-        } finally {
-            Thread.currentThread().setContextClassLoader(previousClassLoader);
+            StartupLog.error("Failed to start FML: {}", sw);
+            throw new FatalStartupException("Failed to start FML: " + e);
         }
-
-        StartupLog.info("After FMLLoader.startup");
     }
 
     private static List<File> listClasspathEntries() {
@@ -122,15 +92,6 @@ public class Startup {
             throw new RuntimeException("The game directory passed on the command-line is not a directory: " + gameDir);
         }
         return gameDir;
-    }
-
-    private static String getLaunchTarget(String[] args) {
-        var target = getArg(args, "launchTarget", "neoforgeclient");
-        return switch (target) {
-            // TODO: Remove translation in 1.21.4
-            case "forgeclient" -> "neoforgeclient";
-            default -> target;
-        };
     }
 
     private static String getArg(String[] args, String name, String defaultValue) {
@@ -202,5 +163,43 @@ public class Startup {
             throw new IllegalStateException("Our DevAgent was not attached. Pass an appropriate -javaagent parameter.");
         }
         return instrumentation;
+    }
+
+    /**
+     * Forces the log4j2 logging context to use the configuration shipped with fml_loader.
+     */
+    static void overwriteLoggingConfiguration() {
+        var loggingConfigUrl = Entrypoint.class.getResource("log4j2.xml");
+        if (loggingConfigUrl != null) {
+            URI loggingConfigUri;
+            try {
+                loggingConfigUri = loggingConfigUrl.toURI();
+            } catch (URISyntaxException e) {
+                StartupLog.error("Failed to read FML logging configuration: {}", loggingConfigUrl, e);
+                return;
+            }
+            StartupLog.debug("Reconfiguring logging with configuration from {}", loggingConfigUri);
+            var configSource = ConfigurationSource.fromUri(loggingConfigUri);
+            Configurator.reconfigure(ConfigurationFactory.getInstance().getConfiguration(LoggerContext.getContext(), configSource));
+        }
+    }
+
+    /**
+     * The only point of this is to get a neater stacktrace in all crash reports, since this
+     * will replace three levels of Java reflection with one generated lambda method.
+     */
+    protected static MethodHandle createMainMethodCallable(ClassLoader loader, String mainClassName) {
+        try {
+            var mainClass = Class.forName(mainClassName, true, loader);
+            var lookup = MethodHandles.publicLookup();
+            var methodType = MethodType.methodType(void.class, String[].class);
+            return lookup.findStatic(mainClass, "main", methodType);
+        } catch (ClassNotFoundException e) {
+            throw new FatalStartupException("Missing main class " + mainClassName + " on the classpath.");
+        } catch (NoSuchMethodException e) {
+            throw new FatalStartupException(mainClassName + " is missing a static 'main' method.");
+        } catch (Throwable e) {
+            throw new FatalStartupException("Failed to create entrypoint object: " + e);
+        }
     }
 }

@@ -14,14 +14,12 @@
 
 package cpw.mods.modlauncher;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.ITransformerVotingContext;
 import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,26 +34,18 @@ class TransformationServiceDecoratorTests {
     private final MethodNodeTransformer methodNodeTransformer = new MethodNodeTransformer();
 
     @Test
-    void testGatherTransformersNormally() throws Exception {
-        MockTransformerService mockTransformerService = new MockTransformerService() {
-            @Override
-            public List<? extends ITransformer<?>> transformers() {
-                return Stream.of(classNodeTransformer, methodNodeTransformer).collect(Collectors.toList());
-            }
-        };
-        TransformStore store = new TransformStore();
+    void testGatherTransformersNormally() {
+        var store = new TransformStore();
+        store.addTransformer(classNodeTransformer, "");
+        store.addTransformer(methodNodeTransformer, "");
 
-        TransformationServiceDecorator sd = new TransformationServiceDecorator(mockTransformerService);
-        sd.gatherTransformers(store);
-        Map<TargetType<?>, TransformList<?>> transformers = store.getTransformers();
-        Set<String> targettedClasses = store.getClassNeedsTransforming();
-        assertAll(
-                () -> assertTrue(transformers.containsKey(TargetType.CLASS), "transformers contains class"),
-                () -> assertTrue(transformers.get(TargetType.CLASS).getTransformers().values().stream().flatMap(Collection::stream).allMatch(s -> ((TransformerHolder<?>) s).getWrapped() == classNodeTransformer), "transformers contains classTransformer"),
-                () -> assertTrue(targettedClasses.contains("cheese/Puffs"), "targetted classes contains class name cheese/Puffs"),
-                () -> assertTrue(transformers.containsKey(TargetType.METHOD), "transformers contains method"),
-                () -> assertTrue(transformers.get(TargetType.METHOD).getTransformers().values().stream().flatMap(Collection::stream).allMatch(s -> ((TransformerHolder<?>) s).getWrapped() == methodNodeTransformer), "transformers contains methodTransformer"),
-                () -> assertTrue(targettedClasses.contains("cheesy/PuffMethod"), "targetted classes contains class name cheesy/PuffMethod"));
+        assertThat(store.getTransformedClasses()).containsOnly("cheese.Puffs", "cheesy.PuffMethod");
+
+        var class1Transforms = store.getClassTransforms("cheese.Puffs");
+        assertThat(class1Transforms.postTransformers).containsOnly(classNodeTransformer);
+        var class2Transforms = store.getClassTransforms("cheesy.PuffMethod");
+        assertThat(class2Transforms.methodTransformers).containsOnly(
+                Map.entry(new TransformStore.ClassElementKey("fish", "()V"), List.of(methodNodeTransformer)));
     }
 
     private static class ClassNodeTransformer implements ITransformer<ClassNode> {

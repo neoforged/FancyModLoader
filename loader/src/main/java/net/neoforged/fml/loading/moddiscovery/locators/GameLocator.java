@@ -37,8 +37,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class GameLocator implements IModFileCandidateLocator {
+    public static final String CLIENT_CLASS = "net/minecraft/client/Minecraft.class";
     private static final Logger LOG = LoggerFactory.getLogger(GameLocator.class);
-
     public static final String LIBRARIES_DIRECTORY_PROPERTY = "libraryDirectory";
 
     @Override
@@ -52,7 +52,7 @@ public class GameLocator implements IModFileCandidateLocator {
         // 1b) It's on the classpath, but as a jar
         var ourCl = Thread.currentThread().getContextClassLoader();
 
-        var mcClassesRoot = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath(ourCl, "net/minecraft/client/Minecraft.class");
+        var mcClassesRoot = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath(ourCl, CLIENT_CLASS);
         var mcResourceRoot = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath(ourCl, "assets/.mcassetsroot");
         if (mcClassesRoot != null && mcResourceRoot != null) {
             // Determine if we're dealing with a split jar-file situation (moddev)

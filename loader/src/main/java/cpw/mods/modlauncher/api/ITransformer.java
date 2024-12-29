@@ -84,10 +84,10 @@ public interface ITransformer<T> {
     /**
      * Simple data holder indicating where the {@link ITransformer} can target.
      * 
-     * @param className         The name of the class being targetted
+     * @param className         The name of the class being targetted in source notation (i.e.: java.lang.String)
      * @param elementName       The name of the element being targetted. This is the field name for a field,
      *                          the method name for a method. Empty string for other types
-     * @param elementDescriptor The method's descriptor. Empty string for other types
+     * @param elementDescriptor The field or method descriptor. Empty string for other types
      * @param targetType        The {@link TargetType} for this target - it should match the ITransformer
      *                          type variable T
      */
@@ -115,7 +115,7 @@ public interface ITransformer<T> {
         /**
          * Convenience method return a {@link Target} for a method
          *
-         * @param className        The name of the class containing the method
+         * @param className        The name of the class containing the method in source notation (java.lang.String)
          * @param methodName       The name of the method
          * @param methodDescriptor The method's descriptor string
          * @return A target for the named method
@@ -125,14 +125,27 @@ public interface ITransformer<T> {
         }
 
         /**
+         * Convenience method returning a {@link Target} for all fields of the given name, regardless of field type.
+         *
+         * @param className The name of the class containing the field in source notation (java.lang.String)
+         * @param fieldName The name of the field
+         * @return A target for the named field
+         * @deprecated Please use the method that also takes a field descriptor.
+         */
+        @Deprecated(forRemoval = true)
+        public static Target<FieldNode> targetField(String className, String fieldName) {
+            return new Target<>(className, fieldName, "", TargetType.FIELD);
+        }
+
+        /**
          * Convenience method returning a {@link Target} for a field
          *
-         * @param className The name of the class containing the field
+         * @param className The name of the class containing the field in source notation (java.lang.String)
          * @param fieldName The name of the field
          * @return A target for the named field
          */
-        public static Target<FieldNode> targetField(String className, String fieldName) {
-            return new Target<>(className, fieldName, "", TargetType.FIELD);
+        public static Target<FieldNode> targetField(String className, String fieldName, String fieldDescriptor) {
+            return new Target<>(className, fieldName, fieldDescriptor, TargetType.FIELD);
         }
     }
 }

@@ -22,14 +22,13 @@ import cpw.mods.modlauncher.api.TypesafeMap;
 @Deprecated(forRemoval = true)
 public class Launcher {
     public static Launcher INSTANCE;
-    private final Environment environment;
+    private final Environment environment = new Environment();
     private final TypesafeMap blackboard;
     // This is only here to keep Sinytra Connector working
     private final LaunchPluginHandler launchPlugins;
 
-    public Launcher(Environment environment, LaunchPluginHandler launchPluginHandler) {
+    public Launcher(LaunchPluginHandler launchPluginHandler) {
         this.blackboard = new TypesafeMap();
-        this.environment = environment;
         this.launchPlugins = launchPluginHandler;
     }
 

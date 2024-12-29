@@ -41,6 +41,10 @@ public class TransformingClassLoader extends ModuleClassLoader {
         return classTransformer.transform(this, bytes, name, context != null ? context : ITransformerActivity.CLASSLOADING_REASON);
     }
 
+    public String getAuditString(String className) {
+        return classTransformer.getAuditTrail().getAuditString(className);
+    }
+
     public Class<?> getLoadedClass(String name) {
         return findLoadedClass(name);
     }

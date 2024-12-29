@@ -5,7 +5,6 @@
 
 package net.neoforged.neoforgespi;
 
-import cpw.mods.modlauncher.api.IEnvironment;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
@@ -21,12 +20,6 @@ import org.slf4j.LoggerFactory;
  */
 public interface ILaunchContext {
     Logger LOGGER = LoggerFactory.getLogger(ILaunchContext.class);
-
-    /**
-     * The Modlauncher environment.
-     */
-    @Deprecated(forRemoval = true)
-    IEnvironment environment();
 
     Dist getRequiredDistribution();
 

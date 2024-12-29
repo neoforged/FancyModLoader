@@ -5,28 +5,51 @@
 
 package net.neoforged.fml.loading;
 
-import static net.neoforged.fml.loading.LogMarkers.CORE;
-import static net.neoforged.fml.loading.LogMarkers.LOADING;
-
 import com.mojang.logging.LogUtils;
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.modlauncher.ArgumentHandler;
 import cpw.mods.modlauncher.ClassTransformer;
-import cpw.mods.modlauncher.Environment;
 import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.Launcher;
-import cpw.mods.modlauncher.TransformStore;
-import cpw.mods.modlauncher.TransformationServicesHandler;
 import cpw.mods.modlauncher.TransformingClassLoader;
-import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.modlauncher.api.ILaunchHandlerService;
-import cpw.mods.modlauncher.api.ITransformationService;
-import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import cpw.mods.niofs.union.UnionFileSystem;
+import net.neoforged.accesstransformer.api.AccessTransformerEngine;
+import net.neoforged.accesstransformer.ml.AccessTransformerService;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.ModLoader;
+import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.common.asm.RuntimeDistCleaner;
+import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
+import net.neoforged.fml.i18n.FMLTranslations;
+import net.neoforged.fml.loading.mixin.MixinFacade;
+import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
+import net.neoforged.fml.loading.moddiscovery.ModFile;
+import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
+import net.neoforged.fml.loading.moddiscovery.locators.ClasspathLibrariesLocator;
+import net.neoforged.fml.loading.moddiscovery.locators.GameLocator;
+import net.neoforged.fml.loading.moddiscovery.locators.InDevLocator;
+import net.neoforged.fml.loading.moddiscovery.locators.MavenDirectoryLocator;
+import net.neoforged.fml.loading.moddiscovery.locators.ModsFolderLocator;
+import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
+import net.neoforged.fml.loading.progress.StartupNotificationManager;
+import net.neoforged.fml.startup.FMLStartupContext;
+import net.neoforged.fml.startup.FatalStartupException;
+import net.neoforged.fml.startup.StartupArgs;
+import net.neoforged.fml.util.ServiceLoaderUtil;
+import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.locating.IModFile;
+import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
+import net.neoforged.neoforgespi.locating.ModFileInfoParser;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.event.Level;
+
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.invoke.MethodHandle;
@@ -35,7 +58,6 @@ import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.FileSystems;
@@ -49,8 +71,6 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -59,48 +79,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import net.neoforged.accesstransformer.api.AccessTransformerEngine;
-import net.neoforged.accesstransformer.ml.AccessTransformerService;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.ModLoader;
-import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.common.asm.RuntimeDistCleaner;
-import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
-import net.neoforged.fml.i18n.FMLTranslations;
-import net.neoforged.fml.loading.mixin.MixinFacade;
-import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
-import net.neoforged.fml.loading.moddiscovery.ModFile;
-import net.neoforged.fml.loading.moddiscovery.locators.ClasspathLibrariesLocator;
-import net.neoforged.fml.loading.moddiscovery.locators.GameLocator;
-import net.neoforged.fml.loading.moddiscovery.locators.InDevLocator;
-import net.neoforged.fml.loading.moddiscovery.locators.MavenDirectoryLocator;
-import net.neoforged.fml.loading.moddiscovery.locators.ModsFolderLocator;
-import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
-import net.neoforged.fml.loading.progress.StartupNotificationManager;
-import net.neoforged.fml.loading.targets.CommonLaunchHandler;
-import net.neoforged.fml.loading.targets.NeoForgeClientDataDevLaunchHandler;
-import net.neoforged.fml.loading.targets.NeoForgeClientDevLaunchHandler;
-import net.neoforged.fml.loading.targets.NeoForgeClientLaunchHandler;
-import net.neoforged.fml.loading.targets.NeoForgeServerDataDevLaunchHandler;
-import net.neoforged.fml.loading.targets.NeoForgeServerDevLaunchHandler;
-import net.neoforged.fml.loading.targets.NeoForgeServerLaunchHandler;
-import net.neoforged.fml.startup.FatalStartupException;
-import net.neoforged.fml.startup.StartupArgs;
-import net.neoforged.fml.util.ServiceLoaderUtil;
-import net.neoforged.neoforgespi.ILaunchContext;
-import net.neoforged.neoforgespi.coremod.ICoreMod;
-import net.neoforged.neoforgespi.language.IModFileInfo;
-import net.neoforged.neoforgespi.language.IModInfo;
-import net.neoforged.neoforgespi.locating.IModFile;
-import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.ConfigurationFactory;
-import org.apache.logging.log4j.core.config.ConfigurationSource;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.VisibleForTesting;
-import org.slf4j.Logger;
-import org.slf4j.event.Level;
 
 public class FMLLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -108,11 +86,8 @@ public class FMLLoader {
     private static LanguageProviderLoader languageProviderLoader;
     private static Dist dist;
     private static LoadingModList loadingModList;
-    private static RuntimeDistCleaner runtimeDistCleaner;
     private static Path gamePath;
     private static VersionInfo versionInfo;
-    private static String launchHandlerName;
-    private static CommonLaunchHandler commonLaunchHandler;
     public static Runnable progressWindowTick;
     public static BackgroundScanHandler backgroundScanHandler;
     private static boolean production;
@@ -125,20 +100,19 @@ public class FMLLoader {
 
     @VisibleForTesting
     record DiscoveryResult(List<ModFile> pluginContent,
-            List<ModFile> gameContent,
-            List<ModLoadingIssue> discoveryIssues) {}
+                           List<ModFile> gameContent,
+                           List<ModLoadingIssue> discoveryIssues) {
+    }
 
     // This is called by FML Startup
-    @SuppressWarnings("unused")
-    public static List<AutoCloseable> startup(@Nullable Instrumentation instrumentation, StartupArgs startupArgs) {
-        // In dev, do not overwrite the logging configuration if the user explicitly set another one.
-        // In production, always overwrite the vanilla configuration.
-        // TODO: Update this comment and coordinate with launchers to determine how to use THEIR logging config
-        if (System.getProperty("log4j2.configurationFile") == null) {
-            overwriteLoggingConfiguration();
-        }
+    public static FMLStartupContext startup(@Nullable Instrumentation instrumentation, StartupArgs startupArgs) {
+        detectDistAndProduction(startupArgs);
 
-        LOGGER.info("Starting FancyModLoader version {}", JarVersionLookupHandler.getVersion(FMLLoader.class).orElse("UNKNOWN"));
+        LOGGER.info(
+                "Starting FancyModLoader version {} ({} in {})",
+                JarVersionLookupHandler.getVersion(FMLLoader.class).orElse("UNKNOWN"),
+                dist,
+                production ? "PROD" : "DEV");
 
         // Make UnionFS work
         // TODO: This should come from a manifest? Service-Loader? Something...
@@ -153,14 +127,6 @@ public class FMLLoader {
         }
 
         var launchPlugins = new HashMap<String, ILaunchPluginService>();
-        var launchHandlers = new HashMap<String, ILaunchHandlerService>();
-        var environment = new Environment(
-                s -> Optional.ofNullable(launchPlugins.get(s)),
-                s -> Optional.ofNullable(launchHandlers.get(s)));
-        environment.computePropertyIfAbsent(IEnvironment.Keys.MLSPEC_VERSION.get(), s -> "11");
-        environment.computePropertyIfAbsent(IEnvironment.Keys.MLIMPL_VERSION.get(), s -> "11");
-        environment.computePropertyIfAbsent(IEnvironment.Keys.MODLIST.get(), s -> new ArrayList<>());
-        environment.computePropertyIfAbsent(IEnvironment.Keys.LAUNCHTARGET.get(), stringKey -> startupArgs.launchTarget());
 
         var programArgs = startupArgs.programArgs();
         var externalOptions = parseArgs(programArgs);
@@ -169,17 +135,7 @@ public class FMLLoader {
         FMLPaths.loadAbsolutePaths(gamePath);
         FMLConfig.load();
 
-        ImmediateWindowHandler.load(startupArgs.launchTarget(), programArgs);
-
-        LOGGER.debug(CORE, "Searching for launch handler '{}'", startupArgs.launchTarget());
-        commonLaunchHandler = getLaunchHandler(startupArgs.launchTarget());
-
-        // TODO: These should be determine via ambient information too, at least the default value for dist
-        dist = commonLaunchHandler.getDist();
-        production = commonLaunchHandler.isProduction();
-
         var launchContext = new LaunchContext(
-                environment,
                 dist,
                 startupArgs.gameDirectory().toPath(),
                 List.of(), // TODO: Argparse
@@ -190,17 +146,20 @@ public class FMLLoader {
             launchContext.addLocated(claimedFile.toPath());
         }
 
-        launchHandlerName = commonLaunchHandler.name();
+        // Search for early services
+        var resourcesToClose = new ArrayList<AutoCloseable>();
+        var parentLoader = Objects.requireNonNullElse(startupArgs.parentClassLoader(), ClassLoader.getSystemClassLoader());
+        var earlyServices = EarlyServiceDiscovery.findEarlyServices(FMLPaths.MODSDIR.get());
+        // TODO: Early services should participate in JIJ discovery
+        parentLoader = loadEarlyServices(launchContext, parentLoader, earlyServices);
+
+        ImmediateWindowHandler.load(startupArgs.headless(), programArgs);
+
         versionInfo = new VersionInfo(
                 externalOptions.neoForgeVersion(),
                 externalOptions.fmlVersion(),
                 externalOptions.mcVersion(),
                 externalOptions.neoFormVersion());
-
-        // Only register the one we already know is selected
-        launchHandlers.put(commonLaunchHandler.name(), commonLaunchHandler);
-        FMLEnvironment.setupInteropEnvironment(environment);
-        net.neoforged.neoforgespi.Environment.build(environment);
 
         var mixinFacade = new MixinFacade();
 
@@ -208,7 +167,7 @@ public class FMLLoader {
         // as mod discovery will add its results to these engines directly.
         accessTransformer = addLaunchPlugin(launchContext, launchPlugins, new AccessTransformerService()).engine;
         addLaunchPlugin(launchContext, launchPlugins, new RuntimeEnumExtender());
-        runtimeDistCleaner = addLaunchPlugin(launchContext, launchPlugins, new RuntimeDistCleaner(dist));
+        addLaunchPlugin(launchContext, launchPlugins, new RuntimeDistCleaner(dist));
         addLaunchPlugin(launchContext, launchPlugins, mixinFacade.getLaunchPlugin());
 
         discoveryResult = runOffThread(() -> runDiscovery(launchContext));
@@ -232,27 +191,15 @@ public class FMLLoader {
             addLaunchPlugin(launchContext, launchPlugins, launchPlugin);
         }
 
-        // Discover third party transformation services
-        var transformationServices = ServiceLoaderUtil.loadServices(
-                launchContext,
-                ITransformationService.class,
-                List.of(),
-                FMLLoader::isValidTransformationService);
-
-        var transformStore = new TransformStore();
-        var transformationServicesHandler = new TransformationServicesHandler(transformStore, environment, transformationServices);
-        var argumentHandler = new ArgumentHandler(programArgs);
         var launchPluginHandler = new LaunchPluginHandler(launchPlugins.values().stream());
 
         // This is to satisfy Synitra
-        Launcher.INSTANCE = new Launcher(environment, launchPluginHandler);
+        Launcher.INSTANCE = new Launcher(launchPluginHandler);
 
         // TODO -> MANIFEST.MF declaration GraphicsBootstrapper.class.getName(),
         // TODO -> MANIFEST.MF declaration net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider.class.getName()
 
         // Load Plugins
-        var resourcesToClose = new ArrayList<AutoCloseable>();
-        var parentLoader = Objects.requireNonNullElse(startupArgs.parentClassLoader(), ClassLoader.getSystemClassLoader());
         if (!loadingModList.getPlugins().isEmpty()) {
             var pluginLoader = loadPlugins(launchContext, startupArgs.cacheRoot(), parentLoader, loadingModList.getPlugins());
             resourcesToClose.add(pluginLoader);
@@ -268,12 +215,6 @@ public class FMLLoader {
 
         // BUILD GAME LAYER
         // NOTE: This is where Mixin contributes its synthetic SecureJar to ensure it's generated classes are handled by the TCL
-
-        transformationServicesHandler.initialiseServiceTransformers();
-        for (var xform : getCoreModTransformers(launchContext)) {
-            transformStore.addTransformer(xform, CoremodTransformationService.INSTANCE);
-        }
-
         var gameContent = new ArrayList<SecureJar>();
         for (var modFile : discoveryResult.gameContent) {
             gameContent.add(modFile.getSecureJar());
@@ -286,8 +227,7 @@ public class FMLLoader {
         // We do not do this: launchService.validateLaunchTarget(argumentHandler);
         // We inlined this: transformationServicesHandler.buildTransformingClassLoader...
 
-        var classTransformer = new ClassTransformer(transformStore, launchPluginHandler);
-        environment.computePropertyIfAbsent(IEnvironment.Keys.AUDITTRAIL.get(), v -> classTransformer.getAuditTrail());
+        var classTransformer = ClassTransformerFactory.create(launchContext, launchPluginHandler, loadingModList);
         var gameLayerResult = buildGameModuleLayer(classTransformer, gameContent, List.of(ModuleLayer.boot()), parentLoader);
         gameLayerResult.classLoader.setFallbackClassLoader(parentLoader);
 
@@ -298,7 +238,7 @@ public class FMLLoader {
         if (classLoadingGuardian != null) {
             classLoadingGuardian.end(gameClassLoader);
         }
-        Thread.currentThread().setContextClassLoader(gameClassLoader);
+        resourcesToClose.add(makeClassLoaderCurrent());
 
         // We're adding mixins *after* setting the Thread context classloader since
         // Mixin stubbornly loads Mixin Configs via its ModLauncher environment using the TCL.
@@ -308,33 +248,60 @@ public class FMLLoader {
         // This will initialize Mixins, for example
         launchPluginHandler.announceLaunch(gameClassLoader, new NamedPath[0]);
 
-        if (startupArgs.skipEntryPoint()) {
-            return resourcesToClose;
+        ImmediateWindowHandler.acceptGameLayer(gameLayer);
+        ImmediateWindowHandler.updateProgress("Launching minecraft");
+        progressWindowTick.run();
+
+        return new FMLStartupContext(LOGGER, programArgs, gameClassLoader, resourcesToClose);
+    }
+
+    private static void detectDistAndProduction(StartupArgs args) {
+        if (args.forcedDist() != null) {
+            dist = args.forcedDist();
+            production = false;
+            return;
         }
 
-        var gameRunner = commonLaunchHandler.launchService(programArgs, gameLayer);
-        try {
-            gameRunner.run();
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Throwable e) {
-            throw new RuntimeException(e);
-        } finally {
-            for (var resource : resourcesToClose) {
-                try {
-                    resource.close();
-                } catch (Exception e) {
-                    LOGGER.error("Failed to close resource after running game.", e);
-                }
-            }
-        }
-        return List.of();
+        // If a client class is available, then it's client, otherwise DEDICATED_SERVER
+        // The auto-detection never detects JOINED since it's impossible to do so
+        var cl = Objects.requireNonNullElse(args.parentClassLoader(), Thread.currentThread().getContextClassLoader());
+        var clientAvailable = cl.getResource("net/minecraft/client/main/Main.class") != null;
+        var serverAvailable = cl.getResource("net/minecraft/server/Main.class") != null;
+        var unobfuscatedClassAvailable = cl.getResource("net/minecraft/DetectedVersion.class") != null;
+        LOGGER.debug("Dist detection: clientAvailable={} serverAvailable={} unobfuscatedClassAvailable={}",
+                clientAvailable, serverAvailable, unobfuscatedClassAvailable);
+
+        dist = clientAvailable ? Dist.CLIENT : Dist.DEDICATED_SERVER;
+
+        // We are in production when the Server entrypoint exists, but not a usually obfuscated canary class
+        production = serverAvailable && !unobfuscatedClassAvailable;
     }
 
     /**
      * Loads the given plugin into a URL classloader.
      */
-    private static URLClassLoader loadPlugins(ILaunchContext launchContext,
+    private static URLClassLoader loadEarlyServices(
+            ILaunchContext launchContext,
+            ClassLoader parentLoader,
+            List<Path> services) {
+        List<URL> rootUrls = new ArrayList<>(services.size());
+        for (var service : services) {
+            try {
+                rootUrls.add(service.toUri().toURL());
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e); // This should not happen for file URLs
+            }
+            launchContext.addLocated(service); // Prevents it from getting picked up again
+        }
+
+        return new URLClassLoader("FML Early Services", rootUrls.toArray(URL[]::new), parentLoader);
+    }
+
+    /**
+     * Loads the given plugin into a URL classloader.
+     */
+    private static URLClassLoader loadPlugins(
+            ILaunchContext launchContext,
             Path cacheDir,
             ClassLoader parentLoader,
             List<IModFileInfo> plugins) {
@@ -366,7 +333,8 @@ public class FMLLoader {
                             long existingSize = -1;
                             try {
                                 existingSize = Files.size(cachedFile);
-                            } catch (IOException ignored) {}
+                            } catch (IOException ignored) {
+                            }
                             if (existingSize != expectedSize) {
                                 // TODO atomic move crap
                                 Files.write(cachedFile, jarInMemory);
@@ -421,9 +389,9 @@ public class FMLLoader {
     }
 
     private static GameLayerResult buildGameModuleLayer(ClassTransformer classTransformer,
-            List<SecureJar> content,
-            List<ModuleLayer> parentLayers,
-            ClassLoader parentLoader) {
+                                                        List<SecureJar> content,
+                                                        List<ModuleLayer> parentLayers,
+                                                        ClassLoader parentLoader) {
         long start = System.currentTimeMillis();
 
         var cf = Configuration.resolveAndBind(
@@ -447,7 +415,8 @@ public class FMLLoader {
         return new GameLayerResult(layer, loader);
     }
 
-    record GameLayerResult(ModuleLayer gameLayer, TransformingClassLoader classLoader) {}
+    record GameLayerResult(ModuleLayer gameLayer, TransformingClassLoader classLoader) {
+    }
 
     private static String getModuleNameList(Configuration cf) {
         return cf.modules().stream()
@@ -470,57 +439,15 @@ public class FMLLoader {
         return !isMixinServiceClass(serviceClass);
     }
 
-    private static <T extends ITransformationService> boolean isValidTransformationService(Class<T> serviceClass) {
-        // Blacklist all Mixin services, since we implement all of them ourselves
-        return !isMixinServiceClass(serviceClass);
-    }
-
-    private static boolean isMixinServiceClass(Class<?> serviceClass) {
+    public static boolean isMixinServiceClass(Class<?> serviceClass) {
         // Blacklist all Mixin services, since we implement all of them ourselves
         var packageName = serviceClass.getPackageName();
         return packageName.equals("org.spongepowered.asm.launch") || packageName.startsWith("org.spongepowered.asm.launch.");
     }
 
-    private static CommonLaunchHandler getLaunchHandler(String name) {
-        return switch (name) {
-            case "neoforgeclient" -> new NeoForgeClientLaunchHandler();
-            case "neoforgeclientdev" -> new NeoForgeClientDevLaunchHandler();
-            case "neoforgeclientdatadev" -> new NeoForgeClientDataDevLaunchHandler();
-            case "neoforgeserverdatadev" -> new NeoForgeServerDataDevLaunchHandler();
-            case "neoforgeserver" -> new NeoForgeServerLaunchHandler();
-            case "neoforgeserverdev" -> new NeoForgeServerDevLaunchHandler();
-            // Default to client
-            case null -> new NeoForgeClientLaunchHandler();
-            default -> {
-                var handler = ServiceLoader.load(ILaunchHandlerService.class)
-                        .stream()
-                        .map(provider -> {
-                            try {
-                                return provider.get();
-                            } catch (Exception e) {
-                                LOGGER.error("Failed to instantiate launch handler service {}", provider.type(), e);
-                                return null;
-                            }
-                        })
-                        .filter(s -> s != null && Objects.equals(name, s.name()))
-                        .findFirst()
-                        .orElse(null);
-
-                if (handler == null) {
-                    LOGGER.info("Failed to find a valid launch handler. Defaulting to client.");
-                    throw new FatalStartupException("The given launch target is unknown: " + name);
-                } else if (handler instanceof CommonLaunchHandler clh) {
-                    yield clh;
-                } else {
-                    throw new FatalStartupException("The given launch target is incompatible with FML: " + handler);
-                }
-            }
-        };
-    }
-
     private static <T extends ILaunchPluginService> T addLaunchPlugin(ILaunchContext launchContext,
-            Map<String, ILaunchPluginService> services,
-            T service) {
+                                                                      Map<String, ILaunchPluginService> services,
+                                                                      T service) {
         LOGGER.debug("Adding launch plugin {}", service.name());
         var previous = services.put(service.name(), service);
         if (previous != null) {
@@ -537,7 +464,8 @@ public class FMLLoader {
             @Nullable String neoForgeVersion,
             @Deprecated(forRemoval = true) @Nullable String fmlVersion,
             @Nullable String mcVersion,
-            @Nullable String neoFormVersion) {}
+            @Nullable String neoFormVersion) {
+    }
 
     private static FMLExternalOptions parseArgs(String[] strings) {
         String neoForgeVersion = null;
@@ -707,22 +635,8 @@ public class FMLLoader {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Interrupted while waiting for future", e);
-            } catch (TimeoutException ignored) {}
-        }
-    }
-
-    @Deprecated(forRemoval = true)
-    static void setupLaunchHandler(VersionInfo versionInfo, CommonLaunchHandler launchHandler) {
-        commonLaunchHandler = launchHandler;
-        launchHandlerName = launchHandler.name();
-        gamePath = FMLPaths.GAMEDIR.get();
-        FMLLoader.versionInfo = versionInfo;
-
-        dist = launchHandler.getDist();
-        production = launchHandler.isProduction();
-
-        if (runtimeDistCleaner != null) {
-            runtimeDistCleaner.setDistribution(dist);
+            } catch (TimeoutException ignored) {
+            }
         }
     }
 
@@ -744,10 +658,6 @@ public class FMLLoader {
     }
 
     public static void beforeStart(ModuleLayer gameLayer) {
-        FMLLoader.gameLayer = gameLayer;
-        ImmediateWindowHandler.acceptGameLayer(gameLayer);
-        ImmediateWindowHandler.updateProgress("Launching minecraft");
-        progressWindowTick.run();
     }
 
     public static LoadingModList getLoadingModList() {
@@ -768,8 +678,9 @@ public class FMLLoader {
         return Collections.emptyList();
     }
 
+    @Deprecated(forRemoval = true)
     public static String launcherHandlerName() {
-        return launchHandlerName;
+        return "";
     }
 
     public static boolean isProduction() {
@@ -787,70 +698,16 @@ public class FMLLoader {
         return versionInfo;
     }
 
-    static List<? extends ITransformer<?>> getCoreModTransformers(ILaunchContext launchContext) {
-        LOGGER.debug(LOADING, "Loading coremod transformers");
-
-        var result = new ArrayList<>(loadCoreModScripts());
-
-        // Find all Java core mods
-        for (var coreMod : ServiceLoaderUtil.loadServices(launchContext, ICoreMod.class)) {
-            // Try to identify the mod-file this is from
-            var sourceFile = ServiceLoaderUtil.identifySourcePath(launchContext, coreMod);
-
-            try {
-                for (var transformer : coreMod.getTransformers()) {
-                    LOGGER.debug(CORE, "Adding {} transformer from core-mod {} in {}", transformer.targets(), coreMod, sourceFile);
-                    result.add(transformer);
-                }
-            } catch (Exception e) {
-                // Throwing here would cause the game to immediately crash without a proper error screen,
-                // since this method is called by ModLauncher directly.
-                ModLoader.addLoadingIssue(
-                        ModLoadingIssue.error("fml.modloadingissue.coremod_error", coreMod.getClass().getName(), sourceFile).withCause(e));
-            }
-        }
-
-        return result;
-    }
-
-    private static List<ITransformer<?>> loadCoreModScripts() {
-        var filesWithCoreModScripts = loadingModList.getModFiles()
-                .stream()
-                .filter(mf -> !mf.getFile().getCoreMods().isEmpty())
-                .toList();
-
-        if (filesWithCoreModScripts.isEmpty()) {
-            // Don't even bother starting the scripting engine if no mod contains scripting core mods
-            LOGGER.debug(CORE, "Not loading coremod script-engine since no mod requested it");
-            return List.of();
-        }
-
-        LOGGER.info(CORE, "Loading coremod script-engine for {}", filesWithCoreModScripts);
-        try {
-            return CoreModScriptLoader.loadCoreModScripts(filesWithCoreModScripts);
-        } catch (NoClassDefFoundError e) {
-            var message = "Could not find the coremod script-engine, but the following mods require it: " + filesWithCoreModScripts;
-            ImmediateWindowHandler.crash(message);
-            throw new IllegalStateException(message, e);
-        }
-    }
-
     /**
-     * Forces the log4j2 logging context to use the configuration shipped with fml_loader.
+     * @return An AutoClosable that resets the classloader back to the original.
      */
-    private static void overwriteLoggingConfiguration() {
-        var loggingConfigUrl = FMLLoader.class.getResource("/log4j2.xml");
-        if (loggingConfigUrl != null) {
-            URI loggingConfigUri;
-            try {
-                loggingConfigUri = loggingConfigUrl.toURI();
-            } catch (URISyntaxException e) {
-                LOGGER.error("Failed to read FML logging configuration: {}", loggingConfigUrl, e);
-                return;
+    private static AutoCloseable makeClassLoaderCurrent() {
+        var previousClassLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(gameClassLoader);
+        return () -> {
+            if (Thread.currentThread().getContextClassLoader() == gameClassLoader) {
+                Thread.currentThread().setContextClassLoader(previousClassLoader);
             }
-            LOGGER.info("Reconfiguring logging with configuration from {}", loggingConfigUri);
-            var configSource = ConfigurationSource.fromUri(loggingConfigUri);
-            Configurator.reconfigure(ConfigurationFactory.getInstance().getConfiguration(LoggerContext.getContext(), configSource));
-        }
+        };
     }
 }

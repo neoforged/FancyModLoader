@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.bytebuddy.agent.ByteBuddyAgent;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.i18n.FMLTranslations;
@@ -70,13 +71,13 @@ public abstract class LauncherTest {
         installation.close();
     }
 
-    protected LaunchResult launchAndLoadInNeoForgeDevEnvironment(String launchTarget) throws Exception {
+    protected LaunchResult launchAndLoadInNeoForgeDevEnvironment(LaunchMode launchTarget) throws Exception {
         var additionalClasspath = installation.setupNeoForgeDevProject();
 
         return launchAndLoadWithAdditionalClasspath(launchTarget, additionalClasspath);
     }
 
-    protected LaunchResult launchAndLoadWithAdditionalClasspath(String launchTarget, List<Path> additionalClassPath) throws Exception {
+    protected LaunchResult launchAndLoadWithAdditionalClasspath(LaunchMode launchTarget, List<Path> additionalClassPath) throws Exception {
         var urls = additionalClassPath.stream().map(path -> {
             try {
                 return path.toUri().toURL();
@@ -98,7 +99,7 @@ public abstract class LauncherTest {
         }
     }
 
-    protected LaunchResult launchAndLoad(String launchTarget) {
+    protected LaunchResult launchAndLoad(LaunchMode launchTarget) {
         // launch represents the modlauncher portion
         LaunchResult result = launch(launchTarget);
         // while loadMods is usually triggered from NeoForge
@@ -106,11 +107,26 @@ public abstract class LauncherTest {
         return result;
     }
 
-    private LaunchResult launch(String launchTarget) {
+    private LaunchResult launch(LaunchMode launchTarget) {
         return launch(launchTarget, List.of());
     }
 
-    private LaunchResult launch(String launchTarget, List<Path> additionalClassPath) {
+    protected enum LaunchMode {
+        PROD_CLIENT(Dist.CLIENT),
+        PROD_SERVER(Dist.DEDICATED_SERVER),
+        DEV_CLIENT(Dist.CLIENT),
+        DEV_SERVER(Dist.DEDICATED_SERVER),
+        DEV_CLIENT_DATA(Dist.CLIENT),
+        DEV_SERVER_DATA(Dist.DEDICATED_SERVER);
+
+        final Dist forcedDist;
+
+        LaunchMode(Dist forcedDist) {
+            this.forcedDist = forcedDist;
+        }
+    }
+
+    private LaunchResult launch(LaunchMode launchTarget, List<Path> additionalClassPath) {
         ModLoader.clearLoadingIssues();
         var lml = FMLLoader.getLoadingModList();
         if (lml != null) {
@@ -122,7 +138,8 @@ public abstract class LauncherTest {
         var classLoader = Thread.currentThread().getContextClassLoader();
         var startupArgs = new StartupArgs(
                 installation.getGameDir().toFile(),
-                launchTarget,
+                true,
+                launchTarget.forcedDist,
                 new String[] {
                         "--fml.fmlVersion", SimulatedInstallation.FML_VERSION,
                         "--fml.mcVersion", SimulatedInstallation.MC_VERSION,
@@ -131,13 +148,12 @@ public abstract class LauncherTest {
                 },
                 locatedPaths.stream().map(Path::toFile).collect(Collectors.toSet()),
                 additionalClassPath.stream().map(Path::toFile).toList(),
-                true,
                 classLoader);
 
         ClassLoader launchClassLoader;
         try {
             var instrumentation = ByteBuddyAgent.install();
-            resourcesToClose.addAll(FMLLoader.startup(instrumentation, startupArgs));
+            resourcesToClose.add(FMLLoader.startup(instrumentation, startupArgs));
             launchClassLoader = Thread.currentThread().getContextClassLoader();
         } finally {
             Thread.currentThread().setContextClassLoader(classLoader);

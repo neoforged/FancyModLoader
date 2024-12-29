@@ -16,7 +16,6 @@ package cpw.mods.modlauncher.serviceapi;
 
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.NamedPath;
-import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Consumer;
@@ -153,15 +152,6 @@ public interface ILaunchPluginService {
     }
 
     /**
-     * Adds a resource to this plugin for processing by it. Used by forge to hand resources to access transformers
-     * for example.
-     *
-     * @param resource The resource to be considered by this plugin.
-     * @param name     A name for this resource.
-     */
-    default void offerResource(Path resource, String name) {}
-
-    /**
      * Offer scan results from TransformationServices to this plugin.
      *
      * @param resources A collection of all the results
@@ -169,17 +159,6 @@ public interface ILaunchPluginService {
     default void addResources(List<SecureJar> resources) {}
 
     default void initializeLaunch(ITransformerLoader transformerLoader, NamedPath[] specialPaths) {}
-
-    /**
-     * Get a plugin specific extension object from the plugin. This can be used to expose proprietary interfaces
-     * to Launchers without ModLauncher needing to understand them.
-     *
-     * @param <T> The type of the extension
-     * @return An extension object
-     */
-    default <T> T getExtension() {
-        return null;
-    }
 
     /**
      * Receives a call immediately after handlesClass for any transformer that declares an interest.

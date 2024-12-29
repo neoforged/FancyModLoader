@@ -8,9 +8,7 @@ package net.neoforged.fml.loading;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 
-import cpw.mods.modlauncher.api.IEnvironment;
 import java.io.IOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
@@ -87,8 +85,7 @@ class LaunchContextTest {
         serviceLoader = new URLClassLoader(new URL[] { jarPath.toUri().toURL() });
         Thread.currentThread().setContextClassLoader(serviceLoader);
 
-        var environment = mock(IEnvironment.class);
-        context = new LaunchContext(environment, Dist.CLIENT, tempDir, List.of(), List.of(), List.of(), List.of());
+        context = new LaunchContext(Dist.CLIENT, tempDir, List.of(), List.of(), List.of(), List.of());
 
         // Create the plugin-layer after the ctor has already been called
         pluginLayer = createModuleLayer(otherJarPath, "test.other.jar", serviceLoader);
