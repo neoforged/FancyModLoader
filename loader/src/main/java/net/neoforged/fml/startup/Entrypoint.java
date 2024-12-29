@@ -18,6 +18,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLLoader;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.ConfigurationFactory;
@@ -27,7 +28,7 @@ import org.apache.logging.log4j.core.config.Configurator;
 public abstract class Entrypoint {
     Entrypoint() {}
 
-    protected static FMLStartupContext startup(String[] args) {
+    protected static FMLStartupContext startup(String[] args, boolean headless, Dist forcedDist) {
         StartupLog.debug("JVM Uptime: {}ms", ManagementFactory.getRuntimeMXBean().getUptime());
 
         args = ArgFileExpander.expandArgFiles(args);
@@ -56,8 +57,8 @@ public abstract class Entrypoint {
 
         var startupArgs = new StartupArgs(
                 gameDir,
-                false,
-                null,
+                headless,
+                forcedDist,
                 args,
                 new HashSet<>(),
                 listClasspathEntries(),

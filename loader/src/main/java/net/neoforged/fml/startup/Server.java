@@ -5,6 +5,8 @@
 
 package net.neoforged.fml.startup;
 
+import net.neoforged.api.distmarker.Dist;
+
 /**
  * The entrypoint for starting a modded Minecraft server.
  */
@@ -12,7 +14,7 @@ public class Server extends Entrypoint {
     private Server() {}
 
     public static void main(String[] args) {
-        try (var startup = startup(args)) {
+        try (var startup = startup(args, true, Dist.DEDICATED_SERVER)) {
             var main = createMainMethodCallable(startup.classLoader(), "net.minecraft.server.Main");
             main.invokeExact(startup.programArgs());
         } catch (Throwable t) {
