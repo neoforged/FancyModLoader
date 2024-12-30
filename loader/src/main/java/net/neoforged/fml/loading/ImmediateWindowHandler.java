@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.neoforged.fml.loading.progress.ProgressMeter;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
+import net.neoforged.fml.startup.FatalStartupException;
 import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
 import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
 import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProviderFactory;
@@ -34,12 +35,12 @@ public class ImmediateWindowHandler {
 
     private static ProgressMeter earlyProgress;
 
-    public static void load(boolean headless, String[] arguments) {
+    public static void load(boolean headless, ProgramArgs arguments) {
         earlyProgress = StartupNotificationManager.addProgressBar("EARLY", 0);
         earlyProgress.label("Bootstrapping Minecraft");
 
         if (headless) {
-            provider = new DummyProvider();
+            provider = new HeadlessProvider();
             LOGGER.info("Not loading early display in headless mode.");
         } else {
             ServiceLoader.load(GraphicsBootstrapper.class)
@@ -47,7 +48,7 @@ public class ImmediateWindowHandler {
                     .map(ServiceLoader.Provider::get)
                     .forEach(bootstrap -> {
                         LOGGER.debug("Invoking bootstrap method {}", bootstrap.name());
-                        bootstrap.bootstrap(arguments);
+                        bootstrap.bootstrap(arguments.getArguments()); // TODO: Should take ProgramArgs
                     });
             if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)) {
                 provider = new DummyProvider();
@@ -109,7 +110,7 @@ public class ImmediateWindowHandler {
         provider.crash(message);
     }
 
-    private record DummyProvider() implements ImmediateWindowProvider {
+    private static final class DummyProvider implements ImmediateWindowProvider {
         private static Method NV_HANDOFF;
         private static Method NV_POSITION;
         private static Method NV_OVERLAY;
@@ -182,6 +183,46 @@ public class ImmediateWindowHandler {
         @Override
         public void crash(final String message) {
             // NOOP for unsupported environments
+        }
+    }
+
+    private static final class HeadlessProvider implements ImmediateWindowProvider {
+        @Override
+        public void updateFramebufferSize(IntConsumer width, IntConsumer height) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long setupMinecraftWindow(IntSupplier width, IntSupplier height, Supplier<String> title, LongSupplier monitor) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean positionWindow(Optional<Object> monitor, IntConsumer widthSetter, IntConsumer heightSetter, IntConsumer xSetter, IntConsumer ySetter) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T> Supplier<T> loadingOverlay(Supplier<?> mc, Supplier<?> ri, Consumer<Optional<Throwable>> ex, boolean fade) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void updateModuleReads(ModuleLayer layer) {
+        }
+
+        @Override
+        public void periodicTick() {
+        }
+
+        @Override
+        public String getGLVersion() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void crash(String message) {
+            throw new FatalStartupException(message);
         }
     }
 }

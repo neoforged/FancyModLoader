@@ -13,7 +13,7 @@ public class DataServer extends Entrypoint {
     public static void main(String[] args) {
         try (var startup = startup(args, true, Dist.DEDICATED_SERVER)) {
             var main = createMainMethodCallable(startup.classLoader(), "net.minecraft.data.Main");
-            main.invokeExact(startup.programArgs());
+            main.invokeExact(startup.programArgs().getArguments());
         } catch (Throwable t) {
             FatalErrorReporting.reportFatalError(t);
             System.exit(1);

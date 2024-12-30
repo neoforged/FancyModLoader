@@ -3,28 +3,31 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.startup;
+package net.neoforged.fml.loading;
 
 import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import org.slf4j.Logger;
 
 /*
- * A class that attempts to parse command line arguments into key value pairs to allow addition and editing.
- * Can not use JOptSimple as that doesn't parse out the values for keys unless the spec says it has a value.
+ * A class that attempts to parse command line arguments into key value pairs to allow non-destructive editing.
  */
-final class ArgumentList {
+public final class ProgramArgs {
     private static final Logger LOGGER = LogUtils.getLogger();
     private final List<Supplier<String[]>> entries = new ArrayList<>();
     private final Map<String, EntryValue> values = new HashMap<>();
 
-    public static ArgumentList from(String... args) {
-        ArgumentList ret = new ArgumentList();
+    private ProgramArgs() {
+    }
+
+    public static ProgramArgs from(String... args) {
+        ProgramArgs ret = new ProgramArgs();
 
         boolean ended = false;
         for (int x = 0; x < args.length; x++) {
@@ -55,7 +58,7 @@ final class ArgumentList {
     }
 
     public void addRaw(final String arg) {
-        entries.add(() -> new String[] { arg });
+        entries.add(() -> new String[]{arg});
     }
 
     public void addArg(boolean split, String raw, String value) {
@@ -146,10 +149,10 @@ final class ArgumentList {
         @Override
         public String[] get() {
             if (getValue() == null)
-                return new String[] { prefix + getKey() };
+                return new String[]{prefix + getKey()};
             if (split)
-                return new String[] { prefix + getKey(), getValue() };
-            return new String[] { prefix + getKey() + '=' + getValue() };
+                return new String[]{prefix + getKey(), getValue()};
+            return new String[]{prefix + getKey() + '=' + getValue()};
         }
 
         @Override

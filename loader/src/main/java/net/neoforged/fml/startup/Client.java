@@ -8,6 +8,7 @@ package net.neoforged.fml.startup;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.ProgramArgs;
 import net.neoforged.fml.loading.FMLLoader;
 
 /**
@@ -19,13 +20,11 @@ public class Client extends Entrypoint {
     public static void main(String[] args) {
         try (var startup = startup(args, false, Dist.CLIENT)) {
             if (!FMLLoader.isProduction()) {
-                args = preProcessDevArguments(startup.programArgs());
-            } else {
-                args = startup.programArgs();
+                preProcessDevArguments(startup.programArgs());
             }
 
             var main = createMainMethodCallable(startup.classLoader(), "net.minecraft.client.main.Main");
-            main.invokeExact(args);
+            main.invokeExact(startup.programArgs().getArguments());
         } catch (Throwable t) {
             FatalErrorReporting.reportFatalError(t);
             System.exit(1);
@@ -38,9 +37,7 @@ public class Client extends Entrypoint {
      * - Replace "#" in usernames with random numbers
      * - Default the username to "Dev" if none is given
      */
-    private static String[] preProcessDevArguments(String[] arguments) {
-        var args = ArgumentList.from(arguments);
-
+    private static void preProcessDevArguments(ProgramArgs args) {
         String username = args.get("username");
         if (username != null) { // Replace '#' placeholders with random numbers
             Matcher m = Pattern.compile("#+").matcher(username);
@@ -57,8 +54,6 @@ public class Client extends Entrypoint {
         if (!args.hasValue("accessToken")) {
             args.put("accessToken", "0");
         }
-
-        return args.getArguments();
     }
 
     private static String getRandomNumbers(int length) {

@@ -110,6 +110,11 @@ public abstract class InstallProductionServerTask extends DefaultTask {
         );
         var startOfSplit = argFileContent.indexOf(mainClass);
         if (startOfSplit == -1) {
+            // Try the old class
+            mainClass = "cpw.mods.bootstraplauncher.BootstrapLauncher";
+            startOfSplit = argFileContent.indexOf(mainClass);
+        }
+        if (startOfSplit == -1) {
             throw new GradleException("Argfile " + argFilePath + " does not contain the main class name " + mainClass);
         }
         if (argFileContent.indexOf(mainClass, startOfSplit + 1) != -1) {
@@ -118,6 +123,8 @@ public abstract class InstallProductionServerTask extends DefaultTask {
 
         var jvmArgs = argFileContent.substring(0, startOfSplit);
         var programArgs = argFileContent.substring(startOfSplit + mainClass.length() + 1);
+        var programArgParams = RunUtils.splitJvmArgs(programArgs);
+        RunUtils.cleanProgramArgs(programArgParams);
 
         // We need to sanitize all JVM args by removing modular args
         var jvmArgParams = RunUtils.splitJvmArgs(jvmArgs);
@@ -127,7 +134,7 @@ public abstract class InstallProductionServerTask extends DefaultTask {
         Files.write(getNeoForgeJvmArgFile().getAsFile().get().toPath(), jvmArgParams, Charset.forName(System.getProperty("native.encoding")));
         Files.writeString(getNeoForgeMainClassArgFile().getAsFile().get().toPath(), mainClass, Charset.forName(System.getProperty("native.encoding")));
         // This is read by our own code in UTF-8
-        Files.writeString(getNeoForgeProgramArgFile().getAsFile().get().toPath(), programArgs, StandardCharsets.UTF_8);
+        Files.write(getNeoForgeProgramArgFile().getAsFile().get().toPath(), programArgParams, StandardCharsets.UTF_8);
     }
 
     private String getEffectiveMainClass() throws IOException {

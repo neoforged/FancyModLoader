@@ -5,19 +5,21 @@
 
 package net.neoforged.fml.startup;
 
-import java.util.List;
+import net.neoforged.fml.loading.ProgramArgs;
 import org.slf4j.Logger;
+
+import java.util.List;
 
 public final class FMLStartupContext implements AutoCloseable {
     private final Logger logger;
-    private final String[] programArgs;
+    private final ProgramArgs programArgs;
     private final ClassLoader classLoader;
     private final List<AutoCloseable> resources;
 
     public FMLStartupContext(Logger logger,
-            String[] programArgs,
-            ClassLoader classLoader,
-            List<AutoCloseable> resources) {
+                             ProgramArgs programArgs,
+                             ClassLoader classLoader,
+                             List<AutoCloseable> resources) {
         this.logger = logger;
         this.programArgs = programArgs;
         this.classLoader = classLoader;
@@ -28,7 +30,7 @@ public final class FMLStartupContext implements AutoCloseable {
         return classLoader;
     }
 
-    public String[] programArgs() {
+    public ProgramArgs programArgs() {
         return programArgs;
     }
 
