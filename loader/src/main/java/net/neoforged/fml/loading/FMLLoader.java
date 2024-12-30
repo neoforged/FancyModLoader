@@ -254,25 +254,21 @@ public class FMLLoader {
     }
 
     private static void detectDistAndProduction(StartupArgs args) {
-        if (args.forcedDist() != null) {
-            dist = args.forcedDist();
-            production = false;
-            return;
-        }
-
         // If a client class is available, then it's client, otherwise DEDICATED_SERVER
         // The auto-detection never detects JOINED since it's impossible to do so
         var cl = Objects.requireNonNullElse(args.parentClassLoader(), Thread.currentThread().getContextClassLoader());
-        var clientAvailable = cl.getResource("net/minecraft/client/main/Main.class") != null;
-        var serverAvailable = cl.getResource("net/minecraft/server/Main.class") != null;
-        var unobfuscatedClassAvailable = cl.getResource("net/minecraft/DetectedVersion.class") != null;
-        LOGGER.debug("Dist detection: clientAvailable={} serverAvailable={} unobfuscatedClassAvailable={}",
-                clientAvailable, serverAvailable, unobfuscatedClassAvailable);
 
-        dist = clientAvailable ? Dist.CLIENT : Dist.DEDICATED_SERVER;
+        if (args.forcedDist() != null) {
+            dist = args.forcedDist();
+        } else {
+            var clientAvailable = cl.getResource("net/minecraft/client/main/Main.class") != null;
+            dist = clientAvailable ? Dist.CLIENT : Dist.DEDICATED_SERVER;
+        }
 
-        // We are in production when the Server entrypoint exists, but not a usually obfuscated canary class
-        production = serverAvailable && !unobfuscatedClassAvailable;
+        // We are not in production when an unobfuscated class is reachable on the classloader
+        // since that means the unobfuscated game is on the classpath. We use DetectedVersion here since
+        // it has existed across many Minecraft versions.
+        production = cl.getResource("net/minecraft/DetectedVersion.class") == null;
     }
 
     /**

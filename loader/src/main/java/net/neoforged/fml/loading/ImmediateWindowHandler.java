@@ -217,7 +217,7 @@ public class ImmediateWindowHandler {
 
         @Override
         public String getGLVersion() {
-            throw new UnsupportedOperationException();
+            return "0";
         }
 
         @Override

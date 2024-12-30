@@ -64,7 +64,6 @@ public abstract class Entrypoint {
                 listClasspathEntries(),
                 Thread.currentThread().getContextClassLoader());
 
-        // Launch FML
         try {
             return FMLLoader.startup(instrumentation, startupArgs);
         } catch (Exception e) {
