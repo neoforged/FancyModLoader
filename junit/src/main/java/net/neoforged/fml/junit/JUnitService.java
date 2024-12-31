@@ -14,6 +14,7 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.startup.FmlInstrumentation;
+import net.neoforged.fml.startup.JUnitGameBootstrapper;
 import net.neoforged.fml.startup.StartupArgs;
 import org.junit.platform.launcher.LauncherSession;
 import org.junit.platform.launcher.LauncherSessionListener;
