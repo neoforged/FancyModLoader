@@ -81,7 +81,7 @@ runConfigurations {
         taskBefore tasks.named("installNeoForgeServer")
         mainClass = "net.neoforged.fml.startup.Server"
         jvmArguments.add(neoForgeInstallations.server.directory.dir("libraries").map { "-DlibraryDirectory=$it" })
-        workingDirectory = layout.projectDir.dir("Z:\\TestServer")
+        workingDirectory = layout.projectDir.dir("Z:/TestServer")
     }
 }
 
