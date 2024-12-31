@@ -8,8 +8,8 @@ package net.neoforged.fml.startup;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.ProgramArgs;
 import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.ProgramArgs;
 
 /**
  * The entrypoint for starting a modded Minecraft client.

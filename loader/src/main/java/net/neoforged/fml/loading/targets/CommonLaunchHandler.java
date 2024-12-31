@@ -6,7 +6,6 @@
 package net.neoforged.fml.loading.targets;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.modlauncher.api.ServiceRunner;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -23,7 +22,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.VersionInfo;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;

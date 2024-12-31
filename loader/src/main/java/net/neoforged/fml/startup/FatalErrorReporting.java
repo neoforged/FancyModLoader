@@ -7,7 +7,6 @@ package net.neoforged.fml.startup;
 
 import java.awt.GraphicsEnvironment;
 import java.lang.reflect.InvocationTargetException;
-import java.util.function.Consumer;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;

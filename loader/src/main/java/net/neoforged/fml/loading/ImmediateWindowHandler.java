@@ -208,12 +208,10 @@ public class ImmediateWindowHandler {
         }
 
         @Override
-        public void updateModuleReads(ModuleLayer layer) {
-        }
+        public void updateModuleReads(ModuleLayer layer) {}
 
         @Override
-        public void periodicTick() {
-        }
+        public void periodicTick() {}
 
         @Override
         public String getGLVersion() {

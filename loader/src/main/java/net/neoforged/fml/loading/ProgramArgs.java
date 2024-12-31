@@ -6,14 +6,13 @@
 package net.neoforged.fml.loading;
 
 import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
 
 /*
  * A class that attempts to parse command line arguments into key value pairs to allow non-destructive editing.
@@ -23,8 +22,7 @@ public final class ProgramArgs {
     private final List<Supplier<String[]>> entries = new ArrayList<>();
     private final Map<String, EntryValue> values = new HashMap<>();
 
-    private ProgramArgs() {
-    }
+    private ProgramArgs() {}
 
     public static ProgramArgs from(String... args) {
         ProgramArgs ret = new ProgramArgs();
@@ -58,7 +56,7 @@ public final class ProgramArgs {
     }
 
     public void addRaw(final String arg) {
-        entries.add(() -> new String[]{arg});
+        entries.add(() -> new String[] { arg });
     }
 
     public void addArg(boolean split, String raw, String value) {
@@ -149,10 +147,10 @@ public final class ProgramArgs {
         @Override
         public String[] get() {
             if (getValue() == null)
-                return new String[]{prefix + getKey()};
+                return new String[] { prefix + getKey() };
             if (split)
-                return new String[]{prefix + getKey(), getValue()};
-            return new String[]{prefix + getKey() + '=' + getValue()};
+                return new String[] { prefix + getKey(), getValue() };
+            return new String[] { prefix + getKey() + '=' + getValue() };
         }
 
         @Override

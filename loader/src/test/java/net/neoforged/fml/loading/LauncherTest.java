@@ -5,17 +5,6 @@
 
 package net.neoforged.fml.loading;
 
-import net.bytebuddy.agent.ByteBuddyAgent;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.ModLoader;
-import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.i18n.FMLTranslations;
-import net.neoforged.fml.startup.StartupArgs;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.mockito.junit.jupiter.MockitoSettings;
-
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -26,6 +15,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import net.bytebuddy.agent.ByteBuddyAgent;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.ModLoader;
+import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.i18n.FMLTranslations;
+import net.neoforged.fml.startup.StartupArgs;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.mockito.junit.jupiter.MockitoSettings;
 
 @MockitoSettings
 public abstract class LauncherTest {
@@ -52,15 +51,22 @@ public abstract class LauncherTest {
     }
 
     @BeforeEach
-    void setUp() throws Exception {
+    final void setUp() throws Exception {
+        if (FMLLoader.currentOrNull() != null) {
+            throw new IllegalStateException("A previous test leaked an active FMLLoader. These tests will fail.");
+        }
+
         // Clear in case other tests have set it and failed to reset it
         SimulatedInstallation.setModFoldersProperty(Map.of());
         installation = new SimulatedInstallation();
     }
 
     @AfterEach
-    void clearSystemProperties() throws Exception {
-        loader.close();
+    final void cleanupLoaderAndInstallation() throws Exception {
+        if (loader != null) {
+            loader.close();
+            loader = null;
+        }
         installation.close();
     }
 
@@ -134,7 +140,7 @@ public abstract class LauncherTest {
                 installation.getGameDir().resolve(".cache"),
                 true,
                 launchTarget.forcedDist,
-                new String[]{
+                new String[] {
                         "--fml.fmlVersion", SimulatedInstallation.FML_VERSION,
                         "--fml.mcVersion", SimulatedInstallation.MC_VERSION,
                         "--fml.neoForgeVersion", SimulatedInstallation.NEOFORGE_VERSION,
@@ -147,7 +153,7 @@ public abstract class LauncherTest {
         ClassLoader launchClassLoader;
         try {
             var instrumentation = ByteBuddyAgent.install();
-            loader = FMLLoader.startup(instrumentation, startupArgs);
+            loader = FMLLoader.create(instrumentation, startupArgs);
             launchClassLoader = Thread.currentThread().getContextClassLoader();
         } finally {
             Thread.currentThread().setContextClassLoader(classLoader);
@@ -180,28 +186,26 @@ public abstract class LauncherTest {
     }
 
     private void loadMods() {
-        FMLLoader.progressWindowTick = () -> {
-        };
+        FMLLoader.progressWindowTick = () -> {};
 
         ModLoader.gatherAndInitializeMods(
                 Runnable::run,
                 Runnable::run,
-                () -> {
-                });
+                () -> {});
     }
 
-    protected static List<String> getTranslatedIssues(LaunchResult launchResult) {
+    protected List<String> getTranslatedIssues(LaunchResult launchResult) {
         return getTranslatedIssues(launchResult.issues());
     }
 
-    protected static List<String> getTranslatedIssues(List<ModLoadingIssue> issues) {
+    protected List<String> getTranslatedIssues(List<ModLoadingIssue> issues) {
         return issues
                 .stream()
                 .map(issue -> issue.severity() + ": " + sanitizeIssueText(issue))
                 .toList();
     }
 
-    private static String sanitizeIssueText(ModLoadingIssue issue) {
+    private String sanitizeIssueText(ModLoadingIssue issue) {
         var text = FMLTranslations.stripControlCodes(FMLTranslations.translateIssue(issue));
 
         // Dynamically generated classnames cannot be asserted against
@@ -209,6 +213,9 @@ public abstract class LauncherTest {
 
         // Normalize path separators so tests run on Linux and Windows
         text = text.replace("\\", "/");
+
+        // Strip game dir prefix
+        text = text.replace(installation.getGameDir().toString().replace("\\", "/") + "/", "");
 
         return text;
     }

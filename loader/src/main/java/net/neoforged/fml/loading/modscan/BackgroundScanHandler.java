@@ -6,14 +6,6 @@
 package net.neoforged.fml.loading.modscan;
 
 import com.mojang.logging.LogUtils;
-import net.neoforged.fml.loading.FMLConfig;
-import net.neoforged.fml.loading.ImmediateWindowHandler;
-import net.neoforged.fml.loading.LoadingModList;
-import net.neoforged.fml.loading.LogMarkers;
-import net.neoforged.fml.loading.moddiscovery.ModFile;
-import net.neoforged.neoforgespi.language.ModFileScanData;
-import org.slf4j.Logger;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -22,6 +14,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import net.neoforged.fml.loading.FMLConfig;
+import net.neoforged.fml.loading.ImmediateWindowHandler;
+import net.neoforged.fml.loading.LoadingModList;
+import net.neoforged.fml.loading.LogMarkers;
+import net.neoforged.fml.loading.moddiscovery.ModFile;
+import net.neoforged.neoforgespi.language.ModFileScanData;
+import org.slf4j.Logger;
 
 public class BackgroundScanHandler {
     private enum ScanStatus {
@@ -47,8 +46,7 @@ public class BackgroundScanHandler {
         int poolSize = Math.max(1, maxThreads - 1);
         modContentScanner = Executors.newFixedThreadPool(
                 poolSize,
-                Thread.ofPlatform().name("background-scan-handler-", 0).daemon().factory()
-        );
+                Thread.ofPlatform().name("background-scan-handler-", 0).daemon().factory());
         scannedFiles = new ArrayList<>();
         pendingFiles = new ArrayList<>();
         allFiles = new ArrayList<>();

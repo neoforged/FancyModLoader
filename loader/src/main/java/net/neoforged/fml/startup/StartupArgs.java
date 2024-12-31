@@ -5,13 +5,12 @@
 
 package net.neoforged.fml.startup;
 
-import net.neoforged.api.distmarker.Dist;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
+import net.neoforged.api.distmarker.Dist;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @param gameDirectory
@@ -32,5 +31,4 @@ public record StartupArgs(
         String[] programArgs,
         Set<File> claimedFiles,
         List<File> unclaimedClassPathEntries,
-        @Nullable ClassLoader parentClassLoader) {
-}
+        @Nullable ClassLoader parentClassLoader) {}

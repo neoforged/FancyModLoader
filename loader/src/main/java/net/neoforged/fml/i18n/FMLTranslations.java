@@ -160,12 +160,11 @@ public class FMLTranslations {
 
     private static Object formatArg(Object arg) {
         if (arg instanceof Path path) {
-            var gameDir = FMLLoader.getGamePath();
-            if (gameDir != null && path.startsWith(gameDir)) {
-                return gameDir.relativize(path).toString();
-            } else {
-                return path.toString();
+            var currentLoader = FMLLoader.currentOrNull();
+            if (currentLoader != null) {
+                return currentLoader.formatPath(path);
             }
+            return path.toString();
         } else {
             return arg;
         }

@@ -18,7 +18,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -74,7 +73,7 @@ public abstract class Entrypoint {
                 Thread.currentThread().getContextClassLoader());
 
         try {
-            return FMLLoader.startup(instrumentation, startupArgs);
+            return FMLLoader.create(instrumentation, startupArgs);
         } catch (Exception e) {
             var sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
