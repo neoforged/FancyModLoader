@@ -32,6 +32,8 @@ neoForgeInstallations {
         version = test_neoforge_version
         minecraftVersion = test_minecraft_version
         mainClass = "net.neoforged.fml.startup.Client"
+        // gameDir = "D:\\PrismInstances\\All the Mods 10 - ATM10\\minecraft"
+        gameDir = "D:\\PrismInstances\\Enigmatica 10 - E10\\minecraft"
     }
     register("server", fmlbuild.NeoForgeServerInstallation) {
         version = test_neoforge_version
@@ -79,6 +81,7 @@ runConfigurations {
         taskBefore tasks.named("installNeoForgeServer")
         mainClass = "net.neoforged.fml.startup.Server"
         jvmArguments.add(neoForgeInstallations.server.directory.dir("libraries").map { "-DlibraryDirectory=$it" })
+        workingDirectory = layout.projectDir.dir("Z:/TestServer")
     }
 }
 
