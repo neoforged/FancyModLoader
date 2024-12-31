@@ -148,7 +148,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
         var noArgEnum = getEnumClass("testmod.NoArgEnum");
         var stringArgEnum = getEnumClass("testmod.StringArgEnum");
 
-        var testModClass = Class.forName("testmod.TestMod", true, gameClassLoader);
+        var testModClass = Class.forName("testmod.TestMod", true, loader.currentClassLoader());
         var noArg = (EnumProxy<?>) testModClass.getField("NO_ARG").get(null);
         assertThat(noArg.getValue()).isInstanceOf(noArgEnum);
 
@@ -400,7 +400,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
 
     @SuppressWarnings("unchecked")
     private <T extends Enum<T>> Class<T> getEnumClass(String name) throws ClassNotFoundException {
-        return (Class<T>) Class.forName(name, true, gameClassLoader);
+        return (Class<T>) Class.forName(name, true, loader.currentClassLoader());
     }
 
     private static Consumer<ModsTomlBuilder> getModsTomlBuilderConsumer(String extensionPath) {

@@ -6,20 +6,30 @@
 package net.neoforged.fml.startup;
 
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLLoader;
 
 /**
  * The entrypoint for starting a modded Minecraft server.
  */
 public class Server extends Entrypoint {
-    private Server() {}
+    private Server() {
+    }
 
     public static void main(String[] args) {
-        try (var startup = startup(args, true, Dist.DEDICATED_SERVER)) {
-            var main = createMainMethodCallable(startup.classLoader(), "net.minecraft.server.Main");
-            main.invokeExact(startup.programArgs().getArguments());
+        FMLLoader loader;
+        try {
+            loader = startup(args, true, Dist.DEDICATED_SERVER);
+
+            var main = createMainMethodCallable(loader, "net.minecraft.server.Main");
+            main.invokeExact(loader.programArgs().getArguments());
         } catch (Throwable t) {
-            FatalErrorReporting.reportFatalError(t);
+            FatalErrorReporting.reportFatalErrorOnConsole(t);
             System.exit(1);
+            return;
         }
+
+        // The dedicated server main method sadly just returns after spawning a non-daemon thread
+        // So the only way to close the loader will be via shutdown hook
+        Runtime.getRuntime().addShutdownHook(new Thread(loader::close));
     }
 }

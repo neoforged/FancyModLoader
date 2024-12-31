@@ -11,11 +11,11 @@ public class DataClient extends Entrypoint {
     private DataClient() {}
 
     public static void main(String[] args) {
-        try (var startup = startup(args, true, Dist.CLIENT)) {
-            var main = createMainMethodCallable(startup.classLoader(), "net.minecraft.client.data.Main");
-            main.invokeExact(startup.programArgs().getArguments());
+        try (var loader = startup(args, true, Dist.CLIENT)) {
+            var main = createMainMethodCallable(loader, "net.minecraft.client.data.Main");
+            main.invokeExact(loader.programArgs().getArguments());
         } catch (Throwable t) {
-            FatalErrorReporting.reportFatalError(t);
+            FatalErrorReporting.reportFatalErrorOnConsole(t);
             System.exit(1);
         }
     }

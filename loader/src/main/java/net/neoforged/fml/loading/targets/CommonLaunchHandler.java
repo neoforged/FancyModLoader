@@ -83,13 +83,6 @@ public abstract class CommonLaunchHandler {
         return result;
     }
 
-    public ServiceRunner launchService(final String[] arguments, final ModuleLayer gameLayer) {
-        FMLLoader.beforeStart(gameLayer);
-        var args = preLaunch(arguments, gameLayer);
-
-        return () -> runService(args, gameLayer);
-    }
-
     protected abstract void runService(final String[] arguments, final ModuleLayer gameLayer) throws Throwable;
 
     protected void clientService(final String[] arguments, final ModuleLayer layer) throws Throwable {

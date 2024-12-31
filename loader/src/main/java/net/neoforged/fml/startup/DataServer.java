@@ -11,11 +11,11 @@ public class DataServer extends Entrypoint {
     private DataServer() {}
 
     public static void main(String[] args) {
-        try (var startup = startup(args, true, Dist.DEDICATED_SERVER)) {
-            var main = createMainMethodCallable(startup.classLoader(), "net.minecraft.data.Main");
-            main.invokeExact(startup.programArgs().getArguments());
+        try (var loader = startup(args, true, Dist.DEDICATED_SERVER)) {
+            var main = createMainMethodCallable(loader, "net.minecraft.data.Main");
+            main.invokeExact(loader.programArgs().getArguments());
         } catch (Throwable t) {
-            FatalErrorReporting.reportFatalError(t);
+            FatalErrorReporting.reportFatalErrorOnConsole(t);
             System.exit(1);
         }
     }

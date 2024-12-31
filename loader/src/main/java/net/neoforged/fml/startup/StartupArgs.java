@@ -5,12 +5,13 @@
 
 package net.neoforged.fml.startup;
 
+import net.neoforged.api.distmarker.Dist;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
-import net.neoforged.api.distmarker.Dist;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * @param gameDirectory
@@ -24,14 +25,12 @@ import org.jetbrains.annotations.Nullable;
  * @param parentClassLoader
  */
 public record StartupArgs(
-        File gameDirectory,
+        Path gameDirectory,
+        Path cacheRoot,
         boolean headless,
         @Nullable Dist forcedDist,
         String[] programArgs,
         Set<File> claimedFiles,
         List<File> unclaimedClassPathEntries,
         @Nullable ClassLoader parentClassLoader) {
-    public Path cacheRoot() {
-        return gameDirectory.toPath().resolve(".neoforgecache");
-    }
 }

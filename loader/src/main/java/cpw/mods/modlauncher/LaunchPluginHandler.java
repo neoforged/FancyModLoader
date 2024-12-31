@@ -50,12 +50,6 @@ public class LaunchPluginHandler {
                 "type", "PLUGINSERVICE",
                 "file", ServiceLoaderUtils.fileNameFor(e.getValue().getClass())))
                 .toList();
-        // TODO if (Launcher.INSTANCE!=null) {
-        // TODO     Launcher.INSTANCE.environment().getProperty(IEnvironment.Keys.MODLIST.get())
-        // TODO             .ifPresentOrElse(mods->mods.addAll(modlist),() -> {
-        // TODO                 throw new RuntimeException("The MODLIST isn't set, huh?");
-        // TODO             });
-        // TODO }
         LOGGER.debug(MODLAUNCHER, "Found launch plugins: [{}]", () -> String.join(",", this.plugins.keySet()));
     }
 

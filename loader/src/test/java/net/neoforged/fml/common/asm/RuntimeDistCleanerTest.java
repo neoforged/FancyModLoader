@@ -129,7 +129,7 @@ class RuntimeDistCleanerTest extends LauncherTest {
 
         launchAndLoad(dist.isClient() ? LaunchMode.PROD_CLIENT : LaunchMode.PROD_SERVER);
 
-        var testClass = Class.forName("test.Test", true, gameClassLoader);
+        var testClass = Class.forName("test.Test", true, loader.currentClassLoader());
         asserter.accept(testClass);
     }
 }

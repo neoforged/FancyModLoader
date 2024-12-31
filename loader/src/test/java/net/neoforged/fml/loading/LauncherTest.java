@@ -5,18 +5,6 @@
 
 package net.neoforged.fml.loading;
 
-import cpw.mods.modlauncher.TransformingClassLoader;
-import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import net.bytebuddy.agent.ByteBuddyAgent;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModLoader;
@@ -28,6 +16,17 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.junit.jupiter.MockitoSettings;
 
+import java.lang.invoke.MethodHandles;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @MockitoSettings
 public abstract class LauncherTest {
     protected SimulatedInstallation installation;
@@ -37,9 +36,7 @@ public abstract class LauncherTest {
     // and ModDirTransformerDiscoverer, which pick up files like mixin.
     Set<Path> locatedPaths = new HashSet<>();
 
-    private List<AutoCloseable> resourcesToClose = new ArrayList<>();
-
-    protected TransformingClassLoader gameClassLoader;
+    protected FMLLoader loader;
 
     @BeforeAll
     static void ensureAddOpensForUnionFs() {
@@ -63,11 +60,7 @@ public abstract class LauncherTest {
 
     @AfterEach
     void clearSystemProperties() throws Exception {
-        for (var resource : resourcesToClose) {
-            resource.close();
-        }
-
-        gameClassLoader = null;
+        loader.close();
         installation.close();
     }
 
@@ -137,10 +130,11 @@ public abstract class LauncherTest {
 
         var classLoader = Thread.currentThread().getContextClassLoader();
         var startupArgs = new StartupArgs(
-                installation.getGameDir().toFile(),
+                installation.getGameDir(),
+                installation.getGameDir().resolve(".cache"),
                 true,
                 launchTarget.forcedDist,
-                new String[] {
+                new String[]{
                         "--fml.fmlVersion", SimulatedInstallation.FML_VERSION,
                         "--fml.mcVersion", SimulatedInstallation.MC_VERSION,
                         "--fml.neoForgeVersion", SimulatedInstallation.NEOFORGE_VERSION,
@@ -153,7 +147,7 @@ public abstract class LauncherTest {
         ClassLoader launchClassLoader;
         try {
             var instrumentation = ByteBuddyAgent.install();
-            resourcesToClose.add(FMLLoader.startup(instrumentation, startupArgs));
+            loader = FMLLoader.startup(instrumentation, startupArgs);
             launchClassLoader = Thread.currentThread().getContextClassLoader();
         } finally {
             Thread.currentThread().setContextClassLoader(classLoader);
@@ -186,14 +180,14 @@ public abstract class LauncherTest {
     }
 
     private void loadMods() {
-        FMLLoader.progressWindowTick = () -> {};
-
-        gameClassLoader = FMLLoader.gameClassLoader;
+        FMLLoader.progressWindowTick = () -> {
+        };
 
         ModLoader.gatherAndInitializeMods(
                 Runnable::run,
                 Runnable::run,
-                () -> {});
+                () -> {
+                });
     }
 
     protected static List<String> getTranslatedIssues(LaunchResult launchResult) {

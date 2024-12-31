@@ -6,6 +6,7 @@
 package net.neoforged.fml.startup;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.instrument.Instrumentation;
@@ -15,6 +16,9 @@ import java.lang.invoke.MethodType;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -28,7 +32,7 @@ import org.apache.logging.log4j.core.config.Configurator;
 public abstract class Entrypoint {
     Entrypoint() {}
 
-    protected static FMLStartupContext startup(String[] args, boolean headless, Dist forcedDist) {
+    protected static FMLLoader startup(String[] args, boolean headless, Dist forcedDist) {
         StartupLog.debug("JVM Uptime: {}ms", ManagementFactory.getRuntimeMXBean().getUptime());
 
         args = ArgFileExpander.expandArgFiles(args);
@@ -43,9 +47,13 @@ public abstract class Entrypoint {
         var gameDir = getGameDir(args);
         StartupLog.info("Game Directory: {}", gameDir);
 
-        var cacheDir = new File(gameDir, ".neoforgecache");
-        if (!cacheDir.exists() && !cacheDir.mkdir()) {
-            StartupLog.error("Failed to create cache directory: {}", cacheDir);
+        var cacheDir = gameDir.resolve(".neoforgecache");
+        if (!Files.isDirectory(cacheDir)) {
+            try {
+                Files.createDirectories(cacheDir);
+            } catch (IOException e) {
+                StartupLog.error("Failed to create cache directory {}: {}", cacheDir, e);
+            }
         }
 
         var instrumentation = obtainInstrumentation();
@@ -57,6 +65,7 @@ public abstract class Entrypoint {
 
         var startupArgs = new StartupArgs(
                 gameDir,
+                cacheDir,
                 headless,
                 forcedDist,
                 args,
@@ -86,12 +95,12 @@ public abstract class Entrypoint {
         return result;
     }
 
-    private static File getGameDir(String[] args) {
+    private static Path getGameDir(String[] args) {
         var gameDir = new File(getArg(args, "gameDir", "")).getAbsoluteFile();
         if (!gameDir.isDirectory()) {
             throw new RuntimeException("The game directory passed on the command-line is not a directory: " + gameDir);
         }
-        return gameDir;
+        return gameDir.toPath();
     }
 
     private static String getArg(String[] args, String name, String defaultValue) {
@@ -188,9 +197,9 @@ public abstract class Entrypoint {
      * The only point of this is to get a neater stacktrace in all crash reports, since this
      * will replace three levels of Java reflection with one generated lambda method.
      */
-    protected static MethodHandle createMainMethodCallable(ClassLoader loader, String mainClassName) {
+    protected static MethodHandle createMainMethodCallable(FMLLoader loader, String mainClassName) {
         try {
-            var mainClass = Class.forName(mainClassName, true, loader);
+            var mainClass = Class.forName(mainClassName, true, loader.currentClassLoader());
             var lookup = MethodHandles.publicLookup();
             var methodType = MethodType.methodType(void.class, String[].class);
             return lookup.findStatic(mainClass, "main", methodType);

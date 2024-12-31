@@ -154,7 +154,7 @@ public class CoreModTest extends LauncherTest {
 
         launchAndLoad(LaunchMode.PROD_CLIENT);
 
-        var testClass = Class.forName("net.minecraft.world.level.biome.Biome", true, gameClassLoader);
+        var testClass = Class.forName("net.minecraft.world.level.biome.Biome", true, loader.currentClassLoader());
         assertThat(testClass).hasAnnotation(Deprecated.class); // This is added by the transformer
     }
 }

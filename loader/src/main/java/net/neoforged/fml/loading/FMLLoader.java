@@ -7,7 +7,6 @@ package net.neoforged.fml.loading;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.cl.JarModuleFinder;
-import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.ClassTransformer;
 import cpw.mods.modlauncher.LaunchPluginHandler;
@@ -30,11 +29,9 @@ import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.locators.ClasspathLibrariesLocator;
 import net.neoforged.fml.loading.moddiscovery.locators.GameLocator;
 import net.neoforged.fml.loading.moddiscovery.locators.InDevLocator;
-import net.neoforged.fml.loading.moddiscovery.locators.MavenDirectoryLocator;
 import net.neoforged.fml.loading.moddiscovery.locators.ModsFolderLocator;
 import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
-import net.neoforged.fml.startup.FMLStartupContext;
 import net.neoforged.fml.startup.FatalStartupException;
 import net.neoforged.fml.startup.StartupArgs;
 import net.neoforged.fml.util.ServiceLoaderUtil;
@@ -48,6 +45,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.invoke.MethodHandle;
@@ -58,43 +56,82 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class FMLLoader {
+public final class FMLLoader implements AutoCloseable {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static AccessTransformerEngine accessTransformer;
     private static LanguageProviderLoader languageProviderLoader;
-    private static Dist dist;
     private static LoadingModList loadingModList;
-    private static Path gamePath;
-    private static VersionInfo versionInfo;
     public static Runnable progressWindowTick;
     public static BackgroundScanHandler backgroundScanHandler;
-    private static boolean production;
-    @Nullable
-    private static ModuleLayer gameLayer;
+
     @VisibleForTesting
     static DiscoveryResult discoveryResult;
-    @VisibleForTesting
-    static TransformingClassLoader gameClassLoader;
+
+    private static final AtomicReference<@Nullable FMLLoader> current = new AtomicReference<>();
+
+    /**
+     * The context class-loader that will be restored when the loader is closed.
+     */
+    @Nullable
+    private final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
+
+    /**
+     * The current tail of the class-loader chain. It is moved whenever a new set of Jars is loaded.
+     */
+    private ClassLoader currentClassLoader;
+
+    /**
+     * Resources owned by this loader, such as opened URL classloaders.
+     */
+    private final List<AutoCloseable> ownedResources = new ArrayList<>();
+
+    private final ProgramArgs programArgs;
+
+    private final Dist dist;
+
+    private final boolean production;
+
+    private final Path gameDir;
+
+    private final Path cacheDir;
+
+    private VersionInfo versionInfo;
+
+    @Nullable
+    private ModuleLayer gameLayer;
+
+    /**
+     * Used to track where Jar files we extract to disk originally came from. Used for error reporting.
+     */
+    private final Map<Path, String> jarSourceInfo = new HashMap<>();
+
+    private final Set<Path> locatedPaths = new HashSet<>();
+
+    private final List<File> unclaimedClassPathEntries = new ArrayList<>();
 
     @VisibleForTesting
     record DiscoveryResult(List<ModFile> pluginContent,
@@ -102,15 +139,90 @@ public class FMLLoader {
                            List<ModLoadingIssue> discoveryIssues) {
     }
 
-    // This is called by FML Startup
-    public static FMLStartupContext startup(@Nullable Instrumentation instrumentation, StartupArgs startupArgs) {
-        detectDistAndProduction(startupArgs);
+    private FMLLoader(ClassLoader currentClassLoader, String[] programArgs, Dist dist, boolean production, Path gameDir, Path cacheDir) {
+        this.currentClassLoader = currentClassLoader;
+        this.programArgs = ProgramArgs.from(programArgs);
+        this.dist = dist;
+        this.production = production;
+        this.gameDir = gameDir;
+        this.cacheDir = cacheDir;
+
+        versionInfo = new VersionInfo(
+                this.programArgs.remove("fml.neoForgeVersion"),
+                this.programArgs.remove("fml.fmlVersion"),
+                this.programArgs.remove("fml.mcVersion"),
+                this.programArgs.remove("fml.neoFormVersion")
+        );
 
         LOGGER.info(
                 "Starting FancyModLoader version {} ({} in {})",
                 JarVersionLookupHandler.getVersion(FMLLoader.class).orElse("UNKNOWN"),
                 dist,
-                production ? "PROD" : "DEV");
+                production ? "PROD" : "DEV"
+        );
+
+        makeCurrent();
+    }
+
+    private static Dist detectDist(ClassLoader classLoader) {
+        var clientAvailable = classLoader.getResource("net/minecraft/client/main/Main.class") != null;
+        return clientAvailable ? Dist.CLIENT : Dist.DEDICATED_SERVER;
+    }
+
+    private static boolean detectProduction(ClassLoader classLoader) {
+        // We are not in production when an unobfuscated class is reachable on the classloader
+        // since that means the unobfuscated game is on the classpath. We use DetectedVersion here since
+        // it has existed across many Minecraft versions.
+        return classLoader.getResource("net/minecraft/DetectedVersion.class") == null;
+    }
+
+    @Override
+    public void close() {
+        LOGGER.info("Closing FML Loader {}", this);
+        current.compareAndExchange(this, null);
+
+        for (var ownedResource : ownedResources) {
+            try {
+                ownedResource.close();
+            } catch (Exception e) {
+                LOGGER.error("Failed to close resource {} owned by FMLLoader", ownedResource, e);
+            }
+        }
+        ownedResources.clear();
+    }
+
+    private void makeCurrent() {
+        FMLLoader witness = current.compareAndExchange(null, this);
+        if (witness != null) {
+            throw new IllegalStateException("Another FML loader is already active: " + witness);
+        }
+    }
+
+    public ClassLoader currentClassLoader() {
+        return currentClassLoader;
+    }
+
+    public ProgramArgs programArgs() {
+        return programArgs;
+    }
+
+    // This is called by FML Startup
+    public static FMLLoader startup(@Nullable Instrumentation instrumentation, StartupArgs startupArgs) {
+        // If a client class is available, then it's client, otherwise DEDICATED_SERVER
+        // The auto-detection never detects JOINED since it's impossible to do so
+        var initialLoader = Objects.requireNonNullElse(startupArgs.parentClassLoader(), ClassLoader.getSystemClassLoader());
+
+        var loader = new FMLLoader(
+                initialLoader,
+                startupArgs.programArgs(),
+                Objects.requireNonNullElseGet(startupArgs.forcedDist(), () -> detectDist(initialLoader)),
+                detectProduction(initialLoader),
+                startupArgs.gameDirectory(),
+                startupArgs.cacheRoot()
+        );
+
+        FMLPaths.loadAbsolutePaths(startupArgs.gameDirectory());
+        FMLConfig.load();
 
         // Make UnionFS work
         // TODO: This should come from a manifest? Service-Loader? Something...
@@ -126,38 +238,14 @@ public class FMLLoader {
 
         var launchPlugins = new HashMap<String, ILaunchPluginService>();
 
-        var programArgs = ProgramArgs.from(startupArgs.programArgs());
-
-        gamePath = startupArgs.gameDirectory().toPath();
-        FMLPaths.loadAbsolutePaths(gamePath);
-        FMLConfig.load();
-
-        var launchContext = new LaunchContext(
-                dist,
-                startupArgs.gameDirectory().toPath(),
-                List.of(), // TODO: Argparse
-                List.of(), // TODO: Argparse
-                List.of(), // TODO: Argparse
-                startupArgs.unclaimedClassPathEntries());
+        var launchContext = loader.new LaunchContextAdapter();
         for (var claimedFile : startupArgs.claimedFiles()) {
             launchContext.addLocated(claimedFile.toPath());
         }
 
-        // Search for early services
-        var resourcesToClose = new ArrayList<AutoCloseable>();
-        var parentLoader = Objects.requireNonNullElse(startupArgs.parentClassLoader(), ClassLoader.getSystemClassLoader());
-        var earlyServices = EarlyServiceDiscovery.findEarlyServices(FMLPaths.MODSDIR.get());
-        // TODO: Early services should participate in JIJ discovery
-        parentLoader = loadEarlyServices(launchContext, parentLoader, earlyServices);
+        loader.loadEarlyServices();
 
-        ImmediateWindowHandler.load(startupArgs.headless(), programArgs);
-
-        versionInfo = new VersionInfo(
-                programArgs.remove("fml.neoForgeVersion"),
-                programArgs.remove("fml.fmlVersion"),
-                programArgs.remove("fml.mcVersion"),
-                programArgs.remove("fml.neoFormVersion")
-        );
+        ImmediateWindowHandler.load(startupArgs.headless(), loader.programArgs);
 
         var mixinFacade = new MixinFacade();
 
@@ -165,10 +253,10 @@ public class FMLLoader {
         // as mod discovery will add its results to these engines directly.
         accessTransformer = addLaunchPlugin(launchContext, launchPlugins, new AccessTransformerService()).engine;
         addLaunchPlugin(launchContext, launchPlugins, new RuntimeEnumExtender());
-        addLaunchPlugin(launchContext, launchPlugins, new RuntimeDistCleaner(dist));
+        addLaunchPlugin(launchContext, launchPlugins, new RuntimeDistCleaner(loader.dist));
         addLaunchPlugin(launchContext, launchPlugins, mixinFacade.getLaunchPlugin());
 
-        discoveryResult = runOffThread(() -> runDiscovery(launchContext));
+        discoveryResult = runOffThread(loader::runDiscovery);
         ClassLoadingGuardian classLoadingGuardian = null;
         if (instrumentation != null) {
             classLoadingGuardian = new ClassLoadingGuardian(instrumentation, discoveryResult.gameContent);
@@ -199,10 +287,7 @@ public class FMLLoader {
 
         // Load Plugins
         if (!loadingModList.getPlugins().isEmpty()) {
-            var pluginLoader = loadPlugins(launchContext, startupArgs.cacheRoot(), parentLoader, loadingModList.getPlugins());
-            resourcesToClose.add(pluginLoader);
-            Thread.currentThread().setContextClassLoader(pluginLoader);
-            parentLoader = pluginLoader;
+            loader.loadPlugins(loadingModList.getPlugins());
         }
 
         // Now go and build the language providers and let mods discover theirs
@@ -226,141 +311,118 @@ public class FMLLoader {
         // We inlined this: transformationServicesHandler.buildTransformingClassLoader...
 
         var classTransformer = ClassTransformerFactory.create(launchContext, launchPluginHandler, loadingModList);
-        var gameLayerResult = buildGameModuleLayer(classTransformer, gameContent, List.of(ModuleLayer.boot()), parentLoader);
-        gameLayerResult.classLoader.setFallbackClassLoader(parentLoader);
-
-        gameLayer = gameLayerResult.gameLayer();
-        gameClassLoader = gameLayerResult.classLoader;
+        var transformingLoader = loader.buildTransformingLoader(classTransformer, gameContent);
 
         // From here on out, try loading through the TCL
         if (classLoadingGuardian != null) {
-            classLoadingGuardian.end(gameClassLoader);
+            classLoadingGuardian.end(transformingLoader);
         }
-        resourcesToClose.add(makeClassLoaderCurrent());
 
         // We're adding mixins *after* setting the Thread context classloader since
         // Mixin stubbornly loads Mixin Configs via its ModLauncher environment using the TCL.
         // Adding containers beforehand will try to load Mixin configs using the app classloader and fail.
-        mixinFacade.finishInitialization(loadingModList, gameClassLoader);
+        mixinFacade.finishInitialization(loadingModList, transformingLoader);
 
         // This will initialize Mixins, for example
-        launchPluginHandler.announceLaunch(gameClassLoader, new NamedPath[0]);
+        launchPluginHandler.announceLaunch(transformingLoader, new NamedPath[0]);
 
-        ImmediateWindowHandler.acceptGameLayer(gameLayer);
+        ImmediateWindowHandler.acceptGameLayer(loader.gameLayer);
         ImmediateWindowHandler.updateProgress("Launching minecraft");
         progressWindowTick.run();
 
-        return new FMLStartupContext(LOGGER, programArgs, gameClassLoader, resourcesToClose);
+        return loader;
     }
 
-    private static void detectDistAndProduction(StartupArgs args) {
-        // If a client class is available, then it's client, otherwise DEDICATED_SERVER
-        // The auto-detection never detects JOINED since it's impossible to do so
-        var cl = Objects.requireNonNullElse(args.parentClassLoader(), Thread.currentThread().getContextClassLoader());
-
-        if (args.forcedDist() != null) {
-            dist = args.forcedDist();
-        } else {
-            var clientAvailable = cl.getResource("net/minecraft/client/main/Main.class") != null;
-            dist = clientAvailable ? Dist.CLIENT : Dist.DEDICATED_SERVER;
+    private void loadEarlyServices() {
+        // Search for early services
+        var earlyServices = EarlyServiceDiscovery.findEarlyServices(FMLPaths.MODSDIR.get());
+        if (!earlyServices.isEmpty()) {
+            // TODO: Early services should participate in JIJ discovery
+            appendLoader("FML Early Services", earlyServices);
         }
-
-        // We are not in production when an unobfuscated class is reachable on the classloader
-        // since that means the unobfuscated game is on the classpath. We use DetectedVersion here since
-        // it has existed across many Minecraft versions.
-        production = cl.getResource("net/minecraft/DetectedVersion.class") == null;
     }
 
-    /**
-     * Loads the given plugin into a URL classloader.
-     */
-    private static URLClassLoader loadEarlyServices(
-            ILaunchContext launchContext,
-            ClassLoader parentLoader,
-            List<Path> services) {
-        List<URL> rootUrls = new ArrayList<>(services.size());
-        for (var service : services) {
-            try {
-                rootUrls.add(service.toUri().toURL());
-            } catch (MalformedURLException e) {
-                throw new RuntimeException(e); // This should not happen for file URLs
-            }
-            launchContext.addLocated(service); // Prevents it from getting picked up again
-        }
-
-        return new URLClassLoader("FML Early Services", rootUrls.toArray(URL[]::new), parentLoader);
-    }
-
-    /**
-     * Loads the given plugin into a URL classloader.
-     */
-    private static URLClassLoader loadPlugins(
-            ILaunchContext launchContext,
-            Path cacheDir,
-            ClassLoader parentLoader,
-            List<IModFileInfo> plugins) {
-        // Causes URL handler to be initialized
-        new ModuleClassLoader("dummy", Configuration.empty(), List.of(ModuleLayer.empty()));
-
-        List<URL> rootUrls = new ArrayList<>(plugins.size());
+    private void loadPlugins(List<IModFileInfo> plugins) {
+        List<Path> pluginPaths = new ArrayList<>(plugins.size());
         for (var plugin : plugins) {
             var jar = plugin.getFile().getSecureJar();
 
-            var basePaths = getBasePaths(jar);
+            unwrapSecureJar(formatModFileLocation(plugin.getFile()), jar, pluginPaths::add);
+        }
 
-            for (var basePath : basePaths) {
+        appendLoader("FML Plugins", pluginPaths);
+    }
+
+    private void unwrapSecureJar(String sourceDescription, SecureJar jar, Consumer<Path> sink) {
+        var basePaths = getBasePaths(jar);
+
+        for (var basePath : basePaths) {
+            if (basePath.getFileSystem().provider().getScheme().equals("file")) {
+                sink.accept(basePath);
+            } else {
                 try {
-                    if (basePath.getFileSystem() == FileSystems.getDefault()) {
-                        rootUrls.add(basePath.toUri().toURL());
-                    } else {
-                        try {
-                            var jarInMemory = Files.readAllBytes(basePath);
-                            MessageDigest md = MessageDigest.getInstance("MD5");
-                            var hash = HexFormat.of().formatHex(md.digest(jarInMemory));
+                    var jarInMemory = Files.readAllBytes(basePath);
+                    MessageDigest md = MessageDigest.getInstance("MD5");
+                    var hash = HexFormat.of().formatHex(md.digest(jarInMemory));
 
-                            var jarCacheDir = cacheDir
-                                    .resolve("embedded_jars")
-                                    .resolve(hash);
-                            Files.createDirectories(jarCacheDir);
-                            var cachedFile = jarCacheDir.resolve(jar.name() + ".jar");
-                            long expectedSize = jarInMemory.length;
-                            long existingSize = -1;
-                            try {
-                                existingSize = Files.size(cachedFile);
-                            } catch (IOException ignored) {
-                            }
-                            if (existingSize != expectedSize) {
-                                // TODO atomic move crap
-                                Files.write(cachedFile, jarInMemory);
-                            }
-
-                            launchContext.setJarSourceDescription(
-                                    cachedFile,
-                                    formatModFileLocation(launchContext, plugin.getFile()));
-
-                            rootUrls.add(cachedFile.toUri().toURL());
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
+                    var jarCacheDir = cacheDir
+                            .resolve("embedded_jars")
+                            .resolve(hash);
+                    Files.createDirectories(jarCacheDir);
+                    var cachedFile = jarCacheDir.resolve(jar.name() + ".jar");
+                    long expectedSize = jarInMemory.length;
+                    long existingSize = -1;
+                    try {
+                        existingSize = Files.size(cachedFile);
+                    } catch (IOException ignored) {
                     }
-                } catch (MalformedURLException e) {
-                    throw new RuntimeException(e); // TODO error handling: investigate when this can happen
+                    if (existingSize != expectedSize) {
+                        // TODO atomic move crap
+                        Files.write(cachedFile, jarInMemory);
+                    }
+
+                    setJarSourceDescription(cachedFile, sourceDescription);
+                    sink.accept(cachedFile);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
             }
         }
-
-        return new URLClassLoader(
-                "FML Plugins",
-                rootUrls.toArray(URL[]::new),
-                parentLoader);
     }
 
-    private static String formatModFileLocation(ILaunchContext launchContext, IModFile file) {
-        var info = launchContext.relativizePath(file.getFilePath());
+    /**
+     * Loads the given services into a URL classloader.
+     */
+    private void appendLoader(String loaderName, List<Path> paths) {
+        if (paths.isEmpty()) {
+            return;
+        }
+
+        LOGGER.info("Loading {}:", loaderName);
+
+        List<URL> rootUrls = new ArrayList<>(paths.size());
+        for (var path : paths) {
+            LOGGER.info(" - {}", formatPath(path));
+            try {
+                rootUrls.add(path.toUri().toURL());
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e); // This should not happen for file URLs
+            }
+            locatedPaths.add(path); // Prevents it from getting picked up again
+        }
+
+        var loader = new URLClassLoader(loaderName, rootUrls.toArray(URL[]::new), currentClassLoader);
+        ownedResources.add(loader);
+        currentClassLoader = loader;
+        Thread.currentThread().setContextClassLoader(loader);
+    }
+
+    private String formatModFileLocation(IModFile file) {
+        var info = formatPath(file.getFilePath());
 
         var parentFile = file.getDiscoveryAttributes().parent();
         if (parentFile != null) {
-            info = formatModFileLocation(launchContext, parentFile) + " > " + info;
+            info = formatModFileLocation(parentFile) + " > " + info;
         }
 
         return info;
@@ -382,11 +444,10 @@ public class FMLLoader {
         }
     }
 
-    private static GameLayerResult buildGameModuleLayer(ClassTransformer classTransformer,
-                                                        List<SecureJar> content,
-                                                        List<ModuleLayer> parentLayers,
-                                                        ClassLoader parentLoader) {
+    private TransformingClassLoader buildTransformingLoader(ClassTransformer classTransformer, List<SecureJar> content) {
         long start = System.currentTimeMillis();
+
+        var parentLayers = List.of(ModuleLayer.boot());
 
         var cf = Configuration.resolveAndBind(
                 JarModuleFinder.of(content.toArray(SecureJar[]::new)),
@@ -396,7 +457,7 @@ public class FMLLoader {
 
         var moduleNames = getModuleNameList(cf);
         LOGGER.info("Building module layer GAME:\n{}", moduleNames);
-        var loader = new TransformingClassLoader(classTransformer, cf, parentLayers, parentLoader);
+        var loader = new TransformingClassLoader(classTransformer, cf, parentLayers, currentClassLoader);
 
         var layer = ModuleLayer.defineModules(
                 cf,
@@ -406,10 +467,12 @@ public class FMLLoader {
         var elapsed = System.currentTimeMillis() - start;
         LOGGER.info("Built game layer in {}ms", elapsed);
 
-        return new GameLayerResult(layer, loader);
-    }
+        loader.setFallbackClassLoader(currentClassLoader);
 
-    record GameLayerResult(ModuleLayer gameLayer, TransformingClassLoader classLoader) {
+        gameLayer = layer;
+        currentClassLoader = loader;
+        Thread.currentThread().setContextClassLoader(loader);
+        return loader;
     }
 
     private static String getModuleNameList(Configuration cf) {
@@ -454,7 +517,7 @@ public class FMLLoader {
         return service;
     }
 
-    private static DiscoveryResult runDiscovery(ILaunchContext launchContext) {
+    private DiscoveryResult runDiscovery() {
         var progress = StartupNotificationManager.prependProgressBar("Discovering mods...", 0);
 
         var additionalLocators = new ArrayList<IModFileCandidateLocator>();
@@ -464,10 +527,9 @@ public class FMLLoader {
         additionalLocators.add(new GameLocator());
         additionalLocators.add(new InDevLocator());
         additionalLocators.add(new ModsFolderLocator());
-        additionalLocators.add(new MavenDirectoryLocator());
         additionalLocators.add(new ClasspathLibrariesLocator());
 
-        var modDiscoverer = new ModDiscoverer(launchContext, additionalLocators);
+        var modDiscoverer = new ModDiscoverer(new LaunchContextAdapter(), additionalLocators);
         var discoveryResult = modDiscoverer.discoverMods();
         var modFiles = new ArrayList<>(discoveryResult.modFiles());
         var issues = new ArrayList<>(discoveryResult.discoveryIssues());
@@ -610,11 +672,16 @@ public class FMLLoader {
         }
     }
 
-    public static Dist getDist() {
-        return dist;
+    public static FMLLoader current() {
+        var current = FMLLoader.current.get();
+        if (current == null) {
+            throw new IllegalStateException("There is no current FML Loader");
+        }
+        return current;
     }
 
-    public static void beforeStart(ModuleLayer gameLayer) {
+    public static Dist getDist() {
+        return current().dist;
     }
 
     public static LoadingModList getLoadingModList() {
@@ -622,7 +689,7 @@ public class FMLLoader {
     }
 
     public static Path getGamePath() {
-        return gamePath;
+        return current().gameDir;
     }
 
     @Deprecated(forRemoval = true)
@@ -641,10 +708,11 @@ public class FMLLoader {
     }
 
     public static boolean isProduction() {
-        return production;
+        return current().production;
     }
 
     public static ModuleLayer getGameLayer() {
+        var gameLayer = current().gameLayer;
         if (gameLayer == null) {
             throw new IllegalStateException("This can only be called after mod discovery is completed");
         }
@@ -652,19 +720,79 @@ public class FMLLoader {
     }
 
     public static VersionInfo versionInfo() {
-        return versionInfo;
+        return current().versionInfo;
     }
 
-    /**
-     * @return An AutoClosable that resets the classloader back to the original.
-     */
-    private static AutoCloseable makeClassLoaderCurrent() {
-        var previousClassLoader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(gameClassLoader);
-        return () -> {
-            if (Thread.currentThread().getContextClassLoader() == gameClassLoader) {
-                Thread.currentThread().setContextClassLoader(previousClassLoader);
-            }
-        };
+    public String formatPath(Path path) {
+        String resultPath;
+
+        if (path.startsWith(gameDir)) {
+            resultPath = gameDir.relativize(path).toString();
+        } else if (Files.isDirectory(path)) {
+            resultPath = path.toAbsolutePath().toString();
+        } else {
+            resultPath = path.getFileName().toString();
+        }
+
+        // Unify separators to ensure it is easier to test
+        return resultPath.replace('\\', '/');
+    }
+
+    private void setJarSourceDescription(Path path, String description) {
+        jarSourceInfo.put(path, description);
+    }
+
+    private String getJarSourceDescription(Path path) {
+        return jarSourceInfo.get(path);
+    }
+
+    class LaunchContextAdapter implements ILaunchContext {
+        @Override
+        public Dist getRequiredDistribution() {
+            return dist;
+        }
+
+        @Override
+        public Path gameDirectory() {
+            return gameDir;
+        }
+
+        @Override
+        public <T> Stream<ServiceLoader.Provider<T>> loadServices(Class<T> serviceClass) {
+            // We simply rely on thread context classloader to be correct
+            return ServiceLoader.load(serviceClass).stream();
+        }
+
+        @Override
+        public boolean isLocated(Path path) {
+            return FMLLoader.this.locatedPaths.contains(path);
+        }
+
+        @Override
+        public boolean addLocated(Path path) {
+            return FMLLoader.this.locatedPaths.add(path);
+        }
+
+        @Override
+        public List<File> getUnclaimedClassPathEntries() {
+            return unclaimedClassPathEntries.stream()
+                    .filter(p -> !isLocated(p.toPath()))
+                    .toList();
+        }
+
+        @Override
+        public void setJarSourceDescription(Path path, String description) {
+            FMLLoader.this.setJarSourceDescription(path, description);
+        }
+
+        @Override
+        public @Nullable String getJarSourceDescription(Path path) {
+            return FMLLoader.this.getJarSourceDescription(path);
+        }
+
+        @Override
+        public String relativizePath(Path path) {
+            return FMLLoader.this.formatPath(path);
+        }
     }
 }

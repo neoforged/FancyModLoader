@@ -18,13 +18,13 @@ public class Client extends Entrypoint {
     private Client() {}
 
     public static void main(String[] args) {
-        try (var startup = startup(args, false, Dist.CLIENT)) {
+        try (var loader = startup(args, false, Dist.CLIENT)) {
             if (!FMLLoader.isProduction()) {
-                preProcessDevArguments(startup.programArgs());
+                preProcessDevArguments(loader.programArgs());
             }
 
-            var main = createMainMethodCallable(startup.classLoader(), "net.minecraft.client.main.Main");
-            main.invokeExact(startup.programArgs().getArguments());
+            var main = createMainMethodCallable(loader, "net.minecraft.client.main.Main");
+            main.invokeExact(loader.programArgs().getArguments());
         } catch (Throwable t) {
             FatalErrorReporting.reportFatalError(t);
             System.exit(1);

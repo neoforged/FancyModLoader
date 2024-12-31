@@ -30,12 +30,6 @@ public interface ILaunchContext {
 
     <T> Stream<ServiceLoader.Provider<T>> loadServices(Class<T> serviceClass);
 
-    List<String> modLists();
-
-    List<String> mods();
-
-    List<String> mavenRoots();
-
     /**
      * Checks if a given path was already found by a previous locator, or may be already loaded.
      */

@@ -151,7 +151,7 @@ class TransformerClassWriter extends ClassWriter {
             //This is safe, as the TCL can't find the class, so it has to be on the super classloader, and it can't cause circulation,
             //as classes from the parent classloader cannot reference classes from the TCL, as the parent only contains libraries and std lib
             try {
-                computeHierarchyFromClass(className, Class.forName(className.replace('/', '.'), false, transformingClassLoader));
+                computeHierarchyFromClass(className, Class.forName(className.replace('/', '.'), false, transformingClassLoader.getParent()));
             } catch (ClassNotFoundException classNotFoundException) {
                 classNotFoundException.addSuppressed(e);
                 LOGGER.fatal("Failed to find class {} ", className, classNotFoundException);

@@ -7,6 +7,7 @@ package net.neoforged.fml.startup;
 
 import java.awt.GraphicsEnvironment;
 import java.lang.reflect.InvocationTargetException;
+import java.util.function.Consumer;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
@@ -14,14 +15,31 @@ import org.lwjgl.util.tinyfd.TinyFileDialogs;
 public final class FatalErrorReporting {
     private FatalErrorReporting() {}
 
+    private static Throwable unwrapException(Throwable t) {
+        var cause = t.getCause();
+        if (cause == null) {
+            return t; // Cannot unwrap without a cause.
+        }
+
+        if (t instanceof InvocationTargetException) {
+            return cause;
+        }
+        return t;
+    }
+
     public static void reportFatalError(Throwable t) {
-        if (t instanceof InvocationTargetException e && e.getCause() != null) {
-            reportFatalError(e.getCause());
-        } else if (t instanceof FatalStartupException e) {
+        t = unwrapException(t);
+
+        if (t instanceof FatalStartupException e) {
             reportFatalError(e.getMessage());
         } else {
             reportFatalError(t.toString());
         }
+    }
+
+    public static void reportFatalErrorOnConsole(Throwable t) {
+        t = unwrapException(t);
+        t.printStackTrace();
     }
 
     /**

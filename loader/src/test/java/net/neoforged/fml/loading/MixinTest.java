@@ -57,7 +57,7 @@ public class MixinTest extends LauncherTest {
                 .build();
 
         launchAndLoad(LaunchMode.PROD_CLIENT);
-        var targetClass = Class.forName("testmod.MixinTargetClass", true, gameClassLoader);
+        var targetClass = Class.forName("testmod.MixinTargetClass", true, loader.currentClassLoader());
         var targetObject = (Callable<?>) targetClass.getConstructor().newInstance();
         assertEquals("mixin did apply!", targetObject.call());
     }
