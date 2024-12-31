@@ -735,7 +735,14 @@ public final class FMLLoader implements AutoCloseable {
         }
 
         // Unify separators to ensure it is easier to test
-        return resultPath.replace('\\', '/');
+        resultPath = resultPath.replace('\\', '/');
+
+        var originalSource = jarSourceInfo.get(path);
+        if (originalSource != null) {
+            resultPath = originalSource + " (at " + resultPath + ")";
+        }
+
+        return resultPath;
     }
 
     private void setJarSourceDescription(Path path, String description) {
