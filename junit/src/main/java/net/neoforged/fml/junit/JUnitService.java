@@ -5,26 +5,24 @@
 
 package net.neoforged.fml.junit;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Set;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.startup.FmlInstrumentation;
 import net.neoforged.fml.startup.StartupArgs;
 import org.junit.platform.launcher.LauncherSession;
 import org.junit.platform.launcher.LauncherSessionListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.ServiceLoader;
+import java.util.Set;
 
 /**
  * A session listener for JUnit environments that will bootstrap a Minecraft (FML) environment.
  */
 public class JUnitService implements LauncherSessionListener {
-    private static final Logger LOGGER = LoggerFactory.getLogger(JUnitService.class);
-
     private Path gameDir;
 
     @Override
@@ -50,10 +48,15 @@ public class JUnitService implements LauncherSessionListener {
                         gameDir.resolve(".cache"),
                         true,
                         null,
-                        new String[] {},
+                        new String[]{},
                         Set.of(),
                         List.of(),
-                        Thread.currentThread().getContextClassLoader()));
+                        Thread.currentThread().getContextClassLoader())
+        );
+
+        for (var bootstrapper : ServiceLoader.load(JUnitGameBootstrapper.class)) {
+            bootstrapper.bootstrap();
+        }
     }
 
     @Override
