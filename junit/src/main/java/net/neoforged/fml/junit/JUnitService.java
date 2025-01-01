@@ -7,8 +7,11 @@ package net.neoforged.fml.junit;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -69,7 +72,19 @@ public class JUnitService implements LauncherSessionListener {
 
         if (gameDir != null) {
             try {
-                Files.deleteIfExists(gameDir);
+                Files.walkFileTree(gameDir, new SimpleFileVisitor<>() {
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                        Files.delete(file);
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                        Files.delete(dir);
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
             } catch (IOException e) {
                 throw new UncheckedIOException("Failed to delete temporary game directory", e);
             }
