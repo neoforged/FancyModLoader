@@ -24,6 +24,15 @@ sourceSets {
     }
 }
 
+jar {
+    manifest {
+        attributes([
+                "Launcher-Agent-Class": "net.neoforged.fml.startup.DevAgent",
+                "Premain-Class"       : "net.neoforged.fml.startup.DevAgent"
+        ])
+    }
+}
+
 configurations {
     localRuntime {
         canBeResolved = false
