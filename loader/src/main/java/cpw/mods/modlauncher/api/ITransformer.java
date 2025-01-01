@@ -92,6 +92,11 @@ public interface ITransformer<T> {
      *                          type variable T
      */
     record Target<T>(String className, String elementName, String elementDescriptor, TargetType<T> targetType) {
+        public Target {
+            // Silently convert to source names
+            className = className.replace('/', '.');
+        }
+
         /**
          * Convenience method returning a {@link Target} for a class
          *
