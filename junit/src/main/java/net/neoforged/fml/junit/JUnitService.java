@@ -68,6 +68,9 @@ public class JUnitService implements LauncherSessionListener {
         var current = FMLLoader.currentOrNull();
         if (current != null) {
             current.close();
+            // This is a slightly desparate attempt, but module loaders cannot be closed explicitly.
+            // Instead, they have to be garbage collected to close the underlying Jar file.
+            System.gc();
         }
 
         if (gameDir != null) {
