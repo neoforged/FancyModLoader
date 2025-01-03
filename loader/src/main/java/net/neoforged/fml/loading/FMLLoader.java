@@ -148,7 +148,7 @@ public final class FMLLoader implements AutoCloseable {
 
         versionInfo = new VersionInfo(
                 this.programArgs.remove("fml.neoForgeVersion"),
-                this.programArgs.remove("fml.fmlVersion"),
+                FMLVersion.getVersion(),
                 this.programArgs.remove("fml.mcVersion"),
                 this.programArgs.remove("fml.neoFormVersion"));
 
