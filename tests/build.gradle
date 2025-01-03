@@ -31,34 +31,37 @@ neoForgeInstallations {
     register("client", fmlbuild.NeoForgeClientInstallation) {
         version = test_neoforge_version
         minecraftVersion = test_minecraft_version
+        mainClass = "net.neoforged.fml.startup.Client"
+        // gameDir = "D:\\PrismInstances\\All the Mods 10 - ATM10\\minecraft"
+        // gameDir = "D:\\PrismInstances\\Enigmatica 10 - E10\\minecraft"
     }
     register("server", fmlbuild.NeoForgeServerInstallation) {
         version = test_neoforge_version
         minecraftVersion = test_minecraft_version
+        mainClass = "net.neoforged.fml.startup.Server"
     }
 }
 
 runConfigurations {
     configureEach {
         taskGroup = "fml/test runs"
-        mainClass = "net.neoforged.devlaunch.Main"
         dependencies {
-            classpath project(":earlydisplay")
-            classpath project(":loader")
-            classpath "net.neoforged:minecraft-dependencies:$test_minecraft_version"
-            // Needed to support arg-files for program arguments
-            classpath "net.neoforged:DevLaunch:1.0.1"
-            modulepath("net.neoforged:neoforge:$test_neoforge_version") {
+            classpath("net.neoforged:neoforge:$test_neoforge_version") {
                 capabilities {
-                    requireCapability("net.neoforged:neoforge-moddev-module-path")
+                    requireCapability("net.neoforged:neoforge-dependencies")
                 }
             }
+            // Needed to support arg-files for program arguments
+            classpath "net.neoforged:DevLaunch:1.0.1"
         }
+        jvmArguments.add("-javaagent:" + file("../loader/devagent.jar").absolutePath)
     }
     productionClient {
+        ideName = "Client (Production)"
         workingDirectory = neoForgeInstallations.client.directory
         jvmArguments.add(neoForgeInstallations.client.vanillaJvmArgFile.map { "@" + it })
-        jvmArguments.add(neoForgeInstallations.client.neoForgeJvmArgFile.map { "@" + it })
+        systemProperties.put("libraryDirectory", neoForgeInstallations.client.directory.dir("libraries").map(d -> d.getAsFile().getAbsolutePath()))
+        // jvmArguments.add(neoForgeInstallations.client.neoForgeJvmArgFile.map { "@" + it })
         programArguments.add(neoForgeInstallations.client.neoForgeMainClassArgFile.map { "@" + it })
         programArguments.add(neoForgeInstallations.client.vanillaProgramArgFile.map { "@" + it })
         programArguments.add(neoForgeInstallations.client.neoForgeProgramArgFile.map { "@" + it })
@@ -68,15 +71,50 @@ runConfigurations {
             classpath files(tasks.named("installNeoForgeClient").map { it.obfuscatedClientJar })
         }
         taskBefore tasks.named("installNeoForgeClient")
+        mainClass = "net.neoforged.fml.startup.Client"
     }
     productionServer {
-        workingDirectory = neoForgeInstallations.server.directory
+        ideName = "Server (Production)"
         jvmArguments.add(neoForgeInstallations.server.neoForgeJvmArgFile.map { "@" + it })
         programArguments.add(neoForgeInstallations.server.neoForgeMainClassArgFile.map { "@" + it })
         programArguments.add(neoForgeInstallations.server.neoForgeProgramArgFile.map { "@" + it })
         taskBefore tasks.named("installNeoForgeServer")
+        mainClass = "net.neoforged.fml.startup.Server"
+        jvmArguments.add(neoForgeInstallations.server.directory.dir("libraries").map { "-DlibraryDirectory=$it" })
+        // workingDirectory = layout.projectDir.dir("Z:/TestServer")
     }
 }
+
+// The production server configuration has to be given the attribute to get server dependencies
+
+abstract class DistributionDisambiguation implements AttributeDisambiguationRule<String> {
+    @Override
+    void execute(MultipleCandidatesDetails<String> details) {
+        details.closestMatch("client");
+    }
+}
+
+abstract class OperatingSystemDisambiguation implements AttributeDisambiguationRule<String> {
+    @Override
+    void execute(MultipleCandidatesDetails<String> details) {
+        var osName = System.getProperty("os.name");
+        // The following matches the logic in Apache Commons Lang 3 SystemUtils
+        if (osName.startsWith("Linux") || osName.startsWith("LINUX")) {
+            osName = "linux";
+        } else if (osName.startsWith("Mac OS X")) {
+            osName = "macosx";
+        } else if (osName.startsWith("Windows")) {
+            osName = "windows";
+        } else {
+            throw new GradleException("Unsupported operating system: " + osName);
+        }
+
+        details.closestMatch(osName);
+    }
+}
+
+var ATTRIBUTE_DISTRIBUTION = Attribute.of("net.neoforged.distribution", String.class);
+var ATTRIBUTE_OPERATING_SYSTEM = Attribute.of("net.neoforged.operatingsystem", String.class);
 
 // Since the neoforge-dependencies use strict resolution, we're kinda lost and have to force.
 configurations.configureEach {
@@ -87,4 +125,11 @@ configurations.configureEach {
     // These have been inlined into FML and should be ignored in the Manifests when using old NF versions
     exclude(group: "cpw.mods", module: "securejarhandler")
     exclude(group: "cpw.mods", module: "modlauncher")
+}
+
+dependencies {
+    attributesSchema(attributesSchema -> {
+        attributesSchema.attribute(ATTRIBUTE_DISTRIBUTION).getDisambiguationRules().add(DistributionDisambiguation.class);
+        attributesSchema.attribute(ATTRIBUTE_OPERATING_SYSTEM).getDisambiguationRules().add(OperatingSystemDisambiguation.class);
+    })
 }

@@ -22,6 +22,10 @@ gradleutils.version {
 
 println "Version: ${project.version = gradleutils.version}"
 
+tasks.named('updateDaemonJvm') {
+    jvmVersion = JavaVersion.VERSION_21
+}
+
 allprojects {
     apply plugin: 'java-library'
     apply plugin: 'jacoco'
@@ -51,7 +55,12 @@ allprojects {
     java {
         withSourcesJar()
         toolchain {
-            languageVersion = JavaLanguageVersion.of(21)
+            languageVersion = JavaLanguageVersion.of(Integer.valueOf(java_version))
+            if (java_vendor) {
+                final actualVendor = java_vendor.endsWith('-J9') ? java_vendor.substring(0, java_vendor.length() - 3) : java_vendor
+                vendor = JvmVendorSpec."${actualVendor.toUpperCase(Locale.ROOT)}" as JvmVendorSpec
+                implementation = java_vendor.endsWith('-J9') ? JvmImplementation.J9 : JvmImplementation.VENDOR_SPECIFIC
+            }
         }
     }
 
@@ -62,6 +71,8 @@ allprojects {
 
 subprojects { subProject ->
     subProject.version = rootProject.version
+
+    apply plugin : fmlbuild.InDevModulePlugin
 
     jar {
         manifest.attributes(

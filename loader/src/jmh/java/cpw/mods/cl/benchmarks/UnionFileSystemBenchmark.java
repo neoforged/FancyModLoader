@@ -25,9 +25,9 @@ public class UnionFileSystemBenchmark {
 
     @Setup
     public void setup() throws Exception {
-        var path1 = Paths.get("src", "testjars", "testjar1.jar").toAbsolutePath().normalize();
-        var path2 = Paths.get("src", "testjars", "testjar2.jar").toAbsolutePath().normalize();
-        var path3 = Paths.get("src", "testjars", "testjar3.jar").toAbsolutePath().normalize();
+        var path1 = Paths.get("src", "testJars", "testjar1.jar").toAbsolutePath().normalize();
+        var path2 = Paths.get("src", "testJars", "testjar2.jar").toAbsolutePath().normalize();
+        var path3 = Paths.get("src", "testJars", "testjar3.jar").toAbsolutePath().normalize();
         Map<String, List<Path>> properties = new HashMap<>();
         var additionalPaths = List.of(path2, path3);
         properties.put("additional", additionalPaths);

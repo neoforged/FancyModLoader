@@ -5,7 +5,11 @@
 
 package net.neoforged.fml.loading;
 
-public record VersionInfo(String neoForgeVersion, String fmlVersion, String mcVersion, String neoFormVersion) {
+public record VersionInfo(
+        String neoForgeVersion,
+        @Deprecated(forRemoval = true) String fmlVersion,
+        String mcVersion,
+        @Deprecated(forRemoval = true) String neoFormVersion) {
     public String mcAndFmlVersion() {
         return mcVersion + "-" + fmlVersion;
     }

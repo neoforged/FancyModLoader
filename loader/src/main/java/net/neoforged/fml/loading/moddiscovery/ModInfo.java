@@ -13,6 +13,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.StringSubstitutor;
 import net.neoforged.fml.loading.StringUtils;
 import net.neoforged.neoforgespi.language.IConfigurable;
@@ -69,7 +70,17 @@ public class ModInfo implements IModInfo, IConfigurable {
             throw new InvalidModFileException("Invalid override namespace found : " + this.namespace, owningFile);
         }
         this.version = config.<String>getConfigElement("version")
-                .map(s -> StringSubstitutor.replace(s, ownFile.map(ModFileInfo::getFile).orElse(null)))
+                .map(s -> {
+                    if ("${global.neoForgeVersion}".equals(s)) {
+                        var neoForgeVersion = FMLLoader.versionInfo().neoForgeVersion();
+                        if (neoForgeVersion != null) {
+                            return neoForgeVersion;
+                        } else {
+                            return owningFile.getFile().getJarVersion().toString();
+                        }
+                    }
+                    return StringSubstitutor.replace(s, ownFile.map(ModFileInfo::getFile).orElse(null));
+                })
                 .map(DefaultArtifactVersion::new)
                 .orElse(DEFAULT_VERSION);
         // verify we have a valid mod version
@@ -199,6 +210,11 @@ public class ModInfo implements IModInfo, IConfigurable {
         } else {
             throw new InvalidModFileException("Invalid feature bound {" + e.getValue() + "} for key {" + e.getKey() + "} only strings are accepted", this.owningFile);
         }
+    }
+
+    @Override
+    public String toString() {
+        return modId;
     }
 
     class ModVersion implements net.neoforged.neoforgespi.language.IModInfo.ModVersion {

@@ -26,9 +26,9 @@ public interface ITransformerActivity {
      */
     String CLASSLOADING_REASON = "classloading";
 
-    String[] getContext();
+    String[] context();
 
-    Type getType();
+    Type type();
 
     String getActivityString();
 

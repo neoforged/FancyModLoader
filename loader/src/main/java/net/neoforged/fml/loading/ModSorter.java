@@ -59,8 +59,9 @@ public class ModSorter {
         try {
             ms.buildUniqueList();
         } catch (ModLoadingException e) {
+            mods = ms.systemMods;
             // We cannot build any list with duped mods. We have to abort immediately and report it
-            return LoadingModList.of(plugins, ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), concat(issues, e.getIssues()), Map.of());
+            return new LoadingModList(plugins, ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), Map.of(), concat(issues, e.getIssues()));
         }
 
         // try and validate dependencies
@@ -70,7 +71,7 @@ public class ModSorter {
 
         // if we miss a dependency or detect an incompatibility, we abort now
         if (!resolutionResult.versionResolution.isEmpty() || !resolutionResult.incompatibilities.isEmpty()) {
-            list = LoadingModList.of(plugins, ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), concat(issues, resolutionResult.buildErrorMessages()), Map.of());
+            list = new LoadingModList(plugins, ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), Map.of(), concat(issues, resolutionResult.buildErrorMessages()));
         } else {
             // Otherwise, lets try and sort the modlist and proceed
             ModLoadingException modLoadingException = null;
@@ -80,9 +81,9 @@ public class ModSorter {
                 modLoadingException = e;
             }
             if (modLoadingException == null) {
-                list = LoadingModList.of(plugins, ms.modFiles, ms.sortedList, issues, ms.modDependencies);
+                list = new LoadingModList(plugins, ms.modFiles, ms.sortedList, ms.modDependencies, issues);
             } else {
-                list = LoadingModList.of(plugins, ms.modFiles, ms.sortedList, concat(issues, modLoadingException.getIssues()), Map.of());
+                list = new LoadingModList(plugins, ms.modFiles, ms.sortedList, Map.of(), concat(issues, modLoadingException.getIssues()));
             }
         }
 

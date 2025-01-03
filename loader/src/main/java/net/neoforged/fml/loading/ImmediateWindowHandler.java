@@ -5,12 +5,9 @@
 
 package net.neoforged.fml.loading;
 
-import cpw.mods.modlauncher.Launcher;
-import cpw.mods.modlauncher.api.IModuleLayerManager.Layer;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
@@ -23,54 +20,57 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.neoforged.fml.loading.progress.ProgressMeter;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
+import net.neoforged.fml.startup.FatalStartupException;
 import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
 import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
+import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProviderFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ImmediateWindowHandler {
     private static final Logger LOGGER = LogManager.getLogger();
+    private static final String HANDOFF_CLASS = "net.neoforged.neoforge.client.loading.NoVizFallback";
 
     private static ImmediateWindowProvider provider;
 
     private static ProgressMeter earlyProgress;
 
-    public static void load(final String launchTarget, final String[] arguments) {
-        final var layer = Launcher.INSTANCE.findLayerManager()
-                .flatMap(manager -> manager.getLayer(Layer.SERVICE))
-                .orElseThrow(() -> new IllegalStateException("Couldn't find SERVICE layer"));
-        ServiceLoader.load(layer, GraphicsBootstrapper.class)
-                .stream()
-                .map(ServiceLoader.Provider::get)
-                .forEach(bootstrap -> {
-                    LOGGER.debug("Invoking bootstrap method {}", bootstrap.name());
-                    bootstrap.bootstrap(arguments);
-                });
-        if (!List.of("neoforgeclient", "neoforgeclientdev").contains(launchTarget)) {
-            provider = new DummyProvider();
-            LOGGER.info("ImmediateWindowProvider not loading because launch target is {}", launchTarget);
-        } else if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)) {
-            provider = new DummyProvider();
-            LOGGER.info("ImmediateWindowProvider not loading because splash screen is disabled");
-        } else {
-            final var providername = FMLConfig.getConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER);
-            LOGGER.info("Loading ImmediateWindowProvider {}", providername);
-            final var maybeProvider = ServiceLoader.load(layer, ImmediateWindowProvider.class)
-                    .stream()
-                    .map(ServiceLoader.Provider::get)
-                    .filter(p -> Objects.equals(p.name(), providername))
-                    .findFirst();
-            provider = maybeProvider.or(() -> {
-                LOGGER.info("Failed to find ImmediateWindowProvider {}, disabling", providername);
-                return Optional.of(new DummyProvider());
-            }).orElseThrow();
-        }
-        // Only update config if the provider isn't the dummy provider
-        if (!Objects.equals(provider.name(), "dummyprovider"))
-            FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER, provider.name());
-        FMLLoader.progressWindowTick = provider.initialize(arguments);
+    public static void load(boolean headless, ProgramArgs arguments) {
         earlyProgress = StartupNotificationManager.addProgressBar("EARLY", 0);
         earlyProgress.label("Bootstrapping Minecraft");
+
+        if (headless) {
+            provider = new HeadlessProvider();
+            LOGGER.info("Not loading early display in headless mode.");
+        } else {
+            ServiceLoader.load(GraphicsBootstrapper.class)
+                    .stream()
+                    .map(ServiceLoader.Provider::get)
+                    .forEach(bootstrap -> {
+                        LOGGER.debug("Invoking bootstrap method {}", bootstrap.name());
+                        bootstrap.bootstrap(arguments.getArguments()); // TODO: Should take ProgramArgs
+                    });
+            if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)) {
+                provider = new DummyProvider();
+                LOGGER.info("ImmediateWindowProvider not loading because splash screen is disabled");
+            } else {
+                final var providername = FMLConfig.getConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER);
+                LOGGER.info("Loading ImmediateWindowProvider {}", providername);
+                final var maybeProvider = ServiceLoader.load(ImmediateWindowProviderFactory.class)
+                        .stream()
+                        .map(ServiceLoader.Provider::get)
+                        .filter(p -> Objects.equals(p.name(), providername))
+                        .findFirst();
+                provider = maybeProvider
+                        .map(factory -> factory.create(arguments))
+                        .orElseGet(() -> {
+                            LOGGER.info("Failed to find ImmediateWindowProvider {}, disabling", providername);
+                            return new DummyProvider();
+                        });
+            }
+        }
+
+        FMLLoader.progressWindowTick = provider::periodicTick;
     }
 
     public static long setupMinecraftWindow(final IntSupplier width, final IntSupplier height, final Supplier<String> title, final LongSupplier monitor) {
@@ -110,21 +110,11 @@ public class ImmediateWindowHandler {
         provider.crash(message);
     }
 
-    private record DummyProvider() implements ImmediateWindowProvider {
+    private static final class DummyProvider implements ImmediateWindowProvider {
         private static Method NV_HANDOFF;
         private static Method NV_POSITION;
         private static Method NV_OVERLAY;
         private static Method NV_VERSION;
-
-        @Override
-        public String name() {
-            return "dummyprovider";
-        }
-
-        @Override
-        public Runnable initialize(String[] args) {
-            return () -> {};
-        }
 
         @Override
         public void updateFramebufferSize(final IntConsumer width, final IntConsumer height) {}
@@ -166,16 +156,22 @@ public class ImmediateWindowHandler {
         }
 
         @Override
-        public void updateModuleReads(final ModuleLayer layer) {
-            var fm = layer.findModule("neoforge");
-            if (fm.isPresent()) {
-                getClass().getModule().addReads(fm.get());
-                var clz = fm.map(l -> Class.forName(l, "net.neoforged.neoforge.client.loading.NoVizFallback")).orElseThrow();
-                var methods = Arrays.stream(clz.getMethods()).filter(m -> Modifier.isStatic(m.getModifiers())).collect(Collectors.toMap(Method::getName, Function.identity()));
-                NV_HANDOFF = methods.get("windowHandoff");
-                NV_OVERLAY = methods.get("loadingOverlay");
-                NV_POSITION = methods.get("windowPositioning");
-                NV_VERSION = methods.get("glVersion");
+        public void updateModuleReads(ModuleLayer layer) {
+            var nfModule = layer.findModule("neoforge").orElse(null);
+            if (nfModule != null) {
+                getClass().getModule().addReads(nfModule);
+                var clz = Class.forName(nfModule, HANDOFF_CLASS);
+                if (clz != null) {
+                    var methods = Arrays.stream(clz.getMethods()).filter(m -> Modifier.isStatic(m.getModifiers())).collect(Collectors.toMap(Method::getName, Function.identity()));
+                    NV_HANDOFF = methods.get("windowHandoff");
+                    NV_OVERLAY = methods.get("loadingOverlay");
+                    NV_POSITION = methods.get("windowPositioning");
+                    NV_VERSION = methods.get("glVersion");
+                } else {
+                    LOGGER.error("Cannot hand over Minecraft window to NeoForge, since class {} wasn't found in {}.", HANDOFF_CLASS, nfModule);
+                }
+            } else {
+                LOGGER.error("Cannot hand over Minecraft window to NeoForge, since module 'neoforge' wasn't found in {}.", layer);
             }
         }
 
@@ -187,6 +183,44 @@ public class ImmediateWindowHandler {
         @Override
         public void crash(final String message) {
             // NOOP for unsupported environments
+        }
+    }
+
+    private static final class HeadlessProvider implements ImmediateWindowProvider {
+        @Override
+        public void updateFramebufferSize(IntConsumer width, IntConsumer height) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long setupMinecraftWindow(IntSupplier width, IntSupplier height, Supplier<String> title, LongSupplier monitor) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean positionWindow(Optional<Object> monitor, IntConsumer widthSetter, IntConsumer heightSetter, IntConsumer xSetter, IntConsumer ySetter) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T> Supplier<T> loadingOverlay(Supplier<?> mc, Supplier<?> ri, Consumer<Optional<Throwable>> ex, boolean fade) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void updateModuleReads(ModuleLayer layer) {}
+
+        @Override
+        public void periodicTick() {}
+
+        @Override
+        public String getGLVersion() {
+            return "0";
+        }
+
+        @Override
+        public void crash(String message) {
+            throw new FatalStartupException(message);
         }
     }
 }

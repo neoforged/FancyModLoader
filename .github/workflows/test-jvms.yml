@@ -1,0 +1,54 @@
+name: Test Java Versions and Vendors
+
+on:
+  push:
+    branches:
+      - main
+      - 7.x
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  testjdks:
+    name: Test Java ${{ matrix.jdk }} ${{ matrix.jvm_version }}
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 10
+      fail-fast: false
+      matrix:
+        # We use the latest LTS available by Microsoft since that is used in Minecraft
+        # We also test J9 and the latest versions of Graal and Adoptium, since users have
+        # to explicitly download these, we do not check the LTS versions.
+        include:
+          - jdk: Adoptium
+            jvm_version: 23
+          - jdk: Graal_VM
+            jvm_version: 23
+          - jdk: IBM # J9
+            jvm_version: 21 # IBM only has 21
+          - jdk: Microsoft
+            jvm_version: 21 # MS OpenJDK only has LTS versions (21)
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@main
+        with:
+          fetch-depth: 0
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-disabled: true
+          add-job-summary: never
+      - name: Run Tests
+        run: ./gradlew test -Pjava_vendor=${{ matrix.jdk }} -Pjava_version=${{ matrix.jvm_version }}
+      - uses: actions/upload-artifact@v4
+        name: Upload Test Results
+        if: always()
+        with:
+          name: test_${{ matrix.jdk }}-${{ matrix.jvm_version }}
+          path: "**/build/reports/tests/**/*"

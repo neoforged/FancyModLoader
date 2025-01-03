@@ -18,9 +18,9 @@ public class JarModuleFinderBenchmark {
 
     @Setup
     public void setup() throws Exception {
-        path1 = Paths.get("src", "testjars", "testjar1.jar").toAbsolutePath().normalize();
-        path2 = Paths.get("src", "testjars", "testjar2.jar").toAbsolutePath().normalize();
-        path3 = Paths.get("src", "testjars", "testjar3.jar").toAbsolutePath().normalize();
+        path1 = Paths.get("src", "testJars", "testjar1.jar").toAbsolutePath().normalize();
+        path2 = Paths.get("src", "testJars", "testjar2.jar").toAbsolutePath().normalize();
+        path3 = Paths.get("src", "testJars", "testjar3.jar").toAbsolutePath().normalize();
     }
 
     @Benchmark

@@ -109,6 +109,7 @@ public interface IModFile {
      *
      * @param status The new status.
      */
+    @Deprecated(forRemoval = true)
     void setSecurityStatus(SecureJar.Status status);
 
     /**

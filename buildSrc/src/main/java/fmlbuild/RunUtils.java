@@ -48,6 +48,20 @@ final class RunUtils {
         }
     }
 
+    /**
+     * We remove the launch target.
+     */
+    static void cleanProgramArgs(List<String> programArgs) {
+        for (int i = 0; i < programArgs.size(); i++) {
+            var programArg = programArgs.get(i);
+            // Remove the classpath argument
+            if ("--launchTarget".equals(programArg)) {
+                programArgs.remove(i + 1);
+                programArgs.remove(i--);
+            }
+        }
+    }
+
     static void escapeJvmArgs(List<String> jvmArgs) {
         jvmArgs.replaceAll(RunUtils::escapeJvmArg);
     }

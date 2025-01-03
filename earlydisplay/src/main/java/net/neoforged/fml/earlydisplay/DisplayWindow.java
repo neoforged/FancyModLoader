@@ -107,13 +107,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private SimpleFont font;
     private Runnable repaintTick = () -> {};
 
-    @Override
-    public String name() {
-        return "fmlearlywindow";
-    }
-
-    @Override
-    public Runnable initialize(String[] arguments) {
+    public DisplayWindow(String[] arguments) {
         final OptionParser parser = new OptionParser();
         var mcversionopt = parser.accepts("fml.mcVersion").withRequiredArg().ofType(String.class);
         var forgeversionopt = parser.accepts("fml.neoForgeVersion").withRequiredArg().ofType(String.class);
@@ -149,7 +143,20 @@ public class DisplayWindow implements ImmediateWindowProvider {
         var forgeVersion = parsed.valueOf(forgeversionopt);
         StartupNotificationManager.modLoaderConsumer().ifPresent(c -> c.accept("NeoForge loading " + forgeVersion));
         performanceInfo = new PerformanceInfo();
-        return start(parsed.valueOf(mcversionopt), forgeVersion);
+        var mcVersion = parsed.valueOf(mcversionopt);
+        renderScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            final var thread = Executors.defaultThreadFactory().newThread(r);
+            thread.setDaemon(true);
+            return thread;
+        });
+        initWindow(mcVersion);
+        this.initializationFuture = renderScheduler.schedule(() -> {
+            try {
+                initRender(mcVersion, forgeVersion);
+            } catch (Exception e) {
+                LOGGER.error("Failed to initialize DisplayWindow for early progress.", e);
+            }
+        }, 1, TimeUnit.MILLISECONDS);
     }
 
     private static final long MINFRAMETIME = TimeUnit.MILLISECONDS.toNanos(10); // This is the FPS cap on the window - note animation is capped at 20FPS via the tickTimer
@@ -199,7 +206,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
      *
      * Nothing fancy, we just want to draw and render text.
      */
-    private void initRender(final @Nullable String mcVersion, final String forgeVersion) {
+    private void initRender(final @Nullable String mcVersion, final @Nullable String forgeVersion) {
         // This thread owns the GL render context now. We should make a note of that.
         glfwMakeContextCurrent(window);
         // Wait for one frame to be complete before swapping; enable vsync in other words.
@@ -227,10 +234,20 @@ public class DisplayWindow implements ImmediateWindowProvider {
             LOGGER.error("Crash during font initialization", t);
             crashElegantly("An error occurred initializing a font for rendering. " + t.getMessage());
         }
+        StringBuilder versionText = new StringBuilder();
+        if (mcVersion != null) {
+            versionText.append(mcVersion);
+        }
+        if (forgeVersion != null) {
+            if (!versionText.isEmpty()) {
+                versionText.append(" - ");
+            }
+            versionText.append(forgeVersion.split("-")[0]);
+        }
         this.elements = new ArrayList<>(Arrays.asList(
                 RenderElement.fox(font),
                 RenderElement.logMessageOverlay(font),
-                RenderElement.forgeVersionOverlay(font, mcVersion + "-" + forgeVersion.split("-")[0]),
+                RenderElement.forgeVersionOverlay(font, versionText.toString()),
                 RenderElement.performanceBar(font),
                 RenderElement.progressBars(font)));
 
@@ -275,20 +292,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
         framebuffer.deactivate();
         glBindVertexArray(currentVAO);
         glBindFramebuffer(GL_FRAMEBUFFER, currentFB);
-    }
-
-    /**
-     * Start the window and Render Thread; we're ready to go.
-     */
-    public Runnable start(@Nullable String mcVersion, final String forgeVersion) {
-        renderScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-            final var thread = Executors.defaultThreadFactory().newThread(r);
-            thread.setDaemon(true);
-            return thread;
-        });
-        initWindow(mcVersion);
-        this.initializationFuture = renderScheduler.schedule(() -> initRender(mcVersion, forgeVersion), 1, TimeUnit.MILLISECONDS);
-        return this::periodicTick;
     }
 
     private static final String ERROR_URL = "https://links.neoforged.net/early-display-errors";
@@ -600,11 +603,15 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     @Override
     public void updateModuleReads(final ModuleLayer layer) {
-        var fm = layer.findModule("neoforge").orElseThrow();
-        getClass().getModule().addReads(fm);
-        var clz = Class.forName(fm, "net.neoforged.neoforge.client.loading.NeoForgeLoadingOverlay");
-        var methods = Arrays.stream(clz.getMethods()).filter(m -> Modifier.isStatic(m.getModifiers())).collect(Collectors.toMap(Method::getName, Function.identity()));
-        loadingOverlay = methods.get("newInstance");
+        var fm = layer.findModule("neoforge").orElse(null);
+        if (fm != null) {
+            getClass().getModule().addReads(fm);
+            var clz = Class.forName(fm, "net.neoforged.neoforge.client.loading.NeoForgeLoadingOverlay");
+            var methods = Arrays.stream(clz.getMethods()).filter(m -> Modifier.isStatic(m.getModifiers())).collect(Collectors.toMap(Method::getName, Function.identity()));
+            loadingOverlay = methods.get("newInstance");
+        } else {
+            LOGGER.error("Minecraft loaded, but no neoforge was found to hand the Window over to...");
+        }
     }
 
     public int getFramebufferTextureId() {

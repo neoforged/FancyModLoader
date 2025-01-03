@@ -18,8 +18,6 @@ import static cpw.mods.modlauncher.LogMarkers.LAUNCHPLUGIN;
 import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 
 import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
@@ -29,7 +27,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -45,11 +42,6 @@ public class LaunchPluginHandler {
     private static final Logger LOGGER = LogManager.getLogger();
     private final Map<String, ILaunchPluginService> plugins;
 
-    public LaunchPluginHandler(final ModuleLayerHandler layerHandler) {
-        this(ServiceLoaderUtils.streamServiceLoader(() -> ServiceLoader.load(layerHandler.getLayer(IModuleLayerManager.Layer.BOOT).orElseThrow(), ILaunchPluginService.class),
-                e -> LOGGER.fatal(MODLAUNCHER, "Encountered serious error loading launch plugin service. Things will not work well", e)));
-    }
-
     @VisibleForTesting
     public LaunchPluginHandler(Stream<ILaunchPluginService> plugins) {
         this.plugins = plugins.collect(Collectors.toMap(ILaunchPluginService::name, Function.identity()));
@@ -58,12 +50,6 @@ public class LaunchPluginHandler {
                 "type", "PLUGINSERVICE",
                 "file", ServiceLoaderUtils.fileNameFor(e.getValue().getClass())))
                 .toList();
-        if (Launcher.INSTANCE != null) {
-            Launcher.INSTANCE.environment().getProperty(IEnvironment.Keys.MODLIST.get())
-                    .ifPresentOrElse(mods -> mods.addAll(modlist), () -> {
-                        throw new RuntimeException("The MODLIST isn't set, huh?");
-                    });
-        }
         LOGGER.debug(MODLAUNCHER, "Found launch plugins: [{}]", () -> String.join(",", this.plugins.keySet()));
     }
 
@@ -86,7 +72,7 @@ public class LaunchPluginHandler {
         return phaseObjectEnumMap;
     }
 
-    void offerScanResultsToPlugins(List<SecureJar> scanResults) {
+    public void offerScanResultsToPlugins(List<SecureJar> scanResults) {
         plugins.forEach((n, p) -> p.addResources(scanResults));
     }
 
@@ -105,7 +91,7 @@ public class LaunchPluginHandler {
         return flags;
     }
 
-    void announceLaunch(final TransformingClassLoader transformerLoader, final NamedPath[] specialPaths) {
+    public void announceLaunch(final TransformingClassLoader transformerLoader, final NamedPath[] specialPaths) {
         plugins.forEach((k, p) -> p.initializeLaunch((s -> transformerLoader.buildTransformedClassNodeFor(s, k)), specialPaths));
     }
 }
