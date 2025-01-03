@@ -15,7 +15,7 @@ dependencies {
 publishing {
     publications {
         maven(MavenPublication) {
-            artifactId = base.archivesName
+            artifactId = base.archivesName.get()
         }
     }
 }
