@@ -142,7 +142,6 @@ public abstract class LauncherTest {
                 launchTarget.forcedDist,
                 true,
                 new String[] {
-                        "--fml.fmlVersion", SimulatedInstallation.FML_VERSION,
                         "--fml.mcVersion", SimulatedInstallation.MC_VERSION,
                         "--fml.neoForgeVersion", SimulatedInstallation.NEOFORGE_VERSION,
                         "--fml.neoFormVersion", SimulatedInstallation.NEOFORM_VERSION

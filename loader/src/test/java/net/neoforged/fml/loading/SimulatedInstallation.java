@@ -80,7 +80,6 @@ public class SimulatedInstallation implements AutoCloseable {
     public static final String LIBRARIES_DIRECTORY_PROPERTY = "libraryDirectory";
     public static final String MOD_FOLDERS_PROPERTIES = "fml.modFolders";
     public static final String NEOFORGE_VERSION = "20.4.9999";
-    public static final String FML_VERSION = "3.0.9999";
     public static final String MC_VERSION = "1.20.4";
     public static final String NEOFORM_VERSION = "202401020304";
     // Simulates the runtime directory passed to the game (present in every directory)

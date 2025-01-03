@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import net.neoforged.fml.FMLVersion;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModWorkManager;
@@ -342,11 +343,12 @@ class FMLLoaderTest extends LauncherTest {
         @ParameterizedTest
         @CsvSource(textBlock = """
                 unknownloader|[1.0]|ERROR: Mod File mods/testmod.jar needs language provider unknownloader:1.0 to load\\nWe have found -
-                javafml|[1.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:1.0 to load\\nWe have found 3.0.9999
-                javafml|[999.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:999.0 to load\\nWe have found 3.0.9999
+                javafml|[1.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:1.0 to load\\nWe have found $VERSION
+                javafml|[999.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:999.0 to load\\nWe have found $VERSION
                 """, delimiter = '|')
         void testIncompatibleLoaderVersions(String requestedLoader, String requestedVersionRange, String expectedError) throws Exception {
             expectedError = expectedError.replace("\\n", "\n");
+            expectedError = expectedError.replace("$VERSION", FMLVersion.getVersion());
 
             installation.setupProductionClient();
             installation.buildModJar("testmod.jar")
