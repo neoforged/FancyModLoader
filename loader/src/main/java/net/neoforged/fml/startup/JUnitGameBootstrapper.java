@@ -5,9 +5,11 @@
 
 package net.neoforged.fml.startup;
 
+import net.neoforged.fml.loading.FMLLoader;
+
 /**
  * Run when FML is bootstrapped in a unit testing context.
  */
 public interface JUnitGameBootstrapper {
-    void bootstrap();
+    void bootstrap(FMLLoader loader);
 }

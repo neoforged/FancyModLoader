@@ -15,6 +15,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.Set;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.startup.FmlInstrumentation;
 import net.neoforged.fml.startup.JUnitGameBootstrapper;
@@ -44,20 +45,22 @@ public class JUnitService implements LauncherSessionListener {
             throw new UncheckedIOException("Failed to create game directory", e);
         }
 
-        FMLLoader.create(
+        var loader = FMLLoader.create(
                 instrumentation,
                 new StartupArgs(
                         gameDir,
                         gameDir.resolve(".cache"),
                         true,
-                        null,
+                        Dist.DEDICATED_SERVER,
+                        /* Do not prevent client classes from loading in unit tests in general */
+                        false,
                         new String[] {},
                         Set.of(),
                         List.of(),
                         Thread.currentThread().getContextClassLoader()));
 
         for (var bootstrapper : ServiceLoader.load(JUnitGameBootstrapper.class)) {
-            bootstrapper.bootstrap();
+            bootstrapper.bootstrap(loader);
         }
     }
 

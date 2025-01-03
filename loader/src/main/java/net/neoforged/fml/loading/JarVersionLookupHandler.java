@@ -7,6 +7,7 @@ package net.neoforged.fml.loading;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Properties;
@@ -17,24 +18,12 @@ import java.util.Properties;
 public class JarVersionLookupHandler {
     public static Optional<String> getVersion(final Class<?> clazz) {
         if (clazz.getModule() != null && clazz.getModule().getName() != null) {
+            // Named modules can be versioned directly via their jar file.
             if (clazz.getModule().getDescriptor() != null) {
                 var version = clazz.getModule().getDescriptor().rawVersion();
                 if (version.isPresent()) {
                     return version;
                 }
-            }
-
-            // the version.properties file was written by a Gradle task in the project
-            try (var in = clazz.getModule().getResourceAsStream("version.properties")) {
-                if (in == null) {
-                    return Optional.empty();
-                }
-
-                var properties = new Properties();
-                properties.load(new InputStreamReader(in, StandardCharsets.UTF_8));
-                return Optional.ofNullable(properties.getProperty("projectVersion"));
-            } catch (IOException e) {
-                return Optional.empty();
             }
         }
 
@@ -44,5 +33,25 @@ public class JarVersionLookupHandler {
         }
 
         return Optional.empty();
+    }
+
+    public static String getVersion(ClassLoader loader, String group, String artifact) {
+        // the version.properties file was written by a Gradle task in the project
+        String versionFile = "META-INF/versions/" + group + "." + artifact;
+        try (var in = loader.getResourceAsStream(versionFile)) {
+            if (in == null) {
+                throw new IllegalStateException("Failed to find version marker file " + versionFile);
+            }
+
+            var properties = new Properties();
+            properties.load(new InputStreamReader(in, StandardCharsets.UTF_8));
+            var version = properties.getProperty("projectVersion");
+            if (version == null) {
+                throw new IllegalStateException("Version marker file " + versionFile + " was found, but did not have a projectVersion property");
+            }
+            return version;
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read version marker file " + versionFile, e);
+        }
     }
 }

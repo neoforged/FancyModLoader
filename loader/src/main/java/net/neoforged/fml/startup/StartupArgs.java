@@ -15,9 +15,11 @@ import org.jetbrains.annotations.Nullable;
 /**
  * @param gameDirectory
  * @param headless
- * @param forcedDist                If set to null, the distribution being launched is auto-detected, otherwise it is set to this.
+ * @param dist                      If set to null, the distribution being launched is auto-detected, otherwise it is set to this.
  *                                  In a dev-environment where a "joined" distribution is being used, this parameter also disables
  *                                  access to classes and resources of the inactive distribution.
+ * @param cleanDist                 If enabled, the loader will try to prevent loading Minecraft classes that do not belong to {@code dist}, but are
+ *                                  otherwise present on the classpath (i.e. in joined distribution scenarios in development).
  * @param programArgs
  * @param claimedFiles
  * @param unclaimedClassPathEntries
@@ -27,7 +29,8 @@ public record StartupArgs(
         Path gameDirectory,
         Path cacheRoot,
         boolean headless,
-        @Nullable Dist forcedDist,
+        @Nullable Dist dist,
+        boolean cleanDist,
         String[] programArgs,
         Set<File> claimedFiles,
         List<File> unclaimedClassPathEntries,

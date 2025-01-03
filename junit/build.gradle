@@ -2,7 +2,9 @@ plugins {
     id 'java-library'
 }
 
-archivesBaseName = 'junit-fml'
+base {
+    archivesName = 'junit-fml'
+}
 
 dependencies {
     implementation(platform("org.junit:junit-bom:$jupiter_version"))
@@ -13,7 +15,7 @@ dependencies {
 publishing {
     publications {
         maven(MavenPublication) {
-            artifactId = archivesBaseName
+            artifactId = base.archivesName
         }
     }
 }

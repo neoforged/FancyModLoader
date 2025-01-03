@@ -52,6 +52,7 @@ import java.util.stream.Stream;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.accesstransformer.ml.AccessTransformerService;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.FMLVersion;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.asm.RuntimeDistCleaner;
@@ -153,7 +154,7 @@ public final class FMLLoader implements AutoCloseable {
 
         LOGGER.info(
                 "Starting FancyModLoader version {} ({} in {})",
-                JarVersionLookupHandler.getVersion(FMLLoader.class).orElse("UNKNOWN"),
+                FMLVersion.getVersion(),
                 dist,
                 production ? "PROD" : "DEV");
 
@@ -210,7 +211,7 @@ public final class FMLLoader implements AutoCloseable {
         var loader = new FMLLoader(
                 initialLoader,
                 startupArgs.programArgs(),
-                Objects.requireNonNullElseGet(startupArgs.forcedDist(), () -> detectDist(initialLoader)),
+                Objects.requireNonNullElseGet(startupArgs.dist(), () -> detectDist(initialLoader)),
                 detectProduction(initialLoader),
                 startupArgs.gameDirectory(),
                 startupArgs.cacheRoot());
@@ -248,7 +249,9 @@ public final class FMLLoader implements AutoCloseable {
             // as mod discovery will add its results to these engines directly.
             accessTransformer = addLaunchPlugin(launchContext, launchPlugins, new AccessTransformerService()).engine;
             addLaunchPlugin(launchContext, launchPlugins, new RuntimeEnumExtender());
-            addLaunchPlugin(launchContext, launchPlugins, new RuntimeDistCleaner(loader.dist));
+            if (startupArgs.cleanDist()) {
+                addLaunchPlugin(launchContext, launchPlugins, new RuntimeDistCleaner(loader.dist));
+            }
             addLaunchPlugin(launchContext, launchPlugins, mixinFacade.getLaunchPlugin());
 
             discoveryResult = runOffThread(loader::runDiscovery);

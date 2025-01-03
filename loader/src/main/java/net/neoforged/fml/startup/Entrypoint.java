@@ -30,7 +30,7 @@ import org.apache.logging.log4j.core.config.Configurator;
 public abstract class Entrypoint {
     Entrypoint() {}
 
-    protected static FMLLoader startup(String[] args, boolean headless, Dist forcedDist) {
+    protected static FMLLoader startup(String[] args, boolean headless, Dist dist) {
         StartupLog.debug("JVM Uptime: {}ms", ManagementFactory.getRuntimeMXBean().getUptime());
 
         args = ArgFileExpander.expandArgFiles(args);
@@ -65,7 +65,8 @@ public abstract class Entrypoint {
                 gameDir,
                 cacheDir,
                 headless,
-                forcedDist,
+                dist,
+                true,
                 args,
                 new HashSet<>(),
                 listClasspathEntries(),

@@ -14,7 +14,6 @@ public class InDevModulePlugin implements Plugin<Project> {
         var createVersionProperties = project.getTasks().register("createVersionProperties", WriteVersionPropertiesTask.class, task -> {
             task.setDescription("Generates a Module version properties file for use during development and containing more information for production as well.");
             task.getOutputDirectory().set(generatedVersionDir);
-            task.getProjectVersion().set(project.provider(() -> project.getVersion().toString()));
         });
         mainSourceSet.getResources().srcDir(createVersionProperties.flatMap(WriteVersionPropertiesTask::getOutputDirectory));
     }

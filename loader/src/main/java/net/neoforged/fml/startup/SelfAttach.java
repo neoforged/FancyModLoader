@@ -6,13 +6,12 @@
 package net.neoforged.fml.startup;
 
 import com.sun.tools.attach.VirtualMachine;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
+import net.neoforged.fml.util.ClasspathResourceUtils;
 
 /**
  * Used out-of-process to attach our agent to the current VM.
@@ -63,27 +62,14 @@ public class SelfAttach {
     /**
      * Gets a Java class-path item that allows the JVM to load this class.
      */
-    public static String getClassPathItem() throws Exception {
-        var relativeClassPath = "/" + SelfAttach.class.getName().replace('.', '/') + ".class";
-        var locationUrl = SelfAttach.class.getResource(relativeClassPath);
-        if (locationUrl == null) {
-            throw new IllegalStateException("Couldn't find SelfAttach class on class-path at " + relativeClassPath);
-        }
-        var location = locationUrl.toURI();
-        if ("file".equals(location.getScheme())) {
-            var classpathDir = Paths.get(location);
+    public static String getClassPathItem() {
+        var relativeClassPath = SelfAttach.class.getName().replace('.', '/') + ".class";
+        var classPathItem = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath(SelfAttach.class.getClassLoader(), relativeClassPath);
 
-            var expectedPath = classpathDir.resolve(SelfAttach.class.getName().replace('.', '/') + ".class");
-            if (!Files.isRegularFile(expectedPath)) {
-                throw new IllegalStateException("Expected SelfAttach at " + expectedPath + " but couldn't find it.");
-            }
-
-            return classpathDir.toAbsolutePath().toString();
-        } else if (location.getScheme().equals("jar") && location.getRawSchemeSpecificPart().contains("!/")) {
-            int lastExcl = location.getRawSchemeSpecificPart().lastIndexOf("!/");
-            return Paths.get(new URI(location.getRawSchemeSpecificPart().substring(0, lastExcl))).toAbsolutePath().toString();
-        } else {
-            throw new IllegalStateException("Class path resource for SelfAttach uses unknown scheme: " + location.getScheme());
+        if (classPathItem == null) {
+            throw new IllegalStateException("Failed to find SelfAttach class file on classpath");
         }
+
+        return classPathItem.toAbsolutePath().toString();
     }
 }

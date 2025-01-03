@@ -71,10 +71,10 @@ public final class FmlInstrumentation {
         // get the "real" agent, we specifically grab the class from the system CL.
         var devAgent = Class.forName("net.neoforged.fml.startup.DevAgent", true, ClassLoader.getSystemClassLoader());
         var instrumentation = (Instrumentation) devAgent.getMethod("getInstrumentation").invoke(null);
-        StartupLog.info("Using our own agent");
         if (instrumentation == null) {
             throw new IllegalStateException("Our DevAgent was not attached. Pass an appropriate -javaagent parameter.");
         }
+        StartupLog.info("Using our own agent");
         return instrumentation;
     }
 }

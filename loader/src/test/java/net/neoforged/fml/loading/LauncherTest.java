@@ -140,6 +140,7 @@ public abstract class LauncherTest {
                 installation.getGameDir().resolve(".cache"),
                 true,
                 launchTarget.forcedDist,
+                true,
                 new String[] {
                         "--fml.fmlVersion", SimulatedInstallation.FML_VERSION,
                         "--fml.mcVersion", SimulatedInstallation.MC_VERSION,
