@@ -58,6 +58,7 @@ import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.asm.RuntimeDistCleaner;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
 import net.neoforged.fml.i18n.FMLTranslations;
+import net.neoforged.fml.jfr.ClassTransformerProfiler;
 import net.neoforged.fml.loading.mixin.MixinFacade;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
@@ -319,6 +320,7 @@ public final class FMLLoader implements AutoCloseable {
             // We inlined this: transformationServicesHandler.buildTransformingClassLoader...
 
             var classTransformer = ClassTransformerFactory.create(launchContext, launchPluginHandler, loadingModList);
+            loader.ownedResources.add(new ClassTransformerProfiler(classTransformer));
             var transformingLoader = loader.buildTransformingLoader(classTransformer, gameContent);
 
             // From here on out, try loading through the TCL

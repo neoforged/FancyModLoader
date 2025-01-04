@@ -27,10 +27,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -57,6 +57,9 @@ public class ClassTransformer {
     private final TransformStore transformers;
     private final LaunchPluginHandler pluginHandler;
     private final TransformerAuditTrail auditTrail;
+    private final AtomicLong transformedClasses = new AtomicLong();
+    private final AtomicLong classParsingTime = new AtomicLong();
+    private final AtomicLong classTransformingTime = new AtomicLong();
 
     public ClassTransformer(TransformStore transformStore, LaunchPluginHandler pluginHandler) {
         this(transformStore, pluginHandler, new TransformerAuditTrail());
@@ -72,78 +75,92 @@ public class ClassTransformer {
         final String internalName = className.replace('.', '/');
         final Type classDesc = Type.getObjectType(internalName);
 
-        final EnumMap<ILaunchPluginService.Phase, List<ILaunchPluginService>> launchPluginTransformerSet = pluginHandler.computeLaunchPluginTransformerSet(classDesc, inputClass.length == 0, reason, this.auditTrail);
+        var launchPluginTransformerSet = pluginHandler.computeLaunchPluginTransformerSet(classDesc, inputClass.length == 0, reason, this.auditTrail);
 
         var classTransforms = transformers.getClassTransforms(className);
         if (classTransforms == null && launchPluginTransformerSet.isEmpty()) {
             return inputClass;
         }
 
-        ClassNode clazz = new ClassNode(Opcodes.ASM9);
+        transformedClasses.incrementAndGet();
+
+        ClassNode clazz;
         Supplier<byte[]> digest;
         boolean empty;
-        if (inputClass.length > 0) {
-            final ClassReader classReader = new ClassReader(inputClass);
-            classReader.accept(clazz, ClassReader.EXPAND_FRAMES);
-            digest = () -> getSha256().digest(inputClass);
-            empty = false;
-        } else {
-            clazz.name = classDesc.getInternalName();
-            clazz.version = 52;
-            clazz.superName = "java/lang/Object";
-            digest = () -> getSha256().digest(EMPTY);
-            empty = true;
+        long classParseStart = System.nanoTime();
+        try {
+            clazz = new ClassNode(Opcodes.ASM9);
+            if (inputClass.length > 0) {
+                final ClassReader classReader = new ClassReader(inputClass);
+                classReader.accept(clazz, ClassReader.EXPAND_FRAMES);
+                digest = () -> getSha256().digest(inputClass);
+                empty = false;
+            } else {
+                clazz.name = classDesc.getInternalName();
+                clazz.version = 52;
+                clazz.superName = "java/lang/Object";
+                digest = () -> getSha256().digest(EMPTY);
+                empty = true;
+            }
+        } finally {
+            classParsingTime.addAndGet(System.nanoTime() - classParseStart);
         }
         auditTrail.addReason(classDesc.getClassName(), reason);
 
-        final int preFlags = pluginHandler.offerClassNodeToPlugins(ILaunchPluginService.Phase.BEFORE, launchPluginTransformerSet.getOrDefault(ILaunchPluginService.Phase.BEFORE, Collections.emptyList()), clazz, classDesc, auditTrail, reason);
-        if (preFlags == ILaunchPluginService.ComputeFlags.NO_REWRITE && classTransforms == null && launchPluginTransformerSet.getOrDefault(ILaunchPluginService.Phase.AFTER, Collections.emptyList()).isEmpty()) {
-            // Shortcut if there's no further work to do
-            return inputClass;
-        }
+        long transformStart = System.nanoTime();
+        try {
 
-        if (classTransforms != null) {
-            VotingContext context = new VotingContext(className, empty, digest, auditTrail.getActivityFor(className), reason);
-
-            clazz = this.performVote(classTransforms.preTransformers, clazz, context);
-
-            List<FieldNode> fieldList = new ArrayList<>(clazz.fields.size());
-            // it's probably possible to inject "dummy" fields into this list for spawning new fields without class transform
-            for (FieldNode field : clazz.fields) {
-                var fieldTransformers = classTransforms.getForField(field.name, field.desc);
-                fieldList.add(this.performVote(fieldTransformers, field, context));
+            final int preFlags = pluginHandler.offerClassNodeToPlugins(ILaunchPluginService.Phase.BEFORE, launchPluginTransformerSet.getOrDefault(ILaunchPluginService.Phase.BEFORE, Collections.emptyList()), clazz, classDesc, auditTrail, reason);
+            if (preFlags == ILaunchPluginService.ComputeFlags.NO_REWRITE && classTransforms == null && launchPluginTransformerSet.getOrDefault(ILaunchPluginService.Phase.AFTER, Collections.emptyList()).isEmpty()) {
+                // Shortcut if there's no further work to do
+                return inputClass;
             }
 
-            // it's probably possible to inject "dummy" methods into this list for spawning new methods without class transform
-            List<MethodNode> methodList = new ArrayList<>(clazz.methods.size());
-            for (MethodNode method : clazz.methods) {
-                var methodTransformers = classTransforms.getForMethod(method.name, method.desc);
-                methodList.add(this.performVote(methodTransformers, method, context));
+            if (classTransforms != null) {
+                VotingContext context = new VotingContext(className, empty, digest, auditTrail.getActivityFor(className), reason);
+
+                clazz = this.performVote(classTransforms.preTransformers, clazz, context);
+
+                List<FieldNode> fieldList = new ArrayList<>(clazz.fields.size());
+                // it's probably possible to inject "dummy" fields into this list for spawning new fields without class transform
+                for (FieldNode field : clazz.fields) {
+                    var fieldTransformers = classTransforms.getForField(field.name, field.desc);
+                    fieldList.add(this.performVote(fieldTransformers, field, context));
+                }
+
+                // it's probably possible to inject "dummy" methods into this list for spawning new methods without class transform
+                List<MethodNode> methodList = new ArrayList<>(clazz.methods.size());
+                for (MethodNode method : clazz.methods) {
+                    var methodTransformers = classTransforms.getForMethod(method.name, method.desc);
+                    methodList.add(this.performVote(methodTransformers, method, context));
+                }
+
+                clazz.fields = fieldList;
+                clazz.methods = methodList;
+                clazz = this.performVote(classTransforms.postTransformers, clazz, context);
             }
 
-            clazz.fields = fieldList;
-            clazz.methods = methodList;
-            clazz = this.performVote(classTransforms.postTransformers, clazz, context);
+            final int postFlags = pluginHandler.offerClassNodeToPlugins(ILaunchPluginService.Phase.AFTER, launchPluginTransformerSet.getOrDefault(ILaunchPluginService.Phase.AFTER, Collections.emptyList()), clazz, classDesc, auditTrail, reason);
+            if (preFlags == ILaunchPluginService.ComputeFlags.NO_REWRITE && postFlags == ILaunchPluginService.ComputeFlags.NO_REWRITE && classTransforms == null) {
+                return inputClass;
+            }
+
+            //Transformers always get compute_frames
+            int mergedFlags = classTransforms != null ? ILaunchPluginService.ComputeFlags.COMPUTE_FRAMES : (postFlags | preFlags);
+
+            //Don't compute frames when loading for frame computation to avoid cycles. The byte data will only be used for computing frames anyway
+            if (reason.equals(ITransformerActivity.COMPUTING_FRAMES_REASON))
+                mergedFlags &= ~ILaunchPluginService.ComputeFlags.COMPUTE_FRAMES;
+
+            final ClassWriter cw = TransformerClassWriter.createClassWriter(mergedFlags, loader, clazz);
+            clazz.accept(cw);
+            if (LOGGER.isEnabled(Level.TRACE) && ITransformerActivity.CLASSLOADING_REASON.equals(reason) && LOGGER.isEnabled(Level.TRACE, CLASSDUMP)) {
+                dumpClass(cw.toByteArray(), className);
+            }
+            return cw.toByteArray();
+        } finally {
+            classTransformingTime.addAndGet(System.nanoTime() - transformStart);
         }
-
-        final int postFlags = pluginHandler.offerClassNodeToPlugins(ILaunchPluginService.Phase.AFTER, launchPluginTransformerSet.getOrDefault(ILaunchPluginService.Phase.AFTER, Collections.emptyList()), clazz, classDesc, auditTrail, reason);
-        if (preFlags == ILaunchPluginService.ComputeFlags.NO_REWRITE && postFlags == ILaunchPluginService.ComputeFlags.NO_REWRITE && classTransforms == null) {
-            return inputClass;
-        }
-
-        //Transformers always get compute_frames
-        int mergedFlags = classTransforms != null ? ILaunchPluginService.ComputeFlags.COMPUTE_FRAMES : (postFlags | preFlags);
-
-        //Don't compute frames when loading for frame computation to avoid cycles. The byte data will only be used for computing frames anyway
-        if (reason.equals(ITransformerActivity.COMPUTING_FRAMES_REASON))
-            mergedFlags &= ~ILaunchPluginService.ComputeFlags.COMPUTE_FRAMES;
-
-        final ClassWriter cw = TransformerClassWriter.createClassWriter(mergedFlags, loader, clazz);
-        clazz.accept(cw);
-        if (LOGGER.isEnabled(Level.TRACE) && ITransformerActivity.CLASSLOADING_REASON.equals(reason) && LOGGER.isEnabled(Level.TRACE, CLASSDUMP)) {
-            dumpClass(cw.toByteArray(), className);
-        }
-        return cw.toByteArray();
     }
 
     private static Path tempDir;
@@ -217,6 +234,18 @@ public class ClassTransformer {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("HUH");
         }
+    }
+
+    public long getTransformedClasses() {
+        return transformedClasses.get();
+    }
+
+    public long getClassParsingTime() {
+        return classParsingTime.get();
+    }
+
+    public long getClassTransformingTime() {
+        return classTransformingTime.get();
     }
 
     public TransformerAuditTrail getAuditTrail() {

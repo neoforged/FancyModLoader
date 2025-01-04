@@ -44,9 +44,10 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
     @Override
     public EnumSet<Phase> handlesClass(Type classType, boolean isEmpty, String reason) {
         if (NAME.equals(reason)) {
-            return Phases.NONE;
+            return Phases.NONE; // We're recursively loading classes to look up inheritance hierarchies. Avoid infinite recursion.
         }
 
+        // Throw if the class was previously determined to be invalid
         String name = classType.getClassName();
         if (classTracker.isInvalidClass(name)) {
             throw new NoClassDefFoundError(String.format("%s is invalid", name));
@@ -71,7 +72,8 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
             }
 
             // Don't transform when the reason is mixin (side-loading in progress)
-            if (FMLMixinLaunchPlugin.NAME.equals(reason)) {
+            // NOTE: we opt-out in handlesClass too
+            if (NAME.equals(reason)) {
                 return false;
             }
 
