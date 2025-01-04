@@ -32,7 +32,7 @@ neoForgeInstallations {
         version = test_neoforge_version
         minecraftVersion = test_minecraft_version
         mainClass = "net.neoforged.fml.startup.Client"
-        // gameDir = "D:\\PrismInstances\\All the Mods 10 - ATM10\\minecraft"
+        gameDir = "D:\\PrismInstances\\All the Mods 10 - ATM10\\minecraft"
         // gameDir = "D:\\PrismInstances\\Enigmatica 10 - E10\\minecraft"
     }
     register("server", fmlbuild.NeoForgeServerInstallation) {

@@ -35,10 +35,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This locator finds mods and services that are passed via the classpath and are grouped explicitly.
+ * This locator finds mods and services that are passed as exploded folders on the classpath and are grouped explicitly.
  */
-public class InDevLocator implements IModFileCandidateLocator {
-    private static final Logger LOGGER = LoggerFactory.getLogger(InDevLocator.class);
+public class InDevFolderLocator implements IModFileCandidateLocator {
+    private static final Logger LOGGER = LoggerFactory.getLogger(InDevFolderLocator.class);
 
     private static final String VIRTUAL_JAR_MANIFEST_PATH = "build/virtualJarManifest.properties";
 
@@ -179,6 +179,6 @@ public class InDevLocator implements IModFileCandidateLocator {
 
     @Override
     public String toString() {
-        return "indev";
+        return "indevfolder";
     }
 }

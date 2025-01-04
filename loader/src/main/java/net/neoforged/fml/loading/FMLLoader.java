@@ -63,7 +63,8 @@ import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.locators.ClasspathLibrariesLocator;
 import net.neoforged.fml.loading.moddiscovery.locators.GameLocator;
-import net.neoforged.fml.loading.moddiscovery.locators.InDevLocator;
+import net.neoforged.fml.loading.moddiscovery.locators.InDevFolderLocator;
+import net.neoforged.fml.loading.moddiscovery.locators.InDevJarLocator;
 import net.neoforged.fml.loading.moddiscovery.locators.ModsFolderLocator;
 import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
@@ -186,6 +187,10 @@ public final class FMLLoader implements AutoCloseable {
             }
         }
         ownedResources.clear();
+
+        if (Thread.currentThread().getContextClassLoader() == currentClassLoader) {
+            Thread.currentThread().setContextClassLoader(originalClassLoader);
+        }
     }
 
     private void makeCurrent() {
@@ -254,10 +259,15 @@ public final class FMLLoader implements AutoCloseable {
             }
             addLaunchPlugin(launchContext, launchPlugins, mixinFacade.getLaunchPlugin());
 
-            discoveryResult = runOffThread(loader::runDiscovery);
+            if (startupArgs.headless()) {
+                discoveryResult = loader.runDiscovery();
+            } else {
+                discoveryResult = runOffThread(loader::runDiscovery);
+            }
             ClassLoadingGuardian classLoadingGuardian = null;
             if (instrumentation != null) {
                 classLoadingGuardian = new ClassLoadingGuardian(instrumentation, discoveryResult.gameContent);
+                loader.ownedResources.add(classLoadingGuardian);
             }
 
             for (var issue : discoveryResult.discoveryIssues()) {
@@ -313,7 +323,7 @@ public final class FMLLoader implements AutoCloseable {
 
             // From here on out, try loading through the TCL
             if (classLoadingGuardian != null) {
-                classLoadingGuardian.end(transformingLoader);
+                classLoadingGuardian.setAllowedClassLoader(transformingLoader);
             }
 
             // We're adding mixins *after* setting the Thread context classloader since
@@ -522,11 +532,10 @@ public final class FMLLoader implements AutoCloseable {
         var progress = StartupNotificationManager.prependProgressBar("Discovering mods...", 0);
 
         var additionalLocators = new ArrayList<IModFileCandidateLocator>();
-        // TODO: We want to be rid of this, but functionality needs to be ported
-        // TODO commonLaunchHandler.collectAdditionalModFileLocators(versionInfo, additionalLocators::add);
 
         additionalLocators.add(new GameLocator());
-        additionalLocators.add(new InDevLocator());
+        additionalLocators.add(new InDevFolderLocator());
+        additionalLocators.add(new InDevJarLocator());
         additionalLocators.add(new ModsFolderLocator());
         additionalLocators.add(new ClasspathLibrariesLocator());
 

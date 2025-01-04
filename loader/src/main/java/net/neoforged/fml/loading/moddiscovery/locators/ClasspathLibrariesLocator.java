@@ -11,12 +11,14 @@ import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 
 /**
- * Any file that remains will just be added to the library set.
+ * Any jar file that remains on the classpath will just be added to the library set, if they are not
+ * already accesible via class loader delegation.
+ * Jars that have explicit markings as FML mods or libs are handled by {@link InDevJarLocator}.
  */
 public class ClasspathLibrariesLocator implements IModFileCandidateLocator {
     @Override
     public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {
-        // When the application class-loader is reachable, do not run
+        // When the application class-loader is reachable, do not run, since libraries are already accessible then
         var loader = getClass().getClassLoader();
         do {
             if (loader == ClassLoader.getSystemClassLoader()) {
