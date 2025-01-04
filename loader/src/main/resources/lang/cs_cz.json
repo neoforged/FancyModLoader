@@ -18,7 +18,7 @@
   "fml.modloadingissue.discouragedmod.proceed": "Pokračuje na vlastní riziko",
   "fml.modloadingissue.duplicate_mod": "Mód §e{0}§r se vyskytuje ve více souborech: {1}",
   "fml.modloadingissue.depoverride.unknown_target": "Neznámý cíl pro přepsání závislosti Id §e{0}§r",
-  "fml.modloadingissue.depoverride.unknown_dependency": "Unknown mod §e{0}§r referenced in dependency overrides for mod §e{1}§r",
+  "fml.modloadingissue.depoverride.unknown_dependency": "Neznámý mód §e{0}§r odkazovaný v přepsáních závislostí pro mód §e{1}§r",
   "fml.modloading.duplicate_library": "Knihovna §e{3}§r se vyskytuje ve více souborech: {4}",
   "fml.modloading.incompatiblemod.noreason": "§eDůvod nebyl poskytnut§r",
   "fml.modloading.discouragedmod.noreason": "§eDůvod nebyl poskytnut§r",
