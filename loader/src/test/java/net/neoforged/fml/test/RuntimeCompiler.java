@@ -6,6 +6,7 @@
 package net.neoforged.fml.test;
 
 import com.google.errorprone.annotations.CheckReturnValue;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
@@ -72,6 +74,7 @@ public class RuntimeCompiler implements AutoCloseable {
     }
 
     public class CompilationBuilder {
+        private final List<Path> classpathItems = new ArrayList<>();
         private final List<JavaFileObject> files = new ArrayList<>();
 
         @CheckReturnValue
@@ -86,6 +89,12 @@ public class RuntimeCompiler implements AutoCloseable {
             return this;
         }
 
+        @CheckReturnValue
+        public CompilationBuilder addClasspathItem(Path classpathItem) {
+            classpathItems.add(classpathItem);
+            return this;
+        }
+
         public void compile() {
             if (files.isEmpty()) {
                 return;
@@ -93,6 +102,11 @@ public class RuntimeCompiler implements AutoCloseable {
 
             List<String> options = new ArrayList<>();
             options.add("-proc:none");
+
+            if (!classpathItems.isEmpty()) {
+                options.add("-cp");
+                options.add(classpathItems.stream().map(Path::toAbsolutePath).map(Path::toString).collect(Collectors.joining(File.pathSeparator)));
+            }
 
             var task = COMPILER.getTask(null, manager, diagnostics, options, null, files);
             if (!task.call()) {

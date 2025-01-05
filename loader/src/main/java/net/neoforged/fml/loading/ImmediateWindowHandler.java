@@ -69,8 +69,6 @@ public class ImmediateWindowHandler {
                         });
             }
         }
-
-        FMLLoader.progressWindowTick = provider::periodicTick;
     }
 
     public static long setupMinecraftWindow(final IntSupplier width, final IntSupplier height, final Supplier<String> title, final LongSupplier monitor) {

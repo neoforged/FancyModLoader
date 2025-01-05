@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -98,6 +99,10 @@ public class SimulatedInstallation implements AutoCloseable {
     // For a production server: The NF installer creates a "libraries" directory in the server root
     // In both cases, the location of this directory is passed via a System property "libraryDirectory"
     public SimulatedInstallation() throws IOException {
+        // Prevents Java from holding on to JarFiles in the background, preventing the cleanup of
+        // jars we create in tests in case any URLConnection is opened for content in them.
+        URLConnection.setDefaultUseCaches("jar", false);
+
         gameDir = Files.createTempDirectory("gameDir");
         librariesDir = Files.createTempDirectory("librariesDir");
         projectRoot = Files.createTempDirectory("projectRoot");

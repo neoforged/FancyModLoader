@@ -108,6 +108,11 @@ public class ModFileBuilder {
         return this;
     }
 
+    public ModFileBuilder addCompilationClasspath(Path classpathItem) {
+        compilationBuilder.addClasspathItem(classpathItem);
+        return this;
+    }
+
     public ModFileBuilder addTextFile(String path, String content) throws IOException {
         var p = memoryFsRoot.resolve(path);
         if (p.getParent() != null) {

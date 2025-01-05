@@ -4,6 +4,7 @@ plugins {
     id 'com.diffplug.spotless' version '6.25.0' apply false
     id 'net.neoforged.gradleutils' version "${gradleutils_version}"
     id 'net.neoforged.gradleutils.spotless' version "${gradleutils_version}" apply false
+    id 'org.jetbrains.gradle.plugin.idea-ext'
 }
 
 changelog {
@@ -72,19 +73,19 @@ allprojects {
 subprojects { subProject ->
     subProject.version = rootProject.version
 
-    apply plugin : fmlbuild.InDevModulePlugin
+    apply plugin: fmlbuild.InDevModulePlugin
 
     jar {
         manifest.attributes(
-                'Git-Commit'  : gradleutils.gitInfo.abbreviatedId,
+                'Git-Commit': gradleutils.gitInfo.abbreviatedId,
                 'Build-Number': "${subProject.version}",
-                'Automatic-Module-Name' : "fml_${subProject.name.replace("-", "_")}",
-                'Specification-Title'   : "FML${subProject.name}",
-                'Specification-Vendor'  : 'NeoForged',
-                'Specification-Version' : "${subProject.version.toString().split('\\.')[0]}",
-                'Implementation-Title'  : "FML $subProject.name",
+                'Automatic-Module-Name': "fml_${subProject.name.replace("-", "_")}",
+                'Specification-Title': "FML${subProject.name}",
+                'Specification-Vendor': 'NeoForged',
+                'Specification-Version': "${subProject.version.toString().split('\\.')[0]}",
+                'Implementation-Title': "FML $subProject.name",
                 'Implementation-Version': "${subProject.version.toString().split('\\.')[0]}.${subProject.version.toString().split('\\.')[1]}",
-                'Implementation-Vendor' : 'NeoForged'
+                'Implementation-Vendor': 'NeoForged'
         )
 
         if (subProject.name != 'junit') {
@@ -117,6 +118,26 @@ subprojects { subProject ->
 
         repositories {
             maven gradleutils.publishingMaven
+        }
+    }
+}
+
+configurations {
+    testJavaAgents {
+        description = "Used to resolve java agents attached to all JUnit configurations in IntelliJ"
+    }
+}
+dependencies {
+    // This should actually match the bytebuddy version used by Mockito, but the Mockito BOM sadly does not specify
+    testJavaAgents files("loader/devagent.jar")
+    testJavaAgents "net.bytebuddy:byte-buddy-agent:1.15.11"
+}
+
+// Make every JUnit test in IntelliJ load the devagent
+idea.project.settings {
+    runConfigurations {
+        defaults(org.jetbrains.gradle.ext.JUnit) {
+            vmParameters = configurations.testJavaAgents.collect { "-javaagent:" + it.absolutePath }.join(" ")
         }
     }
 }

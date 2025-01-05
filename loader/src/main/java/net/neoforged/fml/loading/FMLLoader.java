@@ -11,6 +11,7 @@ import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.ClassTransformer;
 import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.Launcher;
+import cpw.mods.modlauncher.ResourceMaskingClassLoader;
 import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
@@ -53,16 +54,17 @@ import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.accesstransformer.ml.AccessTransformerService;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.FMLVersion;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.asm.RuntimeDistCleaner;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
 import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.fml.jfr.ClassTransformerProfiler;
+import net.neoforged.fml.loading.mixin.FMLMixinService;
 import net.neoforged.fml.loading.mixin.MixinFacade;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
-import net.neoforged.fml.loading.moddiscovery.locators.ClasspathLibrariesLocator;
 import net.neoforged.fml.loading.moddiscovery.locators.GameLocator;
 import net.neoforged.fml.loading.moddiscovery.locators.InDevFolderLocator;
 import net.neoforged.fml.loading.moddiscovery.locators.InDevJarLocator;
@@ -71,6 +73,7 @@ import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import net.neoforged.fml.startup.FatalStartupException;
 import net.neoforged.fml.startup.StartupArgs;
+import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.language.IModFileInfo;
@@ -81,17 +84,10 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
+import org.spongepowered.asm.service.MixinService;
 
 public final class FMLLoader implements AutoCloseable {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static AccessTransformerEngine accessTransformer;
-    private static LanguageProviderLoader languageProviderLoader;
-    private static LoadingModList loadingModList;
-    public static Runnable progressWindowTick;
-    public static BackgroundScanHandler backgroundScanHandler;
-
-    @VisibleForTesting
-    static DiscoveryResult discoveryResult;
 
     private static final AtomicReference<@Nullable FMLLoader> current = new AtomicReference<>();
 
@@ -100,40 +96,35 @@ public final class FMLLoader implements AutoCloseable {
      */
     @Nullable
     private final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
-
     /**
      * The current tail of the class-loader chain. It is moved whenever a new set of Jars is loaded.
      */
     private ClassLoader currentClassLoader;
-
     /**
      * Resources owned by this loader, such as opened URL classloaders.
      */
     private final List<AutoCloseable> ownedResources = new ArrayList<>();
-
     private final ProgramArgs programArgs;
-
     private final Dist dist;
-
     private final boolean production;
-
     private final Path gameDir;
-
     private final Path cacheDir;
-
     private VersionInfo versionInfo;
-
     @Nullable
     private ModuleLayer gameLayer;
-
     /**
      * Used to track where Jar files we extract to disk originally came from. Used for error reporting.
      */
     private final Map<Path, String> jarSourceInfo = new HashMap<>();
-
     private final Set<Path> locatedPaths = new HashSet<>();
-
     private final List<File> unclaimedClassPathEntries = new ArrayList<>();
+    private AccessTransformerEngine accessTransformer;
+    private LanguageProviderLoader languageProviderLoader;
+    private LoadingModList loadingModList;
+    public Runnable progressWindowTick;
+    public BackgroundScanHandler backgroundScanHandler;
+    @VisibleForTesting
+    DiscoveryResult discoveryResult;
 
     @VisibleForTesting
     record DiscoveryResult(List<ModFile> pluginContent,
@@ -178,7 +169,14 @@ public final class FMLLoader implements AutoCloseable {
     @Override
     public void close() {
         LOGGER.info("Closing FML Loader {}", this);
-        current.compareAndExchange(this, null);
+        if (this == current.compareAndExchange(this, null)) {
+            // Clean up some further shared state
+            ModList.clear();
+            ModLoader.clear();
+            // The bytecode provider holds a static global strong reference to the entire class-loader chain
+            // which will keep JAR files opened.
+            ((FMLMixinService) MixinService.getService()).setBytecodeProvider(null);
+        }
 
         for (var ownedResource : ownedResources) {
             try {
@@ -248,18 +246,20 @@ public final class FMLLoader implements AutoCloseable {
             loader.loadEarlyServices();
 
             ImmediateWindowHandler.load(startupArgs.headless(), loader.programArgs);
+            loader.progressWindowTick = ImmediateWindowHandler::renderTick;
 
             var mixinFacade = new MixinFacade();
 
             // Add our own launch plugins explicitly. These do need to exist before mod discovery,
             // as mod discovery will add its results to these engines directly.
-            accessTransformer = addLaunchPlugin(launchContext, launchPlugins, new AccessTransformerService()).engine;
+            loader.accessTransformer = addLaunchPlugin(launchContext, launchPlugins, new AccessTransformerService()).engine;
             addLaunchPlugin(launchContext, launchPlugins, new RuntimeEnumExtender());
             if (startupArgs.cleanDist()) {
                 addLaunchPlugin(launchContext, launchPlugins, new RuntimeDistCleaner(loader.dist));
             }
             addLaunchPlugin(launchContext, launchPlugins, mixinFacade.getLaunchPlugin());
 
+            DiscoveryResult discoveryResult;
             if (startupArgs.headless()) {
                 discoveryResult = loader.runDiscovery();
             } else {
@@ -295,12 +295,10 @@ public final class FMLLoader implements AutoCloseable {
             // TODO -> MANIFEST.MF declaration net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider.class.getName()
 
             // Load Plugins
-            if (!loadingModList.getPlugins().isEmpty()) {
-                loader.loadPlugins(loadingModList.getPlugins());
-            }
+            loader.loadPlugins(loader.loadingModList.getPlugins());
 
             // Now go and build the language providers and let mods discover theirs
-            languageProviderLoader = new LanguageProviderLoader(launchContext);
+            loader.languageProviderLoader = new LanguageProviderLoader(launchContext);
             for (var modFile : discoveryResult.gameContent) {
                 modFile.identifyLanguage();
             }
@@ -319,7 +317,7 @@ public final class FMLLoader implements AutoCloseable {
             // We do not do this: launchService.validateLaunchTarget(argumentHandler);
             // We inlined this: transformationServicesHandler.buildTransformingClassLoader...
 
-            var classTransformer = ClassTransformerFactory.create(launchContext, launchPluginHandler, loadingModList);
+            var classTransformer = ClassTransformerFactory.create(launchContext, launchPluginHandler, loader.loadingModList);
             loader.ownedResources.add(new ClassTransformerProfiler(classTransformer));
             var transformingLoader = loader.buildTransformingLoader(classTransformer, gameContent);
 
@@ -331,14 +329,14 @@ public final class FMLLoader implements AutoCloseable {
             // We're adding mixins *after* setting the Thread context classloader since
             // Mixin stubbornly loads Mixin Configs via its ModLauncher environment using the TCL.
             // Adding containers beforehand will try to load Mixin configs using the app classloader and fail.
-            mixinFacade.finishInitialization(loadingModList, transformingLoader);
+            mixinFacade.finishInitialization(loader.loadingModList, transformingLoader);
 
             // This will initialize Mixins, for example
             launchPluginHandler.announceLaunch(transformingLoader, new NamedPath[0]);
 
             ImmediateWindowHandler.acceptGameLayer(loader.gameLayer);
             ImmediateWindowHandler.updateProgress("Launching minecraft");
-            progressWindowTick.run();
+            loader.progressWindowTick.run();
 
             return loader;
         } catch (RuntimeException | Error e) {
@@ -368,7 +366,7 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     private void unwrapSecureJar(String sourceDescription, SecureJar jar, Consumer<Path> sink) {
-        var basePaths = getBasePaths(jar);
+        var basePaths = getBasePaths(jar, false);
 
         for (var basePath : basePaths) {
             if (basePath.getFileSystem().provider().getScheme().equals("file")) {
@@ -408,6 +406,7 @@ public final class FMLLoader implements AutoCloseable {
      */
     private void appendLoader(String loaderName, List<Path> paths) {
         if (paths.isEmpty()) {
+            LOGGER.info("No additional classpath items for {} were found.", loaderName);
             return;
         }
 
@@ -441,9 +440,9 @@ public final class FMLLoader implements AutoCloseable {
         return info;
     }
 
-    private static List<Path> getBasePaths(SecureJar jar) {
+    private static List<Path> getBasePaths(SecureJar jar, boolean ignoreFilter) {
         var unionFs = (UnionFileSystem) jar.getRootPath().getFileSystem();
-        if (unionFs.getFilesystemFilter() != null) {
+        if (!ignoreFilter && unionFs.getFilesystemFilter() != null) {
             throw new IllegalStateException("Filtering for plugin jars is not supported: " + jar);
         }
 
@@ -457,7 +456,10 @@ public final class FMLLoader implements AutoCloseable {
         }
     }
 
-    private TransformingClassLoader buildTransformingLoader(ClassTransformer classTransformer, List<SecureJar> content) {
+    private TransformingClassLoader buildTransformingLoader(ClassTransformer classTransformer,
+            List<SecureJar> content) {
+        maskContentAlreadyOnClasspath(content);
+
         long start = System.currentTimeMillis();
 
         var parentLayers = List.of(ModuleLayer.boot());
@@ -486,6 +488,41 @@ public final class FMLLoader implements AutoCloseable {
         currentClassLoader = loader;
         Thread.currentThread().setContextClassLoader(loader);
         return loader;
+    }
+
+    /**
+     * If any location being added is already on the classpath, we add a masking classloader to ensure
+     * that resources are not double-reported when using getResources/getResource.
+     *
+     * The primary purpose of this is in mod and NeoForge development environments, where IDEs put the mod
+     * on the app classpath, but we also add it as content to the game layer. This method is responsible
+     * for setting up a classloader that prevents getResource/getResources from reporting Jar resources
+     * for both the jar on the App classpath and on the transforming classloader.
+     */
+    private void maskContentAlreadyOnClasspath(List<SecureJar> content) {
+        var classpathItems = ClasspathResourceUtils.getAllClasspathItems(currentClassLoader);
+
+        // Collect all paths that make up the game content, which are already on the classpath
+        Set<Path> needsMasking = new HashSet<>();
+        for (var secureJar : content) {
+            for (var basePath : getBasePaths(secureJar, true)) {
+                if (classpathItems.contains(basePath)) {
+                    needsMasking.add(basePath);
+                }
+            }
+        }
+
+        if (!needsMasking.isEmpty()) {
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("Masking classpath elements: {}", needsMasking.stream().map(this::formatPath).toList());
+            }
+
+            var maskedLoader = new ResourceMaskingClassLoader(currentClassLoader, needsMasking);
+            if (Thread.currentThread().getContextClassLoader() == currentClassLoader) {
+                Thread.currentThread().setContextClassLoader(maskedLoader);
+            }
+            currentClassLoader = maskedLoader;
+        }
     }
 
     private static String getModuleNameList(Configuration cf) {
@@ -539,7 +576,6 @@ public final class FMLLoader implements AutoCloseable {
         additionalLocators.add(new InDevFolderLocator());
         additionalLocators.add(new InDevJarLocator());
         additionalLocators.add(new ModsFolderLocator());
-        additionalLocators.add(new ClasspathLibrariesLocator());
 
         var modDiscoverer = new ModDiscoverer(new LaunchContextAdapter(), additionalLocators);
         var discoveryResult = modDiscoverer.discoverMods();
@@ -615,7 +651,7 @@ public final class FMLLoader implements AutoCloseable {
             }
 
             for (var accessTransformer : modFile.getAccessTransformers()) {
-                FMLLoader.addAccessTransformer(accessTransformer, modFile);
+                addAccessTransformer(accessTransformer, modFile);
             }
 
             var mods = modFile.getModInfos();
@@ -635,7 +671,7 @@ public final class FMLLoader implements AutoCloseable {
         }
         RuntimeEnumExtender.loadEnumPrototypes(enumExtensionsByMod);
 
-        return new DiscoveryResult(
+        return this.discoveryResult = new DiscoveryResult(
                 pluginContent,
                 gameContent,
                 issues);
@@ -670,10 +706,10 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     public static LanguageProviderLoader getLanguageLoadingProvider() {
-        return languageProviderLoader;
+        return current().languageProviderLoader;
     }
 
-    public static void addAccessTransformer(Path atPath, ModFile modName) {
+    private void addAccessTransformer(Path atPath, ModFile modName) {
         LOGGER.debug(LogMarkers.SCAN, "Adding Access Transformer in {}", modName.getFilePath());
         try {
             accessTransformer.loadATFromPath(atPath);
@@ -700,7 +736,7 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     public static LoadingModList getLoadingModList() {
-        return loadingModList;
+        return current().loadingModList;
     }
 
     public static Path getGamePath() {

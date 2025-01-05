@@ -90,12 +90,13 @@ public final class ModLoader {
      * @param periodicTask     Optional periodic task to perform on the main thread while other activities run
      */
     public static void gatherAndInitializeMods(final Executor syncExecutor, final Executor parallelExecutor, final Runnable periodicTask) {
+        var loader = FMLLoader.current();
         var loadingModList = FMLLoader.getLoadingModList();
         loadingIssues.addAll(loadingModList.getModLoadingIssues());
 
         ForgeFeature.registerFeature("javaVersion", ForgeFeature.VersionFeatureTest.forVersionString(IModInfo.DependencySide.BOTH, System.getProperty("java.version")));
         ForgeFeature.registerFeature("openGLVersion", ForgeFeature.VersionFeatureTest.forVersionString(IModInfo.DependencySide.CLIENT, ImmediateWindowHandler.getGLVersion()));
-        FMLLoader.backgroundScanHandler.waitForScanToComplete(periodicTask);
+        loader.backgroundScanHandler.waitForScanToComplete(periodicTask);
         final ModList modList = ModList.of(loadingModList.getModFiles().stream().map(ModFileInfo::getFile).toList(),
                 loadingModList.getMods());
 
@@ -406,9 +407,10 @@ public final class ModLoader {
 
     @VisibleForTesting
     @ApiStatus.Internal
-    public static void clearLoadingIssues() {
-        LOGGER.info("Clearing {} loading issues", loadingIssues.size());
+    public static void clear() {
+        LOGGER.info("Clearing ModLoader");
         loadingIssues.clear();
+        modList = null;
     }
 
     @ApiStatus.Internal

@@ -10,10 +10,12 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import net.bytebuddy.agent.ByteBuddyAgent;
 import net.neoforged.api.distmarker.Dist;
@@ -36,6 +38,8 @@ public abstract class LauncherTest {
     Set<Path> locatedPaths = new HashSet<>();
 
     protected FMLLoader loader;
+
+    private final List<AutoCloseable> ownedResources = new ArrayList<>();
 
     @BeforeAll
     static void ensureAddOpensForUnionFs() {
@@ -67,6 +71,13 @@ public abstract class LauncherTest {
             loader.close();
             loader = null;
         }
+        for (var ownedResource : ownedResources) {
+            ownedResource.close();
+        }
+        ownedResources.clear();
+
+        System.gc(); // A desperate attempt at cleaning up module loaders before trying to delete Jars
+
         installation.close();
     }
 
@@ -79,14 +90,17 @@ public abstract class LauncherTest {
     protected LaunchResult launchAndLoadWithAdditionalClasspath(LaunchMode launchTarget, List<Path> additionalClassPath) throws Exception {
         var urls = additionalClassPath.stream().map(path -> {
             try {
-                return path.toUri().toURL();
+                return path.normalize().toUri().toURL();
             } catch (MalformedURLException e) {
                 throw new RuntimeException(e);
             }
         }).toArray(URL[]::new);
 
         var previousCl = Thread.currentThread().getContextClassLoader();
-        try (var cl = new URLClassLoader(urls, getClass().getClassLoader())) {
+        var cl = new URLClassLoader(urls, getClass().getClassLoader());
+        ownedResources.add(cl);
+
+        try {
             Thread.currentThread().setContextClassLoader(cl);
             // launch represents the modlauncher portion
             var result = launch(launchTarget, additionalClassPath);
@@ -126,11 +140,7 @@ public abstract class LauncherTest {
     }
 
     private LaunchResult launch(LaunchMode launchTarget, List<Path> additionalClassPath) {
-        ModLoader.clearLoadingIssues();
-        var lml = FMLLoader.getLoadingModList();
-        if (lml != null) {
-            lml.getModLoadingIssues().clear();
-        }
+        ModLoader.clear();
 
         System.setProperty("fml.earlyWindowControl", "false");
 
@@ -167,7 +177,7 @@ public abstract class LauncherTest {
             modFile.getFile().getScanResult();
         }
 
-        var discoveryResult = FMLLoader.discoveryResult;
+        var discoveryResult = loader.discoveryResult;
 
         return new LaunchResult(
                 discoveryResult.pluginContent().stream().collect(
@@ -186,8 +196,6 @@ public abstract class LauncherTest {
     }
 
     private void loadMods() {
-        FMLLoader.progressWindowTick = () -> {};
-
         ModLoader.gatherAndInitializeMods(
                 Runnable::run,
                 Runnable::run,
@@ -218,5 +226,15 @@ public abstract class LauncherTest {
         text = text.replace(installation.getGameDir().toString().replace("\\", "/") + "/", "");
 
         return text;
+    }
+
+    protected final <T> T withGameClassloader(Callable<T> r) throws Exception {
+        var previous = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(loader.currentClassLoader());
+            return r.call();
+        } finally {
+            Thread.currentThread().setContextClassLoader(previous);
+        }
     }
 }

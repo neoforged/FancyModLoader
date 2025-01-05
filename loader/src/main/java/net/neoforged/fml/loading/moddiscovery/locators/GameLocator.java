@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
 import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.loading.ClasspathLocatorUtils;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.MavenCoordinate;
 import net.neoforged.fml.loading.VersionInfo;
@@ -202,13 +201,13 @@ public class GameLocator implements IModFileCandidateLocator {
 
             var resources = getClass().getClassLoader().getResources("net/minecraft/client/main/Main.class");
             while (resources.hasMoreElements()) {
-                jarsWithEntrypoint.add(ClasspathLocatorUtils.findJarPathFor("net/minecraft/client/main/Main.class", "minecraft jar", resources.nextElement()));
+                jarsWithEntrypoint.add(ClasspathResourceUtils.findJarPathFor("net/minecraft/client/main/Main.class", "minecraft jar", resources.nextElement()));
             }
 
             // This class would only be present in deobfuscated jars
             resources = getClass().getClassLoader().getResources("net/minecraft/client/Minecraft.class");
             while (resources.hasMoreElements()) {
-                jarsWithEntrypoint.remove(ClasspathLocatorUtils.findJarPathFor("net/minecraft/client/Minecraft.class", "minecraft jar", resources.nextElement()));
+                jarsWithEntrypoint.remove(ClasspathResourceUtils.findJarPathFor("net/minecraft/client/Minecraft.class", "minecraft jar", resources.nextElement()));
             }
 
             for (Path path : jarsWithEntrypoint) {
