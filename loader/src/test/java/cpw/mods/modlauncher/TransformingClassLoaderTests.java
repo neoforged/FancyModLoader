@@ -18,6 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.jarhandling.impl.Jar;
+import java.io.IOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
@@ -51,8 +53,8 @@ class TransformingClassLoaderTests {
         assertEquals(aClass, newClass, "Class instance is the same from Class.forName and tcl.loadClass");
     }
 
-    private Configuration createTestJarsConfiguration() {
-        SecureJar testJars = SecureJar.from(Path.of(System.getProperty("testJars.location")));
+    private Configuration createTestJarsConfiguration() throws IOException {
+        SecureJar testJars = Jar.of(Path.of(System.getProperty("testJars.location")));
         JarModuleFinder finder = JarModuleFinder.of(testJars);
         return ModuleLayer.boot().configuration().resolveAndBind(finder, ModuleFinder.ofSystem(), Set.of("cpw.mods.modlauncher.testjars"));
     }

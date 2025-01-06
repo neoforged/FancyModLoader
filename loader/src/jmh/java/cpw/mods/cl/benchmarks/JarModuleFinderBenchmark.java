@@ -1,9 +1,12 @@
 package cpw.mods.cl.benchmarks;
 
 import cpw.mods.cl.JarModuleFinder;
-import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.jarhandling.JarContents;
+import cpw.mods.jarhandling.impl.Jar;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
@@ -24,9 +27,9 @@ public class JarModuleFinderBenchmark {
     }
 
     @Benchmark
-    public void benchJarModuleFinderOf(Blackhole blackhole) {
-        var secureJar1 = SecureJar.from(path1, path2);
-        var secureJar2 = SecureJar.from(path3);
+    public void benchJarModuleFinderOf(Blackhole blackhole) throws IOException {
+        var secureJar1 = Jar.of(JarContents.ofPaths(List.of(path1, path2)));
+        var secureJar2 = Jar.of(path3);
         var jarModuleFinder = JarModuleFinder.of(secureJar1, secureJar2);
 
         blackhole.consume(jarModuleFinder);

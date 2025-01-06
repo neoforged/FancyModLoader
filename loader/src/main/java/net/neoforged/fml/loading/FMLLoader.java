@@ -8,6 +8,7 @@ package net.neoforged.fml.loading;
 import com.mojang.logging.LogUtils;
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.jarhandling.VirtualJar;
 import cpw.mods.modlauncher.ClassTransformer;
 import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.Launcher;
@@ -121,7 +122,8 @@ public final class FMLLoader implements AutoCloseable {
     private AccessTransformerEngine accessTransformer;
     private LanguageProviderLoader languageProviderLoader;
     private LoadingModList loadingModList;
-    public Runnable progressWindowTick;
+    // NOTE: NeoForge patches reference this field directly, sadly.
+    public static final Runnable progressWindowTick = ImmediateWindowHandler::renderTick;
     public BackgroundScanHandler backgroundScanHandler;
     @VisibleForTesting
     DiscoveryResult discoveryResult;
@@ -152,6 +154,10 @@ public final class FMLLoader implements AutoCloseable {
                 production ? "PROD" : "DEV");
 
         makeCurrent();
+    }
+
+    public Path getCacheDir() {
+        return cacheDir;
     }
 
     private static Dist detectDist(ClassLoader classLoader) {
@@ -246,7 +252,6 @@ public final class FMLLoader implements AutoCloseable {
             loader.loadEarlyServices();
 
             ImmediateWindowHandler.load(startupArgs.headless(), loader.programArgs);
-            loader.progressWindowTick = ImmediateWindowHandler::renderTick;
 
             var mixinFacade = new MixinFacade();
 
@@ -441,6 +446,10 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     private static List<Path> getBasePaths(SecureJar jar, boolean ignoreFilter) {
+        if (jar instanceof VirtualJar) {
+            return List.of(); // virtual jars have no real paths
+        }
+
         var unionFs = (UnionFileSystem) jar.getRootPath().getFileSystem();
         if (!ignoreFilter && unionFs.getFilesystemFilter() != null) {
             throw new IllegalStateException("Filtering for plugin jars is not supported: " + jar);

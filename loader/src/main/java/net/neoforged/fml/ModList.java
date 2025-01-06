@@ -66,11 +66,10 @@ public class ModList {
 
     private String fileToLine(IModFile mf) {
         var mainMod = mf.getModInfos().getFirst();
-        return String.format(Locale.ENGLISH, "%-50.50s|%-30.30s|%-30.30s|%-20.20s|Manifest: %s", mf.getFileName(),
+        return String.format(Locale.ENGLISH, "%-50.50s|%-30.30s|%-30.30s|%-20.20s", mf.getFileName(),
                 mainMod.getDisplayName(),
                 mainMod.getModId(),
-                mainMod.getVersion(),
-                ((ModFileInfo) mf.getModFileInfo()).getCodeSigningFingerprint().orElse("NOSIGNATURE"));
+                mainMod.getVersion());
     }
 
     private String crashReport() {

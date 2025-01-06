@@ -7,6 +7,7 @@ package net.neoforged.fml.loading.moddiscovery;
 
 import com.google.common.collect.ImmutableMap;
 import com.mojang.logging.LogUtils;
+import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.SecureJar;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -19,7 +20,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -100,6 +100,11 @@ public class ModFile implements IModFile {
     }
 
     @Override
+    public JarContents getContent() {
+        return jar.container();
+    }
+
+    @Override
     public List<IModInfo> getModInfos() {
         return modFileInfo.getMods();
     }
@@ -151,10 +156,9 @@ public class ModFile implements IModFile {
     }
 
     public void scanFile(Consumer<Path> pathConsumer) {
-        final Function<Path, SecureJar.Status> status = p -> getSecureJar().verifyPath(p);
         var rootPath = getSecureJar().getRootPath();
         try (Stream<Path> files = Files.find(rootPath, Integer.MAX_VALUE, (p, a) -> p.getNameCount() > 0 && p.getFileName().toString().endsWith(".class"))) {
-            setSecurityStatus(files.peek(pathConsumer).map(status).reduce((s1, s2) -> SecureJar.Status.values()[Math.min(s1.ordinal(), s2.ordinal())]).orElse(SecureJar.Status.INVALID));
+            files.forEach(pathConsumer);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to scan " + rootPath, e);
         }
@@ -232,10 +236,6 @@ public class ModFile implements IModFile {
     public IModFileInfo getModFileInfo() {
         return modFileInfo;
     }
-
-    @Deprecated(forRemoval = true)
-    @Override
-    public void setSecurityStatus(final SecureJar.Status status) {}
 
     public ArtifactVersion getJarVersion() {
         return new DefaultArtifactVersion(this.jarVersion);

@@ -5,10 +5,8 @@
 
 package net.neoforged.fml.loading.moddiscovery.locators;
 
-import com.google.common.collect.Streams;
 import cpw.mods.jarhandling.JarContents;
-import cpw.mods.jarhandling.JarContentsBuilder;
-import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.jarhandling.impl.Jar;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,7 +16,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.jar.Manifest;
-import java.util.stream.Stream;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.MavenCoordinate;
@@ -39,6 +36,7 @@ public class GameLocator implements IModFileCandidateLocator {
     public static final String CLIENT_CLASS = "net/minecraft/client/Minecraft.class";
     private static final Logger LOG = LoggerFactory.getLogger(GameLocator.class);
     public static final String LIBRARIES_DIRECTORY_PROPERTY = "libraryDirectory";
+    public static final String[] NEOFORGE_SPECIFIC_PATH_PREFIXES = { "net/neoforged/neoforge/", "META-INF/services/", "META-INF/coremods.json", JarModsDotTomlModFileReader.MODS_TOML };
 
     @Override
     public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {
@@ -67,7 +65,6 @@ public class GameLocator implements IModFileCandidateLocator {
             if (Files.isDirectory(mcClassesRoot) && Files.isRegularFile(mcResourceRoot)) {
                 // We look for all MANIFEST.MF directly on the classpath and try to find the one for NeoForge
                 var manifestRoots = ClasspathResourceUtils.findFileSystemRootsOfFileOnClasspath(ourCl, JarModsDotTomlModFileReader.MANIFEST);
-                Path resourcesRoot;
                 for (var manifestRoot : manifestRoots) {
                     if (!Files.isDirectory(manifestRoot)) {
                         continue; // We're only interested in directories
@@ -149,10 +146,10 @@ public class GameLocator implements IModFileCandidateLocator {
         }
 
         try {
-            var mcJarContents = JarContents.of(minecraftJarContent);
+            var mcJarContents = JarContents.ofPaths(minecraftJarContent);
 
             var mcJarMetadata = new ModJarMetadata(mcJarContents);
-            var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);
+            var mcSecureJar = Jar.of(mcJarContents, mcJarMetadata);
             var mcjar = IModFile.create(mcSecureJar, MinecraftModInfo::buildMinecraftModInfo);
             mcJarMetadata.setModFile(mcjar);
             pipeline.addModFile(mcjar);
@@ -233,53 +230,63 @@ public class GameLocator implements IModFileCandidateLocator {
     }
 
     private void addDevelopmentModFiles(List<Path> paths, Path minecraftResourcesRoot, IDiscoveryPipeline pipeline) {
-        var packages = getNeoForgeSpecificPathPrefixes();
-
-        var mcJarContents = new JarContentsBuilder()
-                .paths(Streams.concat(paths.stream(), Stream.of(minecraftResourcesRoot)).toArray(Path[]::new))
-                .pathFilter((entry, basePath) -> {
-                    // We serve everything, except for things in the forge packages.
-                    if (basePath.equals(minecraftResourcesRoot) || entry.endsWith("/")) {
-                        return true;
-                    }
-                    // Any non-class file will be served from the client extra jar file mentioned above
-                    if (!entry.endsWith(".class")) {
+        var mcJarContentsBuilder = JarContents.builder();
+        for (var path : paths) {
+            mcJarContentsBuilder.filteredPath(path, relativePath -> {
+                // Any non-class file will be served from the client extra jar file mentioned above
+                if (!path.endsWith(".class")) {
+                    return false;
+                }
+                for (var pkg : NEOFORGE_SPECIFIC_PATH_PREFIXES) {
+                    if (path.startsWith(pkg)) {
                         return false;
                     }
-                    for (var pkg : packages) {
-                        if (entry.startsWith(pkg)) {
-                            return false;
-                        }
-                    }
-                    return true;
-                })
-                .build();
+                }
+                return true;
+            });
+        }
+        mcJarContentsBuilder.path(minecraftResourcesRoot);
+        JarContents mcJarContents;
+        try {
+            mcJarContents = mcJarContentsBuilder.build();
+        } catch (IOException e) {
+            pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation").withCause(e));
+            return;
+        }
 
         var mcJarMetadata = new ModJarMetadata(mcJarContents);
-        var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);
+        var mcSecureJar = Jar.of(mcJarContents, mcJarMetadata);
         var minecraftModFile = IModFile.create(mcSecureJar, MinecraftModInfo::buildMinecraftModInfo);
         mcJarMetadata.setModFile(minecraftModFile);
         pipeline.addModFile(minecraftModFile);
 
         // We need to separate out our resources/code so that we can show up as a different data pack.
-        var neoforgeJarContents = new JarContentsBuilder()
-                .paths(paths.toArray(Path[]::new))
-                .pathFilter((entry, basePath) -> {
-                    if (!entry.endsWith(".class")) return true;
-                    for (var pkg : packages)
-                        if (entry.startsWith(pkg)) return true;
-                    return false;
-                })
-                .build();
+        var neoforgeJarBuilder = JarContents.builder();
+        for (var path : paths) {
+            neoforgeJarBuilder.filteredPath(path, relativePath -> {
+                if (!relativePath.endsWith(".class")) {
+                    return true;
+                }
+                for (var includedPrefix : NEOFORGE_SPECIFIC_PATH_PREFIXES) {
+                    if (relativePath.startsWith(includedPrefix)) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+        }
+        JarContents neoforgeJarContents;
+        try {
+            neoforgeJarContents = neoforgeJarBuilder.build();
+        } catch (IOException e) {
+            pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation").withCause(e));
+            return;
+        }
         var modFile = JarModsDotTomlModFileReader.createModFile(neoforgeJarContents, ModFileDiscoveryAttributes.DEFAULT);
         if (modFile == null) {
             throw new IllegalStateException("Failed to construct a mod from the NeoForge classes and resources directories.");
         }
         pipeline.addModFile(modFile);
-    }
-
-    private static String[] getNeoForgeSpecificPathPrefixes() {
-        return new String[] { "net/neoforged/neoforge/", "META-INF/services/", "META-INF/coremods.json", JarModsDotTomlModFileReader.MODS_TOML };
     }
 
     @Override

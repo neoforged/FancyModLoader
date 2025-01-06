@@ -2,11 +2,12 @@ package cpw.mods.cl.test;
 
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
-import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.jarhandling.JarContents;
+import cpw.mods.jarhandling.impl.Jar;
 import java.io.File;
+import java.io.IOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -18,11 +19,11 @@ public class TestjarUtil {
     /**
      * Build a layer for a {@code testjarX} source set.
      */
-    private static BuiltLayer buildTestjarLayer(int testjar, List<ModuleLayer> parentLayers) {
+    private static BuiltLayer buildTestjarLayer(int testjar, List<ModuleLayer> parentLayers) throws IOException {
         var paths = Stream.of(System.getenv("sjh.testjar" + testjar).split(File.pathSeparator))
                 .map(Paths::get)
-                .toArray(Path[]::new);
-        var jar = SecureJar.from(paths);
+                .toList();
+        var jar = Jar.of(JarContents.ofPaths(paths));
 
         var roots = List.of(jar.name());
         var jf = JarModuleFinder.of(jar);

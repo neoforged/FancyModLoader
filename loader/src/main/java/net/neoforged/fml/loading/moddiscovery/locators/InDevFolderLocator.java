@@ -79,7 +79,11 @@ public class InDevFolderLocator implements IModFileCandidateLocator {
                 context.addLocated(path);
                 paths.add(path);
             }
-            pipeline.addJarContent(JarContents.of(paths), ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.ERROR);
+            try {
+                pipeline.addJarContent(JarContents.ofPaths(paths), ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.ERROR);
+            } catch (IOException e) {
+                pipeline.addIssue(ModLoadingIssue.error("")); // TODO
+            }
         }
 
         // Add groups that remain but are not on the classpath at all to support legacy configurations
@@ -87,7 +91,11 @@ public class InDevFolderLocator implements IModFileCandidateLocator {
         for (var entry : new HashSet<>(virtualJarMemberIndex.values())) {
             var paths = entry.files.stream().map(File::toPath).toList();
             if (paths.stream().noneMatch(context::isLocated)) {
-                pipeline.addJarContent(JarContents.of(paths), ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.ERROR);
+                try {
+                    pipeline.addJarContent(JarContents.ofPaths(paths), ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.ERROR);
+                } catch (IOException e) {
+                    pipeline.addIssue(ModLoadingIssue.error("")); // TODO
+                }
             }
         }
     }

@@ -93,7 +93,9 @@ public class ImmediateWindowHandler {
     }
 
     public static void renderTick() {
-        provider.periodicTick();
+        if (provider != null) {
+            provider.periodicTick();
+        }
     }
 
     public static String getGLVersion() {

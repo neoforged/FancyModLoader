@@ -14,7 +14,7 @@ sourceSets {
     jmh
     testJars
 
-    // Additional test JARs, to be loaded via SecureJar.from(...)
+    // Additional test JARs, to be loaded via Jar.of(...)
     testjar1
     testjar2
     // Test classpath code, to make sure that ModuleClassLoader is properly isolated from the classpath

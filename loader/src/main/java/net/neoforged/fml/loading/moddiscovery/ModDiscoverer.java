@@ -7,7 +7,8 @@ package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.JarContents;
-import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.jarhandling.impl.Jar;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -187,12 +188,19 @@ public class ModDiscoverer {
                 return;
             }
 
-            var modFile = new ModFile(
-                    SecureJar.from(path),
-                    JarModsDotTomlModFileReader::manifestParser,
-                    IModFile.Type.LIBRARY,
-                    defaultAttributes);
-            addModFile(modFile);
+            // TODO: Libraries no longer need to be ModFile wrapped
+
+            try {
+                var modFile = new ModFile(
+                        Jar.of(path),
+                        JarModsDotTomlModFileReader::manifestParser,
+                        IModFile.Type.LIBRARY,
+                        defaultAttributes);
+                addModFile(modFile);
+            } catch (IOException e) {
+                // TODO KEY
+                addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile.unknown").withAffectedPath(path));
+            }
         }
 
         @Override
@@ -207,7 +215,7 @@ public class ModDiscoverer {
 
             JarContents jarContents;
             try {
-                jarContents = JarContents.of(groupedPaths);
+                jarContents = JarContents.ofPaths(groupedPaths);
             } catch (Exception e) {
                 if (causeChainContains(e, ZipException.class)) {
                     addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile.invalidzip").withAffectedPath(primaryPath).withCause(e));

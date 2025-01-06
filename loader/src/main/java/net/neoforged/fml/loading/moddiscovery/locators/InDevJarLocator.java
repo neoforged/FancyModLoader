@@ -16,7 +16,6 @@ import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 
 /**
  * This locator finds mods and game libraries that are passed as jar files on the classpath.
- * Libraries are handled by {@link ClasspathLibrariesLocator}.
  */
 public class InDevJarLocator implements IModFileCandidateLocator {
     @Override

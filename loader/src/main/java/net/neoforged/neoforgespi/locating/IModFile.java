@@ -5,6 +5,7 @@
 
 package net.neoforged.neoforgespi.locating;
 
+import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.SecureJar;
 import java.nio.file.Path;
 import java.util.List;
@@ -72,6 +73,11 @@ public interface IModFile {
     Path findResource(String... pathName);
 
     /**
+     * Gets the underlying content.
+     */
+    JarContents getContent();
+
+    /**
      * The mod files specific string data substitution map.
      * The map returned here is used to interpolate values in the metadata of the included mods.
      * Examples of where this is used in FML: While parsing the mods.toml file, keys like:
@@ -102,15 +108,6 @@ public interface IModFile {
      * @return The secure jar.
      */
     SecureJar getSecureJar();
-
-    /**
-     * Sets the security status after verification of the mod file has been concluded.
-     * The security status is only determined if the jar is to be loaded into the runtime.
-     *
-     * @param status The new status.
-     */
-    @Deprecated(forRemoval = true)
-    void setSecurityStatus(SecureJar.Status status);
 
     /**
      * Returns a list of all mods located inside this jar.

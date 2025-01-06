@@ -8,8 +8,6 @@ package net.neoforged.fml.loading.mixin;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.jarhandling.VirtualJar;
 import cpw.mods.modlauncher.TransformingClassLoader;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -116,13 +114,6 @@ public final class MixinFacade {
     }
 
     public SecureJar createGeneratedCodeContainer() {
-        Path codeSource;
-        try {
-            codeSource = Path.of(Mixins.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-
-        return new VirtualJar("mixin_synthetic", codeSource, ArgsClassGenerator.SYNTHETIC_PACKAGE);
+        return new VirtualJar("mixin_synthetic", ArgsClassGenerator.SYNTHETIC_PACKAGE);
     }
 }

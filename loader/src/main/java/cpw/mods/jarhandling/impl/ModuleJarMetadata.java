@@ -3,11 +3,8 @@ package cpw.mods.jarhandling.impl;
 import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.LazyJarMetadata;
 import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.io.InputStream;
 import java.lang.module.ModuleDescriptor;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -26,15 +23,11 @@ public class ModuleJarMetadata extends LazyJarMetadata {
     private final ModuleClassVisitor mcv;
     private final Supplier<Set<String>> packagesSupplier;
 
-    public ModuleJarMetadata(URI uri, Supplier<Set<String>> packagesSupplier) {
-        try (var is = Files.newInputStream(Path.of(uri))) {
-            ClassReader cr = new ClassReader(is);
-            var mcv = new ModuleClassVisitor();
-            cr.accept(mcv, ClassReader.SKIP_CODE);
-            this.mcv = mcv;
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+    public ModuleJarMetadata(InputStream in, Supplier<Set<String>> packagesSupplier) throws IOException {
+        ClassReader cr = new ClassReader(in);
+        var mcv = new ModuleClassVisitor();
+        cr.accept(mcv, ClassReader.SKIP_CODE);
+        this.mcv = mcv;
 
         // Defer package scanning until computeDescriptor()
         this.packagesSupplier = packagesSupplier;
