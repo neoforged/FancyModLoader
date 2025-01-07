@@ -32,4 +32,14 @@ public abstract class NeoForgeInstallation implements Named {
      * Where the installation should be made.
      */
     public abstract DirectoryProperty getDirectory();
+
+    /**
+     * The main class to use. If not set, the main class from the version profile is used.
+     */
+    public abstract Property<String> getMainClass();
+
+    /**
+     * Allows the game directory to be overriden. Can be set to the directory of a modpack, for example.
+     */
+    public abstract Property<String> getGameDir();
 }

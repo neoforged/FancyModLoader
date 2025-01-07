@@ -7,12 +7,15 @@ package net.neoforged.fml.loading.moddiscovery.readers;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.JarContents;
-import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.jarhandling.impl.Jar;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.jar.Manifest;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.LogMarkers;
@@ -36,17 +39,21 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
     public static final String MODS_TOML = "META-INF/neoforge.mods.toml";
     public static final String MANIFEST = "META-INF/MANIFEST.MF";
 
-    public static IModFile createModFile(JarContents contents, ModFileDiscoveryAttributes discoveryAttributes) {
-        var type = getModType(contents);
+    public static IModFile createModFile(JarContents container, ModFileDiscoveryAttributes discoveryAttributes) {
+        var type = getModType(container);
         IModFile mod;
-        if (contents.findFile(MODS_TOML).isPresent()) {
-            LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MODS_TOML, type, contents.getPrimaryPath());
-            var mjm = new ModJarMetadata(contents);
-            mod = new ModFile(SecureJar.from(contents, mjm), ModFileParser::modsTomlParser, discoveryAttributes);
+        if (container.findFile(MODS_TOML).isPresent()) {
+            LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MODS_TOML, type, container);
+            var mjm = new ModJarMetadata(container);
+            mod = new ModFile(Jar.of(container, mjm), ModFileParser::modsTomlParser, discoveryAttributes);
             mjm.setModFile(mod);
         } else if (type != null) {
-            LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MANIFEST, type, contents.getPrimaryPath());
-            mod = new ModFile(SecureJar.from(contents), JarModsDotTomlModFileReader::manifestParser, type, discoveryAttributes);
+            LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MANIFEST, type, container);
+            try {
+                mod = new ModFile(Jar.of(container), JarModsDotTomlModFileReader::manifestParser, type, discoveryAttributes);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         } else {
             return null;
         }
@@ -56,7 +63,11 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
 
     @Nullable
     private static IModFile.Type getModType(JarContents jar) {
-        var typeString = jar.getManifest().getMainAttributes().getValue(ModFile.TYPE);
+        Manifest jarManifest = jar.getJarManifest();
+        if (jarManifest == null) {
+            return null;
+        }
+        var typeString = jarManifest.getMainAttributes().getValue(ModFile.TYPE);
         try {
             return typeString != null ? IModFile.Type.valueOf(typeString) : null;
         } catch (IllegalArgumentException e) {

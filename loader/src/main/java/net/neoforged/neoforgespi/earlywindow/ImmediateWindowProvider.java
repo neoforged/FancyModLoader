@@ -27,25 +27,6 @@ import java.util.function.Supplier;
  */
 public interface ImmediateWindowProvider {
     /**
-     * @return The name of this window provider. Do NOT use fmlearlywindow.
-     */
-    String name();
-
-    /**
-     * This is called very early on to initialize ourselves. Use this to initialize the window and other GL core resources.
-     *
-     * One thing we want to ensure is that we try and create the highest GL_PROFILE we can accomplish.
-     * GLFW_CONTEXT_VERSION_MAJOR,GLFW_CONTEXT_VERSION_MINOR should be as high as possible on the created window,
-     * and it should have all the typical profile settings.
-     *
-     * @param arguments The arguments provided to the Java process. This is the entire command line, so you can process
-     *                  stuff from it.
-     * @return A runnable that will be periodically ticked by FML during startup ON THE MAIN THREAD. This is usually
-     *         a good place to put glfwPollEvents() tests.
-     */
-    Runnable initialize(String[] arguments);
-
-    /**
      * This will be called during the handoff to minecraft to update minecraft with the size of the framebuffer we have.
      * Generally won't be called because Minecraft figures it out for itself.
      * 
@@ -105,8 +86,10 @@ public interface ImmediateWindowProvider {
     void updateModuleReads(ModuleLayer layer);
 
     /**
-     * This is called periodically during the loading process to "tick" the window. It is typically the same as the Runnable
-     * from {@link #initialize(String[])}
+     * Update the visual representation of the window while it has still not been handed over to Minecraft.
+     * <p>
+     * Will be periodically called by FML during startup ON THE MAIN THREAD.
+     * This is usually a good place to put glfwPollEvents() tests.
      */
     void periodicTick();
 

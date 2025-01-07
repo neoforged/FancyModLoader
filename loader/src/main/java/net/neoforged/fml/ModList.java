@@ -30,6 +30,8 @@ import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.IModFile;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * Master list of all mods - game-side version. This is classloaded in the game scope and
@@ -45,20 +47,29 @@ public class ModList {
     private List<ModFileScanData> modFileScanData;
     private List<ModContainer> sortedContainers;
 
+    static {
+        // Do this statically to avoid capturing a global reference to the mod list in the lambda function,
+        // which CrashReportCallables is going to store statically.
+        CrashReportCallables.registerCrashCallable("Mod List", () -> {
+            if (INSTANCE != null) {
+                return INSTANCE.crashReport();
+            }
+            return "-";
+        });
+    }
+
     private ModList(final List<ModFile> modFiles, final List<ModInfo> sortedList) {
         this.modFiles = modFiles.stream().map(ModFile::getModFileInfo).map(ModFileInfo.class::cast).collect(Collectors.toList());
-        this.sortedList = sortedList.stream().map(ModInfo.class::cast).collect(Collectors.toList());
+        this.sortedList = new ArrayList<>(sortedList);
         this.fileById = this.modFiles.stream().map(IModFileInfo::getMods).flatMap(Collection::stream).map(ModInfo.class::cast).collect(Collectors.toMap(ModInfo::getModId, ModInfo::getOwningFile));
-        CrashReportCallables.registerCrashCallable("Mod List", this::crashReport);
     }
 
     private String fileToLine(IModFile mf) {
         var mainMod = mf.getModInfos().getFirst();
-        return String.format(Locale.ENGLISH, "%-50.50s|%-30.30s|%-30.30s|%-20.20s|Manifest: %s", mf.getFileName(),
+        return String.format(Locale.ENGLISH, "%-50.50s|%-30.30s|%-30.30s|%-20.20s", mf.getFileName(),
                 mainMod.getDisplayName(),
                 mainMod.getModId(),
-                mainMod.getVersion(),
-                ((ModFileInfo) mf.getModFileInfo()).getCodeSigningFingerprint().orElse("NOSIGNATURE"));
+                mainMod.getVersion());
     }
 
     private String crashReport() {
@@ -176,5 +187,11 @@ public class ModList {
 
     public <T> Stream<T> applyForEachModContainer(Function<ModContainer, T> function) {
         return indexedMods.values().stream().map(function);
+    }
+
+    @ApiStatus.OverrideOnly
+    @VisibleForTesting
+    public static void clear() {
+        INSTANCE = null;
     }
 }

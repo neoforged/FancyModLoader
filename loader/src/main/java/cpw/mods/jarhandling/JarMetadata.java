@@ -2,9 +2,17 @@ package cpw.mods.jarhandling;
 
 import cpw.mods.jarhandling.impl.ModuleJarMetadata;
 import cpw.mods.jarhandling.impl.SimpleJarMetadata;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.jar.Manifest;
 import java.util.regex.Pattern;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,22 +61,85 @@ public interface JarMetadata {
      * Otherwise, the jar is an automatic module, whose name is optionally derived
      * from {@code Automatic-Module-Name} in the manifest.
      */
-    static JarMetadata from(JarContents jar) {
-        var mi = jar.findFile("module-info.class");
-        if (mi.isPresent()) {
-            return new ModuleJarMetadata(mi.get(), jar::getPackages);
-        } else {
+    static JarMetadata from(JarContents jar) throws IOException {
+        var packages = new HashSet<String>();
+        var serviceProviders = new ArrayList<SecureJar.Provider>();
+        indexJarContent(jar, packages, serviceProviders);
+
+        try (var moduleInfoIn = jar.openFile("module-info.class")) {
+            if (moduleInfoIn != null) {
+                return new ModuleJarMetadata(moduleInfoIn, () -> packages);
+            }
+
             var nav = computeNameAndVersion(jar.getPrimaryPath());
             String name = nav.name();
             String version = nav.version();
 
-            String automaticModuleName = jar.getManifest().getMainAttributes().getValue("Automatic-Module-Name");
-            if (automaticModuleName != null) {
-                name = automaticModuleName;
+            Manifest jarManifest = jar.getJarManifest();
+            if (jarManifest != null) {
+                String automaticModuleName = jarManifest.getMainAttributes().getValue("Automatic-Module-Name");
+                if (automaticModuleName != null) {
+                    name = automaticModuleName;
+                }
             }
 
-            return new SimpleJarMetadata(name, version, jar::getPackages, jar.getMetaInfServices());
+            return new SimpleJarMetadata(name, version, () -> packages, serviceProviders);
         }
+    }
+
+    static void indexJarContent(JarContents jar, Set<String> packages, List<SecureJar.Provider> serviceProviders) {
+        jar.visitContent((relativePath, contentSupplier, attributesSupplier) -> {
+            if (relativePath.startsWith("META-INF/services/")) {
+                var serviceClass = relativePath.substring("META-INF/services/".length());
+                if (serviceClass.contains("/")) {
+                    return; // In some subdirectory under META-INF/services/, this is not a real service file
+                }
+
+                var implementationClasses = new ArrayList<String>();
+                try (var reader = new BufferedReader(new InputStreamReader(contentSupplier.get()))) {
+                    for (var line = reader.readLine(); line != null; line = reader.readLine()) {
+                        var soc = line.indexOf('#');
+                        if (soc != -1) {
+                            line = line.substring(0, soc);
+                        }
+                        line = line.trim();
+                        if (line.isEmpty()) {
+                            continue;
+                        }
+                        // NOTE: This differs from previous iterations of SecureJar in that we do not filter the
+                        // impl-class against the JarContents filters.
+                        // Whoever builds the Jar is responsible for only making service manifests
+                        // visible that are actually valid with the filter in place.
+                        implementationClasses.add(line);
+                    }
+                } catch (IOException e) {
+                    throw new UncheckedIOException("Failed to read service file " + relativePath + " from " + jar, e);
+                }
+
+                serviceProviders.add(new SecureJar.Provider(serviceClass, implementationClasses));
+
+            } else if (relativePath.contains("/") && relativePath.endsWith(".class")) {
+                var segments = relativePath.split("/");
+
+                // the JDK checks whether each segment of a package name is a valid java identifier
+                // we perform this check on each directory name
+                // See jdk.internal.module.Checks.isJavaIdentifier
+                for (var segment : segments) {
+                    if (!JlsConstants.isJavaIdentifier(segment)) {
+                        return; // If any segment is not a valid java identifier, we skip the package name
+                    }
+                }
+
+                var packageName = new StringBuilder();
+                for (int i = 0; i < segments.length - 1; i++) {
+                    if (i != 0) {
+                        packageName.append('.');
+                    }
+                    packageName.append(segments[i]);
+                }
+                packages.add(packageName.toString());
+            }
+        });
     }
 
     private static NameAndVersion computeNameAndVersion(Path path) {

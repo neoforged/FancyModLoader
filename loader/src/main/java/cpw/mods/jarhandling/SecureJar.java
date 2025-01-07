@@ -1,7 +1,5 @@
 package cpw.mods.jarhandling;
 
-import cpw.mods.jarhandling.impl.Jar;
-import cpw.mods.jarhandling.impl.JarContentsImpl;
 import cpw.mods.niofs.union.UnionPathFilter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,10 +10,8 @@ import java.lang.module.ModuleReference;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.CodeSigner;
 import java.util.List;
 import java.util.Optional;
-import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,28 +20,6 @@ import org.jetbrains.annotations.Nullable;
  * including all its paths and code signing metadata.
  */
 public interface SecureJar {
-    /**
-     * Creates a jar from a list of paths.
-     * See {@link JarContentsBuilder} for more configuration options.
-     */
-    static SecureJar from(final Path... paths) {
-        return from(new JarContentsBuilder().paths(paths).build());
-    }
-
-    /**
-     * Creates a jar from its contents, with default metadata.
-     */
-    static SecureJar from(JarContents contents) {
-        return from(contents, JarMetadata.from(contents));
-    }
-
-    /**
-     * Creates a jar from its contents and metadata.
-     */
-    static SecureJar from(JarContents contents, JarMetadata metadata) {
-        return new Jar((JarContentsImpl) contents, metadata);
-    }
-
     ModuleDataProvider moduleDataProvider();
 
     /**
@@ -57,20 +31,7 @@ public interface SecureJar {
      */
     Path getPrimaryPath();
 
-    /**
-     * {@return the signers of the manifest, or {@code null} if the manifest is not signed}
-     */
-    @Nullable
-    CodeSigner[] getManifestSigners();
-
-    Status verifyPath(Path path);
-
-    Status getFileStatus(String name);
-
-    @Nullable
-    Attributes getTrustedManifestEntries(String name);
-
-    boolean hasSecurityData();
+    JarContents container();
 
     String name();
 
@@ -121,12 +82,6 @@ public interface SecureJar {
          * {@return the manifest of the jar}
          */
         Manifest getManifest();
-
-        /**
-         * {@return the signers if the class name can be verified, or {@code null} otherwise}
-         */
-        @Nullable
-        CodeSigner[] verifyAndGetSigners(String cname, byte[] bytes);
     }
 
     /**

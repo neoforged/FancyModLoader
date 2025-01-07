@@ -10,9 +10,9 @@ import org.junit.jupiter.api.Test;
 
 public class TestMultiRelease {
     @Test
-    public void testMultiRelease() {
+    public void testMultiRelease() throws IOException {
         Path rootDir = Paths.get("src", "test", "resources", "multirelease");
-        var jar = SecureJar.from(rootDir);
+        var jar = Jar.of(rootDir);
 
         var aContents = readString(jar, "a.txt");
         // Should be overridden by the Java 9 version
@@ -31,7 +31,7 @@ public class TestMultiRelease {
     public void testMultiReleaseNoVersions() {
         Path rootDir = Paths.get("src", "test", "resources", "multirelease-noversions");
         // Jars marked with Multi-Release but don't actually have a versions folder should not throw
-        Assertions.assertDoesNotThrow(() -> SecureJar.from(rootDir));
+        Assertions.assertDoesNotThrow(() -> Jar.of(rootDir));
     }
 
     private static String readString(SecureJar jar, String file) {

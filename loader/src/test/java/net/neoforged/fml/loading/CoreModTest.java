@@ -68,7 +68,7 @@ public class CoreModTest extends LauncherTest {
                 })
                 .build();
 
-        var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
+        var e = assertThrows(ModLoadingException.class, () -> launchAndLoad(LaunchMode.PROD_CLIENT));
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                 "ERROR: An error occurred while loading core-mod testmod.coremods.TestCoreMod from mods/testmod.jar > coremod-1.0.jar");
     }
@@ -88,7 +88,7 @@ public class CoreModTest extends LauncherTest {
                         }}""")
                 .build();
 
-        var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
+        var e = assertThrows(ModLoadingException.class, () -> launchAndLoad(LaunchMode.PROD_CLIENT));
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                 "ERROR: An error occurred while loading core-mod testmod.coremods.TestCoreMod from mods/coremod.jar");
     }
@@ -115,10 +115,9 @@ public class CoreModTest extends LauncherTest {
                 })
                 .build();
 
-        var transformers = launchAndLoad("neoforgeclient").transformers();
-        assertThat(transformers).containsOnly(TEST_TRANSFORMER);
+        var launchResult = launchAndLoad(LaunchMode.PROD_CLIENT);
 
-        var testClass = Class.forName("testmod.TestClass", true, gameClassLoader);
+        var testClass = Class.forName("testmod.TestClass", true, launchResult.launchClassLoader());
         assertThat(testClass).hasAnnotation(Deprecated.class); // This is added by the transformer
     }
 
@@ -153,14 +152,9 @@ public class CoreModTest extends LauncherTest {
                         """)
                 .build();
 
-        var transformers = launchAndLoad("neoforgeclient").transformers();
-        assertThat(transformers).hasSize(1);
-        var transformer = (ITransformer<ClassNode>) transformers.getFirst();
-        assertThat(transformer.getTargetType()).isEqualTo(TargetType.CLASS);
-        assertThat(transformer.targets()).containsOnly(
-                ITransformer.Target.targetClass("net.minecraft.world.level.biome.Biome"));
+        launchAndLoad(LaunchMode.PROD_CLIENT);
 
-        var testClass = Class.forName("net.minecraft.world.level.biome.Biome", true, gameClassLoader);
+        var testClass = Class.forName("net.minecraft.world.level.biome.Biome", true, loader.currentClassLoader());
         assertThat(testClass).hasAnnotation(Deprecated.class); // This is added by the transformer
     }
 }

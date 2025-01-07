@@ -26,7 +26,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                 .withModsToml(getModsTomlBuilderConsumer("xyz"))
                 .build();
 
-        var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
+        var e = assertThrows(ModLoadingException.class, () -> launchAndLoad(LaunchMode.PROD_CLIENT));
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                 "ERROR: Enum extender file xyz, provided by mod testmod, does not exist");
     }
@@ -60,7 +60,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                         """)
                 .build();
 
-        launchAndLoad("neoforgeclient");
+        launchAndLoad(LaunchMode.PROD_CLIENT);
 
         Class<T> enumClass = getEnumClass("testmod.SomeEnum");
 
@@ -143,12 +143,12 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                         }
                         """)
                 .build();
-        launchAndLoad("neoforgeclient");
+        launchAndLoad(LaunchMode.PROD_CLIENT);
 
         var noArgEnum = getEnumClass("testmod.NoArgEnum");
         var stringArgEnum = getEnumClass("testmod.StringArgEnum");
 
-        var testModClass = Class.forName("testmod.TestMod", true, gameClassLoader);
+        var testModClass = Class.forName("testmod.TestMod", true, loader.currentClassLoader());
         var noArg = (EnumProxy<?>) testModClass.getField("NO_ARG").get(null);
         assertThat(noArg.getValue()).isInstanceOf(noArgEnum);
 
@@ -218,7 +218,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                         }
                         """)
                 .build();
-        launchAndLoad("neoforgeclient");
+        launchAndLoad(LaunchMode.PROD_CLIENT);
 
         var extensibleEnum = getEnumClass("enumtestmod.ExtensibleEnum");
         assertThat(extensibleEnum.getEnumConstants()).extracting(Enum::name).containsExactly(
@@ -304,7 +304,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                         }
                         """)
                 .build();
-        launchAndLoad("neoforgeclient");
+        launchAndLoad(LaunchMode.PROD_CLIENT);
 
         var enumWithId = getEnumClass("enumtestmod.EnumWithId");
         assertThat(enumWithId.getEnumConstants()).extracting(Enum::name).containsExactly(
@@ -342,7 +342,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                         }
                         """)
                 .build();
-        launchAndLoad("neoforgeclient");
+        launchAndLoad(LaunchMode.PROD_CLIENT);
 
         var extensibleEnum = getEnumClass("testmod.SomeEnum");
         var extensionInfo = getExtensionInfo(extensibleEnum);
@@ -383,7 +383,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                         }
                         """)
                 .build();
-        launchAndLoad("neoforgeclient");
+        launchAndLoad(LaunchMode.PROD_CLIENT);
 
         var extensibleEnum = getEnumClass("testmod.SomeEnum");
         var extensionInfo = getExtensionInfo(extensibleEnum);
@@ -400,7 +400,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
 
     @SuppressWarnings("unchecked")
     private <T extends Enum<T>> Class<T> getEnumClass(String name) throws ClassNotFoundException {
-        return (Class<T>) Class.forName(name, true, gameClassLoader);
+        return (Class<T>) Class.forName(name, true, loader.currentClassLoader());
     }
 
     private static Consumer<ModsTomlBuilder> getModsTomlBuilderConsumer(String extensionPath) {

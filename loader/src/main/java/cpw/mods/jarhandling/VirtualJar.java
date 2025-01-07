@@ -1,18 +1,13 @@
 package cpw.mods.jarhandling;
 
-import cpw.mods.niofs.union.UnionFileSystem;
-import cpw.mods.niofs.union.UnionFileSystemProvider;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.module.ModuleDescriptor;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.spi.FileSystemProvider;
-import java.security.CodeSigner;
+import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.Set;
-import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,33 +22,17 @@ public final class VirtualJar implements SecureJar {
     /**
      * Creates a new virtual jar.
      *
-     * @param name          the name of the virtual jar; will be used as the module name
-     * @param referencePath a path to an existing directory or jar file, for debugging and display purposes
-     *                      (for example a path to the real jar of the caller)
-     * @param packages      the list of packages in this virtual jar
+     * @param name     the name of the virtual jar; will be used as the module name
+     * @param packages the list of packages in this virtual jar
      */
-    public VirtualJar(String name, Path referencePath, String... packages) {
-        if (!Files.exists(referencePath)) {
-            throw new IllegalArgumentException("VirtualJar reference path " + referencePath + " must exist");
-        }
-
+    public VirtualJar(String name, String... packages) {
         this.moduleDescriptor = ModuleDescriptor.newAutomaticModule(name)
                 .packages(Set.of(packages))
                 .build();
-        // Create a dummy file system from the reference path, with a filter that always returns false
-        this.dummyFileSystem = UFSP.newFileSystem((path, basePath) -> false, referencePath);
     }
-
-    // Implementation details below
-    private static final UnionFileSystemProvider UFSP = (UnionFileSystemProvider) FileSystemProvider.installedProviders()
-            .stream()
-            .filter(fsp -> fsp.getScheme().equals("union"))
-            .findFirst()
-            .orElseThrow(() -> new IllegalStateException("Couldn't find UnionFileSystemProvider"));
 
     private final ModuleDescriptor moduleDescriptor;
     private final ModuleDataProvider moduleData = new VirtualJarModuleDataProvider();
-    private final UnionFileSystem dummyFileSystem;
     private final Manifest manifest = new Manifest();
 
     @Override
@@ -63,32 +42,12 @@ public final class VirtualJar implements SecureJar {
 
     @Override
     public Path getPrimaryPath() {
-        return dummyFileSystem.getPrimaryPath();
+        return Paths.get(name()); // TODO
     }
 
     @Override
-    public @Nullable CodeSigner[] getManifestSigners() {
-        return null;
-    }
-
-    @Override
-    public Status verifyPath(Path path) {
-        return Status.NONE;
-    }
-
-    @Override
-    public Status getFileStatus(String name) {
-        return Status.NONE;
-    }
-
-    @Override
-    public @Nullable Attributes getTrustedManifestEntries(String name) {
-        return null;
-    }
-
-    @Override
-    public boolean hasSecurityData() {
-        return false;
+    public JarContents container() {
+        return JarContents.empty(Paths.get(""));
     }
 
     @Override
@@ -98,18 +57,16 @@ public final class VirtualJar implements SecureJar {
 
     @Override
     public Path getPath(String first, String... rest) {
-        return dummyFileSystem.getPath(first, rest);
+        return Paths.get(first, rest);
     }
 
     @Override
     public Path getRootPath() {
-        return dummyFileSystem.getRoot();
+        throw new RuntimeException(); // TODO
     }
 
     @Override
-    public void close() throws IOException {
-        dummyFileSystem.close();
-    }
+    public void close() throws IOException {}
 
     private class VirtualJarModuleDataProvider implements ModuleDataProvider {
         @Override
@@ -141,12 +98,6 @@ public final class VirtualJar implements SecureJar {
         @Override
         public Manifest getManifest() {
             return manifest;
-        }
-
-        @Override
-        @Nullable
-        public CodeSigner[] verifyAndGetSigners(String cname, byte[] bytes) {
-            return null;
         }
     }
 }

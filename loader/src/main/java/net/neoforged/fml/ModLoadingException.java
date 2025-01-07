@@ -16,6 +16,7 @@ public class ModLoadingException extends RuntimeException {
     }
 
     public ModLoadingException(List<ModLoadingIssue> issues) {
+        super(buildMessage(issues));
         this.issues = issues;
     }
 
@@ -23,17 +24,16 @@ public class ModLoadingException extends RuntimeException {
         return this.issues;
     }
 
-    @Override
-    public String getMessage() {
+    private static String buildMessage(List<ModLoadingIssue> issues) {
         var result = new StringBuilder();
-        var errors = this.issues.stream().filter(i -> i.severity() == ModLoadingIssue.Severity.ERROR).toList();
+        var errors = issues.stream().filter(i -> i.severity() == ModLoadingIssue.Severity.ERROR).toList();
         if (!errors.isEmpty()) {
             result.append("Loading errors encountered:\n");
             for (var error : errors) {
                 appendIssue(error, result);
             }
         }
-        var warnings = this.issues.stream().filter(i -> i.severity() == ModLoadingIssue.Severity.WARNING).toList();
+        var warnings = issues.stream().filter(i -> i.severity() == ModLoadingIssue.Severity.WARNING).toList();
         if (!warnings.isEmpty()) {
             result.append("Loading warnings encountered:\n");
             for (var warning : warnings) {
@@ -43,7 +43,7 @@ public class ModLoadingException extends RuntimeException {
         return result.toString();
     }
 
-    private void appendIssue(ModLoadingIssue issue, StringBuilder result) {
+    private static void appendIssue(ModLoadingIssue issue, StringBuilder result) {
         String translation;
         try {
             translation = FMLTranslations.stripControlCodes(FMLTranslations.translateIssueEnglish(issue));

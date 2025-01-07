@@ -16,29 +16,8 @@ package cpw.mods.modlauncher.util;
 
 import cpw.mods.niofs.union.UnionFileSystem;
 import java.nio.file.Path;
-import java.util.Objects;
-import java.util.ServiceConfigurationError;
-import java.util.ServiceLoader;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 public final class ServiceLoaderUtils {
-    public static <T> Stream<T> streamServiceLoader(Supplier<ServiceLoader<T>> slSupplier, Consumer<ServiceConfigurationError> errorConsumer) {
-        return streamWithErrorHandling(slSupplier.get(), errorConsumer);
-    }
-
-    public static <T> Stream<T> streamWithErrorHandling(ServiceLoader<T> sl, Consumer<ServiceConfigurationError> errorConsumer) {
-        return sl.stream().map(p -> {
-            try {
-                return p.get();
-            } catch (ServiceConfigurationError sce) {
-                errorConsumer.accept(sce);
-                return null;
-            }
-        }).filter(Objects::nonNull);
-    }
-
     public static String fileNameFor(Class<?> clazz) {
         // Used in test scenarios where services might come from normal CP
         if (clazz.getModule().getLayer() == null) {
