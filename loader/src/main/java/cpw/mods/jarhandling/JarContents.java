@@ -1,5 +1,6 @@
 package cpw.mods.jarhandling;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -13,7 +14,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
-import net.neoforged.neoforgespi.locating.ModFileLoadingException;
 import org.jetbrains.annotations.Nullable;
 
 public sealed interface JarContents extends AutoCloseable permits CompositeModContainer, FolderModContainer, JarModContainer, EmptyModContainer {
@@ -68,7 +68,7 @@ public sealed interface JarContents extends AutoCloseable permits CompositeModCo
         } else if (Files.isDirectory(path)) {
             return new FolderModContainer(path);
         } else {
-            throw new ModFileLoadingException("Cannot construct mod container from missing " + path);
+            throw new FileNotFoundException("Cannot construct mod container from missing " + path);
         }
     }
 
