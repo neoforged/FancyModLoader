@@ -16,12 +16,14 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
+import net.neoforged.neoforgespi.language.IConfigurable;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.InvalidModFileException;
@@ -85,17 +87,28 @@ public class ModFileParser {
                 .toList();
     }
 
-    protected static List<String> getMixinConfigs(IModFileInfo modFileInfo) {
+    /**
+     * Represents a potential mixin configuration.
+     *
+     * @param config       The name of the mixin configuration.
+     * @param requiredMods The mod ids that are required for this mixin configuration to be loaded. If empty, will be loaded regardless.
+     */
+    public record MixinConfig(String config, List<String> requiredMods) {}
+
+    protected static List<MixinConfig> getMixinConfigs(IModFileInfo modFileInfo) {
         try {
             var config = modFileInfo.getConfig();
             var mixinsEntries = config.getConfigList("mixins");
-            return mixinsEntries
-                    .stream()
-                    .map(entry -> entry
-                            .<String>getConfigElement("config")
-                            .orElseThrow(
-                                    () -> new InvalidModFileException("Missing \"config\" in [[mixins]] entry", modFileInfo)))
-                    .toList();
+
+            var potentialMixins = new ArrayList<MixinConfig>();
+            for (IConfigurable mixinsEntry : mixinsEntries) {
+                var name = mixinsEntry.<String>getConfigElement("config")
+                        .orElseThrow(() -> new InvalidModFileException("Missing \"config\" in [[mixins]] entry", modFileInfo));
+                var requiredModIds = mixinsEntry.<List<String>>getConfigElement("requiredMods").orElse(List.of());
+                potentialMixins.add(new MixinConfig(name, requiredModIds));
+            }
+
+            return potentialMixins;
         } catch (Exception exception) {
             LOGGER.error("Failed to load mixin configs from mod file", exception);
             return List.of();
