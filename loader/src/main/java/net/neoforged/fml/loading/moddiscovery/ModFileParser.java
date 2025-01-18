@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.neoforgespi.language.IConfigurable;
@@ -88,28 +87,28 @@ public class ModFileParser {
                 .toList();
     }
 
-    private record PotentialMixin(String name, boolean optional) {}
+    private record PotentialMixinConfig(String name, boolean optional) {}
 
     protected static List<String> getMixinConfigs(IModFileInfo modFileInfo) {
         try {
             var config = modFileInfo.getConfig();
             var mixinsEntries = config.getConfigList("mixins");
 
-            var potentialMixins = new ArrayList<PotentialMixin>();
+            var potentialMixins = new ArrayList<PotentialMixinConfig>();
             for (IConfigurable mixinsEntry : mixinsEntries) {
                 var name = mixinsEntry.<String>getConfigElement("config")
                         .orElseThrow(() -> new InvalidModFileException("Missing \"config\" in [[mixins]] entry", modFileInfo));
                 var optional = mixinsEntry.<Boolean>getConfigElement("optional").orElse(false);
-                potentialMixins.add(new PotentialMixin(name, optional));
+                potentialMixins.add(new PotentialMixinConfig(name, optional));
             }
 
             var mixinConfigs = new ArrayList<String>();
-            for (PotentialMixin potentialMixin : potentialMixins) {
-                var mixinConfig = modFileInfo.getFile().findResource(potentialMixin.name);
+            for (PotentialMixinConfig potentialMixinConfig : potentialMixins) {
+                var mixinConfig = modFileInfo.getFile().findResource(potentialMixinConfig.name);
                 if (Files.exists(mixinConfig)) {
-                    mixinConfigs.add(potentialMixin.name());
-                } else if (!potentialMixin.optional) {
-                    throw new InvalidModFileException("Missing mixin config " + potentialMixin.name, modFileInfo);
+                    mixinConfigs.add(potentialMixinConfig.name());
+                } else if (!potentialMixinConfig.optional) {
+                    throw new InvalidModFileException("Missing mixin config " + potentialMixinConfig.name, modFileInfo);
                 }
             }
 
