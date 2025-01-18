@@ -56,7 +56,7 @@ public class ModFile implements IModFile {
     private ModFileScanData fileModFileScanData;
     private volatile CompletableFuture<ModFileScanData> futureScanResult;
     private List<CoreModFile> coreMods;
-    private List<ModFileParser.PotentialMixinConfig> mixinConfigs;
+    private List<ModFileParser.MixinConfig> mixinConfigs;
     private List<Path> accessTransformers;
 
     public static final Attributes.Name TYPE = new Attributes.Name("FMLModType");
@@ -135,7 +135,7 @@ public class ModFile implements IModFile {
         return coreMods;
     }
 
-    public List<ModFileParser.PotentialMixinConfig> getMixinConfigs() {
+    public List<ModFileParser.MixinConfig> getMixinConfigs() {
         return mixinConfigs;
     }
 

@@ -5,6 +5,7 @@
 
 package net.neoforged.fml.loading;
 
+import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.LambdaExceptionUtils;
 import java.net.URL;
 import java.nio.file.Files;
@@ -24,16 +25,19 @@ import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
+import net.neoforged.fml.loading.moddiscovery.ModFileParser;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
+import org.slf4j.Logger;
 
 /**
  * Master list of all mods <em>in the loading context. This class cannot refer outside the
  * loading package</em>
  */
 public class LoadingModList {
+    private static final Logger LOGGER = LogUtils.getLogger();
     private static LoadingModList INSTANCE;
     private final List<IModFileInfo> plugins;
     private final List<ModFileInfo> modFiles;
@@ -77,13 +81,15 @@ public class LoadingModList {
                 .map(ModFileInfo::getFile)
                 .forEach(file -> {
                     final String modId = file.getModInfos().get(0).getModId();
-                    file.getMixinConfigs()
-                            .stream()
-                            .filter(potential -> potential.requiredModIds().isEmpty() ||
-                                    potential.requiredModIds().stream().allMatch(
-                                            id -> this.getModFileById(id) != null
-                                    ))
-                            .forEach(cfg -> DeferredMixinConfigRegistration.addMixinConfig(cfg.name(), modId));
+                    for (ModFileParser.MixinConfig potential : file.getMixinConfigs()) {
+                        if (potential.requiredMods().stream().allMatch(
+                                id -> this.getModFileById(id) != null
+                        )) {
+                            DeferredMixinConfigRegistration.addMixinConfig(potential.config(), modId);
+                        } else {
+                            LOGGER.debug("Mixin config {} for mod {} not applied as required mods are missing", potential.config(), modId);
+                        }
+                    }
                 });
     }
 

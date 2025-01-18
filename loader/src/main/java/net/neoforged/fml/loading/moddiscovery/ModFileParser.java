@@ -90,22 +90,22 @@ public class ModFileParser {
     /**
      * Represents a potential mixin configuration.
      *
-     * @param name The name of the mixin configuration.
-     * @param requiredModIds The mod ids that are required for this mixin configuration to be loaded. If empty, will be loaded regardless.
+     * @param config The name of the mixin configuration.
+     * @param requiredMods The mod ids that are required for this mixin configuration to be loaded. If empty, will be loaded regardless.
      */
-    public record PotentialMixinConfig(String name, List<String> requiredModIds) {}
+    public record MixinConfig(String config, List<String> requiredMods) {}
 
-    protected static List<PotentialMixinConfig> getMixinConfigs(IModFileInfo modFileInfo) {
+    protected static List<MixinConfig> getMixinConfigs(IModFileInfo modFileInfo) {
         try {
             var config = modFileInfo.getConfig();
             var mixinsEntries = config.getConfigList("mixins");
 
-            var potentialMixins = new ArrayList<PotentialMixinConfig>();
+            var potentialMixins = new ArrayList<MixinConfig>();
             for (IConfigurable mixinsEntry : mixinsEntries) {
                 var name = mixinsEntry.<String>getConfigElement("config")
                         .orElseThrow(() -> new InvalidModFileException("Missing \"config\" in [[mixins]] entry", modFileInfo));
                 var requiredModIds = mixinsEntry.<List<String>>getConfigElement("requiredMods").orElse(List.of());
-                potentialMixins.add(new PotentialMixinConfig(name, requiredModIds));
+                potentialMixins.add(new MixinConfig(name, requiredModIds));
             }
 
             return potentialMixins;
