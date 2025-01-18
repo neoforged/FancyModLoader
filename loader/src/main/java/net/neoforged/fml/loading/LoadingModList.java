@@ -77,7 +77,13 @@ public class LoadingModList {
                 .map(ModFileInfo::getFile)
                 .forEach(file -> {
                     final String modId = file.getModInfos().get(0).getModId();
-                    file.getMixinConfigs().forEach(cfg -> DeferredMixinConfigRegistration.addMixinConfig(cfg, modId));
+                    file.getMixinConfigs()
+                            .stream()
+                            .filter(potential -> potential.requiredModIds().isEmpty() ||
+                                    potential.requiredModIds().stream().allMatch(
+                                            id -> this.getModFileById(id) != null
+                                    ))
+                            .forEach(cfg -> DeferredMixinConfigRegistration.addMixinConfig(cfg.name(), modId));
                 });
     }
 

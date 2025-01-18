@@ -87,9 +87,15 @@ public class ModFileParser {
                 .toList();
     }
 
-    private record PotentialMixinConfig(String name, boolean optional) {}
+    /**
+     * Represents a potential mixin configuration.
+     *
+     * @param name The name of the mixin configuration.
+     * @param requiredModIds The mod ids that are required for this mixin configuration to be loaded. If empty, will be loaded regardless.
+     */
+    public record PotentialMixinConfig(String name, List<String> requiredModIds) {}
 
-    protected static List<String> getMixinConfigs(IModFileInfo modFileInfo) {
+    protected static List<PotentialMixinConfig> getMixinConfigs(IModFileInfo modFileInfo) {
         try {
             var config = modFileInfo.getConfig();
             var mixinsEntries = config.getConfigList("mixins");
@@ -98,21 +104,11 @@ public class ModFileParser {
             for (IConfigurable mixinsEntry : mixinsEntries) {
                 var name = mixinsEntry.<String>getConfigElement("config")
                         .orElseThrow(() -> new InvalidModFileException("Missing \"config\" in [[mixins]] entry", modFileInfo));
-                var optional = mixinsEntry.<Boolean>getConfigElement("optional").orElse(false);
-                potentialMixins.add(new PotentialMixinConfig(name, optional));
+                var requiredModIds = mixinsEntry.<List<String>>getConfigElement("requiredMods").orElse(List.of());
+                potentialMixins.add(new PotentialMixinConfig(name, requiredModIds));
             }
 
-            var mixinConfigs = new ArrayList<String>();
-            for (PotentialMixinConfig potentialMixinConfig : potentialMixins) {
-                var mixinConfig = modFileInfo.getFile().findResource(potentialMixinConfig.name);
-                if (Files.exists(mixinConfig)) {
-                    mixinConfigs.add(potentialMixinConfig.name());
-                } else if (!potentialMixinConfig.optional) {
-                    throw new InvalidModFileException("Missing mixin config " + potentialMixinConfig.name, modFileInfo);
-                }
-            }
-
-            return mixinConfigs;
+            return potentialMixins;
         } catch (Exception exception) {
             LOGGER.error("Failed to load mixin configs from mod file", exception);
             return List.of();
