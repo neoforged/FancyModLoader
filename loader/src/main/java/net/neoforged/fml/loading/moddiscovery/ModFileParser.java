@@ -90,7 +90,7 @@ public class ModFileParser {
     /**
      * Represents a potential mixin configuration.
      *
-     * @param config The name of the mixin configuration.
+     * @param config       The name of the mixin configuration.
      * @param requiredMods The mod ids that are required for this mixin configuration to be loaded. If empty, will be loaded regardless.
      */
     public record MixinConfig(String config, List<String> requiredMods) {}

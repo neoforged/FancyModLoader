@@ -82,9 +82,7 @@ public class LoadingModList {
                 .forEach(file -> {
                     final String modId = file.getModInfos().get(0).getModId();
                     for (ModFileParser.MixinConfig potential : file.getMixinConfigs()) {
-                        if (potential.requiredMods().stream().allMatch(
-                                id -> this.getModFileById(id) != null
-                        )) {
+                        if (potential.requiredMods().stream().allMatch(id -> this.getModFileById(id) != null)) {
                             DeferredMixinConfigRegistration.addMixinConfig(potential.config(), modId);
                         } else {
                             LOGGER.debug("Mixin config {} for mod {} not applied as required mods are missing", potential.config(), modId);
