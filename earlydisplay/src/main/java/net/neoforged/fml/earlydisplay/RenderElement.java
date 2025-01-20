@@ -141,8 +141,8 @@ public class RenderElement {
             int offset = outsize / 6;
             var x0 = context.scaledWidth() - outsize * context.scale() + offset;
             var x1 = context.scaledWidth() + offset;
-            var y0 = context.scaledHeight() - outsize * context.scale() / aspect - font.descent() - font.lineSpacing();
-            var y1 = context.scaledHeight() - font.descent() - font.lineSpacing();
+            var y0 = context.scaledHeight() - outsize * context.scale() / aspect - font.descent() - font.lineSpacing() - 10;
+            var y1 = context.scaledHeight() - font.descent() - font.lineSpacing() - 10;
             int frameidx = frame % framecount;
             float framesize = 1 / (float) framecount;
             float framepos = frameidx * framesize;
