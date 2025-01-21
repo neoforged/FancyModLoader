@@ -18,7 +18,7 @@
   "fml.modloadingissue.discouragedmod.proceed": "Продовжити на свій страх і ризик",
   "fml.modloadingissue.duplicate_mod": "Мод §e{0}§r присутній в кількох файлах: {1}",
   "fml.modloadingissue.depoverride.unknown_target": "Unknown dependency override target with id §e{0}§r",
-  "fml.modloadingissue.depoverride.unknown_dependency": "Unknown mod §e{0}§r referenced in dependency overrides for mod §e{1}§r",
+  "fml.modloadingissue.depoverride.unknown_dependency": "Невідомий мод §e{0}§r згадується в перевизначеннях залежностей для моду §e{1}§r",
   "fml.modloading.duplicate_library": "Бібліотека §e{3}§r присутня в кількох файлах: {4}",
   "fml.modloading.incompatiblemod.noreason": "§eПричина не вказана§r",
   "fml.modloading.discouragedmod.noreason": "§eПричина не вказана§r",
