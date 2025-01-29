@@ -48,7 +48,7 @@
   "fml.modloadingissue.multiple_copies_on_classpath": "Знайдено багато копій {0} в classpath: {1}",
   "fml.messages.artifactversion.ornotinstalled": "{0,ornull,fml.messages.artifactversion.notinstalled}",
   "fml.messages.artifactversion": "{0,ornull,fml.messages.artifactversion.none}",
-  "fml.messages.artifactversion.none": "відсутньо",
+  "fml.messages.artifactversion.none": "відсутня",
   "fml.messages.artifactversion.notinstalled": "§nне встановлено",
   "fml.messages.version.restriction.any": "будь-що",
   "fml.messages.version.restriction.lower.inclusive": "{0} або вище",
