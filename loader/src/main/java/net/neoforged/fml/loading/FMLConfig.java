@@ -45,7 +45,8 @@ public class FMLConfig {
         EARLY_WINDOW_HEIGHT("earlyWindowHeight", 480, "Early window height"),
         EARLY_WINDOW_FBSCALE("earlyWindowFBScale", 1, "Early window framebuffer scale"),
         EARLY_WINDOW_MAXIMIZED("earlyWindowMaximized", Boolean.FALSE, "Early window starts maximized"),
-        EARLY_WINDOW_SKIP_GL_VERSIONS("earlyWindowSkipGLVersions", List.of(), "Skip specific GL versions, may help with buggy graphics card drivers"),
+        EARLY_WINDOW_UPGRADE_CONTEXT("earlyWindowUpgradeContext", Boolean.FALSE, "Should we try to upgrade the OpenGL context to the latest available version? Disabling may help with buggy graphics card drivers."),
+        EARLY_WINDOW_SKIP_GL_VERSIONS("earlyWindowSkipGLVersions", List.of(), "When upgrading the OpenGL context, skip these specific GL version. This may help with buggy graphics card drivers."),
         EARLY_WINDOW_SQUIR("earlyWindowSquir", Boolean.FALSE, "Squir?");
 
         private final String entry;
