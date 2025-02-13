@@ -391,7 +391,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         var successfulWindow = new AtomicBoolean(false);
         var windowFailFuture = renderScheduler.schedule(() -> {
             if (!successfulWindow.get()) crashElegantly("Timed out trying to setup the Game Window.");
-        }, 10, TimeUnit.SECONDS);
+        }, 30, TimeUnit.SECONDS);
         int versidx = 0;
         var skipVersions = FMLConfig.<String>getListConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_SKIP_GL_VERSIONS);
         final String[] lastGLError = new String[GL_VERSIONS.length];
