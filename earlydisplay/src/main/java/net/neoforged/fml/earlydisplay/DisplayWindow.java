@@ -48,6 +48,8 @@ import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
+import org.apache.commons.lang3.mutable.Mutable;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFWImage;
@@ -392,47 +394,74 @@ public class DisplayWindow implements ImmediateWindowProvider {
         var windowFailFuture = renderScheduler.schedule(() -> {
             if (!successfulWindow.get()) crashElegantly("Timed out trying to setup the Game Window.");
         }, 10, TimeUnit.SECONDS);
-        int versidx = 0;
-        var skipVersions = FMLConfig.<String>getListConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_SKIP_GL_VERSIONS);
-        final String[] lastGLError = new String[GL_VERSIONS.length];
-        do {
-            final var glVersionToTry = GL_VERSIONS[versidx][0] + "." + GL_VERSIONS[versidx][1];
-            if (skipVersions.contains(glVersionToTry)) {
-                LOGGER.info("Skipping GL version " + glVersionToTry + " because of configuration");
-                versidx++;
-                continue;
-            }
-            LOGGER.info("Trying GL version " + glVersionToTry);
-            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GL_VERSIONS[versidx][0]); // we try our versions one at a time
-            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GL_VERSIONS[versidx][1]);
-            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-            glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-            window = glfwCreateWindow(winWidth, winHeight, "Minecraft: NeoForge Loading...", 0L, 0L);
-            var erridx = versidx;
-            handleLastGLFWError((error, description) -> lastGLError[erridx] = String.format("Trying %d.%d: GLFW error: [0x%X]%s", GL_VERSIONS[erridx][0], GL_VERSIONS[erridx][1], error, description));
-            if (lastGLError[versidx] != null) {
-                LOGGER.trace(lastGLError[versidx]);
-            }
-            versidx++;
-        } while (window == 0 && versidx < GL_VERSIONS.length);
-//        LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(12));
-        if (versidx == GL_VERSIONS.length && window == 0) {
-            LOGGER.error("Failed to find any valid GLFW profile. " + lastGLError[0]);
 
-            crashElegantly("Failed to find a valid GLFW profile.\nWe tried " +
-                    Arrays.stream(GL_VERSIONS).map(p -> p[0] + "." + p[1]).filter(o -> !skipVersions.contains(o))
-                            .collect(Collector.of(() -> new StringJoiner(", ").setEmptyValue("no versions"), StringJoiner::add, StringJoiner::merge, StringJoiner::toString))
-                    +
-                    " but none of them worked.\n" + Arrays.stream(lastGLError).filter(Objects::nonNull).collect(Collectors.joining("\n")));
-            throw new IllegalStateException("Failed to create a GLFW window with any profile");
+        String gotVersion;
+
+        if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_UPGRADE_CONTEXT)) {
+            int versidx = 0;
+            var skipVersions = FMLConfig.<String>getListConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_SKIP_GL_VERSIONS);
+            final String[] lastGLError = new String[GL_VERSIONS.length];
+            do {
+                int glVersionMajor = GL_VERSIONS[versidx][0];
+                int glVersionMinor = GL_VERSIONS[versidx][1];
+                final var glVersionString = glVersionMajor + "." + glVersionMinor;
+                if (skipVersions.contains(glVersionString)) {
+                    LOGGER.info("Skipping GL version " + glVersionString + " because of configuration");
+                    versidx++;
+                    continue;
+                }
+                window = tryCreateWindow(glVersionMajor, glVersionMinor);
+                var erridx = versidx;
+                handleLastGLFWError((error, description) -> lastGLError[erridx] = String.format("Trying %d.%d: GLFW error: [0x%X]%s", GL_VERSIONS[erridx][0], GL_VERSIONS[erridx][1], error, description));
+                if (lastGLError[versidx] != null) {
+                    LOGGER.trace(lastGLError[versidx]);
+                }
+                versidx++;
+            } while (window == 0 && versidx < GL_VERSIONS.length);
+
+            if (versidx == GL_VERSIONS.length && window == 0) {
+                LOGGER.error("Failed to find any valid GLFW profile. " + lastGLError[0]);
+
+                crashElegantly("Failed to find a valid GLFW profile.\nWe tried " +
+                        Arrays.stream(GL_VERSIONS).map(p -> p[0] + "." + p[1]).filter(o -> !skipVersions.contains(o))
+                                .collect(Collector.of(() -> new StringJoiner(", ").setEmptyValue("no versions"), StringJoiner::add, StringJoiner::merge, StringJoiner::toString))
+                        +
+                        " but none of them worked.\n" + Arrays.stream(lastGLError).filter(Objects::nonNull).collect(Collectors.joining("\n")));
+                throw new IllegalStateException("Failed to create a GLFW window with any profile");
+            }
+
+            var requestedVersion = GL_VERSIONS[versidx - 1][0] + "." + GL_VERSIONS[versidx - 1][1];
+            var maj = glfwGetWindowAttrib(window, GLFW_CONTEXT_VERSION_MAJOR);
+            var min = glfwGetWindowAttrib(window, GLFW_CONTEXT_VERSION_MINOR);
+            gotVersion = maj + "." + min;
+            LOGGER.info("Requested GL version {}, got version {}", requestedVersion, gotVersion);
+        } else {
+            // Same as Minecraft.
+            final int glMajorVersion = 3;
+            final int glMinorVersion = 2;
+            final String glVersionString = glMajorVersion + "." + glMinorVersion;
+
+            final Mutable<String> lastError = new MutableObject<>("(no error information)");
+            window = tryCreateWindow(glMajorVersion, glMinorVersion);
+            handleLastGLFWError((error, description) -> lastError.setValue(String.format("GLFW error: [0x%X]%s", error, description)));
+
+            if (window == 0L) {
+                String friendlyError = "Failed to create GLFW window with forward-compatible OpenGL %s context: %s".formatted(glVersionString, lastError.getValue());
+                LOGGER.error(friendlyError);
+                crashElegantly(friendlyError);
+
+                throw new IllegalStateException("Failed to create a GLFW window");
+            }
+
+            // Consumers need to check extension support and branch depending.
+            gotVersion = glVersionString;
         }
+
+//        LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(12));
+
         successfulWindow.set(true);
         if (!windowFailFuture.cancel(true)) throw new IllegalStateException("We died but didn't somehow?");
-        var requestedVersion = GL_VERSIONS[versidx - 1][0] + "." + GL_VERSIONS[versidx - 1][1];
-        var maj = glfwGetWindowAttrib(window, GLFW_CONTEXT_VERSION_MAJOR);
-        var min = glfwGetWindowAttrib(window, GLFW_CONTEXT_VERSION_MINOR);
-        var gotVersion = maj + "." + min;
-        LOGGER.info("Requested GL version " + requestedVersion + " got version " + gotVersion);
+
         this.glVersion = gotVersion;
         this.window = window;
 
@@ -482,6 +511,15 @@ public class DisplayWindow implements ImmediateWindowProvider {
         this.fbWidth = x[0];
         this.fbHeight = y[0];
         glfwPollEvents();
+    }
+
+    private long tryCreateWindow(int glVersionMajor, int glVersionMinor) {
+        LOGGER.info("Trying GL version {}.{}", glVersionMajor, glVersionMinor);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, glVersionMajor); // we try our versions one at a time
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, glVersionMinor);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        return glfwCreateWindow(winWidth, winHeight, "Minecraft: NeoForge Loading...", 0L, 0L);
     }
 
     private void badWindowHandler(final int code, final long desc) {
