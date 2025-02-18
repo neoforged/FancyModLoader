@@ -24,12 +24,13 @@ final class MinecraftModInfo {
         final var conf = Config.inMemory();
         conf.set("modLoader", "minecraft");
         conf.set("loaderVersion", "1");
-        conf.set("license", "Mojang Studios, All Rights Reserved");
+        conf.set("license", "All Rights Reserved");
         final var mods = Config.inMemory();
         mods.set("modId", "minecraft");
         mods.set("version", FMLLoader.versionInfo().mcVersion());
         mods.set("displayName", "Minecraft");
-        mods.set("description", "Minecraft");
+        mods.set("authors", "Mojang Studios");
+        mods.set("description", "");
         conf.set("mods", List.of(mods));
 
         final NightConfigWrapper configWrapper = new NightConfigWrapper(conf);
