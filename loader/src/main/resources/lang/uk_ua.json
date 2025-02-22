@@ -1,5 +1,5 @@
 {
-  "fml.loadingerrorscreen.errorheader": "Помилка при завантаженні модів\n{0,choice,1#1 помилка |1<{0} помилки} під час завантаження",
+  "fml.loadingerrorscreen.errorheader": "Помилка завантаження модів\n{0,choice,1#Сталася помилка|1<Сталися помилки ({0})} під час завантаження",
   "fml.loadingerrorscreen.warningheader": "{0,choice,1#Попередження|1<Попереджень} при завантаженні модів\n{0,choice,1#1 попередження|1<{0} попередження} при завантаженні модів",
   "fml.modloadingissue.language.missingversion": "Файл мода {101} потребує мовний провайдер {0}:{1,vr} для завантаження\n§7Ми знайшли {2,i18n,fml.messages.artifactversion}",
   "fml.modloading.missingclasses": "Файл мода {3} містить моди, які не були знайдені",
