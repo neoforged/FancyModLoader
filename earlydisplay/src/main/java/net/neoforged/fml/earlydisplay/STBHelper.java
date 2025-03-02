@@ -45,14 +45,14 @@ public class STBHelper {
         int[] lc = new int[1];
         var img = loadImageFromClasspath(file, size, lw, lh, lc);
         var texid = glGenTextures();
-        glActiveTexture(textureNumber);
-        glBindTexture(GL_TEXTURE_2D, texid);
+        GlState.activeTexture(textureNumber);
+        GlState.bindTexture2D(texid);
 //        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 //        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, lw[0], lh[0], 0, GL_RGBA, GL_UNSIGNED_BYTE, img);
-        glActiveTexture(GL_TEXTURE0);
+        GlState.activeTexture(GL_TEXTURE0);
         MemoryUtil.memFree(img);
         return new int[] { lw[0], lh[0] };
     }

@@ -174,14 +174,14 @@ public class DisplayWindow implements ImmediateWindowProvider {
             nextFrameTime = nt + MINFRAMETIME;
             glfwMakeContextCurrent(window);
             framebuffer.activate();
-            glViewport(0, 0, this.context.scaledWidth(), this.context.scaledHeight());
+            GlState.viewport(0, 0, this.context.scaledWidth(), this.context.scaledHeight());
             this.context.elementShader().activate();
             this.context.elementShader().updateScreenSizeUniform(this.context.scaledWidth(), this.context.scaledHeight());
-            glClearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), 1f);
+            GlState.clearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), 1f);
             paintFramebuffer();
             this.context.elementShader().clear();
             framebuffer.deactivate();
-            glViewport(0, 0, fbWidth, fbHeight);
+            GlState.viewport(0, 0, fbWidth, fbHeight);
             framebuffer.draw(this.fbWidth, this.fbHeight);
             // Swap buffers; we're done
             glfwSwapBuffers(window);
@@ -216,7 +216,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         }
 
         // Set the clear color based on the colour scheme
-        glClearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), 1f);
+        GlState.clearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), 1f);
 
         // we always render to an 854x480 texture and then fit that to the screen - with a scale factor
         this.context = new RenderElement.DisplayContext(854, 480, fbScale, elementShader, colourScheme, performanceInfo);
@@ -238,8 +238,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
         if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_SQUIR) || (date.get(Calendar.MONTH) == Calendar.APRIL && date.get(Calendar.DAY_OF_MONTH) == 1))
             this.elements.add(0, RenderElement.squir());
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GlState.enableBlend(true);
+        GlState.blendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glfwMakeContextCurrent(0);
         this.windowTick = renderScheduler.scheduleAtFixedRate(this::renderThreadFunc, 50, 50, TimeUnit.MILLISECONDS);
         this.performanceTick = renderScheduler.scheduleAtFixedRate(performanceInfo::update, 0, 500, TimeUnit.MILLISECONDS);
@@ -253,8 +253,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
     void paintFramebuffer() {
         // Clear the screen to our color
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GlState.enableBlend(true);
+        GlState.blendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
         this.elements.removeIf(element -> !element.render(context, framecount));
         if (animationTimerTrigger.compareAndSet(true, false)) // we only increment the framecount on a periodic basis
@@ -265,16 +265,20 @@ public class DisplayWindow implements ImmediateWindowProvider {
         var currentVAO = glGetInteger(GL_VERTEX_ARRAY_BINDING);
         var currentFB = glGetInteger(GL_READ_FRAMEBUFFER_BINDING);
         glViewport(0, 0, this.context.scaledWidth(), this.context.scaledHeight());
+        GlState.readFromOpenGL();
+        var backup = GlState.createSnapshot();
+
+        GlState.viewport(0, 0, this.context.scaledWidth(), this.context.scaledHeight());
         RenderElement.globalAlpha = alpha;
         framebuffer.activate();
-        glClearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), alpha / 255f);
+        GlState.clearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), alpha / 255f);
         elementShader.activate();
         elementShader.updateScreenSizeUniform(this.context.scaledWidth(), this.context.scaledHeight());
         paintFramebuffer();
         elementShader.clear();
         framebuffer.deactivate();
-        glBindVertexArray(currentVAO);
-        glBindFramebuffer(GL_FRAMEBUFFER, currentFB);
+
+        GlState.applySnapshot(backup);
     }
 
     /**
