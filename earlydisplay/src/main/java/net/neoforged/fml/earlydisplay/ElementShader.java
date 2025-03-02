@@ -84,7 +84,7 @@ public class ElementShader {
     }
 
     public void activate() {
-        glUseProgram(program);
+        GlState.useProgram(program);
     }
 
     public void updateTextureUniform(int textureNumber) {
@@ -100,7 +100,7 @@ public class ElementShader {
     }
 
     public void clear() {
-        glUseProgram(0);
+        GlState.useProgram(0);
     }
 
     public void close() {

@@ -57,9 +57,9 @@ public class SimpleFont {
         this.lineSpacing = (int) (ascent[0] - descent[0] + lineGap[0]);
         this.descent = (int) Math.floor(descent[0]);
         int fontTextureId = glGenTextures();
-        glActiveTexture(GL_TEXTURE0 + textureNumber);
+        GlState.activeTexture(GL_TEXTURE0 + textureNumber);
         this.textureNumber = textureNumber;
-        glBindTexture(GL_TEXTURE_2D, fontTextureId);
+        GlState.bindTexture2D(fontTextureId);
         try (var packedchars = STBTTPackedchar.malloc(GLYPH_COUNT)) {
             int texwidth = 256;
             int texheight = 128;
@@ -83,7 +83,7 @@ public class SimpleFont {
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 }
             }
-            glActiveTexture(GL_TEXTURE0);
+            GlState.activeTexture(GL_TEXTURE0);
             try (var q = STBTTAlignedQuad.malloc()) {
                 float[] x = new float[1];
                 float[] y = new float[1];

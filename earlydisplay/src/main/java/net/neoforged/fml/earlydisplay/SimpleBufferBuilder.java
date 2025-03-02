@@ -95,7 +95,7 @@ public class SimpleBufferBuilder implements Closeable {
         final var newIndexCount = newElementBufferVertexLength + newElementBufferVertexLength / 2;
 
         // allocate new buffer
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, newElementBuffer);
+        GlState.bindElementArrayBuffer(newElementBuffer);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, newIndexCount * 4L, GL_STATIC_DRAW);
 
         // mapping avoids creating additional CPU copies of the data
@@ -127,7 +127,7 @@ public class SimpleBufferBuilder implements Closeable {
             glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_ELEMENT_ARRAY_BUFFER, 0, 0, mappingOffset);
             glBindBuffer(GL_COPY_READ_BUFFER, 0);
         }
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        GlState.bindElementArrayBuffer(0);
 
         glDeleteBuffers(elementBuffer);
         elementBuffer = newElementBuffer;
@@ -328,7 +328,7 @@ public class SimpleBufferBuilder implements Closeable {
             // Upload the raw vertex data in dynamic mode.
             final int vbo = VERTEX_BUFFERS[format.ordinal()];
             final int vboSize = VERTEX_BUFFER_LENGTHS[format.ordinal()];
-            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            GlState.bindArrayBuffer(vbo);
             if (vboSize < index) {
                 // expand buffer, it's not big enough
                 var newVBOSize = Math.max(1024, vboSize);
@@ -348,7 +348,7 @@ public class SimpleBufferBuilder implements Closeable {
 
             if (mode == Mode.QUADS) {
                 ensureElementBufferLength(vertices);
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
+                GlState.bindElementArrayBuffer(elementBuffer);
             }
 
             return indices;
@@ -388,13 +388,13 @@ public class SimpleBufferBuilder implements Closeable {
 
             // Ask our Format to set up its data layout for the vertex array.
             // but only once, the VAO saves this state
-            glBindVertexArray(vao);
-            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            GlState.bindVertexArray(vao);
+            GlState.bindArrayBuffer(vbo);
             format.bind();
             format.enable();
         }
         // Bind the vertex array and buffers!
-        glBindVertexArray(vao);
+        GlState.bindVertexArray(vao);
 
         // Upload the data.
         int indices = finishAndUpload();
@@ -406,7 +406,7 @@ public class SimpleBufferBuilder implements Closeable {
         }
 
         // Unbind the vertex array.
-        glBindVertexArray(0);
+        GlState.bindVertexArray(0);
     }
 
     /**
@@ -500,7 +500,7 @@ public class SimpleBufferBuilder implements Closeable {
          */
         public void enable() {
             for (int i = 0; i < types.length; i++) {
-                glEnableVertexAttribArray(i);
+                GlState.enableVertexAttribArray(i, true);
             }
         }
 
@@ -509,7 +509,7 @@ public class SimpleBufferBuilder implements Closeable {
          */
         public void disable() {
             for (int i = 0; i < types.length; i++) {
-                glDisableVertexAttribArray(i);
+                GlState.enableVertexAttribArray(i, false);
             }
         }
     }

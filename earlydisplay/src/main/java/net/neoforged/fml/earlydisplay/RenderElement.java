@@ -100,12 +100,12 @@ public class RenderElement {
             ctx.elementShader().updateTextureUniform(0);
             ctx.elementShader().updateRenderTypeUniform(ElementShader.RenderType.TEXTURE);
             var fade = Math.min((frame - frameStart) * 10, 255);
-            glBindTexture(GL_TEXTURE_2D, textureId);
+            GlState.bindTexture2D(textureId);
             bb.begin(SimpleBufferBuilder.Format.POS_TEX_COLOR, SimpleBufferBuilder.Mode.QUADS);
             QuadHelper.loadQuad(bb, x0, x0 + size, y0, y0 + size / 2f, 0f, 1f, 0f, 0.5f, ctx.colourScheme.foreground().packedint(fade));
             QuadHelper.loadQuad(bb, x0 + size, x0 + 2 * size, y0, y0 + size / 2f, 0f, 1f, 0.5f, 1f, ctx.colourScheme.foreground().packedint(fade));
             bb.draw();
-            glBindTexture(GL_TEXTURE_2D, 0);
+            GlState.bindTexture2D(0);
         });
     }
 
