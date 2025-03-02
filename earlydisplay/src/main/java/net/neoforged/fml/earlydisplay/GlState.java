@@ -5,6 +5,7 @@
 
 package net.neoforged.fml.earlydisplay;
 
+import static org.lwjgl.opengl.GL20C.glIsProgram;
 import static org.lwjgl.opengl.GL32C.GL_ACTIVE_TEXTURE;
 import static org.lwjgl.opengl.GL32C.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL32C.GL_ARRAY_BUFFER_BINDING;
@@ -396,7 +397,12 @@ final class GlState {
         clearColor(snapshot.clearColorRed, snapshot.clearColorGreen, snapshot.clearColorBlue, snapshot.clearColorAlpha);
         enableBlend(snapshot.blendEnabled);
         blendFuncSeparate(snapshot.blendSrcRGB, snapshot.blendDstRGB, snapshot.blendSrcAlpha, snapshot.blendDstAlpha);
-        useProgram(snapshot.currentProgram);
+        // The program might have been flagged for deletion and may no longer be available
+        if (glIsProgram(snapshot.currentProgram)) {
+            useProgram(snapshot.currentProgram);
+        } else {
+            useProgram(0);
+        }
         activeTexture(snapshot.activeTextureUnit);
         bindTexture2D(snapshot.boundTexture2D);
         bindVertexArray(snapshot.boundVertexArray);
