@@ -60,7 +60,6 @@ public class SimpleFont {
         GlState.activeTexture(GL_TEXTURE0 + textureNumber);
         this.textureNumber = textureNumber;
         GlState.bindTexture2D(fontTextureId);
-        GlDebug.labelTexture(fontTextureId, "EarlyDisplay font " + fontName);
         try (var packedchars = STBTTPackedchar.malloc(GLYPH_COUNT)) {
             int texwidth = 256;
             int texheight = 128;
