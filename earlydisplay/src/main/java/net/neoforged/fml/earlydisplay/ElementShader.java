@@ -15,7 +15,9 @@ public class ElementShader {
 
     public void init() {
         int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+        GlDebug.labelShader(vertexShader, "EarlyDisplay vs");
         int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+        GlDebug.labelShader(fragmentShader, "EarlyDisplay fs");
 
         // Bind the source of our shaders to the ones created above
         glShaderSource(fragmentShader, """
@@ -61,6 +63,7 @@ public class ElementShader {
         }
 
         var program = glCreateProgram();
+        GlDebug.labelProgram(program, "EarlyDisplay program");
         glBindAttribLocation(program, 0, "position");
         glBindAttribLocation(program, 1, "tex");
         glBindAttribLocation(program, 2, "colour");

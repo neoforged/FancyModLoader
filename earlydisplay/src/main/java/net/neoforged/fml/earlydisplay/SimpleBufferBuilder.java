@@ -48,6 +48,7 @@ public class SimpleBufferBuilder implements Closeable {
         Arrays.fill(VERTEX_BUFFER_LENGTHS, 0);
     }
 
+    private final String label;
     private long bufferAddr;   // Pointer to the backing buffer.
     private ByteBuffer buffer; // ByteBuffer view of the backing buffer.
 
@@ -68,7 +69,8 @@ public class SimpleBufferBuilder implements Closeable {
      *
      * @param capacity The initial capacity in bytes.
      */
-    public SimpleBufferBuilder(int capacity) {
+    public SimpleBufferBuilder(String label, int capacity) {
+        this.label = label;
         bufferAddr = ALLOCATOR.malloc(capacity);
         buffer = MemoryUtil.memByteBuffer(bufferAddr, capacity);
     }
@@ -96,6 +98,7 @@ public class SimpleBufferBuilder implements Closeable {
 
         // allocate new buffer
         GlState.bindElementArrayBuffer(newElementBuffer);
+        GlDebug.labelBuffer(newElementBuffer, "EarlyDisplay shared index buffer");
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, newIndexCount * 4L, GL_STATIC_DRAW);
 
         // mapping avoids creating additional CPU copies of the data
@@ -164,7 +167,6 @@ public class SimpleBufferBuilder implements Closeable {
      *
      * @param x The x.
      * @param y The y.
-     * @param z The z.
      * @return The same builder.
      */
     public SimpleBufferBuilder pos(float x, float y) {
@@ -390,6 +392,8 @@ public class SimpleBufferBuilder implements Closeable {
             // but only once, the VAO saves this state
             GlState.bindVertexArray(vao);
             GlState.bindArrayBuffer(vbo);
+            GlDebug.labelVertexArray(vao, label);
+            GlDebug.labelBuffer(vao, label);
             format.bind();
             format.enable();
         }

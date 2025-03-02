@@ -55,7 +55,11 @@ import static org.lwjgl.opengl.GL32C.glViewport;
  * when necessary, reducing overhead from redundant state changes.
  */
 final class GlState {
-    // Viewport state
+    // The font is actually using multi-texturing, there's a guarantee for at least 16
+    // in OGL 3.1
+    private static final int MAX_TEXTURE_UNITS = 16;
+    private static final int MAX_VERTEX_ATTRIB_ARRAYS = 16;
+
     private static int viewportX;
     private static int viewportY;
     private static int viewportWidth;
@@ -78,12 +82,12 @@ final class GlState {
     private static int currentProgram;
 
     // Texture state
-    private static int boundTexture2D;
+    private static final int[] boundTexture2D = new int[MAX_TEXTURE_UNITS];
     private static int activeTextureUnit;
 
     // Vertex array state
     private static int boundVertexArray;
-    private static final boolean[] enabledVertexAttribArrays = new boolean[16];
+    private static final boolean[] enabledVertexAttribArrays = new boolean[MAX_VERTEX_ATTRIB_ARRAYS];
 
     // Framebuffer states
     private static int boundDrawFramebuffer;
@@ -132,7 +136,11 @@ final class GlState {
 
         // Read texture state
         activeTextureUnit = GL_TEXTURE0 + glGetInteger(GL_ACTIVE_TEXTURE) - GL_TEXTURE0;
-        boundTexture2D = glGetInteger(GL_TEXTURE_BINDING_2D);
+        for (var i = 0; i < boundTexture2D.length; i++) {
+            glActiveTexture(i);
+            boundTexture2D[i] = glGetInteger(GL_TEXTURE_BINDING_2D);
+        }
+        glActiveTexture(activeTextureUnit);
 
         // Read vertex array state
         boundVertexArray = glGetInteger(GL_VERTEX_ARRAY_BINDING);
@@ -251,9 +259,9 @@ final class GlState {
      * @param textureId The texture ID to bind
      */
     public static void bindTexture2D(int textureId) {
-        if (textureId != boundTexture2D) {
+        if (textureId != boundTexture2D[activeTextureUnit]) {
             glBindTexture(GL_TEXTURE_2D, textureId);
-            boundTexture2D = textureId;
+            boundTexture2D[activeTextureUnit] = textureId;
         }
     }
 
@@ -356,7 +364,7 @@ final class GlState {
             boolean blendEnabled,
             int blendSrcRGB, int blendDstRGB, int blendSrcAlpha, int blendDstAlpha,
             int currentProgram,
-            int boundTexture2D, int activeTextureUnit,
+            int[] boundTexture2D, int activeTextureUnit,
             int boundVertexArray, boolean[] enabledVertexAttribArrays,
             int boundDrawFramebuffer, int boundReadFramebuffer,
             int boundElementArrayBuffer, int boundArrayBuffer) {
@@ -365,6 +373,7 @@ final class GlState {
          */
         public StateSnapshot {
             enabledVertexAttribArrays = enabledVertexAttribArrays.clone();
+            boundTexture2D = boundTexture2D.clone();
         }
     }
 
@@ -381,7 +390,7 @@ final class GlState {
                 blendSrcRGB, blendDstRGB, blendSrcAlpha, blendDstAlpha,
                 currentProgram,
                 boundTexture2D, activeTextureUnit,
-                boundVertexArray, enabledVertexAttribArrays.clone(),
+                boundVertexArray, enabledVertexAttribArrays,
                 boundDrawFramebuffer, boundReadFramebuffer,
                 boundElementArrayBuffer, boundArrayBuffer);
     }
@@ -397,8 +406,12 @@ final class GlState {
         enableBlend(snapshot.blendEnabled);
         blendFuncSeparate(snapshot.blendSrcRGB, snapshot.blendDstRGB, snapshot.blendSrcAlpha, snapshot.blendDstAlpha);
         useProgram(snapshot.currentProgram);
+        for (int i = 0; i < boundTexture2D.length; i++) {
+            glActiveTexture(i);
+            glBindTexture(GL_TEXTURE_2D, snapshot.boundTexture2D[i]);
+            boundTexture2D[i] = snapshot.boundTexture2D[i];
+        }
         activeTexture(snapshot.activeTextureUnit);
-        bindTexture2D(snapshot.boundTexture2D);
         bindVertexArray(snapshot.boundVertexArray);
         // Handle framebuffers - check if both are the same
         if (snapshot.boundDrawFramebuffer == snapshot.boundReadFramebuffer) {

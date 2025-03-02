@@ -16,7 +16,7 @@ gradleutils.version {
     }
 }
 
-println "Version: ${project.version = gradleutils.version}"
+println "Version: ${project.version = '9.9.9'}"
 
 allprojects {
     apply plugin: 'java-library'

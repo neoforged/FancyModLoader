@@ -204,8 +204,9 @@ public class DisplayWindow implements ImmediateWindowProvider {
         glfwMakeContextCurrent(window);
         // Wait for one frame to be complete before swapping; enable vsync in other words.
         glfwSwapInterval(1);
-        createCapabilities();
-        LOGGER.info("GL info: " + glGetString(GL_RENDERER) + " GL version " + glGetString(GL_VERSION) + ", " + glGetString(GL_VENDOR));
+        var capabilities = createCapabilities();
+        GlDebug.setCapabilities(capabilities);
+        LOGGER.info("GL info: {} GL version {}, {}", glGetString(GL_RENDERER), glGetString(GL_VERSION), glGetString(GL_VENDOR));
 
         elementShader = new ElementShader();
         try {
@@ -261,10 +262,9 @@ public class DisplayWindow implements ImmediateWindowProvider {
             framecount++;
     }
 
+    // Called from NeoForge
     public void render(int alpha) {
-        var currentVAO = glGetInteger(GL_VERTEX_ARRAY_BINDING);
-        var currentFB = glGetInteger(GL_READ_FRAMEBUFFER_BINDING);
-        glViewport(0, 0, this.context.scaledWidth(), this.context.scaledHeight());
+        GlDebug.pushGroup("update EarlyDisplay framebuffer");
         GlState.readFromOpenGL();
         var backup = GlState.createSnapshot();
 
@@ -279,6 +279,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         framebuffer.deactivate();
 
         GlState.applySnapshot(backup);
+        GlDebug.popGroup();
     }
 
     /**
