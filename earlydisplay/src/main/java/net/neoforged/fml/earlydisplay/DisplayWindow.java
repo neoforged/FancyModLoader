@@ -205,6 +205,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         // Wait for one frame to be complete before swapping; enable vsync in other words.
         glfwSwapInterval(1);
         var capabilities = createCapabilities();
+        GlState.readFromOpenGL();
         GlDebug.setCapabilities(capabilities);
         LOGGER.info("GL info: {} GL version {}, {}", glGetString(GL_RENDERER), glGetString(GL_VERSION), glGetString(GL_VENDOR));
 
