@@ -39,13 +39,13 @@ public class STBHelper {
         return MemoryUtil.memSlice(buf); // we trim the final buffer to the size of the content
     }
 
-    public static int[] loadTextureFromClasspath(String file, int size, int textureNumber) {
+    public static ImageTexture loadTextureFromClasspath(String file, int size) {
         int[] lw = new int[1];
         int[] lh = new int[1];
         int[] lc = new int[1];
         var img = loadImageFromClasspath(file, size, lw, lh, lc);
         var texid = glGenTextures();
-        GlState.activeTexture(textureNumber);
+        GlState.activeTexture(GL_TEXTURE0);
         GlState.bindTexture2D(texid);
         GlDebug.labelTexture(texid, "EarlyDisplay " + file);
 //        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -55,8 +55,12 @@ public class STBHelper {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, lw[0], lh[0], 0, GL_RGBA, GL_UNSIGNED_BYTE, img);
         GlState.activeTexture(GL_TEXTURE0);
         MemoryUtil.memFree(img);
-        return new int[] { lw[0], lh[0] };
+        return new ImageTexture(
+                texid,
+                new int[] { lw[0], lh[0] });
     }
+
+    public record ImageTexture(int textureId, int[] size) {}
 
     public static ByteBuffer loadImageFromClasspath(String file, int size, int[] width, int[] height, int[] channels) {
         ByteBuffer buf = STBHelper.readFromClasspath(file, size);

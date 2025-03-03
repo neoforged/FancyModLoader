@@ -15,7 +15,6 @@ import net.neoforged.fml.loading.progress.ProgressMeter;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 
 public class RenderElement {
-    static final int INDEX_TEXTURE_OFFSET = 5;
     private final SimpleBufferBuilder bb;
     private final Renderer renderer;
     static int globalAlpha = 255;
@@ -247,7 +246,8 @@ public class RenderElement {
     }
 
     private static void renderText(final SimpleFont font, final TextGenerator textGenerator, final SimpleBufferBuilder bb, final DisplayContext context) {
-        context.elementShader().updateTextureUniform(font.textureNumber());
+        GlState.activeTexture(GL_TEXTURE0);
+        GlState.bindTexture2D(font.textureId());
         context.elementShader().updateRenderTypeUniform(ElementShader.RenderType.FONT);
         bb.begin(SimpleBufferBuilder.Format.POS_TEX_COLOR, SimpleBufferBuilder.Mode.QUADS);
         textGenerator.accept(bb, font, context);
@@ -260,11 +260,12 @@ public class RenderElement {
 
     private static Initializer initializeTexture(final String textureFileName, int size, int textureNumber, TextureRenderer positionAndColour) {
         return () -> {
-            int[] imgSize = STBHelper.loadTextureFromClasspath(textureFileName, size, GL_TEXTURE0 + textureNumber + INDEX_TEXTURE_OFFSET);
+            var texture = STBHelper.loadTextureFromClasspath(textureFileName, size);
             return (bb, ctx, frame) -> {
-                ctx.elementShader().updateTextureUniform(textureNumber + INDEX_TEXTURE_OFFSET);
+                GlState.activeTexture(GL_TEXTURE0);
+                GlState.bindTexture2D(texture.textureId());
                 ctx.elementShader().updateRenderTypeUniform(ElementShader.RenderType.TEXTURE);
-                renderTexture(bb, ctx, frame, imgSize, positionAndColour);
+                renderTexture(bb, ctx, frame, texture.size(), positionAndColour);
             };
         };
     }
@@ -279,7 +280,7 @@ public class RenderElement {
         if (num < min) {
             return min;
         } else {
-            return num > max ? max : num;
+            return Math.min(num, max);
         }
     }
 
@@ -287,7 +288,7 @@ public class RenderElement {
         if (num < min) {
             return min;
         } else {
-            return num > max ? max : num;
+            return Math.min(num, max);
         }
     }
 

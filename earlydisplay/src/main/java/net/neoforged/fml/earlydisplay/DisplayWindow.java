@@ -224,7 +224,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         this.context = new RenderElement.DisplayContext(854, 480, fbScale, elementShader, colourScheme, performanceInfo);
         framebuffer = new EarlyFramebuffer(this.context);
         try {
-            this.font = new SimpleFont("Monocraft.ttf", fbScale, 200000, 1 + RenderElement.INDEX_TEXTURE_OFFSET);
+            this.font = new SimpleFont("Monocraft.ttf", fbScale, 200000);
         } catch (Throwable t) {
             LOGGER.error("Crash during font initialization", t);
             crashElegantly("An error occurred initializing a font for rendering. " + t.getMessage());
