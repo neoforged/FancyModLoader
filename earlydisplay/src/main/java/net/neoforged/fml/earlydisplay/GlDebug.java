@@ -49,9 +49,9 @@ final class GlDebug {
             groupMode = GroupMode.CORE;
             maxLabelLength = GL32C.glGetInteger(KHRDebug.GL_MAX_LABEL_LENGTH);
         } else {
+            maxLabelLength = 256;
             if (capabilities.GL_EXT_debug_label) {
                 labelMode = LabelMode.EXTENSION;
-                maxLabelLength = 256;
             }
             if (capabilities.GL_EXT_debug_marker) {
                 groupMode = GroupMode.EXTENSION;

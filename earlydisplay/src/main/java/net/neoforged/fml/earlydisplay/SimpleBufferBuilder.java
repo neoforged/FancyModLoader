@@ -393,7 +393,7 @@ public class SimpleBufferBuilder implements Closeable {
             GlState.bindVertexArray(vao);
             GlState.bindArrayBuffer(vbo);
             GlDebug.labelVertexArray(vao, label);
-            GlDebug.labelBuffer(vao, label);
+            GlDebug.labelBuffer(vbo, label);
             format.bind();
             format.enable();
         }
