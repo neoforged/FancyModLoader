@@ -53,8 +53,8 @@ public class RenderElement {
         }
     }
 
-    public RenderElement(final Initializer rendererInitializer) {
-        this.bb = new SimpleBufferBuilder(1);
+    public RenderElement(String label, final Initializer rendererInitializer) {
+        this.bb = new SimpleBufferBuilder(label, 1);
         this.renderer = rendererInitializer.get();
     }
 
@@ -82,18 +82,8 @@ public class RenderElement {
         font.generateVerticesForTexts(10, context.scaledHeight() - texts.size() * font.lineSpacing() + font.descent() - 10, bb, texts.toArray(SimpleFont.DisplayText[]::new));
     }
 
-    public static RenderElement monag() {
-        return new RenderElement(RenderElement.initializeTexture("monagstudios.png", 45000, 4, (bb, ctx, sz, frame) -> {
-            var size = 256;
-            var x0 = (ctx.width() - 2 * size) / 2;
-            var y0 = 64;
-            QuadHelper.loadQuad(bb, x0, x0 + size, y0, y0 + size / 2f, 0f, 1f, 0f, 0.5f, 0xFFFFFFFF);
-            QuadHelper.loadQuad(bb, x0 + size, x0 + 2 * size, y0, y0 + size / 2f, 0f, 1f, 0.5f, 1f, 0xFFFFFFFF);
-        }));
-    }
-
     public static RenderElement mojang(final int textureId, final int frameStart) {
-        return new RenderElement(() -> (bb, ctx, frame) -> {
+        return new RenderElement("mojang logo", () -> (bb, ctx, frame) -> {
             var size = 256 * ctx.scale();
             var x0 = (ctx.scaledWidth() - 2 * size) / 2;
             var y0 = 64 * ctx.scale() + 32;
@@ -110,17 +100,17 @@ public class RenderElement {
     }
 
     public static RenderElement logMessageOverlay(SimpleFont font) {
-        return new RenderElement(RenderElement.initializeText(font, RenderElement::startupLogMessages));
+        return new RenderElement("log messages", RenderElement.initializeText(font, RenderElement::startupLogMessages));
     }
 
     public static RenderElement forgeVersionOverlay(SimpleFont font, String version) {
-        return new RenderElement(RenderElement.initializeText(font, (bb, fnt, ctx) -> font.generateVerticesForTexts(ctx.scaledWidth() - font.stringWidth(version) - 10,
+        return new RenderElement("version overlay", RenderElement.initializeText(font, (bb, fnt, ctx) -> font.generateVerticesForTexts(ctx.scaledWidth() - font.stringWidth(version) - 10,
                 ctx.scaledHeight() - font.lineSpacing() + font.descent() - 10, bb,
                 new SimpleFont.DisplayText(version, ctx.colourScheme.foreground().packedint(RenderElement.globalAlpha)))));
     }
 
     public static RenderElement squir() {
-        return new RenderElement(RenderElement.initializeTexture("squirrel.png", 45000, 3, (bb, context, size, frame) -> {
+        return new RenderElement("squir", RenderElement.initializeTexture("squirrel.png", 45000, 3, (bb, context, size, frame) -> {
             var inset = 5f;
             var x0 = inset;
             var x1 = inset + size[0] * context.scale();
@@ -134,7 +124,7 @@ public class RenderElement {
     }
 
     public static RenderElement fox(SimpleFont font) {
-        return new RenderElement(RenderElement.initializeTexture("fox_running.png", 128000, 2, (bb, context, size, frame) -> {
+        return new RenderElement("fox", RenderElement.initializeTexture("fox_running.png", 128000, 2, (bb, context, size, frame) -> {
             int framecount = 28;
             float aspect = size[0] * (float) framecount / size[1];
             int outsize = size[0];
@@ -151,11 +141,11 @@ public class RenderElement {
     }
 
     public static RenderElement progressBars(SimpleFont font) {
-        return new RenderElement(() -> (bb, ctx, frame) -> RenderElement.startupProgressBars(font, bb, ctx, frame));
+        return new RenderElement("progress bars", () -> (bb, ctx, frame) -> RenderElement.startupProgressBars(font, bb, ctx, frame));
     }
 
     public static RenderElement performanceBar(SimpleFont font) {
-        return new RenderElement(() -> (bb, ctx, frame) -> RenderElement.memoryInfo(font, bb, ctx, frame));
+        return new RenderElement("performance bar", () -> (bb, ctx, frame) -> RenderElement.memoryInfo(font, bb, ctx, frame));
     }
 
     public static void startupProgressBars(SimpleFont font, final SimpleBufferBuilder buffer, final DisplayContext context, final int frameNumber) {
