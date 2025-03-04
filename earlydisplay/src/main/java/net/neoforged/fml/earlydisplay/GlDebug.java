@@ -39,7 +39,7 @@ final class GlDebug {
     private static int maxLabelLength;
 
     public static void setCapabilities(GLCapabilities capabilities) {
-        if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_GLDEBUG)) {
+        if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DEBUG_OPENGL)) {
             return;
         }
 
