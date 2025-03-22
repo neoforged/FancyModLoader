@@ -173,6 +173,10 @@ public class DisplayWindow implements ImmediateWindowProvider {
             }
             nextFrameTime = nt + MINFRAMETIME;
             glfwMakeContextCurrent(window);
+
+            GlState.readFromOpenGL();
+            var backup = GlState.createSnapshot();
+
             framebuffer.activate();
             GlState.viewport(0, 0, this.context.scaledWidth(), this.context.scaledHeight());
             this.context.elementShader().activate();
@@ -185,6 +189,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
             framebuffer.draw(this.fbWidth, this.fbHeight);
             // Swap buffers; we're done
             glfwSwapBuffers(window);
+
+            GlState.applySnapshot(backup);
         } catch (Throwable t) {
             LOGGER.error("BARF", t);
         } finally {
