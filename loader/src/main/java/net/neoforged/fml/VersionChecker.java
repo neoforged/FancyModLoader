@@ -91,7 +91,7 @@ public class VersionChecker {
     public record CheckResult(VersionChecker.Status status, ComparableVersion target, Map<ComparableVersion, String> changes, String url) {}
 
     public static void startVersionCheck() {
-        new Thread("Forge Version Check") {
+        new Thread("NeoForge Version Check") {
             private HttpClient client;
 
             @Override

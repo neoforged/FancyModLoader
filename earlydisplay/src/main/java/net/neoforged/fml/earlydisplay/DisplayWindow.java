@@ -173,18 +173,24 @@ public class DisplayWindow implements ImmediateWindowProvider {
             }
             nextFrameTime = nt + MINFRAMETIME;
             glfwMakeContextCurrent(window);
+
+            GlState.readFromOpenGL();
+            var backup = GlState.createSnapshot();
+
             framebuffer.activate();
-            glViewport(0, 0, this.context.scaledWidth(), this.context.scaledHeight());
+            GlState.viewport(0, 0, this.context.scaledWidth(), this.context.scaledHeight());
             this.context.elementShader().activate();
             this.context.elementShader().updateScreenSizeUniform(this.context.scaledWidth(), this.context.scaledHeight());
-            glClearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), 1f);
+            GlState.clearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), 1f);
             paintFramebuffer();
             this.context.elementShader().clear();
             framebuffer.deactivate();
-            glViewport(0, 0, fbWidth, fbHeight);
+            GlState.viewport(0, 0, fbWidth, fbHeight);
             framebuffer.draw(this.fbWidth, this.fbHeight);
             // Swap buffers; we're done
             glfwSwapBuffers(window);
+
+            GlState.applySnapshot(backup);
         } catch (Throwable t) {
             LOGGER.error("BARF", t);
         } finally {
@@ -204,8 +210,10 @@ public class DisplayWindow implements ImmediateWindowProvider {
         glfwMakeContextCurrent(window);
         // Wait for one frame to be complete before swapping; enable vsync in other words.
         glfwSwapInterval(1);
-        createCapabilities();
-        LOGGER.info("GL info: " + glGetString(GL_RENDERER) + " GL version " + glGetString(GL_VERSION) + ", " + glGetString(GL_VENDOR));
+        var capabilities = createCapabilities();
+        GlState.readFromOpenGL();
+        GlDebug.setCapabilities(capabilities);
+        LOGGER.info("GL info: {} GL version {}, {}", glGetString(GL_RENDERER), glGetString(GL_VERSION), glGetString(GL_VENDOR));
 
         elementShader = new ElementShader();
         try {
@@ -216,13 +224,13 @@ public class DisplayWindow implements ImmediateWindowProvider {
         }
 
         // Set the clear color based on the colour scheme
-        glClearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), 1f);
+        GlState.clearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), 1f);
 
         // we always render to an 854x480 texture and then fit that to the screen - with a scale factor
         this.context = new RenderElement.DisplayContext(854, 480, fbScale, elementShader, colourScheme, performanceInfo);
         framebuffer = new EarlyFramebuffer(this.context);
         try {
-            this.font = new SimpleFont("Monocraft.ttf", fbScale, 200000, 1 + RenderElement.INDEX_TEXTURE_OFFSET);
+            this.font = new SimpleFont("Monocraft.ttf", fbScale, 200000);
         } catch (Throwable t) {
             LOGGER.error("Crash during font initialization", t);
             crashElegantly("An error occurred initializing a font for rendering. " + t.getMessage());
@@ -238,8 +246,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
         if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_SQUIR) || (date.get(Calendar.MONTH) == Calendar.APRIL && date.get(Calendar.DAY_OF_MONTH) == 1))
             this.elements.add(0, RenderElement.squir());
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GlState.enableBlend(true);
+        GlState.blendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glfwMakeContextCurrent(0);
         this.windowTick = renderScheduler.scheduleAtFixedRate(this::renderThreadFunc, 50, 50, TimeUnit.MILLISECONDS);
         this.performanceTick = renderScheduler.scheduleAtFixedRate(performanceInfo::update, 0, 500, TimeUnit.MILLISECONDS);
@@ -253,28 +261,32 @@ public class DisplayWindow implements ImmediateWindowProvider {
     void paintFramebuffer() {
         // Clear the screen to our color
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GlState.enableBlend(true);
+        GlState.blendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
         this.elements.removeIf(element -> !element.render(context, framecount));
         if (animationTimerTrigger.compareAndSet(true, false)) // we only increment the framecount on a periodic basis
             framecount++;
     }
 
+    // Called from NeoForge
     public void render(int alpha) {
-        var currentVAO = glGetInteger(GL_VERTEX_ARRAY_BINDING);
-        var currentFB = glGetInteger(GL_READ_FRAMEBUFFER_BINDING);
-        glViewport(0, 0, this.context.scaledWidth(), this.context.scaledHeight());
+        GlDebug.pushGroup("update EarlyDisplay framebuffer");
+        GlState.readFromOpenGL();
+        var backup = GlState.createSnapshot();
+
+        GlState.viewport(0, 0, this.context.scaledWidth(), this.context.scaledHeight());
         RenderElement.globalAlpha = alpha;
         framebuffer.activate();
-        glClearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), alpha / 255f);
+        GlState.clearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), alpha / 255f);
         elementShader.activate();
         elementShader.updateScreenSizeUniform(this.context.scaledWidth(), this.context.scaledHeight());
         paintFramebuffer();
         elementShader.clear();
         framebuffer.deactivate();
-        glBindVertexArray(currentVAO);
-        glBindFramebuffer(GL_FRAMEBUFFER, currentFB);
+
+        GlState.applySnapshot(backup);
+        GlDebug.popGroup();
     }
 
     /**
@@ -391,7 +403,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         var successfulWindow = new AtomicBoolean(false);
         var windowFailFuture = renderScheduler.schedule(() -> {
             if (!successfulWindow.get()) crashElegantly("Timed out trying to setup the Game Window.");
-        }, 10, TimeUnit.SECONDS);
+        }, 30, TimeUnit.SECONDS);
         int versidx = 0;
         var skipVersions = FMLConfig.<String>getListConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_SKIP_GL_VERSIONS);
         final String[] lastGLError = new String[GL_VERSIONS.length];

@@ -19,7 +19,7 @@ import org.lwjgl.stb.STBTTPackRange;
 import org.lwjgl.stb.STBTTPackedchar;
 
 public class SimpleFont {
-    private final int textureNumber;
+    private final int textureId;
     private final int lineSpacing;
     private final int descent;
     private final int GLYPH_COUNT = 127 - 32;
@@ -42,7 +42,7 @@ public class SimpleFont {
     /**
      * Build the font and store it in the textureNumber location
      */
-    public SimpleFont(String fontName, int scale, int bufferSize, int textureNumber) {
+    public SimpleFont(String fontName, int scale, int bufferSize) {
         ByteBuffer buf = STBHelper.readFromClasspath(fontName, bufferSize);
         var info = STBTTFontinfo.create();
         if (!stbtt_InitFont(info, buf)) {
@@ -56,10 +56,10 @@ public class SimpleFont {
         stbtt_GetScaledFontVMetrics(buf, 0, fontSize, ascent, descent, lineGap);
         this.lineSpacing = (int) (ascent[0] - descent[0] + lineGap[0]);
         this.descent = (int) Math.floor(descent[0]);
-        int fontTextureId = glGenTextures();
-        glActiveTexture(GL_TEXTURE0 + textureNumber);
-        this.textureNumber = textureNumber;
-        glBindTexture(GL_TEXTURE_2D, fontTextureId);
+        this.textureId = glGenTextures();
+        GlState.activeTexture(GL_TEXTURE0);
+        GlState.bindTexture2D(this.textureId);
+        GlDebug.labelTexture(this.textureId, "font texture " + fontName);
         try (var packedchars = STBTTPackedchar.malloc(GLYPH_COUNT)) {
             int texwidth = 256;
             int texheight = 128;
@@ -83,7 +83,6 @@ public class SimpleFont {
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 }
             }
-            glActiveTexture(GL_TEXTURE0);
             try (var q = STBTTAlignedQuad.malloc()) {
                 float[] x = new float[1];
                 float[] y = new float[1];
@@ -103,8 +102,8 @@ public class SimpleFont {
         return lineSpacing;
     }
 
-    int textureNumber() {
-        return textureNumber;
+    int textureId() {
+        return textureId;
     }
 
     int descent() {

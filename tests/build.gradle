@@ -2,10 +2,6 @@ plugins {
     id 'net.neoforged.moddev'
 }
 
-apply plugin: fmlbuild.NeoForgeInstallationsPlugin
-apply plugin: fmlbuild.RunConfigurationsPlugin
-apply plugin: fmlbuild.AttributesPlugin
-
 neoForge {
     version = test_neoforge_version
     runs {
@@ -17,12 +13,15 @@ neoForge {
             server()
             gameDirectory = file("build/runs/server")
         }
-        data {
-            data()
+        clientData {
+            clientData()
             gameDirectory = file("build/runs/data")
         }
     }
 }
+
+apply plugin: fmlbuild.NeoForgeInstallationsPlugin
+apply plugin: fmlbuild.RunConfigurationsPlugin
 
 runClient.group = "fml/test runs"
 runServer.group = "fml/test runs"
@@ -45,7 +44,9 @@ runConfigurations {
         dependencies {
             classpath project(":earlydisplay")
             classpath project(":loader")
-            classpath "net.neoforged:minecraft-dependencies:$test_minecraft_version"
+            classpath("net.neoforged:minecraft-dependencies:$test_minecraft_version") {
+                exclude group: 'org.ow2.asm' // Conflicting strict requirements on ASM version
+            }
             // Needed to support arg-files for program arguments
             classpath "net.neoforged:DevLaunch:1.0.1"
             modulepath("net.neoforged:neoforge:$test_neoforge_version") {

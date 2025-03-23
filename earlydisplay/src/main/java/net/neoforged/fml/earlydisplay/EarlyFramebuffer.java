@@ -19,22 +19,25 @@ public class EarlyFramebuffer {
         this.context = context;
         this.framebuffer = glGenFramebuffers();
         this.texture = glGenTextures();
-        glBindFramebuffer(GL_FRAMEBUFFER, this.framebuffer);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, this.texture);
+        GlState.bindFramebuffer(this.framebuffer);
+        GlDebug.labelFramebuffer(this.framebuffer, "EarlyDisplay framebuffer");
+
+        GlState.activeTexture(GL_TEXTURE0);
+        GlState.bindTexture2D(this.texture);
+        GlDebug.labelTexture(this.texture, "EarlyDisplay backbuffer");
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, context.width() * context.scale(), context.height() * context.scale(), 0, GL_RGBA, GL_UNSIGNED_BYTE, (IntBuffer) null);
         glTexParameterIi(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameterIi(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this.texture, 0);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        GlState.bindFramebuffer(0);
     }
 
     void activate() {
-        glBindFramebuffer(GL_FRAMEBUFFER, this.framebuffer);
+        GlState.bindFramebuffer(this.framebuffer);
     }
 
     void deactivate() {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        GlState.bindFramebuffer(0);
     }
 
     void draw(int windowFBWidth, int windowFBHeight) {
@@ -45,14 +48,14 @@ public class EarlyFramebuffer {
         var wtop = (int) (windowFBHeight * 0.5f - scale * this.context.height());
         var wright = (int) (windowFBWidth * 0.5f + scale * this.context.width());
         var wbottom = (int) (windowFBHeight * 0.5f + scale * this.context.height());
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, this.framebuffer);
+        GlState.bindDrawFramebuffer(0);
+        GlState.bindReadFramebuffer(this.framebuffer);
         final var colour = this.context.colourScheme().background();
-        glClearColor(colour.redf(), colour.greenf(), colour.bluef(), 1f);
+        GlState.clearColor(colour.redf(), colour.greenf(), colour.bluef(), 1f);
         glClear(GL_COLOR_BUFFER_BIT);
         // src Y are flipped, since our FB is flipped
         glBlitFramebuffer(0, this.context.height() * this.context.scale(), this.context.width() * this.context.scale(), 0, RenderElement.clamp(wleft, 0, windowFBWidth), RenderElement.clamp(wtop, 0, windowFBHeight), RenderElement.clamp(wright, 0, windowFBWidth), RenderElement.clamp(wbottom, 0, windowFBHeight), GL_COLOR_BUFFER_BIT, GL_NEAREST);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        GlState.bindFramebuffer(0);
     }
 
     int getTexture() {
