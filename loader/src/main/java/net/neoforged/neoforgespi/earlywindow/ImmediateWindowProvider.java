@@ -5,6 +5,8 @@
 
 package net.neoforged.neoforgespi.earlywindow;
 
+import net.neoforged.fml.loading.EarlyLoadingScreenController;
+
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
@@ -25,7 +27,7 @@ import java.util.function.Supplier;
  *
  * No doubt many more things can be said here.
  */
-public interface ImmediateWindowProvider {
+public interface ImmediateWindowProvider extends EarlyLoadingScreenController {
     /**
      * @return The name of this window provider. Do NOT use fmlearlywindow.
      */
@@ -44,57 +46,6 @@ public interface ImmediateWindowProvider {
      *         a good place to put glfwPollEvents() tests.
      */
     Runnable initialize(String[] arguments);
-
-    /**
-     * This will be called during the handoff to minecraft to update minecraft with the size of the framebuffer we have.
-     * Generally won't be called because Minecraft figures it out for itself.
-     * 
-     * @param width  Consumer of the framebuffer width
-     * @param height Consumer of the framebuffer height
-     */
-    void updateFramebufferSize(IntConsumer width, IntConsumer height);
-
-    /**
-     * This is called to setup the minecraft window, as if Mojang had done it themselves in their Window class. This
-     * handoff is difficult to get right - you have to make sure that any activities you're doing to the window are finished
-     * prior to returning. You should try and setup the width and height as Mojang expects - the suppliers give you all that
-     * information. Alternatively, you can force Mojang to update from the current position of the window in {@link #positionWindow(Optional, IntConsumer, IntConsumer, IntConsumer, IntConsumer)}
-     * instead. This might give a more seamless experience.
-     *
-     * @param width   This is the width of the window Mojang expects
-     * @param height  This is the height of the Window Mojang expects.
-     * @param title   This is the title for the window.
-     * @param monitor This is the monitor it should appear on.
-     * @return The window id
-     */
-    long setupMinecraftWindow(final IntSupplier width, final IntSupplier height, final Supplier<String> title, final LongSupplier monitor);
-
-    /**
-     * This is called after window handoff to allow us to tell Mojang about our window's position. This might give a
-     * preferrable user experience to users, because we just tell Mojang our truth, rather than accept theirs.
-     * 
-     * @param monitor      This is the monitor we're rendering on. Note that this is the Mojang monitor object. You might have trouble unwrapping it.
-     * @param widthSetter  This sets the width on the Mojang side
-     * @param heightSetter This sets the height on the Mojang side
-     * @param xSetter      This sets the x coordinate on the Mojang side
-     * @param ySetter      This sets the y coordinate on the Mojang side
-     * @return true if you've handled the window positioning - this skips the "forced fullscreen" code until a later stage
-     */
-    boolean positionWindow(Optional<Object> monitor, IntConsumer widthSetter, IntConsumer heightSetter, IntConsumer xSetter, IntConsumer ySetter);
-
-    /**
-     * Return a Supplier of an object extending the LoadingOverlay class from Mojang. This is what will be used once
-     * the Mojang window code has taken over rendering of the window, to render the later stages of the loading process.
-     *
-     * @param mc   This supplies the Minecraft object
-     * @param ri   This supplies the ReloadInstance object that tells us when the loading is finished
-     * @param ex   This Consumes the final state of the loading - if it's an error you pass it the Throwable, otherwise you
-     *             pass Optional.empty()
-     * @param fade This is the fade flag passed to LoadingOverlay. You probably want to ignore it.
-     * @param <T>  This is the type LoadingOverlay to allow type binding on the Mojang side
-     * @return A supplier of your later LoadingOverlay screen.
-     */
-    <T> Supplier<T> loadingOverlay(Supplier<?> mc, Supplier<?> ri, Consumer<Optional<Throwable>> ex, boolean fade);
 
     /**
      * This is called during the module loading process to allow us to find objects inside the GAME layer, such as a

@@ -539,7 +539,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
      *
      * @return the Window we own.
      */
-    public long setupMinecraftWindow(final IntSupplier width, final IntSupplier height, final Supplier<String> title, final LongSupplier monitorSupplier) {
+    public long takeOverGlfwWindow() {
         // wait for the window to actually be initialized
         try {
             this.initializationFuture.get(30, TimeUnit.SECONDS);
@@ -572,7 +572,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
         glfwMakeContextCurrent(window);
         // Set the title to what the game wants
-        glfwSetWindowTitle(window, title.get());
         glfwSwapInterval(0);
         // Clean up our hooks
         glfwSetFramebufferSizeCallback(window, null).free();
@@ -581,21 +580,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
         this.repaintTick = this::renderThreadFunc; // the repaint will continue to be called until the overlay takes over
         this.windowTick = null; // this tells the render thread that the async ticker is done
         return window;
-    }
-
-    @Override
-    public boolean positionWindow(final Optional<Object> monitor, final IntConsumer widthSetter, final IntConsumer heightSetter, final IntConsumer xSetter, final IntConsumer ySetter) {
-        widthSetter.accept(this.winWidth);
-        heightSetter.accept(this.winHeight);
-        xSetter.accept(this.winX);
-        ySetter.accept(this.winY);
-        return true;
-    }
-
-    @Override
-    public void updateFramebufferSize(final IntConsumer width, final IntConsumer height) {
-        width.accept(this.fbWidth);
-        height.accept(this.fbHeight);
     }
 
     private Method loadingOverlay;
