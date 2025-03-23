@@ -11,8 +11,6 @@ import static org.lwjgl.opengl.GL32C.*;
 
 import java.awt.Desktop;
 import java.io.IOException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -22,7 +20,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -34,9 +31,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import joptsimple.OptionParser;
@@ -104,8 +98,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private boolean maximized;
     private SimpleFont font;
     private Runnable repaintTick = () -> {};
-
-    private Method loadingOverlay;
 
     public DisplayWindow() {
         mainProgress = StartupNotificationManager.addProgressBar("EARLY", 0);
@@ -580,25 +572,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
         return window;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public <T> Supplier<T> loadingOverlay(final Supplier<?> mc, final Supplier<?> ri, final Consumer<Optional<Throwable>> ex, final boolean fade) {
-        mainProgress.complete(); // remove the main progress before handing over
-        try {
-            return (Supplier<T>) loadingOverlay.invoke(null, mc, ri, ex, this);
-        } catch (Throwable e) {
-            throw new IllegalStateException("How did you get here?", e);
-        }
-    }
-
-    @Override
-    public void updateModuleReads(final ModuleLayer layer) {
-        var fm = layer.findModule("neoforge").orElseThrow();
-        getClass().getModule().addReads(fm);
-        var clz = Class.forName(fm, "net.neoforged.neoforge.client.loading.NeoForgeLoadingOverlay");
-        var methods = Arrays.stream(clz.getMethods()).filter(m -> Modifier.isStatic(m.getModifiers())).collect(Collectors.toMap(Method::getName, Function.identity()));
-        loadingOverlay = methods.get("newInstance");
-    }
+    public void updateModuleReads(final ModuleLayer layer) {}
 
     public int getFramebufferTextureId() {
         return framebuffer.getTexture();
@@ -617,6 +592,11 @@ public class DisplayWindow implements ImmediateWindowProvider {
     @Override
     public void updateProgress(String label) {
         mainProgress.label(label);
+    }
+
+    @Override
+    public void completeProgress() {
+        mainProgress.complete();
     }
 
     public void addMojangTexture(final int textureId) {

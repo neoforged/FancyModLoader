@@ -5,9 +5,6 @@
 
 package net.neoforged.fml.loading;
 
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,20 +30,6 @@ public interface EarlyLoadingScreenController {
     long takeOverGlfwWindow();
 
     /**
-     * Return a Supplier of an object extending the LoadingOverlay class from Mojang. This is what will be used once
-     * the Mojang window code has taken over rendering of the window, to render the later stages of the loading process.
-     *
-     * @param mc   This supplies the Minecraft object
-     * @param ri   This supplies the ReloadInstance object that tells us when the loading is finished
-     * @param ex   This Consumes the final state of the loading - if it's an error you pass it the Throwable, otherwise you
-     *             pass Optional.empty()
-     * @param fade This is the fade flag passed to LoadingOverlay. You probably want to ignore it.
-     * @param <T>  This is the type LoadingOverlay to allow type binding on the Mojang side
-     * @return A supplier of your later LoadingOverlay screen.
-     */
-    <T> Supplier<T> loadingOverlay(Supplier<?> mc, Supplier<?> ri, Consumer<Optional<Throwable>> ex, boolean fade);
-
-    /**
      * After calling {@linkplain #takeOverGlfwWindow() taking over} the main window, the game may still want to
      * periodically ask the loading screen to update itself independently. It will call this method to do so.
      */
@@ -56,4 +39,10 @@ public interface EarlyLoadingScreenController {
      * Sets a label for the main progress bar on the early loading screen.
      */
     void updateProgress(String label);
+
+    /**
+     * Clears all current progress in preparation for drawing a Minecraft overlay on top of the loading
+     * screen.
+     */
+    void completeProgress();
 }
