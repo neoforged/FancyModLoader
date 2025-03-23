@@ -5,7 +5,7 @@ name: Release
 
 on:
   push:
-    branches: [ "main", "7.x"]
+    branches: [ "main", "8.x"]
 
 permissions:
   contents: read

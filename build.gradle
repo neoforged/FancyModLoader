@@ -12,7 +12,7 @@ changelog {
 
 gradleutils.version {
     branches {
-        suffixExemptedBranches.add("7.x")
+        suffixExemptedBranches.add("8.x")
         suffixBranch()
     }
     tags {
