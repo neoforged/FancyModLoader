@@ -18,7 +18,6 @@ jobs:
       java: 21
       pre_gradle_tasks: test
       gradle_tasks: publish
-      version_task: ':configureGitHubActions'
     secrets:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
       MAVEN_USER: ${{ secrets.MAVEN_USER }}
