@@ -101,7 +101,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     public DisplayWindow() {
         mainProgress = StartupNotificationManager.addProgressBar("EARLY", 0);
-        mainProgress.label("Bootstrapping Minecraft");
     }
 
     @Override
@@ -540,7 +539,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
             crashElegantly("We seem to be having trouble initializing the window, waited for 30 seconds");
         }
         // we have to spin wait for the window ticker
-        ImmediateWindowHandler.updateProgress("Initializing Game Graphics");
+        updateProgress("Initializing Game Graphics");
         while (!this.windowTick.isDone()) {
             this.windowTick.cancel(false);
         }
