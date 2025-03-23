@@ -5,33 +5,72 @@
 
 package net.neoforged.fml.earlydisplay;
 
-import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL.createCapabilities;
-import static org.lwjgl.opengl.GL32C.*;
+import static org.lwjgl.glfw.GLFW.GLFW_CLIENT_API;
+import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_CREATION_API;
+import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MAJOR;
+import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MINOR;
+import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
+import static org.lwjgl.glfw.GLFW.GLFW_NATIVE_CONTEXT_API;
+import static org.lwjgl.glfw.GLFW.GLFW_NO_ERROR;
+import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_API;
+import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_CORE_PROFILE;
+import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_DEBUG_CONTEXT;
+import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_FORWARD_COMPAT;
+import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_PROFILE;
+import static org.lwjgl.glfw.GLFW.GLFW_RESIZABLE;
+import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
+import static org.lwjgl.glfw.GLFW.GLFW_VISIBLE;
+import static org.lwjgl.glfw.GLFW.GLFW_X11_CLASS_NAME;
+import static org.lwjgl.glfw.GLFW.GLFW_X11_INSTANCE_NAME;
+import static org.lwjgl.glfw.GLFW.glfwCreateWindow;
+import static org.lwjgl.glfw.GLFW.glfwDefaultWindowHints;
+import static org.lwjgl.glfw.GLFW.glfwGetError;
+import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
+import static org.lwjgl.glfw.GLFW.glfwGetMonitorPos;
+import static org.lwjgl.glfw.GLFW.glfwGetPrimaryMonitor;
+import static org.lwjgl.glfw.GLFW.glfwGetVideoMode;
+import static org.lwjgl.glfw.GLFW.glfwGetWindowPos;
+import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
+import static org.lwjgl.glfw.GLFW.glfwInit;
+import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
+import static org.lwjgl.glfw.GLFW.glfwMaximizeWindow;
+import static org.lwjgl.glfw.GLFW.glfwPollEvents;
+import static org.lwjgl.glfw.GLFW.glfwSetFramebufferSizeCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowIcon;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowPos;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowPosCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowSizeCallback;
+import static org.lwjgl.glfw.GLFW.glfwShowWindow;
+import static org.lwjgl.glfw.GLFW.glfwSwapInterval;
+import static org.lwjgl.glfw.GLFW.glfwWindowHint;
+import static org.lwjgl.glfw.GLFW.glfwWindowHintString;
+import static org.lwjgl.opengl.GL32C.GL_TRUE;
 
 import java.awt.Desktop;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import joptsimple.OptionParser;
+import net.neoforged.fml.earlydisplay.render.LoadingScreenRenderer;
+import net.neoforged.fml.earlydisplay.render.SimpleFont;
+import net.neoforged.fml.earlydisplay.theme.Theme;
+import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.progress.ProgressMeter;
@@ -41,7 +80,6 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
-import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
@@ -52,29 +90,25 @@ import org.slf4j.LoggerFactory;
  * The Loading Window that is opened Immediately after Forge starts.
  * It is called from the ModDirTransformerDiscoverer, the soonest method that ModLauncher calls into Forge code.
  * In this way, we can be sure that this will not run before any transformer or injection.
- *
+ * <p>
  * The window itself is spun off into a secondary thread, and is handed off to the main game by Forge.
- *
+ * <p>
  * Because it is created so early, this thread will "absorb" the context from OpenGL.
  * Therefore, it is of utmost importance that the Context is made Current for the main thread before handoff,
  * otherwise OS X will crash out.
- *
+ * <p>
  * Based on the prior ClientVisualization, with some personal touches.
  */
 public class DisplayWindow implements ImmediateWindowProvider {
     private static final Logger LOGGER = LoggerFactory.getLogger("EARLYDISPLAY");
-    private final AtomicBoolean animationTimerTrigger = new AtomicBoolean(true);
+    private static final ThreadGroup BACKGROUND_THREAD_GROUP = new ThreadGroup("fml-loadingscreen");
     private final ProgressMeter mainProgress;
 
-    private ColourScheme colourScheme;
-    private ElementShader elementShader;
+    private boolean darkMode;
+    private Theme theme;
 
-    private RenderElement.DisplayContext context;
-    private List<RenderElement> elements;
     private int framecount;
-    private EarlyFramebuffer framebuffer;
-    private ScheduledFuture<?> windowTick;
-    private ScheduledFuture<?> initializationFuture;
+    private ScheduledFuture<LoadingScreenRenderer> rendererFuture;
 
     private PerformanceInfo performanceInfo;
     private ScheduledFuture<?> performanceTick;
@@ -84,19 +118,18 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private ScheduledExecutorService renderScheduler;
     private int fbWidth;
     private int fbHeight;
-    private int fbScale;
     private int winWidth;
     private int winHeight;
     private int winX;
     private int winY;
 
-    private final Semaphore renderLock = new Semaphore(1);
     private boolean maximized;
-    private SimpleFont font;
+    private Map<String, SimpleFont> fonts;
     private Runnable repaintTick = () -> {};
+    private ThemeColor background;
 
     public DisplayWindow() {
-        mainProgress = StartupNotificationManager.addProgressBar("EARLY", 0);
+        mainProgress = StartupNotificationManager.addProgressBar("", 0);
     }
 
     @Override
@@ -122,176 +155,58 @@ public class DisplayWindow implements ImmediateWindowProvider {
         winHeight = parsed.valueOf(heightopt);
         FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_WIDTH, winWidth);
         FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_HEIGHT, winHeight);
-        fbScale = FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_FBSCALE);
+
         if (System.getenv("FML_EARLY_WINDOW_DARK") != null) {
-            this.colourScheme = ColourScheme.BLACK;
+            this.darkMode = true;
         } else {
             try {
                 var optionLines = Files.readAllLines(FMLPaths.GAMEDIR.get().resolve(Paths.get("options.txt")));
                 var options = optionLines.stream().map(l -> l.split(":")).filter(a -> a.length == 2).collect(Collectors.toMap(a -> a[0], a -> a[1]));
-                var colourScheme = Boolean.parseBoolean(options.getOrDefault("darkMojangStudiosBackground", "false"));
-                this.colourScheme = colourScheme ? ColourScheme.BLACK : ColourScheme.RED;
-            } catch (IOException ioe) {
+                this.darkMode = Boolean.parseBoolean(options.getOrDefault("darkMojangStudiosBackground", "false"));
+            } catch (NoSuchFileException ignored) {
                 // No options
-                this.colourScheme = ColourScheme.RED; // default to red colourscheme
+            } catch (IOException e) {
+                LOGGER.warn("Failed to read dark-mode settings from options.txt", e);
             }
         }
+        this.theme = Theme.load(new File(""), darkMode);
         this.maximized = parsed.has(maximizedopt) || FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_MAXIMIZED);
 
         var forgeVersion = parsed.valueOf(forgeversionopt);
         StartupNotificationManager.modLoaderConsumer().ifPresent(c -> c.accept("NeoForge loading " + forgeVersion));
         performanceInfo = new PerformanceInfo();
-        return start(parsed.valueOf(mcversionopt), forgeVersion);
-    }
 
-    private static final long MINFRAMETIME = TimeUnit.MILLISECONDS.toNanos(10); // This is the FPS cap on the window - note animation is capped at 20FPS via the tickTimer
-    private long nextFrameTime = 0;
+        this.renderScheduler = Executors.newSingleThreadScheduledExecutor(
+                Thread.ofPlatform().group(BACKGROUND_THREAD_GROUP)
+                        .name("fml-loadingscreen")
+                        .daemon()
+                        .uncaughtExceptionHandler((t, e) -> {
+                            System.err.println("Uncaught error on background rendering thread: " + e);
+                            e.printStackTrace();
+                        })
+                        .factory());
 
-    /**
-     * The main render loop.
-     * renderThread executes this.
-     *
-     * Performs initialization and then ticks the screen at 20 fps.
-     * When the thread is killed, context is destroyed.
-     */
-    private void renderThreadFunc() {
-        if (!renderLock.tryAcquire()) {
-            return;
-        }
-        try {
-            long nt;
-            if ((nt = System.nanoTime()) < nextFrameTime) {
-                return;
+        var mcVersion = parsed.valueOf(mcversionopt);
+        initWindow(mcVersion);
+
+        this.rendererFuture = renderScheduler.schedule(() -> new LoadingScreenRenderer(renderScheduler, window, theme, mcVersion, forgeVersion), 1, TimeUnit.MILLISECONDS);
+        StartupNotificationManager.addModMessage("BLAHFASEL");
+        while (true) {
+            try {
+                periodicTick();
+                Thread.sleep(100L);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-            nextFrameTime = nt + MINFRAMETIME;
-            glfwMakeContextCurrent(window);
-
-            GlState.readFromOpenGL();
-            var backup = GlState.createSnapshot();
-
-            framebuffer.activate();
-            GlState.viewport(0, 0, this.context.scaledWidth(), this.context.scaledHeight());
-            this.context.elementShader().activate();
-            this.context.elementShader().updateScreenSizeUniform(this.context.scaledWidth(), this.context.scaledHeight());
-            GlState.clearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), 1f);
-            paintFramebuffer();
-            this.context.elementShader().clear();
-            framebuffer.deactivate();
-            GlState.viewport(0, 0, fbWidth, fbHeight);
-            framebuffer.draw(this.fbWidth, this.fbHeight);
-            // Swap buffers; we're done
-            glfwSwapBuffers(window);
-
-            GlState.applySnapshot(backup);
-        } catch (Throwable t) {
-            LOGGER.error("BARF", t);
-        } finally {
-            if (this.windowTick != null) glfwMakeContextCurrent(0); // we release the gl context IF we're running off the main thread
-            renderLock.release();
         }
-    }
-
-    /**
-     * Render initialization methods called by the Render Thread.
-     * It compiles the fragment and vertex shaders for rendering text with STB, and sets up basic render framework.
-     *
-     * Nothing fancy, we just want to draw and render text.
-     */
-    private void initRender(final @Nullable String mcVersion, final String forgeVersion) {
-        // This thread owns the GL render context now. We should make a note of that.
-        glfwMakeContextCurrent(window);
-        // Wait for one frame to be complete before swapping; enable vsync in other words.
-        glfwSwapInterval(1);
-        var capabilities = createCapabilities();
-        GlState.readFromOpenGL();
-        GlDebug.setCapabilities(capabilities);
-        LOGGER.info("GL info: {} GL version {}, {}", glGetString(GL_RENDERER), glGetString(GL_VERSION), glGetString(GL_VENDOR));
-
-        elementShader = new ElementShader();
-        try {
-            elementShader.init();
-        } catch (Throwable t) {
-            LOGGER.error("Crash during shader initialization", t);
-            crashElegantly("An error occurred initializing shaders.");
-        }
-
-        // Set the clear color based on the colour scheme
-        GlState.clearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), 1f);
-
-        // we always render to an 854x480 texture and then fit that to the screen - with a scale factor
-        this.context = new RenderElement.DisplayContext(854, 480, fbScale, elementShader, colourScheme, performanceInfo);
-        framebuffer = new EarlyFramebuffer(this.context);
-        try {
-            this.font = new SimpleFont("Monocraft.ttf", fbScale, 200000);
-        } catch (Throwable t) {
-            LOGGER.error("Crash during font initialization", t);
-            crashElegantly("An error occurred initializing a font for rendering. " + t.getMessage());
-        }
-        this.elements = new ArrayList<>(Arrays.asList(
-                RenderElement.fox(font),
-                RenderElement.logMessageOverlay(font),
-                RenderElement.forgeVersionOverlay(font, mcVersion + "-" + forgeVersion.split("-")[0]),
-                RenderElement.performanceBar(font),
-                RenderElement.progressBars(font)));
-
-        var date = Calendar.getInstance();
-        if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_SQUIR) || (date.get(Calendar.MONTH) == Calendar.APRIL && date.get(Calendar.DAY_OF_MONTH) == 1))
-            this.elements.add(0, RenderElement.squir());
-
-        GlState.enableBlend(true);
-        GlState.blendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glfwMakeContextCurrent(0);
-        this.windowTick = renderScheduler.scheduleAtFixedRate(this::renderThreadFunc, 50, 50, TimeUnit.MILLISECONDS);
-        this.performanceTick = renderScheduler.scheduleAtFixedRate(performanceInfo::update, 0, 500, TimeUnit.MILLISECONDS);
-        // schedule a 50 ms ticker to try and smooth out the rendering
-        renderScheduler.scheduleAtFixedRate(() -> animationTimerTrigger.set(true), 1, 50, TimeUnit.MILLISECONDS);
-    }
-
-    /**
-     * Called every frame by the Render Thread to draw to the screen.
-     */
-    void paintFramebuffer() {
-        // Clear the screen to our color
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        GlState.enableBlend(true);
-        GlState.blendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-        this.elements.removeIf(element -> !element.render(context, framecount));
-        if (animationTimerTrigger.compareAndSet(true, false)) // we only increment the framecount on a periodic basis
-            framecount++;
+        //return this::periodicTick;
     }
 
     // Called from NeoForge
-    public void renderToFramebuffer() {
-        GlDebug.pushGroup("update EarlyDisplay framebuffer");
-        GlState.readFromOpenGL();
-        var backup = GlState.createSnapshot();
-
-        GlState.viewport(0, 0, this.context.scaledWidth(), this.context.scaledHeight());
-        framebuffer.activate();
-        GlState.clearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), 1f);
-        elementShader.activate();
-        elementShader.updateScreenSizeUniform(this.context.scaledWidth(), this.context.scaledHeight());
-        paintFramebuffer();
-        elementShader.clear();
-        framebuffer.deactivate();
-
-        GlState.applySnapshot(backup);
-        GlDebug.popGroup();
-    }
-
-    /**
-     * Start the window and Render Thread; we're ready to go.
-     */
-    public Runnable start(@Nullable String mcVersion, final String forgeVersion) {
-        renderScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-            final var thread = Executors.defaultThreadFactory().newThread(r);
-            thread.setDaemon(true);
-            return thread;
-        });
-        initWindow(mcVersion);
-        this.initializationFuture = renderScheduler.schedule(() -> initRender(mcVersion, forgeVersion), 1, TimeUnit.MILLISECONDS);
-        return this::periodicTick;
+    public void render(int alpha) {
+        if (rendererFuture.isDone()) {
+            rendererFuture.resultNow().renderToFramebuffer();
+        }
     }
 
     private static final String ERROR_URL = "https://links.neoforged.net/early-display-errors";
@@ -331,10 +246,10 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     /**
      * Called to initialize the window when preparing for the Render Thread.
-     *
+     * <p>
      * The act of calling glfwInit here creates a concurrency issue; GL doesn't know whether we're gonna call any
      * GL functions from the secondary thread and the main thread at the same time.
-     *
+     * <p>
      * It's then our job to make sure this doesn't happen, only calling GL functions where the Context is Current.
      * As long as we can verify that, then GL (and things like OS X) have no complaints with doing this.
      *
@@ -431,15 +346,12 @@ public class DisplayWindow implements ImmediateWindowProvider {
         glfwSetWindowPos(window, (vidmode.width() - this.winWidth) / 2 + monitorX, (vidmode.height() - this.winHeight) / 2 + monitorY);
 
         // Attempt setting the icon
-        int[] channels = new int[1];
         try (var glfwImgBuffer = GLFWImage.malloc(1)) {
-            final ByteBuffer imgBuffer;
             try (GLFWImage glfwImages = GLFWImage.malloc()) {
-                imgBuffer = STBHelper.loadImageFromClasspath("neoforged_icon.png", 20000, x, y, channels);
-                glfwImgBuffer.put(glfwImages.set(x[0], y[0], imgBuffer));
+                var icon = theme.windowIcon();
+                glfwImgBuffer.put(glfwImages.set(icon.width(), icon.height(), icon.imageData()));
                 glfwImgBuffer.flip();
                 glfwSetWindowIcon(window, glfwImgBuffer);
-                STBImage.stbi_image_free(imgBuffer);
             }
         } catch (NullPointerException e) {
             LOGGER.error("Failed to load NeoForged icon");
@@ -508,55 +420,57 @@ public class DisplayWindow implements ImmediateWindowProvider {
      * @return the Window we own.
      */
     public long takeOverGlfwWindow() {
-        // wait for the window to actually be initialized
+        // While this should have happened already, wait for it now to continue
+        LoadingScreenRenderer renderer;
         try {
-            this.initializationFuture.get(30, TimeUnit.SECONDS);
+            renderer = this.rendererFuture.get(30, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         } catch (TimeoutException e) {
-            Thread.dumpStack();
+            dumpBackgroundThreadStack();
             crashElegantly("We seem to be having trouble initializing the window, waited for 30 seconds");
+            return -1L; // crashElegantly will never return
         }
-        // we have to spin wait for the window ticker
+
         updateProgress("Initializing Game Graphics");
-        while (!this.windowTick.isDone()) {
-            this.windowTick.cancel(false);
-        }
+
+        // Stop the automatic off-thread rendering to move the GL context back to the main thread (this thread)
         try {
-            if (!renderLock.tryAcquire(5, TimeUnit.SECONDS)) {
-                crashElegantly("We seem to be having trouble handing off the window, tried for 5 seconds");
-            }
+            renderer.stopAutomaticRendering();
+        } catch (TimeoutException e) {
+            dumpBackgroundThreadStack();
+            crashElegantly("Cannot hand over rendering to Minecraft! The background loading screen renderer seems stuck.");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        // we don't want the lock, just making sure it's back on the main thread
-        renderLock.release();
 
         glfwMakeContextCurrent(window);
         // Set the title to what the game wants
         glfwSwapInterval(0);
         // Clean up our hooks
-        glfwSetFramebufferSizeCallback(window, null).free();
-        glfwSetWindowPosCallback(window, null).free();
-        glfwSetWindowSizeCallback(window, null).free();
-        this.repaintTick = this::renderThreadFunc; // the repaint will continue to be called until the overlay takes over
-        this.windowTick = null; // this tells the render thread that the async ticker is done
+        glfwSetFramebufferSizeCallback(window, null).close();
+        glfwSetWindowPosCallback(window, null).close();
+        glfwSetWindowSizeCallback(window, null).close();
+        this.repaintTick = renderer::renderToScreen; // the repaint will continue to be called until the overlay takes over
         return window;
     }
 
     @Override
     public void updateModuleReads(final ModuleLayer layer) {}
 
+    // Called from Neo
     public int getFramebufferTextureId() {
-        return framebuffer.getTexture();
-    }
-
-    public RenderElement.DisplayContext context() {
-        return this.context;
+        if (!rendererFuture.isDone()) {
+            throw new IllegalStateException("Initialization of the renderer has not completed yet.");
+        }
+        return rendererFuture.resultNow().getFramebufferTextureId();
     }
 
     @Override
     public void periodicTick() {
+        if (rendererFuture.state() == Future.State.FAILED) {
+            throw new RuntimeException("Initialization of the loading screen failed.", rendererFuture.exceptionNow());
+        }
         glfwPollEvents();
         repaintTick.run();
     }
@@ -572,20 +486,28 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     public void addMojangTexture(final int textureId) {
-        this.elements.add(0, RenderElement.mojang(textureId, framecount));
+// TODO        this.elements.add(0, RenderElement.mojang(textureId, framecount));
 //        this.elements.get(0).retire(framecount + 1);
     }
 
     public void close() {
         // Close the Render Scheduler thread
         renderScheduler.shutdown();
-        this.framebuffer.close();
-        this.context.elementShader().close();
-        SimpleBufferBuilder.destroy();
+        try {
+            rendererFuture.get().close();
+        } catch (ExecutionException e) {
+            LOGGER.error("Cannot close renderer since it failed to initialize", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // Re-interrupt and continue closing
+        }
     }
 
     @Override
     public void crash(final String message) {
         crashElegantly(message);
+    }
+
+    private static void dumpBackgroundThreadStack() {
+        BACKGROUND_THREAD_GROUP.list();
     }
 }

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.earlydisplay;
+package net.neoforged.fml.earlydisplay.render;
 
 import static org.lwjgl.opengl.GL20C.glIsProgram;
 import static org.lwjgl.opengl.GL32C.GL_ACTIVE_TEXTURE;
@@ -44,13 +44,16 @@ import static org.lwjgl.opengl.GL32C.glIsEnabled;
 import static org.lwjgl.opengl.GL32C.glUseProgram;
 import static org.lwjgl.opengl.GL32C.glViewport;
 
+import org.jetbrains.annotations.ApiStatus;
+
 /**
  * A static state manager for a subset of OpenGL states to minimize redundant state changes.
  * <p>
  * This class tracks the current state of various OpenGL state elements and only applies changes
  * when necessary, reducing overhead from redundant state changes.
  */
-final class GlState {
+@ApiStatus.Internal
+public final class GlState {
     // Viewport state
     private static int viewportX;
     private static int viewportY;

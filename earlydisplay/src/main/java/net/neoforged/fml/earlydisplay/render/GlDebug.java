@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.earlydisplay;
+package net.neoforged.fml.earlydisplay.render;
 
 import net.neoforged.fml.loading.FMLConfig;
+import org.jetbrains.annotations.ApiStatus;
 import org.lwjgl.opengl.EXTDebugLabel;
 import org.lwjgl.opengl.EXTDebugMarker;
 import org.lwjgl.opengl.GL32C;
@@ -15,7 +16,8 @@ import org.lwjgl.opengl.KHRDebug;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class GlDebug {
+@ApiStatus.Internal
+public final class GlDebug {
     private static final Logger LOG = LoggerFactory.getLogger(GlDebug.class);
 
     private GlDebug() {}

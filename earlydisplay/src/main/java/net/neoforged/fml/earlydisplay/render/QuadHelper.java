@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.earlydisplay;
+package net.neoforged.fml.earlydisplay.render;
 
 public class QuadHelper {
     public static void loadQuad(SimpleBufferBuilder bb, float x0, float x1, float y0, float y1, float u0, float u1, float v0, float v1, int colour) {
