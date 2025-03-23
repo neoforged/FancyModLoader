@@ -36,9 +36,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.IntConsumer;
-import java.util.function.IntSupplier;
-import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -46,6 +43,7 @@ import joptsimple.OptionParser;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
+import net.neoforged.fml.loading.progress.ProgressMeter;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
 import org.jetbrains.annotations.Nullable;
@@ -76,6 +74,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private static final int[][] GL_VERSIONS = new int[][] { { 4, 6 }, { 4, 5 }, { 4, 4 }, { 4, 3 }, { 4, 2 }, { 4, 1 }, { 4, 0 }, { 3, 3 }, { 3, 2 } };
     private static final Logger LOGGER = LoggerFactory.getLogger("EARLYDISPLAY");
     private final AtomicBoolean animationTimerTrigger = new AtomicBoolean(true);
+    private final ProgressMeter mainProgress;
 
     private ColourScheme colourScheme;
     private ElementShader elementShader;
@@ -103,9 +102,15 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     private final Semaphore renderLock = new Semaphore(1);
     private boolean maximized;
-    private String glVersion;
     private SimpleFont font;
     private Runnable repaintTick = () -> {};
+
+    private Method loadingOverlay;
+
+    public DisplayWindow() {
+        mainProgress = StartupNotificationManager.addProgressBar("EARLY", 0);
+        mainProgress.label("Bootstrapping Minecraft");
+    }
 
     @Override
     public String name() {
@@ -270,15 +275,14 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     // Called from NeoForge
-    public void render(int alpha) {
+    public void renderToFramebuffer() {
         GlDebug.pushGroup("update EarlyDisplay framebuffer");
         GlState.readFromOpenGL();
         var backup = GlState.createSnapshot();
 
         GlState.viewport(0, 0, this.context.scaledWidth(), this.context.scaledHeight());
-        RenderElement.globalAlpha = alpha;
         framebuffer.activate();
-        GlState.clearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), alpha / 255f);
+        GlState.clearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), 1f);
         elementShader.activate();
         elementShader.updateScreenSizeUniform(this.context.scaledWidth(), this.context.scaledHeight());
         paintFramebuffer();
@@ -304,11 +308,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     private static final String ERROR_URL = "https://links.neoforged.net/early-display-errors";
-
-    @Override
-    public String getGLVersion() {
-        return this.glVersion;
-    }
 
     private final ReentrantLock crashLock = new ReentrantLock();
 
@@ -445,7 +444,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
         var min = glfwGetWindowAttrib(window, GLFW_CONTEXT_VERSION_MINOR);
         var gotVersion = maj + "." + min;
         LOGGER.info("Requested GL version " + requestedVersion + " got version " + gotVersion);
-        this.glVersion = gotVersion;
         this.window = window;
 
         int[] x = new int[1];
@@ -582,11 +580,10 @@ public class DisplayWindow implements ImmediateWindowProvider {
         return window;
     }
 
-    private Method loadingOverlay;
-
     @SuppressWarnings("unchecked")
     @Override
     public <T> Supplier<T> loadingOverlay(final Supplier<?> mc, final Supplier<?> ri, final Consumer<Optional<Throwable>> ex, final boolean fade) {
+        mainProgress.complete(); // remove the main progress before handing over
         try {
             return (Supplier<T>) loadingOverlay.invoke(null, mc, ri, ex, this);
         } catch (Throwable e) {
@@ -615,6 +612,11 @@ public class DisplayWindow implements ImmediateWindowProvider {
     public void periodicTick() {
         glfwPollEvents();
         repaintTick.run();
+    }
+
+    @Override
+    public void updateProgress(String label) {
+        mainProgress.label(label);
     }
 
     public void addMojangTexture(final int textureId) {

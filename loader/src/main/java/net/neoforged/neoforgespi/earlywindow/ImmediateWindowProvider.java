@@ -7,13 +7,6 @@ package net.neoforged.neoforgespi.earlywindow;
 
 import net.neoforged.fml.loading.EarlyLoadingScreenController;
 
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.IntConsumer;
-import java.util.function.IntSupplier;
-import java.util.function.LongSupplier;
-import java.util.function.Supplier;
-
 /**
  * This is for allowing the plugging in of alternative early display implementations.
  *
@@ -54,20 +47,6 @@ public interface ImmediateWindowProvider extends EarlyLoadingScreenController {
      * @param layer This is the GAME layer from ModLauncher
      */
     void updateModuleReads(ModuleLayer layer);
-
-    /**
-     * This is called periodically during the loading process to "tick" the window. It is typically the same as the Runnable
-     * from {@link #initialize(String[])}
-     */
-    void periodicTick();
-
-    /**
-     * This is called to construct a {@link net.neoforged.neoforgespi.locating.ForgeFeature} for the GL_VERSION we
-     * managed to create for the window. Should be a string of the format {MAJOR}.{MINOR}, such as 4.6, 4.5 or such.
-     *
-     * @return the GL profile we created
-     */
-    String getGLVersion();
 
     /**
      * This is called during some very early startup routines to show a crash dialog
