@@ -2,6 +2,7 @@
   "fml.loadingerrorscreen.errorheader": "Erro ao carregar mods\nOcorreu {0,choice,1#1 erro |1<{0} erros} ao carregar os mods",
   "fml.loadingerrorscreen.warningheader": "{0,choice,1#Warning|1<Warnings} enquanto carregava os mods\nOcorreu {0,choice,1#1 warning|1<{0} warnings} ao carregar os mods",
   "fml.modloadingissue.language.missingversion": "O Mod File {101} precisa de um language provider {0}:{1,vr} para carregar\n§7Nós encontramos {2,i18n,fml.messages.artifactversion}",
+  "fml.modloadingissue.language.missing": "Mod File {101} needs language provider {0} to load",
   "fml.modloading.missingclasses": "O Mod File {3} tem mods que foram não foram encontrados",
   "fml.modloading.missingmetadata": "Falta metadata para o modid {3} no mods.toml",
   "fml.modloadingissue.failedtoloadmodclass": "{100,modinfo,name} ({100,modinfo,id}) tem classes com erro ao carregar\n§7{102,exc,msg}",
