@@ -21,9 +21,11 @@ import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.IModFile;
 
 public class FMLJavaModLanguageProvider extends BuiltInLanguageLoader {
+    public static final String NAME = "javafml";
+
     @Override
     public String name() {
-        return "javafml";
+        return NAME;
     }
 
     @Override
