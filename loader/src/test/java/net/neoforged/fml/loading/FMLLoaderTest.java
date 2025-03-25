@@ -20,6 +20,7 @@ import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModWorkManager;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.javafmlmod.FMLJavaModLanguageProvider;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.ContainedVersion;
@@ -248,6 +249,30 @@ class FMLLoaderTest extends LauncherTest {
             assertEquals("12.0", loadedMod.versionString());
         }
 
+        /**
+         * Tests that a lowcode mod is automatically redirected to the javafml loader.
+         */
+        @Test
+        void testLowCodeIsRedirectToJava() throws Exception {
+            installation.setupProductionClient();
+            installation.buildModJar("testmod1.jar")
+                    .withModsToml(modsToml -> {
+                        modsToml.license("unlicensed");
+                        modsToml.setLoader("lowcodefml", "[99999]");
+
+                        modsToml.addMod("testmod1", "1.0");
+                    })
+                    .build();
+
+            var result = launchAndLoad("neoforgeclient");
+
+            var loadedMod = result.loadedMods().get("testmod1");
+            assertNotNull(loadedMod);
+            assertEquals("1.0", loadedMod.versionString());
+            var modInfo = loadedMod.getMods().getFirst();
+            assertThat(modInfo.getLoader()).isInstanceOf(FMLJavaModLanguageProvider.class);
+        }
+
         @Test
         void testUserdevWithModProject() throws Exception {
             var additionalClasspath = installation.setupUserdevProject();
@@ -339,7 +364,7 @@ class FMLLoaderTest extends LauncherTest {
     class Errors {
         @ParameterizedTest
         @CsvSource(textBlock = """
-                unknownloader|[1.0]|ERROR: Mod File mods/testmod.jar needs language provider unknownloader:1.0 to load\\nWe have found -
+                unknownloader|[1.0]|ERROR: Mod File mods/testmod.jar needs language provider unknownloader to load
                 javafml|[1.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:1.0 to load\\nWe have found 3.0.9999
                 javafml|[999.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:999.0 to load\\nWe have found 3.0.9999
                 """, delimiter = '|')
