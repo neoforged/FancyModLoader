@@ -2,6 +2,7 @@
   "fml.loadingerrorscreen.errorheader": "Ralat dalam memuat mod\n{0,choice,1#1 ralat telah|1<{0} ralat telah} berlaku semasa pemuatan",
   "fml.loadingerrorscreen.warningheader": "{0,choice,1#Amaran|1<Amaran} ketika memuat mod\n{0,choice,1#1 amaran telah|1<{0} amaran telah} berlaku semasa pemuatan",
   "fml.modloadingissue.language.missingversion": "Fail Mod {101} memerlukan penyedia bahasa {0}:{1,vr} untuk dimuatkan\n§7Kami telah menemui {2,i18n,fml.messages.artifactversion}",
+  "fml.modloadingissue.language.missing": "Mod File {101} needs language provider {0} to load",
   "fml.modloading.missingclasses": "Fail Mod {3} mempunyai mod yang tidak dapat ditemui",
   "fml.modloading.missingmetadata": "mods.toml ketiadaan metadata untuk modid {3}",
   "fml.modloadingissue.failedtoloadmodclass": "{100,modinfo,name} ({100,modinfo,id}) mempunyai ralat pemuatan kelas\n§7{102,exc,msg}",
