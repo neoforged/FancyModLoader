@@ -101,8 +101,6 @@ public abstract class LauncherTest {
 
         installation = new SimulatedInstallation();
 
-        immediateWindowHandlerMock.when(ImmediateWindowHandler::getGLVersion).thenReturn("4.3");
-
         environment.computePropertyIfAbsent(IEnvironment.Keys.GAMEDIR.get(), ignored -> installation.getGameDir());
     }
 
