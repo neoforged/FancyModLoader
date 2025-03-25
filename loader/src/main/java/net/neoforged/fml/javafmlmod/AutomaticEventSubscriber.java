@@ -59,8 +59,8 @@ public class AutomaticEventSubscriber {
 
                         bus.register(Class.forName(ad.clazz().getClassName(), true, layer.getClassLoader()));
                     }
-                } catch (ClassNotFoundException e) {
-                    LOGGER.fatal(LOADING, "Failed to load mod class {} for @EventBusSubscriber annotation", ad.clazz(), e);
+                } catch (Exception e) {
+                    LOGGER.fatal(LOADING, "Failed to register class {} with @EventBusSubscriber annotation", ad.clazz(), e);
                     throw new RuntimeException(e);
                 }
             }

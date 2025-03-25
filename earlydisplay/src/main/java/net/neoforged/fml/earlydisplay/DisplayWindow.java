@@ -11,8 +11,6 @@ import static org.lwjgl.opengl.GL32C.*;
 
 import java.awt.Desktop;
 import java.io.IOException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -22,7 +20,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -34,18 +31,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.IntConsumer;
-import java.util.function.IntSupplier;
-import java.util.function.LongSupplier;
-import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import joptsimple.OptionParser;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
-import net.neoforged.fml.loading.ImmediateWindowHandler;
+import net.neoforged.fml.loading.progress.ProgressMeter;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
 import org.jetbrains.annotations.Nullable;
@@ -76,6 +67,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private static final int[][] GL_VERSIONS = new int[][] { { 4, 6 }, { 4, 5 }, { 4, 4 }, { 4, 3 }, { 4, 2 }, { 4, 1 }, { 4, 0 }, { 3, 3 }, { 3, 2 } };
     private static final Logger LOGGER = LoggerFactory.getLogger("EARLYDISPLAY");
     private final AtomicBoolean animationTimerTrigger = new AtomicBoolean(true);
+    private final ProgressMeter mainProgress;
 
     private ColourScheme colourScheme;
     private ElementShader elementShader;
@@ -103,9 +95,12 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     private final Semaphore renderLock = new Semaphore(1);
     private boolean maximized;
-    private String glVersion;
     private SimpleFont font;
     private Runnable repaintTick = () -> {};
+
+    public DisplayWindow() {
+        mainProgress = StartupNotificationManager.addProgressBar("EARLY", 0);
+    }
 
     @Override
     public String name() {
@@ -173,18 +168,24 @@ public class DisplayWindow implements ImmediateWindowProvider {
             }
             nextFrameTime = nt + MINFRAMETIME;
             glfwMakeContextCurrent(window);
+
+            GlState.readFromOpenGL();
+            var backup = GlState.createSnapshot();
+
             framebuffer.activate();
-            glViewport(0, 0, this.context.scaledWidth(), this.context.scaledHeight());
+            GlState.viewport(0, 0, this.context.scaledWidth(), this.context.scaledHeight());
             this.context.elementShader().activate();
             this.context.elementShader().updateScreenSizeUniform(this.context.scaledWidth(), this.context.scaledHeight());
-            glClearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), 1f);
+            GlState.clearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), 1f);
             paintFramebuffer();
             this.context.elementShader().clear();
             framebuffer.deactivate();
-            glViewport(0, 0, fbWidth, fbHeight);
+            GlState.viewport(0, 0, fbWidth, fbHeight);
             framebuffer.draw(this.fbWidth, this.fbHeight);
             // Swap buffers; we're done
             glfwSwapBuffers(window);
+
+            GlState.applySnapshot(backup);
         } catch (Throwable t) {
             LOGGER.error("BARF", t);
         } finally {
@@ -204,8 +205,10 @@ public class DisplayWindow implements ImmediateWindowProvider {
         glfwMakeContextCurrent(window);
         // Wait for one frame to be complete before swapping; enable vsync in other words.
         glfwSwapInterval(1);
-        createCapabilities();
-        LOGGER.info("GL info: " + glGetString(GL_RENDERER) + " GL version " + glGetString(GL_VERSION) + ", " + glGetString(GL_VENDOR));
+        var capabilities = createCapabilities();
+        GlState.readFromOpenGL();
+        GlDebug.setCapabilities(capabilities);
+        LOGGER.info("GL info: {} GL version {}, {}", glGetString(GL_RENDERER), glGetString(GL_VERSION), glGetString(GL_VENDOR));
 
         elementShader = new ElementShader();
         try {
@@ -216,13 +219,13 @@ public class DisplayWindow implements ImmediateWindowProvider {
         }
 
         // Set the clear color based on the colour scheme
-        glClearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), 1f);
+        GlState.clearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), 1f);
 
         // we always render to an 854x480 texture and then fit that to the screen - with a scale factor
         this.context = new RenderElement.DisplayContext(854, 480, fbScale, elementShader, colourScheme, performanceInfo);
         framebuffer = new EarlyFramebuffer(this.context);
         try {
-            this.font = new SimpleFont("Monocraft.ttf", fbScale, 200000, 1 + RenderElement.INDEX_TEXTURE_OFFSET);
+            this.font = new SimpleFont("Monocraft.ttf", fbScale, 200000);
         } catch (Throwable t) {
             LOGGER.error("Crash during font initialization", t);
             crashElegantly("An error occurred initializing a font for rendering. " + t.getMessage());
@@ -238,8 +241,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
         if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_SQUIR) || (date.get(Calendar.MONTH) == Calendar.APRIL && date.get(Calendar.DAY_OF_MONTH) == 1))
             this.elements.add(0, RenderElement.squir());
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GlState.enableBlend(true);
+        GlState.blendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glfwMakeContextCurrent(0);
         this.windowTick = renderScheduler.scheduleAtFixedRate(this::renderThreadFunc, 50, 50, TimeUnit.MILLISECONDS);
         this.performanceTick = renderScheduler.scheduleAtFixedRate(performanceInfo::update, 0, 500, TimeUnit.MILLISECONDS);
@@ -253,28 +256,31 @@ public class DisplayWindow implements ImmediateWindowProvider {
     void paintFramebuffer() {
         // Clear the screen to our color
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GlState.enableBlend(true);
+        GlState.blendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
         this.elements.removeIf(element -> !element.render(context, framecount));
         if (animationTimerTrigger.compareAndSet(true, false)) // we only increment the framecount on a periodic basis
             framecount++;
     }
 
-    public void render(int alpha) {
-        var currentVAO = glGetInteger(GL_VERTEX_ARRAY_BINDING);
-        var currentFB = glGetInteger(GL_READ_FRAMEBUFFER_BINDING);
-        glViewport(0, 0, this.context.scaledWidth(), this.context.scaledHeight());
-        RenderElement.globalAlpha = alpha;
+    // Called from NeoForge
+    public void renderToFramebuffer() {
+        GlDebug.pushGroup("update EarlyDisplay framebuffer");
+        GlState.readFromOpenGL();
+        var backup = GlState.createSnapshot();
+
+        GlState.viewport(0, 0, this.context.scaledWidth(), this.context.scaledHeight());
         framebuffer.activate();
-        glClearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), alpha / 255f);
+        GlState.clearColor(colourScheme.background().redf(), colourScheme.background().greenf(), colourScheme.background().bluef(), 1f);
         elementShader.activate();
         elementShader.updateScreenSizeUniform(this.context.scaledWidth(), this.context.scaledHeight());
         paintFramebuffer();
         elementShader.clear();
         framebuffer.deactivate();
-        glBindVertexArray(currentVAO);
-        glBindFramebuffer(GL_FRAMEBUFFER, currentFB);
+
+        GlState.applySnapshot(backup);
+        GlDebug.popGroup();
     }
 
     /**
@@ -292,11 +298,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     private static final String ERROR_URL = "https://links.neoforged.net/early-display-errors";
-
-    @Override
-    public String getGLVersion() {
-        return this.glVersion;
-    }
 
     private final ReentrantLock crashLock = new ReentrantLock();
 
@@ -391,7 +392,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         var successfulWindow = new AtomicBoolean(false);
         var windowFailFuture = renderScheduler.schedule(() -> {
             if (!successfulWindow.get()) crashElegantly("Timed out trying to setup the Game Window.");
-        }, 10, TimeUnit.SECONDS);
+        }, 30, TimeUnit.SECONDS);
         int versidx = 0;
         var skipVersions = FMLConfig.<String>getListConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_SKIP_GL_VERSIONS);
         final String[] lastGLError = new String[GL_VERSIONS.length];
@@ -433,7 +434,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
         var min = glfwGetWindowAttrib(window, GLFW_CONTEXT_VERSION_MINOR);
         var gotVersion = maj + "." + min;
         LOGGER.info("Requested GL version " + requestedVersion + " got version " + gotVersion);
-        this.glVersion = gotVersion;
         this.window = window;
 
         int[] x = new int[1];
@@ -527,7 +527,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
      *
      * @return the Window we own.
      */
-    public long setupMinecraftWindow(final IntSupplier width, final IntSupplier height, final Supplier<String> title, final LongSupplier monitorSupplier) {
+    public long takeOverGlfwWindow() {
         // wait for the window to actually be initialized
         try {
             this.initializationFuture.get(30, TimeUnit.SECONDS);
@@ -538,7 +538,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
             crashElegantly("We seem to be having trouble initializing the window, waited for 30 seconds");
         }
         // we have to spin wait for the window ticker
-        ImmediateWindowHandler.updateProgress("Initializing Game Graphics");
+        updateProgress("Initializing Game Graphics");
         while (!this.windowTick.isDone()) {
             this.windowTick.cancel(false);
         }
@@ -560,7 +560,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
         glfwMakeContextCurrent(window);
         // Set the title to what the game wants
-        glfwSetWindowTitle(window, title.get());
         glfwSwapInterval(0);
         // Clean up our hooks
         glfwSetFramebufferSizeCallback(window, null).free();
@@ -572,40 +571,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     @Override
-    public boolean positionWindow(final Optional<Object> monitor, final IntConsumer widthSetter, final IntConsumer heightSetter, final IntConsumer xSetter, final IntConsumer ySetter) {
-        widthSetter.accept(this.winWidth);
-        heightSetter.accept(this.winHeight);
-        xSetter.accept(this.winX);
-        ySetter.accept(this.winY);
-        return true;
-    }
-
-    @Override
-    public void updateFramebufferSize(final IntConsumer width, final IntConsumer height) {
-        width.accept(this.fbWidth);
-        height.accept(this.fbHeight);
-    }
-
-    private Method loadingOverlay;
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> Supplier<T> loadingOverlay(final Supplier<?> mc, final Supplier<?> ri, final Consumer<Optional<Throwable>> ex, final boolean fade) {
-        try {
-            return (Supplier<T>) loadingOverlay.invoke(null, mc, ri, ex, this);
-        } catch (Throwable e) {
-            throw new IllegalStateException("How did you get here?", e);
-        }
-    }
-
-    @Override
-    public void updateModuleReads(final ModuleLayer layer) {
-        var fm = layer.findModule("neoforge").orElseThrow();
-        getClass().getModule().addReads(fm);
-        var clz = Class.forName(fm, "net.neoforged.neoforge.client.loading.NeoForgeLoadingOverlay");
-        var methods = Arrays.stream(clz.getMethods()).filter(m -> Modifier.isStatic(m.getModifiers())).collect(Collectors.toMap(Method::getName, Function.identity()));
-        loadingOverlay = methods.get("newInstance");
-    }
+    public void updateModuleReads(final ModuleLayer layer) {}
 
     public int getFramebufferTextureId() {
         return framebuffer.getTexture();
@@ -619,6 +585,16 @@ public class DisplayWindow implements ImmediateWindowProvider {
     public void periodicTick() {
         glfwPollEvents();
         repaintTick.run();
+    }
+
+    @Override
+    public void updateProgress(String label) {
+        mainProgress.label(label);
+    }
+
+    @Override
+    public void completeProgress() {
+        mainProgress.complete();
     }
 
     public void addMojangTexture(final int textureId) {
