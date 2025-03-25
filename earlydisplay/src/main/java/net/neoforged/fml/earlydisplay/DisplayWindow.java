@@ -542,19 +542,13 @@ public class DisplayWindow implements ImmediateWindowProvider {
         while (!this.windowTick.isDone()) {
             this.windowTick.cancel(false);
         }
-        var tries = 0;
-        var renderlockticket = false;
-        do {
-            try {
-                renderlockticket = renderLock.tryAcquire(100, TimeUnit.MILLISECONDS);
-                if (++tries > 9) {
-                    Thread.dumpStack();
-                    crashElegantly("We seem to be having trouble handing off the window, tried for 1 second");
-                }
-            } catch (InterruptedException e) {
-                Thread.interrupted();
+        try {
+            if (!renderLock.tryAcquire(5, TimeUnit.SECONDS)) {
+                crashElegantly("We seem to be having trouble handing off the window, tried for 5 seconds");
             }
-        } while (!renderlockticket);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         // we don't want the lock, just making sure it's back on the main thread
         renderLock.release();
 
