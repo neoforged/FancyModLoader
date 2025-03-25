@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 public class FMLConfig {
     public enum ConfigValue {
         DISABLE_CONFIG_WATCHER("disableConfigWatcher", Boolean.FALSE, "Disables File Watcher. Used to automatically update config if its file has been modified."),
-        EARLY_WINDOW_CONTROL("earlyWindowControl", Boolean.TRUE, "Should we control the window. Disabling this disables new GL features and can be bad for mods that rely on them."),
+        EARLY_WINDOW_CONTROL("earlyWindowControl", Boolean.TRUE, "Shows an early loading screen for mod loading which improves the user experience with early feedback about mod loading."),
         MAX_THREADS("maxThreads", -1, "Max threads for early initialization parallelism,  -1 is based on processor count", FMLConfig::maxThreads),
         VERSION_CHECK("versionCheck", Boolean.TRUE, "Enable NeoForge global version checking"),
         DEBUG_OPENGL("debugOpenGl", Boolean.FALSE, "Enable synchronous OpenGL debug output and object labeling"),
@@ -46,7 +46,6 @@ public class FMLConfig {
         EARLY_WINDOW_HEIGHT("earlyWindowHeight", 480, "Early window height"),
         EARLY_WINDOW_FBSCALE("earlyWindowFBScale", 1, "Early window framebuffer scale"),
         EARLY_WINDOW_MAXIMIZED("earlyWindowMaximized", Boolean.FALSE, "Early window starts maximized"),
-        EARLY_WINDOW_SKIP_GL_VERSIONS("earlyWindowSkipGLVersions", List.of(), "Skip specific GL versions, may help with buggy graphics card drivers"),
         EARLY_WINDOW_SQUIR("earlyWindowSquir", Boolean.FALSE, "Squir?");
 
         private final String entry;
