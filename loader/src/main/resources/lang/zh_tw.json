@@ -2,6 +2,7 @@
   "fml.loadingerrorscreen.errorheader": "載入模組時發生錯誤\n載入時發生了 {0,choice,1#1 個錯誤|1<{0} 個錯誤}",
   "fml.loadingerrorscreen.warningheader": "載入模組時發生警告{0,choice,1#警告|1<警告}\n載入過程中發生 {0,choice,1#1 個警告|1<{0} 個警告}",
   "fml.modloadingissue.language.missingversion": "模組檔案 {101} 需要語言提供模組 {0}:{1,vr} 才能載入\n§7我們找到 {2,i18n,fml.messages.artifactversion}",
+  "fml.modloadingissue.language.missing": "Mod File {101} needs language provider {0} to load",
   "fml.modloading.missingclasses": "模組檔案 {3} 有要求的但找不到的模組",
   "fml.modloading.missingmetadata": "mods.toml 缺少模組 id {3} 的後設資料",
   "fml.modloadingissue.failedtoloadmodclass": "{100,modinfo,name} ({100,modinfo,id}) 有類別載入錯誤\n§7{102,exc,msg}",
