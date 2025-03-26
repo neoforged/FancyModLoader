@@ -377,6 +377,10 @@ public class DisplayWindow implements ImmediateWindowProvider {
             glfwWindowHintString(GLFW_X11_CLASS_NAME, vanillaWindowTitle);
             glfwWindowHintString(GLFW_X11_INSTANCE_NAME, vanillaWindowTitle);
         }
+        if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DEBUG_OPENGL)) {
+            LOGGER.info("Requesting the creation of an OpenGL debug context");
+            glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+        }
 
         long primaryMonitor = glfwGetPrimaryMonitor();
         if (primaryMonitor == 0) {
