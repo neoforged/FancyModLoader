@@ -17,49 +17,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class InterModComms {
-    public record IMCMessage(String senderModId, String modId, String method, Supplier<?> messageSupplier) {
-        /**
-         * Deprecated: use {@link #senderModId()}
-         * 
-         * @return The modid of the sender. This is supplied by the caller, or by the active mod container context.
-         *         Consider it unreliable.
-         */
-        @Deprecated
-        public final String getSenderModId() {
-            return this.senderModId;
-        }
-
-        /**
-         * Deprecated: use {@link #modId()}
-         * 
-         * @return The modid being sent to.
-         */
-        @Deprecated
-        public final String getModId() {
-            return this.modId;
-        }
-
-        /**
-         * Deprecated: use {@link #method()}
-         * 
-         * @return The method being sent to.
-         */
-        @Deprecated
-        public final String getMethod() {
-            return this.method;
-        }
-
-        /**
-         * @param <T> The type of the message.
-         * @return A {@link Supplier} of the message.
-         *         Use {@link #messageSupplier()}
-         */
-        @SuppressWarnings("unchecked")
-        @Deprecated
-        public final <T> Supplier<T> getMessageSupplier() {
-            return (Supplier<T>) this.messageSupplier;
-        }
-    }
+    public record IMCMessage(String senderModId, String modId, String method, Supplier<?> messageSupplier) {}
 
     private static ConcurrentMap<String, ConcurrentLinkedQueue<IMCMessage>> containerQueues = new ConcurrentHashMap<>();
 
