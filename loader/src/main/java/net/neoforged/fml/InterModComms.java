@@ -17,6 +17,14 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class InterModComms {
+    /**
+     *
+     * @param senderModId     The modid of the sender. This is supplied by the caller, or by the active mod container context.
+     *                        Consider it unreliable.
+     * @param modId           The modid being sent to.
+     * @param method          The method being sent to.
+     * @param messageSupplier A {@link Supplier} of the message.
+     */
     public record IMCMessage(String senderModId, String modId, String method, Supplier<?> messageSupplier) {}
 
     private static ConcurrentMap<String, ConcurrentLinkedQueue<IMCMessage>> containerQueues = new ConcurrentHashMap<>();
