@@ -2,6 +2,7 @@
   "fml.loadingerrorscreen.errorheader": "Yükleme aşamasında {0,choice,1#1 hata|1<{0} hata} ile karşılaşıldı",
   "fml.loadingerrorscreen.warningheader": "{0,choice,1#Warning|1<Warnings} while loading mods\n{0,choice,1#1 warning has|1<{0} warnings have} occurred during loading",
   "fml.modloadingissue.language.missingversion": "{101} mod dosyasının {0} sağlayıcısına ihtiyacı var: Yüklenecek {1,vr} \n§7{2,i18n,fml.messages.artifactversion} bulduk",
+  "fml.modloadingissue.language.missing": "Mod File {101} needs language provider {0} to load",
   "fml.modloading.missingclasses": "The Mod File {3} has mods that were not found",
   "fml.modloading.missingmetadata": "mods.toml missing metadata for modid {3}",
   "fml.modloadingissue.failedtoloadmodclass": "{100,modinfo,name} ({100,modinfo,id}) sınıfında yükleme hataları var\n§7{102,exc,msg}",

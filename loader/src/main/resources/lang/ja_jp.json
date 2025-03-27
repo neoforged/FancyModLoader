@@ -2,6 +2,7 @@
   "fml.loadingerrorscreen.errorheader": "Modの読み込み中にエラーが発生しました\n読み込み中に{0,choice,1#1|1<{0}}件のエラーが発生しました",
   "fml.loadingerrorscreen.warningheader": "Modの読み込み中に{0,choice,1#警告|1<警告}が発生しました\n読み込み中に{0,choice,1#1|1<{0}}件の警告が発生しました",
   "fml.modloadingissue.language.missingversion": "Modファイル{101}は言語プロバイダー{0}:{1,vr}の読み込みが必要です\n§7{2,i18n,fml.messages.artifactversion}が見つかりました",
+  "fml.modloadingissue.language.missing": "Mod File {101} needs language provider {0} to load",
   "fml.modloading.missingclasses": "Modファイル{3}が見つかりません",
   "fml.modloading.missingmetadata": "mods.tomlにmodid {3}のメタデータがありません",
   "fml.modloadingissue.failedtoloadmodclass": "{100,modinfo,name}（{100,modinfo,id}）でクラスの読み込み中にエラーが発生しました\n§7{102,exc,msg}",
