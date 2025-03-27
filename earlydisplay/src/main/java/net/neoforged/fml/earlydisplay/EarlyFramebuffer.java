@@ -26,8 +26,8 @@ public class EarlyFramebuffer {
         GlState.bindTexture2D(this.texture);
         GlDebug.labelTexture(this.texture, "EarlyDisplay backbuffer");
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, context.width() * context.scale(), context.height() * context.scale(), 0, GL_RGBA, GL_UNSIGNED_BYTE, (IntBuffer) null);
-        glTexParameterIi(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameterIi(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this.texture, 0);
         GlState.bindFramebuffer(0);
     }

@@ -26,9 +26,7 @@ import static org.lwjgl.opengl.GL32C.GL_READ_FRAMEBUFFER_BINDING;
 import static org.lwjgl.opengl.GL32C.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL32C.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL32C.GL_TEXTURE_BINDING_2D;
-import static org.lwjgl.opengl.GL32C.GL_TRUE;
 import static org.lwjgl.opengl.GL32C.GL_VERTEX_ARRAY_BINDING;
-import static org.lwjgl.opengl.GL32C.GL_VERTEX_ATTRIB_ARRAY_ENABLED;
 import static org.lwjgl.opengl.GL32C.GL_VIEWPORT;
 import static org.lwjgl.opengl.GL32C.glActiveTexture;
 import static org.lwjgl.opengl.GL32C.glBindBuffer;
@@ -38,13 +36,10 @@ import static org.lwjgl.opengl.GL32C.glBindVertexArray;
 import static org.lwjgl.opengl.GL32C.glBlendFuncSeparate;
 import static org.lwjgl.opengl.GL32C.glClearColor;
 import static org.lwjgl.opengl.GL32C.glDisable;
-import static org.lwjgl.opengl.GL32C.glDisableVertexAttribArray;
 import static org.lwjgl.opengl.GL32C.glEnable;
-import static org.lwjgl.opengl.GL32C.glEnableVertexAttribArray;
 import static org.lwjgl.opengl.GL32C.glGetFloatv;
 import static org.lwjgl.opengl.GL32C.glGetInteger;
 import static org.lwjgl.opengl.GL32C.glGetIntegerv;
-import static org.lwjgl.opengl.GL32C.glGetVertexAttribi;
 import static org.lwjgl.opengl.GL32C.glIsEnabled;
 import static org.lwjgl.opengl.GL32C.glUseProgram;
 import static org.lwjgl.opengl.GL32C.glViewport;
@@ -84,7 +79,6 @@ final class GlState {
 
     // Vertex array state
     private static int boundVertexArray;
-    private static final boolean[] enabledVertexAttribArrays = new boolean[16];
 
     // Framebuffer states
     private static int boundDrawFramebuffer;
@@ -137,9 +131,6 @@ final class GlState {
 
         // Read vertex array state
         boundVertexArray = glGetInteger(GL_VERTEX_ARRAY_BINDING);
-        for (int i = 0; i < enabledVertexAttribArrays.length; i++) {
-            enabledVertexAttribArrays[i] = glGetVertexAttribi(i, GL_VERTEX_ATTRIB_ARRAY_ENABLED) == GL_TRUE;
-        }
 
         // Read framebuffer states
         boundDrawFramebuffer = glGetInteger(GL_DRAW_FRAMEBUFFER_BINDING);
@@ -332,24 +323,7 @@ final class GlState {
     }
 
     /**
-     * Enables or disables a vertex attribute array.
-     *
-     * @param index   The attribute index
-     * @param enabled Whether the attribute should be enabled
-     */
-    public static void enableVertexAttribArray(int index, boolean enabled) {
-        if (index >= 0 && index < enabledVertexAttribArrays.length && enabled != enabledVertexAttribArrays[index]) {
-            if (enabled) {
-                glEnableVertexAttribArray(index);
-            } else {
-                glDisableVertexAttribArray(index);
-            }
-            enabledVertexAttribArrays[index] = enabled;
-        }
-    }
-
-    /**
-     * A record class representing a snapshot of the OpenGL state.
+     * A snapshot of the OpenGL state.
      */
     public record StateSnapshot(
             int viewportX, int viewportY, int viewportWidth, int viewportHeight,
@@ -358,16 +332,9 @@ final class GlState {
             int blendSrcRGB, int blendDstRGB, int blendSrcAlpha, int blendDstAlpha,
             int currentProgram,
             int boundTexture2D, int activeTextureUnit,
-            int boundVertexArray, boolean[] enabledVertexAttribArrays,
+            int boundVertexArray,
             int boundDrawFramebuffer, int boundReadFramebuffer,
-            int boundElementArrayBuffer, int boundArrayBuffer) {
-        /**
-         * Creates a copy of the enabledVertexAttribArrays to avoid sharing arrays.
-         */
-        public StateSnapshot {
-            enabledVertexAttribArrays = enabledVertexAttribArrays.clone();
-        }
-    }
+            int boundElementArrayBuffer, int boundArrayBuffer) {}
 
     /**
      * Creates a snapshot of the current OpenGL state.
@@ -382,7 +349,7 @@ final class GlState {
                 blendSrcRGB, blendDstRGB, blendSrcAlpha, blendDstAlpha,
                 currentProgram,
                 boundTexture2D, activeTextureUnit,
-                boundVertexArray, enabledVertexAttribArrays.clone(),
+                boundVertexArray,
                 boundDrawFramebuffer, boundReadFramebuffer,
                 boundElementArrayBuffer, boundArrayBuffer);
     }
@@ -415,10 +382,5 @@ final class GlState {
         }
         bindElementArrayBuffer(snapshot.boundElementArrayBuffer);
         bindArrayBuffer(snapshot.boundArrayBuffer);
-
-        // Apply vertex attribute array states
-        for (int i = 0; i < snapshot.enabledVertexAttribArrays.length; i++) {
-            enableVertexAttribArray(i, snapshot.enabledVertexAttribArrays[i]);
-        }
     }
 }
