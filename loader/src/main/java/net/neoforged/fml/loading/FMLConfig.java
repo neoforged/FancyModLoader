@@ -9,7 +9,6 @@ import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.core.ConfigSpec;
 import com.electronwill.nightconfig.core.InMemoryFormat;
-import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.electronwill.nightconfig.core.io.ParsingMode;
 import com.electronwill.nightconfig.core.io.WritingMode;
 import com.electronwill.nightconfig.toml.TomlFormat;
@@ -81,15 +80,6 @@ public class FMLConfig {
             return (T) this.entryFunction.apply(config != null ? config.get(this.entry) : this.defaultValue);
         }
 
-        /**
-         * @deprecated Use {@link FMLConfig#updateConfig(ConfigValue, Object)} instead.
-         */
-        @Deprecated(forRemoval = true)
-        public <T> void updateValue(final CommentedFileConfig configData, final T value) {
-            setConfigValue(configData, value);
-            FMLConfig.INSTANCE.saveConfig(FMLPaths.FMLCONFIG.get());
-        }
-
         private <T> void setConfigValue(CommentedConfig configData, final T value) {
             configData.set(this.entry, value);
         }
@@ -108,6 +98,7 @@ public class FMLConfig {
             // Make sure the values are written in the same order as the enum.
             InMemoryFormat.withUniversalSupport().createConfig(LinkedHashMap::new));
     private static final CommentedConfig configComments = CommentedConfig.inMemory();
+
     static {
         for (ConfigValue cv : ConfigValue.values()) {
             cv.buildConfigEntry(configSpec, configComments);
