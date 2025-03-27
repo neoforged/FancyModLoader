@@ -5,6 +5,7 @@
 
 package net.neoforged.fml.earlydisplay;
 
+import static org.lwjgl.opengl.GL20C.glEnableVertexAttribArray;
 import static org.lwjgl.opengl.GL32C.*;
 
 import java.io.Closeable;
@@ -504,16 +505,7 @@ public class SimpleBufferBuilder implements Closeable {
          */
         public void enable() {
             for (int i = 0; i < types.length; i++) {
-                GlState.enableVertexAttribArray(i, true);
-            }
-        }
-
-        /**
-         * Disables the vertex attributes this format contains.
-         */
-        public void disable() {
-            for (int i = 0; i < types.length; i++) {
-                GlState.enableVertexAttribArray(i, false);
+                glEnableVertexAttribArray(i);
             }
         }
     }
