@@ -2,7 +2,7 @@
   "fml.loadingerrorscreen.errorheader": "Chyba při načítání módů\n{0,choice,1#1 chyba nastala|1<{0} chyb nastalo} při načítání",
   "fml.loadingerrorscreen.warningheader": "{0,choice,1#Upozornění|1<Upozornění} při načítání módů\n{0,choice,1#1 upozornění|1<{0} upozornění} nastalo při načítání",
   "fml.modloadingissue.language.missingversion": "Módový soubor {101} potřebuje poskytovatele jazyka {0}{1,vr} pro správné načtení\n§7Nalezli jsme {2,i18n,fml.messages.artifactversion}",
-  "fml.modloadingissue.language.missing": "Mod File {101} needs language provider {0} to load",
+  "fml.modloadingissue.language.missing": "Soubor modu {101} potřebuje k načtení poskytovatele jazyka {0}",
   "fml.modloading.missingclasses": "Módový soubor {3} obsahuje módy které nebyly nalezeny",
   "fml.modloading.missingmetadata": "mods.toml neobsahuje metada pro modid {3}",
   "fml.modloadingissue.failedtoloadmodclass": "{100,modinfo,name} ({100,modinfo,id}) má chyby při načítání tříd\n§7{102,exc,msg}",
