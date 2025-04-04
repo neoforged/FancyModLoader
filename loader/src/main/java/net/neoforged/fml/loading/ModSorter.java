@@ -313,7 +313,7 @@ public class ModSorter {
                     "Missing or unsupported mandatory dependencies:\n{}",
                     missingVersions.stream()
                             .filter(mv -> mv.getType() == IModInfo.DependencyType.REQUIRED || mv.getType() == IModInfo.DependencyType.CONDITIONAL)
-                            .map(ver -> ver.getType() == IModInfo.DependencyType.CONDITIONAL ? formatConditionalDependencyError(ver, modVersions) : formatDependencyError(ver, modVersions))
+                            .map(ver -> formatDependencyError(ver, modVersions))
                             .collect(Collectors.joining("\n")));
         }
         if (missingVersions.size() - mandatoryMissing > 0) {
@@ -346,19 +346,6 @@ public class ModSorter {
                 dependency.getOwner().getModId(),
                 dependency.getVersionRange(),
                 installed != null ? installed.toString() : "[MISSING]");
-    }
-
-    private static String formatConditionalDependencyError(IModInfo.ModVersion dependency, Map<String, ArtifactVersion> modVersions) {
-        ArtifactVersion installedDep = modVersions.get(dependency.getModId());
-        List<String> installedConditions = dependency.getConditionalModIds().map(condIds -> condIds.stream().filter(modVersions::containsKey).collect(toList())).orElse(new ArrayList<>());
-        return String.format(
-                "\tMod ID: '%s', Requested by: '%s' because %s %s installed, Expected range: '%s', Actual version: '%s'",
-                dependency.getModId(),
-                dependency.getOwner().getModId(),
-                String.join(", ", installedConditions),
-                installedConditions.size() > 1 ? "are" : "is",
-                dependency.getVersionRange(),
-                installedDep != null ? installedDep.toString() : "[MISSING]");
     }
 
     private static String formatIncompatibleDependencyError(IModInfo.ModVersion dependency, String type, Map<String, ArtifactVersion> modVersions) {
