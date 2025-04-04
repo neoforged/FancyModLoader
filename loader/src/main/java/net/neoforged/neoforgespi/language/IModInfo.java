@@ -85,7 +85,7 @@ public interface IModInfo {
     }
 
     enum DependencyType {
-        REQUIRED, OPTIONAL,
+        REQUIRED, OPTIONAL, CONDITIONAL,
         /**
          * Prevents the game from loading if the dependency is loaded.
          */
@@ -93,7 +93,7 @@ public interface IModInfo {
         /**
          * Shows a warning if the dependency is loaded.
          */
-        DISCOURAGED
+        DISCOURAGED;
     }
 
     interface ModVersion {
@@ -103,9 +103,11 @@ public interface IModInfo {
 
         DependencyType getType();
 
+        Optional<List<String>> getConditionalModIds();
+
         /**
          * {@return the reason of this dependency}
-         * Only displayed if the type is either {@link DependencyType#DISCOURAGED} or {@link DependencyType#INCOMPATIBLE}
+         * Only displayed if the type is either {@link DependencyType#DISCOURAGED}, {@link DependencyType#INCOMPATIBLE}, or {@link DependencyType#CONDITIONAL}
          */
         Optional<String> getReason();
 

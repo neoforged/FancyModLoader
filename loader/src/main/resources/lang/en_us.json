@@ -14,6 +14,7 @@
   "fml.modloadingissue.javafml.dangling_entrypoint": "File {2} contains mod entrypoint class §6{1}§r for mod with id §e{0}§r, which does not exist or is not in the same file.\nDid you forget to update the mod id in the entrypoint?",
   "fml.modloadingissue.missingdependency": "Mod §e{1}§r requires §6{0}§r §o{2,vr}§r\n§7Currently, §6{0}§r§7 is §o{3,i18n,fml.messages.artifactversion.ornotinstalled}§r\n{4,optional,§7Reason for the dependency: §r}",
   "fml.modloadingissue.missingdependency.optional": "Mod §e{1}§r only supports §3{0}§r §o{2,vr}§r\n§7Currently, §3{0}§r§7 is §o{3}",
+  "fml.modloadingissue.missingdependency.conditional": "Mod §e{1}§r requires §6{0}§r §o{2,vr}§r when §6{3}§r is installed\n§7Currently, §6{0}§r§7 is §o{4,i18n,fml.messages.artifactversion.ornotinstalled}§r\n{5,optional,§7Reason for the dependency: §r}",
   "fml.modloadingissue.incompatiblemod": "Mod §e{1}§r is §cincompatible§r with §3{0}§r §o{2,vr}§r\n§7Currently, §3{0}§r§7 is §o{3}§r\n§7The reason is:§r §o{4,i18ntranslate}§r",
   "fml.modloadingissue.discouragedmod": "Mod §e{1}§r §ddiscourages§r the use of §3{0}§r §o{2,vr}§r\n§7Currently, §3{0}§r§7 is §o{3}§r\n§7The reason is:§r §o{4,i18ntranslate}§r",
   "fml.modloadingissue.discouragedmod.proceed": "Proceed at your own risk",
