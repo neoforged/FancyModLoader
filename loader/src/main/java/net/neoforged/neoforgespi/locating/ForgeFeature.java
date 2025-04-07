@@ -68,6 +68,10 @@ public class ForgeFeature {
         public <T> T bound() {
             return (T) features.getOrDefault(featureName, MISSING).convertFromString(featureBound);
         }
+
+        public String visualizedInfo() {
+            return "{featureName=" + this.featureName + ", featureBound=" + this.featureBound + ", modInfo=" + this.modInfo.visualizedInfo() + "}"
+        }
     }
 
     /**

@@ -114,7 +114,7 @@ public final class ModLoader {
                 .toList();
 
         if (!failedBounds.isEmpty()) {
-            LOGGER.fatal(CORE, "Failed to validate feature bounds for mods: {}", failedBounds);
+            LOGGER.fatal(CORE, "Failed to validate feature bounds for mods: {}", failedBounds.stream().map(bound -> bound.visualizedInfo()).toList());
             for (var fb : failedBounds) {
                 loadingIssues.add(ModLoadingIssue.error("fml.modloadingissue.feature.missing", fb, ForgeFeature.featureValue(fb)).withAffectedMod(fb.modInfo()));
             }
