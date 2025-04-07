@@ -70,7 +70,7 @@ public class ForgeFeature {
         }
 
         public String visualizedInfo() {
-            return "{featureName=" + this.featureName + ", featureBound=" + this.featureBound + ", modInfo=" + this.modInfo.visualizedInfo() + "}"
+            return "{featureName=" + this.featureName + ", featureBound=" + this.featureBound + ", modInfo=" + this.modInfo.visualizedInfo() + "}";
         }
     }
 
