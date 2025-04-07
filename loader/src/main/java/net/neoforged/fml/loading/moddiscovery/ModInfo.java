@@ -202,7 +202,7 @@ public class ModInfo implements IModInfo, IConfigurable {
     }
 
     public String visualizedInfo() {
-        return "{modId=" + this.modId + ", displayName=" + this.displayName + "}"
+        return "{modId=" + this.modId + ", displayName=" + this.displayName + "}";
     }
 
     class ModVersion implements net.neoforged.neoforgespi.language.IModInfo.ModVersion {
