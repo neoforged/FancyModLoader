@@ -1,14 +1,15 @@
 package net.neoforged.fml.earlydisplay.theme.elements;
 
-public class ThemeLabelElement extends ThemeElement {
-    private final String text;
+import java.util.Objects;
 
-    public ThemeLabelElement(String id, String text) {
-        super(id);
-        this.text = text;
-    }
+public class ThemeLabelElement extends ThemeElement {
+    private String text = "";
 
     public String text() {
         return text;
+    }
+
+    public void setText(String text) {
+        this.text = Objects.requireNonNull(text);
     }
 }

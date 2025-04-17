@@ -18,6 +18,13 @@ public final class NativeBuffer implements AutoCloseable {
         return buffer;
     }
 
+    public byte[] toByteArray() {
+        byte[] data = new byte[buffer.remaining()];
+        buffer.get(data);
+        buffer.position(0);
+        return data;
+    }
+
     @Override
     public void close() {
         if (deallocated.compareAndSet(false, true)) {

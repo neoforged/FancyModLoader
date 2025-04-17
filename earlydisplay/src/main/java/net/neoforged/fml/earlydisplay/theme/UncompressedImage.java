@@ -1,11 +1,16 @@
 package net.neoforged.fml.earlydisplay.theme;
 
 import java.nio.ByteBuffer;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Image data loaded into memory and decompressed.
  */
-public record UncompressedImage(String name, NativeBuffer nativeImageData, int width,
+public record UncompressedImage(
+        String name,
+        @Nullable ThemeResource source,
+        NativeBuffer nativeImageData,
+        int width,
         int height) implements AutoCloseable {
     public ByteBuffer imageData() {
         return nativeImageData.buffer();

@@ -1,17 +1,17 @@
 package net.neoforged.fml.earlydisplay.render.elements;
 
 import java.util.List;
+import net.neoforged.fml.earlydisplay.render.MaterializedTheme;
 import net.neoforged.fml.earlydisplay.render.RenderContext;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
-import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.util.Bounds;
 import net.neoforged.fml.earlydisplay.util.Size;
 
 public class LabelElement extends RenderElement {
     private final String text;
 
-    public LabelElement(String id, String text) {
-        super(id);
+    public LabelElement(String id, MaterializedTheme theme, String text) {
+        super(id, theme);
         this.text = text;
     }
 
@@ -20,7 +20,6 @@ public class LabelElement extends RenderElement {
         var texts = List.of(
                 new SimpleFont.DisplayText(text, -1));
 
-        var font = context.getFont(Theme.FONT_DEFAULT);
         var intrinsicSize = getIntrinsicSize(texts, font);
         var bounds = resolveBounds(context.availableWidth(), context.availableHeight(), intrinsicSize.width(), intrinsicSize.height());
 

@@ -12,18 +12,20 @@ import static org.lwjgl.opengl.GL11C.glTexParameteri;
 import static org.lwjgl.opengl.GL13C.GL_TEXTURE0;
 
 import net.neoforged.fml.earlydisplay.theme.AnimationMetadata;
+import net.neoforged.fml.earlydisplay.theme.TextureScaling;
 import net.neoforged.fml.earlydisplay.theme.ThemeTexture;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL32C;
 
 public record Texture(int textureId, int physicalWidth, int physicalHeight,
+        TextureScaling scaling,
         @Nullable AnimationMetadata animationMetadata) implements AutoCloseable {
     public int width() {
-        return physicalWidth;
+        return scaling.width();
     }
 
     public int height() {
-        return animationMetadata != null ? physicalHeight / animationMetadata.frameCount() : physicalHeight;
+        return scaling.height();
     }
 
     /**
@@ -39,7 +41,7 @@ public record Texture(int textureId, int physicalWidth, int physicalHeight,
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.imageData());
             GlState.activeTexture(GL_TEXTURE0);
-            return new Texture(texId, image.width(), image.height(), themeTexture.animation());
+            return new Texture(texId, image.width(), image.height(), themeTexture.scaling(), themeTexture.animation());
         }
     }
 

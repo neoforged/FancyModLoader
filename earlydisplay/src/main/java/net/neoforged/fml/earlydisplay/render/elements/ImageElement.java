@@ -1,13 +1,14 @@
 package net.neoforged.fml.earlydisplay.render.elements;
 
+import net.neoforged.fml.earlydisplay.render.MaterializedTheme;
 import net.neoforged.fml.earlydisplay.render.RenderContext;
 import net.neoforged.fml.earlydisplay.render.Texture;
 
 public class ImageElement extends RenderElement {
     private final Texture texture;
 
-    public ImageElement(String id, Texture texture) {
-        super(id);
+    public ImageElement(String id, MaterializedTheme theme, Texture texture) {
+        super(id, theme);
         this.texture = texture;
     }
 
@@ -21,7 +22,7 @@ public class ImageElement extends RenderElement {
 
         var bounds = resolveBounds(context.availableWidth(), context.availableHeight(), texture.width(), texture.height());
 
-        context.blitTexture(texture, bounds.left(), bounds.top(), bounds.width(), bounds.height(), color);
+        context.blitTexture(texture, bounds, color);
     }
 
     @Override

@@ -29,6 +29,13 @@ public final class StyleLength {
         return new StyleLength(Unit.POINT, points);
     }
 
+    public static StyleLength ofREM(float rem) {
+        if (Float.isNaN(rem)) {
+            return ofUndefined();
+        }
+        return new StyleLength(Unit.REM, rem);
+    }
+
     public static StyleLength ofPercent(float percent) {
         if (Float.isNaN(percent)) {
             return ofUndefined();
@@ -44,9 +51,20 @@ public final class StyleLength {
         return value;
     }
 
+    @Override
+    public String toString() {
+        return switch (unit) {
+            case UNDEFINED -> "undefined";
+            case POINT -> String.valueOf(value);
+            case REM -> value + "rem";
+            case PERCENT -> value + "%";
+        };
+    }
+
     public enum Unit {
         UNDEFINED,
         POINT,
+        REM,
         PERCENT
     }
 }

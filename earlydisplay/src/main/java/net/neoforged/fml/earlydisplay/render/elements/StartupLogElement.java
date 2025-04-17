@@ -2,9 +2,9 @@ package net.neoforged.fml.earlydisplay.render.elements;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.neoforged.fml.earlydisplay.render.MaterializedTheme;
 import net.neoforged.fml.earlydisplay.render.RenderContext;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
-import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 import net.neoforged.fml.earlydisplay.util.Bounds;
 import net.neoforged.fml.earlydisplay.util.Size;
@@ -14,8 +14,8 @@ import net.neoforged.fml.loading.progress.StartupNotificationManager;
 public class StartupLogElement extends RenderElement {
     private ThemeColor textColor;
 
-    public StartupLogElement(String id, ThemeColor textColor) {
-        super(id);
+    public StartupLogElement(String id, MaterializedTheme theme, ThemeColor textColor) {
+        super(id, theme);
         this.textColor = textColor;
     }
 
@@ -34,7 +34,6 @@ public class StartupLogElement extends RenderElement {
             texts.add(new SimpleFont.DisplayText(msg.getText() + "\n", colour));
         }
 
-        var font = context.getFont(Theme.FONT_DEFAULT);
         var intrinsicSize = getIntrinsicSize(texts, font);
         var bounds = resolveBounds(context.availableWidth(), context.availableHeight(), intrinsicSize.width(), intrinsicSize.height());
 

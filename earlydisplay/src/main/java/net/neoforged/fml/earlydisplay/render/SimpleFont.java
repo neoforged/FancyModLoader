@@ -33,14 +33,15 @@ import java.nio.charset.StandardCharsets;
 import net.neoforged.fml.earlydisplay.theme.ThemeResource;
 import net.neoforged.fml.earlydisplay.util.Size;
 import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL32C;
 import org.lwjgl.stb.STBTTAlignedQuad;
 import org.lwjgl.stb.STBTTFontinfo;
 import org.lwjgl.stb.STBTTPackContext;
 import org.lwjgl.stb.STBTTPackRange;
 import org.lwjgl.stb.STBTTPackedchar;
 
-public class SimpleFont {
-    private final int textureId;
+public class SimpleFont implements AutoCloseable {
+    private int textureId;
     private final int lineSpacing;
     private final int descent;
     private final int GLYPH_COUNT = 127 - 32;
@@ -53,7 +54,6 @@ public class SimpleFont {
         var y = 0f;
 
         var codePoints = text.codePoints().iterator();
-
         while (codePoints.hasNext()) {
             int codePoint = codePoints.next();
             switch (codePoint) {
@@ -64,7 +64,7 @@ public class SimpleFont {
                 }
                 case '\t' -> x += glyphs[0].charwidth() * 4;
                 default -> {
-                    if (codePoint > ' ' && codePoint - ' ' < GLYPH_COUNT) {
+                    if (codePoint >= ' ' && codePoint - ' ' < GLYPH_COUNT) {
                         x += glyphs[codePoint - ' '].charwidth();
                     }
                 }
@@ -78,6 +78,14 @@ public class SimpleFont {
         }
 
         return new Size(width, height);
+    }
+
+    @Override
+    public void close() {
+        if (textureId != 0) {
+            GL32C.glDeleteTextures(textureId);
+            textureId = 0;
+        }
     }
 
     private record Glyph(char c, int charwidth, int[] pos, float[] uv) {
@@ -155,7 +163,7 @@ public class SimpleFont {
         }
     }
 
-    int lineSpacing() {
+    public int lineSpacing() {
         return lineSpacing;
     }
 
@@ -163,7 +171,7 @@ public class SimpleFont {
         return textureId;
     }
 
-    int descent() {
+    public int descent() {
         return descent;
     }
 

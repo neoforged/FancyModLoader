@@ -1,21 +1,23 @@
 package net.neoforged.fml.earlydisplay.theme.elements;
 
+import java.util.Objects;
 import net.neoforged.fml.earlydisplay.util.StyleLength;
 
 public abstract class ThemeElement {
-    private final String id;
+    private String id;
 
+    private boolean maintainAspectRatio = true;
     private StyleLength left = StyleLength.ofUndefined();
     private StyleLength top = StyleLength.ofUndefined();
     private StyleLength right = StyleLength.ofUndefined();
     private StyleLength bottom = StyleLength.ofUndefined();
 
-    public ThemeElement(String id) {
-        this.id = id;
-    }
-
     public String id() {
         return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public StyleLength left() {
@@ -23,7 +25,7 @@ public abstract class ThemeElement {
     }
 
     public void setLeft(StyleLength left) {
-        this.left = left;
+        this.left = Objects.requireNonNull(left);
     }
 
     public StyleLength top() {
@@ -31,7 +33,7 @@ public abstract class ThemeElement {
     }
 
     public void setTop(StyleLength top) {
-        this.top = top;
+        this.top = Objects.requireNonNull(top);
     }
 
     public StyleLength right() {
@@ -39,7 +41,7 @@ public abstract class ThemeElement {
     }
 
     public void setRight(StyleLength right) {
-        this.right = right;
+        this.right = Objects.requireNonNull(right);
     }
 
     public StyleLength bottom() {
@@ -47,7 +49,15 @@ public abstract class ThemeElement {
     }
 
     public void setBottom(StyleLength bottom) {
-        this.bottom = bottom;
+        this.bottom = Objects.requireNonNull(bottom);
+    }
+
+    public boolean maintainAspectRatio() {
+        return maintainAspectRatio;
+    }
+
+    public void setMaintainAspectRatio(boolean maintainAspectRatio) {
+        this.maintainAspectRatio = maintainAspectRatio;
     }
 
     @Override

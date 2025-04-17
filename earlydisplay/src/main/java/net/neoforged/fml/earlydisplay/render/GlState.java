@@ -5,6 +5,9 @@
 
 package net.neoforged.fml.earlydisplay.render;
 
+import static org.lwjgl.opengl.GL11C.GL_SCISSOR_BOX;
+import static org.lwjgl.opengl.GL11C.GL_SCISSOR_TEST;
+import static org.lwjgl.opengl.GL11C.glScissor;
 import static org.lwjgl.opengl.GL20C.glIsProgram;
 import static org.lwjgl.opengl.GL32C.GL_ACTIVE_TEXTURE;
 import static org.lwjgl.opengl.GL32C.GL_ARRAY_BUFFER;
@@ -91,6 +94,10 @@ public final class GlState {
     private static int boundElementArrayBuffer;
     private static int boundArrayBuffer;
 
+    // Scissor test
+    private static boolean scissorEnabled;
+    private static int[] scissorBox = new int[4];
+
     /**
      * Private constructor to prevent instantiation of this utility class.
      */
@@ -142,6 +149,10 @@ public final class GlState {
         // Read buffer states
         boundElementArrayBuffer = glGetInteger(GL_ELEMENT_ARRAY_BUFFER_BINDING);
         boundArrayBuffer = glGetInteger(GL_ARRAY_BUFFER_BINDING);
+
+        // Read scissor state
+        glGetIntegerv(GL_SCISSOR_BOX, scissorBox);
+        scissorEnabled = glIsEnabled(GL_SCISSOR_TEST);
     }
 
     /**
@@ -326,6 +337,33 @@ public final class GlState {
     }
 
     /**
+     * Configures the rectangle for the scissor test, which can be enabled or disabled by {@link #scissorTest}.
+     */
+    public static void scissorBox(int x, int y, int width, int height) {
+        if (x != scissorBox[0] || y != scissorBox[1] || width != scissorBox[2] || height != scissorBox[3]) {
+            glScissor(x, y, width, height);
+            scissorBox[0] = x;
+            scissorBox[1] = y;
+            scissorBox[2] = width;
+            scissorBox[3] = height;
+        }
+    }
+
+    /**
+     * Enables or disables the scissor test against the box defined by {@link #scissorBox}.
+     */
+    public static void scissorTest(boolean enabled) {
+        if (enabled != scissorEnabled) {
+            if (enabled) {
+                glEnable(GL_SCISSOR_TEST);
+            } else {
+                glDisable(GL_SCISSOR_TEST);
+            }
+            scissorEnabled = enabled;
+        }
+    }
+
+    /**
      * A snapshot of the OpenGL state.
      */
     public record StateSnapshot(
@@ -337,7 +375,8 @@ public final class GlState {
             int boundTexture2D, int activeTextureUnit,
             int boundVertexArray,
             int boundDrawFramebuffer, int boundReadFramebuffer,
-            int boundElementArrayBuffer, int boundArrayBuffer) {}
+            int boundElementArrayBuffer, int boundArrayBuffer,
+            boolean scissorEnabled, int[] scissorBox) {}
 
     /**
      * Creates a snapshot of the current OpenGL state.
@@ -354,7 +393,8 @@ public final class GlState {
                 boundTexture2D, activeTextureUnit,
                 boundVertexArray,
                 boundDrawFramebuffer, boundReadFramebuffer,
-                boundElementArrayBuffer, boundArrayBuffer);
+                boundElementArrayBuffer, boundArrayBuffer,
+                scissorEnabled, scissorBox);
     }
 
     /**
@@ -385,5 +425,7 @@ public final class GlState {
         }
         bindElementArrayBuffer(snapshot.boundElementArrayBuffer);
         bindArrayBuffer(snapshot.boundArrayBuffer);
+        scissorTest(snapshot.scissorEnabled);
+        scissorBox(snapshot.scissorBox[0], snapshot.scissorBox[1], snapshot.scissorBox[2], snapshot.scissorBox[3]);
     }
 }

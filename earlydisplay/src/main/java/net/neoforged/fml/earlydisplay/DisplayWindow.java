@@ -47,11 +47,11 @@ import static org.lwjgl.glfw.GLFW.glfwWindowHintString;
 import static org.lwjgl.opengl.GL32C.GL_TRUE;
 
 import java.awt.Desktop;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.Map;
@@ -71,6 +71,7 @@ import net.neoforged.fml.earlydisplay.render.LoadingScreenRenderer;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
+import net.neoforged.fml.earlydisplay.theme.ThemeSerializer;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.progress.ProgressMeter;
@@ -110,8 +111,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private int framecount;
     private ScheduledFuture<LoadingScreenRenderer> rendererFuture;
 
-    private PerformanceInfo performanceInfo;
-    private ScheduledFuture<?> performanceTick;
     // The GL ID of the window. Used for all operations
     private long window;
     // The thread that contains and ticks the window while Forge is loading mods
@@ -169,12 +168,11 @@ public class DisplayWindow implements ImmediateWindowProvider {
                 LOGGER.warn("Failed to read dark-mode settings from options.txt", e);
             }
         }
-        this.theme = Theme.load(new File(""), darkMode);
+        this.theme = loadTheme(darkMode);
         this.maximized = parsed.has(maximizedopt) || FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_MAXIMIZED);
 
         var forgeVersion = parsed.valueOf(forgeversionopt);
         StartupNotificationManager.modLoaderConsumer().ifPresent(c -> c.accept("NeoForge loading " + forgeVersion));
-        performanceInfo = new PerformanceInfo();
 
         this.renderScheduler = Executors.newSingleThreadScheduledExecutor(
                 Thread.ofPlatform().group(BACKGROUND_THREAD_GROUP)
@@ -190,20 +188,40 @@ public class DisplayWindow implements ImmediateWindowProvider {
         initWindow(mcVersion);
 
         this.rendererFuture = renderScheduler.schedule(() -> new LoadingScreenRenderer(renderScheduler, window, theme, mcVersion, forgeVersion), 1, TimeUnit.MILLISECONDS);
+
+        updateProgress("Initializing Game Graphics");
         StartupNotificationManager.addModMessage("BLAHFASEL");
-        while (true) {
-            try {
-                periodicTick();
-                Thread.sleep(100L);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+        var pp = StartupNotificationManager.prependProgressBar("Minecraft Progress", 1000);
+        pp.setAbsolute(250);
+
+        return this::periodicTick;
+    }
+
+    private static Theme loadTheme(boolean darkMode) {
+        Path themePath = getThemePath(darkMode);
+        Theme theme;
+        try {
+            theme = ThemeSerializer.load(themePath);
+        } catch (NoSuchFileException ignored) {
+            LOGGER.info("No theme found at {}", themePath);
+            theme = Theme.createDefaultTheme(darkMode);
+            if (Boolean.getBoolean("fml.writeMissingTheme")) {
+                ThemeSerializer.save(getThemePath(true), Theme.createDefaultTheme(true));
+                ThemeSerializer.save(getThemePath(false), Theme.createDefaultTheme(false));
             }
+        } catch (Exception e) {
+            LOGGER.error("Failed to load theme {}", themePath, e);
+            theme = Theme.createDefaultTheme(darkMode);
         }
-        //return this::periodicTick;
+        return theme;
+    }
+
+    private static Path getThemePath(boolean darkMode) {
+        return FMLPaths.CONFIGDIR.get().resolve(darkMode ? "fml/theme_dark.json" : "fml/theme.json");
     }
 
     // Called from NeoForge
-    public void render(int alpha) {
+    public void renderToFramebuffer() {
         if (rendererFuture.isDone()) {
             rendererFuture.resultNow().renderToFramebuffer();
         }
@@ -346,15 +364,14 @@ public class DisplayWindow implements ImmediateWindowProvider {
         glfwSetWindowPos(window, (vidmode.width() - this.winWidth) / 2 + monitorX, (vidmode.height() - this.winHeight) / 2 + monitorY);
 
         // Attempt setting the icon
-        try (var glfwImgBuffer = GLFWImage.malloc(1)) {
-            try (GLFWImage glfwImages = GLFWImage.malloc()) {
-                var icon = theme.windowIcon();
-                glfwImgBuffer.put(glfwImages.set(icon.width(), icon.height(), icon.imageData()));
-                glfwImgBuffer.flip();
-                glfwSetWindowIcon(window, glfwImgBuffer);
-            }
-        } catch (NullPointerException e) {
-            LOGGER.error("Failed to load NeoForged icon");
+        try (var glfwImgBuffer = GLFWImage.malloc(1);
+                var glfwImages = GLFWImage.malloc();
+                var icon = theme.windowIcon().loadAsImage()) {
+            glfwImgBuffer.put(glfwImages.set(icon.width(), icon.height(), icon.imageData()));
+            glfwImgBuffer.flip();
+            glfwSetWindowIcon(window, glfwImgBuffer);
+        } catch (Exception e) {
+            LOGGER.error("Failed to load NeoForged icon", e);
         }
         getLastGlfwError().ifPresent(error -> LOGGER.warn("Failed to set window icon: {}", error));
 
@@ -443,6 +460,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+
+        completeProgress();
 
         glfwMakeContextCurrent(window);
         // Set the title to what the game wants

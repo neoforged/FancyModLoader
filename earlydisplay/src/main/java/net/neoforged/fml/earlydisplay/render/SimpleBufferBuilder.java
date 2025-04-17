@@ -11,6 +11,7 @@ import static org.lwjgl.opengl.GL32C.*;
 import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 import org.lwjgl.system.MemoryUtil;
 
 /**
@@ -224,23 +225,13 @@ public class SimpleBufferBuilder implements Closeable {
     }
 
     /**
-     * @see ColourScheme.Colour#packedint(int)
-     * @param packedColor an ABGR packed int
+     * @param packedColor an ARGB packed int
      * @return the same buffer.
+     * @see ThemeColor#toArgb()
      */
     public SimpleBufferBuilder colour(int packedColor) {
-        if (!building) throw new IllegalStateException("Not building."); // You did not call begin.
-
-        if (elementIndex == format.types.length) throw new IllegalStateException("Expected endVertex"); // we have reached the end of elements to buffer for this vertex, we expected an endVertex call.
-        if (format.types[elementIndex] != Element.COLOR) throw new IllegalArgumentException("Expected " + format.types[elementIndex]); // You called the wrong method for the format order.
-
-        // Assumes our COLOR element specifies the UNSIGNED_BYTE data type.
-        buffer.putInt(index + 0, packedColor);
-
-        // Increment index for the number of bytes we wrote and increment the element index.
-        index += format.types[elementIndex].width;
-        elementIndex++;
-        return this;
+        var color = ThemeColor.ofArgb(packedColor);
+        return colour(color.r(), color.g(), color.b(), color.a());
     }
 
     /**

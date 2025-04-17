@@ -26,6 +26,7 @@ final class ImageLoader {
             var decodedImage = STBImage.stbi_load_from_memory(buffer.buffer(), width, height, channels, 4);
             // TODO: Handle image decoding error
             return new UncompressedImage(resource.toString(),
+                    resource,
                     new NativeBuffer(decodedImage, STBImage::stbi_image_free),
                     width[0],
                     height[0]);
@@ -52,6 +53,7 @@ final class ImageLoader {
         var nativeBuffer = new NativeBuffer(pixelData, MemoryUtil::memFree);
         return new UncompressedImage(
                 "broken texture",
+                null,
                 nativeBuffer,
                 BROKEN_TEXTURE_DIMENSIONS,
                 BROKEN_TEXTURE_DIMENSIONS);

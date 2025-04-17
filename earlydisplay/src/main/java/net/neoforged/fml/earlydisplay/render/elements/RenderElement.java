@@ -5,22 +5,28 @@
 
 package net.neoforged.fml.earlydisplay.render.elements;
 
+import net.neoforged.fml.earlydisplay.render.MaterializedTheme;
 import net.neoforged.fml.earlydisplay.render.RenderContext;
+import net.neoforged.fml.earlydisplay.render.SimpleFont;
+import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.util.Bounds;
 import net.neoforged.fml.earlydisplay.util.StyleLength;
 
 public abstract class RenderElement implements AutoCloseable {
-    private int retireCount;
-
     private final String id;
+    protected final MaterializedTheme theme;
 
+    private boolean maintainAspectRatio = true;
     private StyleLength left = StyleLength.ofUndefined();
     private StyleLength top = StyleLength.ofUndefined();
     private StyleLength right = StyleLength.ofUndefined();
     private StyleLength bottom = StyleLength.ofUndefined();
+    protected SimpleFont font;
 
-    public RenderElement(String id) {
+    public RenderElement(String id, MaterializedTheme theme) {
         this.id = id;
+        this.theme = theme;
+        this.font = theme.fonts().get(Theme.FONT_DEFAULT);
     }
 
     public String id() {
@@ -43,11 +49,17 @@ public abstract class RenderElement implements AutoCloseable {
 
         // Handle aspect ratio
         if (widthDefined != heightDefined) {
-            float ar = intrinsicWidth / intrinsicHeight;
-            if (widthDefined) {
-                height = width / ar;
-            } else {
-                width = height * ar;
+            if (maintainAspectRatio) {
+                float ar = intrinsicWidth / intrinsicHeight;
+                if (widthDefined) {
+                    height = width / ar;
+                } else {
+                    width = height * ar;
+                }
+            } else if (widthDefined) {
+                height = intrinsicHeight;
+            } else if (heightDefined) {
+                width = intrinsicWidth;
             }
         } else if (!widthDefined && !heightDefined) {
             width = intrinsicWidth;
@@ -75,10 +87,11 @@ public abstract class RenderElement implements AutoCloseable {
         return new Bounds(left, top, right, bottom);
     }
 
-    private static float resolve(StyleLength length, float availableSpace) {
+    private float resolve(StyleLength length, float availableSpace) {
         return switch (length.unit()) {
             case UNDEFINED -> Float.NaN;
             case POINT -> length.value();
+            case REM -> length.value() * font.lineSpacing();
             case PERCENT -> (length.value() * availableSpace) / 100.0f;
         };
     }
@@ -113,6 +126,14 @@ public abstract class RenderElement implements AutoCloseable {
 
     public void setBottom(StyleLength bottom) {
         this.bottom = bottom;
+    }
+
+    public boolean maintainAspectRatio() {
+        return maintainAspectRatio;
+    }
+
+    public void setMaintainAspectRatio(boolean maintainAspectRatio) {
+        this.maintainAspectRatio = maintainAspectRatio;
     }
 
     //
@@ -230,56 +251,6 @@ public abstract class RenderElement implements AutoCloseable {
         } else {
             return Math.min(num, max);
         }
-    }
-
-    public static int hsvToRGB(float hue, float saturation, float value) {
-        int i = (int) (hue * 6.0F) % 6;
-        float f = hue * 6.0F - (float) i;
-        float f1 = value * (1.0F - saturation);
-        float f2 = value * (1.0F - f * saturation);
-        float f3 = value * (1.0F - (1.0F - f) * saturation);
-        float f4;
-        float f5;
-        float f6;
-        switch (i) {
-            case 0:
-                f4 = value;
-                f5 = f3;
-                f6 = f1;
-                break;
-            case 1:
-                f4 = f2;
-                f5 = value;
-                f6 = f1;
-                break;
-            case 2:
-                f4 = f1;
-                f5 = value;
-                f6 = f3;
-                break;
-            case 3:
-                f4 = f1;
-                f5 = f2;
-                f6 = value;
-                break;
-            case 4:
-                f4 = f3;
-                f5 = f1;
-                f6 = value;
-                break;
-            case 5:
-                f4 = value;
-                f5 = f1;
-                f6 = f2;
-                break;
-            default:
-                throw new RuntimeException("Something went wrong when converting from HSV to RGB. Input was " + hue + ", " + saturation + ", " + value);
-        }
-
-        int j = clamp((int) (f4 * 255.0F), 0, 255);
-        int k = clamp((int) (f5 * 255.0F), 0, 255);
-        int l = clamp((int) (f6 * 255.0F), 0, 255);
-        return 0xFF << 24 | j << 16 | k << 8 | l;
     }
 
     @Override

@@ -16,11 +16,8 @@ import static org.lwjgl.opengl.GL11C.GL_VERSION;
 import static org.lwjgl.opengl.GL11C.glClear;
 import static org.lwjgl.opengl.GL11C.glGetString;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
@@ -28,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import net.neoforged.fml.earlydisplay.render.elements.ImageElement;
 import net.neoforged.fml.earlydisplay.render.elements.LabelElement;
+import net.neoforged.fml.earlydisplay.render.elements.PerformanceElement;
 import net.neoforged.fml.earlydisplay.render.elements.ProgressBarsElement;
 import net.neoforged.fml.earlydisplay.render.elements.RenderElement;
 import net.neoforged.fml.earlydisplay.render.elements.StartupLogElement;
@@ -35,6 +33,7 @@ import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
+import net.neoforged.fml.earlydisplay.theme.elements.ThemePerformanceElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeProgressBarsElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeStartupLogElement;
 import org.lwjgl.opengl.GL32C;
@@ -45,7 +44,7 @@ public class LoadingScreenRenderer implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoadingScreenRenderer.class);
 
     private final long glfwWindow;
-    private final Theme theme;
+    private final MaterializedTheme theme;
     private final String mcVersion;
     private final String neoForgeVersion;
 
@@ -56,15 +55,11 @@ public class LoadingScreenRenderer implements AutoCloseable {
 
     private final EarlyFramebuffer framebuffer;
 
-    private final ScheduledExecutorService scheduler;
-
     private final Semaphore renderLock = new Semaphore(1);
 
     // Scheduled background rendering of the loading screen
     private final ScheduledFuture<?> automaticRendering;
 
-    private final Map<String, ElementShader> shaders;
-    private final Map<String, SimpleFont> fonts;
     private final List<RenderElement> elements;
 
     private final SimpleBufferBuilder buffer = new SimpleBufferBuilder("shared", 8192);
@@ -80,9 +75,7 @@ public class LoadingScreenRenderer implements AutoCloseable {
             Theme theme,
             String mcVersion,
             String neoForgeVersion) {
-        this.scheduler = scheduler;
         this.glfwWindow = glfwWindow;
-        this.theme = theme;
         this.mcVersion = mcVersion;
         this.neoForgeVersion = neoForgeVersion;
 
@@ -95,10 +88,9 @@ public class LoadingScreenRenderer implements AutoCloseable {
         GlDebug.setCapabilities(capabilities);
         LOGGER.info("GL info: {} GL version {}, {}", glGetString(GL_RENDERER), glGetString(GL_VERSION), glGetString(GL_VENDOR));
 
-        // Create shader resources
-        this.shaders = loadShaders(theme);
-        this.fonts = loadFonts(theme);
-        this.elements = loadElements(shaders, fonts, theme);
+        // Create GL resources
+        this.theme = MaterializedTheme.materialize(theme);
+        this.elements = loadElements();
 
         // we always render to an 854x480 texture and then fit that to the screen
         framebuffer = new EarlyFramebuffer(854, 480);
@@ -120,72 +112,58 @@ public class LoadingScreenRenderer implements AutoCloseable {
         GlState.enableBlend(true);
         GlState.blendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glfwMakeContextCurrent(0);
-        this.automaticRendering = scheduler.scheduleAtFixedRate(this::renderToScreen, 50, 50, TimeUnit.MILLISECONDS);
+        this.automaticRendering = scheduler.scheduleWithFixedDelay(this::renderToScreen, 50, 50, TimeUnit.MILLISECONDS);
         // TODO this.performanceTick = scheduler.scheduleAtFixedRate(performanceInfo::update, 0, 500, TimeUnit.MILLISECONDS);
         // schedule a 50 ms ticker to try and smooth out the rendering
-        scheduler.scheduleAtFixedRate(() -> animationFrame++, 1, 50, TimeUnit.MILLISECONDS);
+        scheduler.scheduleWithFixedDelay(() -> animationFrame++, 1, 50, TimeUnit.MILLISECONDS);
     }
 
-    private static Map<String, ElementShader> loadShaders(Theme theme) {
-        var shaders = new HashMap<String, ElementShader>(theme.shaders().size());
-        for (var entry : theme.shaders().entrySet()) {
-            var shader = ElementShader.create(
-                    entry.getKey(),
-                    entry.getValue().vertexShader(),
-                    entry.getValue().fragmentShader());
-            shaders.put(entry.getKey(), shader);
-        }
-        return shaders;
-    }
+    private List<RenderElement> loadElements() {
+        var themeElements = theme.theme().elements();
+        var elements = new ArrayList<RenderElement>(themeElements.size());
 
-    private static Map<String, SimpleFont> loadFonts(Theme theme) {
-        var fonts = new HashMap<String, SimpleFont>(theme.fonts().size());
-        for (var entry : theme.fonts().entrySet()) {
-            try {
-                fonts.put(entry.getKey(), new SimpleFont(entry.getValue(), 1));
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to load font " + entry.getKey(), e);
-            }
-        }
-        return fonts;
-    }
-
-    private List<RenderElement> loadElements(Map<String, ElementShader> shaders,
-            Map<String, SimpleFont> fonts,
-            Theme theme) {
-        var elements = new ArrayList<RenderElement>(theme.elements().size());
-
-        for (var element : theme.elements()) {
-            elements.add(loadElement(theme, element));
+        for (var element : themeElements) {
+            elements.add(loadElement(element));
         }
 
         return elements;
     }
 
-    private RenderElement loadElement(Theme theme, ThemeElement element) {
+    private RenderElement loadElement(ThemeElement element) {
         var renderElement = switch (element) {
-            case ThemeImageElement imageElement -> new ImageElement(imageElement.id(), Texture.create(imageElement.texture()));
+            case ThemeImageElement imageElement -> new ImageElement(imageElement.id(), theme, Texture.create(imageElement.texture()));
 
             case ThemeStartupLogElement startupLogElement -> new StartupLogElement(
                     startupLogElement.id(),
-                    theme.colorScheme().text());
+                    theme,
+                    theme.theme().colorScheme().text());
 
             case ThemeLabelElement labelElement -> {
                 var version = mcVersion + "-" + neoForgeVersion.split("-")[0];
                 yield new LabelElement(
                         labelElement.id(),
+                        theme,
                         labelElement.text().replace("${version}", version));
             }
 
-            case ThemeProgressBarsElement progressBarsElement -> new ProgressBarsElement(progressBarsElement.id(), theme);
+            case ThemeProgressBarsElement progressBarsElement -> new ProgressBarsElement(
+                    progressBarsElement.id(),
+                    theme,
+                    progressBarsElement);
 
-            default -> throw new IllegalStateException("Unexpected theme element: " + element);
+            case ThemePerformanceElement performanceElement -> new PerformanceElement(
+                    performanceElement.id(),
+                    theme,
+                    performanceElement);
+
+            default -> throw new IllegalStateException("Unexpected theme element " + element + " of type " + element.getClass());
         };
 
         renderElement.setLeft(element.left());
         renderElement.setTop(element.top());
         renderElement.setRight(element.right());
         renderElement.setBottom(element.bottom());
+        renderElement.setMaintainAspectRatio(element.maintainAspectRatio());
 
         return renderElement;
     }
@@ -231,13 +209,13 @@ public class LoadingScreenRenderer implements AutoCloseable {
             glfwGetFramebufferSize(glfwWindow, w, h);
 
             GlState.viewport(0, 0, w[0], h[0]);
-            framebuffer.blitToScreen(this.theme.colorScheme().background(), w[0], h[0]);
+            framebuffer.blitToScreen(this.theme.theme().colorScheme().background(), w[0], h[0]);
             // Swap buffers; we're done
             glfwSwapBuffers(glfwWindow);
 
             GlState.applySnapshot(backup);
         } catch (Throwable t) {
-            LOGGER.error("BARF", t);
+            LOGGER.error("Unexpected error while rendering the loading screen", t);
         } finally {
             if (this.automaticRendering != null)
                 glfwMakeContextCurrent(0); // we release the gl context IF we're running off the main thread
@@ -254,20 +232,20 @@ public class LoadingScreenRenderer implements AutoCloseable {
         framebuffer.activate();
 
         // Clear the screen to our color
-        var background = theme.colorScheme().background();
+        var background = theme.theme().colorScheme().background();
         GlState.clearColor(background.r(), background.g(), background.b(), 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         GlState.enableBlend(true);
         GlState.blendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-        for (var shader : shaders.values()) {
+        for (var shader : theme.shaders().values()) {
             shader.activate();
             if (shader.hasUniform(ElementShader.UNIFORM_SCREEN_SIZE)) {
                 shader.setUniform2f(ElementShader.UNIFORM_SCREEN_SIZE, framebuffer.width(), framebuffer.height());
             }
         }
 
-        var context = new RenderContext(buffer, fonts, shaders, framebuffer.width(), framebuffer.height(), animationFrame);
+        var context = new RenderContext(buffer, theme, framebuffer.width(), framebuffer.height(), animationFrame);
 
         for (var element : this.elements) {
             element.render(context);
