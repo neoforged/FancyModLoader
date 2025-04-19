@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import net.neoforged.neoforgespi.language.IModFileInfo;
-import org.apache.maven.artifact.versioning.VersionRange;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,8 +37,6 @@ class ModFileInfoTest {
         when(modFile.getFileName()).thenReturn("testmod.jar");
 
         // Set up a minimal valid configuration
-        config.set("modLoader", "javafml");
-        config.set("loaderVersion", "1.0");
         config.set("license", "unlicensed");
         mods = new ArrayList<>();
         config.set("mods", mods);
@@ -51,8 +48,6 @@ class ModFileInfoTest {
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-            modLoader|Missing ModLoader in file (testmod.jar)
-            loaderVersion|Missing ModLoader version in file (testmod.jar)
             license|Missing license (testmod.jar)
             mods|Missing mods list (testmod.jar)
             """, delimiter = '|')
@@ -63,10 +58,17 @@ class ModFileInfoTest {
     }
 
     @Test
-    void testMinimalModInfo() throws Exception {
+    void testSettingLoaderVersionWithoutLoaderIsAnError() {
+        config.set("loaderVersion", "1.0");
+        assertThatThrownBy(() -> new ModFileInfo(modFile, new NightConfigWrapper(config), callback))
+                .hasMessage("You cannot specify a loaderVersion without specifying a modLoader (testmod.jar)");
+    }
+
+    @Test
+    void testMinimalModInfo() {
         var info = new ModFileInfo(modFile, new NightConfigWrapper(config), callback);
         assertThat(info.requiredLanguageLoaders()).containsOnly(
-                new IModFileInfo.LanguageSpec("javafml", VersionRange.createFromVersionSpec("1.0")));
+                new IModFileInfo.LanguageSpec(null, null));
         assertSame(modFile, info.getFile());
         assertThat(info.getMods()).hasSize(1);
 

@@ -10,13 +10,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.electronwill.nightconfig.core.Config;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModWorkManager;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.javafmlmod.FMLJavaModLanguageProvider;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.ContainedVersion;
@@ -36,7 +40,7 @@ class FMLLoaderTest extends LauncherTest {
         void testProductionClientDiscovery() throws Exception {
             installation.setupProductionClient();
 
-            var result = launchAndLoad("forgeclient");
+            var result = launchAndLoad("neoforgeclient");
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
@@ -49,7 +53,7 @@ class FMLLoaderTest extends LauncherTest {
         void testProductionServerDiscovery() throws Exception {
             installation.setupProductionServer();
 
-            var result = launchAndLoad("forgeserver");
+            var result = launchAndLoad("neoforgeserver");
             assertThat(result.issues()).isEmpty();
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
@@ -61,7 +65,7 @@ class FMLLoaderTest extends LauncherTest {
 
         @Test
         void testNeoForgeDevServerDiscovery() throws Exception {
-            var result = launchAndLoadInNeoForgeDevEnvironment("forgeserverdev");
+            var result = launchAndLoadInNeoForgeDevEnvironment("neoforgeserverdev");
             assertThat(result.issues()).isEmpty();
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
@@ -72,8 +76,20 @@ class FMLLoaderTest extends LauncherTest {
         }
 
         @Test
-        void testNeoForgeDevDataDiscovery() throws Exception {
-            var result = launchAndLoadInNeoForgeDevEnvironment("forgedatadev");
+        void testNeoForgeDevClientDataDiscovery() throws Exception {
+            var result = launchAndLoadInNeoForgeDevEnvironment("neoforgeclientdatadev");
+            assertThat(result.issues()).isEmpty();
+            assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.pluginLayerModules()).isEmpty();
+
+            installation.assertMinecraftClientJar(result);
+            installation.assertNeoForgeJar(result);
+        }
+
+        @Test
+        void testNeoForgeDevServerDataDiscovery() throws Exception {
+            var result = launchAndLoadInNeoForgeDevEnvironment("neoforgeserverdatadev");
             assertThat(result.issues()).isEmpty();
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
@@ -85,7 +101,7 @@ class FMLLoaderTest extends LauncherTest {
 
         @Test
         void testNeoForgeDevClientDiscovery() throws Exception {
-            var result = launchAndLoadInNeoForgeDevEnvironment("forgeclientdev");
+            var result = launchAndLoadInNeoForgeDevEnvironment("neoforgeclientdev");
             assertThat(result.issues()).isEmpty();
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
@@ -99,7 +115,7 @@ class FMLLoaderTest extends LauncherTest {
         void testUserDevServerDiscovery() throws Exception {
             var classpath = installation.setupUserdevProject();
 
-            var result = launchAndLoadWithAdditionalClasspath("forgeserveruserdev", classpath);
+            var result = launchAndLoadWithAdditionalClasspath("neoforgeserverdev", classpath);
             assertThat(result.issues()).isEmpty();
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
@@ -110,10 +126,24 @@ class FMLLoaderTest extends LauncherTest {
         }
 
         @Test
-        void testUserDevDataDiscovery() throws Exception {
+        void testUserServerDevDataDiscovery() throws Exception {
             var classpath = installation.setupUserdevProject();
 
-            var result = launchAndLoadWithAdditionalClasspath("forgedatauserdev", classpath);
+            var result = launchAndLoadWithAdditionalClasspath("neoforgeserverdatadev", classpath);
+            assertThat(result.issues()).isEmpty();
+            assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.pluginLayerModules()).isEmpty();
+
+            installation.assertMinecraftClientJar(result);
+            installation.assertNeoForgeJar(result);
+        }
+
+        @Test
+        void testUserClientDevDataDiscovery() throws Exception {
+            var classpath = installation.setupUserdevProject();
+
+            var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdatadev", classpath);
             assertThat(result.issues()).isEmpty();
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
@@ -127,7 +157,7 @@ class FMLLoaderTest extends LauncherTest {
         void testUserDevClientDiscovery() throws Exception {
             var classpath = installation.setupUserdevProject();
 
-            var result = launchAndLoadWithAdditionalClasspath("forgeclientuserdev", classpath);
+            var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdev", classpath);
             assertThat(result.issues()).isEmpty();
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
@@ -146,7 +176,7 @@ class FMLLoaderTest extends LauncherTest {
             installation.setupModInModsFolder("testmod1", "1.0");
             installation.setupModInModsFolder("testmod1", "1.0");
 
-            var result = launchAndLoad("forgeclient");
+            var result = launchAndLoad("neoforgeclient");
             assertThat(result.issues()).isEmpty();
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge", "testmod1");
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge", "testmod1");
@@ -165,7 +195,7 @@ class FMLLoaderTest extends LauncherTest {
             installation.setupProductionClient();
             installation.setupPlainJarInModsFolder("plainmod.jar");
 
-            var result = launchAndLoad("forgeclient");
+            var result = launchAndLoad("neoforgeclient");
 
             assertThat(result.gameLayerModules()).doesNotContainKey("plainmod");
             assertThat(result.pluginLayerModules()).doesNotContainKey("plainmod");
@@ -195,7 +225,7 @@ class FMLLoaderTest extends LauncherTest {
                             new ContainedJarMetadata(new ContainedJarIdentifier("modgroup", "embedded-gamelib"), JIJ_V1, "META-INF/jarjar/embedded_gamelib-1.0.jar", false),
                             new ContainedJarMetadata(new ContainedJarIdentifier("modgroup", "embedded-lib"), JIJ_V1, "META-INF/jarjar/embedded_lib-1.0.jar", false)));
 
-            var result = launchAndLoad("forgeclient");
+            var result = launchAndLoad("neoforgeclient");
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "embeddedmod", "embedded.gamelib", "jijmod", "neoforge");
             assertThat(result.pluginLayerModules()).containsOnlyKeys("embedded.lib", "embedded.service");
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge", "embeddedmod", "jijmod");
@@ -212,11 +242,35 @@ class FMLLoaderTest extends LauncherTest {
             installation.setupModInModsFolder("testmod1", "12.0");
             installation.setupModInModsFolder("testmod1", "3.0");
 
-            var result = launchAndLoad("forgeclient");
+            var result = launchAndLoad("neoforgeclient");
 
             var loadedMod = result.loadedMods().get("testmod1");
             assertNotNull(loadedMod);
             assertEquals("12.0", loadedMod.versionString());
+        }
+
+        /**
+         * Tests that a lowcode mod is automatically redirected to the javafml loader.
+         */
+        @Test
+        void testLowCodeIsRedirectToJava() throws Exception {
+            installation.setupProductionClient();
+            installation.buildModJar("testmod1.jar")
+                    .withModsToml(modsToml -> {
+                        modsToml.license("unlicensed");
+                        modsToml.setLoader("lowcodefml", "[99999]");
+
+                        modsToml.addMod("testmod1", "1.0");
+                    })
+                    .build();
+
+            var result = launchAndLoad("neoforgeclient");
+
+            var loadedMod = result.loadedMods().get("testmod1");
+            assertNotNull(loadedMod);
+            assertEquals("1.0", loadedMod.versionString());
+            var modInfo = loadedMod.getMods().getFirst();
+            assertThat(modInfo.getLoader()).isInstanceOf(FMLJavaModLanguageProvider.class);
         }
 
         @Test
@@ -232,7 +286,7 @@ class FMLLoaderTest extends LauncherTest {
             // Tell FML that the classes and resources directory belong together
             SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
 
-            var result = launchAndLoadWithAdditionalClasspath("forgeclientuserdev", additionalClasspath);
+            var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdev", additionalClasspath);
             assertThat(result.pluginLayerModules()).doesNotContainKey("mod");
             assertThat(result.gameLayerModules()).containsKey("mod");
             installation.assertModContent(result, "mod", List.of(entrypointClass, modManifest));
@@ -255,7 +309,7 @@ class FMLLoaderTest extends LauncherTest {
             // Tell FML that the classes and resources directory belong together
             SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
 
-            var result = launchAndLoadWithAdditionalClasspath("forgeclientuserdev", additionalClasspath);
+            var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdev", additionalClasspath);
             assertThat(result.pluginLayerModules()).doesNotContainKey("mod");
             assertThat(result.gameLayerModules()).containsKey("mod");
             installation.assertModContent(result, "mod", List.of(entrypointClass, modManifest));
@@ -274,7 +328,7 @@ class FMLLoaderTest extends LauncherTest {
             // Tell FML that the classes and resources directory belong together
             SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
 
-            var result = launchAndLoadWithAdditionalClasspath("forgeclientuserdev", additionalClasspath);
+            var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdev", additionalClasspath);
             assertThat(result.pluginLayerModules()).containsKey("mod");
             assertThat(result.gameLayerModules()).doesNotContainKey("mod");
             assertThat(result.loadedMods()).doesNotContainKey("mod");
@@ -299,7 +353,7 @@ class FMLLoaderTest extends LauncherTest {
             SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
             locatedPaths.add(mainModule.getFirst()); // Mark the primary path as located by ML so it gets skipped by FML
 
-            var result = launchAndLoadWithAdditionalClasspath("forgeclientuserdev", additionalClasspath);
+            var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdev", additionalClasspath);
             assertThat(result.pluginLayerModules()).doesNotContainKey("mod");
             assertThat(result.gameLayerModules()).doesNotContainKey("mod");
             assertThat(result.loadedMods()).doesNotContainKey("mod");
@@ -310,7 +364,7 @@ class FMLLoaderTest extends LauncherTest {
     class Errors {
         @ParameterizedTest
         @CsvSource(textBlock = """
-                unknownloader|[1.0]|ERROR: Mod File mods/testmod.jar needs language provider unknownloader:1.0 to load\\nWe have found -
+                unknownloader|[1.0]|ERROR: Mod File mods/testmod.jar needs language provider unknownloader to load
                 javafml|[1.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:1.0 to load\\nWe have found 3.0.9999
                 javafml|[999.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:999.0 to load\\nWe have found 3.0.9999
                 """, delimiter = '|')
@@ -325,7 +379,7 @@ class FMLLoaderTest extends LauncherTest {
                             .addMod("testmod"))
                     .build();
 
-            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(expectedError);
         }
 
@@ -336,7 +390,7 @@ class FMLLoaderTest extends LauncherTest {
             var serverPath = installation.getLibrariesDir().resolve("net/minecraft/server/1.20.4-202401020304/server-1.20.4-202401020304-srg.jar");
             Files.delete(serverPath);
 
-            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeserver"));
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeserver"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                     "ERROR: Your NeoForge installation is corrupted, please try to reinstall");
         }
@@ -348,7 +402,7 @@ class FMLLoaderTest extends LauncherTest {
             var clientPath = installation.getLibrariesDir().resolve("net/minecraft/client/1.20.4-202401020304/client-1.20.4-202401020304-srg.jar");
             Files.delete(clientPath);
 
-            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                     "ERROR: Your NeoForge installation is corrupted, please try to reinstall");
         }
@@ -362,7 +416,7 @@ class FMLLoaderTest extends LauncherTest {
 
             installation.writeModJar("test.jar", CustomSubclassModFileReader.TRIGGER);
 
-            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                     "ERROR: A technical error occurred during mod loading: Unexpected IModFile subclass: class net.neoforged.neoforgespi.locating.IModFile");
         }
@@ -388,8 +442,48 @@ class FMLLoaderTest extends LauncherTest {
                     side="BOTH"
                     """.getBytes()));
 
-            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly("ERROR: Mod testproject requires neoforge 999.6 or above\nCurrently, neoforge is 1\n");
+        }
+
+        @Test
+        void testDependencyOverride() throws Exception {
+            installation.setupProductionClient();
+            installation.writeConfig("[dependencyOverrides]", "targetmod = [\"-depmod\", \"-incompatiblemod\"]");
+            installation.buildModJar("depmod.jar").withMod("depmod", "1.0").build();
+            installation.buildModJar("incompatiblemod.jar").withMod("incompatiblemod", "1.0").build();
+            installation.buildModJar("targetmod.jar")
+                    .withModsToml(builder -> {
+                        builder.unlicensedJavaMod();
+                        builder.addMod("targetmod", "1.0", c -> {
+                            var sub = Config.inMemory();
+                            sub.set("modId", "depmod");
+                            sub.set("versionRange", "[2,)");
+                            sub.set("type", "required");
+
+                            var sub2 = Config.inMemory();
+                            sub2.set("modId", "incompatiblemod");
+                            sub2.set("versionRange", "[1,");
+                            sub2.set("type", "incompatible");
+                            c.set("dependencies.targetmod", new ArrayList<>(Arrays.asList(sub, sub2)));
+                        });
+                    })
+                    .build();
+            assertThat(launchAndLoad("neoforgeclient").issues()).isEmpty();
+        }
+
+        @Test
+        void testInvalidDependencyOverride() throws Exception {
+            installation.setupProductionClient();
+
+            // Test that invalid targets and dependencies warn
+            installation.writeConfig("[dependencyOverrides]", "unknownmod = [\"-testmod\"]", "testmod = [\"+depdoesntexist\"]");
+            installation.buildModJar("testmod.jar").withMod("testmod", "1.0").build();
+
+            var r = launchAndLoad("neoforgeclient");
+            assertThat(getTranslatedIssues(r.issues())).containsOnly(
+                    "WARNING: Unknown dependency override target with id unknownmod",
+                    "WARNING: Unknown mod depdoesntexist referenced in dependency overrides for mod testmod");
         }
 
         @Test
@@ -399,7 +493,7 @@ class FMLLoaderTest extends LauncherTest {
             installation.writeModJar("test1.jar", SimulatedInstallation.createMultiModsToml("mod_a", "1.0", "mod_c", "1.0"));
             installation.writeModJar("test2.jar", SimulatedInstallation.createMultiModsToml("mod_b", "1.0", "mod_c", "1.0"));
 
-            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                     "ERROR: Mod mod_c is present in multiple files: test2.jar, test1.jar");
         }
@@ -416,7 +510,7 @@ class FMLLoaderTest extends LauncherTest {
                                     "thisFeatureDoesNotExist", "*")))
                     .build();
 
-            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                     "ERROR: testmod (testmod) is missing a feature it requires to run"
                             + "\nIt requires javaVersion 999 but " + System.getProperty("java.version") + " is available",
@@ -442,7 +536,7 @@ class FMLLoaderTest extends LauncherTest {
                             """)
                     .build();
 
-            var launchResult = launchAndLoad("forgeclient");
+            var launchResult = launchAndLoad("neoforgeclient");
             assertThat(launchResult.loadedMods()).containsKey("testmod");
 
             var e = assertThrows(ModLoadingException.class, () -> ModLoader.dispatchParallelEvent("test", ModWorkManager.syncExecutor(), ModWorkManager.parallelExecutor(), () -> {}, FMLClientSetupEvent::new));
@@ -455,7 +549,7 @@ class FMLLoaderTest extends LauncherTest {
         void testExceptionInInitTaskIsCollectedAsModLoadingIssue() throws Exception {
             installation.setupProductionClient();
 
-            launchAndLoad("forgeclient");
+            launchAndLoad("neoforgeclient");
             var e = assertThrows(ModLoadingException.class, () -> ModLoader.runInitTask("test", ModWorkManager.syncExecutor(), () -> {}, () -> {
                 throw new IllegalStateException("Exception Message");
             }));

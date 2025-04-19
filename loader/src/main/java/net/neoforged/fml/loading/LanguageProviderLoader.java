@@ -14,6 +14,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.javafmlmod.FMLJavaModLanguageProvider;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.ILaunchContext;
@@ -21,6 +22,7 @@ import net.neoforged.neoforgespi.language.IModLanguageLoader;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 public class LanguageProviderLoader {
@@ -53,15 +55,26 @@ public class LanguageProviderLoader {
         });
     }
 
-    public IModLanguageLoader findLanguage(ModFile mf, String modLoader, VersionRange modLoaderVersion) {
-        final String languageFileName = mf.getFileName();
-        final ModLanguageWrapper mlw = languageProviderMap.get(modLoader);
-        if (mlw == null) {
-            LOGGER.error(LogMarkers.LOADING, "Missing language {} version {} wanted by {}", modLoader, modLoaderVersion, languageFileName);
-            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.language.missingversion", modLoader, modLoaderVersion, "-").withAffectedModFile(mf));
+    public IModLanguageLoader findLanguage(ModFile mf, @Nullable String modLoader, @Nullable VersionRange modLoaderVersion) {
+        // Remove this in 1.21.6 or beyond
+        if ("lowcodefml".equals(modLoader)) {
+            LOGGER.warn("Mod {} is using the deprecated 'lowcodefml' language loader. This warning can be fixed by simply removing the modLoader and loaderVersion settings from neoforge.mods.toml.", mf);
+            modLoader = null;
+            modLoaderVersion = null;
         }
-        if (!VersionSupportMatrix.testVersionSupportMatrix(modLoaderVersion, modLoader, "languageloader", (llid, range) -> range.containsVersion(mlw.version()))) {
-            LOGGER.error(LogMarkers.LOADING, "Missing language {} version {} wanted by {}, found {}", modLoader, modLoaderVersion, languageFileName, mlw.version());
+
+        // We default to the java language loader now, since it also supports use-cases without any code
+        if (modLoader == null) {
+            modLoader = FMLJavaModLanguageProvider.NAME;
+        }
+
+        var mlw = languageProviderMap.get(modLoader);
+        if (mlw == null) {
+            LOGGER.error(LogMarkers.LOADING, "Missing language loader {} wanted by {}", modLoader, mf);
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.language.missing", modLoader).withAffectedModFile(mf));
+        }
+        if (modLoaderVersion != null && !VersionSupportMatrix.testVersionSupportMatrix(modLoaderVersion, modLoader, "languageloader", (llid, range) -> range.containsVersion(mlw.version()))) {
+            LOGGER.error(LogMarkers.LOADING, "Language loader {} version {} is incompatible with {} required by {}", modLoader, mlw.version(), modLoaderVersion, mf);
             throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.language.missingversion", modLoader, modLoaderVersion, mlw.version()).withAffectedModFile(mf));
         }
 

@@ -1,10 +1,8 @@
 net.neoforged.fml.loading.targets.NeoForgeClientLaunchHandler
 net.neoforged.fml.loading.targets.NeoForgeClientDevLaunchHandler
-net.neoforged.fml.loading.targets.NeoForgeClientUserdevLaunchHandler
+net.neoforged.fml.loading.targets.NeoForgeClientDataDevLaunchHandler
 net.neoforged.fml.loading.targets.NeoForgeServerLaunchHandler
 net.neoforged.fml.loading.targets.NeoForgeServerDevLaunchHandler
-net.neoforged.fml.loading.targets.NeoForgeServerUserdevLaunchHandler
-net.neoforged.fml.loading.targets.NeoForgeDataDevLaunchHandler
-net.neoforged.fml.loading.targets.NeoForgeDataUserdevLaunchHandler
+net.neoforged.fml.loading.targets.NeoForgeGameTestServerDevLaunchHandler
+net.neoforged.fml.loading.targets.NeoForgeServerDataDevLaunchHandler
 net.neoforged.fml.loading.targets.JUnitDevLaunchTarget
-net.neoforged.fml.loading.targets.JUnitUserDevLaunchTarget

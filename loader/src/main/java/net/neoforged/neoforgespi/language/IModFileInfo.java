@@ -9,11 +9,12 @@ import java.util.List;
 import java.util.Map;
 import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.maven.artifact.versioning.VersionRange;
+import org.jetbrains.annotations.Nullable;
 
 public interface IModFileInfo {
     List<IModInfo> getMods();
 
-    record LanguageSpec(String languageName, VersionRange acceptedVersions) {}
+    record LanguageSpec(@Nullable String languageName, @Nullable VersionRange acceptedVersions) {}
 
     List<LanguageSpec> requiredLanguageLoaders();
 

@@ -10,7 +10,7 @@ import net.neoforged.api.distmarker.Dist;
 /**
  * A launch target for bootstrapping a slim Minecraft environment in forgedev, to be used in JUnit tests.
  */
-public class JUnitDevLaunchTarget extends CommonDevLaunchHandler {
+public class JUnitDevLaunchTarget extends NeoForgeDevLaunchHandler {
     @Override
     public Dist getDist() {
         return Dist.DEDICATED_SERVER;
@@ -23,6 +23,6 @@ public class JUnitDevLaunchTarget extends CommonDevLaunchHandler {
 
     @Override
     public String name() {
-        return "forgejunitdev";
+        return "neoforgejunitdev";
     }
 }

@@ -5,6 +5,7 @@
 
 package net.neoforged.fml.earlydisplay;
 
+import static org.lwjgl.opengl.GL20C.glEnableVertexAttribArray;
 import static org.lwjgl.opengl.GL32C.*;
 
 import java.io.Closeable;
@@ -48,6 +49,7 @@ public class SimpleBufferBuilder implements Closeable {
         Arrays.fill(VERTEX_BUFFER_LENGTHS, 0);
     }
 
+    private final String label;
     private long bufferAddr;   // Pointer to the backing buffer.
     private ByteBuffer buffer; // ByteBuffer view of the backing buffer.
 
@@ -68,7 +70,8 @@ public class SimpleBufferBuilder implements Closeable {
      *
      * @param capacity The initial capacity in bytes.
      */
-    public SimpleBufferBuilder(int capacity) {
+    public SimpleBufferBuilder(String label, int capacity) {
+        this.label = label;
         bufferAddr = ALLOCATOR.malloc(capacity);
         buffer = MemoryUtil.memByteBuffer(bufferAddr, capacity);
     }
@@ -95,7 +98,8 @@ public class SimpleBufferBuilder implements Closeable {
         final var newIndexCount = newElementBufferVertexLength + newElementBufferVertexLength / 2;
 
         // allocate new buffer
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, newElementBuffer);
+        GlState.bindElementArrayBuffer(newElementBuffer);
+        GlDebug.labelBuffer(newElementBuffer, "EarlyDisplay shared index buffer");
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, newIndexCount * 4L, GL_STATIC_DRAW);
 
         // mapping avoids creating additional CPU copies of the data
@@ -127,7 +131,7 @@ public class SimpleBufferBuilder implements Closeable {
             glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_ELEMENT_ARRAY_BUFFER, 0, 0, mappingOffset);
             glBindBuffer(GL_COPY_READ_BUFFER, 0);
         }
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        GlState.bindElementArrayBuffer(0);
 
         glDeleteBuffers(elementBuffer);
         elementBuffer = newElementBuffer;
@@ -164,7 +168,6 @@ public class SimpleBufferBuilder implements Closeable {
      *
      * @param x The x.
      * @param y The y.
-     * @param z The z.
      * @return The same builder.
      */
     public SimpleBufferBuilder pos(float x, float y) {
@@ -328,7 +331,7 @@ public class SimpleBufferBuilder implements Closeable {
             // Upload the raw vertex data in dynamic mode.
             final int vbo = VERTEX_BUFFERS[format.ordinal()];
             final int vboSize = VERTEX_BUFFER_LENGTHS[format.ordinal()];
-            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            GlState.bindArrayBuffer(vbo);
             if (vboSize < index) {
                 // expand buffer, it's not big enough
                 var newVBOSize = Math.max(1024, vboSize);
@@ -348,7 +351,7 @@ public class SimpleBufferBuilder implements Closeable {
 
             if (mode == Mode.QUADS) {
                 ensureElementBufferLength(vertices);
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
+                GlState.bindElementArrayBuffer(elementBuffer);
             }
 
             return indices;
@@ -388,13 +391,15 @@ public class SimpleBufferBuilder implements Closeable {
 
             // Ask our Format to set up its data layout for the vertex array.
             // but only once, the VAO saves this state
-            glBindVertexArray(vao);
-            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            GlState.bindVertexArray(vao);
+            GlState.bindArrayBuffer(vbo);
+            GlDebug.labelVertexArray(vao, label);
+            GlDebug.labelBuffer(vbo, label);
             format.bind();
             format.enable();
         }
         // Bind the vertex array and buffers!
-        glBindVertexArray(vao);
+        GlState.bindVertexArray(vao);
 
         // Upload the data.
         int indices = finishAndUpload();
@@ -406,7 +411,7 @@ public class SimpleBufferBuilder implements Closeable {
         }
 
         // Unbind the vertex array.
-        glBindVertexArray(0);
+        GlState.bindVertexArray(0);
     }
 
     /**
@@ -501,15 +506,6 @@ public class SimpleBufferBuilder implements Closeable {
         public void enable() {
             for (int i = 0; i < types.length; i++) {
                 glEnableVertexAttribArray(i);
-            }
-        }
-
-        /**
-         * Disables the vertex attributes this format contains.
-         */
-        public void disable() {
-            for (int i = 0; i < types.length; i++) {
-                glDisableVertexAttribArray(i);
             }
         }
     }

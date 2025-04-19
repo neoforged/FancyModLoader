@@ -46,9 +46,9 @@ public class ModList {
     private List<ModContainer> sortedContainers;
 
     private ModList(final List<ModFile> modFiles, final List<ModInfo> sortedList) {
-        this.modFiles = modFiles.stream().map(ModFile::getModFileInfo).map(ModFileInfo.class::cast).collect(Collectors.toList());
-        this.sortedList = sortedList.stream().map(ModInfo.class::cast).collect(Collectors.toList());
-        this.fileById = this.modFiles.stream().map(IModFileInfo::getMods).flatMap(Collection::stream).map(ModInfo.class::cast).collect(Collectors.toMap(ModInfo::getModId, ModInfo::getOwningFile));
+        this.modFiles = modFiles.stream().map(ModFile::getModFileInfo).toList();
+        this.sortedList = sortedList.stream().map(IModInfo.class::cast).toList();
+        this.fileById = this.modFiles.stream().map(IModFileInfo::getMods).flatMap(Collection::stream).map(ModInfo.class::cast).collect(Collectors.toUnmodifiableMap(ModInfo::getModId, ModInfo::getOwningFile));
         CrashReportCallables.registerCrashCallable("Mod List", this::crashReport);
     }
 
@@ -62,7 +62,7 @@ public class ModList {
     }
 
     private String crashReport() {
-        return "\n" + applyForEachModFile(this::fileToLine).collect(Collectors.joining("\n\t\t", "\t\t", ""));
+        return "\n" + applyForEachModFileAlphabetical(this::fileToLine).collect(Collectors.joining("\n\t\t", "\t\t", ""));
     }
 
     public static ModList of(List<ModFile> modFiles, List<ModInfo> sortedList) {
@@ -150,6 +150,16 @@ public class ModList {
 
     public <T> Stream<T> applyForEachModFile(Function<IModFile, T> function) {
         return modFiles.stream().map(IModFileInfo::getFile).map(function);
+    }
+
+    /**
+     * Stream sorted by Mod Name in alphabetical order
+     */
+    public <T> Stream<T> applyForEachModFileAlphabetical(Function<IModFile, T> function) {
+        return modFiles.stream()
+                .map(IModFileInfo::getFile)
+                .sorted(Comparator.comparing(modFile -> modFile.getModInfos().getFirst().getDisplayName(), String.CASE_INSENSITIVE_ORDER))
+                .map(function);
     }
 
     public void forEachModContainer(BiConsumer<String, ModContainer> modContainerConsumer) {
