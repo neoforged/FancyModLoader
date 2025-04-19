@@ -1,9 +1,13 @@
 package net.neoforged.fml.earlydisplay.render;
 
+import net.neoforged.fml.earlydisplay.theme.Theme;
+import net.neoforged.fml.earlydisplay.theme.ThemeResource;
+import net.neoforged.fml.earlydisplay.theme.ThemeShader;
+import net.neoforged.fml.earlydisplay.theme.ThemeSprites;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import net.neoforged.fml.earlydisplay.theme.Theme;
 
 /**
  * A themes resources loaded for rendering at runtime.
@@ -11,17 +15,19 @@ import net.neoforged.fml.earlydisplay.theme.Theme;
 public record MaterializedTheme(
         Theme theme,
         Map<String, SimpleFont> fonts,
-        Map<String, ElementShader> shaders) implements AutoCloseable {
+        Map<String, ElementShader> shaders,
+        MaterializedThemeSprites sprites) implements AutoCloseable {
     public static MaterializedTheme materialize(Theme theme) {
         return new MaterializedTheme(
                 theme,
-                loadFonts(theme),
-                loadShaders(theme));
+                loadFonts(theme.fonts()),
+                loadShaders(theme.shaders()),
+                loadSprites(theme.sprites()));
     }
 
-    private static Map<String, ElementShader> loadShaders(Theme theme) {
-        var shaders = new HashMap<String, ElementShader>(theme.shaders().size());
-        for (var entry : theme.shaders().entrySet()) {
+    private static Map<String, ElementShader> loadShaders(Map<String, ThemeShader> themeShaders) {
+        var shaders = new HashMap<String, ElementShader>(themeShaders.size());
+        for (var entry : themeShaders.entrySet()) {
             var shader = ElementShader.create(
                     entry.getKey(),
                     entry.getValue().vertexShader(),
@@ -31,9 +37,9 @@ public record MaterializedTheme(
         return shaders;
     }
 
-    private static Map<String, SimpleFont> loadFonts(Theme theme) {
-        var fonts = new HashMap<String, SimpleFont>(theme.fonts().size());
-        for (var entry : theme.fonts().entrySet()) {
+    private static Map<String, SimpleFont> loadFonts(Map<String, ThemeResource> themeFonts) {
+        var fonts = new HashMap<String, SimpleFont>(themeFonts.size());
+        for (var entry : themeFonts.entrySet()) {
             try {
                 fonts.put(entry.getKey(), new SimpleFont(entry.getValue(), 1));
             } catch (IOException e) {
@@ -41,6 +47,14 @@ public record MaterializedTheme(
             }
         }
         return fonts;
+    }
+
+    private static MaterializedThemeSprites loadSprites(ThemeSprites sprites) {
+        return new MaterializedThemeSprites(
+                Texture.create(sprites.progressBarBackground()),
+                Texture.create(sprites.progressBarForeground()),
+                Texture.create(sprites.progressBarIndeterminate())
+        );
     }
 
     public SimpleFont getFont(String fontId) {

@@ -1,6 +1,15 @@
 package net.neoforged.fml.earlydisplay.render.elements;
 
 import com.sun.management.OperatingSystemMXBean;
+import net.neoforged.fml.earlydisplay.render.MaterializedTheme;
+import net.neoforged.fml.earlydisplay.render.RenderContext;
+import net.neoforged.fml.earlydisplay.render.SimpleFont;
+import net.neoforged.fml.earlydisplay.theme.ThemeColor;
+import net.neoforged.fml.earlydisplay.theme.elements.ThemePerformanceElement;
+import net.neoforged.fml.earlydisplay.util.Bounds;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.util.List;
@@ -8,16 +17,6 @@ import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import net.neoforged.fml.earlydisplay.render.GlState;
-import net.neoforged.fml.earlydisplay.render.MaterializedTheme;
-import net.neoforged.fml.earlydisplay.render.RenderContext;
-import net.neoforged.fml.earlydisplay.render.SimpleFont;
-import net.neoforged.fml.earlydisplay.render.Texture;
-import net.neoforged.fml.earlydisplay.theme.ThemeColor;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemePerformanceElement;
-import net.neoforged.fml.earlydisplay.util.Bounds;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class PerformanceElement extends RenderElement {
     private static final Logger LOG = LoggerFactory.getLogger(PerformanceElement.class);
@@ -28,24 +27,13 @@ public class PerformanceElement extends RenderElement {
     private Future<Void> performanceUpdateFuture;
     private volatile PerformanceInfo currentPerformanceData;
 
-    private final Texture barBackground;
-    private final Texture barForeground;
-    private final float[] lowColorHsb;
-    private final float[] highColorHsb;
-
-    public PerformanceElement(String id, MaterializedTheme theme, ThemePerformanceElement element) {
-        super(id, theme);
+    public PerformanceElement(MaterializedTheme theme, ThemePerformanceElement settings) {
+        super(settings.id(), theme);
 
         osBean = ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
         memoryBean = ManagementFactory.getMemoryMXBean();
 
         performanceUpdateFuture = CompletableFuture.runAsync(this::updatePerformanceData);
-
-        this.barBackground = Texture.create(element.barBackground());
-        this.barForeground = Texture.create(element.barForeground());
-
-        this.lowColorHsb = element.lowColor().toHsb();
-        this.highColorHsb = element.highColor().toHsb();
     }
 
     @Override
@@ -63,26 +51,20 @@ public class PerformanceElement extends RenderElement {
         var areaBounds = resolveBounds(context.availableWidth(), context.availableHeight(), 250, 50);
         float memoryBarFill = performanceData.memory();
 
-        final int colour = ThemeColor.ofHsb(
-                lowColorHsb[0] + (highColorHsb[0] - lowColorHsb[0]) * memoryBarFill,
-                lowColorHsb[1] + (highColorHsb[1] - lowColorHsb[1]) * memoryBarFill,
-                lowColorHsb[2] + (highColorHsb[2] - lowColorHsb[2]) * memoryBarFill).toArgb();
+        // Interpolate between the low/high colors set in the theme based on current memory usage
+        var color = ThemeColor.lerp(
+                theme.theme().colorScheme().memoryLowColor(),
+                theme.theme().colorScheme().memoryHighColor(),
+                memoryBarFill
+        );
 
         var barBounds = new Bounds(
                 areaBounds.left(),
                 areaBounds.top(),
                 areaBounds.right(),
-                areaBounds.top() + barBackground.height());
-        context.blitTexture(barBackground, barBounds);
-        GlState.scissorTest(true);
-        memoryBarFill = 0.5f;
-        GlState.scissorBox(
-                (int) barBounds.left(),
-                (int) barBounds.top(),
-                (int) (barBounds.width() * memoryBarFill),
-                (int) barBounds.height());
-        context.blitTexture(barForeground, barBounds, colour);
-        GlState.scissorTest(false);
+                areaBounds.top() + theme.sprites().progressBarBackground().height());
+
+        context.renderProgressBar(barBounds, memoryBarFill, color.toArgb());
 
         // Draw the detailed performance text centered below the progress bar
         var textMeasurement = font.measureText(performanceData.text());
@@ -121,5 +103,6 @@ public class PerformanceElement extends RenderElement {
         }
     }
 
-    private record PerformanceInfo(long createdNanos, float memory, String text) {}
+    private record PerformanceInfo(long createdNanos, float memory, String text) {
+    }
 }

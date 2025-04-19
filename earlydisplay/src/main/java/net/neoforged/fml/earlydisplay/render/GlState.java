@@ -55,7 +55,6 @@ import org.jetbrains.annotations.ApiStatus;
  * This class tracks the current state of various OpenGL state elements and only applies changes
  * when necessary, reducing overhead from redundant state changes.
  */
-@ApiStatus.Internal
 public final class GlState {
     // Viewport state
     private static int viewportX;

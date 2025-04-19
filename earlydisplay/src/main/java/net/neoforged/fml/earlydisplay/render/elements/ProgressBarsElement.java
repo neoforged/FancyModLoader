@@ -1,32 +1,23 @@
 package net.neoforged.fml.earlydisplay.render.elements;
 
-import java.util.List;
-import net.neoforged.fml.earlydisplay.render.GlState;
 import net.neoforged.fml.earlydisplay.render.MaterializedTheme;
 import net.neoforged.fml.earlydisplay.render.RenderContext;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
-import net.neoforged.fml.earlydisplay.render.Texture;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeProgressBarsElement;
 import net.neoforged.fml.earlydisplay.util.Bounds;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
+
+import java.util.List;
 
 public class ProgressBarsElement extends RenderElement {
     private static final int BAR_AREA_WIDTH = 400;
     private static final int BAR_AREA_HEIGHT = 200;
 
-    private final ThemeProgressBarsElement themeElement;
-    private final Texture background;
-    private final Texture foreground;
-    private final Texture foregroundIndeterminate;
+    private final ThemeProgressBarsElement settings;
 
-    public ProgressBarsElement(String id,
-            MaterializedTheme theme,
-            ThemeProgressBarsElement themeElement) {
-        super(id, theme);
-        this.background = Texture.create(themeElement.background());
-        this.foreground = Texture.create(themeElement.foreground());
-        this.foregroundIndeterminate = Texture.create(themeElement.foregroundIndeterminate());
-        this.themeElement = themeElement;
+    public ProgressBarsElement(MaterializedTheme theme, ThemeProgressBarsElement settings) {
+        super(settings.id(), theme);
+        this.settings = settings;
     }
 
     @Override
@@ -47,58 +38,21 @@ public class ProgressBarsElement extends RenderElement {
                         areaBounds.top() + yOffset,
                         font,
                         List.of(new SimpleFont.DisplayText(text, theme.theme().colorScheme().text().toArgb())));
-                yOffset += font.lineSpacing() + themeElement.labelGap();
+                yOffset += font.lineSpacing() + settings.labelGap();
             }
 
             var barBounds = new Bounds(
                     areaBounds.left(),
                     areaBounds.top() + yOffset,
                     areaBounds.right(),
-                    areaBounds.top() + yOffset + background.height());
-            context.blitTexture(background, barBounds);
+                    areaBounds.top() + yOffset + theme.sprites().progressBarBackground().height());
 
             if (progress.steps() == 0) {
-                if (themeElement.indeterminateBounce()) {
-                    // Indeterminate progress bars are rendered as a 20% piece that travels back and forth
-                    var barX = 0;
-                    var barWidth = (int) (barBounds.width() * 0.2f);
-                    var availableSpace = (int) (barBounds.width() - barWidth);
-                    if (availableSpace > 0) {
-                        float f = (context.animationFrame() % 200) / 100.0f;
-                        if (f > 1) {
-                            f = 1 - (f - 1);
-                        }
-                        barX = (int) (f * availableSpace);
-                    }
-                    context.blitTexture(
-                            foregroundIndeterminate,
-                            barBounds.left() + barX,
-                            barBounds.top(),
-                            barWidth,
-                            barBounds.height());
-                } else {
-                    // Indeterminate progress bars are rendered as a 20% piece that's scrolling left-to-right and then resets
-                    var centerPercentage = (context.animationFrame() % 120) - 10;
-                    var start = Math.clamp((centerPercentage - 10) / 100f, 0f, 1f);
-                    var end = Math.clamp((centerPercentage + 10) / 100f, 0f, 1f);
-                    context.blitTexture(
-                            foregroundIndeterminate,
-                            (int) (barBounds.left() + barBounds.width() * start),
-                            barBounds.top(),
-                            (int) (barBounds.width() * (end - start)),
-                            barBounds.height());
-                }
+                context.renderIndeterminateProgressBar(barBounds);
             } else {
-                GlState.scissorTest(true);
-                GlState.scissorBox(
-                        (int) barBounds.left(),
-                        (int) barBounds.top(),
-                        (int) (barBounds.width() * progress.progress()),
-                        (int) barBounds.height());
-                context.blitTexture(foreground, barBounds);
-                GlState.scissorTest(false);
+                context.renderProgressBar(barBounds, progress.progress());
             }
-            yOffset += barBounds.height() + themeElement.barGap();
+            yOffset += barBounds.height() + settings.barGap();
         }
     }
 }

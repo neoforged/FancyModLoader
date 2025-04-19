@@ -1,10 +1,12 @@
 package net.neoforged.fml.earlydisplay.render;
 
-import static org.lwjgl.opengl.GL13C.GL_TEXTURE0;
+import net.neoforged.fml.earlydisplay.theme.Theme;
+import net.neoforged.fml.earlydisplay.theme.ThemeColor;
+import net.neoforged.fml.earlydisplay.util.Bounds;
 
 import java.util.List;
-import net.neoforged.fml.earlydisplay.theme.Theme;
-import net.neoforged.fml.earlydisplay.util.Bounds;
+
+import static org.lwjgl.opengl.GL13C.GL_TEXTURE0;
 
 public record RenderContext(
         SimpleBufferBuilder sharedBuffer,
@@ -61,5 +63,64 @@ public record RenderContext(
         sharedBuffer.begin(SimpleBufferBuilder.Format.POS_TEX_COLOR, SimpleBufferBuilder.Mode.QUADS);
         font.generateVerticesForTexts(x, y, sharedBuffer, texts);
         sharedBuffer.draw();
+    }
+
+    public void renderIndeterminateProgressBar(Bounds backgroundBounds) {
+
+        var sprites = theme.sprites();
+
+        blitTexture(sprites.progressBarBackground(), backgroundBounds);
+
+        if (theme.theme().sprites().progressBarIndeterminateBounces()) {
+            // Indeterminate progress bars are rendered as a 20% piece that travels back and forth
+            var barX = 0;
+            var barWidth = (int) (backgroundBounds.width() * 0.2f);
+            var availableSpace = (int) (backgroundBounds.width() - barWidth);
+            if (availableSpace > 0) {
+                float f = (animationFrame() % 200) / 100.0f;
+                if (f > 1) {
+                    f = 1 - (f - 1);
+                }
+                barX = (int) (f * availableSpace);
+            }
+            blitTexture(
+                    sprites.progressBarIndeterminate(),
+                    backgroundBounds.left() + barX,
+                    backgroundBounds.top(),
+                    barWidth,
+                    backgroundBounds.height());
+        } else {
+            // Indeterminate progress bars are rendered as a 20% piece that's scrolling left-to-right and then resets
+            var centerPercentage = (animationFrame() % 120) - 10;
+            var start = Math.clamp((centerPercentage - 10) / 100f, 0f, 1f);
+            var end = Math.clamp((centerPercentage + 10) / 100f, 0f, 1f);
+            blitTexture(
+                    sprites.progressBarIndeterminate(),
+                    (int) (backgroundBounds.left() + backgroundBounds.width() * start),
+                    backgroundBounds.top(),
+                    (int) (backgroundBounds.width() * (end - start)),
+                    backgroundBounds.height());
+        }
+    }
+
+    public void renderProgressBar(Bounds barBounds, float fillFactor) {
+        renderProgressBar(barBounds, fillFactor, ThemeColor.WHITE.toArgb());
+    }
+
+    public void renderProgressBar(Bounds barBounds, float fillFactor, int foregroundColor) {
+        fillFactor = Math.clamp(fillFactor, 0, 1);
+
+        var sprites = theme.sprites();
+
+        blitTexture(sprites.progressBarBackground(), barBounds);
+
+        GlState.scissorTest(true);
+        GlState.scissorBox(
+                (int) barBounds.left(),
+                (int) barBounds.top(),
+                (int) (barBounds.width() * fillFactor),
+                (int) barBounds.height());
+        blitTexture(sprites.progressBarForeground(), barBounds, foregroundColor);
+        GlState.scissorTest(false);
     }
 }

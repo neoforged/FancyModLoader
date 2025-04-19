@@ -16,7 +16,6 @@ import org.lwjgl.opengl.KHRDebug;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ApiStatus.Internal
 public final class GlDebug {
     private static final Logger LOG = LoggerFactory.getLogger(GlDebug.class);
 

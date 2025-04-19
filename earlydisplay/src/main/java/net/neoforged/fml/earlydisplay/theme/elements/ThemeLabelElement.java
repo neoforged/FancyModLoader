@@ -2,7 +2,7 @@ package net.neoforged.fml.earlydisplay.theme.elements;
 
 import java.util.Objects;
 
-public class ThemeLabelElement extends ThemeElement {
+public class ThemeLabelElement extends ThemeDecorativeElement {
     private String text = "";
 
     public String text() {

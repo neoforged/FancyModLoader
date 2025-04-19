@@ -1,22 +1,25 @@
 package net.neoforged.fml.earlydisplay.render.elements;
 
-import java.util.ArrayList;
-import java.util.List;
 import net.neoforged.fml.earlydisplay.render.MaterializedTheme;
 import net.neoforged.fml.earlydisplay.render.RenderContext;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
+import net.neoforged.fml.earlydisplay.theme.elements.ThemeStartupLogElement;
 import net.neoforged.fml.earlydisplay.util.Bounds;
 import net.neoforged.fml.earlydisplay.util.Size;
 import net.neoforged.fml.loading.progress.Message;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 public class StartupLogElement extends RenderElement {
     private ThemeColor textColor;
 
-    public StartupLogElement(String id, MaterializedTheme theme, ThemeColor textColor) {
-        super(id, theme);
-        this.textColor = textColor;
+    public StartupLogElement(MaterializedTheme theme, ThemeStartupLogElement settings) {
+        super(settings.id(), theme);
+        this.textColor = Objects.requireNonNullElseGet(textColor, () -> theme.theme().colorScheme().text());
     }
 
     @Override

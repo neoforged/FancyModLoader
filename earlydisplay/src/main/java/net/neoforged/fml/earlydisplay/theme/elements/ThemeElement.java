@@ -1,23 +1,25 @@
 package net.neoforged.fml.earlydisplay.theme.elements;
 
-import java.util.Objects;
 import net.neoforged.fml.earlydisplay.util.StyleLength;
 
-public abstract class ThemeElement {
-    private String id;
+import java.util.Objects;
 
+public abstract class ThemeElement {
+    private boolean visibility = false;
     private boolean maintainAspectRatio = true;
     private StyleLength left = StyleLength.ofUndefined();
     private StyleLength top = StyleLength.ofUndefined();
     private StyleLength right = StyleLength.ofUndefined();
     private StyleLength bottom = StyleLength.ofUndefined();
 
-    public String id() {
-        return id;
+    public abstract String id();
+
+    public boolean visibility() {
+        return visibility;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setVisibility(boolean visibility) {
+        this.visibility = visibility;
     }
 
     public StyleLength left() {
@@ -62,6 +64,6 @@ public abstract class ThemeElement {
 
     @Override
     public String toString() {
-        return id;
+        return id();
     }
 }

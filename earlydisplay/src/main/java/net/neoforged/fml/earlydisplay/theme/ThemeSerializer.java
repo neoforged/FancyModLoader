@@ -16,36 +16,104 @@ import com.google.gson.TypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import net.neoforged.fml.earlydisplay.theme.elements.ThemeDecorativeElement;
+import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
+import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
+import net.neoforged.fml.earlydisplay.util.StyleLength;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeElement;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemePerformanceElement;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeProgressBarsElement;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeStartupLogElement;
-import net.neoforged.fml.earlydisplay.util.StyleLength;
-import org.jetbrains.annotations.ApiStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-@ApiStatus.Internal
 public final class ThemeSerializer {
     private static final Logger LOG = LoggerFactory.getLogger(ThemeSerializer.class);
+    private static final int VERSION = 1;
 
-    private ThemeSerializer() {}
+    private ThemeSerializer() {
+    }
 
-    public static Theme load(Path path) throws IOException {
-        try (var in = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
-            return createGson(path.toAbsolutePath().getParent()).fromJson(in, Theme.class);
+    public static Theme load(Path baseDirectory, String id) throws IOException {
+
+        var themeTree = readThemeTree(baseDirectory, id);
+
+        createGson(baseDirectory)
+
+    }
+
+    private static JsonObject readThemeTree(Path baseDirectory, String id) throws IOException {
+        String filename = getThemeFilename(id);
+
+        try (var in = Files.newInputStream(baseDirectory.resolve(filename))) {
+            return readThemeTree(baseDirectory, in);
+        } catch (NoSuchFileException ignored) {
         }
+
+        // Try to load it from the classpath instead
+        String classpathLocation = "/net/neoforged/fml/earlydisplay/" + filename;
+        try (var in = ThemeSerializer.class.getResourceAsStream(classpathLocation)) {
+            if (in == null) {
+                throw new NoSuchFileException("Failed to find embedded theme resource " + classpathLocation);
+            }
+            return readThemeTree(baseDirectory, in);
+        }
+    }
+
+    private static JsonObject readThemeTree(Path baseDirectory, InputStream in) {
+        var reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+
+        var themeRoot = createGson(baseDirectory).fromJson(reader, JsonObject.class);
+        var themeVersion = takeInt(themeRoot, "version");
+        if (themeVersion == null || themeVersion != VERSION) {
+            throw new JsonParseException("Expected theme version " + VERSION + " but found: " + themeVersion);
+        }
+
+        var extendsId = takeString(themeRoot, "extends");
+
+        return null;
+    }
+
+    private static String getThemeFilename(String id) {
+        return "theme-" + id + ".json";
+    }
+
+    @Nullable
+    private static Integer takeInt(JsonElement el, String field) {
+        var primitive = takePrimitive(el, field);
+        return primitive == null ? null : primitive.getAsInt();
+    }
+
+    @Nullable
+    private static String takeString(JsonElement el, String field) {
+        var primitive = takePrimitive(el, field);
+        return primitive == null ? null : primitive.getAsString();
+    }
+
+    private static JsonPrimitive takePrimitive(JsonElement el, String field) {
+        if (!el.isJsonObject()) {
+            throw new JsonParseException("Expected  " + el + " to be an object.");
+        }
+        var obj = (JsonObject) el;
+        var v = obj.remove(field);
+        if (v == null) {
+            return null;
+        }
+        if (!(v instanceof JsonPrimitive primitive)) {
+            throw new JsonParseException("Expected " + field + " of " + el + " to be a primitive");
+        }
+        return primitive;
     }
 
     public static void save(Path path, Theme theme) {
@@ -57,12 +125,12 @@ public final class ThemeSerializer {
         }
     }
 
-    private static Gson createGson(Path outputFolder) {
+    private static Gson createGson(Path baseDirectory) {
         return new GsonBuilder()
                 .setPrettyPrinting()
                 .registerTypeAdapter(TextureScaling.class, new TextureScalingSerializer())
                 .registerTypeAdapterFactory(new ThemeElementAdapterFactory())
-                .registerTypeHierarchyAdapter(ThemeResource.class, new ThemeResourceAdapter(outputFolder))
+                .registerTypeHierarchyAdapter(ThemeResource.class, new ThemeResourceAdapter(baseDirectory))
                 .registerTypeAdapter(UncompressedImage.class, new UncompressedImageSerializer())
                 .registerTypeAdapter(StyleLength.class, new StyleLengthAdapter())
                 .registerTypeAdapter(ThemeColor.class, new ThemeColorAdapter())
@@ -117,10 +185,10 @@ public final class ThemeSerializer {
     }
 
     private static class ThemeResourceAdapter extends TypeAdapter<ThemeResource> {
-        private final Path themeFolder;
+        private final Path baseDirectory;
 
-        public ThemeResourceAdapter(Path themeFolder) {
-            this.themeFolder = themeFolder;
+        public ThemeResourceAdapter(Path baseDirectory) {
+            this.baseDirectory = baseDirectory;
         }
 
         @Override
@@ -131,7 +199,7 @@ public final class ThemeSerializer {
                             classpathResource.path().lastIndexOf('/'),
                             classpathResource.path().lastIndexOf('\\'));
                     var filename = classpathResource.path().substring(idx + 1);
-                    var diskPath = themeFolder.resolve(filename);
+                    var diskPath = baseDirectory.resolve(filename);
                     try (var buffer = value.toNativeBuffer()) {
                         Files.write(diskPath, buffer.toByteArray());
                     } catch (IOException e) {
@@ -140,7 +208,7 @@ public final class ThemeSerializer {
                     out.value(filename);
                 }
                 case FileResource fileResource -> {
-                    var diskPath = themeFolder.resolve(fileResource.file().getName());
+                    var diskPath = baseDirectory.resolve(fileResource.file().getName());
                     Files.copy(fileResource.file().toPath(), diskPath, StandardCopyOption.REPLACE_EXISTING);
                     out.value(fileResource.file().getName());
                 }
@@ -153,7 +221,7 @@ public final class ThemeSerializer {
             if (text.startsWith("classpath:")) {
                 return new ClasspathResource(text.substring("classpath:".length()));
             }
-            return new FileResource(themeFolder.resolve(text).toFile());
+            return new FileResource(baseDirectory.resolve(text).toFile());
         }
     }
 
@@ -215,12 +283,9 @@ public final class ThemeSerializer {
     }
 
     private static class ThemeElementAdapterFactory implements TypeAdapterFactory {
-        private static final Map<String, Class<? extends ThemeElement>> TYPE_MAP = Map.of(
+        private static final Map<String, Class<? extends ThemeDecorativeElement>> TYPE_MAP = Map.of(
                 "image", ThemeImageElement.class,
-                "label", ThemeLabelElement.class,
-                "performance", ThemePerformanceElement.class,
-                "progress", ThemeProgressBarsElement.class,
-                "startupLog", ThemeStartupLogElement.class);
+                "label", ThemeLabelElement.class);
 
         @SuppressWarnings("unchecked")
         @Override
@@ -228,13 +293,13 @@ public final class ThemeSerializer {
             if (type == null) {
                 return null;
             }
-            if (!ThemeElement.class.isAssignableFrom(type.getRawType())) {
+            if (!ThemeDecorativeElement.class.isAssignableFrom(type.getRawType())) {
                 return null;
             }
 
             TypeAdapter<JsonElement> jsonElementAdapter = gson.getAdapter(JsonElement.class);
-            Map<String, TypeAdapter<? extends ThemeElement>> labelToDelegate = new HashMap<>();
-            Map<Class<?>, TypeAdapter<? extends ThemeElement>> subtypeToDelegate = new HashMap<>();
+            Map<String, TypeAdapter<? extends ThemeDecorativeElement>> labelToDelegate = new HashMap<>();
+            Map<Class<?>, TypeAdapter<? extends ThemeDecorativeElement>> subtypeToDelegate = new HashMap<>();
             Map<Class<?>, String> subtypeToLabel = new HashMap<>();
             for (var entry : TYPE_MAP.entrySet()) {
                 var delegate = gson.getDelegateAdapter(this, TypeToken.get(entry.getValue()));
@@ -243,9 +308,9 @@ public final class ThemeSerializer {
                 subtypeToLabel.put(entry.getValue(), entry.getKey());
             }
 
-            return (TypeAdapter<T>) new TypeAdapter<ThemeElement>() {
+            return (TypeAdapter<T>) new TypeAdapter<ThemeDecorativeElement>() {
                 @Override
-                public ThemeElement read(JsonReader in) throws IOException {
+                public ThemeDecorativeElement read(JsonReader in) throws IOException {
                     var jsonElement = jsonElementAdapter.read(in);
                     var labelJsonElement = jsonElement.getAsJsonObject().remove("type");
 
@@ -263,11 +328,11 @@ public final class ThemeSerializer {
                 }
 
                 @Override
-                public void write(JsonWriter out, ThemeElement value) throws IOException {
-                    Class<? extends ThemeElement> srcType = value.getClass();
+                public void write(JsonWriter out, ThemeDecorativeElement value) throws IOException {
+                    Class<? extends ThemeDecorativeElement> srcType = value.getClass();
                     String label = subtypeToLabel.get(srcType);
                     // The registration in this map guarantees the type bound of the key equals that of the value
-                    var delegate = (TypeAdapter<ThemeElement>) subtypeToDelegate.get(srcType);
+                    var delegate = (TypeAdapter<ThemeDecorativeElement>) subtypeToDelegate.get(srcType);
                     if (delegate == null) {
                         throw new JsonParseException("cannot serialize theme element " + srcType.getName());
                     }

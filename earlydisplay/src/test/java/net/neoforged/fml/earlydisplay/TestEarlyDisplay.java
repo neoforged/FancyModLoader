@@ -1,12 +1,14 @@
 package net.neoforged.fml.earlydisplay;
 
+import net.neoforged.fml.loading.FMLPaths;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import net.neoforged.fml.loading.FMLPaths;
 
 public class TestEarlyDisplay {
     public static void main(String[] args) throws Exception {
+        System.setProperty("java.awt.headless", "true");
         System.setProperty("fml.writeMissingTheme", "true");
 
         // Find the project directory by search for build.gradle upwards
@@ -14,7 +16,7 @@ public class TestEarlyDisplay {
         FMLPaths.loadAbsolutePaths(projectRoot);
 
         var window = new DisplayWindow();
-        var periodicTick = window.initialize(new String[] {
+        var periodicTick = window.initialize(new String[]{
                 "--fml.mcVersion", "1.21.5",
                 "--fml.neoForgeVersion", "21.5.123-beta"
         });

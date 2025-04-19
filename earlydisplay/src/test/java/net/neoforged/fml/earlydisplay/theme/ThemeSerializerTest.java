@@ -15,11 +15,11 @@ class ThemeSerializerTest {
 
     @Test
     void testDefaultThemeRoundtrip() throws IOException {
-        var defaultTheme = Theme.createDefaultTheme(false);
-        Path themePath = tempDir.resolve("theme.json");
+        var defaultTheme = Theme.createDefaultTheme();
+        Path themePath = tempDir.resolve("theme-default.json");
         ThemeSerializer.save(themePath, defaultTheme);
 
-        var loadedTheme = ThemeSerializer.load(themePath);
+        var loadedTheme = ThemeSerializer.load(tempDir, "default");
         assertThat(loadedTheme)
                 .usingComparatorForType(RESOURCE_COMPARATOR, ThemeResource.class)
                 .usingRecursiveComparison()

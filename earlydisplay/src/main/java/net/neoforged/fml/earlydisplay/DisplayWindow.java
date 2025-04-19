@@ -5,6 +5,48 @@
 
 package net.neoforged.fml.earlydisplay;
 
+import joptsimple.OptionParser;
+import net.neoforged.fml.earlydisplay.render.LoadingScreenRenderer;
+import net.neoforged.fml.earlydisplay.render.SimpleFont;
+import net.neoforged.fml.earlydisplay.theme.Theme;
+import net.neoforged.fml.earlydisplay.theme.ThemeColor;
+import net.neoforged.fml.earlydisplay.theme.ThemeSerializer;
+import net.neoforged.fml.loading.FMLConfig;
+import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.fml.loading.progress.ProgressMeter;
+import net.neoforged.fml.loading.progress.StartupNotificationManager;
+import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
+import org.jetbrains.annotations.Nullable;
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.glfw.GLFWImage;
+import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.util.tinyfd.TinyFileDialogs;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.awt.Desktop;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+
 import static org.lwjgl.glfw.GLFW.GLFW_CLIENT_API;
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_CREATION_API;
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MAJOR;
@@ -46,47 +88,6 @@ import static org.lwjgl.glfw.GLFW.glfwWindowHint;
 import static org.lwjgl.glfw.GLFW.glfwWindowHintString;
 import static org.lwjgl.opengl.GL32C.GL_TRUE;
 
-import java.awt.Desktop;
-import java.io.IOException;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
-import joptsimple.OptionParser;
-import net.neoforged.fml.earlydisplay.render.LoadingScreenRenderer;
-import net.neoforged.fml.earlydisplay.render.SimpleFont;
-import net.neoforged.fml.earlydisplay.theme.Theme;
-import net.neoforged.fml.earlydisplay.theme.ThemeColor;
-import net.neoforged.fml.earlydisplay.theme.ThemeSerializer;
-import net.neoforged.fml.loading.FMLConfig;
-import net.neoforged.fml.loading.FMLPaths;
-import net.neoforged.fml.loading.progress.ProgressMeter;
-import net.neoforged.fml.loading.progress.StartupNotificationManager;
-import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
-import org.jetbrains.annotations.Nullable;
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.glfw.GLFWImage;
-import org.lwjgl.glfw.GLFWVidMode;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * The Loading Window that is opened Immediately after Forge starts.
  * It is called from the ModDirTransformerDiscoverer, the soonest method that ModLauncher calls into Forge code.
@@ -124,7 +125,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     private boolean maximized;
     private Map<String, SimpleFont> fonts;
-    private Runnable repaintTick = () -> {};
+    private Runnable repaintTick = () -> {
+    };
     private ThemeColor background;
 
     public DisplayWindow() {
@@ -198,26 +200,21 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     private static Theme loadTheme(boolean darkMode) {
-        Path themePath = getThemePath(darkMode);
+        Path themePath = getThemePath();
+        var themeId = darkMode ? "darkmode" : "default";
+
         Theme theme;
         try {
-            theme = ThemeSerializer.load(themePath);
-        } catch (NoSuchFileException ignored) {
-            LOGGER.info("No theme found at {}", themePath);
-            theme = Theme.createDefaultTheme(darkMode);
-            if (Boolean.getBoolean("fml.writeMissingTheme")) {
-                ThemeSerializer.save(getThemePath(true), Theme.createDefaultTheme(true));
-                ThemeSerializer.save(getThemePath(false), Theme.createDefaultTheme(false));
-            }
+            theme = ThemeSerializer.load(themePath, themeId);
         } catch (Exception e) {
             LOGGER.error("Failed to load theme {}", themePath, e);
-            theme = Theme.createDefaultTheme(darkMode);
+            theme = Theme.createDefaultTheme();
         }
         return theme;
     }
 
-    private static Path getThemePath(boolean darkMode) {
-        return FMLPaths.CONFIGDIR.get().resolve(darkMode ? "fml/theme_dark.json" : "fml/theme.json");
+    private static Path getThemePath() {
+        return FMLPaths.CONFIGDIR.get().resolve("fml");
     }
 
     // Called from NeoForge
@@ -257,7 +254,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
         thread.start();
         try {
             thread.join();
-        } catch (InterruptedException ignored) {}
+        } catch (InterruptedException ignored) {
+        }
 
         System.exit(1);
     }
@@ -365,8 +363,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
         // Attempt setting the icon
         try (var glfwImgBuffer = GLFWImage.malloc(1);
-                var glfwImages = GLFWImage.malloc();
-                var icon = theme.windowIcon().loadAsImage()) {
+             var glfwImages = GLFWImage.malloc();
+             var icon = theme.windowIcon().loadAsImage()) {
             glfwImgBuffer.put(glfwImages.set(icon.width(), icon.height(), icon.imageData()));
             glfwImgBuffer.flip();
             glfwSetWindowIcon(window, glfwImgBuffer);
@@ -475,7 +473,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     @Override
-    public void updateModuleReads(final ModuleLayer layer) {}
+    public void updateModuleReads(final ModuleLayer layer) {
+    }
 
     // Called from Neo
     public int getFramebufferTextureId() {

@@ -2,7 +2,7 @@ package net.neoforged.fml.earlydisplay.theme.elements;
 
 import net.neoforged.fml.earlydisplay.theme.ThemeTexture;
 
-public class ThemeImageElement extends ThemeElement {
+public class ThemeImageElement extends ThemeDecorativeElement {
     private ThemeTexture texture;
 
     public ThemeTexture texture() {
