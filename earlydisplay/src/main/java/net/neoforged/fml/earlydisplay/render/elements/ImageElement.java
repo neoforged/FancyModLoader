@@ -3,13 +3,14 @@ package net.neoforged.fml.earlydisplay.render.elements;
 import net.neoforged.fml.earlydisplay.render.MaterializedTheme;
 import net.neoforged.fml.earlydisplay.render.RenderContext;
 import net.neoforged.fml.earlydisplay.render.Texture;
+import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
 
 public class ImageElement extends RenderElement {
     private final Texture texture;
 
-    public ImageElement(String id, MaterializedTheme theme, Texture texture) {
-        super(id, theme);
-        this.texture = texture;
+    public ImageElement(ThemeImageElement element, MaterializedTheme theme) {
+        super(element, theme);
+        this.texture = Texture.create(element.texture());
     }
 
     @Override

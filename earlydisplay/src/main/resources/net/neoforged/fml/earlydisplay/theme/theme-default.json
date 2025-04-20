@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "windowIcon": "classpath:net/neoforged/fml/earlydisplay/theme/neoforged_icon.png",
+  "fonts": {
+    "default": "classpath:net/neoforged/fml/earlydisplay/theme/Monocraft.ttf"
+  },
+  "shaders": {
+    "font": {
+      "vertexShader": "classpath:net/neoforged/fml/earlydisplay/gui.vert",
+      "fragmentShader": "classpath:net/neoforged/fml/earlydisplay/gui_font.frag"
+    },
+    "color": {
+      "vertexShader": "classpath:net/neoforged/fml/earlydisplay/gui.vert",
+      "fragmentShader": "classpath:net/neoforged/fml/earlydisplay/gui_color.frag"
+    },
+    "gui": {
+      "vertexShader": "classpath:net/neoforged/fml/earlydisplay/gui.vert",
+      "fragmentShader": "classpath:net/neoforged/fml/earlydisplay/gui.frag"
+    }
+  },
+  "decoration": [
+    {
+      "type": "image",
+      "texture": {
+        "resource": "classpath:net/neoforged/fml/earlydisplay/theme/squirrel.png",
+        "scaling": {
+          "type": "stretch",
+          "width": 112,
+          "height": 112
+        }
+      },
+      "id": "squir",
+      "visibility": false,
+      "maintainAspectRatio": true
+    },
+    {
+      "type": "image",
+      "texture": {
+        "resource": "classpath:net/neoforged/fml/earlydisplay/theme/fox_running.png",
+        "scaling": {
+          "type": "stretch",
+          "width": 151,
+          "height": 128
+        },
+        "animation": {
+          "frameCount": 28
+        }
+      },
+      "id": "fox",
+      "visibility": false,
+      "maintainAspectRatio": true,
+      "right": 10.0,
+      "bottom": "1.0rem"
+    },
+    {
+      "type": "label",
+      "text": "${version}",
+      "id": "version",
+      "visibility": false,
+      "maintainAspectRatio": true,
+      "right": 10.0,
+      "bottom": 10.0
+    }
+  ],
+  "colorScheme": {
+    "screenBackground": "#ef323d",
+    "text": "#ffffff",
+    "memoryLowColor": "#007f00",
+    "memoryHighColor": "#ff7f00"
+  },
+  "sprites": {
+    "progressBarBackground": {
+      "resource": "classpath:net/neoforged/fml/earlydisplay/theme/progress_bar_bg.png",
+      "scaling": {
+        "type": "nine_slice",
+        "width": 40,
+        "height": 20,
+        "left": 2,
+        "top": 2,
+        "right": 2,
+        "bottom": 2,
+        "stretchHorizontalFill": true,
+        "stretchVerticalFill": true
+      }
+    },
+    "progressBarForeground": {
+      "resource": "classpath:net/neoforged/fml/earlydisplay/theme/progress_bar_fg.png",
+      "scaling": {
+        "type": "nine_slice",
+        "width": 40,
+        "height": 20,
+        "left": 4,
+        "top": 4,
+        "right": 4,
+        "bottom": 4,
+        "stretchHorizontalFill": true,
+        "stretchVerticalFill": true
+      }
+    },
+    "progressBarIndeterminate": {
+      "resource": "classpath:net/neoforged/fml/earlydisplay/theme/progress_bar_fg.png",
+      "scaling": {
+        "type": "nine_slice",
+        "width": 40,
+        "height": 20,
+        "left": 4,
+        "top": 4,
+        "right": 4,
+        "bottom": 4,
+        "stretchHorizontalFill": true,
+        "stretchVerticalFill": true
+      }
+    },
+    "progressBarIndeterminateBounces": false
+  },
+  "loadingScreen": {
+    "performance": {
+      "visibility": false,
+      "maintainAspectRatio": true,
+      "left": 220.0,
+      "top": 10.0,
+      "right": 220.0
+    },
+    "progressBars": {
+      "labelGap": 4,
+      "barGap": 5,
+      "visibility": false,
+      "maintainAspectRatio": false,
+      "left": 220.0,
+      "top": 250.0,
+      "right": 220.0
+    },
+    "startupLog": {
+      "visibility": false,
+      "maintainAspectRatio": true,
+      "left": 10.0,
+      "bottom": 10.0
+    }
+  }
+}

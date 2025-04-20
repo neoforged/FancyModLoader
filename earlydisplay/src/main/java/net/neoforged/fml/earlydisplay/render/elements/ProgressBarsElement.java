@@ -15,8 +15,8 @@ public class ProgressBarsElement extends RenderElement {
 
     private final ThemeProgressBarsElement settings;
 
-    public ProgressBarsElement(MaterializedTheme theme, ThemeProgressBarsElement settings) {
-        super(settings.id(), theme);
+    public ProgressBarsElement(ThemeProgressBarsElement settings, MaterializedTheme theme) {
+        super(settings, theme);
         this.settings = settings;
     }
 

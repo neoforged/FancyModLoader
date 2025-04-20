@@ -13,9 +13,15 @@ public sealed interface TextureScaling {
      */
     int height();
 
-    record Stretch(int width, int height) implements TextureScaling {}
+    boolean linearScaling();
 
-    record Tile(int width, int height) implements TextureScaling {}
+    record Stretch(int width, int height, boolean linearScaling) implements TextureScaling {
+    }
 
-    record NineSlice(int width, int height, int left, int top, int right, int bottom, boolean stretchHorizontalFill, boolean stretchVerticalFill) implements TextureScaling {}
+    record Tile(int width, int height, boolean linearScaling) implements TextureScaling {
+    }
+
+    record NineSlice(int width, int height, int left, int top, int right, int bottom, boolean stretchHorizontalFill,
+                     boolean stretchVerticalFill, boolean linearScaling) implements TextureScaling {
+    }
 }

@@ -27,8 +27,8 @@ public class PerformanceElement extends RenderElement {
     private Future<Void> performanceUpdateFuture;
     private volatile PerformanceInfo currentPerformanceData;
 
-    public PerformanceElement(MaterializedTheme theme, ThemePerformanceElement settings) {
-        super(settings.id(), theme);
+    public PerformanceElement(ThemePerformanceElement settings, MaterializedTheme theme) {
+        super(settings, theme);
 
         osBean = ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
         memoryBean = ManagementFactory.getMemoryMXBean();

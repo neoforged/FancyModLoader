@@ -1,5 +1,6 @@
 package net.neoforged.fml.earlydisplay.theme;
 
+import net.neoforged.fml.earlydisplay.theme.elements.ThemeDecorativeElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
@@ -26,7 +27,7 @@ public record Theme(
         ThemeResource windowIcon,
         Map<String, ThemeResource> fonts,
         Map<String, ThemeShader> shaders,
-        List<ThemeElement> decoration,
+        List<ThemeDecorativeElement> decoration,
         ThemeColorScheme colorScheme,
         ThemeSprites sprites,
         ThemeLoadingScreen loadingScreen
@@ -41,19 +42,19 @@ public record Theme(
         var sprites = new ThemeSprites(
                 new ThemeTexture(
                         classpathResource("progress_bar_bg.png"),
-                        new TextureScaling.NineSlice(40, 20, 2, 2, 2, 2, true, true)),
+                        new TextureScaling.NineSlice(40, 20, 2, 2, 2, 2, true, true, false)),
                 new ThemeTexture(
                         classpathResource("progress_bar_fg.png"),
-                        new TextureScaling.NineSlice(40, 20, 4, 4, 4, 4, true, true)),
+                        new TextureScaling.NineSlice(40, 20, 4, 4, 4, 4, true, true, false)),
                 new ThemeTexture(
                         classpathResource("progress_bar_fg.png"),
-                        new TextureScaling.NineSlice(40, 20, 4, 4, 4, 4, true, true)),
+                        new TextureScaling.NineSlice(40, 20, 4, 4, 4, 4, true, true, false)),
                 false
         );
 
         var squir = new ThemeImageElement();
         squir.setId("squir");
-        squir.setTexture(new ThemeTexture(classpathResource("squirrel.png"), new TextureScaling.Stretch(112, 112)));
+        squir.setTexture(new ThemeTexture(classpathResource("squirrel.png"), new TextureScaling.Stretch(112, 112, true)));
 
         var startupLog = new ThemeStartupLogElement();
         startupLog.setLeft(StyleLength.ofPoints(10));
@@ -64,7 +65,7 @@ public record Theme(
         fox.setTexture(
                 new ThemeTexture(
                         classpathResource("fox_running.png"),
-                        new TextureScaling.Stretch(151, 128),
+                        new TextureScaling.Stretch(151, 128, false),
                         new AnimationMetadata(28)));
         fox.setRight(StyleLength.ofPoints(10));
         fox.setBottom(StyleLength.ofREM(1));

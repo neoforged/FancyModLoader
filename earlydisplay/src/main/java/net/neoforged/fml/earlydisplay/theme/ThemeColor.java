@@ -41,19 +41,19 @@ public record ThemeColor(float r, float g, float b, float a) {
     }
 
     public int rByte() {
-        return (int) (r * 256);
+        return (int) (r * 255);
     }
 
     public int gByte() {
-        return (int) (g * 256);
+        return (int) (g * 255);
     }
 
     public int bByte() {
-        return (int) (b * 256);
+        return (int) (b * 255);
     }
 
     public int aByte() {
-        return (int) (a * 256);
+        return (int) (a * 255);
     }
 
     public static ThemeColor lerp(ThemeColor a, ThemeColor b, float f) {

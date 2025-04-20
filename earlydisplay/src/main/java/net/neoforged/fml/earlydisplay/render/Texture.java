@@ -1,6 +1,7 @@
 package net.neoforged.fml.earlydisplay.render;
 
 import static org.lwjgl.opengl.GL11C.GL_LINEAR;
+import static org.lwjgl.opengl.GL11C.GL_NEAREST;
 import static org.lwjgl.opengl.GL11C.GL_RGBA;
 import static org.lwjgl.opengl.GL11C.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL11C.GL_TEXTURE_MAG_FILTER;
@@ -37,8 +38,9 @@ public record Texture(int textureId, int physicalWidth, int physicalHeight,
             GlState.activeTexture(GL_TEXTURE0);
             GlState.bindTexture2D(texId);
             GlDebug.labelTexture(texId, "EarlyDisplay " + themeTexture);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            boolean linear = themeTexture.scaling().linearScaling();
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, linear ? GL_LINEAR : GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, linear ? GL_LINEAR : GL_NEAREST);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.imageData());
             GlState.activeTexture(GL_TEXTURE0);
             return new Texture(texId, image.width(), image.height(), themeTexture.scaling(), themeTexture.animation());

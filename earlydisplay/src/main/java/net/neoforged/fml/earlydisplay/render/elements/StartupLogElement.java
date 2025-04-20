@@ -17,8 +17,8 @@ import java.util.Objects;
 public class StartupLogElement extends RenderElement {
     private ThemeColor textColor;
 
-    public StartupLogElement(MaterializedTheme theme, ThemeStartupLogElement settings) {
-        super(settings.id(), theme);
+    public StartupLogElement(ThemeStartupLogElement settings, MaterializedTheme theme) {
+        super(settings, theme);
         this.textColor = Objects.requireNonNullElseGet(textColor, () -> theme.theme().colorScheme().text());
     }
 

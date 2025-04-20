@@ -9,6 +9,7 @@ import net.neoforged.fml.earlydisplay.render.MaterializedTheme;
 import net.neoforged.fml.earlydisplay.render.RenderContext;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import net.neoforged.fml.earlydisplay.theme.Theme;
+import net.neoforged.fml.earlydisplay.theme.elements.ThemeElement;
 import net.neoforged.fml.earlydisplay.util.Bounds;
 import net.neoforged.fml.earlydisplay.util.StyleLength;
 
@@ -16,17 +17,22 @@ public abstract class RenderElement implements AutoCloseable {
     private final String id;
     protected final MaterializedTheme theme;
 
-    private boolean maintainAspectRatio = true;
-    private StyleLength left = StyleLength.ofUndefined();
-    private StyleLength top = StyleLength.ofUndefined();
-    private StyleLength right = StyleLength.ofUndefined();
-    private StyleLength bottom = StyleLength.ofUndefined();
+    private boolean maintainAspectRatio;
+    private StyleLength left;
+    private StyleLength top;
+    private StyleLength right;
+    private StyleLength bottom;
     protected SimpleFont font;
 
-    public RenderElement(String id, MaterializedTheme theme) {
-        this.id = id;
+    public RenderElement(ThemeElement element, MaterializedTheme theme) {
         this.theme = theme;
-        this.font = theme.fonts().get(Theme.FONT_DEFAULT);
+        this.id = element.id();
+        this.font = theme.getFont(element.font());
+        this.left = element.left();
+        this.top = element.top();
+        this.right = element.right();
+        this.bottom = element.bottom();
+        this.maintainAspectRatio = element.maintainAspectRatio();
     }
 
     public String id() {

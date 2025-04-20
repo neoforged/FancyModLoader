@@ -1,5 +1,6 @@
 package net.neoforged.fml.earlydisplay.theme.elements;
 
+import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.util.StyleLength;
 
 import java.util.Objects;
@@ -11,6 +12,7 @@ public abstract class ThemeElement {
     private StyleLength top = StyleLength.ofUndefined();
     private StyleLength right = StyleLength.ofUndefined();
     private StyleLength bottom = StyleLength.ofUndefined();
+    private String font = Theme.FONT_DEFAULT;
 
     public abstract String id();
 
@@ -60,6 +62,14 @@ public abstract class ThemeElement {
 
     public void setMaintainAspectRatio(boolean maintainAspectRatio) {
         this.maintainAspectRatio = maintainAspectRatio;
+    }
+
+    public String font() {
+        return font;
+    }
+
+    public void setFont(String font) {
+        this.font = font;
     }
 
     @Override

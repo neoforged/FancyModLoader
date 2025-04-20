@@ -157,7 +157,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_WIDTH, winWidth);
         FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_HEIGHT, winHeight);
 
-        if (System.getenv("FML_EARLY_WINDOW_DARK") != null) {
+        if (Boolean.getBoolean("fml.earlyWindowDarkMode")) {
             this.darkMode = true;
         } else {
             try {

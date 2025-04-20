@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
@@ -111,13 +112,13 @@ public class LoadingScreenRenderer implements AutoCloseable {
 
         var loadingScreen = theme.theme().loadingScreen();
         if (!loadingScreen.performance().visibility()) {
-            elements.add(new PerformanceElement(theme, loadingScreen.performance()));
+            elements.add(new PerformanceElement(loadingScreen.performance(), theme));
         }
         if (!loadingScreen.startupLog().visibility()) {
-            elements.add(new StartupLogElement(theme, loadingScreen.startupLog()));
+            elements.add(new StartupLogElement(loadingScreen.startupLog(), theme));
         }
         if (!loadingScreen.progressBars().visibility()) {
-            elements.add(new ProgressBarsElement(theme, loadingScreen.progressBars()));
+            elements.add(new ProgressBarsElement(loadingScreen.progressBars(), theme));
         }
 
         // Add decorative elements
@@ -129,33 +130,20 @@ public class LoadingScreenRenderer implements AutoCloseable {
     }
 
     private RenderElement loadElement(ThemeElement element) {
-        var renderElement = switch (element) {
-            case ThemeImageElement imageElement ->
-                    new ImageElement(imageElement.id(), theme, Texture.create(imageElement.texture()));
+        return switch (element) {
+            case ThemeImageElement imageElement -> new ImageElement(imageElement, theme);
 
-            case ThemeLabelElement labelElement -> {
-                var version = mcVersion + "-" + neoForgeVersion.split("-")[0];
-                yield new LabelElement(
-                        labelElement.id(),
-                        theme,
-                        labelElement.text().replace("${version}", version));
-            }
+            case ThemeLabelElement labelElement -> new LabelElement(
+                    labelElement,
+                    theme,
+                    Map.of(
+                            "version", mcVersion + "-" + neoForgeVersion.split("-")[0]
+                    )
+            );
 
             default ->
                     throw new IllegalStateException("Unexpected theme element " + element + " of type " + element.getClass());
         };
-
-        applyBaseProperties(element, renderElement);
-
-        return renderElement;
-    }
-
-    private static void applyBaseProperties(ThemeElement element, RenderElement renderElement) {
-        renderElement.setLeft(element.left());
-        renderElement.setTop(element.top());
-        renderElement.setRight(element.right());
-        renderElement.setBottom(element.bottom());
-        renderElement.setMaintainAspectRatio(element.maintainAspectRatio());
     }
 
     public void stopAutomaticRendering() throws TimeoutException, InterruptedException {

@@ -36,7 +36,9 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 public final class ThemeSerializer {
     private static final Logger LOG = LoggerFactory.getLogger(ThemeSerializer.class);
@@ -47,42 +49,102 @@ public final class ThemeSerializer {
 
     public static Theme load(Path baseDirectory, String id) throws IOException {
 
-        var themeTree = readThemeTree(baseDirectory, id);
+        var sources = new LinkedHashSet<String>();
+        var themeTree = readThemeTree(baseDirectory, id, sources);
 
-        createGson(baseDirectory)
+        try {
+            return createGson(baseDirectory, false).fromJson(themeTree, Theme.class);
+        } catch (Exception e) {
+            throw new IOException("Failed to load theme '" + id + "' from JSON structure.", e);
+        }
 
     }
 
-    private static JsonObject readThemeTree(Path baseDirectory, String id) throws IOException {
+    private static JsonObject readThemeTree(Path baseDirectory, String id, Set<String> sources) throws IOException {
+        if (!sources.add(id)) {
+            throw new IllegalStateException("Detected recursion in theme extends clause: " + sources + " -> " + id);
+        }
+
         String filename = getThemeFilename(id);
 
-        try (var in = Files.newInputStream(baseDirectory.resolve(filename))) {
-            return readThemeTree(baseDirectory, in);
+        Path themePath = baseDirectory.resolve(filename);
+        try (var in = Files.newInputStream(themePath)) {
+            LOG.debug("Loading theme from {}", themePath);
+            return readThemeTree(baseDirectory, in, sources);
         } catch (NoSuchFileException ignored) {
         }
 
         // Try to load it from the classpath instead
-        String classpathLocation = "/net/neoforged/fml/earlydisplay/" + filename;
+        String classpathLocation = "/net/neoforged/fml/earlydisplay/theme/" + filename;
         try (var in = ThemeSerializer.class.getResourceAsStream(classpathLocation)) {
+            LOG.debug("Loading built-in theme {}", id);
             if (in == null) {
                 throw new NoSuchFileException("Failed to find embedded theme resource " + classpathLocation);
             }
-            return readThemeTree(baseDirectory, in);
+            return readThemeTree(baseDirectory, in, sources);
         }
     }
 
-    private static JsonObject readThemeTree(Path baseDirectory, InputStream in) {
+    private static JsonObject readThemeTree(Path baseDirectory, InputStream in, Set<String> sources) throws IOException {
         var reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
 
-        var themeRoot = createGson(baseDirectory).fromJson(reader, JsonObject.class);
+        var themeRoot = createGson(baseDirectory, false).fromJson(reader, JsonObject.class);
         var themeVersion = takeInt(themeRoot, "version");
         if (themeVersion == null || themeVersion != VERSION) {
             throw new JsonParseException("Expected theme version " + VERSION + " but found: " + themeVersion);
         }
 
         var extendsId = takeString(themeRoot, "extends");
+        if (extendsId != null) {
+            var baseThemeRoot = readThemeTree(baseDirectory, extendsId, sources);
+            themeRoot = mergeThemeRoot(baseThemeRoot, themeRoot);
+        }
 
-        return null;
+        return themeRoot;
+    }
+
+    private static JsonObject mergeThemeRoot(JsonObject baseThemeRoot, JsonObject themeRoot) {
+        return mergeObject(baseThemeRoot, themeRoot, (property, baseValue, value) -> switch (property) {
+            case "fonts", "shaders", "colorScheme", "sprites" -> mergeObject(baseValue, value);
+            case "loadingScreen" -> mergeObject(baseValue, value, ThemeSerializer::mergeLoadingScreenProperty);
+            default -> value;
+        });
+    }
+
+    private static JsonElement mergeLoadingScreenProperty(String property, JsonElement baseValue, JsonElement value) {
+        // Just recursively merge every property of the loading screen object
+        return mergeObject(baseValue, value);
+    }
+
+    private static JsonObject mergeObject(JsonElement baseObject, JsonElement object) {
+        return mergeObject(baseObject, object, (property, baseValue, value) -> value);
+    }
+
+    /**
+     * Simple merge function that copies all entries from object into baseObject, overwriting
+     * existing entries.
+     */
+    private static JsonObject mergeObject(JsonElement baseObject,
+                                          JsonElement object,
+                                          PropertyMerger propertyMerger) {
+        var objectObj = object.getAsJsonObject();
+        var baseObjectObj = baseObject.getAsJsonObject();
+
+        for (var entry : objectObj.entrySet()) {
+            var baseValue = baseObjectObj.get(entry.getKey());
+            if (baseValue == null) {
+                baseObjectObj.add(entry.getKey(), entry.getValue());
+            } else {
+                baseObjectObj.add(entry.getKey(), propertyMerger.map(entry.getKey(), baseValue, entry.getValue()));
+            }
+        }
+
+        return baseObjectObj;
+    }
+
+    @FunctionalInterface
+    private interface PropertyMerger {
+        JsonElement map(String property, JsonElement baseValue, JsonElement value);
     }
 
     private static String getThemeFilename(String id) {
@@ -116,21 +178,30 @@ public final class ThemeSerializer {
         return primitive;
     }
 
-    public static void save(Path path, Theme theme) {
+    public static void save(Path path, Theme theme, boolean exportResources) {
         LOG.info("Saving theme to {}", path);
+
+        Gson gson = createGson(path.toAbsolutePath().getParent(), exportResources);
+        var themeTree = (JsonObject) gson.toJsonTree(theme);
+        var merged = new JsonObject();
+        merged.addProperty("version", VERSION);
+        for (var entry : themeTree.entrySet()) {
+            merged.add(entry.getKey(), entry.getValue());
+        }
+
         try (var out = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
-            createGson(path.toAbsolutePath().getParent()).toJson(theme, out);
+            gson.toJson(merged, out);
         } catch (IOException e) {
             LOG.error("Failed to save theme to {}", path, e);
         }
     }
 
-    private static Gson createGson(Path baseDirectory) {
+    private static Gson createGson(Path baseDirectory, boolean exportResources) {
         return new GsonBuilder()
                 .setPrettyPrinting()
                 .registerTypeAdapter(TextureScaling.class, new TextureScalingSerializer())
                 .registerTypeAdapterFactory(new ThemeElementAdapterFactory())
-                .registerTypeHierarchyAdapter(ThemeResource.class, new ThemeResourceAdapter(baseDirectory))
+                .registerTypeHierarchyAdapter(ThemeResource.class, new ThemeResourceAdapter(baseDirectory, exportResources))
                 .registerTypeAdapter(UncompressedImage.class, new UncompressedImageSerializer())
                 .registerTypeAdapter(StyleLength.class, new StyleLengthAdapter())
                 .registerTypeAdapter(ThemeColor.class, new ThemeColorAdapter())
@@ -186,26 +257,32 @@ public final class ThemeSerializer {
 
     private static class ThemeResourceAdapter extends TypeAdapter<ThemeResource> {
         private final Path baseDirectory;
+        private final boolean exportResources;
 
-        public ThemeResourceAdapter(Path baseDirectory) {
+        public ThemeResourceAdapter(Path baseDirectory, boolean exportResources) {
             this.baseDirectory = baseDirectory;
+            this.exportResources = exportResources;
         }
 
         @Override
         public void write(JsonWriter out, ThemeResource value) throws IOException {
             switch (value) {
                 case ClasspathResource classpathResource -> {
-                    var idx = Math.max(
-                            classpathResource.path().lastIndexOf('/'),
-                            classpathResource.path().lastIndexOf('\\'));
-                    var filename = classpathResource.path().substring(idx + 1);
-                    var diskPath = baseDirectory.resolve(filename);
-                    try (var buffer = value.toNativeBuffer()) {
-                        Files.write(diskPath, buffer.toByteArray());
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
+                    if (exportResources) {
+                        var idx = Math.max(
+                                classpathResource.path().lastIndexOf('/'),
+                                classpathResource.path().lastIndexOf('\\'));
+                        var filename = classpathResource.path().substring(idx + 1);
+                        var diskPath = baseDirectory.resolve(filename);
+                        try (var buffer = value.toNativeBuffer()) {
+                            Files.write(diskPath, buffer.toByteArray());
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                        out.value(filename);
+                    } else {
+                        out.value("classpath:" + classpathResource.path());
                     }
-                    out.value(filename);
                 }
                 case FileResource fileResource -> {
                     var diskPath = baseDirectory.resolve(fileResource.file().getName());
@@ -231,8 +308,14 @@ public final class ThemeSerializer {
             if (value == null) {
                 out.nullValue();
             } else {
-                var hexColor = Integer.toHexString(value.toArgb());
-                hexColor = "#" + "0".repeat(Math.max(0, 8 - hexColor.length())) + hexColor;
+                String hexColor;
+                if (value.a() == 1) {
+                    hexColor = Integer.toHexString(value.toArgb() & 0xFFFFFF);
+                    hexColor = "#" + "0".repeat(Math.max(0, 6 - hexColor.length())) + hexColor;
+                } else {
+                    hexColor = Integer.toHexString(value.toArgb());
+                    hexColor = "#" + "0".repeat(Math.max(0, 8 - hexColor.length())) + hexColor;
+                }
                 out.value(hexColor);
             }
         }
@@ -285,7 +368,8 @@ public final class ThemeSerializer {
     private static class ThemeElementAdapterFactory implements TypeAdapterFactory {
         private static final Map<String, Class<? extends ThemeDecorativeElement>> TYPE_MAP = Map.of(
                 "image", ThemeImageElement.class,
-                "label", ThemeLabelElement.class);
+                "label", ThemeLabelElement.class
+        );
 
         @SuppressWarnings("unchecked")
         @Override

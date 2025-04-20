@@ -17,7 +17,7 @@ class ThemeSerializerTest {
     void testDefaultThemeRoundtrip() throws IOException {
         var defaultTheme = Theme.createDefaultTheme();
         Path themePath = tempDir.resolve("theme-default.json");
-        ThemeSerializer.save(themePath, defaultTheme);
+        ThemeSerializer.save(themePath, defaultTheme, false);
 
         var loadedTheme = ThemeSerializer.load(tempDir, "default");
         assertThat(loadedTheme)
