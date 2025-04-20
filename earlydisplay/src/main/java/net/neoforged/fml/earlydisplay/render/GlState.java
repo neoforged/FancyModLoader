@@ -47,8 +47,6 @@ import static org.lwjgl.opengl.GL32C.glIsEnabled;
 import static org.lwjgl.opengl.GL32C.glUseProgram;
 import static org.lwjgl.opengl.GL32C.glViewport;
 
-import org.jetbrains.annotations.ApiStatus;
-
 /**
  * A static state manager for a subset of OpenGL states to minimize redundant state changes.
  * <p>

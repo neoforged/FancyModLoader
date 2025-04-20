@@ -16,14 +16,6 @@ import com.google.gson.TypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeDecorativeElement;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
-import net.neoforged.fml.earlydisplay.util.StyleLength;
-import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,16 +31,21 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import net.neoforged.fml.earlydisplay.theme.elements.ThemeDecorativeElement;
+import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
+import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
+import net.neoforged.fml.earlydisplay.util.StyleLength;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ThemeSerializer {
     private static final Logger LOG = LoggerFactory.getLogger(ThemeSerializer.class);
     private static final int VERSION = 1;
 
-    private ThemeSerializer() {
-    }
+    private ThemeSerializer() {}
 
     public static Theme load(Path baseDirectory, String id) throws IOException {
-
         var sources = new LinkedHashSet<String>();
         var themeTree = readThemeTree(baseDirectory, id, sources);
 
@@ -57,7 +54,6 @@ public final class ThemeSerializer {
         } catch (Exception e) {
             throw new IOException("Failed to load theme '" + id + "' from JSON structure.", e);
         }
-
     }
 
     private static JsonObject readThemeTree(Path baseDirectory, String id, Set<String> sources) throws IOException {
@@ -71,8 +67,7 @@ public final class ThemeSerializer {
         try (var in = Files.newInputStream(themePath)) {
             LOG.debug("Loading theme from {}", themePath);
             return readThemeTree(baseDirectory, in, sources);
-        } catch (NoSuchFileException ignored) {
-        }
+        } catch (NoSuchFileException ignored) {}
 
         // Try to load it from the classpath instead
         String classpathLocation = "/net/neoforged/fml/earlydisplay/theme/" + filename;
@@ -125,8 +120,8 @@ public final class ThemeSerializer {
      * existing entries.
      */
     private static JsonObject mergeObject(JsonElement baseObject,
-                                          JsonElement object,
-                                          PropertyMerger propertyMerger) {
+            JsonElement object,
+            PropertyMerger propertyMerger) {
         var objectObj = object.getAsJsonObject();
         var baseObjectObj = baseObject.getAsJsonObject();
 
@@ -368,8 +363,7 @@ public final class ThemeSerializer {
     private static class ThemeElementAdapterFactory implements TypeAdapterFactory {
         private static final Map<String, Class<? extends ThemeDecorativeElement>> TYPE_MAP = Map.of(
                 "image", ThemeImageElement.class,
-                "label", ThemeLabelElement.class
-        );
+                "label", ThemeLabelElement.class);
 
         @SuppressWarnings("unchecked")
         @Override

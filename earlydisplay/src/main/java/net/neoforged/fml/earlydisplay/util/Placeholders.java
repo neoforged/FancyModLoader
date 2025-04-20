@@ -6,8 +6,7 @@ import java.util.regex.Pattern;
 public final class Placeholders {
     private static final Pattern PATTERN = Pattern.compile("\\$\\{(\\w+)}");
 
-    private Placeholders() {
-    }
+    private Placeholders() {}
 
     public static String resolve(String text, Map<String, String> placeholders) {
         return PATTERN.matcher(text).replaceAll(matchResult -> {

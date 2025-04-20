@@ -14,6 +14,4 @@ public record ThemeSprites(
         ThemeTexture progressBarBackground,
         ThemeTexture progressBarForeground,
         ThemeTexture progressBarIndeterminate,
-        boolean progressBarIndeterminateBounces
-) {
-}
+        boolean progressBarIndeterminateBounces) {}

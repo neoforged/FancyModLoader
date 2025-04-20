@@ -6,7 +6,6 @@
 package net.neoforged.fml.earlydisplay.render;
 
 import net.neoforged.fml.loading.FMLConfig;
-import org.jetbrains.annotations.ApiStatus;
 import org.lwjgl.opengl.EXTDebugLabel;
 import org.lwjgl.opengl.EXTDebugMarker;
 import org.lwjgl.opengl.GL32C;

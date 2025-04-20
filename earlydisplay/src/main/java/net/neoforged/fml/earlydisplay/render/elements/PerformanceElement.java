@@ -1,6 +1,13 @@
 package net.neoforged.fml.earlydisplay.render.elements;
 
 import com.sun.management.OperatingSystemMXBean;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import net.neoforged.fml.earlydisplay.render.MaterializedTheme;
 import net.neoforged.fml.earlydisplay.render.RenderContext;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
@@ -9,14 +16,6 @@ import net.neoforged.fml.earlydisplay.theme.elements.ThemePerformanceElement;
 import net.neoforged.fml.earlydisplay.util.Bounds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 public class PerformanceElement extends RenderElement {
     private static final Logger LOG = LoggerFactory.getLogger(PerformanceElement.class);
@@ -55,8 +54,7 @@ public class PerformanceElement extends RenderElement {
         var color = ThemeColor.lerp(
                 theme.theme().colorScheme().memoryLowColor(),
                 theme.theme().colorScheme().memoryHighColor(),
-                memoryBarFill
-        );
+                memoryBarFill);
 
         var barBounds = new Bounds(
                 areaBounds.left(),
@@ -103,6 +101,5 @@ public class PerformanceElement extends RenderElement {
         }
     }
 
-    private record PerformanceInfo(long createdNanos, float memory, String text) {
-    }
+    private record PerformanceInfo(long createdNanos, float memory, String text) {}
 }

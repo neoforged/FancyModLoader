@@ -1,6 +1,5 @@
 package net.neoforged.fml.earlydisplay.theme;
 
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemePerformanceElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeProgressBarsElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeStartupLogElement;
@@ -11,6 +10,4 @@ import net.neoforged.fml.earlydisplay.theme.elements.ThemeStartupLogElement;
 public record ThemeLoadingScreen(
         ThemePerformanceElement performance,
         ThemeProgressBarsElement progressBars,
-        ThemeStartupLogElement startupLog
-) {
-}
+        ThemeStartupLogElement startupLog) {}

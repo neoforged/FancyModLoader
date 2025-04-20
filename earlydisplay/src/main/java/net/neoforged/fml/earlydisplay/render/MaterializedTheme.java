@@ -1,13 +1,12 @@
 package net.neoforged.fml.earlydisplay.render;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.ThemeResource;
 import net.neoforged.fml.earlydisplay.theme.ThemeShader;
 import net.neoforged.fml.earlydisplay.theme.ThemeSprites;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * A themes resources loaded for rendering at runtime.
@@ -53,8 +52,7 @@ public record MaterializedTheme(
         return new MaterializedThemeSprites(
                 Texture.create(sprites.progressBarBackground()),
                 Texture.create(sprites.progressBarForeground()),
-                Texture.create(sprites.progressBarIndeterminate())
-        );
+                Texture.create(sprites.progressBarIndeterminate()));
     }
 
     public SimpleFont getFont(String fontId) {

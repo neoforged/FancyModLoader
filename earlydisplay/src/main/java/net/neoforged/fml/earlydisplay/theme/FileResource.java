@@ -20,8 +20,7 @@ public record FileResource(File file) implements ThemeResource {
             var buffer = ByteBuffer.allocateDirect((int) size).order(ByteOrder.nativeOrder());
             channel.read(buffer);
             buffer.flip();
-            return new NativeBuffer(buffer, ignored -> {
-            });
+            return new NativeBuffer(buffer, ignored -> {});
         }
     }
 }

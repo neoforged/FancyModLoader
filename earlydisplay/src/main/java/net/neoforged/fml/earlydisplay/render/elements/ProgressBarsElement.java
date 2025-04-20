@@ -1,13 +1,12 @@
 package net.neoforged.fml.earlydisplay.render.elements;
 
+import java.util.List;
 import net.neoforged.fml.earlydisplay.render.MaterializedTheme;
 import net.neoforged.fml.earlydisplay.render.RenderContext;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeProgressBarsElement;
 import net.neoforged.fml.earlydisplay.util.Bounds;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
-
-import java.util.List;
 
 public class ProgressBarsElement extends RenderElement {
     private static final int BAR_AREA_WIDTH = 400;

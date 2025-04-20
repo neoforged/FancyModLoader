@@ -1,16 +1,14 @@
 package net.neoforged.fml.earlydisplay.theme;
 
+import java.util.List;
+import java.util.Map;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeDecorativeElement;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemePerformanceElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeProgressBarsElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeStartupLogElement;
 import net.neoforged.fml.earlydisplay.util.StyleLength;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Defines a theme for the early display screen.
@@ -30,14 +28,12 @@ public record Theme(
         List<ThemeDecorativeElement> decoration,
         ThemeColorScheme colorScheme,
         ThemeSprites sprites,
-        ThemeLoadingScreen loadingScreen
-) {
+        ThemeLoadingScreen loadingScreen) {
 
     public static final String FONT_DEFAULT = "default";
     public static final String SHADER_GUI = "gui";
     public static final String SHADER_FONT = "font";
     public static final String SHADER_COLOR = "color";
-
     public static Theme createDefaultTheme() {
         var sprites = new ThemeSprites(
                 new ThemeTexture(
@@ -49,8 +45,7 @@ public record Theme(
                 new ThemeTexture(
                         classpathResource("progress_bar_fg.png"),
                         new TextureScaling.NineSlice(40, 20, 4, 4, 4, 4, true, true, false)),
-                false
-        );
+                false);
 
         var squir = new ThemeImageElement();
         squir.setId("squir");
@@ -106,9 +101,7 @@ public record Theme(
                 new ThemeLoadingScreen(
                         performance,
                         progressBars,
-                        startupLog
-                )
-        );
+                        startupLog));
     }
 
     private static ClasspathResource classpathResource(String name) {

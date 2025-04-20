@@ -1,12 +1,11 @@
 package net.neoforged.fml.earlydisplay.render;
 
+import static org.lwjgl.opengl.GL13C.GL_TEXTURE0;
+
+import java.util.List;
 import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 import net.neoforged.fml.earlydisplay.util.Bounds;
-
-import java.util.List;
-
-import static org.lwjgl.opengl.GL13C.GL_TEXTURE0;
 
 public record RenderContext(
         SimpleBufferBuilder sharedBuffer,
@@ -66,7 +65,6 @@ public record RenderContext(
     }
 
     public void renderIndeterminateProgressBar(Bounds backgroundBounds) {
-
         var sprites = theme.sprites();
 
         blitTexture(sprites.progressBarBackground(), backgroundBounds);

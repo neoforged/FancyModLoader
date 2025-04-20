@@ -7,6 +7,7 @@ import org.lwjgl.system.MemoryUtil;
 
 /**
  * A resource loaded from the loading screens classloader.
+ * 
  * @param path Path to a file. This is expected to be an absolute path that doesn't start with a {@code /}.
  */
 public record ClasspathResource(String path) implements ThemeResource {

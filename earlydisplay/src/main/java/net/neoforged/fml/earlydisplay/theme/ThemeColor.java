@@ -5,7 +5,6 @@ import java.awt.Color;
 public record ThemeColor(float r, float g, float b, float a) {
 
     public static final ThemeColor WHITE = new ThemeColor(1, 1, 1, 1);
-
     public static ThemeColor ofBytes(int r, int g, int b, int a) {
         return new ThemeColor(r / 255.f, g / 255.f, b / 255.f, a / 255.f);
     }
@@ -63,8 +62,7 @@ public record ThemeColor(float r, float g, float b, float a) {
         return ofHsb(
                 hsbA[0] + (hsbB[0] - hsbA[0]) * f,
                 hsbA[1] + (hsbB[1] - hsbA[1]) * f,
-                hsbA[2] + (hsbB[2] - hsbA[2]) * f
-        );
+                hsbA[2] + (hsbB[2] - hsbA[2]) * f);
     }
 
     public float[] toHsb() {
