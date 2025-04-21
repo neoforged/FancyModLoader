@@ -17,9 +17,10 @@ on:
 
 jobs:
   build:
-    uses: neoforged/actions/.github/workflows/build-prs.yml@main
+    uses: neoforged/actions/.github/workflows/build-prs.yml@non-headless
     with:
       java: 21
       # --info allows seeing STDOUT of tests
       gradle_tasks: check --info
       jar_compatibility: true
+      headless: false
