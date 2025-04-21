@@ -17,7 +17,7 @@ on:
 
 jobs:
   build:
-    uses: neoforged/actions/.github/workflows/build-prs.yml@non-headless
+    uses: neoforged/actions/.github/workflows/build-prs.yml@main
     with:
       java: 21
       # --info allows seeing STDOUT of tests

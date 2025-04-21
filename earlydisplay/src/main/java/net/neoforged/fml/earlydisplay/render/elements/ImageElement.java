@@ -21,6 +21,7 @@ public class ImageElement extends RenderElement {
     @Override
     public void render(RenderContext context) {
         int color = -1;
+        // April-fools handling
         if ("squir".equals(id())) {
             int fade = (int) (Math.cos(context.animationFrame() * Math.PI / 16) * 16) + 16;
             color = (fade & 0xff) << 24 | 0xffffff;
