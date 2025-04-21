@@ -6,7 +6,7 @@ package net.neoforged.fml.earlydisplay.theme;
  * @param memoryLowColor   The color to use for coloring the bar when resource usage is low.
  *                         The actual color will be interpolated between this and {@code highColor}.
  * @param memoryHighColor  The color to use for coloring the bar when resource usage is high.
- *                         The actual color will be interpolated between this and {@code highColor}.
+ *                         The actual color will be interpolated between this and {@code lowColor}.
  */
 public record ThemeColorScheme(
         ThemeColor screenBackground,
