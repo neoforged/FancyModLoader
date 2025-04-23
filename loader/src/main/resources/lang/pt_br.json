@@ -2,7 +2,7 @@
   "fml.loadingerrorscreen.errorheader": "Erro ao carregar mods\nOcorreu {0,choice,1#1 erro |1<{0} erros} ao carregar os mods",
   "fml.loadingerrorscreen.warningheader": "{0,choice,1#Warning|1<Warnings} enquanto carregava os mods\nOcorreu {0,choice,1#1 warning|1<{0} warnings} ao carregar os mods",
   "fml.modloadingissue.language.missingversion": "O Mod File {101} precisa de um language provider {0}:{1,vr} para carregar\n§7Nós encontramos {2,i18n,fml.messages.artifactversion}",
-  "fml.modloadingissue.language.missing": "Mod File {101} needs language provider {0} to load",
+  "fml.modloadingissue.language.missing": "Arquivo de mod {101} precisa do provedor de linguagem {0} para carregar",
   "fml.modloading.missingclasses": "O Mod File {3} tem mods que foram não foram encontrados",
   "fml.modloading.missingmetadata": "Falta metadata para o modid {3} no mods.toml",
   "fml.modloadingissue.failedtoloadmodclass": "{100,modinfo,name} ({100,modinfo,id}) tem classes com erro ao carregar\n§7{102,exc,msg}",
@@ -75,5 +75,5 @@
   "fml.modloadingissue.enumextender.argument.constant.count_mismatch": "Parameter count {0} does not match argument count {1} of constructor {2} for field {3} in enum {4}, specified by mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.invalid_char": "Invalid character {0} at parameter index {1} for field {2} in enum {3}, specified by mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Unsupported immediate argument type {0} at parameter index {1} for field {2} in enum {3}, specified by mod {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.duplicate": "Found duplicate field {0} for enum {1}, provided by mods {2} and {3}"
+  "fml.modloadingissue.enumextender.duplicate": "Encontrado campo duplicado {0} para enum {1}, causado pelos mods {2} e {3}"
 }
