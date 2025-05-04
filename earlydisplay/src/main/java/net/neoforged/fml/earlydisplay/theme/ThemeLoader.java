@@ -44,11 +44,12 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class ThemeSerializer {
-    private static final Logger LOG = LoggerFactory.getLogger(ThemeSerializer.class);
+public final class ThemeLoader {
+    private static final Logger LOG = LoggerFactory.getLogger(ThemeLoader.class);
     private static final int VERSION = 1;
+    private static final String BUILTIN_PREFIX = "builtin:";
 
-    private ThemeSerializer() {}
+    private ThemeLoader() {}
 
     public static Theme load(Path baseDirectory, String id) throws IOException {
         var sources = new LinkedHashSet<String>();
@@ -62,21 +63,35 @@ public final class ThemeSerializer {
     }
 
     private static JsonObject readThemeTree(Path baseDirectory, String id, Set<String> sources) throws IOException {
-        if (!sources.add(id)) {
-            throw new IllegalStateException("Detected recursion in theme extends clause: " + sources + " -> " + id);
+        if (id.startsWith(BUILTIN_PREFIX)) {
+            id = id.substring(BUILTIN_PREFIX.length());
+            return readBuiltinThemeTree(baseDirectory, id, sources);
         }
 
         String filename = getThemeFilename(id);
-
         Path themePath = baseDirectory.resolve(filename);
-        try (var in = Files.newInputStream(themePath)) {
-            LOG.debug("Loading theme from {}", themePath);
-            return readThemeTree(baseDirectory, in, sources);
-        } catch (NoSuchFileException ignored) {}
+        try (var in = openIfExists(themePath)) {
+            if (in != null) {
+                if (!sources.add(id)) {
+                    throw new IllegalStateException("Detected recursion in theme extends clause: " + sources + " -> " + id);
+                }
+
+                LOG.debug("Loading theme from {}", themePath);
+                return readThemeTree(baseDirectory, in, sources);
+            }
+        }
+
+        return readBuiltinThemeTree(baseDirectory, id, sources);
+    }
+
+    private static JsonObject readBuiltinThemeTree(Path baseDirectory, String id, Set<String> sources) throws IOException {
+        if (!sources.add(BUILTIN_PREFIX + id)) {
+            throw new IllegalStateException("Detected recursion in theme extends clause: " + sources + " -> " + BUILTIN_PREFIX + id);
+        }
 
         // Try to load it from the classpath instead
-        String classpathLocation = "/net/neoforged/fml/earlydisplay/theme/" + filename;
-        try (var in = ThemeSerializer.class.getResourceAsStream(classpathLocation)) {
+        String classpathLocation = "/net/neoforged/fml/earlydisplay/theme/" + getThemeFilename(id);
+        try (var in = ThemeLoader.class.getResourceAsStream(classpathLocation)) {
             LOG.debug("Loading built-in theme {}", id);
             if (in == null) {
                 throw new NoSuchFileException("Failed to find embedded theme resource " + classpathLocation);
@@ -85,7 +100,18 @@ public final class ThemeSerializer {
         }
     }
 
-    private static JsonObject readThemeTree(Path baseDirectory, InputStream in, Set<String> sources) throws IOException {
+    @Nullable
+    private static InputStream openIfExists(Path themePath) throws IOException {
+        try {
+            return Files.newInputStream(themePath);
+        } catch (NoSuchFileException ignored) {
+            return null;
+        }
+    }
+
+    private static JsonObject readThemeTree(Path baseDirectory,
+            InputStream in,
+            Set<String> sources) throws IOException {
         var reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
 
         var themeRoot = createGson(baseDirectory, false).fromJson(reader, JsonObject.class);
@@ -106,7 +132,7 @@ public final class ThemeSerializer {
     private static JsonObject mergeThemeRoot(JsonObject baseThemeRoot, JsonObject themeRoot) {
         return mergeObject(baseThemeRoot, themeRoot, (property, baseValue, value) -> switch (property) {
             case "fonts", "shaders", "colorScheme", "sprites" -> mergeObject(baseValue, value);
-            case "loadingScreen" -> mergeObject(baseValue, value, ThemeSerializer::mergeLoadingScreenProperty);
+            case "loadingScreen" -> mergeObject(baseValue, value, ThemeLoader::mergeLoadingScreenProperty);
             default -> value;
         });
     }

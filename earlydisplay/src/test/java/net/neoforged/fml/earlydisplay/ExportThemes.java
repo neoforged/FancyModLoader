@@ -6,7 +6,7 @@
 package net.neoforged.fml.earlydisplay;
 
 import net.neoforged.fml.earlydisplay.theme.Theme;
-import net.neoforged.fml.earlydisplay.theme.ThemeSerializer;
+import net.neoforged.fml.earlydisplay.theme.ThemeLoader;
 
 public class ExportThemes {
     public static void main(String[] args) throws Exception {
@@ -14,6 +14,6 @@ public class ExportThemes {
 
         var defaultTheme = Theme.createDefaultTheme();
         var builtInThemePath = projectRoot.resolve("src/main/resources/net/neoforged/fml/earlydisplay/theme");
-        ThemeSerializer.save(builtInThemePath.resolve("theme-default.json"), defaultTheme, false);
+        ThemeLoader.save(builtInThemePath.resolve("theme-default.json"), defaultTheme, false);
     }
 }

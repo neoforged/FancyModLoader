@@ -53,6 +53,8 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.Month;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -71,7 +73,8 @@ import net.neoforged.fml.earlydisplay.render.LoadingScreenRenderer;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
-import net.neoforged.fml.earlydisplay.theme.ThemeSerializer;
+import net.neoforged.fml.earlydisplay.theme.ThemeIds;
+import net.neoforged.fml.earlydisplay.theme.ThemeLoader;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.progress.ProgressMeter;
@@ -199,13 +202,19 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     private static Theme loadTheme(boolean darkMode) {
         Path themePath = getThemePath();
-        var themeId = darkMode ? "darkmode" : "default";
+        var themeId = darkMode ? ThemeIds.DARK_MODE : ThemeIds.DEFAULT;
+
+        // Specials
+        var today = LocalDate.now();
+        if (today.getMonth() == Month.APRIL && today.getDayOfMonth() == 1) {
+            themeId = ThemeIds.APRIL_FOOLS;
+        }
 
         Theme theme;
         try {
-            theme = ThemeSerializer.load(themePath, themeId);
+            theme = ThemeLoader.load(themePath, themeId);
         } catch (Exception e) {
-            LOGGER.error("Failed to load theme {}", themePath, e);
+            LOGGER.error("Failed to load theme {} from {}", themeId, themePath, e);
             theme = Theme.createDefaultTheme();
         }
         return theme;
