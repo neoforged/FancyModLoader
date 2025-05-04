@@ -14,8 +14,8 @@ import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 public class EarlyFramebuffer {
     private final int framebuffer;
     private final int texture;
-    private final int width;
-    private final int height;
+    private int width;
+    private int height;
 
     EarlyFramebuffer(int width, int height) {
         this.width = width;
@@ -72,6 +72,15 @@ public class EarlyFramebuffer {
 
     int getTexture() {
         return this.texture;
+    }
+
+    public void resize(int width, int height) {
+        if (this.width != width || this.height != height) {
+            GlState.bindFramebuffer(framebuffer);
+            this.width = width;
+            this.height = height;
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (IntBuffer) null);
+        }
     }
 
     public void close() {

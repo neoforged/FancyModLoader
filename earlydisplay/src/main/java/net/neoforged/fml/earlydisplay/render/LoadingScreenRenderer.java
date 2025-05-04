@@ -5,6 +5,30 @@
 
 package net.neoforged.fml.earlydisplay.render;
 
+import net.neoforged.fml.earlydisplay.render.elements.ImageElement;
+import net.neoforged.fml.earlydisplay.render.elements.LabelElement;
+import net.neoforged.fml.earlydisplay.render.elements.MojangLogoElement;
+import net.neoforged.fml.earlydisplay.render.elements.PerformanceElement;
+import net.neoforged.fml.earlydisplay.render.elements.ProgressBarsElement;
+import net.neoforged.fml.earlydisplay.render.elements.RenderElement;
+import net.neoforged.fml.earlydisplay.render.elements.StartupLogElement;
+import net.neoforged.fml.earlydisplay.theme.Theme;
+import net.neoforged.fml.earlydisplay.theme.elements.ThemeElement;
+import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
+import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
+import org.lwjgl.opengl.GL32C;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
@@ -21,30 +45,10 @@ import static org.lwjgl.opengl.GL11C.GL_VERSION;
 import static org.lwjgl.opengl.GL11C.glClear;
 import static org.lwjgl.opengl.GL11C.glGetString;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import net.neoforged.fml.earlydisplay.render.elements.ImageElement;
-import net.neoforged.fml.earlydisplay.render.elements.LabelElement;
-import net.neoforged.fml.earlydisplay.render.elements.PerformanceElement;
-import net.neoforged.fml.earlydisplay.render.elements.ProgressBarsElement;
-import net.neoforged.fml.earlydisplay.render.elements.RenderElement;
-import net.neoforged.fml.earlydisplay.render.elements.StartupLogElement;
-import net.neoforged.fml.earlydisplay.theme.Theme;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeElement;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
-import org.lwjgl.opengl.GL32C;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class LoadingScreenRenderer implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoadingScreenRenderer.class);
+    public static final int LAYOUT_WIDTH = 854;
+    public static final int LAYOUT_HEIGHT = 480;
 
     private final long glfwWindow;
     private final MaterializedTheme theme;
@@ -74,10 +78,10 @@ public class LoadingScreenRenderer implements AutoCloseable {
      * Nothing fancy, we just want to draw and render text.
      */
     public LoadingScreenRenderer(ScheduledExecutorService scheduler,
-            long glfwWindow,
-            Theme theme,
-            String mcVersion,
-            String neoForgeVersion) {
+                                 long glfwWindow,
+                                 Theme theme,
+                                 String mcVersion,
+                                 String neoForgeVersion) {
         this.glfwWindow = glfwWindow;
         this.mcVersion = mcVersion;
         this.neoForgeVersion = neoForgeVersion;
@@ -96,7 +100,7 @@ public class LoadingScreenRenderer implements AutoCloseable {
         this.elements = loadElements();
 
         // we always render to an 854x480 texture and then fit that to the screen
-        framebuffer = new EarlyFramebuffer(854, 480);
+        framebuffer = new EarlyFramebuffer(LAYOUT_WIDTH, LAYOUT_HEIGHT);
 
         // Set the clear color based on the colour scheme
         var background = theme.colorScheme().screenBackground();
@@ -115,26 +119,33 @@ public class LoadingScreenRenderer implements AutoCloseable {
         var elements = new ArrayList<RenderElement>();
 
         var loadingScreen = theme.theme().loadingScreen();
-        if (!loadingScreen.performance().visibility()) {
+        if (loadingScreen.performance().visible()) {
             elements.add(new PerformanceElement(loadingScreen.performance(), theme));
         }
-        if (!loadingScreen.startupLog().visibility()) {
+        if (loadingScreen.startupLog().visible()) {
             elements.add(new StartupLogElement(loadingScreen.startupLog(), theme));
         }
-        if (!loadingScreen.progressBars().visibility()) {
+        if (loadingScreen.progressBars().visible()) {
             elements.add(new ProgressBarsElement(loadingScreen.progressBars(), theme));
+        }
+        if (loadingScreen.mojangLogo().visible()) {
+            elements.add(new MojangLogoElement(loadingScreen.mojangLogo(), theme));
         }
 
         // Add decorative elements
-        for (var element : theme.theme().decoration()) {
-            elements.add(loadElement(element));
+        for (var entry : loadingScreen.decoration().entrySet()) {
+            var element = entry.getValue();
+            if (!element.visible()) {
+                continue; // Likely reconfigured in an extended theme
+            }
+            elements.add(loadElement(entry.getKey(), element));
         }
 
         return elements;
     }
 
-    private RenderElement loadElement(ThemeElement element) {
-        return switch (element) {
+    private RenderElement loadElement(String id, ThemeElement element) {
+        var renderElement = switch (element) {
             case ThemeImageElement imageElement -> new ImageElement(imageElement, theme);
 
             case ThemeLabelElement labelElement -> new LabelElement(
@@ -143,8 +154,11 @@ public class LoadingScreenRenderer implements AutoCloseable {
                     Map.of(
                             "version", mcVersion + "-" + neoForgeVersion.split("-")[0]));
 
-            default -> throw new IllegalStateException("Unexpected theme element " + element + " of type " + element.getClass());
+            default ->
+                    throw new IllegalStateException("Unexpected theme element " + element + " of type " + element.getClass());
         };
+        renderElement.setId(id);
+        return renderElement;
     }
 
     public void stopAutomaticRendering() throws TimeoutException, InterruptedException {
@@ -178,14 +192,12 @@ public class LoadingScreenRenderer implements AutoCloseable {
             GlState.readFromOpenGL();
             var backup = GlState.createSnapshot();
 
-            framebuffer.activate();
-            GlState.viewport(0, 0, framebuffer.width(), framebuffer.height());
-            renderToFramebuffer();
-            framebuffer.deactivate();
-
             int[] w = new int[1];
             int[] h = new int[1];
             glfwGetFramebufferSize(glfwWindow, w, h);
+            framebuffer.resize(w[0], h[0]);
+
+            renderToFramebuffer();
 
             GlState.viewport(0, 0, w[0], h[0]);
             framebuffer.blitToScreen(this.theme.theme().colorScheme().screenBackground(), w[0], h[0]);
@@ -207,8 +219,8 @@ public class LoadingScreenRenderer implements AutoCloseable {
         GlState.readFromOpenGL();
         var backup = GlState.createSnapshot();
 
-        GlState.viewport(0, 0, framebuffer.width(), framebuffer.height());
         framebuffer.activate();
+        GlState.viewport(0, 0, framebuffer.width(), framebuffer.height());
 
         // Clear the screen to our color
         var background = theme.theme().colorScheme().screenBackground();
@@ -220,11 +232,11 @@ public class LoadingScreenRenderer implements AutoCloseable {
         for (var shader : theme.shaders().values()) {
             shader.activate();
             if (shader.hasUniform(ElementShader.UNIFORM_SCREEN_SIZE)) {
-                shader.setUniform2f(ElementShader.UNIFORM_SCREEN_SIZE, framebuffer.width(), framebuffer.height());
+                shader.setUniform2f(ElementShader.UNIFORM_SCREEN_SIZE, LAYOUT_WIDTH, LAYOUT_HEIGHT);
             }
         }
 
-        var context = new RenderContext(buffer, theme, framebuffer.width(), framebuffer.height(), animationFrame);
+        var context = new RenderContext(buffer, theme, LAYOUT_WIDTH, LAYOUT_HEIGHT, animationFrame);
 
         for (var element : this.elements) {
             element.render(context);

@@ -500,8 +500,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     public void addMojangTexture(final int textureId) {
-// TODO        this.elements.add(0, RenderElement.mojang(textureId, framecount));
-//        this.elements.get(0).retire(framecount + 1);
     }
 
     public void close() {

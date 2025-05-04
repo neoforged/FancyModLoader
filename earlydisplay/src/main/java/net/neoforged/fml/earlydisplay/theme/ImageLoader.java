@@ -5,6 +5,7 @@
 
 package net.neoforged.fml.earlydisplay.theme;
 
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
@@ -16,7 +17,10 @@ import org.slf4j.LoggerFactory;
  * Theme images will refer to a resource their content is loaded from, this is expected to be a PNG image.
  */
 final class ImageLoader {
+    private static final String BROKEN_TEXTURE_NAME = "broken texture";
+
     private static final int BROKEN_TEXTURE_DIMENSIONS = 16;
+
     static final Logger LOGGER = LoggerFactory.getLogger(ImageLoader.class);
 
     /**
@@ -24,21 +28,39 @@ final class ImageLoader {
      * Note that if the image fails to load for any reason, a dummy "missing" texture is returned instead.
      */
     static UncompressedImage loadImage(ThemeResource resource) {
+        return switch (tryLoadImage(resource)) {
+            case ImageLoadResult.Success(UncompressedImage image) -> image;
+            case ImageLoadResult.Error(Exception exception) -> {
+                LOGGER.error("Failed to load theme image {}", resource, exception);
+                yield createBrokenImage();
+            }
+        };
+    }
+
+    /**
+     * Load the image resource, and decompress it into native memory for use with OpenGL and other native APIs.
+     * Note that if the image fails to load for any reason, a dummy "missing" texture is returned instead.
+     */
+    static ImageLoadResult tryLoadImage(ThemeResource resource) {
         try (var buffer = resource.toNativeBuffer()) {
             var width = new int[1];
             var height = new int[1];
             var channels = new int[1];
             var decodedImage = STBImage.stbi_load_from_memory(buffer.buffer(), width, height, channels, 4);
             // TODO: Handle image decoding error
-            return new UncompressedImage(resource.toString(),
+            return new ImageLoadResult.Success(new UncompressedImage(resource.toString(),
                     resource,
                     new NativeBuffer(decodedImage, STBImage::stbi_image_free),
                     width[0],
-                    height[0]);
+                    height[0]));
         } catch (Exception e) {
-            LOGGER.error("Failed to load theme image {}", resource, e);
-            return createBrokenImage();
+            return new ImageLoadResult.Error(e);
         }
+    }
+
+    public sealed interface ImageLoadResult {
+        record Success(UncompressedImage image) implements ImageLoadResult {}
+        record Error(Exception exception) implements ImageLoadResult {}
     }
 
     private static UncompressedImage createBrokenImage() {
@@ -57,12 +79,13 @@ final class ImageLoader {
 
         var nativeBuffer = new NativeBuffer(pixelData, MemoryUtil::memFree);
         return new UncompressedImage(
-                "broken texture",
+                BROKEN_TEXTURE_NAME,
                 null,
                 nativeBuffer,
                 BROKEN_TEXTURE_DIMENSIONS,
                 BROKEN_TEXTURE_DIMENSIONS);
     }
 
-    private ImageLoader() {}
+    private ImageLoader() {
+    }
 }

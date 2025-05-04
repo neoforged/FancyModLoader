@@ -35,7 +35,7 @@ import org.lwjgl.system.MemoryUtil;
  *
  * @author covers1624
  */
-public class SimpleBufferBuilder implements Closeable {
+class SimpleBufferBuilder implements Closeable {
     private static final MemoryUtil.MemoryAllocator ALLOCATOR = MemoryUtil.getAllocator(false);
 
     private static final int[] VERTEX_ARRAYS = new int[Format.values().length];

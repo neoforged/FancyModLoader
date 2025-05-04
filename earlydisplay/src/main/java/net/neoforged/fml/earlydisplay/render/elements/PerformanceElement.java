@@ -33,6 +33,7 @@ public class PerformanceElement extends RenderElement {
 
     public PerformanceElement(ThemePerformanceElement settings, MaterializedTheme theme) {
         super(settings, theme);
+        setId("performance");
 
         osBean = ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
         memoryBean = ManagementFactory.getMemoryMXBean();

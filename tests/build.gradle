@@ -3,7 +3,10 @@ plugins {
 }
 
 neoForge {
-    version = test_neoforge_version
+    enable {
+        version = test_neoforge_version
+        enabledSourceSets = [sourceSets.test]
+    }
     runs {
         client {
             client()
@@ -85,4 +88,8 @@ configurations.configureEach {
         substitute module("net.neoforged.fancymodloader:loader") using project(":loader")
         substitute module("net.neoforged.fancymodloader:earlydisplay") using project(":earlydisplay")
     }
+}
+
+dependencies {
+    testImplementation project(":earlydisplay")
 }

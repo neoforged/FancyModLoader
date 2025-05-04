@@ -10,14 +10,4 @@ package net.neoforged.fml.earlydisplay.theme.elements;
  * have no specific functionality.
  */
 public abstract class ThemeDecorativeElement extends ThemeElement {
-    private String id;
-
-    @Override
-    public String id() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
 }

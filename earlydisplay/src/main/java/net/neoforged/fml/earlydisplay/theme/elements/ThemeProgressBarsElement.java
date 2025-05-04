@@ -16,11 +16,6 @@ public class ThemeProgressBarsElement extends ThemeElement {
      */
     private int barGap;
 
-    @Override
-    public String id() {
-        return "progressBars";
-    }
-
     public int labelGap() {
         return labelGap;
     }
