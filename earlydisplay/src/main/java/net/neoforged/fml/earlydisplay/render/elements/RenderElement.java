@@ -129,8 +129,7 @@ public abstract class RenderElement implements AutoCloseable {
     }
 
     @Override
-    public void close() {
-    }
+    public void close() {}
 
     @Override
     public String toString() {

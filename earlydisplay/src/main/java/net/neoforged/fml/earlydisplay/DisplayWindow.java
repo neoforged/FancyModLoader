@@ -499,8 +499,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         mainProgress.complete();
     }
 
-    public void addMojangTexture(final int textureId) {
-    }
+    public void addMojangTexture(final int textureId) {}
 
     public void close() {
         // Close the Render Scheduler thread

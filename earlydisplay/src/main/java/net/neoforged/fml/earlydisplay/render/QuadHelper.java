@@ -10,20 +10,19 @@ import net.neoforged.fml.earlydisplay.util.Bounds;
 
 class QuadHelper {
     public static void fillSprite(SimpleBufferBuilder buffer,
-                                  Texture texture,
-                                  float x,
-                                  float y,
-                                  float z,
-                                  float width,
-                                  float height,
-                                  int color,
-                                  SpriteFillDirection fillDirection,
-                                  int animationFrame,
-                                  float srcU0,
-                                  float srcU1,
-                                  float srcV0,
-                                  float srcV1
-    ) {
+            Texture texture,
+            float x,
+            float y,
+            float z,
+            float width,
+            float height,
+            int color,
+            SpriteFillDirection fillDirection,
+            int animationFrame,
+            float srcU0,
+            float srcU1,
+            float srcV0,
+            float srcV1) {
         // Too large values for width / height cause immediate crashes of the VM due to graphics driver bugs<
         // These maximum values are picked without too much thought.
         width = Math.min(65535, width);
@@ -56,23 +55,22 @@ class QuadHelper {
             case TextureScaling.NineSlice nineSlice -> {
                 addTiledNineSlice(buffer, x, y, z, width, height, color, nineSlice, u0, u1, v0, v1);
             }
-            default -> {
-            }
+            default -> {}
         }
     }
 
     private static void addTiledNineSlice(SimpleBufferBuilder buffer,
-                                          float x,
-                                          float y,
-                                          float z,
-                                          float width,
-                                          float height,
-                                          int color,
-                                          TextureScaling.NineSlice nineSlice,
-                                          float u0,
-                                          float u1,
-                                          float v0,
-                                          float v1) {
+            float x,
+            float y,
+            float z,
+            float width,
+            float height,
+            int color,
+            TextureScaling.NineSlice nineSlice,
+            float u0,
+            float u1,
+            float v0,
+            float v1) {
         var leftWidth = Math.min(nineSlice.left(), width / 2);
         var rightWidth = Math.min(nineSlice.right(), width / 2);
         var topHeight = Math.min(nineSlice.top(), height / 2);
@@ -137,13 +135,13 @@ class QuadHelper {
     }
 
     private static void fillTiled(SimpleBufferBuilder buffer, float x, float y, float z, float width, float height, int color, float destTileWidth,
-                                  float destTileHeight, float u0, float u1, float v0, float v1) {
+            float destTileHeight, float u0, float u1, float v0, float v1) {
         fillTiled(buffer, x, y, z, width, height, color, destTileWidth, destTileHeight, u0, u1, v0, v1,
                 SpriteFillDirection.TOP_TO_BOTTOM);
     }
 
     private static void fillTiled(SimpleBufferBuilder buffer, float x, float y, float z, float width, float height, int color, float destTileWidth,
-                                  float destTileHeight, float u0, float u1, float v0, float v1, SpriteFillDirection fillDirection) {
+            float destTileHeight, float u0, float u1, float v0, float v1, SpriteFillDirection fillDirection) {
         if (destTileWidth <= 0 || destTileHeight <= 0) {
             return;
         }
@@ -183,7 +181,7 @@ class QuadHelper {
     }
 
     public static void addQuad(SimpleBufferBuilder buffer, float x, float y, float z, float width, float height, int color, float minU, float maxU,
-                               float minV, float maxV) {
+            float minV, float maxV) {
         if (width < 0 || height < 0) {
             return;
         }

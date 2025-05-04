@@ -5,10 +5,9 @@
 
 package net.neoforged.fml.earlydisplay.theme.elements;
 
+import java.util.Objects;
 import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.util.StyleLength;
-
-import java.util.Objects;
 
 public abstract class ThemeElement {
     private boolean visible = true;

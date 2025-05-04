@@ -5,13 +5,6 @@
 
 package net.neoforged.fml.earlydisplay.render;
 
-import net.neoforged.fml.earlydisplay.theme.AnimationMetadata;
-import net.neoforged.fml.earlydisplay.theme.TextureScaling;
-import net.neoforged.fml.earlydisplay.theme.ThemeTexture;
-import net.neoforged.fml.earlydisplay.theme.UncompressedImage;
-import org.jetbrains.annotations.Nullable;
-import org.lwjgl.opengl.GL32C;
-
 import static org.lwjgl.opengl.GL11C.GL_LINEAR;
 import static org.lwjgl.opengl.GL11C.GL_NEAREST;
 import static org.lwjgl.opengl.GL11C.GL_RGBA;
@@ -27,9 +20,16 @@ import static org.lwjgl.opengl.GL11C.glTexParameteri;
 import static org.lwjgl.opengl.GL12C.GL_CLAMP_TO_EDGE;
 import static org.lwjgl.opengl.GL13C.GL_TEXTURE0;
 
+import net.neoforged.fml.earlydisplay.theme.AnimationMetadata;
+import net.neoforged.fml.earlydisplay.theme.TextureScaling;
+import net.neoforged.fml.earlydisplay.theme.ThemeTexture;
+import net.neoforged.fml.earlydisplay.theme.UncompressedImage;
+import org.jetbrains.annotations.Nullable;
+import org.lwjgl.opengl.GL32C;
+
 public record Texture(int textureId, int physicalWidth, int physicalHeight,
-                      TextureScaling scaling,
-                      @Nullable AnimationMetadata animationMetadata) implements AutoCloseable {
+        TextureScaling scaling,
+        @Nullable AnimationMetadata animationMetadata) implements AutoCloseable {
     public int width() {
         return scaling.width();
     }
@@ -51,8 +51,7 @@ public record Texture(int textureId, int physicalWidth, int physicalHeight,
             UncompressedImage image,
             String debugName,
             TextureScaling scaling,
-            @Nullable AnimationMetadata animation
-    ) {
+            @Nullable AnimationMetadata animation) {
         var texId = glGenTextures();
         GlState.activeTexture(GL_TEXTURE0);
         GlState.bindTexture2D(texId);

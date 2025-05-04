@@ -5,7 +5,6 @@
 
 package net.neoforged.fml.earlydisplay.theme;
 
-import org.jetbrains.annotations.Nullable;
 import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
@@ -60,6 +59,7 @@ final class ImageLoader {
 
     public sealed interface ImageLoadResult {
         record Success(UncompressedImage image) implements ImageLoadResult {}
+
         record Error(Exception exception) implements ImageLoadResult {}
     }
 
@@ -86,6 +86,5 @@ final class ImageLoader {
                 BROKEN_TEXTURE_DIMENSIONS);
     }
 
-    private ImageLoader() {
-    }
+    private ImageLoader() {}
 }

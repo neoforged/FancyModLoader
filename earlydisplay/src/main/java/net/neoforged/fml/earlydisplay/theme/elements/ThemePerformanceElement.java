@@ -5,5 +5,4 @@
 
 package net.neoforged.fml.earlydisplay.theme.elements;
 
-public class ThemePerformanceElement extends ThemeElement {
-}
+public class ThemePerformanceElement extends ThemeElement {}

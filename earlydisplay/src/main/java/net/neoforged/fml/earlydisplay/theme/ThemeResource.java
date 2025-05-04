@@ -5,9 +5,8 @@
 
 package net.neoforged.fml.earlydisplay.theme;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
+import org.jetbrains.annotations.Nullable;
 
 public sealed interface ThemeResource permits ClasspathResource, FileResource {
     /**
@@ -31,7 +30,7 @@ public sealed interface ThemeResource permits ClasspathResource, FileResource {
      */
     @Nullable
     default UncompressedImage tryLoadAsImage() {
-        return switch(ImageLoader.tryLoadImage(this)) {
+        return switch (ImageLoader.tryLoadImage(this)) {
             case ImageLoader.ImageLoadResult.Error error -> null;
             case ImageLoader.ImageLoadResult.Success(UncompressedImage image) -> image;
         };

@@ -5,12 +5,11 @@
 
 package net.neoforged.fml.earlydisplay.theme;
 
+import java.util.Map;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeDecorativeElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemePerformanceElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeProgressBarsElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeStartupLogElement;
-
-import java.util.Map;
 
 /**
  * Describes the themable properties of the loading screen.
@@ -20,5 +19,4 @@ public record ThemeLoadingScreen(
         ThemeProgressBarsElement progressBars,
         ThemeStartupLogElement startupLog,
         ThemeMojangLogoElement mojangLogo,
-        Map<String, ThemeDecorativeElement> decoration) {
-}
+        Map<String, ThemeDecorativeElement> decoration) {}

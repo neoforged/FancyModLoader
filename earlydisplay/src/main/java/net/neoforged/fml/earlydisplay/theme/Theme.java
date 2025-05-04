@@ -5,14 +5,13 @@
 
 package net.neoforged.fml.earlydisplay.theme;
 
+import java.util.Map;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemePerformanceElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeProgressBarsElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeStartupLogElement;
 import net.neoforged.fml.earlydisplay.util.StyleLength;
-
-import java.util.Map;
 
 /**
  * Defines a theme for the early display screen.
@@ -36,7 +35,6 @@ public record Theme(
     public static final String SHADER_GUI = "gui";
     public static final String SHADER_FONT = "font";
     public static final String SHADER_COLOR = "color";
-
     public static Theme createDefaultTheme() {
         var sprites = new ThemeSprites(
                 new ThemeTexture(
@@ -109,8 +107,7 @@ public record Theme(
                         Map.of(
                                 "squir", squir,
                                 "fox", fox,
-                                "version", forgeVersion
-                        )));
+                                "version", forgeVersion)));
     }
 
     private static ClasspathResource classpathResource(String name) {

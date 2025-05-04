@@ -5,30 +5,6 @@
 
 package net.neoforged.fml.earlydisplay.render;
 
-import net.neoforged.fml.earlydisplay.render.elements.ImageElement;
-import net.neoforged.fml.earlydisplay.render.elements.LabelElement;
-import net.neoforged.fml.earlydisplay.render.elements.MojangLogoElement;
-import net.neoforged.fml.earlydisplay.render.elements.PerformanceElement;
-import net.neoforged.fml.earlydisplay.render.elements.ProgressBarsElement;
-import net.neoforged.fml.earlydisplay.render.elements.RenderElement;
-import net.neoforged.fml.earlydisplay.render.elements.StartupLogElement;
-import net.neoforged.fml.earlydisplay.theme.Theme;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeElement;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
-import org.lwjgl.opengl.GL32C;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
@@ -44,6 +20,29 @@ import static org.lwjgl.opengl.GL11C.GL_VENDOR;
 import static org.lwjgl.opengl.GL11C.GL_VERSION;
 import static org.lwjgl.opengl.GL11C.glClear;
 import static org.lwjgl.opengl.GL11C.glGetString;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import net.neoforged.fml.earlydisplay.render.elements.ImageElement;
+import net.neoforged.fml.earlydisplay.render.elements.LabelElement;
+import net.neoforged.fml.earlydisplay.render.elements.MojangLogoElement;
+import net.neoforged.fml.earlydisplay.render.elements.PerformanceElement;
+import net.neoforged.fml.earlydisplay.render.elements.ProgressBarsElement;
+import net.neoforged.fml.earlydisplay.render.elements.RenderElement;
+import net.neoforged.fml.earlydisplay.render.elements.StartupLogElement;
+import net.neoforged.fml.earlydisplay.theme.Theme;
+import net.neoforged.fml.earlydisplay.theme.elements.ThemeElement;
+import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
+import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
+import org.lwjgl.opengl.GL32C;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LoadingScreenRenderer implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoadingScreenRenderer.class);
@@ -78,10 +77,10 @@ public class LoadingScreenRenderer implements AutoCloseable {
      * Nothing fancy, we just want to draw and render text.
      */
     public LoadingScreenRenderer(ScheduledExecutorService scheduler,
-                                 long glfwWindow,
-                                 Theme theme,
-                                 String mcVersion,
-                                 String neoForgeVersion) {
+            long glfwWindow,
+            Theme theme,
+            String mcVersion,
+            String neoForgeVersion) {
         this.glfwWindow = glfwWindow;
         this.mcVersion = mcVersion;
         this.neoForgeVersion = neoForgeVersion;
@@ -154,8 +153,7 @@ public class LoadingScreenRenderer implements AutoCloseable {
                     Map.of(
                             "version", mcVersion + "-" + neoForgeVersion.split("-")[0]));
 
-            default ->
-                    throw new IllegalStateException("Unexpected theme element " + element + " of type " + element.getClass());
+            default -> throw new IllegalStateException("Unexpected theme element " + element + " of type " + element.getClass());
         };
         renderElement.setId(id);
         return renderElement;

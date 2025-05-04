@@ -7,5 +7,4 @@ package net.neoforged.fml.earlydisplay.theme;
 
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeElement;
 
-public class ThemeMojangLogoElement extends ThemeElement {
-}
+public class ThemeMojangLogoElement extends ThemeElement {}

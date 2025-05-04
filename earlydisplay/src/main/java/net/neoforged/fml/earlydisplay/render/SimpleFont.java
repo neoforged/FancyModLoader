@@ -7,7 +7,6 @@ package net.neoforged.fml.earlydisplay.render;
 
 import static org.lwjgl.opengl.GL11C.GL_NEAREST;
 import static org.lwjgl.opengl.GL32C.GL_CLAMP_TO_EDGE;
-import static org.lwjgl.opengl.GL32C.GL_LINEAR;
 import static org.lwjgl.opengl.GL32C.GL_RED;
 import static org.lwjgl.opengl.GL32C.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL32C.GL_TEXTURE_2D;

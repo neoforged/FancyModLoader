@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-import net.neoforged.fml.earlydisplay.DisplayWindow;
-import net.neoforged.fml.loading.FMLPaths;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import net.neoforged.fml.earlydisplay.DisplayWindow;
+import net.neoforged.fml.loading.FMLPaths;
 
 public class TestEarlyDisplay {
     public static void main(String[] args) throws Exception {

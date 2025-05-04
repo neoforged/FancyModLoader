@@ -5,13 +5,12 @@
 
 package net.neoforged.fml.earlydisplay.render;
 
+import static org.lwjgl.opengl.GL13C.GL_TEXTURE0;
+
+import java.util.List;
 import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 import net.neoforged.fml.earlydisplay.util.Bounds;
-
-import java.util.List;
-
-import static org.lwjgl.opengl.GL13C.GL_TEXTURE0;
 
 public record RenderContext(
         SimpleBufferBuilder sharedBuffer,
@@ -42,16 +41,15 @@ public record RenderContext(
     }
 
     public void blitTextureRegion(Texture texture,
-                                  float x,
-                                  float y,
-                                  float width,
-                                  float height,
-                                  int color,
-                                  float u0,
-                                  float u1,
-                                  float v0,
-                                  float v1
-    ) {
+            float x,
+            float y,
+            float width,
+            float height,
+            int color,
+            float u0,
+            float u1,
+            float v0,
+            float v1) {
         GlState.activeTexture(GL_TEXTURE0);
         GlState.bindTexture2D(texture.textureId());
 
@@ -74,8 +72,7 @@ public record RenderContext(
                 u0,
                 u1,
                 v0,
-                v1
-        );
+                v1);
 
         sharedBuffer.draw();
     }
