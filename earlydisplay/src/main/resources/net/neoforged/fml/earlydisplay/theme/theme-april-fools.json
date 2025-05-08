@@ -1,0 +1,24 @@
+{
+  "extends": "builtin:default",
+  "loadingScreen": {
+    "decoration": {
+      "squir": {
+        "type": "image",
+        "texture": {
+          "resource": "squirrel.png",
+          "scaling": {
+            "type": "stretch",
+            "width": 112,
+            "height": 112,
+            "linearScaling": true
+          }
+        },
+        "visible": true,
+        "maintainAspectRatio": true,
+        "centerHorizontally": false,
+        "centerVertically": false,
+        "font": "default"
+      }
+    }
+  }
+}

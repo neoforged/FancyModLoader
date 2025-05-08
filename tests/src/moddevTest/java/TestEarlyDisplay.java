@@ -12,7 +12,7 @@ import net.neoforged.fml.loading.FMLPaths;
 public class TestEarlyDisplay {
     public static void main(String[] args) throws Exception {
         System.setProperty("java.awt.headless", "true");
-        System.setProperty("fml.earlyWindowDarkMode", "true");
+        //System.setProperty("fml.earlyWindowDarkMode", "true");
 
         FMLPaths.loadAbsolutePaths(findProjectRoot());
 

@@ -48,9 +48,6 @@ public record Theme(
                         new TextureScaling.NineSlice(40, 20, 4, 4, 4, 4, true, true, false)),
                 false);
 
-        var squir = new ThemeImageElement();
-        squir.setTexture(new ThemeTexture(classpathResource("squirrel.png"), new TextureScaling.Stretch(112, 112, true)));
-
         var startupLog = new ThemeStartupLogElement();
         startupLog.setLeft(StyleLength.ofPoints(10));
         startupLog.setBottom(StyleLength.ofPoints(10));
@@ -105,7 +102,6 @@ public record Theme(
                         startupLog,
                         mojangLogo,
                         Map.of(
-                                "squir", squir,
                                 "fox", fox,
                                 "version", forgeVersion)));
     }

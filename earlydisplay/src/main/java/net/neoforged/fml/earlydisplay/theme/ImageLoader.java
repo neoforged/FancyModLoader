@@ -10,6 +10,10 @@ import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 /**
  * Represents an image referenced from a theme.
  * <p>
@@ -42,6 +46,8 @@ final class ImageLoader {
      */
     static ImageLoadResult tryLoadImage(ThemeResource resource) {
         try (var buffer = resource.toNativeBuffer()) {
+            validateHeader(buffer.buffer().slice());
+
             var width = new int[1];
             var height = new int[1];
             var channels = new int[1];
@@ -57,10 +63,27 @@ final class ImageLoader {
         }
     }
 
-    public sealed interface ImageLoadResult {
-        record Success(UncompressedImage image) implements ImageLoadResult {}
+    // Taken from Mojangs code to add validation that STB doesnt seem to have.
+    private static void validateHeader(ByteBuffer buffer) throws IOException {
+        ByteOrder byteorder = buffer.order();
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        if (buffer.getLong(0) != 0x89504e470d0a1a0aL) {
+            throw new IOException("Bad PNG Signature");
+        } else if (buffer.getInt(8) != 13) {
+            throw new IOException("Bad length for IHDR chunk!");
+        } else if (buffer.getInt(12) != 0x49484452) {
+            throw new IOException("Bad type for IHDR chunk!");
+        } else {
+            buffer.order(byteorder);
+        }
+    }
 
-        record Error(Exception exception) implements ImageLoadResult {}
+    public sealed interface ImageLoadResult {
+        record Success(UncompressedImage image) implements ImageLoadResult {
+        }
+
+        record Error(Exception exception) implements ImageLoadResult {
+        }
     }
 
     private static UncompressedImage createBrokenImage() {
@@ -86,5 +109,6 @@ final class ImageLoader {
                 BROKEN_TEXTURE_DIMENSIONS);
     }
 
-    private ImageLoader() {}
+    private ImageLoader() {
+    }
 }

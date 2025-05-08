@@ -145,23 +145,6 @@
         "centerHorizontally": false,
         "centerVertically": false,
         "font": "default"
-      },
-      "squir": {
-        "type": "image",
-        "texture": {
-          "resource": "classpath:net/neoforged/fml/earlydisplay/theme/squirrel.png",
-          "scaling": {
-            "type": "stretch",
-            "width": 112,
-            "height": 112,
-            "linearScaling": true
-          }
-        },
-        "visible": true,
-        "maintainAspectRatio": true,
-        "centerHorizontally": false,
-        "centerVertically": false,
-        "font": "default"
       }
     }
   }
