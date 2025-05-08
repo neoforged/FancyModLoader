@@ -40,6 +40,7 @@ import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
+import net.neoforged.fml.earlydisplay.util.Bounds;
 import org.lwjgl.opengl.GL32C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -218,6 +219,10 @@ public class LoadingScreenRenderer implements AutoCloseable {
         var backup = GlState.createSnapshot();
 
         framebuffer.activate();
+
+        // Fit the layout rectangle into the screen while maintaining aspect ratio
+        var b = new Bounds(0, 0, LAYOUT_WIDTH, LAYOUT_HEIGHT);
+
         GlState.viewport(0, 0, framebuffer.width(), framebuffer.height());
 
         // Clear the screen to our color
