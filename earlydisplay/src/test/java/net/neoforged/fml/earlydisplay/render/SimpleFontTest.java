@@ -8,7 +8,7 @@ package net.neoforged.fml.earlydisplay.render;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
-import net.neoforged.fml.earlydisplay.theme.ClasspathResource;
+import net.neoforged.fml.earlydisplay.theme.ThemeResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,7 @@ class SimpleFontTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        font = new SimpleFont(new ClasspathResource("net/neoforged/fml/earlydisplay/theme/Monocraft.ttf"), 1);
+        font = new SimpleFont(new ThemeResource("Monocraft.ttf"), 1);
     }
 
     @AfterEach

@@ -5,12 +5,15 @@
 
 package net.neoforged.fml.earlydisplay.render.elements;
 
+import java.io.IOException;
 import net.neoforged.fml.earlydisplay.render.MaterializedTheme;
 import net.neoforged.fml.earlydisplay.render.RenderContext;
 import net.neoforged.fml.earlydisplay.render.Texture;
-import net.neoforged.fml.earlydisplay.theme.ClasspathResource;
+import net.neoforged.fml.earlydisplay.theme.ImageLoader;
+import net.neoforged.fml.earlydisplay.theme.NativeBuffer;
 import net.neoforged.fml.earlydisplay.theme.TextureScaling;
 import net.neoforged.fml.earlydisplay.theme.ThemeMojangLogoElement;
+import net.neoforged.fml.earlydisplay.theme.UncompressedImage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,13 +34,16 @@ public class MojangLogoElement extends RenderElement {
 
         Texture mojangLogo = null;
         for (var logoPath : LOGO_PATHS) {
-            try (var image = new ClasspathResource(logoPath).tryLoadAsImage()) {
-                if (image == null) {
-                    LOGGER.debug("Failed to load Mojang logo from {}", logoPath);
-                    continue;
+            try (var buffer = NativeBuffer.loadFromClasspath(logoPath)) {
+                var loadResult = ImageLoader.tryLoadImage("mojang logo", null, buffer);
+                if (loadResult instanceof ImageLoader.Result.Error(Exception exception)) {
+                    LOGGER.debug("Failed to load Mojang logo from {}: {}", logoPath, exception);
+                } else if (loadResult instanceof ImageLoader.Result.Success(UncompressedImage image)) {
+                    mojangLogo = Texture.create(image, "mojang logo", new TextureScaling.Stretch(512, 128, true), null);
+                    break;
                 }
-
-                mojangLogo = Texture.create(image, "mojang logo", new TextureScaling.Stretch(512, 128, true), null);
+            } catch (IOException e) {
+                LOGGER.debug("Failed to load Mojang logo from {}", logoPath);
             }
         }
         this.mojangLogo = mojangLogo;
@@ -45,6 +51,10 @@ public class MojangLogoElement extends RenderElement {
 
     @Override
     public void render(RenderContext context) {
+        if (this.mojangLogo == null) {
+            return;
+        }
+
         var bounds = resolveBounds(context.availableWidth(), context.availableHeight(), 512, 128);
 
         float x0 = bounds.left();

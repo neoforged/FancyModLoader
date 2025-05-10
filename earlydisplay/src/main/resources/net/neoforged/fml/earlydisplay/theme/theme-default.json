@@ -1,21 +1,21 @@
 {
   "version": 1,
-  "windowIcon": "classpath:net/neoforged/fml/earlydisplay/theme/neoforged_icon.png",
+  "windowIcon": "neoforged_icon.png",
   "fonts": {
-    "default": "classpath:net/neoforged/fml/earlydisplay/theme/Monocraft.ttf"
+    "default": "Monocraft.ttf"
   },
   "shaders": {
     "color": {
-      "vertexShader": "classpath:net/neoforged/fml/earlydisplay/gui.vert",
-      "fragmentShader": "classpath:net/neoforged/fml/earlydisplay/gui_color.frag"
+      "vertexShader": "gui.vert",
+      "fragmentShader": "gui_color.frag"
     },
     "font": {
-      "vertexShader": "classpath:net/neoforged/fml/earlydisplay/gui.vert",
-      "fragmentShader": "classpath:net/neoforged/fml/earlydisplay/gui_font.frag"
+      "vertexShader": "gui.vert",
+      "fragmentShader": "gui_font.frag"
     },
     "gui": {
-      "vertexShader": "classpath:net/neoforged/fml/earlydisplay/gui.vert",
-      "fragmentShader": "classpath:net/neoforged/fml/earlydisplay/gui.frag"
+      "vertexShader": "gui.vert",
+      "fragmentShader": "gui.frag"
     }
   },
   "colorScheme": {
@@ -26,7 +26,7 @@
   },
   "sprites": {
     "progressBarBackground": {
-      "resource": "classpath:net/neoforged/fml/earlydisplay/theme/progress_bar_bg.png",
+      "resource": "progress_bar_bg.png",
       "scaling": {
         "type": "nine_slice",
         "width": 40,
@@ -41,7 +41,7 @@
       }
     },
     "progressBarForeground": {
-      "resource": "classpath:net/neoforged/fml/earlydisplay/theme/progress_bar_fg.png",
+      "resource": "progress_bar_fg.png",
       "scaling": {
         "type": "nine_slice",
         "width": 40,
@@ -56,7 +56,7 @@
       }
     },
     "progressBarIndeterminate": {
-      "resource": "classpath:net/neoforged/fml/earlydisplay/theme/progress_bar_fg.png",
+      "resource": "progress_bar_fg.png",
       "scaling": {
         "type": "nine_slice",
         "width": 40,
@@ -116,7 +116,7 @@
       "fox": {
         "type": "image",
         "texture": {
-          "resource": "classpath:net/neoforged/fml/earlydisplay/theme/fox_running.png",
+          "resource": "fox_running.png",
           "scaling": {
             "type": "stretch",
             "width": 151,

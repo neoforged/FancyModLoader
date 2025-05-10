@@ -6,11 +6,11 @@ This document describes how to customize the theme for the FML early loading scr
 
 FML will try to load one of the following themes.
 
-| Theme Id      | Description                                                                           | Filename                                                                                                    |
-|---------------|---------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------| 
-| `default`     | Loaded if no other criteria are met.                                                  | [theme-default.json](./src/main/resources/net/neoforged/fml/earlydisplay/theme/theme-default.json)          |
-| `darkmode`    | Loaded if the player configured dark-mode in options.txt or via environment variable. | [theme-darkmode.json](./src/main/resources/net/neoforged/fml/earlydisplay/theme/theme-darkmode.json)        |
-| `april-fools` | Loaded on April 1st. Takes precedence over the other themes.                          | [theme-aprils-fools.json](./src/main/resources/net/neoforged/fml/earlydisplay/theme/theme-april-fools.json) |
+| Theme Id      | Description                                                                           | Filename                                                                                                   |
+|---------------|---------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------| 
+| `default`     | Loaded if no other criteria are met.                                                  | [theme-default.json](./src/main/resources/net/neoforged/fml/earlydisplay/theme/theme-default.json)         |
+| `darkmode`    | Loaded if the player configured dark-mode in options.txt or via environment variable. | [theme-darkmode.json](./src/main/resources/net/neoforged/fml/earlydisplay/theme/theme-darkmode.json)       |
+| `april-fools` | Loaded on April 1st. Takes precedence over the other themes.                          | [theme-april-fools.json](./src/main/resources/net/neoforged/fml/earlydisplay/theme/theme-april-fools.json) |
 
 ## Customization
 

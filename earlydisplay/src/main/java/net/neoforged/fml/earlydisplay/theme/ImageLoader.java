@@ -5,21 +5,21 @@
 
 package net.neoforged.fml.earlydisplay.theme;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 /**
  * Represents an image referenced from a theme.
  * <p>
  * Theme images will refer to a resource their content is loaded from, this is expected to be a PNG image.
  */
-final class ImageLoader {
+public final class ImageLoader {
     private static final String BROKEN_TEXTURE_NAME = "broken texture";
 
     private static final int BROKEN_TEXTURE_DIMENSIONS = 16;
@@ -30,10 +30,10 @@ final class ImageLoader {
      * Load the image resource, and decompress it into native memory for use with OpenGL and other native APIs.
      * Note that if the image fails to load for any reason, a dummy "missing" texture is returned instead.
      */
-    static UncompressedImage loadImage(ThemeResource resource) {
+    public static UncompressedImage loadImage(ThemeResource resource) {
         return switch (tryLoadImage(resource)) {
-            case ImageLoadResult.Success(UncompressedImage image) -> image;
-            case ImageLoadResult.Error(Exception exception) -> {
+            case Result.Success(UncompressedImage image) -> image;
+            case Result.Error(Exception exception) -> {
                 LOGGER.error("Failed to load theme image {}", resource, exception);
                 yield createBrokenImage();
             }
@@ -44,8 +44,20 @@ final class ImageLoader {
      * Load the image resource, and decompress it into native memory for use with OpenGL and other native APIs.
      * Note that if the image fails to load for any reason, a dummy "missing" texture is returned instead.
      */
-    static ImageLoadResult tryLoadImage(ThemeResource resource) {
+    public static Result tryLoadImage(ThemeResource resource) {
         try (var buffer = resource.toNativeBuffer()) {
+            return tryLoadImage(resource.toString(), resource, buffer);
+        } catch (Exception e) {
+            return new Result.Error(e);
+        }
+    }
+
+    /**
+     * Load the image resource, and decompress it into native memory for use with OpenGL and other native APIs.
+     * Note that if the image fails to load for any reason, a dummy "missing" texture is returned instead.
+     */
+    public static Result tryLoadImage(String debugName, @Nullable ThemeResource source, NativeBuffer buffer) {
+        try {
             validateHeader(buffer.buffer().slice());
 
             var width = new int[1];
@@ -53,13 +65,14 @@ final class ImageLoader {
             var channels = new int[1];
             var decodedImage = STBImage.stbi_load_from_memory(buffer.buffer(), width, height, channels, 4);
             // TODO: Handle image decoding error
-            return new ImageLoadResult.Success(new UncompressedImage(resource.toString(),
-                    resource,
+            return new Result.Success(new UncompressedImage(
+                    debugName,
+                    source,
                     new NativeBuffer(decodedImage, STBImage::stbi_image_free),
                     width[0],
                     height[0]));
         } catch (Exception e) {
-            return new ImageLoadResult.Error(e);
+            return new Result.Error(e);
         }
     }
 
@@ -78,12 +91,10 @@ final class ImageLoader {
         }
     }
 
-    public sealed interface ImageLoadResult {
-        record Success(UncompressedImage image) implements ImageLoadResult {
-        }
+    public sealed interface Result {
+        record Success(UncompressedImage image) implements Result {}
 
-        record Error(Exception exception) implements ImageLoadResult {
-        }
+        record Error(Exception exception) implements Result {}
     }
 
     private static UncompressedImage createBrokenImage() {
@@ -109,6 +120,5 @@ final class ImageLoader {
                 BROKEN_TEXTURE_DIMENSIONS);
     }
 
-    private ImageLoader() {
-    }
+    private ImageLoader() {}
 }

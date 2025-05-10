@@ -31,7 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -291,40 +290,22 @@ public final class ThemeLoader {
         }
 
         @Override
-        public void write(JsonWriter out, ThemeResource value) throws IOException {
-            switch (value) {
-                case ClasspathResource classpathResource -> {
-                    if (exportResources) {
-                        var idx = Math.max(
-                                classpathResource.path().lastIndexOf('/'),
-                                classpathResource.path().lastIndexOf('\\'));
-                        var filename = classpathResource.path().substring(idx + 1);
-                        var diskPath = baseDirectory.resolve(filename);
-                        try (var buffer = value.toNativeBuffer()) {
-                            Files.write(diskPath, buffer.toByteArray());
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                        }
-                        out.value(filename);
-                    } else {
-                        out.value("classpath:" + classpathResource.path());
-                    }
-                }
-                case FileResource fileResource -> {
-                    var diskPath = baseDirectory.resolve(fileResource.file().getName());
-                    Files.copy(fileResource.file().toPath(), diskPath, StandardCopyOption.REPLACE_EXISTING);
-                    out.value(fileResource.file().getName());
-                }
-            }
+        public ThemeResource read(JsonReader in) throws IOException {
+            return new ThemeResource(baseDirectory, in.nextString());
         }
 
         @Override
-        public ThemeResource read(JsonReader in) throws IOException {
-            var text = in.nextString();
-            if (text.startsWith("classpath:")) {
-                return new ClasspathResource(text.substring("classpath:".length()));
+        public void write(JsonWriter out, ThemeResource value) throws IOException {
+            if (exportResources) {
+                // Try loading it from the classpath
+                var diskPath = baseDirectory.resolve(value.path());
+                try (var buffer = value.toNativeBuffer()) {
+                    Files.write(diskPath, buffer.toByteArray());
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
             }
-            return new FileResource(baseDirectory.resolve(text).toFile());
+            out.value(value.path());
         }
     }
 

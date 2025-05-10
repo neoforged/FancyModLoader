@@ -38,13 +38,13 @@ public record Theme(
     public static Theme createDefaultTheme() {
         var sprites = new ThemeSprites(
                 new ThemeTexture(
-                        classpathResource("progress_bar_bg.png"),
+                        new ThemeResource("progress_bar_bg.png"),
                         new TextureScaling.NineSlice(40, 20, 2, 2, 2, 2, true, true, false)),
                 new ThemeTexture(
-                        classpathResource("progress_bar_fg.png"),
+                        new ThemeResource("progress_bar_fg.png"),
                         new TextureScaling.NineSlice(40, 20, 4, 4, 4, 4, true, true, false)),
                 new ThemeTexture(
-                        classpathResource("progress_bar_fg.png"),
+                        new ThemeResource("progress_bar_fg.png"),
                         new TextureScaling.NineSlice(40, 20, 4, 4, 4, 4, true, true, false)),
                 false);
 
@@ -55,7 +55,7 @@ public record Theme(
         var fox = new ThemeImageElement();
         fox.setTexture(
                 new ThemeTexture(
-                        classpathResource("fox_running.png"),
+                        new ThemeResource("fox_running.png"),
                         new TextureScaling.Stretch(151, 128, false),
                         new AnimationMetadata(28)));
         fox.setRight(StyleLength.ofPoints(10));
@@ -84,9 +84,9 @@ public record Theme(
         mojangLogo.setTop(StyleLength.ofPoints(96));
 
         return new Theme(
-                classpathResource("neoforged_icon.png"),
+                new ThemeResource("neoforged_icon.png"),
                 Map.of(
-                        FONT_DEFAULT, classpathResource("Monocraft.ttf")),
+                        FONT_DEFAULT, new ThemeResource("Monocraft.ttf")),
                 Map.of(
                         SHADER_GUI,
                         ThemeShader.DEFAULT_GUI,
@@ -104,9 +104,5 @@ public record Theme(
                         Map.of(
                                 "fox", fox,
                                 "version", forgeVersion)));
-    }
-
-    private static ClasspathResource classpathResource(String name) {
-        return new ClasspathResource("net/neoforged/fml/earlydisplay/theme/" + name);
     }
 }

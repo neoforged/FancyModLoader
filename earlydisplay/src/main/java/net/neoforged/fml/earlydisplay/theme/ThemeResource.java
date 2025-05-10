@@ -6,21 +6,32 @@
 package net.neoforged.fml.earlydisplay.theme;
 
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import org.jetbrains.annotations.Nullable;
 
-public sealed interface ThemeResource permits ClasspathResource, FileResource {
-    /**
-     * Sanity check to stop going OOM instead of showing the loading screen.
-     */
-    int MAX_SIZE = 100_000_000;
+public record ThemeResource(@Nullable Path themeDirectory, String path) {
+    public ThemeResource(String path) {
+        this(null, path);
+    }
 
-    NativeBuffer toNativeBuffer() throws IOException;
+    public NativeBuffer toNativeBuffer() throws IOException {
+        if (themeDirectory != null) {
+            try {
+                return NativeBuffer.loadFromPath(themeDirectory.resolve(path));
+            } catch (NoSuchFileException ignored) {
+                // Fall through and load fallback resource from built-in resources
+            }
+        }
+
+        return NativeBuffer.loadFromClasspath("net/neoforged/fml/earlydisplay/theme/" + path);
+    }
 
     /**
      * Load the image resource, and decompress it into native memory for use with OpenGL and other native APIs.
      * Note that if the image fails to load for any reason, a dummy "missing" texture is returned instead.
      */
-    default UncompressedImage loadAsImage() {
+    public UncompressedImage loadAsImage() {
         return ImageLoader.loadImage(this);
     }
 
@@ -29,10 +40,10 @@ public sealed interface ThemeResource permits ClasspathResource, FileResource {
      * Note that if the image fails to load for any reason, a dummy "missing" texture is returned instead.
      */
     @Nullable
-    default UncompressedImage tryLoadAsImage() {
+    public UncompressedImage tryLoadAsImage() {
         return switch (ImageLoader.tryLoadImage(this)) {
-            case ImageLoader.ImageLoadResult.Error error -> null;
-            case ImageLoader.ImageLoadResult.Success(UncompressedImage image) -> image;
+            case ImageLoader.Result.Error error -> null;
+            case ImageLoader.Result.Success(UncompressedImage image) -> image;
         };
     }
 }
