@@ -13,6 +13,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryUtil;
 
 public final class NativeBuffer implements AutoCloseable {
@@ -48,8 +49,11 @@ public final class NativeBuffer implements AutoCloseable {
     /**
      * @throws NoSuchFileException If the resource does not exist.
      */
-    public static NativeBuffer loadFromClasspath(String path) throws IOException {
-        var resource = NativeBuffer.class.getClassLoader().getResource(path);
+    public static NativeBuffer loadFromClasspath(String path, @Nullable ClassLoader classLoader) throws IOException {
+        if (classLoader == null) {
+            classLoader = Thread.currentThread().getContextClassLoader();
+        }
+        var resource = classLoader.getResource(path);
         if (resource == null) {
             throw new NoSuchFileException("Couldn't find theme resource " + path);
         }

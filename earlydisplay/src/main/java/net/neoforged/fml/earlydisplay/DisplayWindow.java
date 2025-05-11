@@ -193,9 +193,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
         this.rendererFuture = renderScheduler.schedule(() -> new LoadingScreenRenderer(renderScheduler, window, theme, mcVersion, forgeVersion), 1, TimeUnit.MILLISECONDS);
 
         updateProgress("Initializing Game Graphics");
-        StartupNotificationManager.addModMessage("BLAHFASEL");
-        var pp = StartupNotificationManager.prependProgressBar("Minecraft Progress", 1000);
-        pp.setAbsolute(250);
 
         return this::periodicTick;
     }

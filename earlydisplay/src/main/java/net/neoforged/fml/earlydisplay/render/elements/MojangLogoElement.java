@@ -32,19 +32,32 @@ public class MojangLogoElement extends RenderElement {
     public MojangLogoElement(ThemeMojangLogoElement element, MaterializedTheme theme) {
         super(element, theme);
 
+        // Try the context classloader first, but if we cannot find a logo there,
+        // try the system loader, since FML might already have isolated us from
+        // the MC assets that can be found there.
+        ClassLoader[] classLoaders = {
+                Thread.currentThread().getContextClassLoader(),
+                ClassLoader.getSystemClassLoader()
+        };
+
         Texture mojangLogo = null;
         for (var logoPath : LOGO_PATHS) {
-            try (var buffer = NativeBuffer.loadFromClasspath(logoPath)) {
-                var loadResult = ImageLoader.tryLoadImage("mojang logo", null, buffer);
-                if (loadResult instanceof ImageLoader.Result.Error(Exception exception)) {
-                    LOGGER.debug("Failed to load Mojang logo from {}: {}", logoPath, exception);
-                } else if (loadResult instanceof ImageLoader.Result.Success(UncompressedImage image)) {
-                    mojangLogo = Texture.create(image, "mojang logo", new TextureScaling.Stretch(512, 128, true), null);
-                    break;
+            for (var classLoader : classLoaders) {
+                try (var buffer = NativeBuffer.loadFromClasspath(logoPath, classLoader)) {
+                    var loadResult = ImageLoader.tryLoadImage("mojang logo", null, buffer);
+                    if (loadResult instanceof ImageLoader.Result.Error(Exception exception)) {
+                        LOGGER.debug("Failed to load Mojang logo from {}: {}", logoPath, exception);
+                    } else if (loadResult instanceof ImageLoader.Result.Success(UncompressedImage image)) {
+                        mojangLogo = Texture.create(image, "mojang logo", new TextureScaling.Stretch(512, 128, true), null);
+                        break;
+                    }
+                } catch (IOException e) {
+                    LOGGER.debug("Failed to load Mojang logo from {}", logoPath);
                 }
-            } catch (IOException e) {
-                LOGGER.debug("Failed to load Mojang logo from {}", logoPath);
             }
+        }
+        if (mojangLogo == null) {
+            LOGGER.warn("Failed to find Mojang logo at any of the expected classpath locations.");
         }
         this.mojangLogo = mojangLogo;
     }

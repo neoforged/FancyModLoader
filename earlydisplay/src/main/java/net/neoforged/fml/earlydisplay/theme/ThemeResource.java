@@ -24,7 +24,7 @@ public record ThemeResource(@Nullable Path themeDirectory, String path) {
             }
         }
 
-        return NativeBuffer.loadFromClasspath("net/neoforged/fml/earlydisplay/theme/" + path);
+        return NativeBuffer.loadFromClasspath("net/neoforged/fml/earlydisplay/theme/" + path, null);
     }
 
     /**
