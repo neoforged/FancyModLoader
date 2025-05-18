@@ -171,7 +171,14 @@ public class DisplayWindow implements ImmediateWindowProvider {
                 LOGGER.warn("Failed to read dark-mode settings from options.txt", e);
             }
         }
-        this.theme = loadTheme(darkMode);
+
+        var forcedTheme = FMLConfig.getConfigValue(FMLConfig.ConfigValue.EARLY_LOADING_SCREEN_THEME);
+        if (!forcedTheme.isEmpty()) {
+            LOGGER.info("Trying to load configured early loading screen theme '{}'", forcedTheme);
+            this.theme = loadTheme(forcedTheme);
+        } else {
+            this.theme = loadTheme(darkMode);
+        }
         this.maximized = parsed.has(maximizedopt) || FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_MAXIMIZED);
 
         var forgeVersion = parsed.valueOf(forgeversionopt);
@@ -190,7 +197,13 @@ public class DisplayWindow implements ImmediateWindowProvider {
         var mcVersion = parsed.valueOf(mcversionopt);
         initWindow(mcVersion);
 
-        this.rendererFuture = renderScheduler.schedule(() -> new LoadingScreenRenderer(renderScheduler, window, theme, mcVersion, forgeVersion), 1, TimeUnit.MILLISECONDS);
+        this.rendererFuture = renderScheduler.schedule(() -> new LoadingScreenRenderer(
+                renderScheduler,
+                window,
+                theme,
+                getThemePath(),
+                mcVersion,
+                forgeVersion), 1, TimeUnit.MILLISECONDS);
 
         updateProgress("Initializing Game Graphics");
 
@@ -198,14 +211,11 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     private static Theme loadTheme(boolean darkMode) {
-        Path themePath = getThemePath();
-        var themeId = darkMode ? ThemeIds.DARK_MODE : ThemeIds.DEFAULT;
+        return loadTheme(getThemeId(darkMode));
+    }
 
-        // Specials
-        var today = LocalDate.now();
-        if (today.getMonth() == Month.APRIL && today.getDayOfMonth() == 1) {
-            themeId = ThemeIds.APRIL_FOOLS;
-        }
+    private static Theme loadTheme(String themeId) {
+        var themePath = getThemePath();
 
         Theme theme;
         try {
@@ -215,6 +225,17 @@ public class DisplayWindow implements ImmediateWindowProvider {
             theme = Theme.createDefaultTheme();
         }
         return theme;
+    }
+
+    private static String getThemeId(boolean darkMode) {
+        var themeId = darkMode ? ThemeIds.DARK_MODE : ThemeIds.DEFAULT;
+
+        // Specials
+        var today = LocalDate.now();
+        if (today.getMonth() == Month.APRIL && today.getDayOfMonth() == 1) {
+            themeId = darkMode ? ThemeIds.APRIL_FOOLS_DARK_MODE : ThemeIds.APRIL_FOOLS;
+        }
+        return themeId;
     }
 
     private static Path getThemePath() {
@@ -367,7 +388,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         // Attempt setting the icon
         try (var glfwImgBuffer = GLFWImage.malloc(1);
                 var glfwImages = GLFWImage.malloc();
-                var icon = theme.windowIcon().loadAsImage()) {
+                var icon = theme.windowIcon().loadAsImage(getThemePath())) {
             glfwImgBuffer.put(glfwImages.set(icon.width(), icon.height(), icon.imageData()));
             glfwImgBuffer.flip();
             glfwSetWindowIcon(window, glfwImgBuffer);

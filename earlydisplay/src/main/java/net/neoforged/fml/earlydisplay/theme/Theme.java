@@ -35,6 +35,12 @@ public record Theme(
     public static final String SHADER_GUI = "gui";
     public static final String SHADER_FONT = "font";
     public static final String SHADER_COLOR = "color";
+    /**
+     * Creates the default theme. At runtime, it will actually be loaded from an embedded JSON File containing this structure,
+     * which makes it easier for modpacks to inspect the default theme and how to adjust it.
+     * <p>
+     * To update the built-in theme JSON file, see the ExportDefaultTheme class.
+     */
     public static Theme createDefaultTheme() {
         var sprites = new ThemeSprites(
                 new ThemeTexture(

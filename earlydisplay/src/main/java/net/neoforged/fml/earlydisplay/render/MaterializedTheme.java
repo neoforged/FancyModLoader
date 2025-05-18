@@ -6,46 +6,51 @@
 package net.neoforged.fml.earlydisplay.render;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.ThemeResource;
 import net.neoforged.fml.earlydisplay.theme.ThemeShader;
 import net.neoforged.fml.earlydisplay.theme.ThemeSprites;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A themes resources loaded for rendering at runtime.
  */
 public record MaterializedTheme(
         Theme theme,
+        @Nullable Path externalThemeDirectory,
         Map<String, SimpleFont> fonts,
         Map<String, ElementShader> shaders,
         MaterializedThemeSprites sprites) implements AutoCloseable {
-    public static MaterializedTheme materialize(Theme theme) {
+    public static MaterializedTheme materialize(Theme theme, @Nullable Path externalThemeDirectory) {
         return new MaterializedTheme(
                 theme,
-                loadFonts(theme.fonts()),
-                loadShaders(theme.shaders()),
-                loadSprites(theme.sprites()));
+                externalThemeDirectory,
+                loadFonts(theme.fonts(), externalThemeDirectory),
+                loadShaders(theme.shaders(), externalThemeDirectory),
+                loadSprites(theme.sprites(), externalThemeDirectory));
     }
 
-    private static Map<String, ElementShader> loadShaders(Map<String, ThemeShader> themeShaders) {
+    private static Map<String, ElementShader> loadShaders(Map<String, ThemeShader> themeShaders, @Nullable Path externalThemeDirectory) {
         var shaders = new HashMap<String, ElementShader>(themeShaders.size());
         for (var entry : themeShaders.entrySet()) {
             var shader = ElementShader.create(
                     entry.getKey(),
                     entry.getValue().vertexShader(),
-                    entry.getValue().fragmentShader());
+                    entry.getValue().fragmentShader(),
+                    externalThemeDirectory);
             shaders.put(entry.getKey(), shader);
         }
         return shaders;
     }
 
-    private static Map<String, SimpleFont> loadFonts(Map<String, ThemeResource> themeFonts) {
+    private static Map<String, SimpleFont> loadFonts(Map<String, ThemeResource> themeFonts, @Nullable Path externalThemeDirectory) {
         var fonts = new HashMap<String, SimpleFont>(themeFonts.size());
         for (var entry : themeFonts.entrySet()) {
             try {
-                fonts.put(entry.getKey(), new SimpleFont(entry.getValue(), 1));
+                fonts.put(entry.getKey(), new SimpleFont(entry.getValue(), externalThemeDirectory));
             } catch (IOException e) {
                 throw new RuntimeException("Failed to load font " + entry.getKey(), e);
             }
@@ -53,11 +58,11 @@ public record MaterializedTheme(
         return fonts;
     }
 
-    private static MaterializedThemeSprites loadSprites(ThemeSprites sprites) {
+    private static MaterializedThemeSprites loadSprites(ThemeSprites sprites, @Nullable Path externalThemeDirectory) {
         return new MaterializedThemeSprites(
-                Texture.create(sprites.progressBarBackground()),
-                Texture.create(sprites.progressBarForeground()),
-                Texture.create(sprites.progressBarIndeterminate()));
+                Texture.create(sprites.progressBarBackground(), externalThemeDirectory),
+                Texture.create(sprites.progressBarForeground(), externalThemeDirectory),
+                Texture.create(sprites.progressBarIndeterminate(), externalThemeDirectory));
     }
 
     public SimpleFont getFont(String fontId) {

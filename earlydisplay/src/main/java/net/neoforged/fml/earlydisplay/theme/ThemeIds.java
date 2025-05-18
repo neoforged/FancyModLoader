@@ -14,6 +14,7 @@ public final class ThemeIds {
     public static final String DEFAULT = "default";
     public static final String DARK_MODE = "darkmode";
     public static final String APRIL_FOOLS = "april-fools";
+    public static final String APRIL_FOOLS_DARK_MODE = "april-fools-darkmode";
 
     private ThemeIds() {}
 }

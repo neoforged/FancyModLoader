@@ -20,6 +20,7 @@ import static org.lwjgl.opengl.GL11C.glTexParameteri;
 import static org.lwjgl.opengl.GL12C.GL_CLAMP_TO_EDGE;
 import static org.lwjgl.opengl.GL13C.GL_TEXTURE0;
 
+import java.nio.file.Path;
 import net.neoforged.fml.earlydisplay.theme.AnimationMetadata;
 import net.neoforged.fml.earlydisplay.theme.TextureScaling;
 import net.neoforged.fml.earlydisplay.theme.ThemeTexture;
@@ -41,8 +42,8 @@ public record Texture(int textureId, int physicalWidth, int physicalHeight,
     /**
      * Loads a resource into an OpenGL texture.
      */
-    public static Texture create(ThemeTexture themeTexture) {
-        try (var image = themeTexture.resource().loadAsImage()) {
+    public static Texture create(ThemeTexture themeTexture, @Nullable Path externalThemeDirectory) {
+        try (var image = themeTexture.resource().loadAsImage(externalThemeDirectory)) {
             return create(image, "EarlyDisplay " + themeTexture, themeTexture.scaling(), themeTexture.animation());
         }
     }

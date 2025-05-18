@@ -5,17 +5,17 @@
     "default": "Monocraft.ttf"
   },
   "shaders": {
-    "color": {
+    "gui": {
       "vertexShader": "gui.vert",
-      "fragmentShader": "gui_color.frag"
+      "fragmentShader": "gui.frag"
     },
     "font": {
       "vertexShader": "gui.vert",
       "fragmentShader": "gui_font.frag"
     },
-    "gui": {
+    "color": {
       "vertexShader": "gui.vert",
-      "fragmentShader": "gui.frag"
+      "fragmentShader": "gui_color.frag"
     }
   },
   "colorScheme": {
@@ -113,6 +113,17 @@
       "font": "default"
     },
     "decoration": {
+      "version": {
+        "type": "label",
+        "text": "${version}",
+        "visible": true,
+        "maintainAspectRatio": true,
+        "right": 10.0,
+        "bottom": 10.0,
+        "centerHorizontally": false,
+        "centerVertically": false,
+        "font": "default"
+      },
       "fox": {
         "type": "image",
         "texture": {
@@ -131,17 +142,6 @@
         "maintainAspectRatio": true,
         "right": 10.0,
         "bottom": "1.0rem",
-        "centerHorizontally": false,
-        "centerVertically": false,
-        "font": "default"
-      },
-      "version": {
-        "type": "label",
-        "text": "${version}",
-        "visible": true,
-        "maintainAspectRatio": true,
-        "right": 10.0,
-        "bottom": 10.0,
         "centerHorizontally": false,
         "centerVertically": false,
         "font": "default"

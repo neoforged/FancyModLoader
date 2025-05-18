@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import net.neoforged.fml.earlydisplay.DisplayWindow;
+import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
 
 public class TestEarlyDisplay {
@@ -15,6 +16,7 @@ public class TestEarlyDisplay {
         //System.setProperty("fml.earlyWindowDarkMode", "true");
 
         FMLPaths.loadAbsolutePaths(findProjectRoot());
+        FMLConfig.load();
 
         var window = new DisplayWindow();
         var periodicTick = window.initialize(new String[] {

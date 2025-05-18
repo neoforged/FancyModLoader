@@ -20,7 +20,7 @@ class SimpleFontTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        font = new SimpleFont(new ThemeResource("Monocraft.ttf"), 1);
+        font = new SimpleFont(new ThemeResource("Monocraft.ttf"), null);
     }
 
     @AfterEach

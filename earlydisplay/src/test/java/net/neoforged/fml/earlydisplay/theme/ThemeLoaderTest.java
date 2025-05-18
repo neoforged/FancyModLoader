@@ -26,7 +26,7 @@ class ThemeLoaderTest {
     void testDefaultThemeRoundtrip() throws IOException {
         var defaultTheme = Theme.createDefaultTheme();
         Path themePath = tempDir.resolve("theme-default.json");
-        ThemeLoader.save(themePath, defaultTheme, false);
+        ThemeLoader.save(themePath, defaultTheme);
 
         var loadedTheme = ThemeLoader.load(tempDir, "default");
         assertThat(loadedTheme)
@@ -88,7 +88,7 @@ class ThemeLoaderTest {
                     return null;
                 }
                 try {
-                    return resource.toNativeBuffer().toByteArray();
+                    return resource.toNativeBuffer(null).toByteArray();
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }

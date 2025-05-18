@@ -15,7 +15,7 @@ public class ImageElement extends RenderElement {
 
     public ImageElement(ThemeImageElement element, MaterializedTheme theme) {
         super(element, theme);
-        this.texture = Texture.create(element.texture());
+        this.texture = Texture.create(element.texture(), theme.externalThemeDirectory());
     }
 
     @Override

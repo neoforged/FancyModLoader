@@ -10,7 +10,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
@@ -25,7 +24,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -48,42 +46,53 @@ public final class ThemeLoader {
     private static final int VERSION = 1;
     private static final String BUILTIN_PREFIX = "builtin:";
 
+    private static final Gson GSON = new GsonBuilder()
+            .setPrettyPrinting()
+            .registerTypeAdapter(TextureScaling.class, new TextureScalingSerializer())
+            .registerTypeAdapterFactory(new ThemeElementAdapterFactory())
+            .registerTypeHierarchyAdapter(ThemeResource.class, new ThemeResourceAdapter())
+            .registerTypeAdapter(StyleLength.class, new StyleLengthAdapter())
+            .registerTypeAdapter(ThemeColor.class, new ThemeColorAdapter())
+            .create();
+
     private ThemeLoader() {}
 
-    public static Theme load(Path baseDirectory, String id) throws IOException {
+    public static Theme load(@Nullable Path externalThemeDirectory, String id) throws IOException {
         var sources = new LinkedHashSet<String>();
-        var themeTree = readThemeTree(baseDirectory, id, sources);
+        var themeTree = readThemeTree(externalThemeDirectory, id, sources);
 
         try {
-            return createGson(baseDirectory, false).fromJson(themeTree, Theme.class);
+            return GSON.fromJson(themeTree, Theme.class);
         } catch (Exception e) {
             throw new IOException("Failed to load theme '" + id + "' from JSON structure.", e);
         }
     }
 
-    private static JsonObject readThemeTree(Path baseDirectory, String id, Set<String> sources) throws IOException {
+    private static JsonObject readThemeTree(@Nullable Path externalThemeDirectory, String id, Set<String> sources) throws IOException {
         if (id.startsWith(BUILTIN_PREFIX)) {
             id = id.substring(BUILTIN_PREFIX.length());
-            return readBuiltinThemeTree(baseDirectory, id, sources);
+            return readBuiltinThemeTree(externalThemeDirectory, id, sources);
         }
 
-        String filename = getThemeFilename(id);
-        Path themePath = baseDirectory.resolve(filename);
-        try (var in = openIfExists(themePath)) {
-            if (in != null) {
-                if (!sources.add(id)) {
-                    throw new IllegalStateException("Detected recursion in theme extends clause: " + sources + " -> " + id);
-                }
+        if (externalThemeDirectory != null) {
+            String filename = getThemeFilename(id);
+            Path themePath = externalThemeDirectory.resolve(filename);
+            try (var in = openIfExists(themePath)) {
+                if (in != null) {
+                    if (!sources.add(id)) {
+                        throw new IllegalStateException("Detected recursion in theme extends clause: " + sources + " -> " + id);
+                    }
 
-                LOG.debug("Loading theme from {}", themePath);
-                return readThemeTree(baseDirectory, in, sources);
+                    LOG.debug("Loading theme from {}", themePath);
+                    return readThemeTree(externalThemeDirectory, in, sources);
+                }
             }
         }
 
-        return readBuiltinThemeTree(baseDirectory, id, sources);
+        return readBuiltinThemeTree(externalThemeDirectory, id, sources);
     }
 
-    private static JsonObject readBuiltinThemeTree(Path baseDirectory, String id, Set<String> sources) throws IOException {
+    private static JsonObject readBuiltinThemeTree(@Nullable Path externalThemeDirectory, String id, Set<String> sources) throws IOException {
         if (!sources.add(BUILTIN_PREFIX + id)) {
             throw new IllegalStateException("Detected recursion in theme extends clause: " + sources + " -> " + BUILTIN_PREFIX + id);
         }
@@ -95,7 +104,7 @@ public final class ThemeLoader {
             if (in == null) {
                 throw new NoSuchFileException("Failed to find embedded theme resource " + classpathLocation);
             }
-            return readThemeTree(baseDirectory, in, sources);
+            return readThemeTree(externalThemeDirectory, in, sources);
         }
     }
 
@@ -108,12 +117,12 @@ public final class ThemeLoader {
         }
     }
 
-    private static JsonObject readThemeTree(Path baseDirectory,
+    private static JsonObject readThemeTree(@Nullable Path externalThemeDirectory,
             InputStream in,
             Set<String> sources) throws IOException {
         var reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
 
-        var themeRoot = createGson(baseDirectory, false).fromJson(reader, JsonObject.class);
+        var themeRoot = GSON.fromJson(reader, JsonObject.class);
         var themeVersion = takeInt(themeRoot, "version");
         if (themeVersion == null || themeVersion != VERSION) {
             throw new JsonParseException("Expected theme version " + VERSION + " but found: " + themeVersion);
@@ -121,7 +130,7 @@ public final class ThemeLoader {
 
         var extendsId = takeString(themeRoot, "extends");
         if (extendsId != null) {
-            var baseThemeRoot = readThemeTree(baseDirectory, extendsId, sources);
+            var baseThemeRoot = readThemeTree(externalThemeDirectory, extendsId, sources);
             themeRoot = mergeThemeRoot(baseThemeRoot, themeRoot);
         }
 
@@ -203,11 +212,10 @@ public final class ThemeLoader {
         return primitive;
     }
 
-    public static void save(Path path, Theme theme, boolean exportResources) {
+    public static void save(Path path, Theme theme) {
         LOG.info("Saving theme to {}", path);
 
-        Gson gson = createGson(path.toAbsolutePath().getParent(), exportResources);
-        var themeTree = (JsonObject) gson.toJsonTree(theme);
+        var themeTree = (JsonObject) GSON.toJsonTree(theme);
         var merged = new JsonObject();
         merged.addProperty("version", VERSION);
         for (var entry : themeTree.entrySet()) {
@@ -215,22 +223,10 @@ public final class ThemeLoader {
         }
 
         try (var out = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
-            gson.toJson(merged, out);
+            GSON.toJson(merged, out);
         } catch (IOException e) {
             LOG.error("Failed to save theme to {}", path, e);
         }
-    }
-
-    private static Gson createGson(Path baseDirectory, boolean exportResources) {
-        return new GsonBuilder()
-                .setPrettyPrinting()
-                .registerTypeAdapter(TextureScaling.class, new TextureScalingSerializer())
-                .registerTypeAdapterFactory(new ThemeElementAdapterFactory())
-                .registerTypeHierarchyAdapter(ThemeResource.class, new ThemeResourceAdapter(baseDirectory, exportResources))
-                .registerTypeAdapter(UncompressedImage.class, new UncompressedImageSerializer())
-                .registerTypeAdapter(StyleLength.class, new StyleLengthAdapter())
-                .registerTypeAdapter(ThemeColor.class, new ThemeColorAdapter())
-                .create();
     }
 
     private static class StyleLengthAdapter extends TypeAdapter<StyleLength> {
@@ -264,47 +260,18 @@ public final class ThemeLoader {
         }
     }
 
-    private static class UncompressedImageSerializer implements JsonSerializer<UncompressedImage>, JsonDeserializer<UncompressedImage> {
-        @Override
-        public UncompressedImage deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            var resource = (ThemeResource) context.deserialize(json, ThemeResource.class);
-            return resource.loadAsImage();
-        }
-
-        @Override
-        public JsonElement serialize(UncompressedImage value, Type typeOfSrc, JsonSerializationContext context) {
-            if (value.source() != null) {
-                return context.serialize(value.source());
-            }
-            return JsonNull.INSTANCE;
-        }
-    }
-
+    /**
+     * This adapter will copy all encountered theme resources from the built-in theme directory
+     * to the target directory.
+     */
     private static class ThemeResourceAdapter extends TypeAdapter<ThemeResource> {
-        private final Path baseDirectory;
-        private final boolean exportResources;
-
-        public ThemeResourceAdapter(Path baseDirectory, boolean exportResources) {
-            this.baseDirectory = baseDirectory;
-            this.exportResources = exportResources;
-        }
-
         @Override
         public ThemeResource read(JsonReader in) throws IOException {
-            return new ThemeResource(baseDirectory, in.nextString());
+            return new ThemeResource(in.nextString());
         }
 
         @Override
         public void write(JsonWriter out, ThemeResource value) throws IOException {
-            if (exportResources) {
-                // Try loading it from the classpath
-                var diskPath = baseDirectory.resolve(value.path());
-                try (var buffer = value.toNativeBuffer()) {
-                    Files.write(diskPath, buffer.toByteArray());
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            }
             out.value(value.path());
         }
     }

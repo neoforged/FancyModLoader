@@ -31,11 +31,13 @@ import static org.lwjgl.opengl.GL32C.glUniform2f;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import net.neoforged.fml.earlydisplay.theme.ThemeResource;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,9 +59,9 @@ public class ElementShader implements AutoCloseable {
         this.uniformLocations = uniformLocations;
     }
 
-    public static ElementShader create(String name, ThemeResource vertexShader, ThemeResource fragmentShader) {
-        try (var vertexShaderBuffer = vertexShader.toNativeBuffer();
-                var fragmentShaderBuffer = fragmentShader.toNativeBuffer()) {
+    public static ElementShader create(String name, ThemeResource vertexShader, ThemeResource fragmentShader, @Nullable Path externalThemeDirectory) {
+        try (var vertexShaderBuffer = vertexShader.toNativeBuffer(externalThemeDirectory);
+                var fragmentShaderBuffer = fragmentShader.toNativeBuffer(externalThemeDirectory)) {
             return create(name, vertexShaderBuffer.buffer(), fragmentShaderBuffer.buffer());
         } catch (IOException e) {
             throw new RuntimeException("Failed to read shaders for " + name);

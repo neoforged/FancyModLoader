@@ -8,6 +8,7 @@ package net.neoforged.fml.earlydisplay.theme;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Path;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryUtil;
@@ -30,8 +31,8 @@ public final class ImageLoader {
      * Load the image resource, and decompress it into native memory for use with OpenGL and other native APIs.
      * Note that if the image fails to load for any reason, a dummy "missing" texture is returned instead.
      */
-    public static UncompressedImage loadImage(ThemeResource resource) {
-        return switch (tryLoadImage(resource)) {
+    public static UncompressedImage loadImage(ThemeResource resource, @Nullable Path externalThemeDirectory) {
+        return switch (tryLoadImage(resource, externalThemeDirectory)) {
             case Result.Success(UncompressedImage image) -> image;
             case Result.Error(Exception exception) -> {
                 LOGGER.error("Failed to load theme image {}", resource, exception);
@@ -44,8 +45,8 @@ public final class ImageLoader {
      * Load the image resource, and decompress it into native memory for use with OpenGL and other native APIs.
      * Note that if the image fails to load for any reason, a dummy "missing" texture is returned instead.
      */
-    public static Result tryLoadImage(ThemeResource resource) {
-        try (var buffer = resource.toNativeBuffer()) {
+    public static Result tryLoadImage(ThemeResource resource, @Nullable Path externalThemeDirectory) {
+        try (var buffer = resource.toNativeBuffer(externalThemeDirectory)) {
             return tryLoadImage(resource.toString(), resource, buffer);
         } catch (Exception e) {
             return new Result.Error(e);

@@ -30,8 +30,10 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import net.neoforged.fml.earlydisplay.theme.ThemeResource;
 import net.neoforged.fml.earlydisplay.util.Size;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL32C;
 import org.lwjgl.stb.STBTTAlignedQuad;
@@ -105,8 +107,8 @@ public class SimpleFont implements AutoCloseable {
     /**
      * Build the font and store it in the textureNumber location
      */
-    public SimpleFont(ThemeResource resource, int scale) throws IOException {
-        try (var nativeBuffer = resource.toNativeBuffer()) {
+    public SimpleFont(ThemeResource resource, @Nullable Path externalThemeDirectory) throws IOException {
+        try (var nativeBuffer = resource.toNativeBuffer(externalThemeDirectory)) {
             var buf = nativeBuffer.buffer();
             var info = STBTTFontinfo.create();
             if (!stbtt_InitFont(info, buf)) {

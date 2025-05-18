@@ -22,6 +22,7 @@ import static org.lwjgl.opengl.GL11C.GL_ZERO;
 import static org.lwjgl.opengl.GL11C.glClear;
 import static org.lwjgl.opengl.GL11C.glGetString;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ import net.neoforged.fml.earlydisplay.theme.elements.ThemeElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
 import net.neoforged.fml.earlydisplay.util.Bounds;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL32C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,6 +83,7 @@ public class LoadingScreenRenderer implements AutoCloseable {
     public LoadingScreenRenderer(ScheduledExecutorService scheduler,
             long glfwWindow,
             Theme theme,
+            @Nullable Path externalThemeDirectory,
             String mcVersion,
             String neoForgeVersion) {
         this.glfwWindow = glfwWindow;
@@ -97,7 +100,7 @@ public class LoadingScreenRenderer implements AutoCloseable {
         LOGGER.info("GL info: {} GL version {}, {}", glGetString(GL_RENDERER), glGetString(GL_VERSION), glGetString(GL_VENDOR));
 
         // Create GL resources
-        this.theme = MaterializedTheme.materialize(theme);
+        this.theme = MaterializedTheme.materialize(theme, externalThemeDirectory);
         this.elements = loadElements();
 
         // we always render to an 854x480 texture and then fit that to the screen

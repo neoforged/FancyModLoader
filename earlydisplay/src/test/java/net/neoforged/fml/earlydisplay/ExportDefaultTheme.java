@@ -14,6 +14,6 @@ public class ExportDefaultTheme {
 
         var defaultTheme = Theme.createDefaultTheme();
         var builtInThemePath = projectRoot.resolve("src/main/resources/net/neoforged/fml/earlydisplay/theme");
-        ThemeLoader.save(builtInThemePath.resolve("theme-default.json"), defaultTheme, false);
+        ThemeLoader.save(builtInThemePath.resolve("theme-default.json"), defaultTheme);
     }
 }
