@@ -1,5 +1,5 @@
 {
-  "fml.loadingerrorscreen.errorheader": "Error loading mods\n{0,choice,1#1 error has|1<{0} errors have} occurred during loading",
+  "fml.loadingerrorscreen.errorheader": "Eroare la încărcarea modurilor\n{0,choice,1#1 error has|1<{0} errors have} s-au întămplat în timpul încărcării",
   "fml.loadingerrorscreen.warningheader": "{0,choice,1#Warning|1<Warnings} while loading mods\n{0,choice,1#1 warning has|1<{0} warnings have} occurred during loading",
   "fml.modloadingissue.language.missingversion": "Mod File {101} needs language provider {0}:{1,vr} to load\n§7We have found {2,i18n,fml.messages.artifactversion}",
   "fml.modloadingissue.language.missing": "Mod File {101} needs language provider {0} to load",
@@ -73,7 +73,7 @@
   "fml.modloadingissue.enumextender.argument.unexpected_decl": "Unexpected parameter declaration {0} for field {1} in enum {2}, specified by mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.loading_error": "Failed to load enum extension data at {0} in mod {100,modinfo,id}: {102,exc,msg}",
   "fml.modloadingissue.enumextender.argument.constant.count_mismatch": "Parameter count {0} does not match argument count {1} of constructor {2} for field {3} in enum {4}, specified by mod {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.argument.constant.invalid_char": "Invalid character {0} at parameter index {1} for field {2} in enum {3}, specified by mod {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Unsupported immediate argument type {0} at parameter index {1} for field {2} in enum {3}, specified by mod {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.duplicate": "Found duplicate field {0} for enum {1}, provided by mods {2} and {3}"
+  "fml.modloadingissue.enumextender.argument.constant.invalid_char": "Caracter {0} invalid la parametrul {1} pentru câmpul {2} în enum {3}, specificat de modul {100,modinfo,id}",
+  "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Tip de argument imediat invalid {0} la parametrul {1} pentru câmpul {2} în enum {3}, specificat de modul {100,modinfo,id}",
+  "fml.modloadingissue.enumextender.duplicate": "S-a găsit câmpul duplicat {0} pentru enum {1}, furnizat de modurile {2} și {3}"
 }
