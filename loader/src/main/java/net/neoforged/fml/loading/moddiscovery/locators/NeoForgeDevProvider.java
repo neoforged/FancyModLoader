@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.stream.Stream;
+
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
@@ -89,7 +90,9 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
                 })
                 .build();
 
-        loadMaskedFiles(mcJarContents, maskedPaths);
+        var neoForgeDevDistCleaner = (NeoForgeDevDistCleaner) context.environment().findLaunchPlugin("neoforgedevdistcleaner").orElseThrow();
+
+        loadMaskedFiles(mcJarContents, maskedPaths, neoForgeDevDistCleaner);
 
         var mcJarMetadata = new ModJarMetadata(mcJarContents);
         var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);
@@ -110,7 +113,7 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
         pipeline.addModFile(JarModsDotTomlModFileReader.createModFile(neoforgeJarContents, ModFileDiscoveryAttributes.DEFAULT));
     }
 
-    private void loadMaskedFiles(JarContents minecraftJar, Set<String> maskedPaths) {
+    private void loadMaskedFiles(JarContents minecraftJar, Set<String> maskedPaths, NeoForgeDevDistCleaner neoForgeDevDistCleaner) {
         var manifest = minecraftJar.getManifest();
         String dists = manifest.getMainAttributes().getValue(NAME_DISTS);
         if (dists == null) {
@@ -123,14 +126,23 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
         if (Arrays.stream(dists.split("\\s+")).allMatch(s -> s.equals(dist))) {
             return; // Jar contains only markers for the current dist anyway
         }
+        
+        Set<String> strippedClasses = new HashSet<>();
 
         for (var entry : manifest.getEntries().entrySet()) {
             var filePath = entry.getKey();
             var fileDist = entry.getValue().getValue(NAME_DIST);
             if (fileDist != null && !fileDist.equals(dist)) {
-                maskedPaths.add(filePath);
+                if (filePath.endsWith(".class")) {
+                    var className = filePath.substring(0, filePath.length() - ".class".length()).replace('/', '.');
+                    strippedClasses.add(className);
+                } else {
+                    maskedPaths.add(filePath);
+                }
             }
         }
+
+        neoForgeDevDistCleaner.stripClasses(strippedClasses);
     }
 
     private static String[] getNeoForgeSpecificPathPrefixes() {

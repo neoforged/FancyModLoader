@@ -22,11 +22,11 @@ import java.util.Optional;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.accesstransformer.ml.AccessTransformerService;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.common.asm.RuntimeDistCleaner;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModValidator;
+import net.neoforged.fml.loading.moddiscovery.locators.NeoForgeDevDistCleaner;
 import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.fml.loading.targets.CommonLaunchHandler;
 import net.neoforged.neoforgespi.ILaunchContext;
@@ -40,7 +40,7 @@ public class FMLLoader {
     private static LanguageProviderLoader languageProviderLoader;
     private static Dist dist;
     private static LoadingModList loadingModList;
-    private static RuntimeDistCleaner runtimeDistCleaner;
+    private static NeoForgeDevDistCleaner neoForgeDevDistCleaner;
     private static Path gamePath;
     private static VersionInfo versionInfo;
     private static String launchHandlerName;
@@ -78,9 +78,9 @@ public class FMLLoader {
             throw new IncompatibleEnvironmentException("Missing EventBus, cannot run");
         }
 
-        runtimeDistCleaner = (RuntimeDistCleaner) environment.findLaunchPlugin("runtimedistcleaner").orElseThrow(() -> {
-            LOGGER.error(LogMarkers.CORE, "Dist Cleaner is missing, we need this to run");
-            return new IncompatibleEnvironmentException("Missing DistCleaner, cannot run!");
+        neoForgeDevDistCleaner = (NeoForgeDevDistCleaner) environment.findLaunchPlugin("neoforgedevdistcleaner").orElseThrow(() -> {
+            LOGGER.error(LogMarkers.CORE, "NeoForgeDevDistCleaner is missing, we need this to run");
+            return new IncompatibleEnvironmentException("Missing NeoForgeDevDistCleaner, cannot run!");
         });
         LOGGER.debug(LogMarkers.CORE, "Found Runtime Dist Cleaner");
 
@@ -113,8 +113,7 @@ public class FMLLoader {
 
         dist = commonLaunchHandler.getDist();
         production = commonLaunchHandler.isProduction();
-
-        runtimeDistCleaner.setDistribution(dist);
+        neoForgeDevDistCleaner.setDistribution(dist);
     }
 
     public static List<ITransformationService.Resource> beginModScan(ILaunchContext launchContext) {
