@@ -89,7 +89,7 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
                     return true;
                 })
                 .build();
-
+        
         var neoForgeDevDistCleaner = (NeoForgeDevDistCleaner) context.environment().findLaunchPlugin("neoforgedevdistcleaner").orElseThrow();
 
         loadMaskedFiles(mcJarContents, maskedPaths, neoForgeDevDistCleaner);
@@ -133,6 +133,7 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
             var filePath = entry.getKey();
             var fileDist = entry.getValue().getValue(NAME_DIST);
             if (fileDist != null && !fileDist.equals(dist)) {
+                // Classes are kept, but set to be filtered out at runtime; resources are removed entirely.
                 if (filePath.endsWith(".class")) {
                     var className = filePath.substring(0, filePath.length() - ".class".length()).replace('/', '.');
                     strippedClasses.add(className);

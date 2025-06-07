@@ -12,6 +12,7 @@ import org.slf4j.MarkerFactory;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 public class NeoForgeDevDistCleaner implements ILaunchPluginService {
@@ -42,13 +43,7 @@ public class NeoForgeDevDistCleaner implements ILaunchPluginService {
         strippedClasses.addAll(classes);
     }
 
-    public void setDistribution(@Nullable Dist dist) {
-        if (dist != null) {
-            this.dist = dist.name();
-            LOGGER.debug(DISTXFORM, "Configuring for Dist {}", this.dist);
-        } else {
-            this.dist = null;
-            LOGGER.debug(DISTXFORM, "Disabling runtime dist cleaner");
-        }
+    public void setDistribution(Dist dist) {
+        this.dist = Objects.requireNonNull(dist.name());
     }
 }
