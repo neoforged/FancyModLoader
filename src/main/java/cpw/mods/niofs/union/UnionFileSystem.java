@@ -404,12 +404,11 @@ public class UnionFileSystem extends FileSystem {
             if (!fastPathExists(dir)) {
                 continue;
             }
-            final var isSimple = embeddedFileSystems.containsKey(bp);
             final var ds = Files.newDirectoryStream(dir, filter);
             closeables.add(ds);
             final var currentPaths = StreamSupport.stream(ds.spliterator(), false)
                     .filter(p -> testFilter(p, bp, null))
-                    .map(other -> fastPath(isSimple ? other : bp.relativize(other)));
+                    .map(other -> path.resolve(fastPath(dir.relativize(other))));
             stream = Stream.concat(stream, currentPaths);
         }
         final Stream<Path> realStream = stream.distinct();

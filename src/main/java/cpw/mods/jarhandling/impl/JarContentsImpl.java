@@ -168,7 +168,7 @@ public class JarContentsImpl implements JarContents {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                     if (file.getFileName().toString().endsWith(".class") && attrs.isRegularFile()) {
-                        var pkg = file.getParent().toString().replace('/', '.');
+                        var pkg = JarContentsImpl.this.filesystem.getRoot().relativize(file.getParent()).toString().replace('/', '.');
                         if (!pkg.isEmpty()) {
                             packages.add(pkg);
                         }

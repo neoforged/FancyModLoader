@@ -137,13 +137,13 @@ public class TestUnionFS {
         final var dir2 = Paths.get("src", "test", "resources", "dir2").toAbsolutePath().normalize();
         var fsp = (UnionFileSystemProvider)FileSystemProvider.installedProviders().stream().filter(fs-> fs.getScheme().equals("union")).findFirst().orElseThrow();
         var ufs = fsp.newFileSystem((path, base)->!path.startsWith("masktest2.txt"), dir1, dir2);
-        var t1 = ufs.getPath("masktest.txt");
-        var t3 = ufs.getPath("masktest3.txt");
-        var t2 = ufs.getPath("masktest2.txt");
+        var t1 = ufs.getPath("/masktest.txt");
+        var t3 = ufs.getPath("/masktest3.txt");
+        var t2 = ufs.getPath("/masktest2.txt");
         assertTrue(Files.exists(t1));
         assertTrue(Files.exists(t3));
         assertTrue(Files.notExists(t2));
-        var sd1 = ufs.getPath("subdir1");
+        var sd1 = ufs.getPath("/subdir1");
         var sdt1 = sd1.resolve("masktestsd1.txt");
         var walk = Set.of(ufs.getRoot(), t1, t3, sd1, sdt1);
         assertDoesNotThrow(()-> {
@@ -160,9 +160,9 @@ public class TestUnionFS {
         var fsp = (UnionFileSystemProvider)FileSystemProvider.installedProviders().stream().filter(fs-> fs.getScheme().equals("union")).findFirst().orElseThrow();
         var all = fsp.newFileSystem((a,b) -> true, dir1);
         var all_expected = Set.of(
-            all.getPath("masktest.txt"),
-            all.getPath("masktest2.txt"),
-            all.getPath("subdir1/masktestsd1.txt")
+            all.getPath("/masktest.txt"),
+            all.getPath("/masktest2.txt"),
+            all.getPath("/subdir1/masktestsd1.txt")
         );
         assertDoesNotThrow(() -> {
            try (var walk = Files.walk(all.getRoot()))  {
@@ -173,7 +173,7 @@ public class TestUnionFS {
 
         var some = assertDoesNotThrow(() -> fsp.newFileSystem((a,b) -> a.endsWith("/") || a.equals("masktest.txt"), dir1));
         var some_expected = Set.of(
-            some.getPath("masktest.txt")
+            some.getPath("/masktest.txt")
         );
         assertDoesNotThrow(() -> {
             try (var walk = Files.walk(some.getRoot()))  {
@@ -189,7 +189,7 @@ public class TestUnionFS {
         var fsp = (UnionFileSystemProvider)FileSystemProvider.installedProviders().stream().filter(fs-> fs.getScheme().equals("union")).findFirst().orElseThrow();
         var inner = fsp.newFileSystem((a,b) -> a.endsWith("/") || a.equals("masktest.txt"), dir1);
         var outer = fsp.newFileSystem((a, b) -> true, inner.getRoot());
-        var path = outer.getPath("masktest.txt");
+        var path = outer.getPath("/masktest.txt");
         var expected = Set.of(path);
         assertDoesNotThrow(() -> {
             try (var walk = Files.walk(outer.getRoot()))  {
@@ -263,7 +263,7 @@ public class TestUnionFS {
             final List<String> foundFiles = new ArrayList<>();
             assertAll(
                     StreamSupport.stream(dirStream.spliterator(), false)
-                        .peek(path -> foundFiles.add(path.toString()))
+                        .peek(path -> foundFiles.add(root.relativize(path).toString()))
                         .map(p-> ()-> {
                             if (!Files.exists(p)) {
                                 throw new NoSuchFileException(p.toString());
