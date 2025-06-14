@@ -16,14 +16,13 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.Event;
-import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.Bindings;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.modscan.ModAnnotation;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.logging.log4j.LogManager;
@@ -76,7 +75,7 @@ public class AutomaticEventSubscriber {
                             }
                         } else {
                             LOGGER.debug(LOADING, "Subscribing method {} to the game event bus", method);
-                            Bindings.getGameBus().register(method);
+                            FMLLoader.getBindings().getGameBus().register(method);
                         }
                     }
                 } catch (Exception e) {
