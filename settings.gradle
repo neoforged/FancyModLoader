@@ -23,13 +23,6 @@ dependencyResolutionManagement {
     rulesMode = RulesMode.FAIL_ON_PROJECT_RULES
     repositories {
         mavenCentral()
-        maven {
-            name 'Maven for PR #36' // https://github.com/neoforged/Bus/pull/36
-            url 'https://prmaven.neoforged.net/Bus/pr36'
-            content {
-                includeModule('net.neoforged', 'bus')
-            }
-        }
     }
 }
 
