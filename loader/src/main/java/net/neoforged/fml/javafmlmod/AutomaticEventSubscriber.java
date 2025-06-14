@@ -7,9 +7,7 @@ package net.neoforged.fml.javafmlmod;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.Event;
-import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.Bindings;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
