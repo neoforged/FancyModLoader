@@ -11,19 +11,25 @@ import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.IModuleLayerManager.Layer;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
 import net.neoforged.neoforgespi.locating.IDependencyLocator;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.IModFileReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Defines a class containing constants which implementations of {@link ITransformerDiscoveryService}
  * may use.
  */
 public final class TransformerDiscovererConstants {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TransformerDiscovererConstants.class);
+
     private TransformerDiscovererConstants() {}
 
     /**
@@ -39,11 +45,20 @@ public final class TransformerDiscovererConstants {
             net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider.class.getName());
 
     public static boolean shouldLoadInServiceLayer(Collection<Path> paths) {
-        return shouldLoadInServiceLayer(JarContents.of(paths));
+        var contents = JarContents.of(paths);
+        try {
+            return shouldLoadInServiceLayer(contents);
+        } finally {
+            try {
+                contents.close();
+            } catch (IOException e) {
+                LOGGER.error("Could not close JarContents {}", paths, e);
+            }
+        }
     }
 
     public static boolean shouldLoadInServiceLayer(Path path) {
-        return shouldLoadInServiceLayer(JarContents.of(path));
+        return shouldLoadInServiceLayer(List.of(path));
     }
 
     public static boolean shouldLoadInServiceLayer(JarContents jarContents) {
