@@ -44,8 +44,6 @@ public class FMLConfig {
         EARLY_WINDOW_WIDTH("earlyWindowWidth", 854, "Early window width"),
         EARLY_WINDOW_HEIGHT("earlyWindowHeight", 480, "Early window height"),
         EARLY_WINDOW_MAXIMIZED("earlyWindowMaximized", Boolean.FALSE, "Early window starts maximized"),
-        @Deprecated(forRemoval = true)
-        EARLY_WINDOW_SQUIR("earlyWindowSquir", Boolean.FALSE, "Squir?"),
         EARLY_LOADING_SCREEN_THEME("earlyLoadingScreenTheme", "", "Force a given theme-id to be used for the early loading screen");
 
         private final String entry;
