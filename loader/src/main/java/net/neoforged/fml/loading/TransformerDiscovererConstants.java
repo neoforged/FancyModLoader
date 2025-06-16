@@ -52,7 +52,7 @@ public final class TransformerDiscovererConstants {
             try {
                 contents.close();
             } catch (IOException e) {
-                LOGGER.error("Could not close JarContents", e);
+                LOGGER.error("Could not close JarContents {}", paths, e);
             }
         }
     }
