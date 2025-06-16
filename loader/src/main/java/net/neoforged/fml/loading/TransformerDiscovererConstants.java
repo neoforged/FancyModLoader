@@ -20,12 +20,16 @@ import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
 import net.neoforged.neoforgespi.locating.IDependencyLocator;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.IModFileReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Defines a class containing constants which implementations of {@link ITransformerDiscoveryService}
  * may use.
  */
 public final class TransformerDiscovererConstants {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TransformerDiscovererConstants.class);
+
     private TransformerDiscovererConstants() {}
 
     /**
@@ -47,7 +51,9 @@ public final class TransformerDiscovererConstants {
         } finally {
             try {
                 contents.close();
-            } catch (IOException ignored) {}
+            } catch (IOException e) {
+                LOGGER.error("Could not close JarContents", e);
+            }
         }
     }
 
