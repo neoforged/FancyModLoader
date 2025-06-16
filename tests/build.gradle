@@ -96,7 +96,3 @@ configurations.configureEach {
         substitute module("net.neoforged.fancymodloader:earlydisplay") using project(":earlydisplay")
     }
 }
-
-dependencies {
-    moddevTestImplementation project(":earlydisplay")
-}
