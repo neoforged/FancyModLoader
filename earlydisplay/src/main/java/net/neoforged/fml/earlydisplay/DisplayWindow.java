@@ -68,7 +68,6 @@ import joptsimple.OptionParser;
 import net.neoforged.fml.earlydisplay.render.LoadingScreenRenderer;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import net.neoforged.fml.earlydisplay.theme.Theme;
-import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 import net.neoforged.fml.earlydisplay.theme.ThemeIds;
 import net.neoforged.fml.earlydisplay.theme.ThemeLoader;
 import net.neoforged.fml.loading.FMLConfig;
@@ -107,7 +106,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private boolean darkMode;
     private Theme theme;
 
-    private int framecount;
     private ScheduledFuture<LoadingScreenRenderer> rendererFuture;
 
     // The GL ID of the window. Used for all operations
@@ -120,7 +118,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private boolean maximized;
     private Map<String, SimpleFont> fonts;
     private Runnable repaintTick = () -> {};
-    private ThemeColor background;
+    private volatile boolean closed;
 
     public DisplayWindow() {
         mainProgress = StartupNotificationManager.addProgressBar("", 0);
@@ -485,7 +483,10 @@ public class DisplayWindow implements ImmediateWindowProvider {
             throw new RuntimeException("Initialization of the loading screen failed.", rendererFuture.exceptionNow());
         }
         glfwPollEvents();
-        repaintTick.run();
+        // An event callback could have closed this display, in that case, we do not want to render again
+        if (!closed) {
+            repaintTick.run();
+        }
     }
 
     @Override
@@ -498,17 +499,18 @@ public class DisplayWindow implements ImmediateWindowProvider {
         mainProgress.complete();
     }
 
-    public void addMojangTexture(final int textureId) {}
-
     public void close() {
-        // Close the Render Scheduler thread
-        renderScheduler.shutdown();
-        try {
-            rendererFuture.get().close();
-        } catch (ExecutionException e) {
-            LOGGER.error("Cannot close renderer since it failed to initialize", e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt(); // Re-interrupt and continue closing
+        if (!closed) {
+            closed = true;
+            // Close the Render Scheduler thread
+            renderScheduler.shutdown();
+            try {
+                rendererFuture.get().close();
+            } catch (ExecutionException e) {
+                LOGGER.error("Cannot close renderer since it failed to initialize", e);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); // Re-interrupt and continue closing
+            }
         }
     }
 

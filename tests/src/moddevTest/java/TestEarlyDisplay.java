@@ -11,6 +11,7 @@ import net.neoforged.fml.earlydisplay.DisplayWindow;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.opengl.GL;
 
 public class TestEarlyDisplay {
     public static void main(String[] args) throws Exception {
@@ -27,7 +28,15 @@ public class TestEarlyDisplay {
         });
 
         AtomicBoolean closed = new AtomicBoolean(false);
-        GLFW.glfwSetWindowCloseCallback(window.getWindowId(), window1 -> {
+
+        // Render once, then take over the window to test that it still works
+        periodicTick.run();
+        long windowId = window.takeOverGlfwWindow();
+
+        // The context moves to the main thread now
+        GL.createCapabilities();
+
+        GLFW.glfwSetWindowCloseCallback(windowId, window1 -> {
             window.close();
             closed.set(true);
         });
@@ -35,7 +44,7 @@ public class TestEarlyDisplay {
         while (!closed.get()) {
             try {
                 periodicTick.run();
-                Thread.sleep(100L);
+                Thread.sleep(20L);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
