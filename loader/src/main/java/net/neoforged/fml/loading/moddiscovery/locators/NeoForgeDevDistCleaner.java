@@ -34,9 +34,19 @@ public class NeoForgeDevDistCleaner implements ILaunchPluginService {
     public EnumSet<Phase> handlesClass(Type classType, boolean isEmpty) {
         if (strippedClasses.contains(classType.getClassName())) {
             LOGGER.error(DISTXFORM, "Attempted to load class {} for invalid dist {}", classType.getClassName(), dist);
-            throw new RuntimeException("Attempted to load class " + classType.getClassName() + " for invalid dist " + dist);
+            // We must sneakily throw a (usually checked) ClassNotFoundException here. This is necessary so that java's
+            // initialization logic produces a NoClassDefFoundError in dev, like it would in prod, when a class
+            // referencing such a class is loaded. Though this should not often matter, as errors cannot generally be
+            // caught in a recoverable fashion, they may still be caught for debugging purposes or the like so it is
+            // best to be consistent here.
+            throwUnchecked(new ClassNotFoundException("Attempted to load class " + classType.getClassName() + " for invalid dist " + dist));
         }
         return EMPTY;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T, X extends Throwable> void throwUnchecked(T throwable) throws X {
+        throw (X) throwable;
     }
 
     public synchronized void stripClasses(Collection<String> classes) {
