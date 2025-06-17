@@ -16,7 +16,6 @@ import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import net.neoforged.accesstransformer.ml.AccessTransformerService;
-import net.neoforged.fml.common.asm.RuntimeDistCleaner;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,8 +24,6 @@ public class TestEnvironment implements IEnvironment {
     private final TestModuleLayerManager moduleLayerManager;
     @Nullable
     public AccessTransformerService accessTransformerService = new AccessTransformerService();
-    @Nullable
-    public RuntimeDistCleaner runtimeDistCleaner = new RuntimeDistCleaner();
     @Nullable
     public RuntimeEnumExtender runtimeEnumExtender = new RuntimeEnumExtender();
 
@@ -64,7 +61,6 @@ public class TestEnvironment implements IEnvironment {
 
     public Stream<ILaunchPluginService> getLaunchPlugins() {
         return Stream.of(accessTransformerService,
-                runtimeDistCleaner,
                 runtimeEnumExtender).filter(Objects::nonNull);
     }
 }
