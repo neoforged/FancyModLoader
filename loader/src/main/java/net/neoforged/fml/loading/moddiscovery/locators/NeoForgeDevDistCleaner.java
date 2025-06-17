@@ -7,6 +7,11 @@ package net.neoforged.fml.loading.moddiscovery.locators;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import net.neoforged.api.distmarker.Dist;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
@@ -14,22 +19,16 @@ import org.slf4j.Logger;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
 
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
-
 public class NeoForgeDevDistCleaner implements ILaunchPluginService {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Marker DISTXFORM = MarkerFactory.getMarker("DISTXFORM");
-    private static final EnumSet<Phase> EMPTY = EnumSet.noneOf(Phase.class); 
+    private static final EnumSet<Phase> EMPTY = EnumSet.noneOf(Phase.class);
 
     @Nullable
     private String dist;
 
     private final Set<String> strippedClasses = new HashSet<>();
-    
+
     @Override
     public String name() {
         return "neoforgedevdistcleaner";

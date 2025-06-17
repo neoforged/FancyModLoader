@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.stream.Stream;
-
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
@@ -89,7 +88,7 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
                     return true;
                 })
                 .build();
-        
+
         var neoForgeDevDistCleaner = (NeoForgeDevDistCleaner) context.environment().findLaunchPlugin("neoforgedevdistcleaner").orElseThrow();
 
         loadMaskedFiles(mcJarContents, maskedPaths, neoForgeDevDistCleaner);
@@ -126,7 +125,7 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
         if (Arrays.stream(dists.split("\\s+")).allMatch(s -> s.equals(dist))) {
             return; // Jar contains only markers for the current dist anyway
         }
-        
+
         Set<String> strippedClasses = new HashSet<>();
 
         for (var entry : manifest.getEntries().entrySet()) {
