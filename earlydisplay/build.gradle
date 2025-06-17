@@ -15,22 +15,39 @@ switch (OperatingSystem.current()) {
 dependencies {
 
     implementation(project(':loader'))
-    
+
     compileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
-    implementation("org.lwjgl:lwjgl:${lwjgl_version}")
-    implementation("org.lwjgl:lwjgl-glfw:${lwjgl_version}")
-    implementation("org.lwjgl:lwjgl-opengl:${lwjgl_version}")
-    implementation("org.lwjgl:lwjgl-stb:${lwjgl_version}")
-    implementation("org.lwjgl:lwjgl-tinyfd:${lwjgl_version}")
+    implementation(platform("org.lwjgl:lwjgl-bom:${lwjgl_version}"))
+    implementation("org.lwjgl:lwjgl")
+    implementation("org.lwjgl:lwjgl-glfw")
+    implementation("org.lwjgl:lwjgl-opengl")
+    implementation("org.lwjgl:lwjgl-stb")
+    implementation("org.lwjgl:lwjgl-tinyfd")
     implementation("org.slf4j:slf4j-api:${slf4j_api_version}")
     implementation("net.sf.jopt-simple:jopt-simple:${jopt_simple_version}")
     
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiter_version}")
-
+    testImplementation("org.junit.jupiter:junit-jupiter-params:$jupiter_version")
+    testImplementation("org.assertj:assertj-core:${assertj_version}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiter_version}")
-    testRuntimeOnly("org.slf4j:slf4j-jdk14:${slf4j_api_version}")
-    testRuntimeOnly("org.lwjgl:lwjgl::${lwjglNatives}")
-    testRuntimeOnly("org.lwjgl:lwjgl-glfw::${lwjglNatives}")
-    testRuntimeOnly("org.lwjgl:lwjgl-opengl::${lwjglNatives}")
-    testRuntimeOnly("org.lwjgl:lwjgl-stb::${lwjglNatives}")
+    testRuntimeOnly("org.lwjgl:lwjgl") {
+        artifact {
+            classifier = lwjglNatives
+        }
+    }
+    testRuntimeOnly("org.lwjgl:lwjgl-glfw") {
+        artifact {
+            classifier = lwjglNatives
+        }
+    }
+    testRuntimeOnly("org.lwjgl:lwjgl-opengl") {
+        artifact {
+            classifier = lwjglNatives
+        }
+    }
+    testRuntimeOnly("org.lwjgl:lwjgl-stb") {
+        artifact {
+            classifier = lwjglNatives
+        }
+    }
 }
