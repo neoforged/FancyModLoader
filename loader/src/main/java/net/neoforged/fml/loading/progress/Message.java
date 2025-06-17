@@ -32,7 +32,7 @@ public class Message {
         return type.colour();
     }
 
-    enum MessageType {
+    public enum MessageType {
         MC(1.0f, 1.0f, 1.0f),
         ML(0.0f, 0.0f, 0.5f),
         LOC(0.0f, 0.5f, 0.0f),
