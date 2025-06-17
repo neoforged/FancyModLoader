@@ -82,7 +82,7 @@ public class FMLLoader {
             LOGGER.error(LogMarkers.CORE, "NeoForgeDevDistCleaner is missing, we need this to run");
             return new IncompatibleEnvironmentException("Missing NeoForgeDevDistCleaner, cannot run!");
         });
-        LOGGER.debug(LogMarkers.CORE, "Found Runtime Dist Cleaner");
+        LOGGER.debug(LogMarkers.CORE, "Found NeoForgeDev Dist Cleaner");
 
         try {
             Class.forName("com.electronwill.nightconfig.core.Config", false, environment.getClass().getClassLoader());
