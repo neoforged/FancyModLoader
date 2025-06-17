@@ -33,10 +33,8 @@ import static org.lwjgl.glfw.GLFW.glfwInit;
 import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwMaximizeWindow;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
-import static org.lwjgl.glfw.GLFW.glfwSetFramebufferSizeCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowIcon;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowPos;
-import static org.lwjgl.glfw.GLFW.glfwSetWindowPosCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowSizeCallback;
 import static org.lwjgl.glfw.GLFW.glfwShowWindow;
 import static org.lwjgl.glfw.GLFW.glfwSwapInterval;
@@ -461,8 +459,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
         // Set the title to what the game wants
         glfwSwapInterval(0);
         // Clean up our hooks
-        glfwSetFramebufferSizeCallback(window, null).close();
-        glfwSetWindowPosCallback(window, null).close();
         glfwSetWindowSizeCallback(window, null).close();
         this.repaintTick = renderer::renderToScreen; // the repaint will continue to be called until the overlay takes over
         return window;
