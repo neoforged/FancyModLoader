@@ -65,7 +65,10 @@ public final class ImageLoader {
             var height = new int[1];
             var channels = new int[1];
             var decodedImage = STBImage.stbi_load_from_memory(buffer.buffer(), width, height, channels, 4);
-            // TODO: Handle image decoding error
+            if (decodedImage == null) {
+                throw new IOException("PNG decoding error");
+            }
+
             return new Result.Success(new UncompressedImage(
                     debugName,
                     source,

@@ -6,9 +6,11 @@
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.atomic.AtomicBoolean;
 import net.neoforged.fml.earlydisplay.DisplayWindow;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
+import org.lwjgl.glfw.GLFW;
 
 public class TestEarlyDisplay {
     public static void main(String[] args) throws Exception {
@@ -24,7 +26,13 @@ public class TestEarlyDisplay {
                 "--fml.neoForgeVersion", "21.5.123-beta"
         });
 
-        while (true) {
+        AtomicBoolean closed = new AtomicBoolean(false);
+        GLFW.glfwSetWindowCloseCallback(window.getWindowId(), window1 -> {
+            window.close();
+            closed.set(true);
+        });
+
+        while (!closed.get()) {
             try {
                 periodicTick.run();
                 Thread.sleep(100L);

@@ -44,6 +44,8 @@ import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
 import net.neoforged.fml.earlydisplay.util.Bounds;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.glfw.GLFW;
+import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL32C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -257,8 +259,19 @@ public class LoadingScreenRenderer implements AutoCloseable {
 
     @Override
     public void close() {
-        // TODO       this.context.elementShader().close();
+        GLFW.glfwMakeContextCurrent(glfwWindow);
+        GL.createCapabilities();
+
+        theme.close();
+        for (var element : elements) {
+            element.close();
+        }
+        framebuffer.close();
+        buffer.close();
         SimpleBufferBuilder.destroy();
+
+        GLFW.glfwMakeContextCurrent(0);
+        GL.setCapabilities(null);
     }
 
     public int getFramebufferTextureId() {

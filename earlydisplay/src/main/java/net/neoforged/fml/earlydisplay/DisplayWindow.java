@@ -25,11 +25,9 @@ import static org.lwjgl.glfw.GLFW.GLFW_X11_INSTANCE_NAME;
 import static org.lwjgl.glfw.GLFW.glfwCreateWindow;
 import static org.lwjgl.glfw.GLFW.glfwDefaultWindowHints;
 import static org.lwjgl.glfw.GLFW.glfwGetError;
-import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.glfw.GLFW.glfwGetMonitorPos;
 import static org.lwjgl.glfw.GLFW.glfwGetPrimaryMonitor;
 import static org.lwjgl.glfw.GLFW.glfwGetVideoMode;
-import static org.lwjgl.glfw.GLFW.glfwGetWindowPos;
 import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
 import static org.lwjgl.glfw.GLFW.glfwInit;
 import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
@@ -118,12 +116,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private long window;
     // The thread that contains and ticks the window while Forge is loading mods
     private ScheduledExecutorService renderScheduler;
-    private int fbWidth;
-    private int fbHeight;
     private int winWidth;
     private int winHeight;
-    private int winX;
-    private int winY;
 
     private boolean maximized;
     private Map<String, SimpleFont> fonts;
@@ -397,19 +391,11 @@ public class DisplayWindow implements ImmediateWindowProvider {
         }
         getLastGlfwError().ifPresent(error -> LOGGER.warn("Failed to set window icon: {}", error));
 
-        glfwSetFramebufferSizeCallback(window, this::fbResize);
-        glfwSetWindowPosCallback(window, this::winMove);
         glfwSetWindowSizeCallback(window, this::winResize);
 
         // Show the window
         glfwShowWindow(window);
-        glfwGetWindowPos(window, x, y);
         getLastGlfwError().ifPresent(error -> LOGGER.warn("Failed to show and position window: {}", error));
-        this.winX = x[0];
-        this.winY = y[0];
-        glfwGetFramebufferSize(window, x, y);
-        this.fbWidth = x[0];
-        this.fbHeight = y[0];
         glfwPollEvents();
     }
 
@@ -417,20 +403,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
         if (window == this.window && width != 0 && height != 0) {
             this.winWidth = width;
             this.winHeight = height;
-        }
-    }
-
-    private void fbResize(long window, int width, int height) {
-        if (window == this.window && width != 0 && height != 0) {
-            this.fbWidth = width;
-            this.fbHeight = height;
-        }
-    }
-
-    private void winMove(long window, int x, int y) {
-        if (window == this.window) {
-            this.winX = x;
-            this.winY = y;
         }
     }
 
@@ -505,6 +477,10 @@ public class DisplayWindow implements ImmediateWindowProvider {
             throw new IllegalStateException("Initialization of the renderer has not completed yet.");
         }
         return rendererFuture.resultNow().getFramebufferTextureId();
+    }
+
+    public long getWindowId() {
+        return window;
     }
 
     @Override
