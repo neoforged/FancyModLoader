@@ -56,7 +56,7 @@ public @interface EventBusSubscriber {
     Dist[] value() default { Dist.CLIENT, Dist.DEDICATED_SERVER };
 
     /**
-     * Optional value, only necessary for multi-mod files.
+     * Optional value, only necessary for mod jars that contain multiple mods.
      *
      * @return the mod id whose mod bus events to subscribe to
      */

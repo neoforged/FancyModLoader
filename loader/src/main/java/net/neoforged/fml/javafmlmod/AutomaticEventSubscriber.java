@@ -55,7 +55,9 @@ public class AutomaticEventSubscriber {
                     var clazz = Class.forName(ad.clazz().getClassName(), true, layer.getClassLoader());
 
                     for (Method method : clazz.getDeclaredMethods()) {
-                        if (!method.isAnnotationPresent(SubscribeEvent.class)) continue;
+                        if (!method.isAnnotationPresent(SubscribeEvent.class)) {
+                            continue;
+                        }
 
                         if (!Modifier.isStatic(method.getModifiers())) {
                             throw new IllegalArgumentException("Method " + method + " annotated with @SubscribeEvent is not static");
