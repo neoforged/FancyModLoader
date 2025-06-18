@@ -71,7 +71,9 @@ public class AutomaticEventSubscriber {
 
                         if (IModBusEvent.class.isAssignableFrom(eventType)) {
                             var modBus = mod.getEventBus();
-                            if (modBus != null) {
+                            if (modBus == null) {
+                                throw new IllegalArgumentException("Method " + method + " attempted to register a mod bus event, but mod " + mod.getModId() + " has no event bus");
+                            } else {
                                 LOGGER.debug(LOADING, "Subscribing method {} to the event bus of mod {}", method, mod.getModId());
                                 modBus.register(method);
                             }
@@ -92,6 +94,7 @@ public class AutomaticEventSubscriber {
         if (data == null) {
             return EnumSet.allOf(Dist.class);
         } else {
+            //noinspection unchecked
             return ((List<ModAnnotation.EnumHolder>) data).stream().map(eh -> Dist.valueOf(eh.value())).collect(Collectors.toCollection(() -> EnumSet.noneOf(Dist.class)));
         }
     }
