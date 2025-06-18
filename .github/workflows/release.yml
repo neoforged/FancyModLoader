@@ -17,7 +17,8 @@ jobs:
     with:
       java: 21
       pre_gradle_tasks: test
-      gradle_tasks: publish 
+      gradle_tasks: publish
+      graphics_environment: true
     secrets:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
       MAVEN_USER: ${{ secrets.MAVEN_USER }}
