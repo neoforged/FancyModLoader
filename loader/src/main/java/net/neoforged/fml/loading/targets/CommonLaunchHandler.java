@@ -125,6 +125,10 @@ public abstract class CommonLaunchHandler implements ILaunchHandlerService {
     }
 
     protected void runTarget(final String target, final String[] arguments, final ModuleLayer layer) throws Throwable {
-        Class.forName(layer.findModule("minecraft").orElseThrow(), target).getMethod("main", String[].class).invoke(null, (Object) arguments);
+        Class<?> entrypointClass = Class.forName(layer.findModule("minecraft").orElseThrow(), target);
+        if (entrypointClass == null) {
+            throw new ClassNotFoundException(target);
+        }
+        entrypointClass.getMethod("main", String[].class).invoke(null, (Object) arguments);
     }
 }
