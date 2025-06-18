@@ -90,11 +90,11 @@ public class AutomaticEventSubscriber {
         });
     }
 
+    @SuppressWarnings("unchecked")
     public static EnumSet<Dist> getSides(Object data) {
         if (data == null) {
             return EnumSet.allOf(Dist.class);
         } else {
-            //noinspection unchecked
             return ((List<ModAnnotation.EnumHolder>) data).stream().map(eh -> Dist.valueOf(eh.value())).collect(Collectors.toCollection(() -> EnumSet.noneOf(Dist.class)));
         }
     }
