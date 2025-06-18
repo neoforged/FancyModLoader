@@ -2,20 +2,30 @@ plugins {
     id 'net.neoforged.moddev'
 }
 
+sourceSets {
+    moddevTest
+}
+
 neoForge {
-    version = test_neoforge_version
+    enable {
+        version = test_neoforge_version
+        enabledSourceSets = [sourceSets.moddevTest]
+    }
     runs {
         client {
             client()
             gameDirectory = file("build/runs/client")
+            sourceSet = sourceSets.moddevTest
         }
         server {
             server()
             gameDirectory = file("build/runs/server")
+            sourceSet = sourceSets.moddevTest
         }
         clientData {
             clientData()
             gameDirectory = file("build/runs/data")
+            sourceSet = sourceSets.moddevTest
         }
     }
 }
