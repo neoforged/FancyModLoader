@@ -7,18 +7,22 @@ package net.neoforged.fml.javafmlmod;
 
 import static net.neoforged.fml.Logging.LOADING;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.Bindings;
+import net.neoforged.bus.api.Event;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.modscan.ModAnnotation;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.logging.log4j.LogManager;
@@ -27,8 +31,8 @@ import org.objectweb.asm.Type;
 
 /**
  * Automatic eventbus subscriber - reads {@link EventBusSubscriber}
- * annotations and passes the class instances to the {@link EventBusSubscriber.Bus}
- * defined by the annotation. Defaults to {@code NeoForge#EVENT_BUS}
+ * annotations and passes individual {@linkplain Method}s to the correct event bus
+ * based on whether the event type inherits from {@link IModBusEvent}.
  */
 public class AutomaticEventSubscriber {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -42,22 +46,41 @@ public class AutomaticEventSubscriber {
         Map<String, String> modids = scanData.getAnnotations().stream().filter(annotationData -> MOD_TYPE.equals(annotationData.annotationType())).collect(Collectors.toMap(a -> a.clazz().getClassName(), a -> (String) a.annotationData().get("value")));
 
         ebsTargets.forEach(ad -> {
-            @SuppressWarnings("unchecked")
             final EnumSet<Dist> sides = getSides(ad.annotationData().get("value"));
             final String modId = (String) ad.annotationData().getOrDefault("modid", modids.getOrDefault(ad.clazz().getClassName(), mod.getModId()));
-            final ModAnnotation.EnumHolder busTargetHolder = (ModAnnotation.EnumHolder) ad.annotationData().getOrDefault("bus", new ModAnnotation.EnumHolder(null, EventBusSubscriber.Bus.GAME.name()));
-            final EventBusSubscriber.Bus busTarget = EventBusSubscriber.Bus.valueOf(busTargetHolder.value());
             if (Objects.equals(mod.getModId(), modId) && sides.contains(FMLEnvironment.dist)) {
+                LOGGER.debug(LOADING, "Scanning class {} for @SubscribeEvent-annotated methods", ad.clazz().getClassName());
+
                 try {
-                    IEventBus bus = switch (busTarget) {
-                        case GAME -> Bindings.getGameBus();
-                        case MOD -> mod.getEventBus();
-                    };
+                    var clazz = Class.forName(ad.clazz().getClassName(), true, layer.getClassLoader());
 
-                    if (bus != null) {
-                        LOGGER.debug(LOADING, "Auto-subscribing {} to {}", ad.clazz().getClassName(), busTarget);
+                    for (Method method : clazz.getDeclaredMethods()) {
+                        if (!method.isAnnotationPresent(SubscribeEvent.class)) {
+                            continue;
+                        }
 
-                        bus.register(Class.forName(ad.clazz().getClassName(), true, layer.getClassLoader()));
+                        if (!Modifier.isStatic(method.getModifiers())) {
+                            throw new IllegalArgumentException("Method " + method + " annotated with @SubscribeEvent is not static");
+                        }
+
+                        if (method.getParameterCount() != 1 || !Event.class.isAssignableFrom(method.getParameterTypes()[0])) {
+                            throw new IllegalArgumentException("Method " + method + " annotated with @SubscribeEvent must have only one parameter that is an Event subtype");
+                        }
+
+                        var eventType = method.getParameterTypes()[0];
+
+                        if (IModBusEvent.class.isAssignableFrom(eventType)) {
+                            var modBus = mod.getEventBus();
+                            if (modBus == null) {
+                                throw new IllegalArgumentException("Method " + method + " attempted to register a mod bus event, but mod " + mod.getModId() + " has no event bus");
+                            } else {
+                                LOGGER.debug(LOADING, "Subscribing method {} to the event bus of mod {}", method, mod.getModId());
+                                modBus.register(method);
+                            }
+                        } else {
+                            LOGGER.debug(LOADING, "Subscribing method {} to the game event bus", method);
+                            FMLLoader.getBindings().getGameBus().register(method);
+                        }
                     }
                 } catch (Exception e) {
                     LOGGER.fatal(LOADING, "Failed to register class {} with @EventBusSubscriber annotation", ad.clazz(), e);
@@ -67,6 +90,7 @@ public class AutomaticEventSubscriber {
         });
     }
 
+    @SuppressWarnings("unchecked")
     public static EnumSet<Dist> getSides(Object data) {
         if (data == null) {
             return EnumSet.allOf(Dist.class);
