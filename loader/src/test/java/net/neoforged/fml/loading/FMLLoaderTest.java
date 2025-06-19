@@ -45,7 +45,7 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
+            installation.assertMinecraftClientJar(result, true);
             installation.assertNeoForgeJar(result);
         }
 
@@ -71,7 +71,7 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
+            installation.assertMinecraftClientJar(result, false);
             installation.assertNeoForgeJar(result);
         }
 
@@ -83,7 +83,7 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
+            installation.assertMinecraftClientJar(result, false);
             installation.assertNeoForgeJar(result);
         }
 
@@ -95,7 +95,7 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
+            installation.assertMinecraftClientJar(result, false);
             installation.assertNeoForgeJar(result);
         }
 
@@ -107,7 +107,7 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
+            installation.assertMinecraftClientJar(result, false);
             installation.assertNeoForgeJar(result);
         }
 
@@ -121,7 +121,7 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
+            installation.assertMinecraftClientJar(result, false);
             installation.assertNeoForgeJar(result);
         }
 
@@ -135,7 +135,7 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
+            installation.assertMinecraftClientJar(result, false);
             installation.assertNeoForgeJar(result);
         }
 
@@ -149,7 +149,7 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
+            installation.assertMinecraftClientJar(result, false);
             installation.assertNeoForgeJar(result);
         }
 
@@ -163,7 +163,7 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
+            installation.assertMinecraftClientJar(result, false);
             installation.assertNeoForgeJar(result);
         }
     }
@@ -182,7 +182,7 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge", "testmod1");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
+            installation.assertMinecraftClientJar(result, true);
             installation.assertNeoForgeJar(result);
         }
 

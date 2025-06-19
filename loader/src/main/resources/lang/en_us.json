@@ -44,6 +44,8 @@
   "fml.modloadingissue.technical_error": "A technical error occurred during mod loading: {0}",
   "fml.modloadingissue.invalid_maven_coordinate": "The following Maven coordinate is invalid: {0}",
   "fml.modloadingissue.maven_coordinate_not_found": "No mod with the Maven coordinate {0} could be found in {1}",
+  "fml.modloadingissue.neodev_missing_dists_attribute": "NeoForge dev environment jar does not have a {0} attribute in its manifest",
+  "fml.modloadingissue.neodev_missing_appropriate_dist": "NeoForge dev environment jar does not have a {0} marker in its {1} attribute in its manifest",
   "fml.modloadingissue.failed_to_list_folder_content": "Failed to list content of folder {0}",
   "fml.modloadingissue.failed_to_find_on_classpath": "Failed to find {0} on the classpath",
   "fml.modloadingissue.multiple_copies_on_classpath": "Found multiple copies of {0} on the classpath: {1}",
