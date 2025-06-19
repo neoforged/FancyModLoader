@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Provides the Minecraft and NeoForge mods in a NeoForge dev environment.
+ * Provides the Minecraft and NeoForge mods in a NeoForge dev environment or a mod dev environment.
  */
 public class NeoForgeDevProvider implements IModFileCandidateLocator {
     private static final Logger LOG = LoggerFactory.getLogger(NeoForgeDevProvider.class);
