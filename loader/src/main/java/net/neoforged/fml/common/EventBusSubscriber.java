@@ -9,13 +9,15 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.event.IModBusEvent;
 
 // @formatter:off - spotless doesn't like @
 /**
- * Annotate a class which will be subscribed to an Event Bus at mod construction time. Defaults to subscribing the current modid to the {@code NeoForge#EVENT_BUS} on both sides.
+ * Annotate a class which will be subscribed to an Event Bus at mod construction time.
  *
  * <p>Annotated classes will be scanned for <b>static</b> methods that have the {@link SubscribeEvent} annotation.
  * For example:
@@ -34,8 +36,14 @@ import net.neoforged.fml.ModContainer;
  *     }
  * }
  * }
- *
- * @see Bus
+ * <p>
+ * Event subscribers for events inheriting from {@link IModBusEvent} will be registered to the {@link ModContainer#getEventBus() mod's event bus},
+ * while the rest will be registered to the {@code NeoForge#EVENT_BUS}.
+ * <p>
+ * <strong>Note:</strong> while you can still manually specify one of the buses via {@link #bus()}, it
+ * is not recommended to do so anymore as this option is no available present in later versions.
+ * <p>
+ * By default, the subscribers will be registered on both physical sides. This can be customised using {@link #value()}.
  */
 // @formatter:on
 @Retention(RetentionPolicy.RUNTIME)
@@ -46,12 +54,12 @@ public @interface EventBusSubscriber {
      *
      * @return an array of Dist to load this event subscriber on
      */
-    Dist[] value() default { Dist.CLIENT, Dist.DEDICATED_SERVER };
+    Dist[] value() default {Dist.CLIENT, Dist.DEDICATED_SERVER};
 
     /**
-     * Optional value, only necessary if this annotation is not on the same class that has a @Mod annotation. Needed to prevent early classloading of classes not owned by your mod.
+     * Optional value, only necessary for mod jars that contain multiple mods.
      *
-     * @return a modid
+     * @return the mod id whose mod bus events to subscribe to
      */
     String modid() default "";
 
@@ -59,9 +67,15 @@ public @interface EventBusSubscriber {
      * Specify an alternative bus to listen to
      *
      * @return the bus you wish to listen to
+     * @deprecated Prefer not specifying a bus at all and instead relying on the default {@link Bus#BOTH}, which is the only option present in later versions
      */
-    Bus bus() default Bus.GAME;
+    @Deprecated(since = "1.21.1", forRemoval = true)
+    Bus bus() default Bus.BOTH;
 
+    /**
+     * @deprecated Prefer not specifying a bus at all and instead relying on the default {@link Bus#BOTH}, which is the only option present in later versions
+     */
+    @Deprecated(since = "1.21.1", forRemoval = true)
     enum Bus {
         /**
          * The main NeoForge Event Bus, used after the game has started up.
@@ -75,5 +89,15 @@ public @interface EventBusSubscriber {
          * @see ModContainer#getEventBus()
          */
         MOD,
+        /**
+         * Used when an {@linkplain EventBusSubscriber EventBusSubscriber-annotated class} has listeners
+         * for either the mod event bus, the game event bus, or a mix of both.
+         * <p>
+         * Listeners whose event type inherits from {@link IModBusEvent} will be registered to the {@linkplain ModContainer#getEventBus() mod bus}
+         * while other listeners will be registered to the {@linkplain #GAME game bus}.
+         * <p>
+         * This is the new default as, in later versions, the bus cannot be specified in {@linkplain EventBusSubscriber#bus() the annotation} anymore.
+         */
+        BOTH
     }
 }
