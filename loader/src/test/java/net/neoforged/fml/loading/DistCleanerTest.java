@@ -59,7 +59,7 @@ class DistCleanerTest extends LauncherTest {
                 Files.readAllBytes(memoryFs.getPath("/", loadsMaskedClassPath)));
         var clientAssetsContent = new IdentifiableContent("CLIENT_ASSETS", "assets/.mcassetsroot");
         var sharedAssetsContent = new IdentifiableContent("SHARED_ASSETS", "data/.mcassetsroot");
-        
+
         SimulatedInstallation.writeJarFile(clientExtraJar,
                 manifestContent,
                 maskedResourceContent,
@@ -79,8 +79,7 @@ class DistCleanerTest extends LauncherTest {
                 sharedAssetsContent,
                 // Other resources from the main jar
                 SimulatedInstallation.generateClass("PATCHED_CLIENT", "net/minecraft/client/Minecraft.class"),
-                SimulatedInstallation.generateClass("PATCHED_SHARED", "net/minecraft/server/MinecraftServer.class")
-        ));
+                SimulatedInstallation.generateClass("PATCHED_SHARED", "net/minecraft/server/MinecraftServer.class")));
         assertThatThrownBy(() -> Class.forName("test.Masked", true, gameClassLoader))
                 .isExactlyInstanceOf(ClassNotFoundException.class).hasMessage("Attempted to load class test.Masked which is not present on the dedicated server");
         assertThatThrownBy(() -> Class.forName("test.LoadsMasked", true, gameClassLoader))
