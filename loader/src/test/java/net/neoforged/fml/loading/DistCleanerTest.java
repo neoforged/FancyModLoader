@@ -16,10 +16,31 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.test.RuntimeCompiler;
 import org.junit.jupiter.api.Test;
 
 class DistCleanerTest extends LauncherTest {
+    @Test
+    void testEnforceManifest() throws Exception {
+        var classpath = installation.setupUserdevProject();
+        var clientExtraJar = installation.getProjectRoot().resolve("client-extra.jar");
+
+        var clientAssetsContent = new IdentifiableContent("CLIENT_ASSETS", "assets/.mcassetsroot");
+        var sharedAssetsContent = new IdentifiableContent("SHARED_ASSETS", "data/.mcassetsroot");
+
+        SimulatedInstallation.writeJarFile(clientExtraJar,
+                clientAssetsContent,
+                sharedAssetsContent);
+
+        assertThatThrownBy(() -> launchAndLoadWithAdditionalClasspath("neoforgeserverdev", classpath))
+                .isExactlyInstanceOf(ModLoadingException.class)
+                .hasMessage("""
+                        Loading errors encountered:
+                            - NeoForge dev environment client-extra jar does not have a Minecraft-Dists attribute in its manifest
+                        """);
+    }
+
     @Test
     void testUserDevDistCleaning() throws Exception {
         var classpath = installation.setupUserdevProject();
