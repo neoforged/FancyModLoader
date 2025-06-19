@@ -259,9 +259,6 @@ public class LoadingScreenRenderer implements AutoCloseable {
 
     @Override
     public void close() {
-        GLFW.glfwMakeContextCurrent(glfwWindow);
-        GL.createCapabilities();
-
         theme.close();
         for (var element : elements) {
             element.close();
@@ -269,9 +266,6 @@ public class LoadingScreenRenderer implements AutoCloseable {
         framebuffer.close();
         buffer.close();
         SimpleBufferBuilder.destroy();
-
-        GLFW.glfwMakeContextCurrent(0);
-        GL.setCapabilities(null);
     }
 
     public int getFramebufferTextureId() {
