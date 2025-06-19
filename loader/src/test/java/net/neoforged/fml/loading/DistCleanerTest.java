@@ -37,7 +37,7 @@ class DistCleanerTest extends LauncherTest {
                 .isExactlyInstanceOf(ModLoadingException.class)
                 .hasMessage("""
                         Loading errors encountered:
-                            - NeoForge dev environment client-extra jar does not have a Minecraft-Dists attribute in its manifest
+                        \t- NeoForge dev environment client-extra jar does not have a Minecraft-Dists attribute in its manifest; this may be because you have an out-of-date gradle plugin
                         """);
     }
 
