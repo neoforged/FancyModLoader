@@ -462,19 +462,16 @@ public class DisplayWindow implements ImmediateWindowProvider {
         return window;
     }
 
-    @Override
-    public void updateModuleReads(final ModuleLayer layer) {}
-
-    // Called from Neo
+    /**
+     * <strong>Called from Neo</strong>
+     * 
+     * @return The OpenGL texture id of the texture the early loading screen is being rendered into.
+     */
     public int getFramebufferTextureId() {
         if (!rendererFuture.isDone()) {
             throw new IllegalStateException("Initialization of the renderer has not completed yet.");
         }
         return rendererFuture.resultNow().getFramebufferTextureId();
-    }
-
-    public long getWindowId() {
-        return window;
     }
 
     @Override
