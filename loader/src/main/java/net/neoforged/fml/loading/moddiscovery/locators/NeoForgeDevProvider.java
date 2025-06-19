@@ -112,6 +112,10 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
         pipeline.addModFile(JarModsDotTomlModFileReader.createModFile(neoforgeJarContents, ModFileDiscoveryAttributes.DEFAULT));
     }
 
+    /**
+     * Loads file masking information from the jar's manifest, masking resource files that should not be present and
+     * telling {@link NeoForgeDevDistCleaner} to clean class files that should be masked.
+     */
     private void loadMaskedFiles(JarContents minecraftJar, Set<String> maskedPaths, NeoForgeDevDistCleaner neoForgeDevDistCleaner) {
         var manifest = minecraftJar.getManifest();
         String dists = manifest.getMainAttributes().getValue(NAME_DISTS);
@@ -142,7 +146,7 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
             }
         }
 
-        neoForgeDevDistCleaner.stripClasses(strippedClasses);
+        neoForgeDevDistCleaner.maskClasses(strippedClasses);
     }
 
     private static String[] getNeoForgeSpecificPathPrefixes() {
