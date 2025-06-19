@@ -31,5 +31,5 @@ rootProject.name = 'FancyModLoader'
 include 'loader'
 include 'earlydisplay'
 include 'junit'
-//include 'tests'
+include 'tests'
 enableFeaturePreview "STABLE_CONFIGURATION_CACHE"
