@@ -64,12 +64,6 @@ public class ImmediateWindowHandler {
         }
     }
 
-    public static void acceptGameLayer(final ModuleLayer layer) {
-        if (provider != null) {
-            provider.updateModuleReads(layer);
-        }
-    }
-
     public static void updateProgress(final String message) {
         if (provider != null) {
             provider.updateProgress(message);

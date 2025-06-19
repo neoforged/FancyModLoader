@@ -162,7 +162,6 @@ public class FMLLoader {
 
     public static void beforeStart(ModuleLayer gameLayer) {
         FMLLoader.gameLayer = gameLayer;
-        ImmediateWindowHandler.acceptGameLayer(gameLayer);
         ImmediateWindowHandler.updateProgress("Launching minecraft");
         progressWindowTick.run();
     }

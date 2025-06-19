@@ -259,19 +259,30 @@ public class LoadingScreenRenderer implements AutoCloseable {
 
     @Override
     public void close() {
-        GLFW.glfwMakeContextCurrent(glfwWindow);
-        GL.createCapabilities();
+        var previousContext = GLFW.glfwGetCurrentContext();
+        var previousCaps = GL.getCapabilities();
 
-        theme.close();
-        for (var element : elements) {
-            element.close();
+        boolean needsToRestoreContext = false;
+        if (previousContext != glfwWindow) {
+            GLFW.glfwMakeContextCurrent(glfwWindow);
+            GL.createCapabilities();
+            needsToRestoreContext = true;
         }
-        framebuffer.close();
-        buffer.close();
-        SimpleBufferBuilder.destroy();
 
-        GLFW.glfwMakeContextCurrent(0);
-        GL.setCapabilities(null);
+        try {
+            theme.close();
+            for (var element : elements) {
+                element.close();
+            }
+            framebuffer.close();
+            buffer.close();
+            SimpleBufferBuilder.destroy();
+        } finally {
+            if (needsToRestoreContext) {
+                GLFW.glfwMakeContextCurrent(previousContext);
+                GL.setCapabilities(previousCaps);
+            }
+        }
     }
 
     public int getFramebufferTextureId() {

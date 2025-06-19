@@ -41,14 +41,6 @@ public interface ImmediateWindowProvider extends EarlyLoadingScreenController {
     Runnable initialize(String[] arguments);
 
     /**
-     * This is called during the module loading process to allow us to find objects inside the GAME layer, such as a
-     * later loading screen.
-     * 
-     * @param layer This is the GAME layer from ModLauncher
-     */
-    void updateModuleReads(ModuleLayer layer);
-
-    /**
      * This is called during some very early startup routines to show a crash dialog
      * using e.g. tinyfd dialogs
      * 
