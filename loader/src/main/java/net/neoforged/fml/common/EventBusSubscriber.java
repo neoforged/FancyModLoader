@@ -40,7 +40,7 @@ import net.neoforged.fml.event.IModBusEvent;
  * while the rest will be registered to the {@code NeoForge#EVENT_BUS}.
  * <p>
  * <strong>Note:</strong> while you can still manually specify one of the buses via {@link #bus()}, it
- * is not recommended to do so anymore as this option is no available present in later versions.
+ * is not recommended to do so anymore as this option is removed in later versions.
  * <p>
  * By default, the subscribers will be registered on both physical sides. This can be customised using {@link #value()}.
  */
