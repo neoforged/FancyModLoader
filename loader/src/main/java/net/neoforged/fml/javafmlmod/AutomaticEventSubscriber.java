@@ -5,19 +5,7 @@
 
 package net.neoforged.fml.javafmlmod;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.Event;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.event.IModBusEvent;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.fml.loading.modscan.ModAnnotation;
-import net.neoforged.neoforgespi.language.ModFileScanData;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.objectweb.asm.Type;
+import static net.neoforged.fml.Logging.LOADING;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -27,13 +15,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import static net.neoforged.fml.Logging.LOADING;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.Event;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.IModBusEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.modscan.ModAnnotation;
+import net.neoforged.neoforgespi.language.ModFileScanData;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.objectweb.asm.Type;
 
 /**
  * Automatic eventbus subscriber - reads {@link EventBusSubscriber}
- * annotations and passes the class instances to the {@link EventBusSubscriber.Bus}
- * defined by the annotation. Defaults to {@code NeoForge#EVENT_BUS}
+ * annotations and passes the class instances to the needed bus based on each listener's event type.
  */
 public class AutomaticEventSubscriber {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -87,7 +87,7 @@ public class AutomaticEventSubscriber {
                         // in order to unregister all @SubscribeEvent-annotated listeners inside it
                         if (modBusListeners.isEmpty()) {
                             LOGGER.debug("Subscribing @EventBusSubscriber class {} to the game event bus", ad.clazz());
-                            Bindings.getGameBus().register(clazz);
+                            FMLLoader.getBindings().getGameBus().register(clazz);
                         } else {
                             if (gameBusListeners.isEmpty()) {
                                 var modBus = mod.getEventBus();
@@ -109,13 +109,13 @@ public class AutomaticEventSubscriber {
 
                                 for (var method : gameBusListeners) {
                                     LOGGER.debug(LOADING, "Subscribing method {} to the game event bus", method);
-                                    Bindings.getGameBus().register(method);
+                                    FMLLoader.getBindings().getGameBus().register(method);
                                 }
                             }
                         }
                     } else {
                         IEventBus bus = switch (busTarget) {
-                            case GAME -> Bindings.getGameBus();
+                            case GAME -> FMLLoader.getBindings().getGameBus();
                             case MOD -> mod.getEventBus();
                             default -> null;
                         };

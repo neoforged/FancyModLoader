@@ -9,7 +9,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -54,7 +53,7 @@ public @interface EventBusSubscriber {
      *
      * @return an array of Dist to load this event subscriber on
      */
-    Dist[] value() default {Dist.CLIENT, Dist.DEDICATED_SERVER};
+    Dist[] value() default { Dist.CLIENT, Dist.DEDICATED_SERVER };
 
     /**
      * Optional value, only necessary for mod jars that contain multiple mods.

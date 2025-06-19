@@ -56,7 +56,7 @@ public class FMLLoader {
     private static ModuleLayer gameLayer;
 
     @Nullable
-    static IBindingsProvider bindings;
+    static volatile IBindingsProvider bindings;
 
     static void onInitialLoad(IEnvironment environment) throws IncompatibleEnvironmentException {
         final String version = LauncherVersion.getVersion();
@@ -206,12 +206,16 @@ public class FMLLoader {
     @ApiStatus.Internal
     public static IBindingsProvider getBindings() {
         if (bindings == null) {
-            var providers = ServiceLoader.load(FMLLoader.getGameLayer(), IBindingsProvider.class)
-                    .stream().toList();
-            if (providers.size() != 1) {
-                throw new IllegalStateException("Could not find bindings provider");
+            synchronized (FMLLoader.class) {
+                if (bindings == null) {
+                    var providers = ServiceLoader.load(FMLLoader.getGameLayer(), IBindingsProvider.class)
+                            .stream().toList();
+                    if (providers.size() != 1) {
+                        throw new IllegalStateException("Could not find bindings provider");
+                    }
+                    bindings = providers.get(0).get();
+                }
             }
-            bindings = providers.get(0).get();
         }
         return bindings;
     }
