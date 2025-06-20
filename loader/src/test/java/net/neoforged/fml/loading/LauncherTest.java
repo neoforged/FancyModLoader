@@ -41,9 +41,13 @@ import java.util.stream.Collectors;
 import joptsimple.OptionParser;
 import joptsimple.OptionSpec;
 import net.bytebuddy.agent.ByteBuddyAgent;
+import net.neoforged.bus.api.BusBuilder;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.IBindingsProvider;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
@@ -99,6 +103,27 @@ public abstract class LauncherTest {
         var environment = environmentCtor.newInstance(launcher);
         when(launcher.environment()).thenReturn(environment);
 
+        FMLLoader.bindings = new IBindingsProvider() {
+            private volatile IEventBus bus;
+
+            @Override
+            public IEventBus getGameBus() {
+                if (bus == null) {
+                    synchronized (this) {
+                        if (bus == null) {
+                            bus = BusBuilder.builder()
+                                    .classChecker(eventType -> {
+                                        if (IModBusEvent.class.isAssignableFrom(eventType)) {
+                                            throw new IllegalArgumentException("IModBusEvent events are not allowed on the game bus!");
+                                        }
+                                    }).build();
+                        }
+                    }
+                }
+                return bus;
+            }
+        };
+
         installation = new SimulatedInstallation();
 
         immediateWindowHandlerMock.when(ImmediateWindowHandler::getGLVersion).thenReturn("4.3");
@@ -111,6 +136,7 @@ public abstract class LauncherTest {
         gameClassLoader = null;
         installation.close();
         Launcher.INSTANCE = null;
+        FMLLoader.bindings = null;
     }
 
     protected LaunchResult launchAndLoadInNeoForgeDevEnvironment(String launchTarget) throws Exception {
