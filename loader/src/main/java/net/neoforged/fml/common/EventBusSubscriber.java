@@ -65,7 +65,7 @@ public @interface EventBusSubscriber {
      * Specify an alternative bus to listen to
      *
      * @return the bus you wish to listen to
-     * @deprecated This value is ignored. Do not specify a bus at all as the option will be removed in later versions
+     * @deprecated This value is ignored, and the bus is determined automatically. Do not specify a bus at all as the option will be removed in later versions
      */
     @Deprecated(since = "1.21.1", forRemoval = true)
     Bus bus() default Bus.GAME;
