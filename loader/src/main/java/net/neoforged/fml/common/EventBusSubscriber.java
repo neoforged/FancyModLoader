@@ -39,8 +39,7 @@ import net.neoforged.fml.event.IModBusEvent;
  * Event subscribers for events inheriting from {@link IModBusEvent} will be registered to the {@link ModContainer#getEventBus() mod's event bus},
  * while the rest will be registered to the {@code NeoForge#EVENT_BUS}.
  * <p>
- * <strong>Note:</strong> while you can still manually specify one of the buses via {@link #bus()}, it
- * is not recommended to do so anymore as this option is removed in later versions.
+ * <strong>Note:</strong> while {@link #bus()} still exists, this value is <i>ignored</i>.
  * <p>
  * By default, the subscribers will be registered on both physical sides. This can be customised using {@link #value()}.
  */
@@ -66,13 +65,17 @@ public @interface EventBusSubscriber {
      * Specify an alternative bus to listen to
      *
      * @return the bus you wish to listen to
-     * @deprecated Prefer not specifying a bus at all and instead relying on the default {@link Bus#BOTH}, which is the only option present in later versions
+     * @deprecated This value is ignored. Do not specify a bus at all as the option will be removed in later versions
      */
     @Deprecated(since = "1.21.1", forRemoval = true)
-    Bus bus() default Bus.BOTH;
+    Bus bus() default Bus.GAME;
 
     /**
-     * @deprecated Prefer not specifying a bus at all and instead relying on the default {@link Bus#BOTH}, which is the only option present in later versions
+     * @deprecated Prefer not specifying a bus at all, as {@linkplain EventBusSubscriber EventBusSubscriber-annotated classes}
+     *             can now have listeners for either the mod event bus, the game event bus, or a mix of both.
+     *             <p>
+     *             Listeners whose event type inherits from {@link IModBusEvent} will be registered to the {@linkplain ModContainer#getEventBus() mod bus}
+     *             while other listeners will be registered to the {@linkplain #GAME game bus}.
      */
     @Deprecated(since = "1.21.1", forRemoval = true)
     enum Bus {
@@ -87,16 +90,6 @@ public @interface EventBusSubscriber {
          *
          * @see ModContainer#getEventBus()
          */
-        MOD,
-        /**
-         * Used when an {@linkplain EventBusSubscriber EventBusSubscriber-annotated class} has listeners
-         * for either the mod event bus, the game event bus, or a mix of both.
-         * <p>
-         * Listeners whose event type inherits from {@link IModBusEvent} will be registered to the {@linkplain ModContainer#getEventBus() mod bus}
-         * while other listeners will be registered to the {@linkplain #GAME game bus}.
-         * <p>
-         * This is the new default as, in later versions, the bus cannot be specified in {@linkplain EventBusSubscriber#bus() the annotation} anymore.
-         */
-        BOTH
+        MOD;
     }
 }

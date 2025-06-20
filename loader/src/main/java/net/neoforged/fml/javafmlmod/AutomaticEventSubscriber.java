@@ -17,7 +17,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.Event;
-import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -50,80 +49,62 @@ public class AutomaticEventSubscriber {
         ebsTargets.forEach(ad -> {
             final EnumSet<Dist> sides = getSides(ad.annotationData().get("value"));
             final String modId = (String) ad.annotationData().getOrDefault("modid", modids.getOrDefault(ad.clazz().getClassName(), mod.getModId()));
-            final ModAnnotation.EnumHolder busTargetHolder = (ModAnnotation.EnumHolder) ad.annotationData().getOrDefault("bus", new ModAnnotation.EnumHolder(null, EventBusSubscriber.Bus.BOTH.name()));
-            final EventBusSubscriber.Bus busTarget = EventBusSubscriber.Bus.valueOf(busTargetHolder.value());
             if (Objects.equals(mod.getModId(), modId) && sides.contains(FMLEnvironment.dist)) {
                 try {
-                    if (busTarget == EventBusSubscriber.Bus.BOTH) {
-                        LOGGER.debug(LOADING, "Scanning class {} for @SubscribeEvent-annotated methods", ad.clazz().getClassName());
-                        var clazz = Class.forName(ad.clazz().getClassName(), true, layer.getClassLoader());
+                    LOGGER.debug(LOADING, "Scanning class {} for @SubscribeEvent-annotated methods", ad.clazz().getClassName());
+                    var clazz = Class.forName(ad.clazz().getClassName(), true, layer.getClassLoader());
 
-                        var modBusListeners = new ArrayList<Method>();
-                        var gameBusListeners = new ArrayList<Method>();
+                    var modBusListeners = new ArrayList<Method>();
+                    var gameBusListeners = new ArrayList<Method>();
 
-                        for (Method method : clazz.getDeclaredMethods()) {
-                            if (!method.isAnnotationPresent(SubscribeEvent.class)) {
-                                continue;
-                            }
-
-                            if (!Modifier.isStatic(method.getModifiers())) {
-                                throw new IllegalArgumentException("Method " + method + " annotated with @SubscribeEvent is not static");
-                            }
-
-                            if (method.getParameterCount() != 1 || !Event.class.isAssignableFrom(method.getParameterTypes()[0])) {
-                                throw new IllegalArgumentException("Method " + method + " annotated with @SubscribeEvent must have only one parameter that is an Event subtype");
-                            }
-
-                            var eventType = method.getParameterTypes()[0];
-                            if (IModBusEvent.class.isAssignableFrom(eventType)) {
-                                modBusListeners.add(method);
-                            } else {
-                                gameBusListeners.add(method);
-                            }
+                    for (Method method : clazz.getDeclaredMethods()) {
+                        if (!method.isAnnotationPresent(SubscribeEvent.class)) {
+                            continue;
                         }
 
-                        // Preserve old behaviour for backwards compat - when there is not a mix of listener types
-                        // register the class directly to the bus so that IEventBus#unregister can be called with the class
-                        // in order to unregister all @SubscribeEvent-annotated listeners inside it
-                        if (modBusListeners.isEmpty()) {
-                            LOGGER.debug("Subscribing @EventBusSubscriber class {} to the game event bus", ad.clazz());
-                            FMLLoader.getBindings().getGameBus().register(clazz);
+                        if (!Modifier.isStatic(method.getModifiers())) {
+                            throw new IllegalArgumentException("Method " + method + " annotated with @SubscribeEvent is not static");
+                        }
+
+                        if (method.getParameterCount() != 1 || !Event.class.isAssignableFrom(method.getParameterTypes()[0])) {
+                            throw new IllegalArgumentException("Method " + method + " annotated with @SubscribeEvent must have only one parameter that is an Event subtype");
+                        }
+
+                        var eventType = method.getParameterTypes()[0];
+                        if (IModBusEvent.class.isAssignableFrom(eventType)) {
+                            modBusListeners.add(method);
                         } else {
-                            if (gameBusListeners.isEmpty()) {
+                            gameBusListeners.add(method);
+                        }
+                    }
+
+                    // Preserve old behaviour for backwards compat - when there is not a mix of listener types
+                    // register the class directly to the bus so that IEventBus#unregister can be called with the class
+                    // in order to unregister all @SubscribeEvent-annotated listeners inside it
+                    if (modBusListeners.isEmpty()) {
+                        LOGGER.debug("Subscribing @EventBusSubscriber class {} to the game event bus", ad.clazz());
+                        FMLLoader.getBindings().getGameBus().register(clazz);
+                    } else {
+                        if (gameBusListeners.isEmpty()) {
+                            var modBus = mod.getEventBus();
+                            if (modBus != null) {
+                                LOGGER.debug("Subscribing @EventBusSubscriber class {} to the mod event bus of mod {}", ad.clazz(), mod.getModId());
+                                modBus.register(clazz);
+                            }
+                        } else {
+                            LOGGER.debug(LOADING, "Found mix of game bus and mod bus listeners in @EventBusSubscriber class {}, registering them separately", ad.clazz());
+                            for (var method : modBusListeners) {
                                 var modBus = mod.getEventBus();
                                 if (modBus != null) {
-                                    LOGGER.debug("Subscribing @EventBusSubscriber class {} to the mod event bus of mod {}", ad.clazz(), mod.getModId());
-                                    modBus.register(clazz);
-                                }
-                            } else {
-                                LOGGER.debug(LOADING, "Found mix of game bus and mod bus listeners in @EventBusSubscriber class {}, registering them separately", ad.clazz());
-                                for (var method : modBusListeners) {
-                                    var modBus = mod.getEventBus();
-                                    if (modBus == null) {
-                                        throw new IllegalArgumentException("Method " + method + " attempted to register a mod bus event, but mod " + mod.getModId() + " has no event bus");
-                                    } else {
-                                        LOGGER.debug(LOADING, "Subscribing method {} to the event bus of mod {}", method, mod.getModId());
-                                        modBus.register(method);
-                                    }
-                                }
-
-                                for (var method : gameBusListeners) {
-                                    LOGGER.debug(LOADING, "Subscribing method {} to the game event bus", method);
-                                    FMLLoader.getBindings().getGameBus().register(method);
+                                    LOGGER.debug(LOADING, "Subscribing method {} to the event bus of mod {}", method, mod.getModId());
+                                    modBus.register(method);
                                 }
                             }
-                        }
-                    } else {
-                        IEventBus bus = switch (busTarget) {
-                            case GAME -> FMLLoader.getBindings().getGameBus();
-                            case MOD -> mod.getEventBus();
-                            default -> null;
-                        };
 
-                        if (bus != null) {
-                            LOGGER.debug(LOADING, "Auto-subscribing {} to {}", ad.clazz().getClassName(), busTarget);
-
-                            bus.register(Class.forName(ad.clazz().getClassName(), true, layer.getClassLoader()));
+                            for (var method : gameBusListeners) {
+                                LOGGER.debug(LOADING, "Subscribing method {} to the game event bus", method);
+                                FMLLoader.getBindings().getGameBus().register(method);
+                            }
                         }
                     }
                 } catch (Exception e) {
