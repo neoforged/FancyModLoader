@@ -5,7 +5,25 @@
 
 package net.neoforged.fml.earlydisplay.render;
 
-import static org.lwjgl.opengl.GL32C.*;
+import static org.lwjgl.opengl.GL32C.GL_COLOR_ATTACHMENT0;
+import static org.lwjgl.opengl.GL32C.GL_COLOR_BUFFER_BIT;
+import static org.lwjgl.opengl.GL32C.GL_FRAMEBUFFER;
+import static org.lwjgl.opengl.GL32C.GL_NEAREST;
+import static org.lwjgl.opengl.GL32C.GL_RGBA;
+import static org.lwjgl.opengl.GL32C.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL32C.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL32C.GL_TEXTURE_MAG_FILTER;
+import static org.lwjgl.opengl.GL32C.GL_TEXTURE_MIN_FILTER;
+import static org.lwjgl.opengl.GL32C.GL_UNSIGNED_BYTE;
+import static org.lwjgl.opengl.GL32C.glBlitFramebuffer;
+import static org.lwjgl.opengl.GL32C.glClear;
+import static org.lwjgl.opengl.GL32C.glDeleteFramebuffers;
+import static org.lwjgl.opengl.GL32C.glDeleteTextures;
+import static org.lwjgl.opengl.GL32C.glFramebufferTexture2D;
+import static org.lwjgl.opengl.GL32C.glGenFramebuffers;
+import static org.lwjgl.opengl.GL32C.glGenTextures;
+import static org.lwjgl.opengl.GL32C.glTexImage2D;
+import static org.lwjgl.opengl.GL32C.glTexParameteri;
 
 import java.nio.IntBuffer;
 import net.neoforged.fml.earlydisplay.render.elements.RenderElement;

@@ -1,9 +1,9 @@
 plugins {
     id 'com.github.ben-manes.versions' version '0.39.0'
     id 'net.neoforged.licenser' version '0.7.2' apply false
-    id 'com.diffplug.spotless' version '6.25.0' apply false
+    id 'dev.lukebemish.immaculate' version '0.1.11' apply false
     id 'net.neoforged.gradleutils' version "${gradleutils_version}"
-    id 'net.neoforged.gradleutils.spotless' version "${gradleutils_version}" apply false
+    id 'net.neoforged.gradleutils.immaculate' version "${gradleutils_version}" apply false
 }
 
 changelog {
@@ -13,6 +13,7 @@ changelog {
 gradleutils.version {
     branches {
         suffixBranch()
+        suffixExemptedBranchPatterns = [/1\.\d+\.\d+/]
     }
 }
 
@@ -26,9 +27,9 @@ allprojects {
 
     apply plugin: 'com.github.ben-manes.versions'
     apply plugin: 'net.neoforged.licenser'
-    apply plugin: 'com.diffplug.spotless'
+    apply plugin: 'dev.lukebemish.immaculate'
     apply plugin: 'net.neoforged.gradleutils'
-    apply plugin: 'net.neoforged.gradleutils.spotless'
+    apply plugin: 'net.neoforged.gradleutils.immaculate'
 
     gradleutils {
         setupSigning(signAllPublications: true)
@@ -36,8 +37,6 @@ allprojects {
 
     group = 'net.neoforged.fancymodloader'
     version = rootProject.version
-
-    spotlessUtils.configure(spotless)
 
     dependencyUpdates.rejectVersionIf { isNonStable(it.candidate.version) }
 
@@ -59,13 +58,13 @@ subprojects { subProject ->
     jar {
         manifest.attributes(
                 'Git-Commit'  : gradleutils.gitInfo.abbreviatedId,
-                'Build-Number': "${subProject.version}",
+                'Build-Number': subProject.version.toString(),
                 'Automatic-Module-Name' : "fml_${subProject.name.replace("-", "_")}",
                 'Specification-Title'   : "FML${subProject.name}",
                 'Specification-Vendor'  : 'NeoForged',
-                'Specification-Version' : "${subProject.version.toString().split('\\.')[0]}",
+                'Specification-Version' : subProject.version.toString().split('\\.')[0],
                 'Implementation-Title'  : "FML $subProject.name",
-                'Implementation-Version': "${subProject.version.toString().split('\\.')[0]}.${subProject.version.toString().split('\\.')[1]}",
+                'Implementation-Version': subProject.version.toString().split('\\.')[0] + '.' + subProject.version.toString().split('\\.')[1],
                 'Implementation-Vendor' : 'NeoForged'
         )
 
