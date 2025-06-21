@@ -33,7 +33,7 @@
   "fml.modloadingissue.brokenfile.unknown": "El archivo {101} no es un archivo de mod válido",
   "fml.modloadingissue.brokenfile.unknownfmlmodtype": "File {101} has an unrecognized FML mod-type: ''{0}''",
   "fml.modloadingissue.brokenfile.oldforge": "File {101} is for an old version of Minecraft Forge and cannot be loaded",
-  "fml.modloadingissue.brokenfile.minecraft_forge": "File {101} is for Minecraft Forge or an older version of NeoForge, and cannot be loaded",
+  "fml.modloadingissue.brokenfile.minecraft_forge": "El archivo {101} es para Minecraft Forge o una versión anterior de NeoForge, y no puede ser cargado",
   "fml.modloadingissue.brokenfile.liteloader": "El archivo {101} es un mod de LiteLoader y no se puede cargar",
   "fml.modloadingissue.brokenfile.fabric": "El archivo {101} es un mod de Fabric y no se puede cargar",
   "fml.modloadingissue.brokenfile.quilt": "File {101} is a Quilt mod and cannot be loaded",
