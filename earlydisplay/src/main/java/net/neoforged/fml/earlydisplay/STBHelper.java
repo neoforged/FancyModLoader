@@ -5,7 +5,16 @@
 
 package net.neoforged.fml.earlydisplay;
 
-import static org.lwjgl.opengl.GL32C.*;
+import static org.lwjgl.opengl.GL32C.GL_LINEAR;
+import static org.lwjgl.opengl.GL32C.GL_RGBA;
+import static org.lwjgl.opengl.GL32C.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL32C.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL32C.GL_TEXTURE_MAG_FILTER;
+import static org.lwjgl.opengl.GL32C.GL_TEXTURE_MIN_FILTER;
+import static org.lwjgl.opengl.GL32C.GL_UNSIGNED_BYTE;
+import static org.lwjgl.opengl.GL32C.glGenTextures;
+import static org.lwjgl.opengl.GL32C.glTexImage2D;
+import static org.lwjgl.opengl.GL32C.glTexParameteri;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

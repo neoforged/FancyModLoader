@@ -5,7 +5,28 @@
 
 package net.neoforged.fml.earlydisplay;
 
-import static org.lwjgl.opengl.GL32C.*;
+import static org.lwjgl.opengl.GL32C.GL_COMPILE_STATUS;
+import static org.lwjgl.opengl.GL32C.GL_FALSE;
+import static org.lwjgl.opengl.GL32C.GL_FRAGMENT_SHADER;
+import static org.lwjgl.opengl.GL32C.GL_LINK_STATUS;
+import static org.lwjgl.opengl.GL32C.GL_VERTEX_SHADER;
+import static org.lwjgl.opengl.GL32C.glAttachShader;
+import static org.lwjgl.opengl.GL32C.glBindAttribLocation;
+import static org.lwjgl.opengl.GL32C.glCompileShader;
+import static org.lwjgl.opengl.GL32C.glCreateProgram;
+import static org.lwjgl.opengl.GL32C.glCreateShader;
+import static org.lwjgl.opengl.GL32C.glDeleteProgram;
+import static org.lwjgl.opengl.GL32C.glDeleteShader;
+import static org.lwjgl.opengl.GL32C.glDetachShader;
+import static org.lwjgl.opengl.GL32C.glGetProgramInfoLog;
+import static org.lwjgl.opengl.GL32C.glGetProgrami;
+import static org.lwjgl.opengl.GL32C.glGetShaderInfoLog;
+import static org.lwjgl.opengl.GL32C.glGetShaderi;
+import static org.lwjgl.opengl.GL32C.glGetUniformLocation;
+import static org.lwjgl.opengl.GL32C.glLinkProgram;
+import static org.lwjgl.opengl.GL32C.glShaderSource;
+import static org.lwjgl.opengl.GL32C.glUniform1i;
+import static org.lwjgl.opengl.GL32C.glUniform2f;
 
 public class ElementShader {
     private int program;

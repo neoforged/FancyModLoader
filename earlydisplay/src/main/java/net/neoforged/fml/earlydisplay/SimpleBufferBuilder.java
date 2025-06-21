@@ -6,7 +6,31 @@
 package net.neoforged.fml.earlydisplay;
 
 import static org.lwjgl.opengl.GL20C.glEnableVertexAttribArray;
-import static org.lwjgl.opengl.GL32C.*;
+import static org.lwjgl.opengl.GL32C.GL_ARRAY_BUFFER;
+import static org.lwjgl.opengl.GL32C.GL_COPY_READ_BUFFER;
+import static org.lwjgl.opengl.GL32C.GL_DYNAMIC_DRAW;
+import static org.lwjgl.opengl.GL32C.GL_ELEMENT_ARRAY_BUFFER;
+import static org.lwjgl.opengl.GL32C.GL_FLOAT;
+import static org.lwjgl.opengl.GL32C.GL_MAP_INVALIDATE_BUFFER_BIT;
+import static org.lwjgl.opengl.GL32C.GL_MAP_UNSYNCHRONIZED_BIT;
+import static org.lwjgl.opengl.GL32C.GL_MAP_WRITE_BIT;
+import static org.lwjgl.opengl.GL32C.GL_STATIC_DRAW;
+import static org.lwjgl.opengl.GL32C.GL_TRIANGLES;
+import static org.lwjgl.opengl.GL32C.GL_UNSIGNED_BYTE;
+import static org.lwjgl.opengl.GL32C.GL_UNSIGNED_INT;
+import static org.lwjgl.opengl.GL32C.glBindBuffer;
+import static org.lwjgl.opengl.GL32C.glBufferData;
+import static org.lwjgl.opengl.GL32C.glBufferSubData;
+import static org.lwjgl.opengl.GL32C.glCopyBufferSubData;
+import static org.lwjgl.opengl.GL32C.glDeleteBuffers;
+import static org.lwjgl.opengl.GL32C.glDeleteVertexArrays;
+import static org.lwjgl.opengl.GL32C.glDrawArrays;
+import static org.lwjgl.opengl.GL32C.glDrawElements;
+import static org.lwjgl.opengl.GL32C.glGenBuffers;
+import static org.lwjgl.opengl.GL32C.glGenVertexArrays;
+import static org.lwjgl.opengl.GL32C.glMapBufferRange;
+import static org.lwjgl.opengl.GL32C.glUnmapBuffer;
+import static org.lwjgl.opengl.GL32C.glVertexAttribPointer;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;

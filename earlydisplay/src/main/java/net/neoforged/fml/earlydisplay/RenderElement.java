@@ -5,7 +5,7 @@
 
 package net.neoforged.fml.earlydisplay;
 
-import static org.lwjgl.opengl.GL32C.*;
+import static org.lwjgl.opengl.GL32C.GL_TEXTURE0;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -5,8 +5,27 @@
 
 package net.neoforged.fml.earlydisplay;
 
-import static org.lwjgl.opengl.GL32C.*;
-import static org.lwjgl.stb.STBTruetype.*;
+import static org.lwjgl.opengl.GL32C.GL_CLAMP_TO_EDGE;
+import static org.lwjgl.opengl.GL32C.GL_LINEAR;
+import static org.lwjgl.opengl.GL32C.GL_RED;
+import static org.lwjgl.opengl.GL32C.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL32C.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL32C.GL_TEXTURE_MAG_FILTER;
+import static org.lwjgl.opengl.GL32C.GL_TEXTURE_MIN_FILTER;
+import static org.lwjgl.opengl.GL32C.GL_TEXTURE_WRAP_S;
+import static org.lwjgl.opengl.GL32C.GL_TEXTURE_WRAP_T;
+import static org.lwjgl.opengl.GL32C.GL_UNSIGNED_BYTE;
+import static org.lwjgl.opengl.GL32C.glGenTextures;
+import static org.lwjgl.opengl.GL32C.glTexImage2D;
+import static org.lwjgl.opengl.GL32C.glTexParameteri;
+import static org.lwjgl.stb.STBTruetype.stbtt_GetPackedQuad;
+import static org.lwjgl.stb.STBTruetype.stbtt_GetScaledFontVMetrics;
+import static org.lwjgl.stb.STBTruetype.stbtt_InitFont;
+import static org.lwjgl.stb.STBTruetype.stbtt_PackBegin;
+import static org.lwjgl.stb.STBTruetype.stbtt_PackEnd;
+import static org.lwjgl.stb.STBTruetype.stbtt_PackFontRanges;
+import static org.lwjgl.stb.STBTruetype.stbtt_PackSetOversampling;
+import static org.lwjgl.stb.STBTruetype.stbtt_PackSetSkipMissingCodepoints;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 import java.nio.ByteBuffer;
