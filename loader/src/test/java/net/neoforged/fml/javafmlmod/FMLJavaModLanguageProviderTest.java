@@ -195,7 +195,7 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
                         """)
                 .build();
 
-        launchAndLoad("forgeclient");
+        launchAndLoad("neoforgeclient");
 
         assertThat(MESSAGES).containsExactly("construct");
 
@@ -229,7 +229,7 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
                         """)
                 .build();
 
-        launchAndLoad("forgeclient");
+        launchAndLoad("neoforgeclient");
 
         var gameBus = FMLLoader.getBindings().getGameBus();
 
