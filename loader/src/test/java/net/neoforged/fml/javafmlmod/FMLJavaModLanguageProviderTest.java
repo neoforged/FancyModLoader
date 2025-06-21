@@ -9,9 +9,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.neoforged.bus.api.Event;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LauncherTest;
 import net.neoforged.fml.loading.SimulatedInstallation;
 import net.neoforged.fml.test.RuntimeCompiler;
@@ -164,5 +166,84 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
         });
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly("ERROR: testmod (testmod) encountered an error while dispatching the net.neoforged.fml.event.lifecycle.FMLClientSetupEvent event"
                 + "\njava.lang.RuntimeException: null");
+    }
+
+    @Test
+    void testMixedEventBusSubscriber() throws Exception {
+        installation.setupProductionClient();
+        installation.buildModJar("test.jar")
+                .withModsToml(builder -> builder.unlicensedJavaMod().addMod("testmod", "1.0"))
+                .addClass("testmod.Subscriber", """
+                        import net.neoforged.bus.api.SubscribeEvent;
+                        import net.neoforged.fml.common.EventBusSubscriber;
+                        import net.neoforged.fml.event.lifecycle.FMLConstructModEvent;
+
+                        import net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest;
+
+                        @EventBusSubscriber
+                        public class Subscriber {
+                            @SubscribeEvent
+                            static void onConstruct(FMLConstructModEvent event) {
+                                FMLJavaModLanguageProviderTest.MESSAGES.add("construct");
+                            }
+
+                            @SubscribeEvent
+                            static void onTestEvent(FMLJavaModLanguageProviderTest.TestEvent event) {
+                                event.message = "received test event!";
+                            }
+                        }
+                        """)
+                .build();
+
+        launchAndLoad("neoforgeclient");
+
+        assertThat(MESSAGES).containsExactly("construct");
+
+        final var event = new TestEvent();
+        FMLLoader.getBindings().getGameBus().post(event);
+        assertThat(event.message).isEqualTo("received test event!");
+    }
+
+    /**
+     * Tests that EBS-annotated classes without a bus specified that only have listener for one of the buses
+     * have their class registered directly, so that it can be unregistered too.
+     */
+    @Test
+    void testSingleBusEventBusSubscriber() throws Exception {
+        installation.setupProductionClient();
+        installation.buildModJar("test.jar")
+                .withModsToml(builder -> builder.unlicensedJavaMod().addMod("testmod", "1.0"))
+                .addClass("testmod.Subscriber", """
+                        import net.neoforged.bus.api.SubscribeEvent;
+                        import net.neoforged.fml.common.EventBusSubscriber;
+
+                        import net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest;
+
+                        @EventBusSubscriber
+                        public class Subscriber {
+                            @SubscribeEvent
+                            static void onTestEvent(FMLJavaModLanguageProviderTest.TestEvent event) {
+                                event.message = "received test event!";
+                            }
+                        }
+                        """)
+                .build();
+
+        launchAndLoad("neoforgeclient");
+
+        var gameBus = FMLLoader.getBindings().getGameBus();
+
+        var event = new TestEvent();
+        gameBus.post(event);
+        assertThat(event.message).isEqualTo("received test event!");
+
+        gameBus.unregister(Class.forName("testmod.Subscriber", true, FMLLoader.getGameLayer().findLoader("testmod")));
+        event = new TestEvent();
+        gameBus.post(event);
+        assertThat(event.message).isNull();
+    }
+
+    public static final class TestEvent extends Event {
+        public String message;
     }
 }
