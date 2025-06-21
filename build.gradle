@@ -58,13 +58,13 @@ subprojects { subProject ->
     jar {
         manifest.attributes(
                 'Git-Commit'  : gradleutils.gitInfo.abbreviatedId,
-                'Build-Number': "${subProject.version}",
+                'Build-Number': subProject.version.toString(),
                 'Automatic-Module-Name' : "fml_${subProject.name.replace("-", "_")}",
                 'Specification-Title'   : "FML${subProject.name}",
                 'Specification-Vendor'  : 'NeoForged',
-                'Specification-Version' : "${subProject.version.toString().split('\\.')[0]}",
+                'Specification-Version' : subProject.version.toString().split('\\.')[0],
                 'Implementation-Title'  : "FML $subProject.name",
-                'Implementation-Version': "${subProject.version.toString().split('\\.')[0]}.${subProject.version.toString().split('\\.')[1]}",
+                'Implementation-Version': subProject.version.toString().split('\\.')[0] + '.' + subProject.version.toString().split('\\.')[1],
                 'Implementation-Vendor' : 'NeoForged'
         )
 
