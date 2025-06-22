@@ -59,6 +59,9 @@ public class FMLModContainer extends ModContainer {
             for (var entrypoint : entrypoints) {
                 try {
                     var cls = Class.forName(layer, entrypoint);
+                    if (cls == null) {
+                        throw new ClassNotFoundException("Class '" + entrypoint + "' could not be found");
+                    }
                     modClasses.add(cls);
                     LOGGER.trace(LOADING, "Loaded modclass {} with {}", cls.getName(), cls.getClassLoader());
                 } catch (Throwable e) {
