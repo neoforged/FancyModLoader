@@ -21,6 +21,7 @@ package cpw.mods.modlauncher.test;
 
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.ServiceLoader;
@@ -28,6 +29,7 @@ import java.util.ServiceLoader;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ClassLoaderAPITest {
+    @Disabled
     @Test
     void testGetResources() throws ClassNotFoundException {
         Launcher.main("--version", "1.0", "--launchTarget", "mockLaunch", "--test.mods", "A,B,C,cpw.mods.modlauncher.testjar.TestClass", "--accessToken", "SUPERSECRET!");

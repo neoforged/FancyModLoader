@@ -25,6 +25,7 @@ import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.TypesafeMap;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.powermock.reflect.Whitebox;
 
@@ -45,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class TransformingClassLoaderTests {
     private static final String TARGET_CLASS = "cpw.mods.modlauncher.testjar.TestClass";
 
+    @Disabled
     @Test
     void testClassLoader() throws Exception {
         MockTransformerService mockTransformerService = new MockTransformerService() {

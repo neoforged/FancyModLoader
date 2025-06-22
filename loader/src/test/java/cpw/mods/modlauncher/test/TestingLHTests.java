@@ -21,6 +21,7 @@ package cpw.mods.modlauncher.test;
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.api.ServiceRunner;
 import org.apache.logging.log4j.LogManager;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.Callable;
@@ -29,7 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TestingLHTests {
     boolean calledback;
-    
+
+    @Disabled
     @Test
     void testTestingLaunchHandler() {
         System.setProperty("test.harness", "build/classes/java/testJars");

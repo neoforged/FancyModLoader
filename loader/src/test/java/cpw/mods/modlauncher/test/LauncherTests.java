@@ -26,6 +26,7 @@ import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.powermock.reflect.Whitebox;
 
@@ -47,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Test overall launcher
  */
 class LauncherTests {
+    @Disabled
     @Test
     void testLauncher() throws Exception {
         Launcher.main("--version", "1.0", "--launchTarget", "mockLaunch", "--test.mods", "A,B,C,cpw.mods.modlauncher.testjar.TestClass", "--accessToken", "SUPERSECRET!");

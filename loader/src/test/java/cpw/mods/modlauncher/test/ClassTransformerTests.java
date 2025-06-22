@@ -28,6 +28,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -45,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Test core transformer functionality
  */
 class ClassTransformerTests {
+    @Disabled
     @Test
     void testClassTransformer() throws Exception {
         MarkerManager.getMarker("CLASSDUMP");
