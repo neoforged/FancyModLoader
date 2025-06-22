@@ -42,7 +42,6 @@ import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
-import net.neoforged.fml.earlydisplay.util.Bounds;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
@@ -227,9 +226,17 @@ public class LoadingScreenRenderer implements AutoCloseable {
         framebuffer.activate();
 
         // Fit the layout rectangle into the screen while maintaining aspect ratio
-        var b = new Bounds(0, 0, LAYOUT_WIDTH, LAYOUT_HEIGHT);
-
-        GlState.viewport(0, 0, framebuffer.width(), framebuffer.height());
+        var desiredAspectRatio = LAYOUT_WIDTH / (float) LAYOUT_HEIGHT;
+        var actualAspectRatio = framebuffer.width() / (float) framebuffer.height();
+        if (actualAspectRatio > desiredAspectRatio) {
+            // This means we are wider than the desired aspect ratio, and have to center horizontally
+            var actualWidth = desiredAspectRatio * framebuffer.height();
+            GlState.viewport((int) (framebuffer.width() - actualWidth) / 2, 0, (int) actualWidth, framebuffer.height());
+        } else {
+            // This means we are taller than the desired aspect ratio, and have to center vertically
+            var actualHeight = framebuffer.width() / desiredAspectRatio;
+            GlState.viewport(0, (int) (framebuffer.height() - actualHeight) / 2, framebuffer.width(), (int) actualHeight);
+        }
 
         // Clear the screen to our color
         var background = theme.theme().colorScheme().screenBackground();
