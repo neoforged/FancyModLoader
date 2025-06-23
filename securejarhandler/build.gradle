@@ -1,3 +1,5 @@
+import javax.inject.Inject
+
 allprojects {
     apply plugin: 'eclipse'
     apply plugin: 'org.gradlex.extra-java-module-info'
@@ -94,21 +96,30 @@ test {
     environment "sjh.testjar2", sourceSets.testjar2.output.classesDirs.asPath + File.pathSeparator + sourceSets.testjar2.output.resourcesDir.absolutePath
 
     // Add SJH and its dependencies to the module path
-    jvmArgumentProviders.add(new CommandLineArgumentProvider() {
-        @Override
-        Iterable<String> asArguments() {
-            // Dependencies
-            def modulePath = test.classpath.filter {
-                it.name.contains("asm")
-            }.join(File.pathSeparator)
-            // SJH itself
-            modulePath += File.pathSeparator + sourceSets.main.output.classesDirs.asPath
+    var commandLineArgs = objects.newInstance(TestsCommandLineArgs)
+    // Dependencies
+    commandLineArgs.modulePath.from(test.classpath.filter { it.name.contains("asm") })
+    // SJH itself
+    commandLineArgs.modulePath.from(sourceSets.main.output.classesDirs.asPath)
+    jvmArgumentProviders.add(commandLineArgs)
+}
 
-            return [
-                    "--module-path",
-                    modulePath,
-                    "--add-modules=ALL-MODULE-PATH",
-            ]
-        }
-    })
+abstract class TestsCommandLineArgs implements CommandLineArgumentProvider {
+    @Inject
+    TestsCommandLineArgs() {}
+
+    @InputFiles
+    @Classpath
+    abstract ConfigurableFileCollection getModulePath()
+
+    @Override
+    Iterable<String> asArguments() {
+        def modulePath = getModulePath().getFiles().join(File.pathSeparator)
+
+        return [
+                "--module-path",
+                modulePath,
+                "--add-modules=ALL-MODULE-PATH",
+        ]
+    }
 }
