@@ -1,0 +1,219 @@
+import net.neoforged.gradleutils.PomUtilsExtension.License
+
+buildscript {
+    dependencies {
+        classpath('de.jjohannes.gradle:extra-java-module-info:0.14')
+    }
+}
+
+plugins {
+    id 'com.github.ben-manes.versions' version '0.42.0'
+    id 'net.neoforged.gradleutils' version '3.0.0-alpha.4'
+}
+
+apply plugin: 'maven-publish'
+
+allprojects {
+    apply plugin: 'java-library'
+    apply plugin: 'eclipse'
+    apply plugin: 'de.jjohannes.extra-java-module-info'
+
+    group 'cpw.mods'
+    java {
+        toolchain.languageVersion = JavaLanguageVersion.of(project.java_version)
+        modularity.inferModulePath.set(true)
+    }
+    version = gradleutils.version
+
+    repositories {
+        mavenLocal()
+        maven {
+            name = 'forge'
+            url = 'https://maven.neoforged.net/releases'
+        }
+    }
+
+    dependencies.testRuntimeOnly('org.apiguardian:apiguardian-api:1.1.2') // No idea why, but windows needs this to not explode.
+
+    extraJavaModuleInfo {
+        failOnMissingModuleInfo = false
+        automaticModule('jmh-core-1.35.jar', 'jmh.core')
+    }
+
+    def isNonStable = { String version ->
+        def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { type -> version.toUpperCase().contains(type) }
+        def regex = /^[0-9,.v-]+(-r)?$/
+        return !stableKeyword && !(version ==~ regex)
+    }
+
+    dependencyUpdates {
+        rejectVersionIf {
+            isNonStable(it.candidate.version)
+        }
+    }
+
+    // Hack eclipse into knowing that the gradle deps are modules
+    eclipse {
+        classpath {
+            containers 'org.eclipse.buildship.core.gradleclasspathcontainer'
+            file {
+                whenMerged {
+                    entries.findAll { it.kind == 'con' && it.path == 'org.eclipse.buildship.core.gradleclasspathcontainer' }.each {
+                        it.entryAttributes['module'] = 'true'
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+repositories {
+    mavenCentral()
+}
+
+def isNonStable = { String version ->
+    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
+    def regex = /^[0-9,.v-]+(-r)?$/
+    return !stableKeyword && !(version ==~ regex)
+}
+
+dependencyUpdates {
+    rejectVersionIf {
+        isNonStable(it.candidate.version)
+    }
+}
+
+sourceSets {
+    // Additional test JARs, to be loaded via SecureJar.from(...)
+    testjar1 {}
+    testjar2 {}
+    // Test classpath code, to make sure that ModuleClassLoader is properly isolated from the classpath
+    testjar_cp {}
+    test {
+        runtimeClasspath += sourceSets.testjar_cp.output
+    }
+}
+
+compileJava {
+    options.compilerArgs += [
+            '-Xlint:unchecked',
+            '--add-exports=java.base/sun.security.util=cpw.mods.securejarhandler',
+    ]
+}
+
+compileTestJava {
+    options.compilerArgs += [
+            '--add-modules=jdk.zipfs',
+            '--add-exports=jdk.zipfs/jdk.nio.zipfs=cpw.mods.securejarhandler'
+    ]
+}
+
+group = 'cpw.mods'
+
+version = gradleutils.version
+logger.lifecycle('Version: ' + version)
+
+dependencies {
+    api("org.ow2.asm:asm:${project.asm_version}")
+    api("org.ow2.asm:asm-tree:${project.asm_version}")
+    api("org.ow2.asm:asm-commons:${project.asm_version}")
+    compileOnly("org.jetbrains:annotations:${project.jb_annotations_version}")
+    testImplementation('org.junit.jupiter:junit-jupiter-api:5.8.+')
+    testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.8.+')
+}
+
+test {
+    //exclude '**/*'
+    useJUnitPlatform()
+    jvmArgs += [
+            // Add test sourceset to the SJH module
+            '--patch-module=cpw.mods.securejarhandler=' + sourceSets.test.output.classesDirs.asPath,
+            // SJH needs this for UnionFileSystem
+            '--add-opens=java.base/java.lang.invoke=cpw.mods.securejarhandler',
+            // Allow JUnit to access the tests
+            '--add-opens=cpw.mods.securejarhandler/cpw.mods.cl.test=ALL-UNNAMED',
+            '--add-opens=cpw.mods.securejarhandler/cpw.mods.jarhandling.impl=ALL-UNNAMED',
+            '--add-opens=cpw.mods.securejarhandler/cpw.mods.niofs.union=ALL-UNNAMED',
+            // To test reading from the classpath
+            '--add-reads=cpw.mods.securejarhandler=ALL-UNNAMED',
+    ]
+
+    dependsOn tasks.compileTestjar1Java
+    dependsOn tasks.processTestjar1Resources
+    dependsOn tasks.compileTestjar2Java
+    dependsOn tasks.processTestjar2Resources
+    environment "sjh.testjar1", sourceSets.testjar1.output.classesDirs.asPath + File.pathSeparator + sourceSets.testjar1.output.resourcesDir.absolutePath
+    environment "sjh.testjar2", sourceSets.testjar2.output.classesDirs.asPath + File.pathSeparator + sourceSets.testjar2.output.resourcesDir.absolutePath
+
+    // Add SJH and its dependencies to the module path
+    jvmArgumentProviders.add(new CommandLineArgumentProvider() {
+        @Override
+        Iterable<String> asArguments() {
+            // Dependencies
+            def modulePath = test.classpath.filter {
+                it.name.contains("asm")
+            }.join(File.pathSeparator)
+            // SJH itself
+            modulePath += File.pathSeparator + sourceSets.main.output.classesDirs.asPath
+
+            return [
+                    "--module-path",
+                    modulePath,
+                    "--add-modules=ALL-MODULE-PATH",
+            ]
+        }
+    })
+}
+
+changelog {
+    from '0.9'
+}
+
+java {
+    withSourcesJar()
+}
+
+jar {
+    manifest {
+        attributes(
+                'Specification-Title': 'securejarhandler',
+                'Specification-Vendor': 'mcmodlauncher',
+                'Specification-Version': '1', // We are version 1 of ourselves
+                'Implementation-Title': project.name,
+                'Implementation-Version': "${project.version}+${gradleutils.gitInfo.branch}.${gradleutils.gitInfo.abbreviatedId}",
+                'Implementation-Vendor':'mcmodlauncher',
+                'Git-Commit': gradleutils.gitInfo.abbreviatedId,
+                'Git-Branch': gradleutils.gitInfo.branch
+        )
+    }
+}
+
+artifacts {
+    archives jar
+    archives sourcesJar
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            pom {
+                name = 'Secure Modular Jar handler'
+                description = 'Making the Java modular system provide security information'
+                pomUtils.githubRepo(it, 'SecureJarHandler', 'McModLauncher')
+                pomUtils.license(it, License.MIT)
+
+                developers {
+                    developer {
+                        id = 'cpw'
+                        name = 'cpw'
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven gradleutils.publishingMaven
+    }
+}
