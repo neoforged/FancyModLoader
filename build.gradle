@@ -4,6 +4,7 @@ plugins {
     id 'dev.lukebemish.immaculate' version '0.1.11' apply false
     id 'net.neoforged.gradleutils' version "${gradleutils_version}"
     id 'net.neoforged.gradleutils.immaculate' version "${gradleutils_version}" apply false
+    id 'org.gradlex.extra-java-module-info' version '1.12' apply false
 }
 
 changelog {
