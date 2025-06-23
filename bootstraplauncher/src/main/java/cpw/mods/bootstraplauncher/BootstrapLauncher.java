@@ -58,19 +58,19 @@ public class BootstrapLauncher {
      * read the documentation on {@link ModuleClassLoader#ModuleClassLoader(String, Configuration, List, ClassLoader)}
      */
     @VisibleForTesting
-    public static void unitTestingMain(String... args) {
+    public static void unitTestingMain(String... args) throws Exception {
         System.err.println("*".repeat(80));
         System.err.println("Starting in unit testing mode. Misconfiguration may mask bugs that would occur in normal operation.");
         System.err.println("*".repeat(80));
         run(false, args);
     }
 
-    public static void main(String... args) {
+    public static void main(String... args) throws Exception {
         run(true, args);
     }
 
     @SuppressWarnings("unchecked")
-    private static void run(boolean classloaderIsolation, String... args) {
+    private static void run(boolean classloaderIsolation, String... args) throws Exception {
         var legacyClasspath = loadLegacyClassPath();
         // Ensure backwards compatibility if somebody reads this value later on.
         System.setProperty("legacyClassPath", String.join(File.pathSeparator, legacyClasspath));
@@ -205,9 +205,10 @@ public class BootstrapLauncher {
         // Set the context class loader to the module class loader from this point forward
         Thread.currentThread().setContextClassLoader(moduleClassLoader);
 
-        final var loader = ServiceLoader.load(layer.layer(), Consumer.class);
-        // This *should* find the service exposed by ModLauncher's BootstrapLaunchConsumer {This doc is here to help find that class next time we go looking}
-        ((Consumer<String[]>) loader.stream().findFirst().orElseThrow().get()).accept(args);
+        // Invoke Launcher via reflection
+        var launcherClass = Class.forName("cpw.mods.modlauncher.Launcher", true, moduleClassLoader);
+        var launcherMain = launcherClass.getMethod("main", String[].class);
+        launcherMain.invoke(null, (Object) args); // cast to disambiguate with vararg
     }
 
     /**

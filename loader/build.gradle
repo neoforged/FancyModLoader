@@ -38,9 +38,6 @@ dependencies {
     implementation("net.sf.jopt-simple:jopt-simple:${jopt_simple_version}")
     implementation project(":securejarhandler")
     implementation("net.neoforged:accesstransformers:${accesstransformers_version}")
-    implementation("net.neoforged.accesstransformers:at-modlauncher:${accesstransformers_version}") {
-        exclude module: 'modlauncher'
-    }
     implementation("net.fabricmc:sponge-mixin:${mixin_version}")
     implementation("net.minecrell:terminalconsoleappender:${terminalconsoleappender_version}")
     implementation("commons-io:commons-io:${commons_io_version}")

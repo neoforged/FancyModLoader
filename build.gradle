@@ -68,10 +68,6 @@ subprojects { subProject ->
                 'Implementation-Version': subProject.version.toString().split('\\.')[0] + '.' + subProject.version.toString().split('\\.')[1],
                 'Implementation-Vendor' : 'NeoForged'
         )
-
-        if (subProject.name != 'junit') {
-            manifest.attributes.put('FMLModType', 'LIBRARY')
-        }
     }
 
     tasks.withType(JavaCompile) {
