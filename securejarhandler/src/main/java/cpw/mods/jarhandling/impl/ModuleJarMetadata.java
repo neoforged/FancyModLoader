@@ -2,12 +2,6 @@ package cpw.mods.jarhandling.impl;
 
 import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.LazyJarMetadata;
-import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ModuleVisitor;
-import org.objectweb.asm.Opcodes;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
@@ -18,6 +12,11 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
+import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ModuleVisitor;
+import org.objectweb.asm.Opcodes;
 
 /**
  * {@link JarMetadata} implementation for a modular jar.
@@ -85,20 +84,19 @@ public class ModuleJarMetadata extends LazyJarMetadata {
         @Override
         public void visitExport(final String packaze, final int access, final String... modules) {
             if (modules != null) {
-                builder.exports(packaze.replace('/','.'), Set.of(modules));
+                builder.exports(packaze.replace('/', '.'), Set.of(modules));
             } else {
-                builder.exports(packaze.replace('/','.'));
+                builder.exports(packaze.replace('/', '.'));
             }
         }
 
         @Override
         public void visitMainClass(final String mainClass) {
-            builder.mainClass(mainClass.replace('/','.'));
+            builder.mainClass(mainClass.replace('/', '.'));
         }
 
         @Override
-        public void visitOpen(final String packaze, final int access, final String... modules) {
-        }
+        public void visitOpen(final String packaze, final int access, final String... modules) {}
 
         @Override
         public void visitPackage(final String packaze) {
@@ -107,7 +105,7 @@ public class ModuleJarMetadata extends LazyJarMetadata {
 
         @Override
         public void visitProvide(final String service, final String... providers) {
-            builder.provides(service.replace('/','.'), Arrays.stream(providers).map(s->s.replace('/','.')).toList());
+            builder.provides(service.replace('/', '.'), Arrays.stream(providers).map(s -> s.replace('/', '.')).toList());
         }
 
         @Override
@@ -126,7 +124,7 @@ public class ModuleJarMetadata extends LazyJarMetadata {
                 if ((access & Opcodes.ACC_MANDATED) != 0)
                     mods.add(ModuleDescriptor.Requires.Modifier.MANDATED);
             }
-            if (version!=null) {
+            if (version != null) {
                 builder.requires(mods, module, ModuleDescriptor.Version.parse(version));
             } else {
                 builder.requires(mods, module);
@@ -135,7 +133,7 @@ public class ModuleJarMetadata extends LazyJarMetadata {
 
         @Override
         public void visitUse(final String service) {
-            builder.uses(service.replace('/','.'));
+            builder.uses(service.replace('/', '.'));
         }
 
         ModuleDescriptor.Builder builder() {

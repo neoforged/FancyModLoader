@@ -1,13 +1,11 @@
 package cpw.mods.cl.test;
 
+import java.lang.annotation.Annotation;
+import java.util.Arrays;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.lang.annotation.Annotation;
-import java.util.Arrays;
-
 public class TestPackageInfo {
-
     @Test
     public void testPackageInfoAvailability() throws Exception {
         // package-info classes can be loaded

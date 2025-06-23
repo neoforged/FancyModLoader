@@ -8,7 +8,6 @@ import org.apache.logging.log4j.core.selector.ClassLoaderContextSelector;
  * As all {@link ModuleClassLoader}s should get the same log4j context, we just return a static string with "MCL", otherwise we use the default logic
  */
 public class MLClassLoaderContextSelector extends ClassLoaderContextSelector {
-
     @Override
     protected String toContextMapKey(ClassLoader loader) {
         if (loader instanceof ModuleClassLoader) {

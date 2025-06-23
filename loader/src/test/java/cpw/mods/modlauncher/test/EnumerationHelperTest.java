@@ -1,34 +1,37 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- *
- *     Copyright (C) 2017-2020 cpw
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, version 3 of the License.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (C) 2017-2020 cpw
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher.test;
 
-import cpw.mods.modlauncher.EnumerationHelper;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.*;
+import cpw.mods.modlauncher.EnumerationHelper;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Optional;
+import java.util.Vector;
 import java.util.function.Function;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class EnumerationHelperTest {
-
     @Test
     void merge() {
         final List<String> strs1 = Arrays.asList("one", "two", "three");
@@ -44,7 +47,7 @@ class EnumerationHelperTest {
         final Function<String, Enumeration<String>> function = EnumerationHelper.fromOptional(Optional::ofNullable);
         assertTrue(function.apply("result").hasMoreElements(), "has more");
         assertFalse(function.apply(null).hasMoreElements(), "has no more");
-        assertEquals("result", function.apply("result").nextElement(),"returns element as first result");
+        assertEquals("result", function.apply("result").nextElement(), "returns element as first result");
         final Enumeration<String> result = function.apply("result");
         result.nextElement();
         assertFalse(result.hasMoreElements(), "has no more");

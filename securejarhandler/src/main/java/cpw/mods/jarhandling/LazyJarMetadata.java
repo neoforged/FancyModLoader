@@ -1,8 +1,7 @@
 package cpw.mods.jarhandling;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.module.ModuleDescriptor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class for {@link JarMetadata} implementations that lazily compute their descriptor.

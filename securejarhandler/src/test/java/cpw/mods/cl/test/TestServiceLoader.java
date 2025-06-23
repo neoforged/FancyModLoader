@@ -1,14 +1,13 @@
 package cpw.mods.cl.test;
 
-import cpw.mods.cl.ModuleClassLoader;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import cpw.mods.cl.ModuleClassLoader;
 import java.net.spi.URLStreamHandlerProvider;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.ServiceLoader;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 public class TestServiceLoader {
     /**
@@ -54,8 +53,8 @@ public class TestServiceLoader {
     public void testClassPathServiceDoesNotLeak() throws Exception {
         // Test that the DummyURLStreamHandlerProvider service provider can be loaded from the classpath
         var foundService = TestjarUtil.loadClasspath(TestServiceLoader.class.getClassLoader(), URLStreamHandlerProvider.class)
-                        .stream()
-                        .anyMatch(p -> p.type().getName().startsWith("cpw.mods.testjar_cp"));
+                .stream()
+                .anyMatch(p -> p.type().getName().startsWith("cpw.mods.testjar_cp"));
 
         assertTrue(foundService, "Could not find service in classpath using application class loader!");
 

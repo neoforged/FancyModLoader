@@ -1,31 +1,32 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- *
- *     Copyright (C) 2017-2019 cpw
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, version 3 of the License.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (C) 2017-2019 cpw
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher;
 
-import cpw.mods.modlauncher.api.*;
-import joptsimple.*;
-import joptsimple.util.*;
-import org.jetbrains.annotations.NotNull;
-
-import java.nio.file.*;
-import java.util.*;
-import java.util.function.*;
+import cpw.mods.modlauncher.api.IEnvironment;
+import cpw.mods.modlauncher.api.ITransformationService;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
+import joptsimple.OptionSpec;
+import joptsimple.util.PathConverter;
+import joptsimple.util.PathProperties;
 
 public class ArgumentHandler {
     private String[] args;
@@ -82,7 +83,7 @@ public class ArgumentHandler {
             }
 
             @Override
-            public <V> @NotNull List<V> values(OptionSpec<V> option) {
+            public <V> List<V> values(OptionSpec<V> option) {
                 checkOwnership(option);
                 return set.valuesOf(option);
             }
@@ -108,7 +109,7 @@ public class ArgumentHandler {
 
     private void addOptionToString(OptionSpec<?> option, OptionSet optionSet, List<String> appendTo) {
         if (optionSet.has(option)) {
-            appendTo.add("--"+option.options().get(0));
+            appendTo.add("--" + option.options().get(0));
             appendTo.add(option.value(optionSet).toString());
         }
     }

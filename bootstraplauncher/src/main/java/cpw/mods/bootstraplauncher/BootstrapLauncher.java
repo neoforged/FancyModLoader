@@ -1,19 +1,15 @@
 /*
  * BootstrapLauncher - for launching Java programs with added modular fun!
- *
- *     Copyright (C) 2021 - cpw
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, version 3 of the License.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (C) 2021 - cpw
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.bootstraplauncher;
@@ -25,8 +21,6 @@ import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.niofs.union.UnionPathFilter;
-import org.jetbrains.annotations.VisibleForTesting;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -44,10 +38,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.VisibleForTesting;
 
 public class BootstrapLauncher {
     private static final boolean DEBUG = System.getProperties().containsKey("bsl.debug");
@@ -137,7 +130,7 @@ public class BootstrapLauncher {
             if (existingModuleLocation != null) {
                 if (!existingModuleLocation.equals(path)) {
                     throw new IllegalStateException("Module named " + moduleName + " was already on the JVMs module path loaded from " +
-                                                    existingModuleLocation + " but class-path contains it at location " + path);
+                            existingModuleLocation + " but class-path contains it at location " + path);
                 }
 
                 if (DEBUG) {
@@ -150,7 +143,6 @@ public class BootstrapLauncher {
             order.add(jarname);
             mergeMap.computeIfAbsent(jarname, k -> new ArrayList<>()).add(path);
         }
-
 
         // Iterate over merged modules map and combine them into one SecureJar each
         mergeMap.entrySet().stream().sorted(Comparator.comparingInt(e -> order.indexOf(e.getKey()))).forEach(e -> {
@@ -215,8 +207,7 @@ public class BootstrapLauncher {
      * Find a mapping from module-name to filesystem location for the modules that are on the JVMs boot module path.
      */
     private static Map<String, Path> findLoadedModules() {
-        record ModuleWithLocation(String name, Path location) {
-        }
+        record ModuleWithLocation(String name, Path location) {}
         return ModuleLayer.boot().configuration().modules().stream()
                 .map(module -> {
                     var reference = module.reference();
@@ -266,13 +257,13 @@ public class BootstrapLauncher {
             // This method returns true if the given path is allowed within the JAR (filters out 'bad' paths)
 
             if (packages.isEmpty() || // This is the first jar, nothing is claimed yet, so allow everything
-                path.startsWith("META-INF/")) // Every module can have their own META-INF
+                    path.startsWith("META-INF/")) // Every module can have their own META-INF
                 return true;
 
             int idx = path.lastIndexOf('/');
             return idx < 0 || // Resources at the root are allowed to co-exist
-                   idx == path.length() - 1 || // All directories can have a potential to exist without conflict, we only care about real files.
-                   !packages.contains(path.substring(0, idx).replace('/', '.')); // If the package hasn't been used by a previous JAR
+                    idx == path.length() - 1 || // All directories can have a potential to exist without conflict, we only care about real files.
+                    !packages.contains(path.substring(0, idx).replace('/', '.')); // If the package hasn't been used by a previous JAR
         }
     }
 

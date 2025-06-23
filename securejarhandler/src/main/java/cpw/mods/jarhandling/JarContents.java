@@ -1,9 +1,6 @@
 package cpw.mods.jarhandling;
 
-import org.jetbrains.annotations.ApiStatus;
-
 import java.io.Closeable;
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -11,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.jar.Manifest;
+import org.jetbrains.annotations.ApiStatus;
 
 /**
  * Access to the contents of a list of {@link Path}s, interpreted as a jar file.

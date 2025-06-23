@@ -3,8 +3,6 @@ package cpw.mods.jarhandling;
 import cpw.mods.jarhandling.impl.Jar;
 import cpw.mods.jarhandling.impl.JarContentsImpl;
 import cpw.mods.niofs.union.UnionPathFilter;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -19,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A secure jar is the full definition for a module,
@@ -143,8 +142,8 @@ public interface SecureJar {
             try {
                 var entries = Files.readAllLines(path).stream()
                         .map(String::trim)
-                        .filter(l-> !l.isEmpty() && !l.startsWith("#")) // We support comments :)
-                        .filter(p-> pkgFilter == null || pkgFilter.test(p.replace('.','/'), path.getRoot()))
+                        .filter(l -> !l.isEmpty() && !l.startsWith("#")) // We support comments :)
+                        .filter(p -> pkgFilter == null || pkgFilter.test(p.replace('.', '/'), path.getRoot()))
                         .toList();
                 return new Provider(sname, entries);
             } catch (IOException e) {

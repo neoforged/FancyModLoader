@@ -1,8 +1,6 @@
 package cpw.mods.jarhandling.impl;
 
 import cpw.mods.jarhandling.SecureJar;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -16,6 +14,7 @@ import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The signing data for a {@link Jar}.
@@ -56,7 +55,7 @@ public class JarSigningData {
 
     @Nullable
     CodeSigner[] getManifestSigners() {
-        return getData(JarFile.MANIFEST_NAME).map(r->r.signers).orElse(null);
+        return getData(JarFile.MANIFEST_NAME).map(r -> r.signers).orElse(null);
     }
 
     SecureJar.Status verifyPath(Manifest manifest, Path path, String filename) {
@@ -71,14 +70,14 @@ public class JarSigningData {
     }
 
     SecureJar.Status getFileStatus(String name) {
-        return hasSecurityData() ? getData(name).map(r->r.status).orElse(SecureJar.Status.NONE) : SecureJar.Status.UNVERIFIED;
+        return hasSecurityData() ? getData(name).map(r -> r.status).orElse(SecureJar.Status.NONE) : SecureJar.Status.UNVERIFIED;
     }
 
     @Nullable
     Attributes getTrustedManifestEntries(Manifest manifest, String name) {
         var manattrs = manifest.getAttributes(name);
         var mansigners = getManifestSigners();
-        var objsigners = getData(name).map(sd->sd.signers).orElse(EMPTY_CODESIGNERS);
+        var objsigners = getData(name).map(sd -> sd.signers).orElse(EMPTY_CODESIGNERS);
         if (mansigners == null || (mansigners.length == objsigners.length)) {
             return manattrs;
         } else {

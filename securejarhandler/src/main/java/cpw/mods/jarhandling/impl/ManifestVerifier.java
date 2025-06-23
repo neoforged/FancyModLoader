@@ -3,7 +3,13 @@ package cpw.mods.jarhandling.impl;
 import java.security.CodeSigner;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
@@ -12,6 +18,7 @@ class ManifestVerifier {
 
     private static final Base64.Decoder BASE64D = Base64.getDecoder();
     private final Map<String, MessageDigest> HASHERS = new HashMap<>();
+
     private MessageDigest getHasher(String name) {
         return HASHERS.computeIfAbsent(name.toLowerCase(Locale.ENGLISH), k -> {
             try {
@@ -29,12 +36,12 @@ class ManifestVerifier {
     /**
      * This is Dumb API, but it's a package private class so la-de-da!
      * return:
-     *   null - Something went wrong, digests were not verified.
-     *   Optional.empty() - No signatures to verify, missing *-Digest entry in manifest, or nobody signed that particular entry
-     *   Optional.isPresent() - code signers!
+     * null - Something went wrong, digests were not verified.
+     * Optional.empty() - No signatures to verify, missing *-Digest entry in manifest, or nobody signed that particular entry
+     * Optional.isPresent() - code signers!
      */
     Optional<CodeSigner[]> verify(final Manifest manifest, final Map<String, CodeSigner[]> pending,
-                                  final Map<String, CodeSigner[]> verified, final String name, final byte[] data) {
+            final Map<String, CodeSigner[]> verified, final String name, final byte[] data) {
         if (DEBUG)
             log("[SJH] Verifying: " + name);
         Attributes attr = manifest.getAttributes(name);
@@ -44,13 +51,14 @@ class ManifestVerifier {
             return Optional.empty();
         }
 
-        record Expected(MessageDigest hash, byte[] value){};
+        record Expected(MessageDigest hash, byte[] value) {}
+        ;
         var expected = new ArrayList<Expected>();
-        attr.forEach((k,v) -> {
+        attr.forEach((k, v) -> {
             var key = k.toString();
             if (key.toLowerCase(Locale.ENGLISH).endsWith("-digest")) {
                 var algo = key.substring(0, key.length() - 7);
-                var hash = BASE64D.decode((String)v);
+                var hash = BASE64D.decode((String) v);
                 expected.add(new Expected(getHasher(algo), hash));
             }
         });

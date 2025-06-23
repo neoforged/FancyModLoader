@@ -5,8 +5,6 @@ import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.niofs.union.UnionFileSystem;
 import cpw.mods.niofs.union.UnionFileSystemProvider;
 import cpw.mods.niofs.union.UnionPathFilter;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -27,13 +25,14 @@ import java.util.function.Supplier;
 import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
+import org.jetbrains.annotations.Nullable;
 
 public class JarContentsImpl implements JarContents {
     private static final UnionFileSystemProvider UFSP = (UnionFileSystemProvider) FileSystemProvider.installedProviders()
             .stream()
-            .filter(fsp->fsp.getScheme().equals("union"))
+            .filter(fsp -> fsp.getScheme().equals("union"))
             .findFirst()
-            .orElseThrow(()->new IllegalStateException("Couldn't find UnionFileSystemProvider"));
+            .orElseThrow(() -> new IllegalStateException("Couldn't find UnionFileSystemProvider"));
     private static final Set<String> NAUGHTY_SERVICE_FILES = Set.of("org.codehaus.groovy.runtime.ExtensionModule");
 
     final UnionFileSystem filesystem;
@@ -158,7 +157,7 @@ public class JarContentsImpl implements JarContents {
 
     @Override
     public Set<String> getPackagesExcluding(String... excludedRootPackages) {
-        Set<String> ignoredRootPackages = new HashSet<>(excludedRootPackages.length+1);
+        Set<String> ignoredRootPackages = new HashSet<>(excludedRootPackages.length + 1);
         ignoredRootPackages.add("META-INF"); // Always ignore META-INF
         ignoredRootPackages.addAll(List.of(excludedRootPackages)); // And additional user-provided packages
 
@@ -204,7 +203,7 @@ public class JarContentsImpl implements JarContents {
             final var services = this.filesystem.getRoot().resolve("META-INF/services/");
             if (Files.exists(services)) {
                 try (var walk = Files.walk(services, 1)) {
-                    this.providers = walk.filter(path->!Files.isDirectory(path))
+                    this.providers = walk.filter(path -> !Files.isDirectory(path))
                             .filter(path -> !NAUGHTY_SERVICE_FILES.contains(path.getFileName().toString()))
                             .map((Path path1) -> SecureJar.Provider.fromPath(path1, filesystem.getFilesystemFilter()))
                             .toList();

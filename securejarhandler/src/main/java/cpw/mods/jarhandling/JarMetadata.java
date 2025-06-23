@@ -2,17 +2,18 @@ package cpw.mods.jarhandling;
 
 import cpw.mods.jarhandling.impl.ModuleJarMetadata;
 import cpw.mods.jarhandling.impl.SimpleJarMetadata;
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Pattern;
+import org.jetbrains.annotations.Nullable;
 
 public interface JarMetadata {
     String name();
+
     @Nullable
     String version();
+
     ModuleDescriptor descriptor();
 
     /**
@@ -35,14 +36,14 @@ public interface JarMetadata {
     Pattern MODULE_VERSION = Pattern.compile("(?<=^|-)([\\d][.\\d]*)");
     Pattern NUMBERLIKE_PARTS = Pattern.compile("(?<=^|\\.)([0-9]+)"); // matches asdf.1.2b because both are invalid java identifiers
     List<String> ILLEGAL_KEYWORDS = List.of(
-        "abstract","continue","for","new","switch","assert",
-        "default","goto","package","synchronized","boolean",
-        "do","if","private","this","break","double","implements",
-        "protected","throw","byte","else","import","public","throws",
-        "case","enum","instanceof","return","transient","catch",
-        "extends","int","short","try","char","final","interface",
-        "static","void","class","finally","long","strictfp",
-        "volatile","const","float","native","super","while");
+            "abstract", "continue", "for", "new", "switch", "assert",
+            "default", "goto", "package", "synchronized", "boolean",
+            "do", "if", "private", "this", "break", "double", "implements",
+            "protected", "throw", "byte", "else", "import", "public", "throws",
+            "case", "enum", "instanceof", "return", "transient", "catch",
+            "extends", "int", "short", "try", "char", "final", "interface",
+            "static", "void", "class", "finally", "long", "strictfp",
+            "volatile", "const", "float", "native", "super", "while");
     Pattern KEYWORD_PARTS = Pattern.compile("(?<=^|\\.)(" + String.join("|", ILLEGAL_KEYWORDS) + ")(?=\\.|$)");
 
     /**
@@ -73,11 +74,9 @@ public interface JarMetadata {
     private static NameAndVersion computeNameAndVersion(Path path) {
         // detect Maven-like paths
         Path versionMaybe = path.getParent();
-        if (versionMaybe != null)
-        {
+        if (versionMaybe != null) {
             Path artifactMaybe = versionMaybe.getParent();
-            if (artifactMaybe != null)
-            {
+            if (artifactMaybe != null) {
                 Path artifactNameMaybe = artifactMaybe.getFileName();
                 if (artifactNameMaybe != null && path.getFileName().toString().startsWith(artifactNameMaybe + "-" + versionMaybe.getFileName().toString())) {
                     var name = artifactMaybe.getFileName().toString();
@@ -132,7 +131,6 @@ public interface JarMetadata {
     }
 
     private static String cleanModuleName(String mn) {
-
         // replace non-alphanumeric
         mn = NON_ALPHANUM.matcher(mn).replaceAll(".");
 
@@ -145,7 +143,7 @@ public interface JarMetadata {
 
         // drop trailing dots
         int len = mn.length();
-        if (len > 0 && mn.charAt(len-1) == '.')
+        if (len > 0 && mn.charAt(len - 1) == '.')
             mn = TRAILING_DOTS.matcher(mn).replaceAll("");
 
         // fixup digits-only components

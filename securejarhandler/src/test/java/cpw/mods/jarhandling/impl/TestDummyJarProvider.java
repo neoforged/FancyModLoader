@@ -1,13 +1,10 @@
 package cpw.mods.jarhandling.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.SecureJar;
-import org.junit.jupiter.api.Test;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.ClassNode;
-
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.module.Configuration;
@@ -21,8 +18,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.ClassNode;
 
 public class TestDummyJarProvider {
     @Test
@@ -30,7 +29,7 @@ public class TestDummyJarProvider {
         final var jmf = JarModuleFinder.of(new DummyJar());
         final var cf = Configuration.resolveAndBind(jmf, List.of(ModuleLayer.boot().configuration()), ModuleFinder.of(), List.of("testdummy"));
         final var mcl = new ModuleClassLoader("TEST", cf, List.of(ModuleLayer.boot()));
-        final var ml = ModuleLayer.defineModules(cf, List.of(ModuleLayer.boot()), f->mcl);
+        final var ml = ModuleLayer.defineModules(cf, List.of(ModuleLayer.boot()), f -> mcl);
         final var mod = ml.layer().findModule("testdummy").orElseThrow();
         final var rmod = cf.findModule("testdummy").orElseThrow();
         final var clz = Class.forName(mod, "test.dummy.Fish");
@@ -45,6 +44,7 @@ public class TestDummyJarProvider {
         cn.accept(cw);
         return cw.toByteArray();
     }
+
     record TestModuleProvider() implements SecureJar.ModuleDataProvider {
         @Override
         public String name() {
@@ -68,7 +68,7 @@ public class TestDummyJarProvider {
 
         @Override
         public Optional<InputStream> open(final String name) {
-            return Optional.of(new ByteArrayInputStream(makeClass(name.substring(0, name.length()-6))));
+            return Optional.of(new ByteArrayInputStream(makeClass(name.substring(0, name.length() - 6))));
         }
 
         @Override
@@ -81,6 +81,7 @@ public class TestDummyJarProvider {
             return new CodeSigner[0];
         }
     }
+
     record DummyJar() implements SecureJar {
         @Override
         public ModuleDataProvider moduleDataProvider() {
@@ -133,7 +134,6 @@ public class TestDummyJarProvider {
         }
 
         @Override
-        public void close() {
-        }
+        public void close() {}
     }
 }

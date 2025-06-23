@@ -3,9 +3,6 @@ package cpw.mods.jarhandling.impl;
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -13,9 +10,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.jar.Manifest;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class TestMetadata
-{
+public class TestMetadata {
     @Test
     void testMavenJar() {
         var path = Paths.get("startofthepathchain/new-protected-class-1.16.5/1.1_mapped_official_1.17.1/new-protected-class-1.16.5-1.1_mapped_official_1.17.1-api.jar");
@@ -23,7 +21,7 @@ public class TestMetadata
         Assertions.assertEquals("_new._protected._class._1._16._5", meta.name());
         Assertions.assertEquals("1.1_mapped_official_1.17.1", meta.version());
     }
-    
+
     @Test
     void testRootStart() {
         var path = Paths.get("/instance/mods/1life-1.5.jar");
@@ -72,7 +70,6 @@ public class TestMetadata
         }
 
         @Override
-        public void close() {
-        }
+        public void close() {}
     }
 }

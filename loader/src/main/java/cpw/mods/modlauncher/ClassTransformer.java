@@ -1,38 +1,51 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- *
- *     Copyright (C) 2017-2019 cpw
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, version 3 of the License.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (C) 2017-2019 cpw
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher;
 
-import cpw.mods.modlauncher.api.*;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-import org.apache.logging.log4j.*;
-import org.objectweb.asm.*;
-import org.objectweb.asm.tree.*;
+import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 
+import cpw.mods.modlauncher.api.ITransformer;
+import cpw.mods.modlauncher.api.ITransformerActivity;
+import cpw.mods.modlauncher.api.TargetType;
+import cpw.mods.modlauncher.api.TransformerVoteResult;
+import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.*;
-import java.util.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
-import java.util.stream.*;
-
-import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.MethodNode;
 
 /**
  * Transforms classes using the supplied launcher services
@@ -74,13 +87,13 @@ public class ClassTransformer {
         if (inputClass.length > 0) {
             final ClassReader classReader = new ClassReader(inputClass);
             classReader.accept(clazz, ClassReader.EXPAND_FRAMES);
-            digest = ()->getSha256().digest(inputClass);
+            digest = () -> getSha256().digest(inputClass);
             empty = false;
         } else {
             clazz.name = classDesc.getInternalName();
             clazz.version = 52;
             clazz.superName = "java/lang/Object";
-            digest = ()->getSha256().digest(EMPTY);
+            digest = () -> getSha256().digest(EMPTY);
             empty = true;
         }
         auditTrail.addReason(classDesc.getClassName(), reason);
@@ -138,6 +151,7 @@ public class ClassTransformer {
     }
 
     private static Path tempDir;
+
     private void dumpClass(final byte[] clazz, String className) {
         if (tempDir == null) {
             synchronized (ClassTransformer.class) {
@@ -177,7 +191,7 @@ public class ClassTransformer {
             if (results.containsKey(TransformerVoteResult.YES)) {
                 final ITransformer<T> transformer = results.get(TransformerVoteResult.YES).get(0).getTransformer();
                 node = transformer.transform(node, context);
-                auditTrail.addTransformerAuditTrail(context.getClassName(), ((TransformerHolder<?>)transformer).owner(), transformer);
+                auditTrail.addTransformerAuditTrail(context.getClassName(), ((TransformerHolder<?>) transformer).owner(), transformer);
                 transformers.remove(transformer);
                 continue;
             }
@@ -185,8 +199,7 @@ public class ClassTransformer {
             if (results.containsKey(TransformerVoteResult.DEFER)) {
                 throw new VoteDeadlockException(results.get(TransformerVoteResult.DEFER), node.getClass());
             }
-        }
-        while (!transformers.isEmpty());
+        } while (!transformers.isEmpty());
         return node;
     }
 

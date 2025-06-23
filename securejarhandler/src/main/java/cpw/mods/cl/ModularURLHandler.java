@@ -1,7 +1,5 @@
 package cpw.mods.cl;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -13,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.function.Function;
+import org.jetbrains.annotations.Nullable;
 
 public class ModularURLHandler implements URLStreamHandlerFactory {
     public static final ModularURLHandler INSTANCE = new ModularURLHandler();
@@ -70,8 +69,7 @@ public class ModularURLHandler implements URLStreamHandlerFactory {
         }
 
         @Override
-        public void connect() throws IOException {
-        }
+        public void connect() throws IOException {}
 
         @Override
         public InputStream getInputStream() throws IOException {
@@ -100,14 +98,17 @@ public class ModularURLHandler implements URLStreamHandlerFactory {
         public long getLastModified() {
             return provider.getLastModified(url);
         }
-
     }
+
     public interface IURLProvider {
         String protocol();
+
         Function<URL, InputStream> inputStreamFunction();
+
         default long getLastModified(URL url) {
             return 0;
         }
+
         default long getContentLength(URL url) {
             return -1;
         }

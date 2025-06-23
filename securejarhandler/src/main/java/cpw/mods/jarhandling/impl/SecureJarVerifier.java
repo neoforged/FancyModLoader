@@ -1,12 +1,11 @@
 package cpw.mods.jarhandling.impl;
 
-import sun.misc.Unsafe;
-
 import java.lang.reflect.Field;
 import java.security.CodeSigner;
 import java.util.Locale;
 import java.util.Map;
 import java.util.jar.JarInputStream;
+import sun.misc.Unsafe;
 
 /**
  * Reflection / Unsafe wrapper class around the unexposed {@link java.util.jar.JarVerifier}.
@@ -16,12 +15,13 @@ public class SecureJarVerifier {
     private static IAccessor ACCESSOR = USE_UNSAAFE ? new UnsafeAccessor() : new Reflection();
 
     private static final char[] LOOKUP = "0123456789abcdef".toCharArray();
+
     public static String toHexString(final byte[] bytes) {
-        final var buffer = new StringBuffer(2*bytes.length);
+        final var buffer = new StringBuffer(2 * bytes.length);
         for (int i = 0, bytesLength = bytes.length; i < bytesLength; i++) {
-            final int aByte = bytes[i] &0xff;
-            buffer.append(LOOKUP[(aByte&0xf0)>>4]);
-            buffer.append(LOOKUP[aByte&0xf]);
+            final int aByte = bytes[i] & 0xff;
+            buffer.append(LOOKUP[(aByte & 0xf0) >> 4]);
+            buffer.append(LOOKUP[aByte & 0xf]);
         }
         return buffer.toString();
     }
@@ -35,9 +35,9 @@ public class SecureJarVerifier {
         if (filename.indexOf('/') != -1)  // Can't be a sub-directory
             return false;
         if ("manifest.mf".equals(filename) || // Main manifest, which has the file hashes
-            filename.endsWith(".sf") ||       // Signature file, which has hashes of the entries in the manifest file
-            filename.endsWith(".dsa") ||      // PKCS7 signature, DSA
-            filename.endsWith(".rsa"))        // PKCS7 signature, SHA-256 + RSA
+                filename.endsWith(".sf") ||       // Signature file, which has hashes of the entries in the manifest file
+                filename.endsWith(".dsa") ||      // PKCS7 signature, DSA
+                filename.endsWith(".rsa"))        // PKCS7 signature, SHA-256 + RSA
             return true;
 
         if (!filename.startsWith("sig-")) // Unspecifed signature format
@@ -59,16 +59,32 @@ public class SecureJarVerifier {
     public static Object getJarVerifier(Object inst) {
         return ACCESSOR.getJarVerifier(inst);
     }
-    public static boolean isParsingMeta(Object inst) { return ACCESSOR.isParsingMeta(inst); }
-    public static boolean hasSignatures(Object inst) { return ACCESSOR.hasSignatures(inst); }
-    public static Map<String, CodeSigner[]> getVerifiedSigners(Object inst){ return ACCESSOR.getVerifiedSigners(inst); }
-    public static Map<String, CodeSigner[]> getPendingSigners(Object inst){ return ACCESSOR.getPendingSigners(inst); }
+
+    public static boolean isParsingMeta(Object inst) {
+        return ACCESSOR.isParsingMeta(inst);
+    }
+
+    public static boolean hasSignatures(Object inst) {
+        return ACCESSOR.hasSignatures(inst);
+    }
+
+    public static Map<String, CodeSigner[]> getVerifiedSigners(Object inst) {
+        return ACCESSOR.getVerifiedSigners(inst);
+    }
+
+    public static Map<String, CodeSigner[]> getPendingSigners(Object inst) {
+        return ACCESSOR.getPendingSigners(inst);
+    }
 
     private interface IAccessor {
         Object getJarVerifier(Object inst);
+
         boolean isParsingMeta(Object inst);
+
         boolean hasSignatures(Object inst);
+
         Map<String, CodeSigner[]> getVerifiedSigners(Object inst);
+
         Map<String, CodeSigner[]> getPendingSigners(Object inst);
     }
 
@@ -86,11 +102,11 @@ public class SecureJarVerifier {
                 final var gj9h = myModule.get();
                 moduleLayer
                         .findModule("java.base")
-                        .filter(m-> m.isOpen("java.util.jar", gj9h) && m.isExported("sun.security.util", gj9h))
-                        .orElseThrow(()->new IllegalStateException("""
-                    Missing JVM arguments. Please correct your runtime profile and run again.
-                        --add-opens java.base/java.util.jar=cpw.mods.securejarhandler
-                        --add-exports java.base/sun.security.util=cpw.mods.securejarhandler"""));
+                        .filter(m -> m.isOpen("java.util.jar", gj9h) && m.isExported("sun.security.util", gj9h))
+                        .orElseThrow(() -> new IllegalStateException("""
+                                Missing JVM arguments. Please correct your runtime profile and run again.
+                                    --add-opens java.base/java.util.jar=cpw.mods.securejarhandler
+                                    --add-exports java.base/sun.security.util=cpw.mods.securejarhandler"""));
             } else if (Boolean.parseBoolean(System.getProperty("securejarhandler.throwOnMissingModule", "true"))) {
                 // Hack for JMH benchmark: in JMH, SecureJarHandler does not load as a module, but we add-open to all unnamed in the jvm args
                 throw new RuntimeException("Failed to find securejarhandler module!");
@@ -111,15 +127,32 @@ public class SecureJarVerifier {
             }
         }
 
-        @Override public Object getJarVerifier(Object inst) {
+        @Override
+        public Object getJarVerifier(Object inst) {
             return getField(jarVerifier, inst);
         }
-        @Override public boolean isParsingMeta(Object inst) { return (Boolean)getField(parsingMeta, inst); }
-        @Override public boolean hasSignatures(Object inst) { return (Boolean)getField(anyToVerify, inst); }
+
+        @Override
+        public boolean isParsingMeta(Object inst) {
+            return (Boolean) getField(parsingMeta, inst);
+        }
+
+        @Override
+        public boolean hasSignatures(Object inst) {
+            return (Boolean) getField(anyToVerify, inst);
+        }
+
         @SuppressWarnings("unchecked")
-        @Override public Map<String, CodeSigner[]> getVerifiedSigners(Object inst){ return (Map<String, CodeSigner[]>)getField(verifiedSigners, inst); }
+        @Override
+        public Map<String, CodeSigner[]> getVerifiedSigners(Object inst) {
+            return (Map<String, CodeSigner[]>) getField(verifiedSigners, inst);
+        }
+
         @SuppressWarnings("unchecked")
-        @Override public Map<String, CodeSigner[]> getPendingSigners(Object inst){ return (Map<String, CodeSigner[]>)getField(verifiedSigners, inst); }
+        @Override
+        public Map<String, CodeSigner[]> getPendingSigners(Object inst) {
+            return (Map<String, CodeSigner[]>) getField(verifiedSigners, inst);
+        }
 
         private static Object getField(Field f, Object inst) {
             try {
@@ -128,7 +161,6 @@ public class SecureJarVerifier {
                 throw new RuntimeException(e);
             }
         }
-
     }
 
     private static class UnsafeAccessor implements IAccessor {
@@ -138,7 +170,7 @@ public class SecureJarVerifier {
             try {
                 var f = Unsafe.class.getDeclaredField("theUnsafe");
                 f.setAccessible(true);
-                UNSAFE = (Unsafe)f.get(null);
+                UNSAFE = (Unsafe) f.get(null);
                 JV_TYPE = JarInputStream.class.getDeclaredField("jv").getType();
             } catch (Exception e) {
                 throw new RuntimeException("Unable to get Unsafe reference, this should never be possible," +
@@ -161,12 +193,31 @@ public class SecureJarVerifier {
             }
         }
 
-        @Override public Object getJarVerifier(Object inst) { return UNSAFE.getObject(inst, jarVerifier); }
-        @Override public boolean isParsingMeta(Object inst) { return UNSAFE.getBoolean(inst, parsingMeta); }
-        @Override public boolean hasSignatures(Object inst) { return UNSAFE.getBoolean(inst, anyToVerify); }
+        @Override
+        public Object getJarVerifier(Object inst) {
+            return UNSAFE.getObject(inst, jarVerifier);
+        }
+
+        @Override
+        public boolean isParsingMeta(Object inst) {
+            return UNSAFE.getBoolean(inst, parsingMeta);
+        }
+
+        @Override
+        public boolean hasSignatures(Object inst) {
+            return UNSAFE.getBoolean(inst, anyToVerify);
+        }
+
         @SuppressWarnings("unchecked")
-        @Override public Map<String, CodeSigner[]> getVerifiedSigners(Object inst) { return (Map<String, CodeSigner[]>)UNSAFE.getObject(inst, verifiedSigners); }
+        @Override
+        public Map<String, CodeSigner[]> getVerifiedSigners(Object inst) {
+            return (Map<String, CodeSigner[]>) UNSAFE.getObject(inst, verifiedSigners);
+        }
+
         @SuppressWarnings("unchecked")
-        @Override public Map<String, CodeSigner[]> getPendingSigners(Object inst) { return (Map<String, CodeSigner[]>)UNSAFE.getObject(inst, sigFileSigners); }
+        @Override
+        public Map<String, CodeSigner[]> getPendingSigners(Object inst) {
+            return (Map<String, CodeSigner[]>) UNSAFE.getObject(inst, sigFileSigners);
+        }
     }
 }

@@ -1,7 +1,5 @@
 package cpw.mods.niofs.union;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -29,8 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiPredicate;
 import java.util.stream.Stream;
+import org.jetbrains.annotations.Nullable;
 
 public class UnionFileSystemProvider extends FileSystemProvider {
     private final Map<String, UnionFileSystem> fileSystems = new HashMap<>();
@@ -65,8 +63,8 @@ public class UnionFileSystemProvider extends FileSystemProvider {
 
     /**
      * Invoked by FileSystems.newFileSystem, Only returns a value if env contains one of more of:
-     *   "filter": UnionPathFilter - A filter to apply to the opened path
-     *   "additional": List<Path> - Additional paths to join together
+     * "filter": UnionPathFilter - A filter to apply to the opened path
+     * "additional": List<Path> - Additional paths to join together
      * If none specified, throws IllegalArgumentException
      * If uri.getScheme() is not "union" throws IllegalArgumentException
      * If you wish to create a UnionFileSystem explicitly, invoke newFileSystem(BiPredicate, Path...)
@@ -74,9 +72,9 @@ public class UnionFileSystemProvider extends FileSystemProvider {
     @Override
     public FileSystem newFileSystem(final URI uri, final Map<String, ?> env) throws IOException {
         @SuppressWarnings("unchecked")
-        var additional = ((Map<String, List<Path>>)env).getOrDefault("additional", List.<Path>of());
+        var additional = ((Map<String, List<Path>>) env).getOrDefault("additional", List.<Path>of());
         @SuppressWarnings("unchecked")
-        var filter = ((Map<String, UnionPathFilter>)env).getOrDefault("filter", null);
+        var filter = ((Map<String, UnionPathFilter>) env).getOrDefault("filter", null);
 
         if (filter == null && additional.isEmpty())
             throw new IllegalArgumentException("Missing additional and/or filter");
@@ -95,18 +93,18 @@ public class UnionFileSystemProvider extends FileSystemProvider {
 
     /**
      * Invoked by FileSystems.newFileSystem, Only returns a value if env contains one of more of:
-     *   "filter": UnionPathFilter - A filter to apply to the opened path
-     *   "additional": List<Path> - Additional paths to join together
+     * "filter": UnionPathFilter - A filter to apply to the opened path
+     * "additional": List<Path> - Additional paths to join together
      * If none specified, throws UnsupportedOperationException instead of IllegalArgumentException
-     *   so that FileSystems.newFileSystem will search for the next provider.
+     * so that FileSystems.newFileSystem will search for the next provider.
      * If you wish to create a UnionFileSystem explicitly, invoke newFileSystem(BiPredicate, Path...)
      */
     @Override
     public FileSystem newFileSystem(final Path path, final Map<String, ?> env) throws IOException {
         @SuppressWarnings("unchecked")
-        var additional = ((Map<String, List<Path>>)env).getOrDefault("additional", List.<Path>of());
+        var additional = ((Map<String, List<Path>>) env).getOrDefault("additional", List.<Path>of());
         @SuppressWarnings("unchecked")
-        var filter = ((Map<String, UnionPathFilter>)env).getOrDefault("filter", null);
+        var filter = ((Map<String, UnionPathFilter>) env).getOrDefault("filter", null);
 
         if (filter == null && additional.isEmpty())
             throw new UnsupportedOperationException("Missing additional and/or filter");
@@ -139,8 +137,7 @@ public class UnionFileSystemProvider extends FileSystemProvider {
     }
 
     private synchronized String makeKey(Path path) {
-        var key= (path instanceof UnionPath p) ? p.getFileSystem().getKey() :
-                        path.toAbsolutePath().normalize().toUri().getPath();
+        var key = (path instanceof UnionPath p) ? p.getFileSystem().getKey() : path.toAbsolutePath().normalize().toUri().getPath();
         return key.replace('!', '_') + "#" + index++;
     }
 
@@ -150,7 +147,7 @@ public class UnionFileSystemProvider extends FileSystemProvider {
         if (parts.length > 1) {
             return getFileSystem(uri).getPath(parts[1]);
         } else {
-            return ((UnionFileSystem)getFileSystem(uri)).getRoot();
+            return ((UnionFileSystem) getFileSystem(uri)).getRoot();
         }
     }
 
@@ -271,7 +268,6 @@ public class UnionFileSystemProvider extends FileSystemProvider {
     }
 
     private class UnionBasicFileAttributeView implements BasicFileAttributeView {
-
         private final Path path;
         private final LinkOption[] options;
 
@@ -291,8 +287,6 @@ public class UnionFileSystemProvider extends FileSystemProvider {
         }
 
         @Override
-        public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) {
-        }
-
+        public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) {}
     }
 }

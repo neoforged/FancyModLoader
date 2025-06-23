@@ -15,7 +15,6 @@ import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
-import java.util.StringJoiner;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.IntStream;
 
@@ -23,10 +22,10 @@ public class UnionPath implements Path {
     private final UnionFileSystem fileSystem;
     private final boolean absolute;
     private final String[] pathParts;
-    
+
     // Store the normalized path after it has been created first
     private UnionPath normalized;
-    
+
     UnionPath(final UnionFileSystem fileSystem, final String... pathParts) {
         this.fileSystem = fileSystem;
         if (pathParts.length == 0) {
@@ -38,7 +37,7 @@ public class UnionPath implements Path {
                 final String element = pathParts[i];
                 if (!element.isEmpty()) {
                     joiner.append(element);
-                    if (i<pathParts.length-1) joiner.append(UnionFileSystem.SEP_STRING);
+                    if (i < pathParts.length - 1) joiner.append(UnionFileSystem.SEP_STRING);
                 }
             }
             final var longstring = joiner.toString();
@@ -52,7 +51,7 @@ public class UnionPath implements Path {
     UnionPath(final UnionFileSystem fileSystem, boolean absolute, final String... pathParts) {
         this(fileSystem, absolute, false, pathParts);
     }
-    
+
     private UnionPath(final UnionFileSystem fileSystem, boolean absolute, boolean isNormalized, final String... pathParts) {
         this.fileSystem = fileSystem;
         this.absolute = absolute;
@@ -100,7 +99,7 @@ public class UnionPath implements Path {
         //    return null;
         return this.fileSystem.getRoot();
     }
-    
+
     @Override
     public Path getFileName() {
         if (this.pathParts.length > 0) {
@@ -116,7 +115,7 @@ public class UnionPath implements Path {
     @Override
     public Path getParent() {
         if (this.pathParts.length > 0) {
-            return new UnionPath(this.fileSystem, this.absolute, Arrays.copyOf(this.pathParts,this.pathParts.length - 1));
+            return new UnionPath(this.fileSystem, this.absolute, Arrays.copyOf(this.pathParts, this.pathParts.length - 1));
         } else {
             return null;
         }
@@ -129,7 +128,7 @@ public class UnionPath implements Path {
 
     @Override
     public Path getName(final int index) {
-        if (index < 0 || index > this.pathParts.length -1) throw new IllegalArgumentException();
+        if (index < 0 || index > this.pathParts.length - 1) throw new IllegalArgumentException();
         return new UnionPath(this.fileSystem, false, this.pathParts[index]);
     }
 
@@ -138,7 +137,7 @@ public class UnionPath implements Path {
         if (!this.absolute && this.pathParts.length == 0 && beginIndex == 0 && endIndex == 1)
             return new UnionPath(this.fileSystem, false);
         if (beginIndex < 0 || beginIndex > this.pathParts.length - 1 || endIndex < 0 || endIndex > this.pathParts.length || beginIndex >= endIndex) {
-            throw new IllegalArgumentException("Out of range "+beginIndex+" to "+endIndex+" for length "+this.pathParts.length);
+            throw new IllegalArgumentException("Out of range " + beginIndex + " to " + endIndex + " for length " + this.pathParts.length);
         }
         if (!this.absolute && beginIndex == 0 && endIndex == this.pathParts.length) {
             return this;
@@ -158,7 +157,6 @@ public class UnionPath implements Path {
         }
         return false;
     }
-
 
     @Override
     public boolean endsWith(final Path other) {
@@ -225,7 +223,7 @@ public class UnionPath implements Path {
 
     @Override
     public Path relativize(final Path other) {
-        if (other.getFileSystem()!=this.getFileSystem()) throw new IllegalArgumentException("Wrong filesystem");
+        if (other.getFileSystem() != this.getFileSystem()) throw new IllegalArgumentException("Wrong filesystem");
         if (other instanceof UnionPath p) {
             if (this.absolute != p.absolute) {
                 // Should not be allowed but union fs relies on it
@@ -267,11 +265,10 @@ public class UnionPath implements Path {
     public URI toUri() {
         try {
             return new URI(
-                fileSystem.provider().getScheme(),
-                null,
-                fileSystem.getKey() + '!' + toAbsolutePath(),
-                null
-            );
+                    fileSystem.provider().getScheme(),
+                    null,
+                    fileSystem.getKey() + '!' + toAbsolutePath(),
+                    null);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }

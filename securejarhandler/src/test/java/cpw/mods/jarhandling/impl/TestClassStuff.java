@@ -1,7 +1,5 @@
 package cpw.mods.jarhandling.impl;
 
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.Configuration;
@@ -9,10 +7,10 @@ import java.lang.module.ModuleFinder;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import org.junit.jupiter.api.Test;
 
 public class TestClassStuff {
     @Test
@@ -21,11 +19,10 @@ public class TestClassStuff {
         if (!Files.exists(path))
             return;
         final var cf = ModuleLayer.boot().configuration().resolveAndBind(ModuleFinder.of(path), ModuleFinder.ofSystem(), List.of("forge"));
-        final var layer = ModuleLayer.defineModulesWithOneLoader(cf, List.of(ModuleLayer.boot()), new URLClassLoader(new URL[]{Paths.get("ge-1.16.5-36.1.16.jar").toUri().toURL()}));
+        final var layer = ModuleLayer.defineModulesWithOneLoader(cf, List.of(ModuleLayer.boot()), new URLClassLoader(new URL[] { Paths.get("ge-1.16.5-36.1.16.jar").toUri().toURL() }));
         var is = layer.layer().configuration().findModule("forge").get();
         var m = layer.layer().findModule(is.name()).get();
         var cl = Class.forName(m, "net.minecraftforge.server.ServerMain");
-
     }
 
     static class MyClassLoader extends ClassLoader {
@@ -34,12 +31,13 @@ public class TestClassStuff {
         MyClassLoader(Configuration cf) {
             this.cf = cf;
         }
+
         @Override
         protected Class<?> findClass(final String moduleName, final String name) {
             try {
                 final var module = cf.findModule(moduleName).orElseThrow();
                 final var reader = module.reference().open();
-                final var bb = reader.read(name.replace('.','/')+".class").orElseThrow();
+                final var bb = reader.read(name.replace('.', '/') + ".class").orElseThrow();
                 var bytes = new byte[bb.remaining()];
                 bb.get(bytes);
                 reader.release(bb);

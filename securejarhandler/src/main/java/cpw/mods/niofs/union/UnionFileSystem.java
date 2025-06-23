@@ -1,7 +1,5 @@
 package cpw.mods.niofs.union;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -36,12 +34,12 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.jetbrains.annotations.Nullable;
 
 public class UnionFileSystem extends FileSystem {
     private static final MethodHandle ZIPFS_CH;
     private static final MethodHandle FCI_UNINTERUPTIBLE;
     static final String SEP_STRING = "/";
-
 
     static {
         try {
@@ -83,7 +81,7 @@ public class UnionFileSystem extends FileSystem {
         public UncheckedIOException(final IOException cause) {
             super(cause);
         }
-        
+
         public UncheckedIOException(final String message, final IOException cause) {
             super(message, cause);
         }
@@ -116,8 +114,7 @@ public class UnionFileSystem extends FileSystem {
         return this.key;
     }
 
-    private record EmbeddedFileSystemMetadata(Path path, FileSystem fs, SeekableByteChannel fsCh) {
-    }
+    private record EmbeddedFileSystemMetadata(Path path, FileSystem fs, SeekableByteChannel fsCh) {}
 
     public UnionFileSystem(final UnionFileSystemProvider provider, @Nullable UnionPathFilter pathFilter, final String key, final Path... basepaths) {
         this.pathFilter = pathFilter;
@@ -283,7 +280,7 @@ public class UnionFileSystem extends FileSystem {
      *
      * @param unionPath the path to find
      * @return an optional containing the first real path that {@link Files#exists(Path, LinkOption...) exists},
-     * or otherwise the last path, if this file system has at least one {@link #basepaths base path}
+     *         or otherwise the last path, if this file system has at least one {@link #basepaths base path}
      */
     private Optional<Path> findFirstFiltered(final UnionPath unionPath) {
         // Iterate the first base paths to try to find matching existing files

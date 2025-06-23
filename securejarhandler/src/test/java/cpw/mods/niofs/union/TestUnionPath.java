@@ -1,18 +1,20 @@
 package cpw.mods.niofs.union;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Arrays;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 public class TestUnionPath {
     @Test
     void testUnionPath() {
-        var fsp = (UnionFileSystemProvider) FileSystemProvider.installedProviders().stream().filter(fs-> fs.getScheme().equals("union")).findFirst().orElseThrow();
+        var fsp = (UnionFileSystemProvider) FileSystemProvider.installedProviders().stream().filter(fs -> fs.getScheme().equals("union")).findFirst().orElseThrow();
         // Actual base directory is not relevant as we don't access the file system in these tests
         var fs = fsp.newFileSystem((path, base) -> true, Paths.get("src").toAbsolutePath().normalize());
 
@@ -30,7 +32,7 @@ public class TestUnionPath {
         var rel1slash3 = fs.getPath("one//three");
         var relUpUp1 = fs.getPath("../../one");
         var relUpUp123 = fs.getPath("../../one/two/three");
-        
+
         var absUp = fs.getPath("/..");
         var abs0 = fs.getPath("/");
         var abs1 = fs.getPath("/one");
@@ -47,7 +49,7 @@ public class TestUnionPath {
         var abs1otherslash3 = fs.getPath("/one\\/three");
         var absUpUp1 = fs.getPath("/../../one");
         var absUpUp123 = fs.getPath("/../../one/two/three");
-        
+
         // General
         assertEquals(rel13, rel13slash);
         assertEquals(rel13, rel1slash3);
@@ -57,7 +59,7 @@ public class TestUnionPath {
         assertEquals(abs12up3, abs12up3otherslash);
         // Not filtering out empty elements for joining will cause this to fail
         assertFalse(fs.getPath("", "one", "two").isAbsolute());
-        
+
         // toString
         assertEquals("..", relUp.toString());
         assertEquals("", rel0.toString());
@@ -87,7 +89,7 @@ public class TestUnionPath {
         assertEquals("/one/three", abs1slash3.toString());
         assertEquals("/../../one", absUpUp1.toString());
         assertEquals("/../../one/two/three", absUpUp123.toString());
-        
+
         // isAbsolute
         assertFalse(relUp.isAbsolute());
         assertFalse(rel0.isAbsolute());
@@ -117,7 +119,7 @@ public class TestUnionPath {
         assertTrue(abs1slash3.isAbsolute());
         assertTrue(absUpUp1.isAbsolute());
         assertTrue(absUpUp123.isAbsolute());
-        
+
         // getParent
         assertEquals(rel3, rel32.getParent());
         assertEquals(rel1, rel123.getParent().getParent());
@@ -135,7 +137,7 @@ public class TestUnionPath {
         assertEquals(abs0, abs13.getParent().getParent());
         assertEquals(abs1, abs13slash.getParent());
         assertEquals(abs1, abs1slash3.getParent());
-        
+
         // getNameCount, getName, getFileName, subpath
         testNameParts(fs, relUp, "..");
         testNameParts(fs, rel0);
@@ -165,7 +167,7 @@ public class TestUnionPath {
         testNameParts(fs, abs1slash3, "one", "three");
         testNameParts(fs, absUpUp1, "..", "..", "one");
         testNameParts(fs, absUpUp123, "..", "..", "one", "two", "three");
-        
+
         assertEquals(rel0, rel0.normalize());
         assertEquals(rel1, rel1.normalize());
         assertEquals(rel13, rel13.normalize());
@@ -180,7 +182,7 @@ public class TestUnionPath {
         assertEquals(abs13, abs12up3.normalize());
         assertEquals(absUpUp1, absUpUp1.normalize());
         assertEquals(absUpUp123, absUpUp123.normalize());
-        
+
         // resolve
         assertEquals(abs32, rel0.resolve(abs32));
         assertEquals(abs13, relUp.resolve(abs13));
@@ -191,21 +193,21 @@ public class TestUnionPath {
         assertEquals(abs123, abs0.resolve(rel123));
         assertEquals(abs123, abs1.resolve(rel2).resolve(rel3));
         assertEquals(abs32, abs3.resolve(rel0).resolve(rel2));
-        
+
         // relativize is tested in TestUnionFS
     }
-    
+
     private static void testNameParts(UnionFileSystem fs, Path path, String... names) {
         // getNameCount
         assertEquals(names.length, path.getNameCount());
-        
+
         // getName
         assertThrows(IllegalArgumentException.class, () -> path.getName(-1));
         assertThrows(IllegalArgumentException.class, () -> path.getName(names.length));
         for (int i = 0; i < names.length; i++) {
             assertEquals(fs.getPath(names[i]), path.getName(i));
         }
-        
+
         // getFileName
         if (names.length > 0) {
             assertEquals(fs.getPath(names[names.length - 1]), path.getFileName());
@@ -223,7 +225,7 @@ public class TestUnionPath {
                 if (fs.getPath("", fromStart).isAbsolute()) throw new IllegalStateException(Arrays.toString(fromStart));
                 assertEquals(fs.getPath("", fromStart), path.subpath(0, i), path + " subpath(0, " + i + ")");
                 assertEquals(fs.getPath("", fromEnd), path.subpath(names.length - i, names.length), path + " subpath(" + (names.length - i) + ", " + names.length + ")");
-                
+
                 String absStr = path.isAbsolute() ? "/" : "";
                 String oppositeAbsStr = path.isAbsolute() ? "" : "/";
                 assertTrue(path.startsWith(fs.getPath(absStr, fromStart)));

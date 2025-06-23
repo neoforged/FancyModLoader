@@ -1,19 +1,15 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- *
- *     Copyright (C) 2017-2019 cpw
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, version 3 of the License.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (C) 2017-2019 cpw
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher.log;
@@ -21,9 +17,8 @@ package cpw.mods.modlauncher.log;
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ITransformerAuditTrail;
-import org.apache.logging.log4j.core.pattern.TextRenderer;
-
 import java.util.Optional;
+import org.apache.logging.log4j.core.pattern.TextRenderer;
 
 public class ExtraDataTextRenderer implements TextRenderer {
     private final TextRenderer wrapped;
@@ -32,9 +27,7 @@ public class ExtraDataTextRenderer implements TextRenderer {
 
     ExtraDataTextRenderer(final TextRenderer wrapped) {
         this.wrapped = wrapped;
-        this.auditData = Optional.ofNullable(Launcher.INSTANCE).
-                map(Launcher::environment).
-                flatMap(env -> env.getProperty(IEnvironment.Keys.AUDITTRAIL.get()));
+        this.auditData = Optional.ofNullable(Launcher.INSTANCE).map(Launcher::environment).flatMap(env -> env.getProperty(IEnvironment.Keys.AUDITTRAIL.get()));
     }
 
     @Override
@@ -52,7 +45,7 @@ public class ExtraDataTextRenderer implements TextRenderer {
             currentClass.remove();
             if (classContext != null) {
                 final Optional<String> auditLine = auditData.map(data -> data.getAuditString(classContext.getClassName()));
-                wrapped.render(" {"+ auditLine.orElse("") +"}", output, "StackTraceElement.Transformers");
+                wrapped.render(" {" + auditLine.orElse("") + "}", output, "StackTraceElement.Transformers");
             }
             return;
         }
@@ -65,7 +58,6 @@ public class ExtraDataTextRenderer implements TextRenderer {
     }
 
     private static class TransformerContext {
-
         private String className;
         private String methodName;
 
@@ -87,7 +79,7 @@ public class ExtraDataTextRenderer implements TextRenderer {
 
         @Override
         public String toString() {
-            return getClassName()+"."+getMethodName();
+            return getClassName() + "." + getMethodName();
         }
     }
 }

@@ -1,26 +1,37 @@
 package cpw.mods.cl;
 
 import cpw.mods.util.LambdaExceptionUtils;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.VisibleForTesting;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.module.*;
+import java.lang.module.Configuration;
+import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleReader;
+import java.lang.module.ModuleReference;
+import java.lang.module.ResolvedModule;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.NoSuchFileException;
-import java.util.*;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 public class ModuleClassLoader extends ClassLoader {
     static {
@@ -95,9 +106,9 @@ public class ModuleClassLoader extends ClassLoader {
                 .filter(m -> m.reference() instanceof JarModuleFinder.JarModuleReference)
                 .peek(mod -> {
                     // Populate packageLookup at the same time, for speed
-                    mod.reference().descriptor().packages().forEach(pk->this.packageLookup.put(pk, mod));
+                    mod.reference().descriptor().packages().forEach(pk -> this.packageLookup.put(pk, mod));
                 })
-                .collect(Collectors.toMap(mod -> mod.reference().descriptor().name(), mod -> (JarModuleFinder.JarModuleReference)mod.reference()));
+                .collect(Collectors.toMap(mod -> mod.reference().descriptor().name(), mod -> (JarModuleFinder.JarModuleReference) mod.reference()));
 
         this.parentLoaders = new HashMap<>();
         Set<ModuleDescriptor> processedAutomaticDescriptors = new HashSet<>();
@@ -108,7 +119,7 @@ public class ModuleClassLoader extends ClassLoader {
             if (!this.resolvedRoots.containsKey(k.name())) {
                 return parentLayers.stream()
                         .filter(l -> l.configuration() == k.configuration())
-                        .flatMap(layer->Optional.ofNullable(layer.findLoader(k.name())).stream())
+                        .flatMap(layer -> Optional.ofNullable(layer.findLoader(k.name())).stream())
                         .findFirst()
                         .orElse(ClassLoader.getPlatformClassLoader());
             } else {
@@ -124,14 +135,14 @@ public class ModuleClassLoader extends ClassLoader {
                 if (descriptor.isAutomatic()) {
                     // No need to run this logic more than once per automatic module
                     if (processedAutomaticDescriptors.add(descriptor)) {
-                        descriptor.packages().forEach(pn->this.parentLoaders.put(pn, cl));
+                        descriptor.packages().forEach(pn -> this.parentLoaders.put(pn, cl));
                     }
                 } else {
                     // We actually use "rm" for this path, so we have to run it each time
                     descriptor.exports().stream()
                             .filter(e -> !e.isQualified() || (e.isQualified() && other.configuration() == configuration && e.targets().contains(rm.name())))
                             .map(ModuleDescriptor.Exports::source)
-                            .forEach(pn->this.parentLoaders.put(pn, cl));
+                            .forEach(pn -> this.parentLoaders.put(pn, cl));
                 }
             }
         }
@@ -176,22 +187,23 @@ public class ModuleClassLoader extends ClassLoader {
         final var is = supplier.orElse(null);
         return Optional.ofNullable(is).stream().onClose(() -> Optional.ofNullable(is).ifPresent(LambdaExceptionUtils.rethrowConsumer(InputStream::close)));
     }
-    protected byte[] getClassBytes(final ModuleReader reader, final ModuleReference ref, final String name) {
-        var cname = name.replace('.','/')+".class";
 
-        try (var istream = closeHandler(Optional.of(reader).flatMap(LambdaExceptionUtils.rethrowFunction(r->r.open(cname))))) {
+    protected byte[] getClassBytes(final ModuleReader reader, final ModuleReference ref, final String name) {
+        var cname = name.replace('.', '/') + ".class";
+
+        try (var istream = closeHandler(Optional.of(reader).flatMap(LambdaExceptionUtils.rethrowFunction(r -> r.open(cname))))) {
             return istream.map(LambdaExceptionUtils.rethrowFunction(InputStream::readAllBytes))
                     .findFirst()
-                    .orElseGet(()->new byte[0]);
+                    .orElseGet(() -> new byte[0]);
         }
     }
 
     private Class<?> readerToClass(final ModuleReader reader, final ModuleReference ref, final String name) {
         var bytes = maybeTransformClassBytes(getClassBytes(reader, ref, name), name, null);
         if (bytes.length == 0) return null;
-        var cname = name.replace('.','/')+".class";
+        var cname = name.replace('.', '/') + ".class";
         var modroot = this.resolvedRoots.get(ref.descriptor().name());
-        ProtectionDomainHelper.tryDefinePackage(this, name, modroot.jar().getManifest(), t->modroot.jar().getManifest().getAttributes(t), this::definePackage); // Packages are dirctories, and can't be signed, so use raw attributes instead of signed.
+        ProtectionDomainHelper.tryDefinePackage(this, name, modroot.jar().getManifest(), t -> modroot.jar().getManifest().getAttributes(t), this::definePackage); // Packages are dirctories, and can't be signed, so use raw attributes instead of signed.
         var cs = ProtectionDomainHelper.createCodeSource(toURL(ref.location()), modroot.jar().verifyAndGetSigners(cname, bytes));
         var cls = defineClass(name, bytes, 0, bytes.length, ProtectionDomainHelper.createProtectionDomain(cs, this));
         ProtectionDomainHelper.trySetPackageModule(cls.getPackage(), cls.getModule());
@@ -272,15 +284,15 @@ public class ModuleClassLoader extends ClassLoader {
 
     private List<URL> findResourceList(final String name) throws IOException {
         var idx = name.lastIndexOf('/');
-        var pkgname =  (idx == -1 || idx==name.length()-1) ? "" : name.substring(0,idx).replace('/','.');
+        var pkgname = (idx == -1 || idx == name.length() - 1) ? "" : name.substring(0, idx).replace('/', '.');
         var module = packageLookup.get(pkgname);
         if (module != null) {
             var res = findResource(module.name(), name);
-            return res != null ? List.of(res): List.of();
+            return res != null ? List.of(res) : List.of();
         } else {
             return resolvedRoots.values().stream()
                     .map(JarModuleFinder.JarModuleReference::jar)
-                    .map(jar->jar.findFile(name))
+                    .map(jar -> jar.findFile(name))
                     .map(ModuleClassLoader::toURL)
                     .filter(Objects::nonNull)
                     .toList();
@@ -318,9 +330,9 @@ public class ModuleClassLoader extends ClassLoader {
         try {
             final var pname = name.substring(0, name.lastIndexOf('.'));
             if (this.packageLookup.containsKey(pname)) {
-                bytes = loadFromModule(classNameToModuleName(name), (reader, ref)->this.getClassBytes(reader, ref, name));
+                bytes = loadFromModule(classNameToModuleName(name), (reader, ref) -> this.getClassBytes(reader, ref, name));
             } else if (this.parentLoaders.containsKey(pname)) {
-                var cname = name.replace('.','/')+".class";
+                var cname = name.replace('.', '/') + ".class";
                 try (var is = this.parentLoaders.get(pname).getResourceAsStream(cname)) {
                     if (is != null)
                         bytes = is.readAllBytes();

@@ -3,7 +3,6 @@ package cpw.mods.cl.test;
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.SecureJar;
-
 import java.io.File;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;

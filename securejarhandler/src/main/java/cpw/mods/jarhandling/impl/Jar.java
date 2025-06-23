@@ -4,8 +4,6 @@ import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.niofs.union.UnionFileSystem;
 import cpw.mods.util.LambdaExceptionUtils;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.module.ModuleDescriptor;
@@ -17,6 +15,7 @@ import java.security.CodeSigner;
 import java.util.Optional;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import org.jetbrains.annotations.Nullable;
 
 public class Jar implements SecureJar {
     private final JarContentsImpl contents;

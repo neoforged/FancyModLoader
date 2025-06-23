@@ -7,5 +7,4 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.PACKAGE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface TestAnnotation {
-}
+public @interface TestAnnotation {}

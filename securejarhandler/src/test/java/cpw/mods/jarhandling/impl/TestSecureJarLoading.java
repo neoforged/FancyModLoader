@@ -1,20 +1,24 @@
 package cpw.mods.jarhandling.impl;
 
-import cpw.mods.jarhandling.SecureJar;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import cpw.mods.jarhandling.SecureJar;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class TestSecureJarLoading {
-
     @BeforeAll
     static void setup() {
         //System.setProperty("securejarhandler.debugVerifier", "true");
@@ -27,18 +31,17 @@ public class TestSecureJarLoading {
         SecureJar jar = SecureJar.from(path);
         try (var is = Files.newInputStream(path)) {
             ZipInputStream zis = new ZipInputStream(is);
-            for (var ze = zis.getNextEntry(); ze!=null; ze=zis.getNextEntry()) {
+            for (var ze = zis.getNextEntry(); ze != null; ze = zis.getNextEntry()) {
                 if (SecureJarVerifier.isSigningRelated(ze.getName())) continue;
                 if (ze.isDirectory()) continue;
                 final var zeName = ze.getName();
                 var cs = jar.moduleDataProvider().verifyAndGetSigners(ze.getName(), zis.readAllBytes());
                 jar.getTrustedManifestEntries(zeName);
                 assertAll("Behaves as a properly secured JAR",
-                        ()->assertNotNull(cs, "Has code signers array"),
-                        ()->assertTrue(cs.length>0, "With length > 0"),
-                        ()->assertEquals("8c6124aab9db357d6616492b40d0ea4cd6e4f3f8", SecureJarVerifier.toHexString(MessageDigest.getInstance("SHA-1").digest(cs[0].getSignerCertPath().getCertificates().get(0).getEncoded())), "and the digest is correct for the code signer"),
-                        ()->assertNotNull(jar.getTrustedManifestEntries(zeName), "Has trusted manifest entries")
-                );
+                        () -> assertNotNull(cs, "Has code signers array"),
+                        () -> assertTrue(cs.length > 0, "With length > 0"),
+                        () -> assertEquals("8c6124aab9db357d6616492b40d0ea4cd6e4f3f8", SecureJarVerifier.toHexString(MessageDigest.getInstance("SHA-1").digest(cs[0].getSignerCertPath().getCertificates().get(0).getEncoded())), "and the digest is correct for the code signer"),
+                        () -> assertNotNull(jar.getTrustedManifestEntries(zeName), "Has trusted manifest entries"));
             }
         }
     }
@@ -49,14 +52,13 @@ public class TestSecureJarLoading {
         SecureJar jar = SecureJar.from(path);
         try (var is = Files.newInputStream(path)) {
             ZipInputStream zis = new ZipInputStream(is);
-            for (var ze = zis.getNextEntry(); ze!=null; ze=zis.getNextEntry()) {
+            for (var ze = zis.getNextEntry(); ze != null; ze = zis.getNextEntry()) {
                 if (SecureJarVerifier.isSigningRelated(ze.getName())) continue;
                 if (ze.isDirectory()) continue;
                 final var zeName = ze.getName();
                 var cs = jar.moduleDataProvider().verifyAndGetSigners(ze.getName(), zis.readAllBytes());
                 assertAll("Jar behaves correctly",
-                        ()->assertNull(cs, "No code signers")
-                );
+                        () -> assertNull(cs, "No code signers"));
             }
         }
     }
@@ -66,15 +68,14 @@ public class TestSecureJarLoading {
         final var path = Paths.get("build");
         SecureJar jar = SecureJar.from(path);
         assertAll(
-                ()->assertFalse(jar.hasSecurityData(), "Jar is not marked secure"),
-                ()->assertTrue(jar.moduleDataProvider().getManifest().getMainAttributes().isEmpty(), "Empty manifest returned")
-        );
+                () -> assertFalse(jar.hasSecurityData(), "Jar is not marked secure"),
+                () -> assertTrue(jar.moduleDataProvider().getManifest().getMainAttributes().isEmpty(), "Empty manifest returned"));
     }
 
     @Test
     void testNonExistent() throws Exception {
         final var path = Paths.get("thisdoesnotexist");
-        assertThrows(UncheckedIOException.class, ()->SecureJar.from(path), "File does not exist");
+        assertThrows(UncheckedIOException.class, () -> SecureJar.from(path), "File does not exist");
     }
 
     @Test // Has a file that is signed, but modified
@@ -95,11 +96,10 @@ public class TestSecureJarLoading {
         final var sentry = zf.getEntry("test/Signed.class");
         final var scs = jar.moduleDataProvider().verifyAndGetSigners(sentry.getName(), zf.getInputStream(sentry).readAllBytes());
         assertAll("Behaves as a properly secured JAR",
-                ()->assertNotNull(scs, "Has code signers array"),
-                ()->assertTrue(scs.length>0, "With length > 0"),
-                ()->assertEquals("8c6124aab9db357d6616492b40d0ea4cd6e4f3f8", SecureJarVerifier.toHexString(MessageDigest.getInstance("SHA-1").digest(scs[0].getSignerCertPath().getCertificates().get(0).getEncoded())), "and the digest is correct for the code signer"),
-                ()->assertNotNull(jar.getTrustedManifestEntries(sentry.getName()), "Has trusted manifest entries")
-        );
+                () -> assertNotNull(scs, "Has code signers array"),
+                () -> assertTrue(scs.length > 0, "With length > 0"),
+                () -> assertEquals("8c6124aab9db357d6616492b40d0ea4cd6e4f3f8", SecureJarVerifier.toHexString(MessageDigest.getInstance("SHA-1").digest(scs[0].getSignerCertPath().getCertificates().get(0).getEncoded())), "and the digest is correct for the code signer"),
+                () -> assertNotNull(jar.getTrustedManifestEntries(sentry.getName()), "Has trusted manifest entries"));
         final var uentry = zf.getEntry("test/UnSigned.class");
         final var ucs = jar.moduleDataProvider().verifyAndGetSigners(uentry.getName(), zf.getInputStream(uentry).readAllBytes());
         assertNull(ucs);
@@ -111,14 +111,13 @@ public class TestSecureJarLoading {
         SecureJar jar = SecureJar.from(path);
         try (var is = Files.newInputStream(path)) {
             ZipInputStream zis = new ZipInputStream(is);
-            for (var ze = zis.getNextEntry(); ze!=null; ze=zis.getNextEntry()) {
+            for (var ze = zis.getNextEntry(); ze != null; ze = zis.getNextEntry()) {
                 if (SecureJarVerifier.isSigningRelated(ze.getName())) continue;
                 if (ze.isDirectory()) continue;
                 final var zeName = ze.getName();
                 var cs = jar.moduleDataProvider().verifyAndGetSigners(ze.getName(), zis.readAllBytes());
                 assertAll("Jar behaves correctly",
-                        ()->assertNull(cs, "No code signers")
-                );
+                        () -> assertNull(cs, "No code signers"));
             }
         }
     }

@@ -2,12 +2,11 @@ package cpw.mods.jarhandling;
 
 import cpw.mods.jarhandling.impl.JarContentsImpl;
 import cpw.mods.niofs.union.UnionPathFilter;
-import org.jetbrains.annotations.Nullable;
-
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.jar.Manifest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Builder for {@link JarContents}.

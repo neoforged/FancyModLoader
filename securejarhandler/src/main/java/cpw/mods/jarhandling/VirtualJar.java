@@ -2,8 +2,6 @@ package cpw.mods.jarhandling;
 
 import cpw.mods.niofs.union.UnionFileSystem;
 import cpw.mods.niofs.union.UnionFileSystemProvider;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.module.ModuleDescriptor;
@@ -16,6 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of {@link SecureJar} that does not actually contain any files,
@@ -48,9 +47,9 @@ public final class VirtualJar implements SecureJar {
     // Implementation details below
     private static final UnionFileSystemProvider UFSP = (UnionFileSystemProvider) FileSystemProvider.installedProviders()
             .stream()
-            .filter(fsp->fsp.getScheme().equals("union"))
+            .filter(fsp -> fsp.getScheme().equals("union"))
             .findFirst()
-            .orElseThrow(()->new IllegalStateException("Couldn't find UnionFileSystemProvider"));
+            .orElseThrow(() -> new IllegalStateException("Couldn't find UnionFileSystemProvider"));
 
     private final ModuleDescriptor moduleDescriptor;
     private final ModuleDataProvider moduleData = new VirtualJarModuleDataProvider();

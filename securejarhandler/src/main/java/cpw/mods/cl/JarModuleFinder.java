@@ -1,19 +1,17 @@
 package cpw.mods.cl;
 
 import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.jarhandling.impl.Jar;
-import cpw.mods.util.LambdaExceptionUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReader;
 import java.lang.module.ModuleReference;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -84,9 +82,7 @@ public class JarModuleFinder implements ModuleFinder {
         }
 
         @Override
-        public void close() throws IOException {
-
-        }
+        public void close() throws IOException {}
 
         @Override
         public String toString() {

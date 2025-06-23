@@ -1,29 +1,25 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- *
- *     Copyright (C) 2017-2019 cpw
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, version 3 of the License.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (C) 2017-2019 cpw
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher.api;
 
 import cpw.mods.jarhandling.SecureJar;
-import joptsimple.*;
-import org.jetbrains.annotations.NotNull;
-
-import java.util.*;
-import java.util.function.*;
+import java.util.List;
+import java.util.Set;
+import java.util.function.BiFunction;
+import joptsimple.OptionSpec;
+import joptsimple.OptionSpecBuilder;
 
 /**
  * Users who wish to provide a mod service which plugs into this API
@@ -38,7 +34,7 @@ public interface ITransformationService {
      *
      * @return the name of the mod service
      */
-    @NotNull
+
     String name();
 
     /**
@@ -47,11 +43,9 @@ public interface ITransformationService {
      *
      * @param argumentBuilder a function mapping name, description to a set of JOptSimple properties for that argument
      */
-    default void arguments(BiFunction<String, String, OptionSpecBuilder> argumentBuilder) {
-    }
+    default void arguments(BiFunction<String, String, OptionSpecBuilder> argumentBuilder) {}
 
-    default void argumentValues(OptionResult option) {
-    }
+    default void argumentValues(OptionResult option) {}
 
     /**
      * Initialize your service.
@@ -61,6 +55,7 @@ public interface ITransformationService {
     void initialize(IEnvironment environment);
 
     record Resource(IModuleLayerManager.Layer target, List<SecureJar> resources) {}
+
     /**
      * Scan for mods (but don't classload them), identify metadata that might drive
      * game functionality, return list of elements and target module layer (One of PLUGIN or GAME)
@@ -91,16 +86,15 @@ public interface ITransformationService {
      * The {@link ITransformer} is the fundamental operator of the system.
      *
      * @return A list of transformers for your ITransformationService. This is called after {@link #onLoad(IEnvironment, Set)}
-     * and {@link #initialize(IEnvironment)}, so you can return an appropriate Transformer set for the environment
-     * you find yourself in.
+     *         and {@link #initialize(IEnvironment)}, so you can return an appropriate Transformer set for the environment
+     *         you find yourself in.
      */
-    @NotNull
+
     List<? extends ITransformer<?>> transformers();
 
     interface OptionResult {
         <V> V value(OptionSpec<V> options);
 
-        @NotNull
         <V> List<V> values(OptionSpec<V> options);
     }
 }

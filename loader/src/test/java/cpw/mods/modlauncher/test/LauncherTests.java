@@ -1,22 +1,25 @@
 /*
  * ModLauncher - for launching Java programs with in-flight transformation ability.
- *
- *     Copyright (C) 2017-2019 cpw
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, version 3 of the License.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (C) 2017-2019 cpw
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package cpw.mods.modlauncher.test;
+
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import cpw.mods.modlauncher.ArgumentHandler;
 import cpw.mods.modlauncher.Launcher;
@@ -24,12 +27,6 @@ import cpw.mods.modlauncher.TransformationServiceDecorator;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
-import joptsimple.OptionSet;
-import joptsimple.OptionSpec;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.powermock.reflect.Whitebox;
-
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
@@ -41,8 +38,11 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
+import joptsimple.OptionSet;
+import joptsimple.OptionSpec;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.powermock.reflect.Whitebox;
 
 /**
  * Test overall launcher
@@ -55,12 +55,11 @@ class LauncherTests {
         Launcher instance = Launcher.INSTANCE;
         final Map<String, TransformationServiceDecorator> services = Whitebox.getInternalState(Whitebox.getInternalState(instance, "transformationServicesHandler"), "serviceLookup");
         final List<ITransformationService> launcherServices = services.values().stream()
-            .map(dec -> Whitebox.<ITransformationService>getInternalState(dec, "service"))
-            .toList();
+                .map(dec -> Whitebox.<ITransformationService>getInternalState(dec, "service"))
+                .toList();
         assertAll("services are present and correct",
                 () -> assertEquals(1, launcherServices.size(), "Found 1 service"),
-                () -> assertEquals(MockTransformerService.class, launcherServices.get(0).getClass(), "Found Test Launcher Service")
-        );
+                () -> assertEquals(MockTransformerService.class, launcherServices.get(0).getClass(), "Found Test Launcher Service"));
 
         final ArgumentHandler argumentHandler = Whitebox.getInternalState(instance, "argumentHandler");
         final OptionSet options = Whitebox.getInternalState(argumentHandler, "optionSet");
@@ -68,18 +67,15 @@ class LauncherTests {
 
         assertAll("options are correctly setup",
                 () -> assertTrue(optionsMap.containsKey("version"), "Version field is correct"),
-                () -> assertTrue(optionsMap.containsKey("test.mods"), "Test service option is correct")
-        );
+                () -> assertTrue(optionsMap.containsKey("test.mods"), "Test service option is correct"));
 
         final MockTransformerService mockTransformerService = (MockTransformerService) launcherServices.get(0);
         assertAll("test launcher service is correctly configured",
                 () -> assertIterableEquals(Arrays.asList("A", "B", "C", "cpw.mods.modlauncher.testjar.TestClass"), Whitebox.getInternalState(mockTransformerService, "modList"), "modlist is configured"),
-                () -> assertEquals("INITIALIZED", Whitebox.getInternalState(mockTransformerService, "state"), "Initialized was called")
-        );
+                () -> assertEquals("INITIALIZED", Whitebox.getInternalState(mockTransformerService, "state"), "Initialized was called"));
 
         assertAll(
-                () -> assertNotNull(instance.environment().getProperty(IEnvironment.Keys.VERSION.get()))
-        );
+                () -> assertNotNull(instance.environment().getProperty(IEnvironment.Keys.VERSION.get())));
 
         try {
             final Stream<Field> transformedFields = Stream.of(Class.forName("cpw.mods.modlauncher.testjar.TestClass", true, Whitebox.getInternalState(Launcher.INSTANCE, "classLoader")).getDeclaredFields());
@@ -104,7 +100,7 @@ class LauncherTests {
         assertNotNull(resource, "Resource not found");
         // assert that we can find something in the resource, so we know it loaded properly
         try (InputStream in = resource.openStream();
-             Scanner scanner = new Scanner(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                Scanner scanner = new Scanner(new InputStreamReader(in, StandardCharsets.UTF_8))) {
             assertTrue(scanner.nextLine().contains("Loaded successfully!"), "Resource has incorrect content");
         }
     }
