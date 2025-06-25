@@ -121,46 +121,4 @@ public class CoreModTest extends LauncherTest {
         var testClass = Class.forName("testmod.TestClass", true, gameClassLoader);
         assertThat(testClass).hasAnnotation(Deprecated.class); // This is added by the transformer
     }
-
-    @SuppressWarnings("unchecked")
-    @Test
-    public void testJavaScriptCoremod() throws Exception {
-        installation.setupProductionClient();
-
-        installation.buildModJar("testmod.jar")
-                .withTestmodModsToml()
-                .addTextFile("META-INF/coremods.json", """
-                        {
-                            "coremodid": "coremods/test.js"
-                        }
-                        """)
-                .addClass("net.minecraft.world.level.biome.Biome", "class Biome {}")
-                .addTextFile("coremods/test.js", """
-                        function initializeCoreMod() {
-                            return {
-                                'test': {
-                                    'target': {
-                                        'type': 'CLASS',
-                                        'name': 'net.minecraft.world.level.biome.Biome'
-                                    },
-                                    'transformer': function(classNode) {
-                                        classNode.visitAnnotation("Ljava/lang/Deprecated;", true);
-                                        return classNode;
-                                    }
-                                }
-                            }
-                        }
-                        """)
-                .build();
-
-        var transformers = launchAndLoad("neoforgeclient").transformers();
-        assertThat(transformers).hasSize(1);
-        var transformer = (ITransformer<ClassNode>) transformers.getFirst();
-        assertThat(transformer.getTargetType()).isEqualTo(TargetType.CLASS);
-        assertThat(transformer.targets()).containsOnly(
-                ITransformer.Target.targetClass("net.minecraft.world.level.biome.Biome"));
-
-        var testClass = Class.forName("net.minecraft.world.level.biome.Biome", true, gameClassLoader);
-        assertThat(testClass).hasAnnotation(Deprecated.class); // This is added by the transformer
-    }
 }
