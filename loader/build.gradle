@@ -26,9 +26,6 @@ dependencies {
     api("org.apache.commons:commons-lang3:${apache_commons_lang3_version}")
     api("com.electronwill.night-config:core:${nightconfig_version}")
     api("com.electronwill.night-config:toml:${nightconfig_version}")
-    api("net.neoforged:coremods:${coremods_version}") {
-        exclude module: 'modlauncher'
-    }
     api("com.mojang:logging:${mojang_logging_version}")
     api "net.neoforged:JarJarSelector:${jarjar_version}"
     api "net.neoforged:JarJarMetadata:${jarjar_version}"

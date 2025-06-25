@@ -125,7 +125,7 @@ public class FMLServiceProvider implements ITransformationService {
     public List<? extends ITransformer<?>> transformers() {
         LOGGER.debug(LOADING, "Loading coremod transformers");
 
-        var result = new ArrayList<>(loadCoreModScripts());
+        var result = new ArrayList<ITransformer<?>>();
 
         // Find all Java core mods
         for (var coreMod : ServiceLoaderUtil.loadServices(launchContext, ICoreMod.class)) {
@@ -146,27 +146,5 @@ public class FMLServiceProvider implements ITransformationService {
         }
 
         return result;
-    }
-
-    private List<ITransformer<?>> loadCoreModScripts() {
-        var filesWithCoreModScripts = LoadingModList.get().getModFiles()
-                .stream()
-                .filter(mf -> !mf.getFile().getCoreMods().isEmpty())
-                .toList();
-
-        if (filesWithCoreModScripts.isEmpty()) {
-            // Don't even bother starting the scripting engine if no mod contains scripting core mods
-            LOGGER.debug(LogMarkers.CORE, "Not loading coremod script-engine since no mod requested it");
-            return List.of();
-        }
-
-        LOGGER.info(LogMarkers.CORE, "Loading coremod script-engine for {}", filesWithCoreModScripts);
-        try {
-            return CoreModScriptLoader.loadCoreModScripts(filesWithCoreModScripts);
-        } catch (NoClassDefFoundError e) {
-            var message = "Could not find the coremod script-engine, but the following mods require it: " + filesWithCoreModScripts;
-            ImmediateWindowHandler.crash(message);
-            throw new IllegalStateException(message, e);
-        }
     }
 }
