@@ -22,5 +22,5 @@ jobs:
       java: 21
       # --info allows seeing STDOUT of tests
       gradle_tasks: check --info
-      jar_compatibility: false # Temporarily disabled for FML 9.0 initial release
+      jar_compatibility: true
       graphics_environment: true
