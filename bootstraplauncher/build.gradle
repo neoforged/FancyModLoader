@@ -1,0 +1,4 @@
+dependencies {
+    compileOnly("org.jetbrains:annotations:${project.jetbrains_annotations_version}")
+    implementation project(':securejarhandler')
+}

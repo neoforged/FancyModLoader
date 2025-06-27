@@ -1,0 +1,125 @@
+import javax.inject.Inject
+
+allprojects {
+    apply plugin: 'eclipse'
+    apply plugin: 'org.gradlex.extra-java-module-info'
+
+    dependencies.testRuntimeOnly('org.apiguardian:apiguardian-api:1.1.2') // No idea why, but windows needs this to not explode.
+
+    extraJavaModuleInfo {
+        failOnMissingModuleInfo = false
+        automaticModule('jmh-core-1.35.jar', 'jmh.core')
+    }
+
+    def isNonStable = { String version ->
+        def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { type -> version.toUpperCase().contains(type) }
+        def regex = /^[0-9,.v-]+(-r)?$/
+        return !stableKeyword && !(version ==~ regex)
+    }
+
+    dependencyUpdates {
+        rejectVersionIf {
+            isNonStable(it.candidate.version)
+        }
+    }
+
+    // Hack eclipse into knowing that the gradle deps are modules
+    eclipse {
+        classpath {
+            containers 'org.eclipse.buildship.core.gradleclasspathcontainer'
+            file {
+                whenMerged {
+                    entries.findAll { it.kind == 'con' && it.path == 'org.eclipse.buildship.core.gradleclasspathcontainer' }.each {
+                        it.entryAttributes['module'] = 'true'
+                    }
+                }
+            }
+        }
+    }
+}
+
+sourceSets {
+    // Additional test JARs, to be loaded via SecureJar.from(...)
+    testjar1 {}
+    testjar2 {}
+    // Test classpath code, to make sure that ModuleClassLoader is properly isolated from the classpath
+    testjar_cp {}
+    test {
+        runtimeClasspath += sourceSets.testjar_cp.output
+    }
+}
+
+compileJava {
+    options.compilerArgs += [
+            '-Xlint:unchecked',
+            '--add-exports=java.base/sun.security.util=cpw.mods.securejarhandler',
+    ]
+}
+
+compileTestJava {
+    options.compilerArgs += [
+            '--add-modules=jdk.zipfs',
+            '--add-exports=jdk.zipfs/jdk.nio.zipfs=cpw.mods.securejarhandler'
+    ]
+}
+
+dependencies {
+    api("org.ow2.asm:asm:${project.asm_version}")
+    api("org.ow2.asm:asm-tree:${project.asm_version}")
+    api("org.ow2.asm:asm-commons:${project.asm_version}")
+    compileOnly("org.jetbrains:annotations:${project.jetbrains_annotations_version}")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:${project.jupiter_version}")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${project.jupiter_version}")
+}
+
+test {
+    //exclude '**/*'
+    useJUnitPlatform()
+    jvmArgs += [
+            // Add test sourceset to the SJH module
+            '--patch-module=cpw.mods.securejarhandler=' + sourceSets.test.output.classesDirs.asPath,
+            // SJH needs this for UnionFileSystem
+            '--add-opens=java.base/java.lang.invoke=cpw.mods.securejarhandler',
+            // Allow JUnit to access the tests
+            '--add-opens=cpw.mods.securejarhandler/cpw.mods.cl.test=ALL-UNNAMED',
+            '--add-opens=cpw.mods.securejarhandler/cpw.mods.jarhandling.impl=ALL-UNNAMED',
+            '--add-opens=cpw.mods.securejarhandler/cpw.mods.niofs.union=ALL-UNNAMED',
+            // To test reading from the classpath
+            '--add-reads=cpw.mods.securejarhandler=ALL-UNNAMED',
+    ]
+
+    dependsOn tasks.compileTestjar1Java
+    dependsOn tasks.processTestjar1Resources
+    dependsOn tasks.compileTestjar2Java
+    dependsOn tasks.processTestjar2Resources
+    environment "sjh.testjar1", sourceSets.testjar1.output.classesDirs.asPath + File.pathSeparator + sourceSets.testjar1.output.resourcesDir.absolutePath
+    environment "sjh.testjar2", sourceSets.testjar2.output.classesDirs.asPath + File.pathSeparator + sourceSets.testjar2.output.resourcesDir.absolutePath
+
+    // Add SJH and its dependencies to the module path
+    var commandLineArgs = objects.newInstance(TestsCommandLineArgs)
+    // Dependencies
+    commandLineArgs.modulePath.from(test.classpath.filter { it.name.contains("asm") })
+    // SJH itself
+    commandLineArgs.modulePath.from(sourceSets.main.output.classesDirs.asPath)
+    jvmArgumentProviders.add(commandLineArgs)
+}
+
+abstract class TestsCommandLineArgs implements CommandLineArgumentProvider {
+    @Inject
+    TestsCommandLineArgs() {}
+
+    @InputFiles
+    @Classpath
+    abstract ConfigurableFileCollection getModulePath()
+
+    @Override
+    Iterable<String> asArguments() {
+        def modulePath = getModulePath().getFiles().join(File.pathSeparator)
+
+        return [
+                "--module-path",
+                modulePath,
+                "--add-modules=ALL-MODULE-PATH",
+        ]
+    }
+}

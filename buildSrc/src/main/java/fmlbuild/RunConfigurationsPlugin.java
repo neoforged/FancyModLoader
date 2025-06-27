@@ -13,6 +13,8 @@ import org.gradle.jvm.toolchain.JavaToolchainService;
 
 import javax.inject.Inject;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -56,17 +58,18 @@ public abstract class RunConfigurationsPlugin implements Plugin<Project> {
                 var jvmArguments = task.getJvmArguments();
                 jvmArguments.addAll(runConfiguration.getJvmArguments());
                 jvmArguments.addAll(runConfiguration.getSystemProperties().map(properties -> {
-                    return properties.entrySet().stream().map(entry -> "-D" + entry.getKey() + "=" + entry.getValue()).toList();
+                    return new ArrayList<>(properties.entrySet().stream().map(entry -> "-D" + entry.getKey() + "=" + entry.getValue()).toList());
                 }));
                 jvmArguments.addAll(runtimeModulesConfig.getElements().map(elements -> {
-                    if (elements.isEmpty()) {
-                        return List.of();
+                    var result = new ArrayList<String>();
+                    if (!elements.isEmpty()) {
+                        Collections.addAll(result, "-p", elements.stream()
+                                .map(FileSystemLocation::getAsFile)
+                                .map(File::getAbsolutePath)
+                                .collect(Collectors.joining(File.pathSeparator))
+                        );
                     }
-                    return List.of("-p", elements.stream()
-                            .map(FileSystemLocation::getAsFile)
-                            .map(File::getAbsolutePath)
-                            .collect(Collectors.joining(File.pathSeparator))
-                    );
+                    return result;
                 }));
 
                 // I don't see a way to avoid querying this provider eagerly...
