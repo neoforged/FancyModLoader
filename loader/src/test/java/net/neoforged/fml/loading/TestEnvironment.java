@@ -16,8 +16,8 @@ import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import net.neoforged.fml.common.asm.AccessTransformerService;
-import net.neoforged.fml.common.asm.RuntimeDistCleaner;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
+import net.neoforged.fml.loading.moddiscovery.locators.NeoForgeDevDistCleaner;
 import org.jetbrains.annotations.Nullable;
 
 public class TestEnvironment implements IEnvironment {
@@ -26,9 +26,9 @@ public class TestEnvironment implements IEnvironment {
     @Nullable
     public AccessTransformerService accessTransformerService = new AccessTransformerService();
     @Nullable
-    public RuntimeDistCleaner runtimeDistCleaner = new RuntimeDistCleaner();
-    @Nullable
     public RuntimeEnumExtender runtimeEnumExtender = new RuntimeEnumExtender();
+    @Nullable
+    public NeoForgeDevDistCleaner neoForgeDevDistCleaner = new NeoForgeDevDistCleaner();
 
     public TestEnvironment(TestModuleLayerManager moduleLayerManager) {
         this.moduleLayerManager = moduleLayerManager;
@@ -64,7 +64,7 @@ public class TestEnvironment implements IEnvironment {
 
     public Stream<ILaunchPluginService> getLaunchPlugins() {
         return Stream.of(accessTransformerService,
-                runtimeDistCleaner,
-                runtimeEnumExtender).filter(Objects::nonNull);
+                runtimeEnumExtender,
+                neoForgeDevDistCleaner).filter(Objects::nonNull);
     }
 }
