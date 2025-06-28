@@ -70,6 +70,7 @@ dependencies {
     compileOnly("org.jetbrains:annotations:${project.jetbrains_annotations_version}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${project.jupiter_version}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${project.jupiter_version}")
+    testImplementation(project(":testlib"))
 }
 
 test {

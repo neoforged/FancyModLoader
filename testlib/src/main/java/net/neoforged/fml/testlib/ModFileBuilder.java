@@ -9,6 +9,7 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.module.ModuleDescriptor;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -68,6 +69,12 @@ public class ModFileBuilder {
 
     public ModFileBuilder withModTypeManifest(String type) {
         return withManifest(Map.of("FMLModType", type));
+    }
+
+    public ModFileBuilder withModuleInfo(ModuleDescriptor descriptor) throws IOException {
+        var moduleInfo = ModuleInfoWriter.toByteArray(descriptor);
+        Files.write(memoryFsRoot.resolve("module-info.class"), moduleInfo);
+        return this;
     }
 
     public ModFileBuilder withManifest(Map<String, String> manifest) {
