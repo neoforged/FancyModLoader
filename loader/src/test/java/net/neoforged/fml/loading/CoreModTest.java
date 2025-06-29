@@ -57,7 +57,7 @@ public class CoreModTest extends LauncherTest {
         installation.buildModJar("testmod.jar")
                 .withTestmodModsToml()
                 .withJarInJar(JAR_IDENTIFIER, coreMod -> {
-                    coreMod.withModTypeManifest(IModFile.Type.LIBRARY)
+                    coreMod.withModTypeManifest(IModFile.Type.LIBRARY.name())
                             .addService(ICoreMod.class.getName(), "testmod.coremods.TestCoreMod")
                             .addClass("testmod.coremods.TestCoreMod", """
                                     import cpw.mods.modlauncher.api.ITransformer;
@@ -78,7 +78,7 @@ public class CoreModTest extends LauncherTest {
         installation.setupProductionClient();
 
         installation.buildModJar("coremod.jar")
-                .withModTypeManifest(IModFile.Type.LIBRARY)
+                .withModTypeManifest(IModFile.Type.LIBRARY.name())
                 .addService(ICoreMod.class.getName(), "testmod.coremods.TestCoreMod")
                 .addClass("testmod.coremods.TestCoreMod", """
                         import cpw.mods.modlauncher.api.ITransformer;
@@ -103,7 +103,7 @@ public class CoreModTest extends LauncherTest {
                         class TestClass {}
                         """)
                 .withJarInJar(JAR_IDENTIFIER, coreMod -> {
-                    coreMod.withModTypeManifest(IModFile.Type.LIBRARY)
+                    coreMod.withModTypeManifest(IModFile.Type.LIBRARY.name())
                             .addService(ICoreMod.class.getName(), "testmod.coremods.TestCoreMod")
                             .addClass("testmod.coremods.TestCoreMod", """
                                     import cpw.mods.modlauncher.api.ITransformer;

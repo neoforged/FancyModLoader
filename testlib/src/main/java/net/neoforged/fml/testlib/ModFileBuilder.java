@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.loading;
+package net.neoforged.fml.testlib;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.module.ModuleDescriptor;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -21,11 +22,9 @@ import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
-import net.neoforged.fml.test.RuntimeCompiler;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.ContainedVersion;
-import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.intellij.lang.annotations.Language;
@@ -44,10 +43,10 @@ public class ModFileBuilder {
 
     // Info that will end up in the mods.toml
 
-    public ModFileBuilder(Path destination) throws IOException {
+    public ModFileBuilder(Path destination) {
         this.destination = destination;
         memoryFs = Jimfs.newFileSystem(Configuration.unix());
-        compiler = new RuntimeCompiler(memoryFs);
+        compiler = RuntimeCompiler.createFolder(memoryFs.getRootDirectories().iterator().next());
         compilationBuilder = compiler.builder();
         memoryFsRoot = memoryFs.getRootDirectories().iterator().next();
     }
@@ -68,9 +67,14 @@ public class ModFileBuilder {
         return withModsToml(builder -> builder.unlicensedJavaMod().addMod(id, version));
     }
 
-    public ModFileBuilder withModTypeManifest(IModFile.Type type) {
-        return withManifest(Map.of(
-                "FMLModType", type.name()));
+    public ModFileBuilder withModTypeManifest(String type) {
+        return withManifest(Map.of("FMLModType", type));
+    }
+
+    public ModFileBuilder withModuleInfo(ModuleDescriptor descriptor) throws IOException {
+        var moduleInfo = ModuleInfoWriter.toByteArray(descriptor);
+        Files.write(memoryFsRoot.resolve("module-info.class"), moduleInfo);
+        return this;
     }
 
     public ModFileBuilder withManifest(Map<String, String> manifest) {

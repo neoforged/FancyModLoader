@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.loading;
+package net.neoforged.fml.testlib;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.Config;
@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import org.jetbrains.annotations.Nullable;
 
 public class ModsTomlBuilder {
@@ -82,6 +81,6 @@ public class ModsTomlBuilder {
     public IdentifiableContent build() {
         var bos = new ByteArrayOutputStream();
         config.configFormat().createWriter().write(config, bos);
-        return new IdentifiableContent("MODS_TOML", JarModsDotTomlModFileReader.MODS_TOML, bos.toByteArray());
+        return new IdentifiableContent("MODS_TOML", "META-INF/neoforge.mods.toml", bos.toByteArray());
     }
 }
