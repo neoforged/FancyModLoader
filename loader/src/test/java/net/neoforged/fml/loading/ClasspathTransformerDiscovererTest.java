@@ -14,6 +14,8 @@ import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import net.neoforged.fml.testlib.IdentifiableContent;
+import net.neoforged.fml.testlib.SimulatedInstallation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

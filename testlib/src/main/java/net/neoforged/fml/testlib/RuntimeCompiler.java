@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.test;
+package net.neoforged.fml.testlib;
 
 import com.google.errorprone.annotations.CheckReturnValue;
 import java.io.IOException;
@@ -37,15 +37,19 @@ public class RuntimeCompiler implements AutoCloseable {
     private final Path rootPath;
     private FileSystem openedFileSystem;
 
-    public static RuntimeCompiler create(Path targetFile) throws IOException {
+    public static RuntimeCompiler createJar(Path targetFile) throws IOException {
         var fs = FileSystems.newFileSystem(URI.create("jar:" + targetFile.toUri()), Map.of("create", true));
-        var result = new RuntimeCompiler(fs);
+        var result = new RuntimeCompiler(fs.getPath("/"));
         result.openedFileSystem = fs;
         return result;
     }
 
-    public RuntimeCompiler(FileSystem targetFS) {
-        this.rootPath = targetFS.getPath("/");
+    public static RuntimeCompiler createFolder(Path targetFolder) {
+        return new RuntimeCompiler(targetFolder);
+    }
+
+    private RuntimeCompiler(Path rootPath) {
+        this.rootPath = rootPath;
         this.diagnostics = new DiagnosticCollector<>();
         this.manager = COMPILER.getStandardFileManager(diagnostics, Locale.ROOT, StandardCharsets.UTF_8);
         try {
@@ -76,7 +80,7 @@ public class RuntimeCompiler implements AutoCloseable {
 
         @CheckReturnValue
         public CompilationBuilder addClass(String name, @Language("java") String content) {
-            if (!content.trim().startsWith("package ")) {
+            if (!content.trim().startsWith("package ") && name.contains(".")) {
                 List<String> nameByDot = new ArrayList<>(Arrays.asList(name.split("\\.")));
                 nameByDot.removeLast();
 

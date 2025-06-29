@@ -22,7 +22,7 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
-import net.neoforged.fml.test.RuntimeCompiler;
+import net.neoforged.fml.testlib.RuntimeCompiler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,7 +47,7 @@ class LaunchContextTest {
             out.write("Manifest-Version: 1.0\nAutomatic-Module-Name: fancymodule\n".getBytes());
         }
 
-        try (var compiler = RuntimeCompiler.create(jarPath)) {
+        try (var compiler = RuntimeCompiler.createJar(jarPath)) {
             compiler.builder()
                     .addClass("pkg.TestService", """
                             package pkg;
@@ -62,7 +62,7 @@ class LaunchContextTest {
 
         // Create a second jar file
         otherJarPath = tempDir.resolve("test-other-jar.jar");
-        try (var compiler = RuntimeCompiler.create(otherJarPath)) {
+        try (var compiler = RuntimeCompiler.createJar(otherJarPath)) {
             compiler.builder()
                     .addClass("pkg2.TestService", """
                             package pkg2;

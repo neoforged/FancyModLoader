@@ -19,6 +19,7 @@ import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.NightConfigWrapper;
 import net.neoforged.fml.loading.modscan.Scanner;
+import net.neoforged.fml.testlib.RuntimeCompiler;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import net.neoforged.neoforgespi.locating.ModFileInfoParser;
 import org.intellij.lang.annotations.Language;
@@ -32,7 +33,7 @@ public class TestModFile extends ModFile implements AutoCloseable {
     private TestModFile(SecureJar jar, FileSystem fileSystem, ModFileInfoParser parser) {
         super(jar, parser, new ModFileDiscoveryAttributes(null, null, null, null));
         this.fileSystem = fileSystem;
-        this.compiler = new RuntimeCompiler(fileSystem);
+        this.compiler = RuntimeCompiler.createFolder(fileSystem.getPath("/"));
     }
 
     private static TestModFile buildFile(FileSystem fileSystem, ModFileInfoParser parser) {

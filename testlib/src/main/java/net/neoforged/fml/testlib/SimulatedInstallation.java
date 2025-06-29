@@ -3,14 +3,10 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.loading;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+package net.neoforged.fml.testlib;
 
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
-import cpw.mods.jarhandling.SecureJar;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -20,11 +16,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -44,30 +37,30 @@ import org.objectweb.asm.Opcodes;
  * Simulates various installation types for NeoForge
  */
 public class SimulatedInstallation implements AutoCloseable {
-    private static final IdentifiableContent CLIENT_ASSETS = new IdentifiableContent("CLIENT_ASSETS", "assets/.mcassetsroot");
-    private static final IdentifiableContent SHARED_ASSETS = new IdentifiableContent("SHARED_ASSETS", "data/.mcassetsroot");
+    public static final IdentifiableContent CLIENT_ASSETS = new IdentifiableContent("CLIENT_ASSETS", "assets/.mcassetsroot");
+    public static final IdentifiableContent SHARED_ASSETS = new IdentifiableContent("SHARED_ASSETS", "data/.mcassetsroot");
     /**
      * A class that is contained in both client and dedicated server distribution, renamed to official mappings.
      */
-    private static final IdentifiableContent RENAMED_SHARED = generateClass("RENAMED_SHARED", "net/minecraft/server/MinecraftServer.class");
+    public static final IdentifiableContent RENAMED_SHARED = generateClass("RENAMED_SHARED", "net/minecraft/server/MinecraftServer.class");
     /**
      * A class that is contained in both client and dedicated server distribution, renamed to official mappings,
      * and containing NeoForge patches.
      */
-    private static final IdentifiableContent PATCHED_SHARED = generateClass("PATCHED_SHARED", "net/minecraft/server/MinecraftServer.class");
+    public static final IdentifiableContent PATCHED_SHARED = generateClass("PATCHED_SHARED", "net/minecraft/server/MinecraftServer.class");
     /**
      * A class that is only in the client distribution, renamed to official mappings.
      */
-    private static final IdentifiableContent RENAMED_CLIENT = generateClass("RENAMED_CLIENT", "net/minecraft/client/Minecraft.class");
+    public static final IdentifiableContent RENAMED_CLIENT = generateClass("RENAMED_CLIENT", "net/minecraft/client/Minecraft.class");
     /**
      * A class that is contained in both client and dedicated server distribution, renamed to official mappings,
      * and containing NeoForge patches.
      */
-    private static final IdentifiableContent PATCHED_CLIENT = generateClass("PATCHED_CLIENT", "net/minecraft/client/Minecraft.class");
-    private static final IdentifiableContent NEOFORGE_CLASSES = generateClass("NEOFORGE_CLASSES", "net/neoforged/neoforge/common/NeoForgeMod.class");
-    private static final IdentifiableContent NEOFORGE_MODS_TOML = new IdentifiableContent("NEOFORGE_MODS_TOML", "META-INF/neoforge.mods.toml", writeNeoForgeModsToml());
-    private static final IdentifiableContent NEOFORGE_MANIFEST = new IdentifiableContent("NEOFORGE_MANIFEST", JarFile.MANIFEST_NAME, writeNeoForgeManifest());
-    private static final IdentifiableContent NEOFORGE_ASSETS = new IdentifiableContent("NEOFORGE_ASSETS", "neoforged_logo.png");
+    public static final IdentifiableContent PATCHED_CLIENT = generateClass("PATCHED_CLIENT", "net/minecraft/client/Minecraft.class");
+    public static final IdentifiableContent NEOFORGE_CLASSES = generateClass("NEOFORGE_CLASSES", "net/neoforged/neoforge/common/NeoForgeMod.class");
+    public static final IdentifiableContent NEOFORGE_MODS_TOML = new IdentifiableContent("NEOFORGE_MODS_TOML", "META-INF/neoforge.mods.toml", writeNeoForgeModsToml());
+    public static final IdentifiableContent NEOFORGE_MANIFEST = new IdentifiableContent("NEOFORGE_MANIFEST", JarFile.MANIFEST_NAME, writeNeoForgeManifest());
+    public static final IdentifiableContent NEOFORGE_ASSETS = new IdentifiableContent("NEOFORGE_ASSETS", "neoforged_logo.png");
 
     public static final String LIBRARIES_DIRECTORY_PROPERTY = "libraryDirectory";
     public static final String MOD_FOLDERS_PROPERTIES = "fml.modFolders";
@@ -82,10 +75,10 @@ public class SimulatedInstallation implements AutoCloseable {
     // Used for testing running out of a Gradle project. Is the simulated Gradle project root directory.
     private final Path projectRoot;
 
-    private static final IdentifiableContent[] SERVER_EXTRA_JAR_CONTENT = { SHARED_ASSETS };
-    private static final IdentifiableContent[] CLIENT_EXTRA_JAR_CONTENT = { CLIENT_ASSETS, SHARED_ASSETS };
-    private static final IdentifiableContent[] NEOFORGE_UNIVERSAL_JAR_CONTENT = { NEOFORGE_ASSETS, NEOFORGE_CLASSES, NEOFORGE_MODS_TOML, NEOFORGE_MANIFEST };
-    private static final IdentifiableContent[] USERDEV_CLIENT_JAR_CONTENT = { PATCHED_CLIENT, PATCHED_SHARED };
+    public static final IdentifiableContent[] SERVER_EXTRA_JAR_CONTENT = { SHARED_ASSETS };
+    public static final IdentifiableContent[] CLIENT_EXTRA_JAR_CONTENT = { CLIENT_ASSETS, SHARED_ASSETS };
+    public static final IdentifiableContent[] NEOFORGE_UNIVERSAL_JAR_CONTENT = { NEOFORGE_ASSETS, NEOFORGE_CLASSES, NEOFORGE_MODS_TOML, NEOFORGE_MANIFEST };
+    public static final IdentifiableContent[] USERDEV_CLIENT_JAR_CONTENT = { PATCHED_CLIENT, PATCHED_SHARED };
 
     // For a production client: Simulates the "libraries" directory found in the Vanilla Minecraft installation directory (".minecraft")
     // For a production server: The NF installer creates a "libraries" directory in the server root
@@ -368,81 +361,6 @@ public class SimulatedInstallation implements AutoCloseable {
                 out.write(identifiableContent.content());
             }
         }
-    }
-
-    public void assertMinecraftServerJar(LaunchResult launchResult) throws IOException {
-        var expectedContent = new ArrayList<IdentifiableContent>();
-        Collections.addAll(expectedContent, SERVER_EXTRA_JAR_CONTENT);
-        expectedContent.add(PATCHED_SHARED);
-
-        assertModContent(launchResult, "minecraft", expectedContent);
-    }
-
-    public void assertMinecraftClientJar(LaunchResult launchResult) throws IOException {
-        var expectedContent = new ArrayList<IdentifiableContent>();
-        Collections.addAll(expectedContent, CLIENT_EXTRA_JAR_CONTENT);
-        expectedContent.add(PATCHED_CLIENT);
-        expectedContent.add(PATCHED_SHARED);
-
-        assertModContent(launchResult, "minecraft", expectedContent);
-    }
-
-    public void assertNeoForgeJar(LaunchResult launchResult) throws IOException {
-        var expectedContent = List.of(
-                NEOFORGE_ASSETS,
-                NEOFORGE_CLASSES,
-                NEOFORGE_MODS_TOML,
-                NEOFORGE_MANIFEST);
-
-        assertModContent(launchResult, "neoforge", expectedContent);
-    }
-
-    public void assertModContent(LaunchResult launchResult, String modId, Collection<IdentifiableContent> content) throws IOException {
-        assertThat(launchResult.loadedMods()).containsKey(modId);
-
-        var modFileInfo = launchResult.loadedMods().get(modId);
-        assertNotNull(modFileInfo, "mod " + modId + " is missing");
-
-        assertSecureJarContent(modFileInfo.getFile().getSecureJar(), content);
-    }
-
-    public void assertSecureJarContent(SecureJar jar, Collection<IdentifiableContent> content) throws IOException {
-        var paths = listFilesRecursively(jar);
-
-        assertThat(paths.keySet()).containsOnly(content.stream().map(IdentifiableContent::relativePath).toArray(String[]::new));
-
-        for (var identifiableContent : content) {
-            var expectedContent = identifiableContent.content();
-            var actualContent = Files.readAllBytes(paths.get(identifiableContent.relativePath()));
-            if (isPrintableAscii(expectedContent) && isPrintableAscii(actualContent)) {
-                assertThat(new String(actualContent)).isEqualTo(new String(expectedContent));
-            } else {
-                assertThat(actualContent).isEqualTo(expectedContent);
-            }
-        }
-    }
-
-    private boolean isPrintableAscii(byte[] potentialText) {
-        for (byte b : potentialText) {
-            if (b < 0x20 || b == 0x7f) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private static Map<String, Path> listFilesRecursively(SecureJar jar) throws IOException {
-        Map<String, Path> paths;
-        var rootPath = jar.getRootPath();
-        try (var stream = Files.walk(rootPath)) {
-            paths = stream
-                    .filter(Files::isRegularFile)
-                    .map(rootPath::relativize)
-                    .collect(Collectors.toMap(
-                            path -> path.toString().replace('\\', '/'),
-                            Function.identity()));
-        }
-        return paths;
     }
 
     public static IdentifiableContent createJijMetadata(ContainedJarMetadata... containedJars) {

@@ -6,6 +6,7 @@
 package net.neoforged.fml.loading;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.when;
 
@@ -22,15 +23,18 @@ import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +53,8 @@ import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.i18n.FMLTranslations;
+import net.neoforged.fml.testlib.IdentifiableContent;
+import net.neoforged.fml.testlib.SimulatedInstallation;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import org.junit.jupiter.api.AfterEach;
@@ -346,6 +352,81 @@ public abstract class LauncherTest {
                 .collect(Collectors.toMap(
                         f -> f.getMods().getFirst().getModId(),
                         f -> f));
+    }
+
+    public void assertMinecraftServerJar(LaunchResult launchResult) throws IOException {
+        var expectedContent = new ArrayList<IdentifiableContent>();
+        Collections.addAll(expectedContent, SimulatedInstallation.SERVER_EXTRA_JAR_CONTENT);
+        expectedContent.add(SimulatedInstallation.PATCHED_SHARED);
+
+        assertModContent(launchResult, "minecraft", expectedContent);
+    }
+
+    public void assertMinecraftClientJar(LaunchResult launchResult) throws IOException {
+        var expectedContent = new ArrayList<IdentifiableContent>();
+        Collections.addAll(expectedContent, SimulatedInstallation.CLIENT_EXTRA_JAR_CONTENT);
+        expectedContent.add(SimulatedInstallation.PATCHED_CLIENT);
+        expectedContent.add(SimulatedInstallation.PATCHED_SHARED);
+
+        assertModContent(launchResult, "minecraft", expectedContent);
+    }
+
+    public void assertNeoForgeJar(LaunchResult launchResult) throws IOException {
+        var expectedContent = List.of(
+                SimulatedInstallation.NEOFORGE_ASSETS,
+                SimulatedInstallation.NEOFORGE_CLASSES,
+                SimulatedInstallation.NEOFORGE_MODS_TOML,
+                SimulatedInstallation.NEOFORGE_MANIFEST);
+
+        assertModContent(launchResult, "neoforge", expectedContent);
+    }
+
+    public void assertModContent(LaunchResult launchResult, String modId, Collection<IdentifiableContent> content) throws IOException {
+        assertThat(launchResult.loadedMods()).containsKey(modId);
+
+        var modFileInfo = launchResult.loadedMods().get(modId);
+        assertNotNull(modFileInfo, "mod " + modId + " is missing");
+
+        assertSecureJarContent(modFileInfo.getFile().getSecureJar(), content);
+    }
+
+    public void assertSecureJarContent(SecureJar jar, Collection<IdentifiableContent> content) throws IOException {
+        var paths = listFilesRecursively(jar);
+
+        assertThat(paths.keySet()).containsOnly(content.stream().map(IdentifiableContent::relativePath).toArray(String[]::new));
+
+        for (var identifiableContent : content) {
+            var expectedContent = identifiableContent.content();
+            var actualContent = Files.readAllBytes(paths.get(identifiableContent.relativePath()));
+            if (isPrintableAscii(expectedContent) && isPrintableAscii(actualContent)) {
+                assertThat(new String(actualContent)).isEqualTo(new String(expectedContent));
+            } else {
+                assertThat(actualContent).isEqualTo(expectedContent);
+            }
+        }
+    }
+
+    private boolean isPrintableAscii(byte[] potentialText) {
+        for (byte b : potentialText) {
+            if (b < 0x20 || b == 0x7f) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static Map<String, Path> listFilesRecursively(SecureJar jar) throws IOException {
+        Map<String, Path> paths;
+        var rootPath = jar.getRootPath();
+        try (var stream = Files.walk(rootPath)) {
+            paths = stream
+                    .filter(Files::isRegularFile)
+                    .map(rootPath::relativize)
+                    .collect(Collectors.toMap(
+                            path -> path.toString().replace('\\', '/'),
+                            Function.identity()));
+        }
+        return paths;
     }
 
     /**
