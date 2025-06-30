@@ -13,11 +13,14 @@ import com.google.common.jimfs.Jimfs;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import net.neoforged.fml.ModLoadingException;
-import net.neoforged.fml.test.RuntimeCompiler;
+import net.neoforged.fml.testlib.IdentifiableContent;
+import net.neoforged.fml.testlib.RuntimeCompiler;
+import net.neoforged.fml.testlib.SimulatedInstallation;
 import org.junit.jupiter.api.Test;
 
 class DistCleanerTest extends LauncherTest {
@@ -26,12 +29,9 @@ class DistCleanerTest extends LauncherTest {
         var classpath = installation.setupUserdevProject();
         var clientExtraJar = installation.getProjectRoot().resolve("client-extra.jar");
 
-        var clientAssetsContent = new IdentifiableContent("CLIENT_ASSETS", "assets/.mcassetsroot");
-        var sharedAssetsContent = new IdentifiableContent("SHARED_ASSETS", "data/.mcassetsroot");
-
         SimulatedInstallation.writeJarFile(clientExtraJar,
-                clientAssetsContent,
-                sharedAssetsContent);
+                SimulatedInstallation.CLIENT_ASSETS,
+                SimulatedInstallation.SHARED_ASSETS);
 
         assertThatThrownBy(() -> launchAndLoadWithAdditionalClasspath("neoforgeserverdev", classpath))
                 .isExactlyInstanceOf(ModLoadingException.class)
@@ -60,17 +60,18 @@ class DistCleanerTest extends LauncherTest {
         var manifestBytes = bout.toByteArray();
 
         var memoryFs = Jimfs.newFileSystem(Configuration.unix());
-        var compiler = new RuntimeCompiler(memoryFs);
-        var compilationBuilder = compiler.builder();
-        compilationBuilder.addClass("test.Masked", """
-                public class Masked {}""");
-        compilationBuilder.addClass("test.LoadsMasked", """
-                public class LoadsMasked {
-                    static {
-                        var masked = test.Masked.class;
-                    }
-                }""");
-        compilationBuilder.compile();
+        try (var compiler = RuntimeCompiler.createFolder(memoryFs.getPath("/"))) {
+            var compilationBuilder = compiler.builder();
+            compilationBuilder = compilationBuilder.addClass("test.Masked", """
+                    public class Masked {}""");
+            compilationBuilder = compilationBuilder.addClass("test.LoadsMasked", """
+                    public class LoadsMasked {
+                        static {
+                            var masked = test.Masked.class;
+                        }
+                    }""");
+            compilationBuilder.compile();
+        }
 
         var manifestContent = new IdentifiableContent("MANIFEST", "META-INF/MANIFEST.MF", manifestBytes);
         var maskedResourceContent = new IdentifiableContent("MASKED_RESOURCE", maskedResourcePath, "{}".getBytes(StandardCharsets.UTF_8));
@@ -78,29 +79,26 @@ class DistCleanerTest extends LauncherTest {
                 Files.readAllBytes(memoryFs.getPath("/", maskedClassPath)));
         var loadsMaskedClassContent = new IdentifiableContent("LOADS_MASKED_CLASS", loadsMaskedClassPath,
                 Files.readAllBytes(memoryFs.getPath("/", loadsMaskedClassPath)));
-        var clientAssetsContent = new IdentifiableContent("CLIENT_ASSETS", "assets/.mcassetsroot");
-        var sharedAssetsContent = new IdentifiableContent("SHARED_ASSETS", "data/.mcassetsroot");
 
         SimulatedInstallation.writeJarFile(clientExtraJar,
                 manifestContent,
                 maskedResourceContent,
                 maskedClassContent,
                 loadsMaskedClassContent,
-                clientAssetsContent,
-                sharedAssetsContent);
+                SimulatedInstallation.CLIENT_ASSETS,
+                SimulatedInstallation.SHARED_ASSETS);
 
         var result = launchAndLoadWithAdditionalClasspath("neoforgeserverdev", classpath);
         assertThat(result.issues()).isEmpty();
-        installation.assertModContent(result, "minecraft", List.of(
+        var content = new ArrayList<>(List.of(
                 manifestContent,
                 // Masked classes are still present, as these are removed on class load for the more specific error message
                 maskedClassContent,
                 loadsMaskedClassContent,
-                clientAssetsContent,
-                sharedAssetsContent,
-                // Other resources from the main jar
-                SimulatedInstallation.generateClass("PATCHED_CLIENT", "net/minecraft/client/Minecraft.class"),
-                SimulatedInstallation.generateClass("PATCHED_SHARED", "net/minecraft/server/MinecraftServer.class")));
+                SimulatedInstallation.CLIENT_ASSETS,
+                SimulatedInstallation.SHARED_ASSETS));
+        content.addAll(List.of(SimulatedInstallation.USERDEV_CLIENT_JAR_CONTENT));
+        assertModContent(result, "minecraft", content);
         assertThatThrownBy(() -> Class.forName("test.Masked", true, gameClassLoader))
                 .isExactlyInstanceOf(ClassNotFoundException.class).hasMessage("Attempted to load class test.Masked which is not present on the dedicated server");
         assertThatThrownBy(() -> Class.forName("test.LoadsMasked", true, gameClassLoader))

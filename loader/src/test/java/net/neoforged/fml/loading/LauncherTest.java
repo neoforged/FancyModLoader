@@ -362,9 +362,14 @@ public abstract class LauncherTest {
         assertModContent(launchResult, "minecraft", expectedContent);
     }
 
-    public void assertMinecraftClientJar(LaunchResult launchResult) throws IOException {
+    public void assertMinecraftClientJar(LaunchResult launchResult, boolean production) throws IOException {
         var expectedContent = new ArrayList<IdentifiableContent>();
-        Collections.addAll(expectedContent, SimulatedInstallation.CLIENT_EXTRA_JAR_CONTENT);
+        if (production) {
+            expectedContent.add(SimulatedInstallation.SHARED_ASSETS);
+            expectedContent.add(SimulatedInstallation.CLIENT_ASSETS);
+        } else {
+            Collections.addAll(expectedContent, SimulatedInstallation.CLIENT_EXTRA_JAR_CONTENT);
+        }
         expectedContent.add(SimulatedInstallation.PATCHED_CLIENT);
         expectedContent.add(SimulatedInstallation.PATCHED_SHARED);
 
