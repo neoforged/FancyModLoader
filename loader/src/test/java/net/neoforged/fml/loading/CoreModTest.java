@@ -57,7 +57,7 @@ public class CoreModTest extends LauncherTest {
         installation.buildModJar("testmod.jar")
                 .withTestmodModsToml()
                 .withJarInJar(JAR_IDENTIFIER, coreMod -> {
-                    coreMod.withModTypeManifest(IModFile.Type.LIBRARY)
+                    coreMod.withModTypeManifest(IModFile.Type.LIBRARY.name())
                             .addService(ICoreMod.class.getName(), "testmod.coremods.TestCoreMod")
                             .addClass("testmod.coremods.TestCoreMod", """
                                     import cpw.mods.modlauncher.api.ITransformer;
@@ -78,7 +78,7 @@ public class CoreModTest extends LauncherTest {
         installation.setupProductionClient();
 
         installation.buildModJar("coremod.jar")
-                .withModTypeManifest(IModFile.Type.LIBRARY)
+                .withModTypeManifest(IModFile.Type.LIBRARY.name())
                 .addService(ICoreMod.class.getName(), "testmod.coremods.TestCoreMod")
                 .addClass("testmod.coremods.TestCoreMod", """
                         import cpw.mods.modlauncher.api.ITransformer;
@@ -103,7 +103,7 @@ public class CoreModTest extends LauncherTest {
                         class TestClass {}
                         """)
                 .withJarInJar(JAR_IDENTIFIER, coreMod -> {
-                    coreMod.withModTypeManifest(IModFile.Type.LIBRARY)
+                    coreMod.withModTypeManifest(IModFile.Type.LIBRARY.name())
                             .addService(ICoreMod.class.getName(), "testmod.coremods.TestCoreMod")
                             .addClass("testmod.coremods.TestCoreMod", """
                                     import cpw.mods.modlauncher.api.ITransformer;
@@ -119,48 +119,6 @@ public class CoreModTest extends LauncherTest {
         assertThat(transformers).containsOnly(TEST_TRANSFORMER);
 
         var testClass = Class.forName("testmod.TestClass", true, gameClassLoader);
-        assertThat(testClass).hasAnnotation(Deprecated.class); // This is added by the transformer
-    }
-
-    @SuppressWarnings("unchecked")
-    @Test
-    public void testJavaScriptCoremod() throws Exception {
-        installation.setupProductionClient();
-
-        installation.buildModJar("testmod.jar")
-                .withTestmodModsToml()
-                .addTextFile("META-INF/coremods.json", """
-                        {
-                            "coremodid": "coremods/test.js"
-                        }
-                        """)
-                .addClass("net.minecraft.world.level.biome.Biome", "class Biome {}")
-                .addTextFile("coremods/test.js", """
-                        function initializeCoreMod() {
-                            return {
-                                'test': {
-                                    'target': {
-                                        'type': 'CLASS',
-                                        'name': 'net.minecraft.world.level.biome.Biome'
-                                    },
-                                    'transformer': function(classNode) {
-                                        classNode.visitAnnotation("Ljava/lang/Deprecated;", true);
-                                        return classNode;
-                                    }
-                                }
-                            }
-                        }
-                        """)
-                .build();
-
-        var transformers = launchAndLoad("neoforgeclient").transformers();
-        assertThat(transformers).hasSize(1);
-        var transformer = (ITransformer<ClassNode>) transformers.getFirst();
-        assertThat(transformer.getTargetType()).isEqualTo(TargetType.CLASS);
-        assertThat(transformer.targets()).containsOnly(
-                ITransformer.Target.targetClass("net.minecraft.world.level.biome.Biome"));
-
-        var testClass = Class.forName("net.minecraft.world.level.biome.Biome", true, gameClassLoader);
         assertThat(testClass).hasAnnotation(Deprecated.class); // This is added by the transformer
     }
 }

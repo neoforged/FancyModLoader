@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import net.neoforged.accesstransformer.ml.AccessTransformerService;
+import net.neoforged.fml.common.asm.AccessTransformerService;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
 import net.neoforged.fml.loading.moddiscovery.locators.NeoForgeDevDistCleaner;
 import org.jetbrains.annotations.Nullable;

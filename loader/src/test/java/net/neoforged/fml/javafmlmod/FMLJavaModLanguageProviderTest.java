@@ -15,8 +15,8 @@ import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LauncherTest;
-import net.neoforged.fml.loading.SimulatedInstallation;
-import net.neoforged.fml.test.RuntimeCompiler;
+import net.neoforged.fml.testlib.RuntimeCompiler;
+import net.neoforged.fml.testlib.SimulatedInstallation;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -41,7 +41,7 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
         installation.setupProductionClient();
 
         var testJar = installation.writeModJar("test.jar", SimulatedInstallation.createModsToml("testmod", "1.0"));
-        try (var compiler = RuntimeCompiler.create(testJar)) {
+        try (var compiler = RuntimeCompiler.createJar(testJar)) {
             compiler.builder()
                     .addClass("testmod.DanglingEntryPoint", """
                             package testmod;
@@ -63,7 +63,7 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
         installation.setupProductionClient();
 
         var testJar = installation.writeModJar("test.jar", SimulatedInstallation.createModsToml("testmod", "1.0"));
-        try (var compiler = RuntimeCompiler.create(testJar)) {
+        try (var compiler = RuntimeCompiler.createJar(testJar)) {
             compiler.builder()
                     .addClass("testmod.EntryPoint", """
                             package testmod;
@@ -87,7 +87,7 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
         installation.setupProductionClient();
 
         var testJar = installation.writeModJar("test.jar", SimulatedInstallation.createModsToml("testmod", "1.0"));
-        try (var compiler = RuntimeCompiler.create(testJar)) {
+        try (var compiler = RuntimeCompiler.createJar(testJar)) {
             compiler.builder()
                     .addClass("testmod.EntryPoint", """
                             import java.util.ArrayList;
@@ -113,7 +113,7 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
         installation.setupProductionClient();
 
         var testJar = installation.writeModJar("test.jar", SimulatedInstallation.createModsToml("testmod", "1.0"));
-        try (var compiler = RuntimeCompiler.create(testJar)) {
+        try (var compiler = RuntimeCompiler.createJar(testJar)) {
             compiler.builder()
                     .addClass("testmod.EntryPoint", """
                             @net.neoforged.fml.common.Mod("testmod")

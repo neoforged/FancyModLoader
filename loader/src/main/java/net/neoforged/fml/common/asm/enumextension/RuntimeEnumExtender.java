@@ -19,7 +19,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import net.neoforged.coremod.api.ASMAPI;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.asm.ListGeneratorAdapter;
@@ -116,7 +115,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         List<FieldNode> enumEntries = createEnumEntries(classType, clinitGenerator, ctors, idParamIdx, nameParamIdx, vanillaEntryCount, protos);
         if ($valuesPresent) { // javac
             MethodNode $values = $valuesOpt.get();
-            MethodInsnNode $valuesInsn = ASMAPI.findFirstMethodCall(clinit, ASMAPI.MethodType.STATIC, classType.getInternalName(), $values.name, $values.desc);
+            MethodInsnNode $valuesInsn = findFirstStaticMethodCall(clinit, classType.getInternalName(), $values.name, $values.desc);
             clinit.instructions.insertBefore($valuesInsn, clinitGenerator.insnList);
         } else { // ECJ
             AbstractInsnNode firstValuesArrayInsn = findValuesArrayCreation(classType, clinit);
@@ -126,7 +125,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         ListGeneratorAdapter clinitTailGenerator = new ListGeneratorAdapter(new InsnList());
         buildExtensionInfo(classNode, classType, clinitTailGenerator, infoField, vanillaEntryCount, protos.size());
         returnValuesToExtender(classType, clinitTailGenerator, protos, enumEntries);
-        AbstractInsnNode clinitRetNode = ASMAPI.findFirstInstructionBefore(clinit, Opcodes.RETURN, clinit.instructions.size() - 1);
+        AbstractInsnNode clinitRetNode = findFirstInstructionBefore(clinit, Opcodes.RETURN, clinit.instructions.size() - 1);
         clinit.instructions.insertBefore(clinitRetNode, clinitTailGenerator.insnList);
         classNode.fields.addAll(vanillaEntryCount, enumEntries);
 
@@ -134,7 +133,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         appendValuesArray(classType, appendValuesGenerator, enumEntries);
         if ($valuesPresent) { // javac
             MethodNode $values = $valuesOpt.get();
-            AbstractInsnNode $valuesAretInsn = ASMAPI.findFirstInstructionBefore($values, Opcodes.ARETURN, $values.instructions.size() - 1);
+            AbstractInsnNode $valuesAretInsn = findFirstInstructionBefore($values, Opcodes.ARETURN, $values.instructions.size() - 1);
             $values.instructions.insertBefore($valuesAretInsn, appendValuesGenerator.insnList);
         } else { // ECJ
             AbstractInsnNode putStaticInsn = findValuesArrayStore(classType, classNode, clinit, classType.getInternalName());
@@ -142,6 +141,47 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         }
 
         return true;
+    }
+
+    /**
+     * Finds the first static method call in the given method matching the given owner, name and descriptor
+     *
+     * @param method     the method to search in
+     * @param owner      the method call's owner to search for
+     * @param name       the method call's name
+     * @param descriptor the method call's descriptor
+     * @return the found method call node, null if none matched after the given index
+     */
+    public static MethodInsnNode findFirstStaticMethodCall(MethodNode method, String owner, String name, String descriptor) {
+        for (int i = 0; i < method.instructions.size(); i++) {
+            AbstractInsnNode node = method.instructions.get(i);
+            if (node instanceof MethodInsnNode methodInsnNode && node.getOpcode() == Opcodes.INVOKESTATIC) {
+                if (methodInsnNode.owner.equals(owner) &&
+                        methodInsnNode.name.equals(name) &&
+                        methodInsnNode.desc.equals(descriptor)) {
+                    return methodInsnNode;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Finds the first instruction with matching opcode before the given index in reverse search
+     *
+     * @param method     the method to search in
+     * @param opCode     the opcode to search for
+     * @param startIndex the index at which to start searching (inclusive)
+     * @return the found instruction node or null if none matched before the given startIndex
+     */
+    public static AbstractInsnNode findFirstInstructionBefore(MethodNode method, int opCode, int startIndex) {
+        for (int i = Math.max(method.instructions.size() - 1, startIndex); i >= 0; i--) {
+            AbstractInsnNode ain = method.instructions.get(i);
+            if (ain.getOpcode() == opCode) {
+                return ain;
+            }
+        }
+        return null;
     }
 
     private static Optional<MethodNode> tryFindMethod(ClassNode classNode, Predicate<MethodNode> predicate) {

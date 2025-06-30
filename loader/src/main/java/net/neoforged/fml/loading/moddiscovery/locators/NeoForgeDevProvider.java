@@ -156,7 +156,7 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
     }
 
     private static String[] getNeoForgeSpecificPathPrefixes() {
-        return new String[] { "net/neoforged/neoforge/", "META-INF/services/", "META-INF/coremods.json", JarModsDotTomlModFileReader.MODS_TOML };
+        return new String[] { "net/neoforged/neoforge/", "META-INF/services/", JarModsDotTomlModFileReader.MODS_TOML };
     }
 
     @Override

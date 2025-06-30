@@ -8,13 +8,13 @@ pluginManagement {
     }
 
     plugins {
-        id 'net.neoforged.moddev' version '2.0.80'
-        id 'net.neoforged.moddev.repositories' version '2.0.80'
+        id 'net.neoforged.moddev' version '2.0.95'
+        id 'net.neoforged.moddev.repositories' version '2.0.95'
     }
 }
 
 plugins {
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.9.0'
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
     id 'net.neoforged.moddev.repositories'
 }
 
@@ -28,8 +28,11 @@ dependencyResolutionManagement {
 
 rootProject.name = 'FancyModLoader'
 
+include 'bootstraplauncher'
 include 'loader'
 include 'earlydisplay'
 include 'junit'
+include 'securejarhandler'
+include 'testlib'
 include 'tests'
 enableFeaturePreview "STABLE_CONFIGURATION_CACHE"

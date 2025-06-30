@@ -21,9 +21,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
-import net.neoforged.accesstransformer.ml.AccessTransformerService;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.IBindingsProvider;
+import net.neoforged.fml.common.asm.AccessTransformerService;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
@@ -162,7 +162,6 @@ public class FMLLoader {
 
     public static void beforeStart(ModuleLayer gameLayer) {
         FMLLoader.gameLayer = gameLayer;
-        ImmediateWindowHandler.acceptGameLayer(gameLayer);
         ImmediateWindowHandler.updateProgress("Launching minecraft");
         progressWindowTick.run();
     }

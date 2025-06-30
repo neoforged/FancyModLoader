@@ -6,6 +6,11 @@ checkJarCompatibility {
     isAPI = true
 }
 
+sourceSets {
+    jmh
+    testJars
+}
+
 dependencies {
     compileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
 
@@ -21,8 +26,6 @@ dependencies {
     api("org.apache.commons:commons-lang3:${apache_commons_lang3_version}")
     api("com.electronwill.night-config:core:${nightconfig_version}")
     api("com.electronwill.night-config:toml:${nightconfig_version}")
-    api("cpw.mods:modlauncher:${modlauncher_version}")
-    api("net.neoforged:coremods:${coremods_version}")
     api("com.mojang:logging:${mojang_logging_version}")
     api "net.neoforged:JarJarSelector:${jarjar_version}"
     api "net.neoforged:JarJarMetadata:${jarjar_version}"
@@ -30,11 +33,8 @@ dependencies {
     implementation("net.neoforged:JarJarFileSystems:$jarjar_version")
 
     implementation("net.sf.jopt-simple:jopt-simple:${jopt_simple_version}")
-    implementation("cpw.mods:securejarhandler:${securejarhandler_version}")
+    implementation project(":securejarhandler")
     implementation("net.neoforged:accesstransformers:${accesstransformers_version}")
-    implementation("net.neoforged.accesstransformers:at-modlauncher:${accesstransformers_version}") {
-        exclude module: 'modlauncher'
-    }
     implementation("net.fabricmc:sponge-mixin:${mixin_version}")
     implementation("net.minecrell:terminalconsoleappender:${terminalconsoleappender_version}")
     implementation("commons-io:commons-io:${commons_io_version}")
@@ -42,15 +42,22 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-core:${log4j_version}")
     annotationProcessor("org.apache.logging.log4j:log4j-core:${log4j_version}")
 
-    testCompileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
-    testRuntimeOnly("cpw.mods:bootstraplauncher:${bootstraplauncher_version}")
+    testRuntimeOnly project(":bootstraplauncher")
     testRuntimeOnly("org.apache.logging.log4j:log4j-core:$log4j_version")
+    testImplementation(project(":testlib"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:$jupiter_version")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$jupiter_version")
     testImplementation("org.mockito:mockito-junit-jupiter:$mockito_version")
-    testImplementation("org.assertj:assertj-core:3.25.3")
+    testImplementation("org.assertj:assertj-core:$assertj_version")
     testImplementation("org.junit.jupiter:junit-jupiter-engine:$jupiter_version")
-    testImplementation('com.google.jimfs:jimfs:1.3.0')
+    testImplementation("org.powermock:powermock-core:${powermock_version}")
+    testImplementation("org.powermock:powermock-reflect:${powermock_version}")
+
+    jmhImplementation(sourceSets.main.output)
+    jmhImplementation(sourceSets.testJars.output)
+    jmhImplementation("org.openjdk.jmh:jmh-core:${jmh_version}")
+    jmhImplementation("org.powermock:powermock-core:${powermock_version}")
+    jmhAnnotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:${jmh_version}")
 
     // Provides the JUnit project as a BOM entry
     constraints {
@@ -58,21 +65,60 @@ dependencies {
     }
 }
 
-spotless {
-    java {
-        // courtesy of diffplug/spotless#240
-        // https://github.com/diffplug/spotless/issues/240#issuecomment-385206606
-        custom 'noWildcardImports', { String fileContents ->
-            if (fileContents.contains('*;\n')) {
-                throw new GradleException('No wildcard imports are allowed!')
-            }
-        }
+configurations.jmhImplementation.extendsFrom(configurations.implementation)
 
-        custom 'noNotNull', { String fileContents ->
-            if (fileContents.contains('@NotNull') || fileContents.contains('@Nonnull')) {
-                throw new GradleException('@NotNull and @Nonnull are disallowed.')
-            }
-        }
-        bumpThisNumberIfACustomStepChanges(1)
+var testJars = tasks.register(sourceSets.testJars.jarTaskName, Jar) {
+    archiveClassifier = 'testsjar'
+    from sourceSets.testJars.output
+}
+
+test {
+    inputs.file(testJars.flatMap(AbstractArchiveTask::getArchiveFile))
+
+    useJUnitPlatform()
+
+    systemProperty 'testJars.location', testJars.map(tj -> tj.archiveFile.get().asFile).get()
+
+    jvmArgs(
+            '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+            '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED'
+    )
+}
+
+tasks.register('jmh', JavaExec) {
+    dependsOn('jmhClasses')
+    classpath.from(sourceSets.jmh.runtimeClasspath)
+    mainClass = 'org.openjdk.jmh.Main'
+    jvmArgs('--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED')
+
+    final results = file("${project.reportsDir}/jmh/result.json")
+    doFirst {
+        results.parentFile.mkdirs()
+    }
+
+    args = [
+            'cpw.mods.modlauncher.benchmarks.TransformBenchmark',
+            '-bm', 'avgt',
+            '-prof', 'stack',
+            '-prof', 'jfr',
+            '-r', '3s',
+            '-w', '3s',
+            '-wi', '3',
+            '-i', '3',
+            '-f', '3',
+            '-tu', 'us',
+            '-rf', 'json',
+            '-rff', results
+    ]
+    if (project.hasProperty('jmhVendor') && project.hasProperty('jmhVersion')) {
+        final specifiedVendor = project.property('jmhVendor').toString()
+        final actualVendor = specifiedVendor.endsWith('-J9') ? specifiedVendor.substring(0, specifiedVendor.length() - 3) : specifiedVendor
+        javaLauncher.set(javaToolchains.launcherFor {
+            it.vendor.set(JvmVendorSpec."${actualVendor.toUpperCase(Locale.ROOT)}" as JvmVendorSpec)
+            it.languageVersion.set(JavaLanguageVersion.of(project.property('jmhVersion') as int))
+            it.implementation.set(specifiedVendor.endsWith('-J9') ? JvmImplementation.J9 : JvmImplementation.VENDOR_SPECIFIC)
+        })
+    } else {
+        javaLauncher.set(javaToolchains.launcherFor(java.toolchain))
     }
 }

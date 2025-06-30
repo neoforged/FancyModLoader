@@ -55,7 +55,6 @@ public class ModFile implements IModFile {
     private IModFileInfo modFileInfo;
     private ModFileScanData fileModFileScanData;
     private volatile CompletableFuture<ModFileScanData> futureScanResult;
-    private List<CoreModFile> coreMods;
     private List<ModFileParser.MixinConfig> mixinConfigs;
     private List<Path> accessTransformers;
 
@@ -114,7 +113,6 @@ public class ModFile implements IModFile {
         this.modFileInfo = ModFileParser.readModList(this, this.parser);
         if (this.modFileInfo == null) return this.getType() != Type.MOD;
         LOGGER.debug(LogMarkers.LOADING, "Loading mod file {} with languages {}", this.getFilePath(), this.modFileInfo.requiredLanguageLoaders());
-        this.coreMods = ModFileParser.getCoreMods(this);
         this.mixinConfigs = ModFileParser.getMixinConfigs(this.modFileInfo);
         this.mixinConfigs.forEach(mc -> LOGGER.debug(LogMarkers.LOADING, "Found mixin config {}", mc));
         this.accessTransformers = ModFileParser.getAccessTransformers(this.modFileInfo)
@@ -129,10 +127,6 @@ public class ModFile implements IModFile {
                         .filter(Files::exists))
                 .toList();
         return true;
-    }
-
-    public List<CoreModFile> getCoreMods() {
-        return coreMods;
     }
 
     public List<ModFileParser.MixinConfig> getMixinConfigs() {
