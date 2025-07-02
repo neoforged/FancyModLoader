@@ -39,6 +39,16 @@ import org.objectweb.asm.Opcodes;
 public class SimulatedInstallation implements AutoCloseable {
     public static final IdentifiableContent CLIENT_ASSETS = new IdentifiableContent("CLIENT_ASSETS", "assets/.mcassetsroot");
     public static final IdentifiableContent SHARED_ASSETS = new IdentifiableContent("SHARED_ASSETS", "data/.mcassetsroot");
+    public static final IdentifiableContent RESOURCES_MANIFEST;
+
+    static {
+        try {
+            RESOURCES_MANIFEST = createManifest("RESOURCES_MANIFEST", Map.of(
+                    "Minecraft-Dists", "client server"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
     /**
      * A class that is contained in both client and dedicated server distribution, renamed to official mappings.
      */
@@ -76,7 +86,7 @@ public class SimulatedInstallation implements AutoCloseable {
     private final Path projectRoot;
 
     public static final IdentifiableContent[] SERVER_EXTRA_JAR_CONTENT = { SHARED_ASSETS };
-    public static final IdentifiableContent[] CLIENT_EXTRA_JAR_CONTENT = { CLIENT_ASSETS, SHARED_ASSETS };
+    public static final IdentifiableContent[] CLIENT_EXTRA_JAR_CONTENT = { CLIENT_ASSETS, SHARED_ASSETS, RESOURCES_MANIFEST };
     public static final IdentifiableContent[] NEOFORGE_UNIVERSAL_JAR_CONTENT = { NEOFORGE_ASSETS, NEOFORGE_CLASSES, NEOFORGE_MODS_TOML, NEOFORGE_MANIFEST };
     public static final IdentifiableContent[] USERDEV_CLIENT_JAR_CONTENT = { PATCHED_CLIENT, PATCHED_SHARED };
 
