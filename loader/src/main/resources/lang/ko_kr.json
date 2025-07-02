@@ -44,6 +44,8 @@
   "fml.modloadingissue.technical_error": "모드 {0}을 불러오는 도중 문제가 발생했습니다",
   "fml.modloadingissue.invalid_maven_coordinate": "잘못된 Maven 좌표: {0}",
   "fml.modloadingissue.maven_coordinate_not_found": "Maven 좌표 {0}을(를) 가지는 모드가 {1}에 없습니다",
+  "fml.modloadingissue.neodev_missing_dists_attribute": "NeoForge dev environment client-extra jar does not have a {0} attribute in its manifest; this may be because you have an out-of-date gradle plugin",
+  "fml.modloadingissue.neodev_missing_appropriate_dist": "NeoForge dev environment client-extra jar does not have a {0} marker in its {1} attribute in its manifest; this may be because you have an out-of-date gradle plugin",
   "fml.modloadingissue.failed_to_list_folder_content": "폴더 {0} 수색중 IO 오류가 발생했습니다",
   "fml.modloadingissue.failed_to_find_on_classpath": "Classpath에 {0}이(가) 없습니다",
   "fml.modloadingissue.multiple_copies_on_classpath": "Classpath {1}에 {0}이(가) 여러개 있습니다",
