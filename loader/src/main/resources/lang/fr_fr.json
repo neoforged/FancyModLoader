@@ -44,6 +44,8 @@
   "fml.modloadingissue.technical_error": "Une erreur technique s'est produite lors du chargement du mod : {0}",
   "fml.modloadingissue.invalid_maven_coordinate": "Les coordonnées Maven suivantes sont invalides : {0}",
   "fml.modloadingissue.maven_coordinate_not_found": "Aucun mod avec les coordonnées Maven {0} n'a pu être trouvé dans {1}",
+  "fml.modloadingissue.neodev_missing_dists_attribute": "NeoForge dev environment client-extra jar does not have a {0} attribute in its manifest; this may be because you have an out-of-date gradle plugin",
+  "fml.modloadingissue.neodev_missing_appropriate_dist": "NeoForge dev environment client-extra jar does not have a {0} marker in its {1} attribute in its manifest; this may be because you have an out-of-date gradle plugin",
   "fml.modloadingissue.failed_to_list_folder_content": "",
   "fml.modloadingissue.failed_to_find_on_classpath": "{0} introuvable sur le chemin d'accès",
   "fml.modloadingissue.multiple_copies_on_classpath": "Plusieurs copies de {0} trouvées sur le chemin d'accès : {1}",
