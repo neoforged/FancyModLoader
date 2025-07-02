@@ -44,6 +44,8 @@
   "fml.modloadingissue.technical_error": "模組載入期間發生技術錯誤：{0}",
   "fml.modloadingissue.invalid_maven_coordinate": "以下 Maven 座標無效：{0}",
   "fml.modloadingissue.maven_coordinate_not_found": "在 {1} 中找不到 Maven 座標為 {0} 的 mod",
+  "fml.modloadingissue.neodev_missing_dists_attribute": "NeoForge dev environment client-extra jar does not have a {0} attribute in its manifest; this may be because you have an out-of-date gradle plugin",
+  "fml.modloadingissue.neodev_missing_appropriate_dist": "NeoForge dev environment client-extra jar does not have a {0} marker in its {1} attribute in its manifest; this may be because you have an out-of-date gradle plugin",
   "fml.modloadingissue.failed_to_list_folder_content": "無法列出資料夾 {0} 的內容",
   "fml.modloadingissue.failed_to_find_on_classpath": "未能在類別路徑中找到 {0}",
   "fml.modloadingissue.multiple_copies_on_classpath": "在類別路徑上找到了 {0} 的多個副本：{1}",
