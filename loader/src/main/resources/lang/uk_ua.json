@@ -44,6 +44,8 @@
   "fml.modloadingissue.technical_error": "Технічна помилка при завантаженні модів: {0}",
   "fml.modloadingissue.invalid_maven_coordinate": "Некоректна Maven координата: {0}",
   "fml.modloadingissue.maven_coordinate_not_found": "Не знайдено мод за координатами Maven {0} в {1}",
+  "fml.modloadingissue.neodev_missing_dists_attribute": "NeoForge dev environment client-extra jar does not have a {0} attribute in its manifest; this may be because you have an out-of-date gradle plugin",
+  "fml.modloadingissue.neodev_missing_appropriate_dist": "NeoForge dev environment client-extra jar does not have a {0} marker in its {1} attribute in its manifest; this may be because you have an out-of-date gradle plugin",
   "fml.modloadingissue.failed_to_list_folder_content": "Не вдалося відобразити вміст теки {0}",
   "fml.modloadingissue.failed_to_find_on_classpath": "Не вдалося знайти {0} в classpath",
   "fml.modloadingissue.multiple_copies_on_classpath": "Знайдено багато копій {0} в classpath: {1}",
