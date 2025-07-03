@@ -91,6 +91,9 @@ runConfigurations {
 
 // Since the neoforge-dependencies use strict resolution, we're kinda lost and have to force.
 configurations.configureEach {
+    if (it.name.startsWith('neoFormRuntime')) {
+        return
+    }
     resolutionStrategy.dependencySubstitution {
         substitute module("net.neoforged.fancymodloader:loader") using project(":loader")
         substitute module("net.neoforged.fancymodloader:earlydisplay") using project(":earlydisplay")
