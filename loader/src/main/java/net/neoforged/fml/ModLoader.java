@@ -449,6 +449,6 @@ public final class ModLoader {
     
     @ApiStatus.Internal
     public static void logTransformationSummary() {
-        LOGGER.debug("Transformed/total loaded classes: {} (and {} parsed for mixin)", getTransformationSummary(), getMixinParsedClassesSummary());
+        LOGGER.debug("Transformed/total loaded classes: {} and {} parsed for mixin", getTransformationSummary(), getMixinParsedClassesSummary());
     }
 }
