@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.net.URL;
 
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
+import net.neoforged.fml.ModLoader;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -65,6 +66,9 @@ class FMLClassBytecodeProvider implements IClassBytecodeProvider {
             ClassNode classNode = new ClassNode();
             ClassReader classReader = new MixinClassReader(classBytes, canonicalName);
             classReader.accept(classNode, readerFlags);
+
+            ModLoader.incrementMixinParsedClasses();
+            
             return classNode;
         }
 
