@@ -9,6 +9,8 @@ import com.google.common.io.Resources;
 import cpw.mods.modlauncher.TransformingClassLoader;
 import java.io.IOException;
 import java.net.URL;
+
+import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -16,11 +18,11 @@ import org.spongepowered.asm.service.IClassBytecodeProvider;
 import org.spongepowered.asm.transformers.MixinClassReader;
 
 class FMLClassBytecodeProvider implements IClassBytecodeProvider {
-    private final TransformingClassLoader classLoader;
+    private final ILaunchPluginService.ITransformerLoader transformerLoader;
     private final FMLMixinLaunchPlugin launchPlugin;
 
-    FMLClassBytecodeProvider(TransformingClassLoader classLoader, FMLMixinLaunchPlugin launchPlugin) {
-        this.classLoader = classLoader;
+    FMLClassBytecodeProvider(ILaunchPluginService.ITransformerLoader transformerLoader, FMLMixinLaunchPlugin launchPlugin) {
+        this.transformerLoader = transformerLoader;
         this.launchPlugin = launchPlugin;
     }
 
@@ -47,7 +49,7 @@ class FMLClassBytecodeProvider implements IClassBytecodeProvider {
 
         try {
             // Passing FMLMixinLaunchPlugin.NAME here prevents that plugin from recursively being applied
-            classBytes = classLoader.buildTransformedClassNodeFor(canonicalName, FMLMixinLaunchPlugin.NAME);
+            classBytes = transformerLoader.buildTransformedClassNodeFor(canonicalName);
         } catch (ClassNotFoundException ex) {
             URL url = Thread.currentThread().getContextClassLoader().getResource(internalName + ".class");
             if (url == null) {

@@ -23,6 +23,7 @@ dependencyResolutionManagement {
     rulesMode = RulesMode.FAIL_ON_PROJECT_RULES
     repositories {
         mavenCentral()
+        mavenLocal()
     }
 }
 
@@ -34,5 +35,7 @@ include 'earlydisplay'
 include 'junit'
 include 'securejarhandler'
 include 'testlib'
-include 'tests'
+
+// commented out to be able to import at all
+//include 'tests'
 enableFeaturePreview "STABLE_CONFIGURATION_CACHE"

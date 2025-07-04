@@ -6,6 +6,7 @@
 package net.neoforged.fml.loading.mixin;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.Nullable;
@@ -13,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.launch.GlobalProperties;
 import org.spongepowered.asm.launch.MixinBootstrap;
+import org.spongepowered.asm.launch.platform.container.IContainerHandle;
 import org.spongepowered.asm.mixin.FabricUtil;
 import org.spongepowered.asm.mixin.Mixins;
 import org.spongepowered.asm.mixin.transformer.Config;
@@ -25,14 +27,6 @@ public class DeferredMixinConfigRegistration {
     record ConfigInfo(String fileName, @Nullable String modId) {}
 
     private static final List<ConfigInfo> mixinConfigs = new ArrayList<>();
-
-    static {
-        // Register our platform agent first
-        List<String> agentClassNames = GlobalProperties.get(GlobalProperties.Keys.AGENTS);
-        agentClassNames.add(FMLMixinPlatformAgent.class.getName());
-        // Register the container (will use the platform agent)
-        MixinBootstrap.getPlatform().addContainer(new FMLMixinContainerHandle());
-    }
 
     public static void addMixinConfig(String config) {
         addMixinConfig(config, null);

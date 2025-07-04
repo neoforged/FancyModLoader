@@ -29,7 +29,7 @@ public final class ServiceLoaderUtils {
     }
 
     public static <T> Stream<T> streamWithErrorHandling(ServiceLoader<T> sl, Consumer<ServiceConfigurationError> errorConsumer) {
-        return sl.stream().map(p -> {
+        return sl.stream().filter(ServiceLoaderUtils::isNotMixinService).map(p -> {
             try {
                 return p.get();
             } catch (ServiceConfigurationError sce) {
@@ -37,6 +37,12 @@ public final class ServiceLoaderUtils {
                 return null;
             }
         }).filter(Objects::nonNull);
+    }
+    
+    private static boolean isNotMixinService(ServiceLoader.Provider<?> provider) {
+        var clazz = provider.type();
+        var packageName = clazz.getPackageName();
+        return !packageName.equals("org.spongepowered.asm.launch") && !packageName.startsWith("org.spongepowered.asm.launch.");
     }
 
     public static String fileNameFor(Class<?> clazz) {

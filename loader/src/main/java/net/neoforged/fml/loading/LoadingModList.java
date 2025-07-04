@@ -77,11 +77,17 @@ public class LoadingModList {
     }
 
     public void addMixinConfigs() {
+        Map<String, String> configModIds = new HashMap<>();
         modFiles.stream()
                 .map(ModFileInfo::getFile)
                 .forEach(file -> {
                     final String modId = file.getModInfos().get(0).getModId();
                     for (ModFileParser.MixinConfig potential : file.getMixinConfigs()) {
+                        var existingModId = configModIds.putIfAbsent(potential.config(), modId);
+                        if (existingModId != null && !existingModId.equals(modId)) {
+                            LOGGER.error("Mixin config {} is registered by multiple mods: {} and {}", potential.config(), existingModId, modId);
+                            throw new IllegalStateException("Mixin config " + potential.config() + " is registered by multiple mods: " + existingModId + " and " + modId);
+                        }
                         if (potential.requiredMods().stream().allMatch(id -> this.getModFileById(id) != null)) {
                             DeferredMixinConfigRegistration.addMixinConfig(potential.config(), modId);
                         } else {

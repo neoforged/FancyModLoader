@@ -8,11 +8,10 @@ package net.neoforged.fml.loading.mixin;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.jetbrains.annotations.ApiStatus;
+
 import org.spongepowered.asm.service.IGlobalPropertyService;
 import org.spongepowered.asm.service.IPropertyKey;
 
-@ApiStatus.Internal
 public class FMLMixinGlobalProperties implements IGlobalPropertyService {
     private static final Map<String, Object> PROPERTIES = new HashMap<>();
 

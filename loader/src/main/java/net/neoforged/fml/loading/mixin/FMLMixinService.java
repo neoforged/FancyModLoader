@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import net.neoforged.fml.loading.FMLLoader;
 import org.jetbrains.annotations.Nullable;
+import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.launch.platform.container.ContainerHandleVirtual;
 import org.spongepowered.asm.launch.platform.container.IContainerHandle;
 import org.spongepowered.asm.logging.ILogger;
@@ -53,7 +54,9 @@ public class FMLMixinService implements IMixinService {
     private IMixinTransformer mixinTransformer;
 
     @Override
-    public void prepare() {}
+    public void prepare() {
+        MixinBootstrap.getPlatform().addContainer(new FMLMixinContainerHandle());
+    }
 
     @Override
     public Phase getInitialPhase() {
@@ -72,11 +75,6 @@ public class FMLMixinService implements IMixinService {
     @Override
     public ReEntranceLock getReEntranceLock() {
         return lock;
-    }
-
-    @Override
-    public Collection<IContainerHandle> getMixinContainers() {
-        return List.of();
     }
 
     @Override
@@ -160,12 +158,19 @@ public class FMLMixinService implements IMixinService {
 
     @Override
     public Collection<String> getPlatformAgents() {
-        return List.of("org.spongepowered.asm.launch.platform.MixinPlatformAgentDefault");
+        return List.of("org.spongepowered.asm.launch.platform.MixinPlatformAgentDefault", FMLMixinPlatformAgent.class.getName());
     }
+    
+    private final IContainerHandle primaryContainer = new ContainerHandleVirtual("fml");
 
     @Override
     public IContainerHandle getPrimaryContainer() {
-        return new ContainerHandleVirtual("fml");
+        return primaryContainer;
+    }
+
+    @Override
+    public Collection<IContainerHandle> getMixinContainers() {
+        return List.of();
     }
 
     @Override
