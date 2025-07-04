@@ -415,4 +415,30 @@ public final class ModLoader {
     public static void addLoadingIssue(ModLoadingIssue issue) {
         loadingIssues.add(issue);
     }
+
+    private static int LOADED_CLASS_COUNT = 0;
+    private static int TRANSFORMED_CLASS_COUNT = 0;
+    
+    @ApiStatus.Internal
+    public static void incrementLoadedClasses() {
+        LOADED_CLASS_COUNT++;
+    }
+    
+    @ApiStatus.Internal
+    public static void incrementTransformedClasses() {
+        TRANSFORMED_CLASS_COUNT++;
+    }
+
+    @ApiStatus.Internal
+    public static String getTransformationSummary() {
+        var loaded = LOADED_CLASS_COUNT;
+        var transformed = TRANSFORMED_CLASS_COUNT;
+        double ratio = loaded == 0 ? 0d : ((double) transformed) / loaded * 100;
+        return String.format("%s/%s (%.2f%%)", transformed, loaded, ratio);
+    }
+    
+    @ApiStatus.Internal
+    public static void logTransformationSummary() {
+        LOGGER.info("Transformed/total loaded classes: {}", getTransformationSummary());
+    }
 }
