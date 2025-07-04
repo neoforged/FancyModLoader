@@ -38,7 +38,7 @@ public final class ServiceLoaderUtils {
             }
         }).filter(Objects::nonNull);
     }
-    
+
     private static boolean isNotMixinService(ServiceLoader.Provider<?> provider) {
         var clazz = provider.type();
         var packageName = clazz.getPackageName();

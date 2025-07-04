@@ -1,16 +1,20 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fml.loading.mixin;
 
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
-
 import java.util.List;
 import java.util.Set;
 
 public class FMLMixinTransformationService implements ITransformationService {
     private MixinFacade facade;
-    
+
     @Override
     public String name() {
         return FMLMixinLaunchPlugin.NAME;

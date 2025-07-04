@@ -419,17 +419,17 @@ public final class ModLoader {
     private static int LOADED_CLASS_COUNT = 0;
     private static int TRANSFORMED_CLASS_COUNT = 0;
     private static int MIXIN_PARSED_CLASS_COUNT = 0;
-    
+
     @ApiStatus.Internal
     public static void incrementLoadedClasses() {
         LOADED_CLASS_COUNT++;
     }
-    
+
     @ApiStatus.Internal
     public static void incrementTransformedClasses() {
         TRANSFORMED_CLASS_COUNT++;
     }
-    
+
     public static void incrementMixinParsedClasses() {
         MIXIN_PARSED_CLASS_COUNT++;
     }
@@ -441,12 +441,12 @@ public final class ModLoader {
         double ratio = loaded == 0 ? 0d : ((double) transformed) / loaded * 100;
         return String.format("%s/%s (%.2f%%)", transformed, loaded, ratio);
     }
-    
+
     @ApiStatus.Internal
     public static String getMixinParsedClassesSummary() {
         return String.valueOf(MIXIN_PARSED_CLASS_COUNT);
     }
-    
+
     @ApiStatus.Internal
     public static void logTransformationSummary() {
         LOGGER.debug("Transformed/total loaded classes: {} and {} parsed for mixin", getTransformationSummary(), getMixinParsedClassesSummary());

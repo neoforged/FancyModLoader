@@ -8,7 +8,6 @@ package net.neoforged.fml.loading.mixin;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
 import org.spongepowered.asm.service.IGlobalPropertyService;
 import org.spongepowered.asm.service.IPropertyKey;
 

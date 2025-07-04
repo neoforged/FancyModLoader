@@ -160,7 +160,7 @@ public class FMLMixinService implements IMixinService {
     public Collection<String> getPlatformAgents() {
         return List.of("org.spongepowered.asm.launch.platform.MixinPlatformAgentDefault", FMLMixinPlatformAgent.class.getName());
     }
-    
+
     private final IContainerHandle primaryContainer = new ContainerHandleVirtual("fml");
 
     @Override

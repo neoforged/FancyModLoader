@@ -21,14 +21,14 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
 
     private MixinFacade facade;
     private final FMLMixinService service;
-    
+
     public FMLMixinLaunchPlugin() {
         System.setProperty("mixin.service", FMLMixinService.class.getName());
         System.setProperty("mixin.bootstrapService", FMLMixinServiceBootstrap.class.getName());
-        
+
         this.service = (FMLMixinService) MixinService.getService();
     }
-    
+
     public synchronized void setup() {
         if (this.facade == null) {
             this.facade = new MixinFacade(this);
@@ -62,7 +62,7 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
         if (NAME.equals(reason)) {
             return Phases.NONE; // We're recursively loading classes to look up inheritance hierarchies. Avoid infinite recursion.
         }
-        
+
         if (!processesClass(classType)) {
             return Phases.NONE; // If there is no chance of the class being processed, we do not bother.
         }
@@ -83,12 +83,12 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
 
         return this.generatesClass(classType) ? Phases.AFTER_ONLY : Phases.NONE;
     }
-    
+
     private boolean processesClass(Type classType) {
         MixinEnvironment environment = MixinEnvironment.getCurrentEnvironment();
         return this.service.getMixinTransformer().couldTransformClass(environment, classType.getClassName());
     }
-        
+
     @Override
     public boolean processClass(Phase phase, ClassNode classNode, Type classType, String reason) {
         try {

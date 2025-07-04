@@ -7,11 +7,9 @@ package net.neoforged.fml.loading.mixin;
 
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.jarhandling.VirtualJar;
-
+import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import net.neoforged.fml.loading.FMLLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
