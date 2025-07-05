@@ -1,0 +1,146 @@
+package cpw.mods.jarhandling.impl;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import cpw.mods.jarhandling.JarContents;
+import cpw.mods.jarhandling.JarMetadata;
+import java.io.IOException;
+import java.lang.module.ModuleDescriptor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import net.neoforged.fml.testlib.ModFileBuilder;
+import net.neoforged.fml.testlib.ModuleInfoWriter;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+public class JarMetadataTest {
+    @TempDir
+    Path tempDir;
+
+    @Nested
+    class WithModuleInfo {
+        @Test
+        void testSimpleNamedModule() throws IOException {
+            var originalDescriptor = ModuleDescriptor.newModule("test_module")
+                    .requires(Set.of(), "other_module")
+                    .provides("service.Interface", List.of("provider.Class"))
+                    .exports("exported.pkg")
+                    .opens("opened.pkg", Set.of("opened_to"))
+                    .packages(Set.of("pkg1", "pkg1.other"))
+                    .uses("other.Service")
+                    .version("1.0").build();
+            var metadata = getJarMetadata(originalDescriptor);
+
+            assertEquals("test_module", metadata.name());
+            assertEquals("1.0", metadata.version());
+            var descriptor = metadata.descriptor();
+            assertEquals(originalDescriptor.name(), descriptor.name());
+            assertEquals(originalDescriptor.rawVersion(), descriptor.rawVersion());
+            assertEquals(originalDescriptor.packages(), descriptor.packages());
+            assertEquals(originalDescriptor.exports(), descriptor.exports());
+            assertEquals(originalDescriptor.provides(), descriptor.provides());
+            assertEquals(originalDescriptor.uses(), descriptor.uses());
+
+            assertEquals(Set.of(ModuleDescriptor.Modifier.OPEN), descriptor.modifiers(), "All modules should be opened automatically.");
+            assertEquals(Set.of(), descriptor.opens(), "Open modules has no explicit set of opens");
+        }
+
+        @Test
+        void testModuleInfoInMetaInfVersions() throws IOException {
+            var moduleInfo = ModuleInfoWriter.toByteArray(ModuleDescriptor.newModule("test_module").version("1.0").build());
+            var metadata = getJarMetadata("test.jar", builder -> builder
+                    .withManifest(Map.of("Multi-Release", "true"))
+                    .addBinaryFile("META-INF/versions/9/module-info.class", moduleInfo));
+
+            assertEquals("test_module", metadata.name());
+            assertEquals("1.0", metadata.version());
+        }
+
+        // A broken module-info.class shouldn't be ignored
+        @Test
+        void testCorruptedModuleInfo() {
+            assertThrows(Exception.class, () -> getJarMetadata("test.jar", builder -> builder.addTextFile("module-info.class", "JUNK")));
+        }
+    }
+
+    @Nested
+    class NonModularWithoutAutomaticModuleName {
+        @Test
+        void testMavenJar() throws IOException {
+            var path = "startofthepathchain/new-protected-class-1.16.5/1.1_mapped_official_1.17.1/new-protected-class-1.16.5-1.1_mapped_official_1.17.1-api.jar";
+            var meta = getJarMetadata(path, builder -> {});
+            assertEquals("_new._protected._class._1._16._5", meta.name());
+            assertEquals("1.1_mapped_official_1.17.1", meta.version());
+        }
+
+        @Test
+        void testNumberStart() throws IOException {
+            var path = "mods/1life-1.5.jar";
+            var meta = getJarMetadata(path, builder -> {});
+            assertEquals("_1life", meta.name());
+            assertEquals("1.5", meta.version());
+        }
+
+        @Test
+        void testUnrecognizableVersion() throws IOException {
+            var path = "mods/noversion.jar";
+            var meta = getJarMetadata(path, builder -> {});
+            assertEquals("noversion", meta.name());
+            assertNull(meta.version());
+
+            var descriptor = meta.descriptor();
+            assertEquals("noversion", descriptor.name());
+            assertEquals(Optional.empty(), descriptor.rawVersion());
+        }
+    }
+
+    @Nested
+    class NonModularWithAutomaticModuleName {
+        @Test
+        void testAutomaticModuleName() throws IOException {
+            var meta = getJarMetadata("test.jar", builder -> {
+                builder.withManifest(Map.of(
+                        "Automatic-Module-Name", "helloworld"));
+            });
+            assertEquals("helloworld", meta.name());
+            assertNull(meta.version());
+        }
+    }
+
+    // Compute JarMetadata for a Jar that only contains a module-info.class with the given descriptor.
+    private JarMetadata getJarMetadata(ModuleDescriptor descriptor) throws IOException {
+        return getJarMetadata("test.jar", b -> b.withModuleInfo(descriptor));
+    }
+
+    private JarMetadata getJarMetadata(String path, ModFileCustomizer consumer) throws IOException {
+        var testJar = tempDir.resolve(path);
+
+        Files.createDirectories(testJar.getParent());
+
+        var builder = new ModFileBuilder(testJar);
+        try {
+            consumer.customize(builder);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+        builder.build();
+
+        try (var jc = JarContents.of(testJar)) {
+            var metadata = JarMetadata.from(jc);
+            metadata.descriptor(); // This causes the packages to be scanned so we can close the unionfs
+            return metadata;
+        }
+    }
+
+    @FunctionalInterface
+    interface ModFileCustomizer {
+        void customize(ModFileBuilder builder) throws IOException;
+    }
+}
