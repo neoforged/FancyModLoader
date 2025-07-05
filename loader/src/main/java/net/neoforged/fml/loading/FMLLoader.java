@@ -25,6 +25,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.IBindingsProvider;
 import net.neoforged.fml.common.asm.AccessTransformerService;
 import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
+import net.neoforged.fml.loading.mixin.FMLMixinLaunchPlugin;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModValidator;
@@ -40,6 +41,7 @@ import org.slf4j.Logger;
 public class FMLLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static AccessTransformerEngine accessTransformer;
+    private static FMLMixinLaunchPlugin mixinLaunchPlugin;
     private static LanguageProviderLoader languageProviderLoader;
     private static Dist dist;
     private static LoadingModList loadingModList;
@@ -90,6 +92,12 @@ public class FMLLoader {
         });
         LOGGER.debug(LogMarkers.CORE, "Found NeoForgeDev Dist Cleaner");
 
+        mixinLaunchPlugin = (FMLMixinLaunchPlugin) environment.findLaunchPlugin(FMLMixinLaunchPlugin.NAME).orElseThrow(() -> {
+            LOGGER.error(LogMarkers.CORE, "FMLMixinLaunchPlugin is missing, we need this to run");
+            return new IncompatibleEnvironmentException("Missing FMLMixinLaunchPlugin, cannot run!");
+        });
+        LOGGER.debug(LogMarkers.CORE, "Found FMLMixinLaunchPlugin");
+
         try {
             Class.forName("com.electronwill.nightconfig.core.Config", false, environment.getClass().getClassLoader());
             Class.forName("com.electronwill.nightconfig.toml.TomlFormat", false, environment.getClass().getClassLoader());
@@ -120,6 +128,7 @@ public class FMLLoader {
         dist = commonLaunchHandler.getDist();
         production = commonLaunchHandler.isProduction();
         neoForgeDevDistCleaner.setDistribution(dist);
+        mixinLaunchPlugin.setup();
     }
 
     public static List<ITransformationService.Resource> beginModScan(ILaunchContext launchContext) {
