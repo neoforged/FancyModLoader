@@ -72,9 +72,7 @@ public class ModFileBuilder {
     }
 
     public ModFileBuilder withModuleInfo(ModuleDescriptor descriptor) throws IOException {
-        var moduleInfo = ModuleInfoWriter.toByteArray(descriptor);
-        Files.write(memoryFsRoot.resolve("module-info.class"), moduleInfo);
-        return this;
+        return addBinaryFile("module-info.class", ModuleInfoWriter.toByteArray(descriptor));
     }
 
     public ModFileBuilder withManifest(Map<String, String> manifest) {
@@ -118,6 +116,15 @@ public class ModFileBuilder {
             Files.createDirectories(p.getParent());
         }
         Files.writeString(p, content, StandardCharsets.UTF_8);
+        return this;
+    }
+
+    public ModFileBuilder addBinaryFile(String path, byte[] content) throws IOException {
+        var p = memoryFsRoot.resolve(path);
+        if (p.getParent() != null) {
+            Files.createDirectories(p.getParent());
+        }
+        Files.write(p, content);
         return this;
     }
 

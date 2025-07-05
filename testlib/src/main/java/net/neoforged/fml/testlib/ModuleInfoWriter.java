@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fml.testlib;
 
 import java.lang.module.ModuleDescriptor;
@@ -22,14 +27,16 @@ public final class ModuleInfoWriter {
             mv.visitRequire(req.name(), mask(req.accessFlags()), req.compiledVersion().map(Object::toString).orElse(null));
         });
 
-        descriptor.exports().forEach(exp -> mv.visitExport(exp.source(), mask(exp.accessFlags()), exp.targets() == null ? null : exp.targets().toArray(new String[0])));
+        descriptor.exports().forEach(exp -> mv.visitExport(toBinaryName(exp.source()), mask(exp.accessFlags()), exp.targets() == null ? null : exp.targets().toArray(new String[0])));
 
-        descriptor.opens().forEach(open -> mv.visitOpen(open.source(), mask(open.accessFlags()), open.targets() == null ? null : open.targets().toArray(new String[0])));
+        descriptor.opens().forEach(open -> mv.visitOpen(toBinaryName(open.source()), mask(open.accessFlags()), open.targets() == null ? null : open.targets().toArray(new String[0])));
 
-        descriptor.uses().forEach(use -> mv.visitUse(use.replace('.', '/')));
+        descriptor.uses().forEach(use -> mv.visitUse(toBinaryName(use)));
 
-        descriptor.provides().forEach(prov -> mv.visitProvide(prov.service().replace('.', '/'),
-                prov.providers().stream().map(p -> p.replace('.', '/')).toArray(String[]::new)));
+        descriptor.provides().forEach(prov -> mv.visitProvide(toBinaryName(prov.service()),
+                prov.providers().stream().map(ModuleInfoWriter::toBinaryName).toArray(String[]::new)));
+
+        descriptor.packages().forEach(p -> mv.visitPackage(toBinaryName(p)));
 
         mv.visitEnd();
         cw.visitEnd();
@@ -42,6 +49,10 @@ public final class ModuleInfoWriter {
         }
 
         return data;
+    }
+
+    private static String toBinaryName(String name) {
+        return name.replace('.', '/');
     }
 
     private static int mask(Set<AccessFlag> flags) {
