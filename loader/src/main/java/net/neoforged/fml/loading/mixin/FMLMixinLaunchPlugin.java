@@ -63,10 +63,6 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
             return Phases.NONE; // We're recursively loading classes to look up inheritance hierarchies. Avoid infinite recursion.
         }
 
-        if (!processesClass(classType)) {
-            return Phases.NONE; // If there is no chance of the class being processed, we do not bother.
-        }
-
         // Throw if the class was previously determined to be invalid
         String name = classType.getClassName();
         if (this.service.getClassTracker().isInvalidClass(name)) {
@@ -74,7 +70,10 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
         }
 
         if (!isEmpty) {
-            return Phases.AFTER_ONLY;
+            if (processesClass(classType)) {
+                return Phases.AFTER_ONLY;
+            }
+            // If there is no chance of the class being processed, we do not bother.
         }
 
         if (this.service.getMixinTransformer().getExtensions().getSyntheticClassRegistry() == null) {
