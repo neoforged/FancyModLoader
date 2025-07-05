@@ -56,7 +56,7 @@ public interface JarMetadata {
     static JarMetadata from(JarContents jar) {
         var mi = jar.findFile("module-info.class");
         if (mi.isPresent()) {
-            return new ModuleJarMetadata(mi.get(), jar::getPackages);
+            return new ModuleJarMetadata(mi.get());
         } else {
             var nav = computeNameAndVersion(jar.getPrimaryPath());
             String name = nav.name();
