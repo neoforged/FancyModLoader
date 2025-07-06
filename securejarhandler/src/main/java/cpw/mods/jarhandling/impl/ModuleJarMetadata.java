@@ -20,10 +20,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ModuleJarMetadata extends LazyJarMetadata {
     private final ModuleDescriptor originalDescriptor;
+    // If null, the package list from originalDescriptor will be used as-is
     @Nullable
     private final Supplier<Set<String>> packagesSupplier;
 
     public ModuleJarMetadata(URI uri, Supplier<Set<String>> packagesSupplier) {
+        // When ModuleDescriptor#read requests the package list, it means the module-info.class didn't contain one
+        // In that case, we need to use the packagesSupplier lazily in computeDescriptor.
         boolean[] packagesSupplierUsed = { false };
         try (var is = new BufferedInputStream(Files.newInputStream(Path.of(uri)))) {
             this.originalDescriptor = ModuleDescriptor.read(is, () -> {
