@@ -4,6 +4,7 @@ import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.SecureJar;
 import java.io.File;
+import java.io.IOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
@@ -18,7 +19,7 @@ public class TestjarUtil {
     /**
      * Build a layer for a {@code testjarX} source set.
      */
-    private static BuiltLayer buildTestjarLayer(int testjar, List<ModuleLayer> parentLayers) {
+    private static BuiltLayer buildTestjarLayer(int testjar, List<ModuleLayer> parentLayers) throws IOException {
         var paths = Stream.of(System.getenv("sjh.testjar" + testjar).split(File.pathSeparator))
                 .map(Paths::get)
                 .toArray(Path[]::new);

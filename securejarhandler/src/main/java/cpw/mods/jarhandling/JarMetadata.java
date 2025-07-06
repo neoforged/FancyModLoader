@@ -44,15 +44,15 @@ public interface JarMetadata {
      * from {@code Automatic-Module-Name} in the manifest.
      */
     static JarMetadata from(JarContents jar) {
-        var mi = jar.findFile("module-info.class");
-        if (mi.isPresent()) {
-            return new ModuleJarMetadata(mi.get(), jar);
+        var moduleInfoResource = jar.get("module-info.class");
+        if (moduleInfoResource != null) {
+            return new ModuleJarMetadata(moduleInfoResource, jar);
         } else {
             var nav = computeNameAndVersion(jar.getPrimaryPath());
             String name = nav.name();
             String version = nav.version();
 
-            String automaticModuleName = jar.getManifest().getMainAttributes().getValue("Automatic-Module-Name");
+            String automaticModuleName = jar.getManifestAttribute("Automatic-Module-Name");
             if (automaticModuleName != null) {
                 name = automaticModuleName;
             }

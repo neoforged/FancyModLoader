@@ -191,7 +191,7 @@ public class ModDiscoverer {
 
             JarContents jarContents;
             try {
-                jarContents = JarContents.of(groupedPaths);
+                jarContents = JarContents.ofPaths(groupedPaths);
             } catch (Exception e) {
                 if (causeChainContains(e, ZipException.class)) {
                     addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile.invalidzip").withAffectedPath(primaryPath).withCause(e));

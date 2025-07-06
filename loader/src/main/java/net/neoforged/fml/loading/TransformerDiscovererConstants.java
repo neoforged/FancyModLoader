@@ -47,7 +47,12 @@ public final class TransformerDiscovererConstants {
             net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider.class.getName());
 
     public static boolean shouldLoadInServiceLayer(Collection<Path> paths) {
-        var contents = JarContents.of(paths);
+        JarContents contents;
+        try {
+            contents = JarContents.ofPaths(paths);
+        } catch (IOException e) {
+            return false;
+        }
         try {
             return shouldLoadInServiceLayer(contents);
         } finally {
@@ -83,12 +88,8 @@ public final class TransformerDiscovererConstants {
         // If we get here, the Jar is non-modular, so we check for matching service files
         for (var service : SERVICES) {
             var serviceFile = "META-INF/services/" + service;
-            try {
-                if (jarContents.containsFile(serviceFile)) {
-                    return true; // Found a match
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException("Failed to check for service-file " + serviceFile + " in " + jarContents, e);
+            if (jarContents.containsFile(serviceFile)) {
+                return true; // Found a match
             }
         }
 

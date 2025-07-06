@@ -181,7 +181,7 @@ public class ScanDataTest {
         }
     }
 
-    private static TestModFile modFile() {
+    private static TestModFile modFile() throws IOException {
         return TestModFile.newInstance("""
                 license="LGPL v3"
 

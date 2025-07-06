@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 public class TestMultiRelease {
     @Test
-    public void testMultiRelease() {
+    public void testMultiRelease() throws IOException {
         Path rootDir = Paths.get("src", "test", "resources", "multirelease");
         var jar = SecureJar.from(rootDir);
 
