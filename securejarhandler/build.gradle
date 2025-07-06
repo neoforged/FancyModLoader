@@ -1,43 +1,5 @@
 import javax.inject.Inject
 
-allprojects {
-    apply plugin: 'eclipse'
-    apply plugin: 'org.gradlex.extra-java-module-info'
-
-    dependencies.testRuntimeOnly('org.apiguardian:apiguardian-api:1.1.2') // No idea why, but windows needs this to not explode.
-
-    extraJavaModuleInfo {
-        failOnMissingModuleInfo = false
-        automaticModule('jmh-core-1.35.jar', 'jmh.core')
-    }
-
-    def isNonStable = { String version ->
-        def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { type -> version.toUpperCase().contains(type) }
-        def regex = /^[0-9,.v-]+(-r)?$/
-        return !stableKeyword && !(version ==~ regex)
-    }
-
-    dependencyUpdates {
-        rejectVersionIf {
-            isNonStable(it.candidate.version)
-        }
-    }
-
-    // Hack eclipse into knowing that the gradle deps are modules
-    eclipse {
-        classpath {
-            containers 'org.eclipse.buildship.core.gradleclasspathcontainer'
-            file {
-                whenMerged {
-                    entries.findAll { it.kind == 'con' && it.path == 'org.eclipse.buildship.core.gradleclasspathcontainer' }.each {
-                        it.entryAttributes['module'] = 'true'
-                    }
-                }
-            }
-        }
-    }
-}
-
 sourceSets {
     // Additional test JARs, to be loaded via SecureJar.from(...)
     testjar1 {}
@@ -64,10 +26,9 @@ compileTestJava {
 }
 
 dependencies {
-    api("org.ow2.asm:asm:${project.asm_version}")
-    api("org.ow2.asm:asm-tree:${project.asm_version}")
-    api("org.ow2.asm:asm-commons:${project.asm_version}")
     compileOnly("org.jetbrains:annotations:${project.jetbrains_annotations_version}")
+    testImplementation("org.ow2.asm:asm:${project.asm_version}")
+    testImplementation("org.ow2.asm:asm-tree:${project.asm_version}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${project.jupiter_version}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${project.jupiter_version}")
     testImplementation(project(":testlib"))
@@ -98,8 +59,6 @@ test {
 
     // Add SJH and its dependencies to the module path
     var commandLineArgs = objects.newInstance(TestsCommandLineArgs)
-    // Dependencies
-    commandLineArgs.modulePath.from(test.classpath.filter { it.name.contains("asm") })
     // SJH itself
     commandLineArgs.modulePath.from(sourceSets.main.output.classesDirs.asPath)
     jvmArgumentProviders.add(commandLineArgs)
