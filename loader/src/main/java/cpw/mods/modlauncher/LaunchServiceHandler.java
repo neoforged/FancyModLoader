@@ -47,10 +47,9 @@ class LaunchServiceHandler {
         return Optional.ofNullable(launchHandlerLookup.getOrDefault(name, null)).map(LaunchServiceHandlerDecorator::service);
     }
 
-    private void launch(String target, String[] arguments, ModuleLayer gameLayer, TransformingClassLoader classLoader, final LaunchPluginHandler launchPluginHandler) {
+    private void launch(String target, String[] arguments, ModuleLayer gameLayer, TransformingClassLoader classLoader) {
         final LaunchServiceHandlerDecorator launchServiceHandlerDecorator = launchHandlerLookup.get(target);
         final NamedPath[] paths = launchServiceHandlerDecorator.service().getPaths();
-        launchPluginHandler.announceLaunch(classLoader, paths);
         LOGGER.info(MODLAUNCHER, "Launching target '{}' with arguments {}", target, hideAccessToken(arguments));
         launchServiceHandlerDecorator.launch(arguments, gameLayer);
     }
@@ -67,10 +66,10 @@ class LaunchServiceHandler {
         return output;
     }
 
-    public void launch(ArgumentHandler argumentHandler, ModuleLayer gameLayer, TransformingClassLoader classLoader, final LaunchPluginHandler launchPluginHandler) {
+    public void launch(ArgumentHandler argumentHandler, ModuleLayer gameLayer, TransformingClassLoader classLoader) {
         String launchTarget = argumentHandler.getLaunchTarget();
         String[] args = argumentHandler.buildArgumentList();
-        launch(launchTarget, args, gameLayer, classLoader, launchPluginHandler);
+        launch(launchTarget, args, gameLayer, classLoader);
     }
 
     void validateLaunchTarget(final ArgumentHandler argumentHandler) {

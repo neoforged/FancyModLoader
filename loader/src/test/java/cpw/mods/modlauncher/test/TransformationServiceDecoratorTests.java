@@ -22,7 +22,7 @@ import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformTargetLabel;
 import cpw.mods.modlauncher.TransformationServiceDecorator;
 import cpw.mods.modlauncher.api.ITransformer;
-import cpw.mods.modlauncher.api.ITransformerVotingContext;
+import cpw.mods.modlauncher.api.ITransformationContext;
 import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
 import java.util.Collection;
@@ -73,12 +73,12 @@ class TransformationServiceDecoratorTests {
 
     private static class ClassNodeTransformer implements ITransformer<ClassNode> {
         @Override
-        public ClassNode transform(ClassNode input, ITransformerVotingContext context) {
+        public ClassNode transform(ClassNode input, ITransformationContext context) {
             return input;
         }
 
         @Override
-        public TransformerVoteResult castVote(ITransformerVotingContext context) {
+        public TransformerVoteResult castVote(ITransformationContext context) {
             return TransformerVoteResult.YES;
         }
 
@@ -95,12 +95,12 @@ class TransformationServiceDecoratorTests {
 
     private static class MethodNodeTransformer implements ITransformer<MethodNode> {
         @Override
-        public MethodNode transform(MethodNode input, ITransformerVotingContext context) {
+        public MethodNode transform(MethodNode input, ITransformationContext context) {
             return input;
         }
 
         @Override
-        public TransformerVoteResult castVote(ITransformerVotingContext context) {
+        public TransformerVoteResult castVote(ITransformationContext context) {
             return TransformerVoteResult.YES;
         }
 

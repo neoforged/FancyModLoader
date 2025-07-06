@@ -14,10 +14,8 @@
 
 package cpw.mods.modlauncher;
 
-import cpw.mods.modlauncher.api.ITransformerActivity;
-import cpw.mods.modlauncher.api.ITransformerVotingContext;
-import java.util.List;
-import java.util.function.Supplier;
+import cpw.mods.modlauncher.api.ITransformationContext;
+import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
@@ -28,21 +26,14 @@ import org.objectweb.asm.tree.MethodNode;
 /**
  * The internal vote context structure.
  */
-class VotingContext implements ITransformerVotingContext {
+@ApiStatus.Internal
+public class TransformationContext implements ITransformationContext {
     private static final Object[] EMPTY = new Object[0];
     private final String className;
-    private final boolean classExists;
-    private final Supplier<byte[]> sha256;
-    private final List<ITransformerActivity> auditActivities;
-    private final String reason;
     private Object node;
 
-    VotingContext(String className, boolean classExists, Supplier<byte[]> sha256sum, final List<ITransformerActivity> activities, final String reason) {
+    public TransformationContext(String className) {
         this.className = className;
-        this.classExists = classExists;
-        this.sha256 = sha256sum;
-        this.auditActivities = activities;
-        this.reason = reason;
     }
 
     @Override
@@ -50,27 +41,7 @@ class VotingContext implements ITransformerVotingContext {
         return className;
     }
 
-    @Override
-    public boolean doesClassExist() {
-        return classExists;
-    }
-
-    @Override
-    public byte[] getInitialClassSha256() {
-        return sha256.get();
-    }
-
-    @Override
-    public List<ITransformerActivity> getAuditActivities() {
-        return auditActivities;
-    }
-
-    @Override
-    public String getReason() {
-        return reason;
-    }
-
-    <T> void setNode(final T node) {
+    public <T> void setNode(final T node) {
         this.node = node;
     }
 

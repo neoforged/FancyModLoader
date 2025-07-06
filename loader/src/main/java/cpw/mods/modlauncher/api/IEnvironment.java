@@ -15,6 +15,8 @@
 package cpw.mods.modlauncher.api;
 
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
+import net.neoforged.neoforgespi.transformation.IClassProcessor;
+
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -47,12 +49,12 @@ public interface IEnvironment {
     <T> T computePropertyIfAbsent(TypesafeMap.Key<T> key, final Function<? super TypesafeMap.Key<T>, ? extends T> valueFunction);
 
     /**
-     * Find the named {@link ILaunchPluginService}
+     * Find the named {@link IClassProcessor}
      *
      * @param name name to lookup
      * @return the launch plugin
      */
-    Optional<ILaunchPluginService> findLaunchPlugin(String name);
+    Optional<IClassProcessor> findTransformer(String name);
 
     /**
      * Find the named {@link ILaunchHandlerService}

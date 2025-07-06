@@ -14,13 +14,13 @@
 
 package cpw.mods.modlauncher;
 
-import cpw.mods.modlauncher.api.ITransformerActivity;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import net.neoforged.neoforgespi.transformation.IClassProcessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.ClassReader;
@@ -39,10 +39,10 @@ class TransformerClassWriter extends ClassWriter {
     private boolean computedThis = false;
 
     public static ClassWriter createClassWriter(final int mlFlags, final ClassTransformer classTransformer, final ClassNode clazzAccessor) {
-        final int writerFlag = mlFlags & ~ILaunchPluginService.ComputeFlags.SIMPLE_REWRITE; //Strip any modlauncher-custom fields
+        final int writerFlag = mlFlags & ~IClassProcessor.ComputeFlags.SIMPLE_REWRITE; //Strip any modlauncher-custom fields
 
         //Only use the TransformerClassWriter when needed as it's slower, and only COMPUTE_FRAMES calls getCommonSuperClass
-        return (writerFlag & ILaunchPluginService.ComputeFlags.COMPUTE_FRAMES) != 0 ? new TransformerClassWriter(writerFlag, classTransformer, clazzAccessor) : new ClassWriter(writerFlag);
+        return (writerFlag & IClassProcessor.ComputeFlags.COMPUTE_FRAMES) != 0 ? new TransformerClassWriter(writerFlag, classTransformer, clazzAccessor) : new ClassWriter(writerFlag);
     }
 
     private TransformerClassWriter(final int writerFlags, final ClassTransformer classTransformer, final ClassNode clazzAccessor) {
@@ -143,7 +143,7 @@ class TransformerClassWriter extends ClassWriter {
      */
     private void computeHierarchyFromFile(final String className) {
         try {
-            byte[] classData = classTransformer.getTransformingClassLoader().buildTransformedClassNodeFor(className.replace('/', '.'), ITransformerActivity.COMPUTING_FRAMES_REASON);
+            byte[] classData = classTransformer.getTransformingClassLoader().buildTransformedClassNodeFor(className.replace('/', '.'), IClassProcessor.COMPUTING_FRAMES);
             ClassReader classReader = new ClassReader(classData);
             classReader.accept(new SuperCollectingVisitor(), ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
         } catch (ClassNotFoundException e) {

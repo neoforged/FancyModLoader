@@ -6,13 +6,13 @@
 package net.neoforged.fml.loading.moddiscovery.locators;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
+
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforgespi.transformation.IClassProcessor;
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
@@ -24,10 +24,9 @@ import org.slf4j.MarkerFactory;
  * informative exception.
  */
 @ApiStatus.Internal
-public class NeoForgeDevDistCleaner implements ILaunchPluginService {
+public class NeoForgeDevDistCleaner implements IClassProcessor {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Marker DISTXFORM = MarkerFactory.getMarker("DISTXFORM");
-    private static final EnumSet<Phase> EMPTY = EnumSet.noneOf(Phase.class);
 
     private Dist dist;
 
@@ -39,7 +38,18 @@ public class NeoForgeDevDistCleaner implements ILaunchPluginService {
     }
 
     @Override
-    public EnumSet<Phase> handlesClass(Type classType, boolean isEmpty) {
+    public Set<String> runsBefore() {
+        // Might as well run as early as we sensibly can, so that we can catch issues before other transformers run their checks
+        return Set.of(IClassProcessor.COMPUTING_FRAMES);
+    }
+
+    @Override
+    public Set<String> runsAfter() {
+        return Set.of();
+    }
+
+    @Override
+    public boolean handlesClass(Type classType, boolean isEmpty) {
         if (maskedClasses.contains(classType.getClassName())) {
             String message = String.format("Attempted to load class %s which is not present on the %s", classType.getClassName(), switch (dist) {
                 case CLIENT -> "client";
@@ -53,7 +63,7 @@ public class NeoForgeDevDistCleaner implements ILaunchPluginService {
             // best to be consistent here.
             throwUnchecked(new ClassNotFoundException(message));
         }
-        return EMPTY;
+        return false;
     }
 
     @SuppressWarnings("unchecked")

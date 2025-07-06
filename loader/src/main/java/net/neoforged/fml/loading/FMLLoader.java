@@ -9,7 +9,6 @@ import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ILaunchHandlerService;
-import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -61,10 +60,9 @@ public class FMLLoader {
     static void onInitialLoad(IEnvironment environment) throws IncompatibleEnvironmentException {
         final String version = LauncherVersion.getVersion();
         LOGGER.debug(LogMarkers.CORE, "FML {} loading", version);
-        final Package modLauncherPackage = ITransformationService.class.getPackage();
         LOGGER.debug(LogMarkers.CORE, "FML found ModLauncher version : {}", environment.getProperty(IEnvironment.Keys.MLIMPL_VERSION.get()).orElse("unknown"));
 
-        accessTransformer = ((AccessTransformerService) environment.findLaunchPlugin("accesstransformer").orElseThrow(() -> {
+        accessTransformer = ((AccessTransformerService) environment.findTransformer("accesstransformer").orElseThrow(() -> {
             LOGGER.error(LogMarkers.CORE, "Access Transformer library is missing, we need this to run");
             return new IncompatibleEnvironmentException("Missing AccessTransformer, cannot run");
         })).engine;
@@ -84,7 +82,7 @@ public class FMLLoader {
             throw new IncompatibleEnvironmentException("Missing EventBus, cannot run");
         }
 
-        neoForgeDevDistCleaner = (NeoForgeDevDistCleaner) environment.findLaunchPlugin("neoforgedevdistcleaner").orElseThrow(() -> {
+        neoForgeDevDistCleaner = (NeoForgeDevDistCleaner) environment.findTransformer("neoforgedevdistcleaner").orElseThrow(() -> {
             LOGGER.error(LogMarkers.CORE, "NeoForgeDevDistCleaner is missing, we need this to run");
             return new IncompatibleEnvironmentException("Missing NeoForgeDevDistCleaner, cannot run!");
         });
@@ -122,7 +120,7 @@ public class FMLLoader {
         neoForgeDevDistCleaner.setDistribution(dist);
     }
 
-    public static List<ITransformationService.Resource> beginModScan(ILaunchContext launchContext) {
+    public static List<FMLServiceProvider.Resource> beginModScan(ILaunchContext launchContext) {
         var additionalLocators = new ArrayList<IModFileCandidateLocator>();
         commonLaunchHandler.collectAdditionalModFileLocators(versionInfo, additionalLocators::add);
 
@@ -132,7 +130,7 @@ public class FMLLoader {
         return List.of(pluginResources);
     }
 
-    public static List<ITransformationService.Resource> completeScan(ILaunchContext launchContext, List<String> extraMixinConfigs) {
+    public static List<FMLServiceProvider.Resource> completeScan(ILaunchContext launchContext, List<String> extraMixinConfigs) {
         languageProviderLoader = new LanguageProviderLoader(launchContext);
         backgroundScanHandler = modValidator.stage2Validation();
         loadingModList = backgroundScanHandler.getLoadingModList();

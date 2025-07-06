@@ -5,13 +5,14 @@
 
 package net.neoforged.fml.common.asm;
 
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-import java.util.EnumSet;
+import java.util.Set;
+
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
+import net.neoforged.neoforgespi.transformation.IClassProcessor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
-public class AccessTransformerService implements ILaunchPluginService {
+public class AccessTransformerService implements IClassProcessor {
     public final AccessTransformerEngine engine = AccessTransformerEngine.newEngine();
 
     @Override
@@ -20,15 +21,17 @@ public class AccessTransformerService implements ILaunchPluginService {
     }
 
     @Override
-    public int processClassWithFlags(final Phase phase, final ClassNode classNode, final Type classType, final String reason) {
+    public Set<String> runsBefore() {
+        return Set.of("mixin");
+    }
+
+    @Override
+    public int processClassWithFlags(final ClassNode classNode, final Type classType) {
         return engine.transform(classNode, classType) ? ComputeFlags.SIMPLE_REWRITE : ComputeFlags.NO_REWRITE;
     }
 
-    private static final EnumSet<Phase> YAY = EnumSet.of(Phase.BEFORE);
-    private static final EnumSet<Phase> NAY = EnumSet.noneOf(Phase.class);
-
     @Override
-    public EnumSet<Phase> handlesClass(final Type classType, final boolean isEmpty) {
-        return !isEmpty && engine.getTargets().contains(classType) ? YAY : NAY;
+    public boolean handlesClass(final Type classType, final boolean isEmpty) {
+        return !isEmpty && engine.getTargets().contains(classType);
     }
 }

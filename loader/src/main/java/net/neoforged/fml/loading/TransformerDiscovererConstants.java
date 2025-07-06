@@ -9,7 +9,6 @@ import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.IModuleLayerManager.Layer;
-import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -37,7 +36,6 @@ public final class TransformerDiscovererConstants {
      * {@link Layer#SERVICE} module layer.
      */
     public static final Set<String> SERVICES = Set.of(
-            ITransformationService.class.getName(),
             IModFileCandidateLocator.class.getName(),
             IModFileReader.class.getName(),
             IDependencyLocator.class.getName(),

@@ -27,7 +27,7 @@ import cpw.mods.modlauncher.TransformTargetLabel;
 import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
-import cpw.mods.modlauncher.api.ITransformerVotingContext;
+import cpw.mods.modlauncher.api.ITransformationContext;
 import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
 import java.util.Collections;
@@ -93,13 +93,13 @@ class ClassTransformerTests {
     private ITransformer<FieldNode> fieldNodeTransformer1() {
         return new ITransformer<>() {
             @Override
-            public FieldNode transform(FieldNode input, ITransformerVotingContext context) {
+            public FieldNode transform(FieldNode input, ITransformationContext context) {
                 input.value = "CHEESE";
                 return input;
             }
 
             @Override
-            public TransformerVoteResult castVote(ITransformerVotingContext context) {
+            public TransformerVoteResult castVote(ITransformationContext context) {
                 return TransformerVoteResult.YES;
             }
 
@@ -118,7 +118,7 @@ class ClassTransformerTests {
     private ITransformer<ClassNode> classTransformer() {
         return new ITransformer<>() {
             @Override
-            public ClassNode transform(ClassNode input, ITransformerVotingContext context) {
+            public ClassNode transform(ClassNode input, ITransformationContext context) {
                 input.superName = "java/lang/Object";
                 FieldNode fn = new FieldNode(Opcodes.ACC_PUBLIC, "testfield", "Ljava/lang/String;", null, null);
                 input.fields.add(fn);
@@ -126,7 +126,7 @@ class ClassTransformerTests {
             }
 
             @Override
-            public TransformerVoteResult castVote(ITransformerVotingContext context) {
+            public TransformerVoteResult castVote(ITransformationContext context) {
                 return TransformerVoteResult.YES;
             }
 

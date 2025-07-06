@@ -278,7 +278,6 @@ public abstract class LauncherTest {
         var lph = new LaunchPluginHandler(environment.getLaunchPlugins());
         gameClassLoader = new TransformingClassLoader(
                 transformStore,
-                lph,
                 launcher.environment(),
                 configuration,
                 parents,

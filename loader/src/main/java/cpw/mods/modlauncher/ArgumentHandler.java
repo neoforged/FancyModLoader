@@ -15,7 +15,6 @@
 package cpw.mods.modlauncher;
 
 import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.modlauncher.api.ITransformationService;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +26,7 @@ import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import joptsimple.util.PathConverter;
 import joptsimple.util.PathProperties;
+import net.neoforged.fml.loading.FMLServiceProvider;
 
 public class ArgumentHandler {
     private String[] args;
@@ -50,7 +50,7 @@ public class ArgumentHandler {
         return new DiscoveryData(optionSet.valueOf(gameDir), optionSet.valueOf(launchTarget), args);
     }
 
-    void processArguments(Environment env, Consumer<OptionParser> parserConsumer, BiConsumer<OptionSet, BiFunction<String, OptionSet, ITransformationService.OptionResult>> resultConsumer) {
+    void processArguments(Environment env, Consumer<OptionParser> parserConsumer, BiConsumer<OptionSet, BiFunction<String, OptionSet, FMLServiceProvider.OptionResult>> resultConsumer) {
         final OptionParser parser = new OptionParser();
         parser.allowsUnrecognizedOptions();
         profileOption = parser.accepts("version", "The version we launched with").withRequiredArg();
@@ -74,8 +74,8 @@ public class ArgumentHandler {
         return this.optionSet.valueOf(launchTarget);
     }
 
-    private ITransformationService.OptionResult optionResults(String serviceName, OptionSet set) {
-        return new ITransformationService.OptionResult() {
+    private FMLServiceProvider.OptionResult optionResults(String serviceName, OptionSet set) {
+        return new FMLServiceProvider.OptionResult() {
             @Override
             public <V> V value(OptionSpec<V> option) {
                 checkOwnership(option);

@@ -6,33 +6,38 @@
 package net.neoforged.fml.loading;
 
 import static net.neoforged.fml.loading.LogMarkers.CORE;
-import static net.neoforged.fml.loading.LogMarkers.LOADING;
 
 import com.mojang.logging.LogUtils;
+import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.modlauncher.ArgumentHandler;
+import cpw.mods.modlauncher.Launcher;
+import cpw.mods.modlauncher.ModuleLayerHandler;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
-import cpw.mods.modlauncher.api.ITransformationService;
-import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
-import java.util.ArrayList;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
+import java.util.ServiceLoader;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import cpw.mods.modlauncher.api.NamedPath;
+import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
+import cpw.mods.modlauncher.util.ServiceLoaderUtils;
 import joptsimple.ArgumentAcceptingOptionSpec;
+import joptsimple.OptionSpec;
 import joptsimple.OptionSpecBuilder;
-import net.neoforged.fml.ModLoader;
-import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.Environment;
 import net.neoforged.neoforgespi.ILaunchContext;
-import net.neoforged.neoforgespi.coremod.ICoreMod;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 
-public class FMLServiceProvider implements ITransformationService {
+@ApiStatus.Internal
+public class FMLServiceProvider {
     private static final Logger LOGGER = LogUtils.getLogger();
     private ArgumentAcceptingOptionSpec<String> modsOption;
     private ArgumentAcceptingOptionSpec<String> modListsOption;
@@ -55,12 +60,6 @@ public class FMLServiceProvider implements ITransformationService {
         Arrays.stream(markerselection.split(",")).forEach(marker -> System.setProperty("forge.logging.marker." + marker.toLowerCase(Locale.ROOT), "ACCEPT"));
     }
 
-    @Override
-    public String name() {
-        return "fml";
-    }
-
-    @Override
     public void initialize(IEnvironment environment) {
         LOGGER.debug(CORE, "Setting up basic FML game directories");
         FMLPaths.setup(environment);
@@ -78,24 +77,31 @@ public class FMLServiceProvider implements ITransformationService {
         Environment.build(environment);
     }
 
-    @Override
     public List<Resource> beginScanning(final IEnvironment environment) {
         LOGGER.debug(CORE, "Initiating mod scan");
         return FMLLoader.beginModScan(launchContext);
     }
 
-    @Override
     public List<Resource> completeScan(final IModuleLayerManager layerManager) {
         Supplier<ModuleLayer> gameLayerSupplier = () -> layerManager.getLayer(IModuleLayerManager.Layer.GAME).orElseThrow();
         return FMLLoader.completeScan(launchContext, mixinConfigsArgumentList);
     }
 
-    @Override
-    public void onLoad(IEnvironment environment, Set<String> otherServices) throws IncompatibleEnvironmentException {
-        FMLLoader.onInitialLoad(environment);
+    public ILaunchContext getLaunchContext() {
+        return this.launchContext;
     }
 
-    @Override
+    public record Resource(IModuleLayerManager.Layer target, List<SecureJar> resources) {}
+
+    public void onLoad(IEnvironment environment) {
+        try {
+            FMLLoader.onInitialLoad(environment);
+        } catch (IncompatibleEnvironmentException e) {
+            LOGGER.error("FML failed to load", e);
+            throw new IllegalStateException(e);
+        }
+    }
+
     public void arguments(BiFunction<String, String, OptionSpecBuilder> argumentBuilder) {
         forgeOption = argumentBuilder.apply("neoForgeVersion", "NeoForge Version number").withRequiredArg().ofType(String.class).required();
         fmlOption = argumentBuilder.apply("fmlVersion", "FML Version number").withRequiredArg().ofType(String.class).required();
@@ -107,7 +113,12 @@ public class FMLServiceProvider implements ITransformationService {
         mixinConfigsOption = argumentBuilder.apply("mixinConfig", "Additional mixin config files to load").withRequiredArg().ofType(String.class);
     }
 
-    @Override
+    public interface OptionResult {
+        <V> V value(OptionSpec<V> options);
+
+        <V> List<V> values(OptionSpec<V> options);
+    }
+
     public void argumentValues(OptionResult option) {
         modsArgumentList = option.values(modsOption);
         modListsArgumentList = option.values(modListsOption);
@@ -119,32 +130,5 @@ public class FMLServiceProvider implements ITransformationService {
                 option.value(mcOption),
                 option.value(mcpOption));
         LOGGER.debug(LogMarkers.CORE, "Received command line version data  : {}", versionInfo);
-    }
-
-    @Override
-    public List<? extends ITransformer<?>> transformers() {
-        LOGGER.debug(LOADING, "Loading coremod transformers");
-
-        var result = new ArrayList<ITransformer<?>>();
-
-        // Find all Java core mods
-        for (var coreMod : ServiceLoaderUtil.loadServices(launchContext, ICoreMod.class)) {
-            // Try to identify the mod-file this is from
-            var sourceFile = ServiceLoaderUtil.identifySourcePath(launchContext, coreMod);
-
-            try {
-                for (var transformer : coreMod.getTransformers()) {
-                    LOGGER.debug(CORE, "Adding {} transformer from core-mod {} in {}", transformer.targets(), coreMod, sourceFile);
-                    result.add(transformer);
-                }
-            } catch (Exception e) {
-                // Throwing here would cause the game to immediately crash without a proper error screen,
-                // since this method is called by ModLauncher directly.
-                ModLoader.addLoadingIssue(
-                        ModLoadingIssue.error("fml.modloadingissue.coremod_error", coreMod.getClass().getName(), sourceFile).withCause(e));
-            }
-        }
-
-        return result;
     }
 }
