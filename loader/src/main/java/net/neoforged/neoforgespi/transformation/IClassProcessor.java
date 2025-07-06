@@ -6,6 +6,10 @@ import org.objectweb.asm.tree.ClassNode;
 
 import java.util.Set;
 
+// TODO: this and IClassProcessorProvider are both on the PLUGIN layer -- the differences from coremods (namely, the
+//  greater flexibility and therefore need to be careful with what you request processing for) should be documented.
+// TODO: should we add some sort of warning screen on load if more than X% of classes are being transformed? This seems doable;
+//  could even count this per-plugin to detect and warn on cases of transform-everything plugins.
 public interface IClassProcessor {
     class ComputeFlags {
         /**

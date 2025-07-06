@@ -57,6 +57,9 @@ public class ClassTransformer {
         if (transformersToUse.isEmpty()) {
             return inputClass;
         }
+        
+        // TODO: reimplement initial-bytecode-hash stuff for coremods? Uncertain how useful this is or where it's used
+        // TODO: reimplement isEmpty check for coremods -- this does seem useful, and coule be exposed to IClassProcessors in general
 
         ClassNode clazz = new ClassNode(Opcodes.ASM9);
         if (inputClass.length > 0) {
