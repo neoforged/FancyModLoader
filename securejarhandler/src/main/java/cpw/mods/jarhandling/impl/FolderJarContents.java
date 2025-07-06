@@ -1,0 +1,182 @@
+package cpw.mods.jarhandling.impl;
+
+import cpw.mods.jarhandling.JarContents;
+import cpw.mods.jarhandling.JarResource;
+import cpw.mods.jarhandling.JarResourceAttributes;
+import cpw.mods.jarhandling.JarResourceVisitor;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
+
+@ApiStatus.Internal
+public record FolderJarContents(Path path) implements JarContents {
+
+    @Override
+    public Path getPrimaryPath() {
+        return path;
+    }
+
+    @Override
+    public Optional<String> getChecksum() {
+        return Optional.empty();
+    }
+
+    @Override
+    public @Nullable JarResource get(String relativePath) {
+        var path = this.path.resolve(relativePath);
+        if (Files.isRegularFile(path)) {
+            return new JarResource() {
+                @Override
+                public InputStream open() throws IOException {
+                    return Files.newInputStream(path);
+                }
+
+                @Override
+                public JarResourceAttributes attributes() throws IOException {
+                    return readAttributes(path);
+                }
+
+                @Override
+                public JarResource retain() {
+                    return this;
+                }
+            };
+        }
+        return null;
+    }
+
+    @Override
+    public boolean containsFile(String relativePath) {
+        return Files.isRegularFile(fromRelativePath(relativePath));
+    }
+
+    @Override
+    public InputStream openFile(String relativePath) throws IOException {
+        try {
+            return Files.newInputStream(fromRelativePath(relativePath));
+        } catch (NoSuchFileException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public byte[] readFile(String relativePath) throws IOException {
+        try {
+            return Files.readAllBytes(fromRelativePath(relativePath));
+        } catch (NoSuchFileException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public Collection<Path> getContentRoots() {
+        return List.of(path);
+    }
+
+    @Override
+    public void visitContent(String startingFolder, JarResourceVisitor visitor) {
+        var startingPoint = getVisitStartingPoint(startingFolder);
+        if (!startingPoint.startsWith(path)) {
+            return; // Don't allow ../ escapes
+        }
+        if (!Files.isDirectory(startingPoint)) {
+            return;
+        }
+
+        try (var stream = Files.walk(startingPoint)) {
+            var locatedResource = new FileResource(null);
+            stream.forEach(path -> {
+                if (Files.isRegularFile(path)) {
+                    var relativePath = PathNormalization.normalize(this.path.relativize(path).toString());
+                    locatedResource.path = path;
+                    visitor.visit(relativePath, locatedResource);
+                }
+            });
+        } catch (NoSuchFileException ignored) {
+            // The specific subfolder doesn't exist
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to walk contents of " + this, e);
+        }
+    }
+
+    private Path getVisitStartingPoint(String startingFolder) {
+        startingFolder = PathNormalization.normalize(startingFolder);
+
+        var startingPoint = path;
+        if (!startingFolder.isEmpty()) {
+            startingPoint = path.resolve(startingFolder).normalize();
+        }
+        return startingPoint;
+    }
+
+    private static JarResourceAttributes readAttributes(Path path) throws IOException {
+        var attributes = Files.getFileAttributeView(path, BasicFileAttributeView.class).readAttributes();
+        return new JarResourceAttributes(attributes.lastModifiedTime(), attributes.size());
+    }
+
+    @Override
+    public Optional<URI> findFile(String relativePath) {
+        var pathToFile = fromRelativePath(relativePath);
+        return pathToFile.toFile().isFile() ? Optional.of(pathToFile.toUri()) : Optional.empty();
+    }
+
+    @Override
+    public Manifest getManifest() {
+        var manifestFile = path.resolve(JarFile.MANIFEST_NAME);
+        try (var in = Files.newInputStream(manifestFile)) {
+            return new Manifest(in);
+        } catch (NoSuchFileException ignored) {} catch (IOException e) {
+            throw new UncheckedIOException("Failed to read manifest " + manifestFile, e);
+        }
+        return EmptyManifest.INSTANCE;
+    }
+
+    @Override
+    public void close() {}
+
+    @Override
+    public String toString() {
+        return path.toString();
+    }
+
+    private Path fromRelativePath(String relativePath) {
+        // Checking for normalization here prevents path escapes
+        PathNormalization.assertNormalized(relativePath);
+        return path.resolve(relativePath);
+    }
+    private static final class FileResource implements JarResource {
+        private Path path;
+
+        public FileResource(Path path) {
+            this.path = path;
+        }
+
+        @Override
+        public InputStream open() throws IOException {
+            return Files.newInputStream(path);
+        }
+
+        @Override
+        public JarResourceAttributes attributes() throws IOException {
+            var attributes = Files.getFileAttributeView(path, BasicFileAttributeView.class).readAttributes();
+            return new JarResourceAttributes(attributes.lastModifiedTime(), attributes.size());
+        }
+
+        @Override
+        public JarResource retain() {
+            return new FileResource(path);
+        }
+    }
+}

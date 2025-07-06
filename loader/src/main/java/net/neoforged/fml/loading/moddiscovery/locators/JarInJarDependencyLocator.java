@@ -5,17 +5,22 @@
 
 package net.neoforged.fml.loading.moddiscovery.locators;
 
-import com.google.common.collect.ImmutableMap;
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.JarContents;
+import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.nio.file.FileSystems;
+import java.io.UncheckedIOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,6 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.jarjar.selection.JarSelector;
 import net.neoforged.neoforgespi.language.IModInfo;
@@ -40,11 +46,10 @@ import org.slf4j.Logger;
 public class JarInJarDependencyLocator implements IDependencyLocator {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    record EmbeddedJarKey(IModFile modFile, Path path) {}
+    record EmbeddedJarKey(IModFile modFile, String relativePath) {}
 
     @Override
     public void scanMods(List<IModFile> loadedMods, IDiscoveryPipeline pipeline) {
-        // JIJ would repeatedly construct mod files for the same path if we didn't cache them
         Map<EmbeddedJarKey, IModFile> createdModFiles = new HashMap<>();
         List<IModFile> dependenciesToLoad = JarSelector.detectAndSelect(
                 loadedMods,
@@ -66,26 +71,101 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
     }
 
     private Optional<IModFile> loadModFileFrom(IModFile file,
-            Path path,
+            String relativePath,
             IDiscoveryPipeline pipeline,
             Map<EmbeddedJarKey, IModFile> createdModFiles) {
-        var key = new EmbeddedJarKey(file, path);
-        return Optional.ofNullable(createdModFiles.computeIfAbsent(key, ignored -> {
+        var key = new EmbeddedJarKey(file, relativePath);
+        var innerModFile = createdModFiles.computeIfAbsent(key, ignored -> {
+            // Copy it to disk as we go, while hashing it
+            var jijCacheDir = FMLPaths.JIJ_CACHEDIR.get();
+            Path tempFile;
             try {
-                var pathInModFile = file.findResource(path.toString());
-                var filePathUri = new URI("jij:" + (pathInModFile.toAbsolutePath().toUri().getRawSchemeSpecificPart())).normalize();
-                var outerFsArgs = ImmutableMap.of("packagePath", pathInModFile);
-                var zipFS = FileSystems.newFileSystem(filePathUri, outerFsArgs);
-                var jar = JarContents.of(zipFS.getPath("/"));
-                return pipeline.readModFile(jar, ModFileDiscoveryAttributes.DEFAULT.withParent(file));
-            } catch (Exception e) {
-                LOGGER.error("Failed to load mod file {} from {}", path, file.getFileName());
-                final RuntimeException exception = new ModFileLoadingException("Failed to load mod file " + file.getFileName());
-                exception.initCause(e);
+                tempFile = Files.createTempFile(jijCacheDir, "_jij", ".tmp");
+            } catch (IOException e) {
+                throw new ModFileLoadingException("Failed to create a temporary file for JIJ in " + jijCacheDir + ": " + e);
+            }
 
+            // Copy the file to the temp-file, while hashing it to produce its final filename
+            Path finalPath;
+            try {
+                String checksum;
+                try (var inStream = file.getContents().openFile(relativePath); var outStream = Files.newOutputStream(tempFile)) {
+                    if (inStream == null) {
+                        LOGGER.error("Mod file {} declares Jar-in-Jar {} but does not contain it.", file, relativePath);
+                        throw new ModFileLoadingException("Mod file " + file + " declares Jar-in-Jar " + relativePath + " but does not contain it.");
+                    }
+
+                    MessageDigest digest;
+                    try {
+                        digest = MessageDigest.getInstance("SHA-256");
+                    } catch (NoSuchAlgorithmException e) {
+                        throw new RuntimeException("Missing default JCA algorithm SHA-256.", e);
+                    }
+
+                    var digestOut = new DigestOutputStream(outStream, digest);
+                    inStream.transferTo(digestOut);
+
+                    checksum = HexFormat.of().formatHex(digest.digest());
+                } catch (IOException e) {
+                    LOGGER.error("Failed to copy Jar-in-Jar file {} from mod file {} to {}", relativePath, file, tempFile, e);
+                    final RuntimeException exception = new ModFileLoadingException("Failed to load mod file " + file.getFileName());
+                    exception.initCause(e);
+                    throw exception;
+                }
+
+                var lastSeparator = relativePath.lastIndexOf('/');
+                String filename = (lastSeparator != -1) ? relativePath.substring(lastSeparator + 1) : relativePath;
+                finalPath = jijCacheDir.resolve(checksum + "/" + filename);
+                // If the file already exists, reuse it, since it might already be opened.
+                if (!Files.isRegularFile(finalPath)) {
+                    try {
+                        Files.createDirectories(finalPath.getParent());
+                    } catch (IOException e) {
+                        throw new UncheckedIOException("Failed to create parent directory for extracted JiJ-file " + tempFile + " at " + finalPath, e);
+                    }
+                    try {
+                        atomicMoveIfPossible(tempFile, finalPath);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException("Failed to move temporary JiJ-file " + tempFile + " to its final location " + finalPath, e);
+                    }
+                }
+            } finally {
+                try {
+                    Files.deleteIfExists(tempFile);
+                } catch (IOException e) {
+                    LOGGER.error("Failed to remove temporary file {}: {}", tempFile, e);
+                }
+            }
+
+            JarContents jar;
+            try {
+                jar = JarContents.ofPath(finalPath);
+            } catch (IOException e) {
+                LOGGER.error("Failed to read Jar-in-Jar file {} extracted from mod file {} to {}", relativePath, file, finalPath, e);
+                final RuntimeException exception = new ModFileLoadingException("Failed to load mod file " + relativePath + " from " + file);
+                exception.initCause(e);
                 throw exception;
             }
-        }));
+            return pipeline.readModFile(jar, ModFileDiscoveryAttributes.DEFAULT.withParent(file));
+        });
+
+        return Optional.ofNullable(innerModFile);
+    }
+
+    /**
+     * Atomically moves the given source file to the given destination file.
+     * If the atomic move is not supported, the file will be moved normally.
+     *
+     * @param source      The source file
+     * @param destination The destination file
+     * @throws IOException If an I/O error occurs
+     */
+    private static void atomicMoveIfPossible(final Path source, final Path destination) throws IOException {
+        try {
+            Files.move(source, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (AtomicMoveNotSupportedException ex) {
+            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     private ModLoadingException exception(Collection<JarSelector.ResolutionFailureInformation<IModFile>> failedDependencies) {
@@ -130,7 +210,7 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
         // If this is a library, it won't have any mod IDs, so we use the module name instead.
         if (modFile.getModInfos().isEmpty()) {
             // Prefix to ensure this cannot collide with any true mod ID.
-            return "library:" + modFile.getModFileInfo().moduleName();
+            return "library:" + modFile.getId();
         }
 
         return modFile.getModInfos().stream().map(IModInfo::getModId).collect(Collectors.joining());
@@ -138,14 +218,14 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
 
     private record ModWithVersionRange(IModInfo modInfo, VersionRange versionRange, ArtifactVersion artifactVersion) {}
 
-    private Optional<InputStream> loadResourceFromModFile(final IModFile modFile, final Path path) {
+    private Optional<InputStream> loadResourceFromModFile(final IModFile modFile, final String relativePath) {
         try {
-            return Optional.of(Files.newInputStream(modFile.findResource(path.toString())));
+            return Optional.ofNullable(modFile.getContents().openFile(relativePath));
         } catch (final NoSuchFileException e) {
-            LOGGER.trace("Failed to load resource {} from {}, it does not contain dependency information.", path, modFile.getFileName());
+            LOGGER.trace("Failed to load resource {} from {}, it does not contain dependency information.", relativePath, modFile.getFileName());
             return Optional.empty();
         } catch (final Exception e) {
-            LOGGER.error("Failed to load resource {} from mod {}, cause {}", path, modFile.getFileName(), e);
+            LOGGER.error("Failed to load resource {} from mod {}, cause {}", relativePath, modFile.getFileName(), e);
             return Optional.empty();
         }
     }

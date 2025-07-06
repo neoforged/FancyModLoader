@@ -6,10 +6,7 @@
 package net.neoforged.fml.util;
 
 import com.google.common.collect.Streams;
-import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.niofs.union.UnionFileSystem;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -18,8 +15,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.ServiceConfigurationError;
+import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.LogMarkers;
-import net.neoforged.jarjar.nio.pathfs.PathFileSystem;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IOrderedProvider;
 import org.jetbrains.annotations.ApiStatus;
@@ -65,10 +62,12 @@ public final class ServiceLoaderUtil {
                     priorityPrefix = String.format(Locale.ROOT, "%8d - ", ((IOrderedProvider) service).getPriority());
                 }
 
-                if (additionalServices.contains(service)) {
-                    LOGGER.debug(LogMarkers.CORE, "\t{}[built-in] {}", priorityPrefix, identifyService(context, service));
-                } else {
-                    LOGGER.debug(LogMarkers.CORE, "\t{}{}", priorityPrefix, identifyService(context, service));
+                if (LOGGER.isDebugEnabled(LogMarkers.CORE)) {
+                    if (additionalServices.contains(service)) {
+                        LOGGER.debug(LogMarkers.CORE, "\t{}[built-in] {}", priorityPrefix, identifyService(context, service));
+                    } else {
+                        LOGGER.debug(LogMarkers.CORE, "\t{}{}", priorityPrefix, identifyService(context, service));
+                    }
                 }
             }
         }
@@ -87,43 +86,33 @@ public final class ServiceLoaderUtil {
      */
     public static String identifySourcePath(ILaunchContext context, Object object) {
         var codeLocation = object.getClass().getProtectionDomain().getCodeSource().getLocation();
+        if (codeLocation == null) {
+            return "unknown";
+        }
+        Path primaryPath;
         try {
-            return unwrapPath(context, Paths.get(codeLocation.toURI()));
+            primaryPath = Paths.get(codeLocation.toURI());
         } catch (URISyntaxException e) {
             return codeLocation.toString();
         }
-    }
-
-    /**
-     * Tries to unwrap the given path if it is from a nested file-system such as JIJ or UnionFS,
-     * while maintaining context in the return (such as "&lt;nested path>" from "&lt;outer jar>").
-     */
-    private static String unwrapPath(ILaunchContext context, Path path) {
-        if (path.getFileSystem() instanceof PathFileSystem pathFileSystem) {
-            return unwrapPath(context, pathFileSystem.getTarget());
-        } else if (path.getFileSystem() instanceof UnionFileSystem unionFileSystem) {
-            if (path.equals(unionFileSystem.getRoot())) {
-                return unwrapPath(context, unionFileSystem.getPrimaryPath());
+        if (LoadingModList.get() != null) {
+            for (var plugin : LoadingModList.get().getPlugins()) {
+                if (plugin.getFile().getContents().getPrimaryPath().equals(primaryPath)) {
+                    return plugin.getFile().toString();
+                }
             }
-            return unwrapPath(context, unionFileSystem.getPrimaryPath()) + " > " + relativizePath(context, path);
-        }
-        return relativizePath(context, path);
-    }
-
-    private static String relativizePath(ILaunchContext context, Path path) {
-        var gameDir = context.environment().getProperty(IEnvironment.Keys.GAMEDIR.get()).orElse(null);
-
-        String resultPath;
-
-        if (gameDir != null && path.startsWith(gameDir)) {
-            resultPath = gameDir.relativize(path).toString();
-        } else if (Files.isDirectory(path)) {
-            resultPath = path.toAbsolutePath().toString();
-        } else {
-            resultPath = path.getFileName().toString();
+            for (var gameLibrary : LoadingModList.get().getGameLibraries()) {
+                if (gameLibrary.getContents().getPrimaryPath().equals(primaryPath)) {
+                    return gameLibrary.toString();
+                }
+            }
+            for (var modFile : LoadingModList.get().getModFiles()) {
+                if (modFile.getFile().getContents().getPrimaryPath().equals(primaryPath)) {
+                    return modFile.getFile().toString();
+                }
+            }
         }
 
-        // Unify separators to ensure it is easier to test
-        return resultPath.replace('\\', '/');
+        return codeLocation.toString();
     }
 }

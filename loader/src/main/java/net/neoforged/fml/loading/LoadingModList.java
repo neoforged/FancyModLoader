@@ -6,18 +6,12 @@
 package net.neoforged.fml.loading;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.modlauncher.api.LambdaExceptionUtils;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import cpw.mods.jarhandling.JarResource;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
@@ -101,17 +95,17 @@ public class LoadingModList {
     }
 
     public void addEnumExtenders() {
-        Map<IModInfo, Path> pathPerMod = new HashMap<>();
+        Map<IModInfo, JarResource> pathPerMod = new HashMap<>();
         modFiles.stream()
                 .map(ModFileInfo::getMods)
                 .flatMap(List::stream)
                 .forEach(mod -> mod.getConfig().<String>getConfigElement("enumExtensions").ifPresent(file -> {
-                    Path path = mod.getOwningFile().getFile().findResource(file);
-                    if (!Files.isRegularFile(path)) {
-                        ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloadingissue.enumextender.file_not_found", path).withAffectedMod(mod));
+                    var resource = mod.getOwningFile().getFile().getContents().get(file);
+                    if (resource == null) {
+                        ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloadingissue.enumextender.file_not_found", file).withAffectedMod(mod));
                         return;
                     }
-                    pathPerMod.put(mod, path);
+                    pathPerMod.put(mod, resource);
                 }));
         RuntimeEnumExtender.loadEnumPrototypes(pathPerMod);
     }
@@ -133,57 +127,6 @@ public class LoadingModList {
 
     public List<ModFileInfo> getModFiles() {
         return modFiles;
-    }
-
-    public Path findResource(String className) {
-        for (ModFileInfo mf : modFiles) {
-            final Path resource = mf.getFile().findResource(className);
-            if (Files.exists(resource)) return resource;
-        }
-        return null;
-    }
-
-    public Enumeration<URL> findAllURLsForResource(String resName) {
-        String resourceName;
-        // strip a leading slash
-        if (resName.startsWith("/")) {
-            resourceName = resName.substring(1);
-        } else {
-            resourceName = resName;
-        }
-        return new Enumeration<URL>() {
-            private final Iterator<ModFileInfo> modFileIterator = modFiles.iterator();
-            private URL next;
-
-            @Override
-            public boolean hasMoreElements() {
-                if (next != null) return true;
-                next = findNextURL();
-                return next != null;
-            }
-
-            @Override
-            public URL nextElement() {
-                if (next == null) {
-                    next = findNextURL();
-                    if (next == null) throw new NoSuchElementException();
-                }
-                URL result = next;
-                next = null;
-                return result;
-            }
-
-            private URL findNextURL() {
-                while (modFileIterator.hasNext()) {
-                    ModFileInfo next = modFileIterator.next();
-                    Path resource = next.getFile().findResource(resourceName);
-                    if (Files.exists(resource)) {
-                        return LambdaExceptionUtils.uncheck(() -> new URL("modjar://" + next.getMods().get(0).getModId() + "/" + resourceName));
-                    }
-                }
-                return null;
-            }
-        };
     }
 
     public ModFileInfo getModFileById(String modid) {

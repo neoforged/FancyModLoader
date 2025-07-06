@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarResource;
 import cpw.mods.jarhandling.JarResourceVisitor;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -20,7 +21,10 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,8 +37,8 @@ class JarContentsTest {
     JarContents contents;
 
     @BeforeEach
-    void setUp() {
-        contents = JarContents.of(tempDir);
+    void setUp() throws IOException {
+        contents = JarContents.ofPath(tempDir);
     }
 
     @Test
@@ -165,20 +169,32 @@ class JarContentsTest {
 
         @BeforeEach
         void setUp() throws IOException {
-            contents = getMultiReleaseJar();
+            Manifest mf = new Manifest();
+            mf.getMainAttributes().putValue("Manifest-Version", "1.0");
+            mf.getMainAttributes().putValue("Multi-Release", "true");
+
+            var tempJar = tempDir.resolve("temp.jar");
+            try (var jarOut = new JarOutputStream(new BufferedOutputStream(Files.newOutputStream(tempJar)), mf)) {
+                jarOut.putNextEntry(new JarEntry("META-INF/versions/9/folder/file"));
+                jarOut.write("hello world".getBytes());
+                jarOut.closeEntry();
+            }
+
+            contents = JarContents.ofPath(tempJar); // Multi-version info only works for Jars, not Folders
+        }
+
+        @AfterEach
+        void closeJar() throws IOException {
+            contents.close();
         }
 
         @Test
         void testContainsFile() throws IOException {
-            var contents = getMultiReleaseJar();
-
             assertTrue(contents.containsFile("folder/file"));
         }
 
         @Test
         void testOpenFile() throws IOException {
-            var contents = getMultiReleaseJar();
-
             try (var stream = contents.openFile("folder/file")) {
                 assertNotNull(stream);
                 assertThat(stream.readAllBytes()).isEqualTo("hello world".getBytes());
@@ -187,25 +203,9 @@ class JarContentsTest {
 
         @Test
         void testReadFile() throws IOException {
-            var contents = getMultiReleaseJar();
-
             var bytes = contents.readFile("folder/file");
             assertNotNull(bytes);
             assertThat(bytes).isEqualTo("hello world".getBytes());
-        }
-
-        private JarContents getMultiReleaseJar() throws IOException {
-            Manifest mf = new Manifest();
-            mf.getMainAttributes().putValue("Manifest-Version", "1.0");
-            mf.getMainAttributes().putValue("Multi-Release", "true");
-            Files.createDirectories(tempDir.resolve("META-INF"));
-            try (var out = Files.newOutputStream(tempDir.resolve("META-INF/MANIFEST.MF"))) {
-                mf.write(out);
-            }
-            Files.createDirectories(tempDir.resolve("META-INF/versions/9/folder"));
-            Files.writeString(tempDir.resolve("META-INF/versions/9/folder/file"), "hello world");
-
-            return JarContents.of(tempDir); // Multi-version info is only read in the ctor so we have to re-create the jar content after writing it
         }
     }
 
