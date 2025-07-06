@@ -104,14 +104,6 @@ public interface IModFile {
     SecureJar getSecureJar();
 
     /**
-     * Sets the security status after verification of the mod file has been concluded.
-     * The security status is only determined if the jar is to be loaded into the runtime.
-     *
-     * @param status The new status.
-     */
-    void setSecurityStatus(SecureJar.Status status);
-
-    /**
      * Returns a list of all mods located inside this jar.
      * <p>
      * If this method returns any entries then {@link #getType()} has to return {@link Type#MOD},
