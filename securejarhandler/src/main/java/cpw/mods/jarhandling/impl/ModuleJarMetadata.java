@@ -8,6 +8,8 @@ import java.lang.module.ModuleDescriptor;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
+import java.util.function.Supplier;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -17,10 +19,10 @@ import org.jetbrains.annotations.Nullable;
 public class ModuleJarMetadata implements JarMetadata {
     private final ModuleDescriptor descriptor;
 
-    public ModuleJarMetadata(URI uri) {
+    public ModuleJarMetadata(URI uri, Supplier<Set<String>> packagesSupplier) {
         ModuleDescriptor descriptor;
         try (var is = new BufferedInputStream(Files.newInputStream(Path.of(uri)))) {
-            descriptor = ModuleDescriptor.read(is);
+            descriptor = ModuleDescriptor.read(is, packagesSupplier);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
