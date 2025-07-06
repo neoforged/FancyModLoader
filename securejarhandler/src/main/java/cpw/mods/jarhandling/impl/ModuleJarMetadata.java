@@ -2,11 +2,11 @@ package cpw.mods.jarhandling.impl;
 
 import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.LazyJarMetadata;
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -19,53 +19,41 @@ import org.jetbrains.annotations.Nullable;
  * Reads the module descriptor from the jar.
  */
 public class ModuleJarMetadata extends LazyJarMetadata {
+    private final byte[] originalDescriptorBytes;
     private final ModuleDescriptor originalDescriptor;
-    // If null, the package list from originalDescriptor will be used as-is
-    @Nullable
     private final Supplier<Set<String>> packagesSupplier;
 
     public ModuleJarMetadata(URI uri, Supplier<Set<String>> packagesSupplier) {
-        // When ModuleDescriptor#read requests the package list, it means the module-info.class didn't contain one
-        // In that case, we need to use the packagesSupplier lazily in computeDescriptor.
-        boolean[] packagesSupplierUsed = { false };
-        try (var is = new BufferedInputStream(Files.newInputStream(Path.of(uri)))) {
-            this.originalDescriptor = ModuleDescriptor.read(is, () -> {
-                packagesSupplierUsed[0] = true;
-                return Set.of();
-            });
+        try {
+            this.originalDescriptorBytes = Files.readAllBytes(Path.of(uri));
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new UncheckedIOException("Failed to read module-info.class from " + uri, e);
         }
-        if (packagesSupplierUsed[0]) {
-            this.packagesSupplier = Objects.requireNonNull(packagesSupplier, "packagesSupplier");
-        } else {
-            this.packagesSupplier = null;
-        }
+        this.packagesSupplier = Objects.requireNonNull(packagesSupplier, "packagesSupplier");
+        this.originalDescriptor = ModuleDescriptor.read(ByteBuffer.wrap(originalDescriptorBytes));
     }
 
     @Override
     protected ModuleDescriptor computeDescriptor() {
+        var fullDescriptor = ModuleDescriptor.read(ByteBuffer.wrap(originalDescriptorBytes), packagesSupplier);
+
         // There are two cases in which we have to build a new descriptor:
         // 1) The original one didn't have a list of package names
         // 2) The original one wasn't an open module, we want all modules to be open
-        if (originalDescriptor.isOpen() && packagesSupplier == null) {
+        if (originalDescriptor.isOpen() && originalDescriptor.packages().equals(fullDescriptor.packages())) {
             return originalDescriptor;
         }
 
         // Make a new open module and copy everything over
         // Note how "open" packages are not copied, since open modules cannot declare them
-        var builder = ModuleDescriptor.newOpenModule(originalDescriptor.name());
-        originalDescriptor.rawVersion().ifPresent(builder::version);
-        originalDescriptor.exports().forEach(builder::exports);
-        originalDescriptor.provides().forEach(builder::provides);
-        originalDescriptor.uses().forEach(builder::uses);
-        originalDescriptor.requires().forEach(builder::requires);
-        originalDescriptor.mainClass().ifPresent(builder::mainClass);
-        if (packagesSupplier != null) {
-            builder.packages(packagesSupplier.get());
-        } else {
-            builder.packages(originalDescriptor.packages());
-        }
+        var builder = ModuleDescriptor.newOpenModule(fullDescriptor.name());
+        fullDescriptor.rawVersion().ifPresent(builder::version);
+        fullDescriptor.exports().forEach(builder::exports);
+        fullDescriptor.provides().forEach(builder::provides);
+        fullDescriptor.uses().forEach(builder::uses);
+        fullDescriptor.requires().forEach(builder::requires);
+        fullDescriptor.mainClass().ifPresent(builder::mainClass);
+        builder.packages(fullDescriptor.packages());
 
         return builder.build();
     }

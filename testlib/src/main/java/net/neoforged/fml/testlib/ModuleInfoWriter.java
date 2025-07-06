@@ -16,7 +16,19 @@ import org.objectweb.asm.Opcodes;
 public final class ModuleInfoWriter {
     private ModuleInfoWriter() {}
 
+    /**
+     * Writes a module-info.class, but omits the package list attribute (which is optional), to test
+     * our code for reconstructing it.
+     */
+    public static byte[] toByteArrayWithoutPackages(ModuleDescriptor descriptor) {
+        return toByteArray(descriptor, false);
+    }
+
     public static byte[] toByteArray(ModuleDescriptor descriptor) {
+        return toByteArray(descriptor, true);
+    }
+
+    private static byte[] toByteArray(ModuleDescriptor descriptor, boolean withPackages) {
         ClassWriter cw = new ClassWriter(0);
         String internalName = "module-info";
         cw.visit(Opcodes.V11, Opcodes.ACC_MODULE, internalName, null, null, null);
@@ -36,7 +48,9 @@ public final class ModuleInfoWriter {
         descriptor.provides().forEach(prov -> mv.visitProvide(toBinaryName(prov.service()),
                 prov.providers().stream().map(ModuleInfoWriter::toBinaryName).toArray(String[]::new)));
 
-        descriptor.packages().forEach(p -> mv.visitPackage(toBinaryName(p)));
+        if (withPackages) {
+            descriptor.packages().forEach(p -> mv.visitPackage(toBinaryName(p)));
+        }
 
         mv.visitEnd();
         cw.visitEnd();
