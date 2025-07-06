@@ -28,4 +28,5 @@ changelog.txt
 /logs/
 
 # Our tests produce this...
+/earlydisplay/logs/
 /loader/logs/

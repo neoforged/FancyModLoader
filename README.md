@@ -4,7 +4,9 @@ The mod loader used by [NeoForge](https://github.com/neoforged/NeoForge).
 
 ## Testing
 
-The `tests` subproject provides several tasks to test FML in various usage scenarios without having to include
+The `testproject` folder contains a separate Gradle project, which depends on the main FML Gradle project.
+Either FML itself or the `testproject` can be imported in IDEA to develop FML.
+The `testproject` provides several tasks to test FML in various usage scenarios without having to include
 it in a NeoForge working directory.
 
 The Gradle property `test_neoforge_version` controls, which NeoForge version is used for these tests.
