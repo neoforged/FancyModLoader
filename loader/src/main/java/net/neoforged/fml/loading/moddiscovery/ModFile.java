@@ -93,7 +93,6 @@ public class ModFile implements IModFile {
         return jar.getPrimaryPath();
     }
 
-    @Override
     public SecureJar getSecureJar() {
         return this.jar;
     }
