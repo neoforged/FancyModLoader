@@ -54,12 +54,17 @@ public class JarMetadataTest {
 
         @Test
         void testPackagesAreScannedIfNotDeclaredInModuleInfo() throws IOException {
+            var descriptor = ModuleDescriptor.newModule("test_module")
+                    .version("1.0")
+                    .exports("exported_package")
+                    .build();
             var metadata = getJarMetadata("test.jar", builder -> builder
+                    .addBinaryFile("exported_package/SomeClass.class", new byte[] {})
                     .addBinaryFile("somepackage/SomeClass.class", new byte[] {})
-                    .withModuleInfo(ModuleDescriptor.newModule("test_module").version("1.0").build()));
+                    .addBinaryFile("module-info.class", ModuleInfoWriter.toByteArrayWithoutPackages(descriptor)));
 
             // It should find the package, even if it wasn't declared
-            assertEquals(Set.of("somepackage"), metadata.descriptor().packages());
+            assertEquals(Set.of("somepackage", "exported_package"), metadata.descriptor().packages());
         }
 
         @Test
