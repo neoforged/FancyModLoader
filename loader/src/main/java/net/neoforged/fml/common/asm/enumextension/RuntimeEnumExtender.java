@@ -21,7 +21,7 @@ import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.asm.ListGeneratorAdapter;
 import net.neoforged.neoforgespi.language.IModInfo;
-import net.neoforged.neoforgespi.transformation.IClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -42,7 +42,7 @@ import org.objectweb.asm.tree.TypeInsnNode;
  * Transforms enums implementing {@link IExtensibleEnum} to add additional entries loaded from files provided by mods
  */
 @ApiStatus.Internal
-public class RuntimeEnumExtender implements IClassProcessor {
+public class RuntimeEnumExtender implements ClassProcessor {
     private static final Type MARKER_IFACE = Type.getType(IExtensibleEnum.class);
     private static final Type INDEXED_ANNOTATION = Type.getType(IndexedEnum.class);
     private static final Type NAMED_ANNOTATION = Type.getType(NamedEnum.class);

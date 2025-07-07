@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import net.neoforged.neoforgespi.transformation.IClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,16 +75,16 @@ public class ClassTransformer {
         
         int flags = 0;
         for (var transformer : transformersToUse) {
-            if (IClassProcessor.COMPUTING_FRAMES.equals(transformer.name())) {
+            if (ClassProcessor.COMPUTING_FRAMES.equals(transformer.name())) {
                 allowsComputeFrames = true;
             } else {
                 auditTrail.addClassProcessor(classDesc.getClassName(), transformer);
             }
             flags |= transformer.processClassWithFlags(clazz, classDesc);
             if (!allowsComputeFrames) {
-                if ((flags & IClassProcessor.ComputeFlags.COMPUTE_FRAMES) != 0) {
-                    LOGGER.error(MODLAUNCHER, "Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer "+ IClassProcessor.COMPUTING_FRAMES, transformer.name());
-                    throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before frame information is available"+ IClassProcessor.COMPUTING_FRAMES);
+                if ((flags & ClassProcessor.ComputeFlags.COMPUTE_FRAMES) != 0) {
+                    LOGGER.error(MODLAUNCHER, "Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer "+ ClassProcessor.COMPUTING_FRAMES, transformer.name());
+                    throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before frame information is available"+ ClassProcessor.COMPUTING_FRAMES);
                 }
             }
         }

@@ -16,7 +16,6 @@ package cpw.mods.modlauncher.api;
 
 import java.util.Set;
 
-import net.neoforged.neoforgespi.transformation.IClassProcessor;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -48,7 +47,7 @@ public interface ITransformer<T> {
 
     Set<Target<T>> targets();
 
-    TargetType<T> getTargetType();
+    TargetType getTargetType();
     
     /** 
      * {@return a unique name for this transformer}
@@ -79,7 +78,7 @@ public interface ITransformer<T> {
      * @param targetType        The {@link TargetType} for this target - it should match the ITransformer
      *                          type variable T
      */
-    record Target<T>(String className, String elementName, String elementDescriptor, TargetType<T> targetType) {
+    record Target<T>(String className, String elementName, String elementDescriptor, TargetType targetType) {
         /**
          * Convenience method returning a {@link Target} for a class
          *

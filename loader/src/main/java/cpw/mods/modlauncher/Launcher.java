@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
 import net.neoforged.fml.loading.FMLServiceProvider;
-import net.neoforged.neoforgespi.transformation.IClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -135,7 +135,7 @@ public class Launcher {
         return launchService.findLaunchHandler(name);
     }
     
-    Optional<IClassProcessor> findTransformer(final String name) {
+    Optional<ClassProcessor> findTransformer(final String name) {
         return this.transformStore.findTransformer(name);
     }
 

@@ -8,11 +8,11 @@ package net.neoforged.fml.common.asm;
 import java.util.Set;
 
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
-import net.neoforged.neoforgespi.transformation.IClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
-public class AccessTransformerService implements IClassProcessor {
+public class AccessTransformerService implements ClassProcessor {
     public final AccessTransformerEngine engine = AccessTransformerEngine.newEngine();
 
     @Override

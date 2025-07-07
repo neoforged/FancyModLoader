@@ -12,7 +12,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.neoforgespi.transformation.IClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
@@ -24,7 +24,7 @@ import org.slf4j.MarkerFactory;
  * informative exception.
  */
 @ApiStatus.Internal
-public class NeoForgeDevDistCleaner implements IClassProcessor {
+public class NeoForgeDevDistCleaner implements ClassProcessor {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Marker DISTXFORM = MarkerFactory.getMarker("DISTXFORM");
 
@@ -40,7 +40,7 @@ public class NeoForgeDevDistCleaner implements IClassProcessor {
     @Override
     public Set<String> runsBefore() {
         // Might as well run as early as we sensibly can, so that we can catch issues before other transformers run their checks
-        return Set.of(IClassProcessor.COMPUTING_FRAMES);
+        return Set.of(ClassProcessor.COMPUTING_FRAMES);
     }
 
     @Override

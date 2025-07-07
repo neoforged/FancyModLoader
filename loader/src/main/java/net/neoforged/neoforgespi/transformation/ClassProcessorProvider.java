@@ -4,6 +4,6 @@ import net.neoforged.neoforgespi.ILaunchContext;
 
 import java.util.List;
 
-public interface IClassProcessorProvider {
-    List<IClassProcessor> makeTransformers(ILaunchContext launchContext);
+public interface ClassProcessorProvider {
+    List<ClassProcessor> makeTransformers(ILaunchContext launchContext);
 }

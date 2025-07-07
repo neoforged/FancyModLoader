@@ -3,14 +3,13 @@ package net.neoforged.fml.loading;
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.TransformationContext;
 import cpw.mods.modlauncher.api.ITransformer;
-import cpw.mods.modlauncher.api.TargetType;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.coremod.ICoreMod;
-import net.neoforged.neoforgespi.transformation.IClassProcessor;
-import net.neoforged.neoforgespi.transformation.IClassProcessorProvider;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.slf4j.Logger;
@@ -25,14 +24,14 @@ import java.util.stream.Collectors;
 import static net.neoforged.fml.loading.LogMarkers.CORE;
 import static net.neoforged.fml.loading.LogMarkers.LOADING;
 
-public class CoreModsTransformerProvider implements IClassProcessorProvider {
+public class CoreModsTransformerProvider implements ClassProcessorProvider {
     private static final Logger LOGGER = LogUtils.getLogger();
     
     @Override
-    public List<IClassProcessor> makeTransformers(ILaunchContext launchContext) {
+    public List<ClassProcessor> makeTransformers(ILaunchContext launchContext) {
         LOGGER.debug(LOADING, "Loading coremod transformers");
 
-        var result = new ArrayList<IClassProcessor>();
+        var result = new ArrayList<ClassProcessor>();
 
         // Find all Java core mods
         for (var coreMod : ServiceLoaderUtil.loadServices(launchContext, ICoreMod.class)) {
@@ -55,15 +54,15 @@ public class CoreModsTransformerProvider implements IClassProcessorProvider {
         return result;
     }
 
-    private <T> IClassProcessor makeTransformer(ITransformer<T> transformer) {
+    private <T> ClassProcessor makeTransformer(ITransformer<T> transformer) {
         Map<String, List<ITransformer.Target<T>>> targetsByClassName = transformer.targets().stream()
                 .collect(Collectors.groupingBy(ITransformer.Target::className));
         Set<String> before = new HashSet<>(transformer.runsBefore());
         Set<String> after = new HashSet<>(transformer.runsAfter());
         // coremod transformers always imply COMPUTE_FRAMES and thus must always run after it.
-        after.add(IClassProcessor.COMPUTING_FRAMES);
+        after.add(ClassProcessor.COMPUTING_FRAMES);
         
-        return new IClassProcessor() {
+        return new ClassProcessor() {
             @Override
             public String name() {
                 return transformer.name();

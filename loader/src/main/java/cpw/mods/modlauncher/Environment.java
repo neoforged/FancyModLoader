@@ -18,7 +18,7 @@ import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.TypesafeMap;
-import net.neoforged.neoforgespi.transformation.IClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
 
 import java.util.Optional;
 import java.util.function.Function;
@@ -41,7 +41,7 @@ public final class Environment implements IEnvironment {
     }
 
     @Override
-    public Optional<IClassProcessor> findTransformer(final String name) {
+    public Optional<ClassProcessor> findTransformer(final String name) {
         return launcher.findTransformer(name);
     }
 

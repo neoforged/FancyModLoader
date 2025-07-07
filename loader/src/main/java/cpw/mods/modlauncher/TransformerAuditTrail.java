@@ -16,7 +16,7 @@ package cpw.mods.modlauncher;
 
 import cpw.mods.modlauncher.api.ITransformerActivity;
 import cpw.mods.modlauncher.api.ITransformerAuditTrail;
-import net.neoforged.neoforgespi.transformation.IClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,7 +39,7 @@ public class TransformerAuditTrail implements ITransformerAuditTrail {
         }
     }
 
-    public void addClassProcessor(String clazz, IClassProcessor classProcessor) {
+    public void addClassProcessor(String clazz, ClassProcessor classProcessor) {
         getTransformerActivities(clazz).add(new TransformerActivity(classProcessor.name()));
     }
 

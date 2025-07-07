@@ -6,8 +6,8 @@ import com.mojang.logging.LogUtils;
 import net.neoforged.fml.loading.toposort.TopologicalSort;
 import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.ILaunchContext;
-import net.neoforged.neoforgespi.transformation.IClassProcessor;
-import net.neoforged.neoforgespi.transformation.IClassProcessorProvider;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -24,27 +24,27 @@ import java.util.function.Function;
 public class TransformStore {
     private static final Logger LOGGER = LogUtils.getLogger();
     
-    private final Map<String, IClassProcessor> transformers = new HashMap<>();
-    private final List<IClassProcessor> sortedTransformers;
+    private final Map<String, ClassProcessor> transformers = new HashMap<>();
+    private final List<ClassProcessor> sortedTransformers;
     
     @VisibleForTesting
     public TransformStore(ILaunchContext launchContext) {
         this.sortedTransformers = sortTransformers(
                 launchContext,
-                ServiceLoaderUtil.loadServices(launchContext, IClassProcessorProvider.class),
-                ServiceLoaderUtil.loadServices(launchContext, IClassProcessor.class)
+                ServiceLoaderUtil.loadServices(launchContext, ClassProcessorProvider.class),
+                ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class)
         );
     }
     
     @SuppressWarnings("UnstableApiUsage")
-    private List<IClassProcessor> sortTransformers(ILaunchContext launchContext, List<IClassProcessorProvider> transformerProviders, List<IClassProcessor> existingTransformers) {
-        final var graph = GraphBuilder.directed().<IClassProcessor>build();
-        var specialComputeFramesNode = new IClassProcessor() {
+    private List<ClassProcessor> sortTransformers(ILaunchContext launchContext, List<ClassProcessorProvider> transformerProviders, List<ClassProcessor> existingTransformers) {
+        final var graph = GraphBuilder.directed().<ClassProcessor>build();
+        var specialComputeFramesNode = new ClassProcessor() {
             // This "special" transformer never handles a class but is always triggered
 
             @Override
             public String name() {
-                return IClassProcessor.COMPUTING_FRAMES;
+                return ClassProcessor.COMPUTING_FRAMES;
             }
 
             @Override
@@ -59,7 +59,7 @@ public class TransformStore {
         };
         graph.addNode(specialComputeFramesNode);
         transformers.put(specialComputeFramesNode.name(), specialComputeFramesNode);
-        for (IClassProcessorProvider provider : transformerProviders) {
+        for (ClassProcessorProvider provider : transformerProviders) {
             for (var transformer : provider.makeTransformers(launchContext)) {
                 addTransformer(transformer, graph);
             }
@@ -89,11 +89,11 @@ public class TransformStore {
                 }
             }
         }
-        return TopologicalSort.topologicalSort(graph, Comparator.comparing(IClassProcessor::name));
+        return TopologicalSort.topologicalSort(graph, Comparator.comparing(ClassProcessor::name));
     }
 
     @SuppressWarnings("UnstableApiUsage")
-    private void addTransformer(IClassProcessor transformer, MutableGraph<IClassProcessor> graph) {
+    private void addTransformer(ClassProcessor transformer, MutableGraph<ClassProcessor> graph) {
         if (transformers.containsKey(transformer.name())) {
             LOGGER.error(
                     "Duplicate transformers with name {}, of types {} and {}",
@@ -107,19 +107,19 @@ public class TransformStore {
         transformers.put(transformer.name(), transformer);
     }
 
-    public void initializeBytecodeProvider(Function<String, IClassProcessor.IBytecodeProvider> function) {
+    public void initializeBytecodeProvider(Function<String, ClassProcessor.IBytecodeProvider> function) {
         for (var transformer : sortedTransformers) {
             transformer.initializeBytecodeProvider(function.apply(transformer.name()));
         }
     }
 
-    public List<IClassProcessor> transformersFor(Type classDesc, boolean isEmpty, String upToTransformer) {
-        var out = new ArrayList<IClassProcessor>();
+    public List<ClassProcessor> transformersFor(Type classDesc, boolean isEmpty, String upToTransformer) {
+        var out = new ArrayList<ClassProcessor>();
         boolean includesComputingFrames = false;
         for (var transformer : sortedTransformers) {
             if (upToTransformer != null && upToTransformer.equals(transformer.name())) {
                 break;
-            } else if (IClassProcessor.COMPUTING_FRAMES.equals(transformer.name())) {
+            } else if (ClassProcessor.COMPUTING_FRAMES.equals(transformer.name())) {
                 includesComputingFrames = true;
                 out.add(transformer);
             } else if (transformer.handlesClass(classDesc, isEmpty)) {
@@ -134,7 +134,7 @@ public class TransformStore {
         return out;
     }
 
-    public Optional<IClassProcessor> findTransformer(String name) {
+    public Optional<ClassProcessor> findTransformer(String name) {
         return Optional.ofNullable(transformers.get(name));
     }
 }

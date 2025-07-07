@@ -10,7 +10,7 @@ import java.util.Set;
 //  greater flexibility and therefore need to be careful with what you request processing for) should be documented.
 // TODO: should we add some sort of warning screen on load if more than X% of classes are being transformed? This seems doable;
 //  could even count this per-plugin to detect and warn on cases of transform-everything plugins.
-public interface IClassProcessor {
+public interface ClassProcessor {
     class ComputeFlags {
         /**
          * This plugin did not change the class and therefor requires no rewrite of the class.
@@ -55,7 +55,7 @@ public interface IClassProcessor {
 
     /**
      * {@return processors that this processor must run after} This should include
-     * {@link IClassProcessor#COMPUTING_FRAMES} if the processor returns a result requiring frame re-computation
+     * {@link ClassProcessor#COMPUTING_FRAMES} if the processor returns a result requiring frame re-computation
      */
     default Set<String> runsAfter() {
         return Set.of(COMPUTING_FRAMES);
