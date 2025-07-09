@@ -37,7 +37,7 @@ public interface JarContents extends Closeable {
 
     /**
      * {@return all the packages in the jar}
-     * (Every folder containing a {@code .class} file is considered a package.)
+     * (Every folder containing a file is considered a package if it is a valid package name, excluding {@code /assets} and {@code /data}.)
      */
     Set<String> getPackages();
 

@@ -166,7 +166,7 @@ public class JarContentsImpl implements JarContents {
             Files.walkFileTree(this.filesystem.getRoot(), new SimpleFileVisitor<>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    if (file.getFileName().toString().endsWith(".class") && attrs.isRegularFile()) {
+                    if (attrs.isRegularFile()) {
                         var pkg = JarContentsImpl.this.filesystem.getRoot().relativize(file.getParent()).toString().replace('/', '.');
                         if (!pkg.isEmpty()) {
                             packages.add(pkg);
@@ -177,8 +177,19 @@ public class JarContentsImpl implements JarContents {
 
                 @Override
                 public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes attrs) {
-                    if (path.getNameCount() > 0 && ignoredRootPackages.contains(path.getName(0).toString())) {
-                        return FileVisitResult.SKIP_SUBTREE;
+                    if (path.getNameCount() > 0) {
+                        // Skip if ignored root
+                        if (ignoredRootPackages.contains(path.getName(0).toString())) {
+                            return FileVisitResult.SKIP_SUBTREE;
+                        }
+
+                        // Skip, if not a valid java package name
+                        for (int i = 0; i < path.getNameCount(); i++) {
+                            var segment = path.getName(i).toString();
+                            if (!JlsConstants.isJavaIdentifier(segment)) {
+                                return FileVisitResult.SKIP_SUBTREE;
+                            }
+                        }
                     }
                     return FileVisitResult.CONTINUE;
                 }
