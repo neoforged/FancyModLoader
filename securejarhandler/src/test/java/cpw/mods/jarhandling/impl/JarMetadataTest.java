@@ -61,10 +61,14 @@ public class JarMetadataTest {
             var metadata = getJarMetadata("test.jar", builder -> builder
                     .addBinaryFile("exported_package/SomeClass.class", new byte[] {})
                     .addBinaryFile("somepackage/SomeClass.class", new byte[] {})
+                    .addBinaryFile("resources/alsocount/resource.txt", new byte[] {})
+                    .addBinaryFile("META-INF/Ignored.class", new byte[] {})
+                    .addBinaryFile("not/while/package/Ignored.class", new byte[] {})
+                    .addBinaryFile("9/notanidentifier/Ignored.class", new byte[] {})
                     .addBinaryFile("module-info.class", ModuleInfoWriter.toByteArrayWithoutPackages(descriptor)));
 
             // It should find the package, even if it wasn't declared
-            assertEquals(Set.of("somepackage", "exported_package"), metadata.descriptor().packages());
+            assertEquals(Set.of("somepackage", "exported_package", "resources.alsocount"), metadata.descriptor().packages());
         }
 
         @Test
