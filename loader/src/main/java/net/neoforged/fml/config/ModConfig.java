@@ -69,11 +69,7 @@ public final class ModConfig {
      */
     @Nullable
     public Path getFullPath() {
-        if (this.loadedConfig != null && loadedConfig.path() != null) {
-            return loadedConfig.path();
-        } else {
-            return null;
-        }
+        return loadedConfig != null ? loadedConfig.path() : null;
     }
 
     void setConfig(@Nullable LoadedConfig loadedConfig, Function<ModConfig, ModConfigEvent> eventConstructor) {
