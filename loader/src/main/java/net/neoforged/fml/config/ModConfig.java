@@ -61,13 +61,15 @@ public final class ModConfig {
         return loadedConfig;
     }
 
-    // TODO: remove from public API?
+    /**
+     * Get the file path of the currently loaded config.
+     *
+     * @return The config's path. Will return {@code null} if the config is not currently loaded, or was loaded
+     *         from memory rather than from a file.
+     */
+    @Nullable
     public Path getFullPath() {
-        if (this.loadedConfig != null && loadedConfig.path() != null) {
-            return loadedConfig.path();
-        } else {
-            throw new IllegalStateException("Cannot call getFullPath() on non-file config " + this.loadedConfig + " at path " + getFileName());
-        }
+        return loadedConfig != null ? loadedConfig.path() : null;
     }
 
     void setConfig(@Nullable LoadedConfig loadedConfig, Function<ModConfig, ModConfigEvent> eventConstructor) {
