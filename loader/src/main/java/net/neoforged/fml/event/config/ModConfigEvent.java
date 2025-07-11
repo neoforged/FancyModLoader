@@ -43,9 +43,11 @@ public class ModConfigEvent extends Event implements IModBusEvent {
     }
 
     /**
-     * Fired when a config is unloaded. This only happens when the server closes, which is
-     * probably only really relevant on the client, to reset internal mod state when the
-     * server goes away, though it will fire on the dedicated server as well.
+     * Fired when a config is unloaded:
+     * <ul>
+     * <li>when a server is shut down - on dedicated servers this is fired when the entire server shuts down, whereas on integrated servers this is fired when the singleplayer world is closed</li>
+     * <li>when a player disconnects from a dedicated server (<strong>not</strong> from a singleplayer world)</li>
+     * </ul>
      * The config file will be saved after this event has fired.
      */
     public static class Unloading extends ModConfigEvent {
