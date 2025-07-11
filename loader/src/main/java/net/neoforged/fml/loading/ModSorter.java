@@ -18,8 +18,10 @@ import cpw.mods.jarhandling.SecureJar;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -54,13 +56,13 @@ public class ModSorter {
         this.uniqueModListBuilder = new UniqueModListBuilder(modFiles);
     }
 
-    public static LoadingModList sort(List<ModFile> plugins, List<ModFile> mods, final List<ModLoadingIssue> issues) {
+    public static LoadingModList sort(List<ModFile> plugins, List<ModFile> gameLibraries, List<ModFile> mods, final List<ModLoadingIssue> issues) {
         final ModSorter ms = new ModSorter(mods);
         try {
             ms.buildUniqueList();
         } catch (ModLoadingException e) {
             // We cannot build any list with duped mods. We have to abort immediately and report it
-            return LoadingModList.of(plugins, ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), concat(issues, e.getIssues()), Map.of());
+            return LoadingModList.of(plugins, gameLibraries, ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), concat(issues, e.getIssues()), Map.of());
         }
 
         // try and validate dependencies
@@ -70,7 +72,7 @@ public class ModSorter {
 
         // if we miss a dependency or detect an incompatibility, we abort now
         if (!resolutionResult.versionResolution.isEmpty() || !resolutionResult.incompatibilities.isEmpty()) {
-            list = LoadingModList.of(plugins, ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), concat(issues, resolutionResult.buildErrorMessages()), Map.of());
+            list = LoadingModList.of(plugins, gameLibraries, ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), concat(issues, resolutionResult.buildErrorMessages()), Map.of());
         } else {
             // Otherwise, lets try and sort the modlist and proceed
             ModLoadingException modLoadingException = null;
@@ -80,9 +82,9 @@ public class ModSorter {
                 modLoadingException = e;
             }
             if (modLoadingException == null) {
-                list = LoadingModList.of(plugins, ms.modFiles, ms.sortedList, issues, ms.modDependencies);
+                list = LoadingModList.of(plugins, gameLibraries, ms.modFiles, ms.sortedList, issues, ms.modDependencies);
             } else {
-                list = LoadingModList.of(plugins, ms.modFiles, ms.sortedList, concat(issues, modLoadingException.getIssues()), Map.of());
+                list = LoadingModList.of(plugins, gameLibraries, ms.modFiles, ms.sortedList, concat(issues, modLoadingException.getIssues()), Map.of());
             }
         }
 
@@ -92,6 +94,16 @@ public class ModSorter {
                     "found mod conflicts",
                     resolutionResult.buildWarningMessages()));
         }
+
+        // Close any mod-files discarded due to dependency constraint issues
+        Set<ModFile> loadedMods = Collections.newSetFromMap(new IdentityHashMap<>());
+        list.getModFiles().forEach(mfi -> loadedMods.add(mfi.getFile()));
+        for (var modFile : ms.modFiles) {
+            if (!loadedMods.contains(modFile)) {
+                modFile.close();
+            }
+        }
+
         return list;
     }
 
@@ -181,6 +193,7 @@ public class ModSorter {
 
     private void buildUniqueList() {
         final UniqueModListBuilder.UniqueModListData uniqueModListData = uniqueModListBuilder.buildUniqueList();
+        uniqueModListData.discardedFiles().forEach(ModFile::close);
 
         this.modFiles = uniqueModListData.modFiles();
 
