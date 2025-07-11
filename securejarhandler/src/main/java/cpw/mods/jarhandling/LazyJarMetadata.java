@@ -21,7 +21,6 @@ public abstract class LazyJarMetadata implements JarMetadata {
 
     /**
      * Computes the module descriptor for this jar.
-     * This method is called at most once.
      */
     protected abstract ModuleDescriptor computeDescriptor();
 }

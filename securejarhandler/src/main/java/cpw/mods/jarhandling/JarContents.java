@@ -1,14 +1,15 @@
 package cpw.mods.jarhandling;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.jar.Manifest;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Access to the contents of a list of {@link Path}s, interpreted as a jar file.
@@ -30,29 +31,19 @@ public interface JarContents extends Closeable {
     Optional<URI> findFile(String name);
 
     /**
+     * Tries to open a file inside the jar content using a path relative to the root.
+     * The stream will not be buffered.
+     * 
+     * @return null if the file cannot be found.
+     */
+    @Nullable
+    InputStream getResourceAsStream(String name) throws IOException;
+
+    /**
      * {@return the manifest of the jar}
      * Empty if no manifest is present in the jar.
      */
     Manifest getManifest();
-
-    /**
-     * {@return all the packages in the jar}
-     * (Every folder containing a file is considered a package if it is a valid package name.)
-     */
-    Set<String> getPackages();
-
-    /**
-     * {@return all the packages in the jar, with some root packages excluded}
-     *
-     * <p>This can be used to skip scanning of folders that are known to not contain code,
-     * but would be expensive to go through.
-     */
-    Set<String> getPackagesExcluding(String... excludedRootPackages);
-
-    /**
-     * Parses the {@code META-INF/services} files in the jar, and returns the list of service providers.
-     */
-    List<SecureJar.Provider> getMetaInfServices();
 
     /**
      * Create plain jar contents from a single jar file or folder.
