@@ -66,7 +66,7 @@ public final class TransformerDiscovererConstants {
     public static boolean shouldLoadInServiceLayer(JarContents jarContents) {
         // This tries to optimize for speed since this scan happens before any progress window is shown to the user
         // We try a module-info.class first, if it is present.
-        try (var moduleInfoContent = jarContents.getResourceAsStream("module-info.class")) {
+        try (var moduleInfoContent = jarContents.openFile("module-info.class")) {
             if (moduleInfoContent != null) {
                 // Module-info is present, read it without scanning for packages
                 var moduleDescriptor = ModuleDescriptor.read(new BufferedInputStream(moduleInfoContent));
@@ -80,18 +80,18 @@ public final class TransformerDiscovererConstants {
             throw new UncheckedIOException("Failed to read module-info.class from " + jarContents, e);
         }
 
-        // If we get here, the Jar is non-modular, so we check for service files
+        // If we get here, the Jar is non-modular, so we check for matching service files
         for (var service : SERVICES) {
             var serviceFile = "META-INF/services/" + service;
-            try (var stream = jarContents.getResourceAsStream(serviceFile)) {
-                if (stream != null) {
+            try {
+                if (jarContents.containsFile(serviceFile)) {
                     return true; // Found a match
                 }
             } catch (IOException e) {
-                throw new UncheckedIOException("Failed to open service-file " + serviceFile + " in " + jarContents, e);
+                throw new UncheckedIOException("Failed to check for service-file " + serviceFile + " in " + jarContents, e);
             }
         }
 
-        return false; // No service file was found
+        return false; // No matching service files were found
     }
 }

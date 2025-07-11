@@ -140,7 +140,7 @@ public class JarContentsImpl implements JarContents {
     }
 
     @Override
-    public InputStream getResourceAsStream(String name) throws IOException {
+    public InputStream openFile(String name) throws IOException {
         var rel = filesystem.getPath(name);
         if (this.nameOverrides.containsKey(rel)) {
             rel = this.filesystem.getPath("META-INF", "versions", this.nameOverrides.get(rel).toString()).resolve(rel);

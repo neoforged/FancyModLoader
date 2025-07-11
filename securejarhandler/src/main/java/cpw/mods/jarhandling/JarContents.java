@@ -38,7 +38,23 @@ public interface JarContents extends Closeable {
      * @return null if the file cannot be found, or if there is a directory with the given name.
      */
     @Nullable
-    InputStream getResourceAsStream(String name) throws IOException;
+    InputStream openFile(String name) throws IOException;
+
+    /**
+     * Checks, if a given file exists in this jar file.
+     *
+     * @param relativePath The path to the file, relative to the root of this Jar file.
+     * @return True if the file exists, false if it doesn't or the given path denotes a directory.
+     * @throws IOException If an I/O error occurs while looking for the file.
+     */
+    default boolean containsFile(String relativePath) throws IOException {
+        var stream = openFile(relativePath);
+        if (stream != null) {
+            stream.close();
+            return true;
+        }
+        return false;
+    }
 
     /**
      * {@return the manifest of the jar}

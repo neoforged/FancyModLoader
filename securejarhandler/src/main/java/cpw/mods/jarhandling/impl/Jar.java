@@ -135,7 +135,7 @@ public class Jar implements SecureJar {
         @Override
         public Optional<InputStream> open(final String name) {
             try {
-                return Optional.ofNullable(jar.contents.getResourceAsStream(name));
+                return Optional.ofNullable(jar.contents.openFile(name));
             } catch (IOException e) {
                 throw new UncheckedIOException("Failed to open " + name, e);
             }
