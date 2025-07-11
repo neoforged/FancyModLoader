@@ -48,7 +48,7 @@ public final class ModuleDescriptorFactory {
         var root = ((JarContentsImpl) jar).filesystem.getRoot();
 
         var metaInfDir = root.resolve("META-INF");
-        var servicesDir = root.resolve("META-INF/services");
+        var servicesDir = metaInfDir.resolve("services");
 
         Set<String> packageNames = new HashSet<>();
         List<Path> serviceProviderFiles = new ArrayList<>();
@@ -56,6 +56,7 @@ public final class ModuleDescriptorFactory {
             Files.walkFileTree(root, new SimpleFileVisitor<>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    // Ignore all content in META-INF except for service files
                     if (file.startsWith(metaInfDir)) {
                         if (file.startsWith(servicesDir)) {
                             var serviceName = file.getFileName().toString();
@@ -64,7 +65,6 @@ public final class ModuleDescriptorFactory {
                                 serviceProviderFiles.add(file);
                             }
                         }
-                        // Ignore all content beneath META-INF except for service files
                         return FileVisitResult.CONTINUE;
                     }
 

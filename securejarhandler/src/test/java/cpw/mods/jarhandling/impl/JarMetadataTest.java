@@ -173,6 +173,7 @@ public class JarMetadataTest {
                     .addBinaryFile("somepackage/SomeClass.class", new byte[] {})
                     .addBinaryFile("resources/alsocount/resource.txt", new byte[] {})
                     .addBinaryFile("META-INF/Ignored.class", new byte[] {})
+                    .addBinaryFile("META-INF/services/subdir/Ignored.class", new byte[] {})
                     .addBinaryFile("not/while/package/Ignored.class", new byte[] {})
                     .addBinaryFile("9/notanidentifier/Ignored.class", new byte[] {}));
 
