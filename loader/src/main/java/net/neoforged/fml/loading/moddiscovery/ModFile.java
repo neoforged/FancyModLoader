@@ -17,7 +17,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.jar.Attributes;
@@ -47,13 +49,11 @@ public class ModFile implements IModFile {
     private ModFileDiscoveryAttributes discoveryAttributes;
     private Map<String, Object> fileProperties;
     private List<IModLanguageLoader> loaders;
-    private Throwable scanError;
     private final SecureJar jar;
     private final Type modFileType;
     private final Manifest manifest;
     private IModFileInfo modFileInfo;
-    private ModFileScanData fileModFileScanData;
-    private volatile CompletableFuture<ModFileScanData> futureScanResult;
+    private CompletableFuture<ModFileScanData> futureScanResult;
     private List<ModFileParser.MixinConfig> mixinConfigs;
     private List<Path> accessTransformers;
 
@@ -131,13 +131,6 @@ public class ModFile implements IModFile {
         return mixinConfigs;
     }
 
-    /**
-     * Run in an executor thread to harvest the class and annotation list
-     */
-    public ModFileScanData compileContent() {
-        return new Scanner(this).scan();
-    }
-
     public void scanFile(Consumer<Path> pathConsumer) {
         var rootPath = getSecureJar().getRootPath();
         try (Stream<Path> files = Files.find(rootPath, Integer.MAX_VALUE, (p, a) -> p.getNameCount() > 0 && p.getFileName().toString().endsWith(".class"))) {
@@ -147,31 +140,28 @@ public class ModFile implements IModFile {
         }
     }
 
-    public void setFutureScanResult(CompletableFuture<ModFileScanData> future) {
-        this.futureScanResult = future;
+    public CompletionStage<ModFileScanData> startScan(Executor executor) {
+        if (this.futureScanResult != null) {
+            throw new IllegalStateException("The mod file scan was already started.");
+        }
+
+        this.futureScanResult = CompletableFuture.supplyAsync(() -> new Scanner(this).scan(), executor);
+        return this.futureScanResult;
     }
 
     @Override
     public ModFileScanData getScanResult() {
-        if (this.futureScanResult != null) {
-            try {
-                this.futureScanResult.get();
-            } catch (InterruptedException | ExecutionException e) {
-                LOGGER.error("Caught unexpected exception processing scan results", e);
-            }
+        if (this.futureScanResult == null) {
+            throw new IllegalStateException("Scanning of this mod file has not started yet.");
         }
-        if (this.scanError != null) {
-            throw new RuntimeException(this.scanError);
+        try {
+            return this.futureScanResult.get();
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e.getCause());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while waiting for mod file scan to complete.");
         }
-        return this.fileModFileScanData;
-    }
-
-    public void setScanResult(final ModFileScanData modFileScanData, final Throwable throwable) {
-        this.fileModFileScanData = modFileScanData;
-        if (throwable != null) {
-            this.scanError = throwable;
-        }
-        this.futureScanResult = null;
     }
 
     public void setFileProperties(Map<String, Object> fileProperties) {
