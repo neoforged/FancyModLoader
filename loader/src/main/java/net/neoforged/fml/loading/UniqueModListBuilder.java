@@ -12,9 +12,12 @@ import static net.neoforged.fml.loading.LogMarkers.LOADING;
 import com.mojang.logging.LogUtils;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoadingException;
@@ -106,7 +109,12 @@ public class UniqueModListBuilder {
         loadedList.addAll(uniqueModList);
         loadedList.addAll(uniqueLibListWithVersion);
 
-        return new UniqueModListData(loadedList, uniqueModFilesByFirstId);
+        // Close any mod files that were removed
+        Set<ModFile> discardedModFiles = Collections.newSetFromMap(new IdentityHashMap<>());
+        discardedModFiles.addAll(this.modFiles);
+        loadedList.forEach(discardedModFiles::remove);
+
+        return new UniqueModListData(loadedList, new ArrayList<>(discardedModFiles), uniqueModFilesByFirstId);
     }
 
     private ModFile selectNewestModInfo(Map.Entry<String, List<ModFile>> fullList) {
@@ -135,5 +143,7 @@ public class UniqueModListBuilder {
         return modFile.getModFileInfo().moduleName();
     }
 
-    public record UniqueModListData(List<ModFile> modFiles, Map<String, List<ModFile>> modFilesByFirstId) {}
+    public record UniqueModListData(List<ModFile> modFiles,
+            List<ModFile> discardedFiles,
+            Map<String, List<ModFile>> modFilesByFirstId) {}
 }

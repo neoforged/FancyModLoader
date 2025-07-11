@@ -30,6 +30,7 @@ import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.locating.IModFile;
 import org.slf4j.Logger;
 
 /**
@@ -40,16 +41,18 @@ public class LoadingModList {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static LoadingModList INSTANCE;
     private final List<IModFileInfo> plugins;
+    private final List<IModFile> gameLibraries;
     private final List<ModFileInfo> modFiles;
     private final List<ModInfo> sortedList;
     private final Map<ModInfo, List<ModInfo>> modDependencies;
     private final Map<String, ModFileInfo> fileById;
     private final List<ModLoadingIssue> modLoadingIssues;
 
-    private LoadingModList(final List<ModFile> plugins, final List<ModFile> modFiles, final List<ModInfo> sortedList, Map<ModInfo, List<ModInfo>> modDependencies) {
+    private LoadingModList(final List<ModFile> plugins, final List<ModFile> gameLibraries, final List<ModFile> modFiles, final List<ModInfo> sortedList, Map<ModInfo, List<ModInfo>> modDependencies) {
         this.plugins = plugins.stream()
                 .map(ModFile::getModFileInfo)
                 .collect(Collectors.toList());
+        this.gameLibraries = List.copyOf(gameLibraries);
         this.modFiles = modFiles.stream()
                 .map(ModFile::getModFileInfo)
                 .map(ModFileInfo.class::cast)
@@ -66,8 +69,8 @@ public class LoadingModList {
         this.modLoadingIssues = new ArrayList<>();
     }
 
-    public static LoadingModList of(List<ModFile> plugins, List<ModFile> modFiles, List<ModInfo> sortedList, List<ModLoadingIssue> issues, Map<ModInfo, List<ModInfo>> modDependencies) {
-        INSTANCE = new LoadingModList(plugins, modFiles, sortedList, modDependencies);
+    public static LoadingModList of(List<ModFile> plugins, List<ModFile> gameLibraries, List<ModFile> modFiles, List<ModInfo> sortedList, List<ModLoadingIssue> issues, Map<ModInfo, List<ModInfo>> modDependencies) {
+        INSTANCE = new LoadingModList(plugins, gameLibraries, modFiles, sortedList, modDependencies);
         INSTANCE.modLoadingIssues.addAll(issues);
         return INSTANCE;
     }
@@ -122,6 +125,10 @@ public class LoadingModList {
 
     public List<IModFileInfo> getPlugins() {
         return plugins;
+    }
+
+    public List<IModFile> getGameLibraries() {
+        return gameLibraries;
     }
 
     public List<ModFileInfo> getModFiles() {
