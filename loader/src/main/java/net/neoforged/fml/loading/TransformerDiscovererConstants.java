@@ -12,6 +12,7 @@ import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.module.InvalidModuleDescriptorException;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -73,6 +74,8 @@ public final class TransformerDiscovererConstants {
                         .map(ModuleDescriptor.Provides::service)
                         .anyMatch(SERVICES::contains);
             }
+        } catch (InvalidModuleDescriptorException e) {
+            throw new RuntimeException("Invalid module-info.class in " + jarContents, e);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read module-info.class from " + jarContents, e);
         }

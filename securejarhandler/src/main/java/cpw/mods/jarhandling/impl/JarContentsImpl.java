@@ -162,4 +162,9 @@ public class JarContentsImpl implements JarContents {
     public void close() throws IOException {
         filesystem.close();
     }
+
+    @Override
+    public String toString() {
+        return getPrimaryPath().toString();
+    }
 }

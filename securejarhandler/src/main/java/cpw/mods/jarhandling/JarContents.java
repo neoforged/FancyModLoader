@@ -32,9 +32,10 @@ public interface JarContents extends Closeable {
 
     /**
      * Tries to open a file inside the jar content using a path relative to the root.
+     * <p>
      * The stream will not be buffered.
      * 
-     * @return null if the file cannot be found.
+     * @return null if the file cannot be found, or if there is a directory with the given name.
      */
     @Nullable
     InputStream getResourceAsStream(String name) throws IOException;
