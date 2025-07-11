@@ -44,6 +44,8 @@
   "fml.modloadingissue.technical_error": "Er is een technische fout opgetreden tijdens het laden van mods: {0}",
   "fml.modloadingissue.invalid_maven_coordinate": "Het volgende Maven coördinaat is ongeldig: {0}",
   "fml.modloadingissue.maven_coordinate_not_found": "Geen mod met de Maven coördinaat {0} kon worden gevonden in {1}",
+  "fml.modloadingissue.neodev_missing_dists_attribute": "NeoForge dev environment client-extra jar does not have a {0} attribute in its manifest; this may be because you have an out-of-date gradle plugin",
+  "fml.modloadingissue.neodev_missing_appropriate_dist": "NeoForge dev environment client-extra jar does not have a {0} marker in its {1} attribute in its manifest; this may be because you have an out-of-date gradle plugin",
   "fml.modloadingissue.failed_to_list_folder_content": "Fout bij het tonen van inhoud van map {0}",
   "fml.modloadingissue.failed_to_find_on_classpath": "Kan {0} niet vinden in de classpath",
   "fml.modloadingissue.multiple_copies_on_classpath": "Meerdere kopieën van {0} gevonden bij de classpath: {1}",
