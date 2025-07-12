@@ -66,7 +66,7 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
     }
 
     public static IModFileInfo manifestParser(final IModFile mod) {
-        Function<String, Optional<String>> cfg = name -> Optional.ofNullable(mod.getSecureJar().moduleDataProvider().getManifest().getMainAttributes().getValue(name));
+        Function<String, Optional<String>> cfg = name -> Optional.ofNullable(((ModFile) mod).getSecureJar().moduleDataProvider().getManifest().getMainAttributes().getValue(name));
         var license = cfg.apply("LICENSE").orElse("");
         var dummy = new IConfigurable() {
             @Override
@@ -142,7 +142,7 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
 
         @Override
         public String moduleName() {
-            return mod.getSecureJar().name();
+            return ((ModFile) mod).getSecureJar().name();
         }
 
         // These Should never be called as it's only called from ModJarMetadata.version and we bypass that

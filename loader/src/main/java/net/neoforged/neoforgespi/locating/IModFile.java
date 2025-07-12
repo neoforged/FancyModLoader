@@ -97,13 +97,6 @@ public interface IModFile {
     Path getFilePath();
 
     /**
-     * The secure jar that represents this mod file.
-     *
-     * @return The secure jar.
-     */
-    SecureJar getSecureJar();
-
-    /**
      * Returns a list of all mods located inside this jar.
      * <p>
      * If this method returns any entries then {@link #getType()} has to return {@link Type#MOD},
