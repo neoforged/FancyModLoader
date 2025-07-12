@@ -38,6 +38,7 @@ import net.neoforged.neoforgespi.locating.ModFileInfoParser;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 @ApiStatus.Internal
@@ -53,6 +54,7 @@ public class ModFile implements IModFile {
     private final Type modFileType;
     private final Manifest manifest;
     private IModFileInfo modFileInfo;
+    @Nullable
     private CompletableFuture<ModFileScanData> futureScanResult;
     private List<ModFileParser.MixinConfig> mixinConfigs;
     private List<Path> accessTransformers;
