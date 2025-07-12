@@ -18,7 +18,6 @@ import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.NightConfigWrapper;
-import net.neoforged.fml.loading.modscan.Scanner;
 import net.neoforged.fml.testlib.RuntimeCompiler;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import net.neoforged.neoforgespi.locating.ModFileInfoParser;
@@ -53,7 +52,7 @@ public class TestModFile extends ModFile implements AutoCloseable {
     }
 
     public void scan() {
-        setScanResult(new Scanner(this).scan(), null);
+        startScan(Runnable::run);
     }
 
     @CheckReturnValue
