@@ -2,18 +2,14 @@ package cpw.mods.jarhandling;
 
 import cpw.mods.jarhandling.impl.Jar;
 import cpw.mods.jarhandling.impl.JarContentsImpl;
-import cpw.mods.niofs.union.UnionPathFilter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleReader;
 import java.lang.module.ModuleReference;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.CodeSigner;
-import java.util.List;
 import java.util.Optional;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -127,29 +123,6 @@ public interface SecureJar {
          */
         @Nullable
         CodeSigner[] verifyAndGetSigners(String cname, byte[] bytes);
-    }
-
-    /**
-     * Same as {@link ModuleDescriptor.Provides}, but with an exposed constructor.
-     * Use only if the {@link #fromPath} method is useful to you.
-     */
-    record Provider(String serviceName, List<String> providers) {
-        /**
-         * Helper method to parse service provider implementations from a {@link Path}.
-         */
-        public static Provider fromPath(final Path path, final UnionPathFilter pkgFilter) {
-            final var sname = path.getFileName().toString();
-            try {
-                var entries = Files.readAllLines(path).stream()
-                        .map(String::trim)
-                        .filter(l -> !l.isEmpty() && !l.startsWith("#")) // We support comments :)
-                        .filter(p -> pkgFilter == null || pkgFilter.test(p.replace('.', '/'), path.getRoot()))
-                        .toList();
-                return new Provider(sname, entries);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
     }
 
     enum Status {

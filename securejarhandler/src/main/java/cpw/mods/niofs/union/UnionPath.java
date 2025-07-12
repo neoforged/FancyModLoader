@@ -321,7 +321,12 @@ public class UnionPath implements Path {
 
     @Override
     public String toString() {
-        return (this.absolute ? UnionFileSystem.SEP_STRING : "") + String.join(UnionFileSystem.SEP_STRING, this.pathParts);
+        var pathParts = this.pathParts.length == 1 ? this.pathParts[0] : String.join(UnionFileSystem.SEP_STRING, this.pathParts);
+        if (absolute) {
+            return UnionFileSystem.SEP_STRING + pathParts;
+        } else {
+            return pathParts;
+        }
     }
 
     public InputStream buildInputStream() {

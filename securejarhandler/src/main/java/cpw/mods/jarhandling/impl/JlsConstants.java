@@ -88,5 +88,35 @@ final class JlsConstants {
         return true;
     }
 
+    public static String getPackageName(String typeName) {
+        var lastSeparator = typeName.lastIndexOf('.');
+        if (lastSeparator != -1) {
+            return typeName.substring(0, lastSeparator);
+        }
+        return "";
+    }
+
+    /**
+     * Same as jdk.internal.module.Checks.isTypeName
+     * <p>
+     * Checks that every segment of the Java name (assuming period separators) is itself a valid Java identifier.
+     */
+    public static boolean isTypeName(String name) {
+        int nextSep = -1;
+        int lastSep = 0;
+        // Iterate all segments
+        for (nextSep = name.indexOf('.'); nextSep != -1; nextSep = name.indexOf('.', lastSep)) {
+            var segment = name.substring(lastSep, nextSep);
+            lastSep = nextSep + 1;
+
+            if (!isJavaIdentifier(segment)) {
+                return false;
+            }
+        }
+
+        var lastSegment = name.substring(lastSep);
+        return isJavaIdentifier(lastSegment);
+    }
+
     private JlsConstants() {}
 }

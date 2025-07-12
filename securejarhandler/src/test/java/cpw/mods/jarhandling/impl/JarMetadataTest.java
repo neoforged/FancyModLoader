@@ -8,6 +8,7 @@ import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarMetadata;
 import java.io.IOException;
 import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -58,7 +59,8 @@ public class JarMetadataTest {
                     .version("1.0")
                     .exports("exported_package")
                     .build();
-            var metadata = getJarMetadata("test.jar", builder -> builder
+            var testJar = tempDir.resolve("test.jar");
+            var metadata = getJarMetadata(testJar, builder -> builder
                     .addBinaryFile("exported_package/SomeClass.class", new byte[] {})
                     .addBinaryFile("somepackage/SomeClass.class", new byte[] {})
                     .addBinaryFile("resources/alsocount/resource.txt", new byte[] {})
@@ -69,6 +71,10 @@ public class JarMetadataTest {
 
             // It should find the package, even if it wasn't declared
             assertEquals(Set.of("somepackage", "exported_package", "resources.alsocount"), metadata.descriptor().packages());
+
+            // Compare against the packages found by the JDK for the same Jar
+            var jdkModuleDescriptor = getJdkModuleDescriptor(testJar);
+            assertEquals(jdkModuleDescriptor.packages(), metadata.descriptor().packages());
         }
 
         @Test
@@ -141,6 +147,45 @@ public class JarMetadataTest {
             assertEquals("helloworld", meta.name());
             assertNull(meta.version());
         }
+
+        @Test
+        void testServiceProviders() throws Exception {
+            var testJar = tempDir.resolve("test.jar");
+            var metadata = getJarMetadata(testJar, builder -> builder
+                    .addBinaryFile("somepackage/SomeClass.class", new byte[] {})
+                    .addService("pkg.SomeService", "somepackage.SomeClass")
+                    // This tests that service files with invalid names are ignored
+                    .addService("package.Class", "somepackage.SomeClass"));
+
+            var descriptor = metadata.descriptor();
+            assertEquals(Set.of("somepackage"), descriptor.packages());
+
+            // Compare against the services found by the JDK for the same Jar
+            var jdkModuleDescriptor = getJdkModuleDescriptor(testJar);
+            assertEquals(jdkModuleDescriptor.provides(), descriptor.provides());
+        }
+
+        @Test
+        void testPackageScanning() throws Exception {
+            var testJar = tempDir.resolve("test.jar");
+            var metadata = getJarMetadata(testJar, builder -> builder
+                    .addBinaryFile("exported_package/SomeClass.class", new byte[] {})
+                    .addBinaryFile("somepackage/SomeClass.class", new byte[] {})
+                    .addBinaryFile("resources/alsocount/resource.txt", new byte[] {})
+                    .addBinaryFile("META-INF/Ignored.class", new byte[] {})
+                    .addBinaryFile("META-INF/services/subdir/Ignored.class", new byte[] {})
+                    .addBinaryFile("not/while/package/Ignored.class", new byte[] {})
+                    .addBinaryFile("9/notanidentifier/Ignored.class", new byte[] {}));
+
+            // It should find the package, even if it wasn't declared
+            // But unlike normal named modules, automatic modules do *not* declare their resource packages
+            // which makes them work like pre-modular Java (resources findable via the ClassLoader).
+            assertEquals(Set.of("somepackage", "exported_package"), metadata.descriptor().packages());
+
+            // Compare against the packages found by the JDK for the same Jar
+            var jdkModuleDescriptor = getJdkModuleDescriptor(testJar);
+            assertEquals(jdkModuleDescriptor.packages(), metadata.descriptor().packages());
+        }
     }
 
     // Compute JarMetadata for a Jar that only contains a module-info.class with the given descriptor.
@@ -150,7 +195,10 @@ public class JarMetadataTest {
 
     private JarMetadata getJarMetadata(String path, ModFileCustomizer consumer) throws IOException {
         var testJar = tempDir.resolve(path);
+        return getJarMetadata(testJar, consumer);
+    }
 
+    private JarMetadata getJarMetadata(Path testJar, ModFileCustomizer consumer) throws IOException {
         Files.createDirectories(testJar.getParent());
 
         var builder = new ModFileBuilder(testJar);
@@ -166,6 +214,12 @@ public class JarMetadataTest {
             metadata.descriptor(); // This causes the packages to be scanned so we can close the unionfs
             return metadata;
         }
+    }
+
+    private static ModuleDescriptor getJdkModuleDescriptor(Path testJar) {
+        var modules = ModuleFinder.of(testJar).findAll();
+        assertEquals(1, modules.size());
+        return modules.iterator().next().descriptor();
     }
 
     @FunctionalInterface

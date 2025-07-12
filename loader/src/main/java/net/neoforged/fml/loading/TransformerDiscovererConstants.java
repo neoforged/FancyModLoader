@@ -6,12 +6,14 @@
 package net.neoforged.fml.loading;
 
 import cpw.mods.jarhandling.JarContents;
-import cpw.mods.jarhandling.JarMetadata;
-import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.IModuleLayerManager.Layer;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.lang.module.InvalidModuleDescriptorException;
+import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
@@ -62,9 +64,34 @@ public final class TransformerDiscovererConstants {
     }
 
     public static boolean shouldLoadInServiceLayer(JarContents jarContents) {
-        JarMetadata metadata = JarMetadata.from(jarContents);
-        return metadata.providers().stream()
-                .map(SecureJar.Provider::serviceName)
-                .anyMatch(SERVICES::contains);
+        // This tries to optimize for speed since this scan happens before any progress window is shown to the user
+        // We try a module-info.class first, if it is present.
+        try (var moduleInfoContent = jarContents.openFile("module-info.class")) {
+            if (moduleInfoContent != null) {
+                // Module-info is present, read it without scanning for packages
+                var moduleDescriptor = ModuleDescriptor.read(new BufferedInputStream(moduleInfoContent));
+                return moduleDescriptor.provides().stream()
+                        .map(ModuleDescriptor.Provides::service)
+                        .anyMatch(SERVICES::contains);
+            }
+        } catch (InvalidModuleDescriptorException e) {
+            throw new RuntimeException("Invalid module-info.class in " + jarContents, e);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read module-info.class from " + jarContents, e);
+        }
+
+        // If we get here, the Jar is non-modular, so we check for matching service files
+        for (var service : SERVICES) {
+            var serviceFile = "META-INF/services/" + service;
+            try {
+                if (jarContents.containsFile(serviceFile)) {
+                    return true; // Found a match
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException("Failed to check for service-file " + serviceFile + " in " + jarContents, e);
+            }
+        }
+
+        return false; // No matching service files were found
     }
 }

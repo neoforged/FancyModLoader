@@ -1,5 +1,6 @@
 package cpw.mods.jarhandling.impl;
 
+import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.LazyJarMetadata;
 import java.io.IOException;
@@ -9,9 +10,6 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Supplier;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -21,21 +19,21 @@ import org.jetbrains.annotations.Nullable;
 public class ModuleJarMetadata extends LazyJarMetadata {
     private final byte[] originalDescriptorBytes;
     private final ModuleDescriptor originalDescriptor;
-    private final Supplier<Set<String>> packagesSupplier;
+    private final JarContents jar;
 
-    public ModuleJarMetadata(URI uri, Supplier<Set<String>> packagesSupplier) {
+    public ModuleJarMetadata(URI uri, JarContents jar) {
+        this.jar = jar;
         try {
             this.originalDescriptorBytes = Files.readAllBytes(Path.of(uri));
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read module-info.class from " + uri, e);
         }
-        this.packagesSupplier = Objects.requireNonNull(packagesSupplier, "packagesSupplier");
         this.originalDescriptor = ModuleDescriptor.read(ByteBuffer.wrap(originalDescriptorBytes));
     }
 
     @Override
     protected ModuleDescriptor computeDescriptor() {
-        var fullDescriptor = ModuleDescriptor.read(ByteBuffer.wrap(originalDescriptorBytes), packagesSupplier);
+        var fullDescriptor = ModuleDescriptor.read(ByteBuffer.wrap(originalDescriptorBytes), () -> ModuleDescriptorFactory.scanModulePackages(jar));
 
         // There are two cases in which we have to build a new descriptor:
         // 1) The original one didn't have a list of package names
