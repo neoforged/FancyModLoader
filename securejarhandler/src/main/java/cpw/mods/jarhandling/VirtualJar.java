@@ -24,6 +24,8 @@ import org.jetbrains.annotations.Nullable;
  * and need to make a {@link SecureJar}-based module system implementation aware of these packages.
  */
 public final class VirtualJar implements SecureJar {
+    private final JarContents contents;
+
     /**
      * Creates a new virtual jar.
      *
@@ -37,6 +39,7 @@ public final class VirtualJar implements SecureJar {
             throw new IllegalArgumentException("VirtualJar reference path " + referencePath + " must exist");
         }
 
+        this.contents = JarContents.empty(referencePath);
         this.moduleDescriptor = ModuleDescriptor.newAutomaticModule(name)
                 .packages(Set.of(packages))
                 .build();
@@ -64,6 +67,11 @@ public final class VirtualJar implements SecureJar {
     @Override
     public Path getPrimaryPath() {
         return dummyFileSystem.getPrimaryPath();
+    }
+
+    @Override
+    public JarContents contents() {
+        return contents;
     }
 
     @Override

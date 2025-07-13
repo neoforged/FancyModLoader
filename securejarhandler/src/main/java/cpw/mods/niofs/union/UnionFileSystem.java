@@ -235,6 +235,10 @@ public class UnionFileSystem extends FileSystem {
         throw new UnsupportedOperationException();
     }
 
+    public boolean hasContentRoot(Path path) {
+        return basepaths.contains(path);
+    }
+
     List<Path> getBasePaths() {
         return this.basepaths;
     }

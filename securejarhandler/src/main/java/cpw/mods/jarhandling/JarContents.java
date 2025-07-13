@@ -7,6 +7,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
@@ -20,10 +21,28 @@ import org.jetbrains.annotations.Nullable;
  */
 @ApiStatus.NonExtendable
 public interface JarContents extends Closeable {
+    static JarContents empty(Path path) {
+        return new EmptyJarContents(path);
+    }
+
     /**
      * @see SecureJar#getPrimaryPath()
      */
     Path getPrimaryPath();
+
+    /**
+     * Does this mod container have the given file system path as one of its content roots?
+     */
+    boolean hasContentRoot(Path path);
+
+    @Nullable
+    String getManifestAttribute(String name);
+
+    @Nullable
+    String getManifestAttribute(Attributes.Name name);
+
+    @Nullable
+    JarResource get(String relativePath);
 
     /**
      * Looks for a file in the jar.
@@ -40,19 +59,29 @@ public interface JarContents extends Closeable {
     @Nullable
     InputStream openFile(String name) throws IOException;
 
+    default byte @Nullable [] readFile(String relativePath) throws IOException {
+        try (var in = openFile(relativePath)) {
+            if (in == null) {
+                return null;
+            }
+            return in.readAllBytes();
+        }
+    }
+
     /**
      * Checks, if a given file exists in this jar file.
      *
      * @param relativePath The path to the file, relative to the root of this Jar file.
      * @return True if the file exists, false if it doesn't or the given path denotes a directory.
-     * @throws IOException If an I/O error occurs while looking for the file.
      */
-    default boolean containsFile(String relativePath) throws IOException {
-        var stream = openFile(relativePath);
-        if (stream != null) {
-            stream.close();
-            return true;
-        }
+    default boolean containsFile(String relativePath) {
+        try {
+            var stream = openFile(relativePath);
+            if (stream != null) {
+                stream.close();
+                return true;
+            }
+        } catch (IOException ignored) {}
         return false;
     }
 
@@ -60,7 +89,20 @@ public interface JarContents extends Closeable {
      * {@return the manifest of the jar}
      * Empty if no manifest is present in the jar.
      */
+    @Deprecated
     Manifest getManifest();
+
+    /**
+     * Visits all content found in this jar.
+     */
+    default void visitContent(JarResourceVisitor visitor) {
+        visitContent("", visitor);
+    }
+
+    /**
+     * Visits all content found in this jar, starting in the given folder
+     */
+    void visitContent(String startingFolder, JarResourceVisitor visitor);
 
     /**
      * Create plain jar contents from a single jar file or folder.
