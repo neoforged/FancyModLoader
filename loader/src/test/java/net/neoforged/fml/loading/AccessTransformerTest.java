@@ -64,7 +64,7 @@ public class AccessTransformerTest extends LauncherTest {
     }
 
     /**
-     * This tests that gamelibraries can apply ATs by putting them in the default location.
+     * This tests that gamelibraries cannot apply ATs by putting them in the default location.
      */
     @Test
     void testGameLibraryWithDefaultAccessTransformer() throws Exception {
