@@ -229,7 +229,12 @@ public class ModDiscoverer {
                         if (addModFile(provided)) {
                             return Optional.of(provided);
                         }
-                        ((ModFile) provided).close();
+                        // The reader might have returned something other than a ModFile, which we handle elsewhere
+                        if (provided instanceof ModFile modFile) {
+                            modFile.close();
+                        } else {
+                            closeJarContents(jarContents);
+                        }
                         return Optional.empty();
                     }
                 } catch (ModLoadingException e) {
