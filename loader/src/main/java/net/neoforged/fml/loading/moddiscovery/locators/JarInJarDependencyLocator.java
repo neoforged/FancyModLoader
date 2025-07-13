@@ -33,8 +33,10 @@ import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import net.neoforged.neoforgespi.locating.ModFileLoadingException;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
+import org.jetbrains.annotations.ApiStatus;
 import org.slf4j.Logger;
 
+@ApiStatus.Internal
 public class JarInJarDependencyLocator implements IDependencyLocator {
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -86,7 +88,7 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
         }));
     }
 
-    protected ModLoadingException exception(Collection<JarSelector.ResolutionFailureInformation<IModFile>> failedDependencies) {
+    private ModLoadingException exception(Collection<JarSelector.ResolutionFailureInformation<IModFile>> failedDependencies) {
         final List<ModLoadingIssue> errors = failedDependencies.stream()
                 .filter(entry -> !entry.sources().isEmpty()) //Should never be the case, but just to be sure
                 .map(this::buildExceptionData)
@@ -121,7 +123,7 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
         return "\u00a7e" + modWithVersionRange.modInfo().getModId() + "\u00a7r - \u00a74" + modWithVersionRange.versionRange().toString() + "\u00a74 - \u00a72" + modWithVersionRange.artifactVersion().toString() + "\u00a72";
     }
 
-    protected String identifyMod(final IModFile modFile) {
+    private String identifyMod(final IModFile modFile) {
         if (modFile.getModFileInfo() == null) {
             return modFile.getFileName();
         }
@@ -136,7 +138,7 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
 
     private record ModWithVersionRange(IModInfo modInfo, VersionRange versionRange, ArtifactVersion artifactVersion) {}
 
-    protected Optional<InputStream> loadResourceFromModFile(final IModFile modFile, final Path path) {
+    private Optional<InputStream> loadResourceFromModFile(final IModFile modFile, final Path path) {
         try {
             return Optional.of(Files.newInputStream(modFile.findResource(path.toString())));
         } catch (final NoSuchFileException e) {
