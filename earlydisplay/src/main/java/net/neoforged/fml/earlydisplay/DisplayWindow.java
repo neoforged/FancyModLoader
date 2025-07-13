@@ -464,7 +464,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     /**
      * <strong>Called from Neo</strong>
-     * 
+     *
      * @return The OpenGL texture id of the texture the early loading screen is being rendered into.
      */
     public int getFramebufferTextureId() {
