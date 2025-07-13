@@ -229,7 +229,7 @@ public class ModDiscoverer {
                         if (addModFile(provided)) {
                             return Optional.of(provided);
                         }
-                        closeJarContents(jarContents); // The mod-file wasn't used, ensure the jar contents are cleaned up
+                        ((ModFile) provided).close();
                         return Optional.empty();
                     }
                 } catch (ModLoadingException e) {
