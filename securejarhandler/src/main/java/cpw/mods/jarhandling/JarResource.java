@@ -7,6 +7,13 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * A resource found in a {@link JarContents}.
+ *
+ * <p><strong>NOTE:</strong> Instances of this class obtained from {@link JarResourceVisitor} should not be
+ * copied for use outside the visitor. If you need to hold onto a resource outside the visitor, copy it first
+ * using {@link #retain()}.
+ */
 public interface JarResource {
     InputStream open() throws IOException;
 
@@ -24,6 +31,12 @@ public interface JarResource {
         }
     }
 
+    /**
+     * Reads metadata attributes of this resource.
+     *
+     * @return The attributes of this resource.
+     * @throws IOException If accessing the attributes fails due to an I/O error.
+     */
     JarResourceAttributes attributes() throws IOException;
 
     /**

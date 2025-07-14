@@ -18,6 +18,11 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Create with {@link JarContentsBuilder}.
  * Convert to a full jar with {@link SecureJar#from(JarContents)}.
+ *
+ * <h2>Relative Paths</h2>
+ * To address files within jars, paths that are interpreted to be relative to the root of the jar file are used.
+ * The relative path for a class-file for class {@code your.package.YourClass} would be {@code your/package/YourClass},
+ * for example.
  */
 @ApiStatus.NonExtendable
 public interface JarContents extends Closeable {
@@ -31,12 +36,31 @@ public interface JarContents extends Closeable {
      */
     boolean hasContentRoot(Path path);
 
+    /**
+     * Reads an attribute from the main section of the Jar manifest contained in this jar contents.
+     * <p>Prefer {@link #getManifestAttribute(Attributes.Name)} where possible, and store the Name in a field.
+     *
+     * @param name The name of the attribute.
+     * @return Null if either no manifest could be found, or if the manifest doesn't have the named attribute.
+     */
     @Nullable
     String getManifestAttribute(String name);
 
+    /**
+     * Reads an attribute from the main section of the Jar manifest contained in this jar contents.
+     *
+     * @param name The name of the attribute.
+     * @return Null if either no manifest could be found, or if the manifest doesn't have the named attribute.
+     */
     @Nullable
     String getManifestAttribute(Attributes.Name name);
 
+    /**
+     * Tries to find a resource with the given path in this jar content.
+     *
+     * @param relativePath See {@link JarContents} for a definition of relative paths.
+     * @return Null if the resource could not be found within the jar.
+     */
     @Nullable
     JarResource get(String relativePath);
 
@@ -49,12 +73,18 @@ public interface JarContents extends Closeable {
      * Tries to open a file inside the jar content using a path relative to the root.
      * <p>
      * The stream will not be buffered.
-     * 
+     *
      * @return null if the file cannot be found, or if there is a directory with the given name.
      */
     @Nullable
     InputStream openFile(String name) throws IOException;
 
+    /**
+     * A convenience method that {@linkplain #openFile(String) opens a file} and if the file was found,
+     * returns its content.
+     *
+     * @return Null if the file does not exist.
+     */
     default byte @Nullable [] readFile(String relativePath) throws IOException {
         try (var in = openFile(relativePath)) {
             if (in == null) {
@@ -65,7 +95,7 @@ public interface JarContents extends Closeable {
     }
 
     /**
-     * Checks, if a given file exists in this jar file.
+     * Checks, if a given file exists in this jar.
      *
      * @param relativePath The path to the file, relative to the root of this Jar file.
      * @return True if the file exists, false if it doesn't or the given path denotes a directory.
