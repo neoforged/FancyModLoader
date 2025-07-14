@@ -21,10 +21,6 @@ import org.jetbrains.annotations.Nullable;
  */
 @ApiStatus.NonExtendable
 public interface JarContents extends Closeable {
-    static JarContents empty(Path path) {
-        return new EmptyJarContents(path);
-    }
-
     /**
      * @see SecureJar#getPrimaryPath()
      */

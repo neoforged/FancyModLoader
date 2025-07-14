@@ -39,12 +39,12 @@ public final class VirtualJar implements SecureJar {
             throw new IllegalArgumentException("VirtualJar reference path " + referencePath + " must exist");
         }
 
-        this.contents = JarContents.empty(referencePath);
         this.moduleDescriptor = ModuleDescriptor.newAutomaticModule(name)
                 .packages(Set.of(packages))
                 .build();
         // Create a dummy file system from the reference path, with a filter that always returns false
         this.dummyFileSystem = UFSP.newFileSystem((path, basePath) -> false, referencePath);
+        this.contents = JarContents.of(dummyFileSystem.getRoot());
     }
 
     // Implementation details below
