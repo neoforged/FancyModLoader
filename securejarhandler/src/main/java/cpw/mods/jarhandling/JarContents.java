@@ -7,7 +7,6 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
@@ -35,25 +34,6 @@ public interface JarContents extends Closeable {
      * Does this mod container have the given file system path as one of its content roots?
      */
     boolean hasContentRoot(Path path);
-
-    /**
-     * Reads an attribute from the main section of the Jar manifest contained in this jar contents.
-     * <p>Prefer {@link #getManifestAttribute(Attributes.Name)} where possible, and store the Name in a field.
-     *
-     * @param name The name of the attribute.
-     * @return Null if either no manifest could be found, or if the manifest doesn't have the named attribute.
-     */
-    @Nullable
-    String getManifestAttribute(String name);
-
-    /**
-     * Reads an attribute from the main section of the Jar manifest contained in this jar contents.
-     *
-     * @param name The name of the attribute.
-     * @return Null if either no manifest could be found, or if the manifest doesn't have the named attribute.
-     */
-    @Nullable
-    String getManifestAttribute(Attributes.Name name);
 
     /**
      * Tries to find a resource with the given path in this jar content.
@@ -114,8 +94,8 @@ public interface JarContents extends Closeable {
     /**
      * {@return the manifest of the jar}
      * Empty if no manifest is present in the jar.
+     * <p><strong>NOTE:</strong> Do not modify the returned manifest.
      */
-    @Deprecated
     Manifest getManifest();
 
     /**

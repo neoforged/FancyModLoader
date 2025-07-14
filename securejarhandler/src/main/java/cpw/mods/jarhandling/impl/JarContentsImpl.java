@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
@@ -172,24 +171,6 @@ public class JarContentsImpl implements JarContents {
     @Override
     public boolean hasContentRoot(Path path) {
         return filesystem.hasContentRoot(path);
-    }
-
-    @Override
-    public @Nullable String getManifestAttribute(String name) {
-        var manifest = getManifest();
-        if (manifest != null) {
-            return manifest.getMainAttributes().getValue(name);
-        }
-        return null;
-    }
-
-    @Override
-    public @Nullable String getManifestAttribute(Attributes.Name name) {
-        var manifest = getManifest();
-        if (manifest != null) {
-            return manifest.getMainAttributes().getValue(name);
-        }
-        return null;
     }
 
     @Override
