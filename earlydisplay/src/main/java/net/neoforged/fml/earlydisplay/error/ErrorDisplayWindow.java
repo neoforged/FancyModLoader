@@ -230,9 +230,10 @@ final class ErrorDisplayWindow {
 
         boolean press = action == GLFW.GLFW_PRESS;
         if (press) {
+            buttons.forEach(Button::unfocus);
             for (Button btn : buttons) {
                 if (btn.isMouseOver(mouseX, mouseY)) {
-                    btn.onPress().run();
+                    btn.onPress.run();
                     break;
                 }
             }
@@ -248,10 +249,42 @@ final class ErrorDisplayWindow {
     void handleKey(long ignoredWindow, int key, int ignoredScancode, int action, int ignoredMods) {
         if (action == GLFW.GLFW_RELEASE) return;
 
+        boolean repeat = action == GLFW.GLFW_REPEAT;
         switch (key) {
-            case GLFW.GLFW_KEY_ESCAPE -> closed = true;
+            case GLFW.GLFW_KEY_ESCAPE -> {
+                if (!repeat) {
+                    closed = true;
+                }
+            }
             case GLFW.GLFW_KEY_PAGE_UP, GLFW.GLFW_KEY_UP -> scroll(-1);
             case GLFW.GLFW_KEY_PAGE_DOWN, GLFW.GLFW_KEY_DOWN -> scroll(1);
+            case GLFW.GLFW_KEY_TAB -> {
+                if (repeat) break;
+
+                boolean modified = false;
+                for (int i = 0; i < buttons.size(); i++) {
+                    Button button = buttons.get(i);
+                    if (button.isFocused()) {
+                        button.unfocus();
+                        buttons.get((i + 1) % buttons.size()).focus();
+                        modified = true;
+                        break;
+                    }
+                }
+                if (!modified) {
+                    buttons.getFirst().focus();
+                }
+            }
+            case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> {
+                if (repeat) break;
+
+                for (Button button : buttons) {
+                    if (button.isFocused()) {
+                        button.onPress.run();
+                        break;
+                    }
+                }
+            }
         }
     }
 

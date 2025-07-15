@@ -18,10 +18,29 @@ import net.neoforged.fml.earlydisplay.theme.TextureScaling;
 import net.neoforged.fml.earlydisplay.theme.UncompressedImage;
 import org.lwjgl.system.MemoryUtil;
 
-record Button(ErrorDisplayWindow window, int x, int y, int width, int height, String text, Runnable onPress) {
+final class Button {
+    private final ErrorDisplayWindow window;
+    private final int x;
+    private final int y;
+    private final int width;
+    private final int height;
+    private final String text;
+    final Runnable onPress;
+    private boolean focused;
+
+    Button(ErrorDisplayWindow window, int x, int y, int width, int height, String text, Runnable onPress) {
+        this.window = window;
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.text = text;
+        this.onPress = onPress;
+    }
+
     void render(RenderContext ctx, SimpleFont font, double mouseX, double mouseY) {
-        boolean hovered = isMouseOver(mouseX, mouseY);
-        Texture texture = hovered ? window.buttonTextureHover : window.buttonTexture;
+        boolean highlighted = focused || isMouseOver(mouseX, mouseY);
+        Texture texture = highlighted ? window.buttonTextureHover : window.buttonTexture;
         ctx.blitTexture(texture, x, y, width, height);
 
         int w = font.stringWidth(text);
@@ -31,6 +50,18 @@ record Button(ErrorDisplayWindow window, int x, int y, int width, int height, St
 
     boolean isMouseOver(double mouseX, double mouseY) {
         return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
+    }
+
+    boolean isFocused() {
+        return focused;
+    }
+
+    void focus() {
+        this.focused = true;
+    }
+
+    void unfocus() {
+        focused = false;
     }
 
     static Texture loadTexture(boolean highlighted) {
