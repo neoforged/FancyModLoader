@@ -1,9 +1,8 @@
 package net.neoforged.fml.earlydisplay.error;
 
-import net.neoforged.fml.earlydisplay.render.SimpleFont;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.neoforged.fml.earlydisplay.render.SimpleFont;
 
 record ErrorEntry(List<List<SimpleFont.DisplayText>> lines, int lineCount) {
     static ErrorEntry of(String text) {

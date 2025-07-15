@@ -1,5 +1,9 @@
 package net.neoforged.fml.earlydisplay.error;
 
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.earlydisplay.render.EarlyFramebuffer;
 import net.neoforged.fml.earlydisplay.render.ElementShader;
@@ -13,11 +17,6 @@ import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.i18n.FMLTranslations;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11C;
-
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 
 final class ErrorDisplayWindow {
     private static final long MINFRAMETIME = TimeUnit.MILLISECONDS.toNanos(10); // This is the FPS cap on the window
@@ -85,8 +84,7 @@ final class ErrorDisplayWindow {
                 new Button(this, LEFT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Open Mods Folder", () -> opener.open(modsFolder)),
                 new Button(this, LEFT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Open crash report", () -> opener.open(crashReportFile)),
                 new Button(this, RIGHT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Open log file", () -> opener.open(logFile)),
-                new Button(this, RIGHT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Quit game", () -> closed = true)
-        );
+                new Button(this, RIGHT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Quit game", () -> closed = true));
         this.errorEntries = errors.stream()
                 .map(FMLTranslations::translateIssueEnglish)
                 .map(ErrorEntry::of)
@@ -152,7 +150,7 @@ final class ErrorDisplayWindow {
 
     private void renderToFramebuffer(RenderContext ctx) {
         // Background
-        ctx.fillRect(0,  0, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0xFF402020, 0xFF501010);
+        ctx.fillRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0xFF402020, 0xFF501010);
         // Top edge
         ctx.fillRect(0, LIST_BORDER_TOP_Y1, DISPLAY_WIDTH, LIST_BORDER_HEIGHT, 0x33FFFFFF);
         ctx.fillRect(0, LIST_BORDER_TOP_Y2, DISPLAY_WIDTH, LIST_BORDER_HEIGHT, 0xBF000000);

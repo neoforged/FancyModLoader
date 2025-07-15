@@ -1,14 +1,13 @@
 package net.neoforged.fml.earlydisplay.error;
 
+import java.nio.file.Path;
+import java.util.List;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.earlydisplay.render.GlState;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.Callback;
-
-import java.nio.file.Path;
-import java.util.List;
 
 public final class ErrorDisplay {
     private static final boolean THROW_ON_EXIT = Boolean.getBoolean("fml.loadingErrorThrowOnExit");

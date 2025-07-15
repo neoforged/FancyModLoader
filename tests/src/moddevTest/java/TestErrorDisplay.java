@@ -3,16 +3,15 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.earlydisplay.DisplayWindow;
 import net.neoforged.fml.earlydisplay.error.ErrorDisplay;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
 import org.lwjgl.opengl.GL;
-
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 public class TestErrorDisplay {
     public static void main(String[] args) throws Exception {
@@ -44,8 +43,7 @@ public class TestErrorDisplay {
                     new UnsupportedOperationException(),
                     null,
                     null,
-                    null
-            ));
+                    null));
         }
         ErrorDisplay.fatal(windowId, issues, Path.of("./tests/mods"), Path.of("./logs/latest.log"), Path.of("./"));
     }

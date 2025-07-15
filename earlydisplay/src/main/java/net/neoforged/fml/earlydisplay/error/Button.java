@@ -1,5 +1,9 @@
 package net.neoforged.fml.earlydisplay.error;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+import java.util.List;
 import net.neoforged.fml.earlydisplay.render.RenderContext;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import net.neoforged.fml.earlydisplay.render.Texture;
@@ -8,11 +12,6 @@ import net.neoforged.fml.earlydisplay.theme.NativeBuffer;
 import net.neoforged.fml.earlydisplay.theme.TextureScaling;
 import net.neoforged.fml.earlydisplay.theme.UncompressedImage;
 import org.lwjgl.system.MemoryUtil;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
-import java.util.List;
 
 record Button(ErrorDisplayWindow window, int x, int y, int width, int height, String text, Runnable onPress) {
     void render(RenderContext ctx, SimpleFont font, double mouseX, double mouseY) {

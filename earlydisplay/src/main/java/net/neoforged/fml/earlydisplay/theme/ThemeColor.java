@@ -83,7 +83,6 @@ public record ThemeColor(float r, float g, float b, float a) {
                 Math.clamp(color.r() * scale, 0, 1F),
                 Math.clamp(color.g() * scale, 0, 1F),
                 Math.clamp(color.b() * scale, 0, 1F),
-                color.a()
-        );
+                color.a());
     }
 }

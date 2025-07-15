@@ -1,12 +1,11 @@
 package net.neoforged.fml.earlydisplay.error;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Locale;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public abstract sealed class FileOpener {
     private static final Logger LOGGER = LogManager.getLogger();
