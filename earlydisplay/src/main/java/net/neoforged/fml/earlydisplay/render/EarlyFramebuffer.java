@@ -35,7 +35,7 @@ public class EarlyFramebuffer {
     private int width;
     private int height;
 
-    EarlyFramebuffer(int width, int height) {
+    public EarlyFramebuffer(int width, int height) {
         this.width = width;
         this.height = height;
         this.framebuffer = glGenFramebuffers();
@@ -53,15 +53,15 @@ public class EarlyFramebuffer {
         GlState.bindFramebuffer(0);
     }
 
-    void activate() {
+    public void activate() {
         GlState.bindFramebuffer(this.framebuffer);
     }
 
-    void deactivate() {
+    public void deactivate() {
         GlState.bindFramebuffer(0);
     }
 
-    void blitToScreen(ThemeColor backgroundColor, int windowFBWidth, int windowFBHeight) {
+    public void blitToScreen(ThemeColor backgroundColor, int windowFBWidth, int windowFBHeight) {
         var wscale = ((float) windowFBWidth / width);
         var hscale = ((float) windowFBHeight / height);
         var scale = Math.min(wscale, hscale) / 2f;
@@ -95,6 +95,7 @@ public class EarlyFramebuffer {
     public void resize(int width, int height) {
         if (this.width != width || this.height != height) {
             GlState.bindFramebuffer(framebuffer);
+            GlState.bindTexture2D(texture);
             this.width = width;
             this.height = height;
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (IntBuffer) null);
