@@ -1,5 +1,7 @@
 package cpw.mods.jarhandling;
 
+import org.jetbrains.annotations.ApiStatus;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,6 +16,7 @@ import java.nio.charset.StandardCharsets;
  * copied for use outside the visitor. If you need to hold onto a resource outside the visitor, copy it first
  * using {@link #retain()}.
  */
+@ApiStatus.NonExtendable
 public interface JarResource {
     InputStream open() throws IOException;
 
