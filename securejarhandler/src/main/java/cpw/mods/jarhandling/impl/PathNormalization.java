@@ -3,7 +3,8 @@ package cpw.mods.jarhandling.impl;
 final class PathNormalization {
     private static final char SEPARATOR = '/';
 
-    private PathNormalization() {}
+    private PathNormalization() {
+    }
 
     public static boolean isNormalized(CharSequence path) {
         if (path.isEmpty()) {
@@ -18,15 +19,29 @@ final class PathNormalization {
         }
 
         char prevCh = '\0';
+        int segmentStart = 0;
         for (int i = 0; i < path.length(); i++) {
+            boolean atEnd = i == path.length() - 1;
+
             char ch = path.charAt(i);
-            if ((i == 0 || i == path.length() - 1) && ch == SEPARATOR) {
+            if ((i == 0 || atEnd) && ch == SEPARATOR) {
                 return false; // No leading or trailing separators
             }
             if (ch == SEPARATOR && prevCh == SEPARATOR) {
                 return false; // No repeated separators
             }
-            // TODO We do not support ./ or ../
+            // Validate path segments either when encounter separators or at the last character
+            if (ch == SEPARATOR || atEnd) {
+                var segmentEnd = ch == SEPARATOR ? i - 1 : i;
+                var segmentLength = (segmentEnd - segmentStart) + 1;
+                if (segmentLength == 1 && path.charAt(segmentStart) == '.') {
+                    return false; // No '.' segments
+                } else if (segmentLength == 2 && path.charAt(segmentStart) == '.' && path.charAt(segmentEnd) == '.') {
+                    return false; // No '..' segments
+                }
+
+                segmentStart = i + 1;
+            }
             prevCh = ch;
         }
 
