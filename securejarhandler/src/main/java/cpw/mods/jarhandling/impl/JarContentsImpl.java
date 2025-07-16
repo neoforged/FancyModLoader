@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -155,6 +156,11 @@ public class JarContentsImpl implements JarContents {
         var path = fromRelativePath(name);
         try {
             return Files.newInputStream(path);
+        } catch (AccessDeniedException e) {
+            if (Files.isDirectory(path)) {
+                return null;
+            }
+            throw e;
         } catch (NoSuchFileException e) {
             return null;
         }
@@ -178,7 +184,7 @@ public class JarContentsImpl implements JarContents {
     @Override
     public @Nullable JarResource get(String relativePath) {
         var path = fromRelativePath(relativePath);
-        if (Files.exists(path)) {
+        if (Files.isRegularFile(path)) {
             return new JarResource() {
                 @Override
                 public InputStream open() throws IOException {
@@ -201,8 +207,14 @@ public class JarContentsImpl implements JarContents {
 
     @Override
     public byte[] readFile(String relativePath) throws IOException {
+        Path path = fromRelativePath(relativePath);
         try {
-            return Files.readAllBytes(fromRelativePath(relativePath));
+            return Files.readAllBytes(path);
+        } catch (AccessDeniedException e) {
+            if (Files.isDirectory(path)) {
+                return null;
+            }
+            throw e;
         } catch (NoSuchFileException e) {
             return null;
         }
@@ -213,6 +225,9 @@ public class JarContentsImpl implements JarContents {
         var startingPoint = getVisitStartingPoint(startingFolder);
         if (!startingPoint.startsWith(filesystem.getRoot())) {
             return; // Don't allow ../ escapes
+        }
+        if (!Files.isDirectory(startingPoint)) {
+            return;
         }
 
         try (var stream = Files.walk(startingPoint)) {

@@ -27,6 +27,7 @@ compileTestJava {
 
 dependencies {
     compileOnly("org.jetbrains:annotations:${project.jetbrains_annotations_version}")
+    testImplementation("org.assertj:assertj-core:$assertj_version")
     testImplementation("org.ow2.asm:asm:${project.asm_version}")
     testImplementation("org.ow2.asm:asm-tree:${project.asm_version}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${project.jupiter_version}")

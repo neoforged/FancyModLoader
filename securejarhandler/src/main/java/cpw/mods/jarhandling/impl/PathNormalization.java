@@ -3,8 +3,7 @@ package cpw.mods.jarhandling.impl;
 final class PathNormalization {
     private static final char SEPARATOR = '/';
 
-    private PathNormalization() {
-    }
+    private PathNormalization() {}
 
     public static boolean isNormalized(CharSequence path) {
         if (path.isEmpty()) {

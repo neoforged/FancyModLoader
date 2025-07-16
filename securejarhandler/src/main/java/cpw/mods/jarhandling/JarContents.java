@@ -108,7 +108,8 @@ public interface JarContents extends Closeable {
     }
 
     /**
-     * Visits all content found in this jar, starting in the given folder
+     * Visits all content found in this jar, starting in the given folder.
+     * <p>If the folder does not exist, the visitor is not invoked and no error is raised.
      */
     void visitContent(String startingFolder, JarResourceVisitor visitor);
 
