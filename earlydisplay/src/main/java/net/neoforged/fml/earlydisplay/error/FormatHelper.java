@@ -1,9 +1,13 @@
-package net.neoforged.fml.earlydisplay.error;
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
 
-import net.neoforged.fml.earlydisplay.render.SimpleFont;
+package net.neoforged.fml.earlydisplay.error;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.neoforged.fml.earlydisplay.render.SimpleFont;
 
 final class FormatHelper {
     static List<List<SimpleFont.DisplayText>> formatText(String text, int defaultColor) {
@@ -62,5 +66,5 @@ final class FormatHelper {
         };
     }
 
-    private FormatHelper() { }
+    private FormatHelper() {}
 }
