@@ -34,6 +34,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 public class UnionFileSystem extends FileSystem {
@@ -235,11 +237,8 @@ public class UnionFileSystem extends FileSystem {
         throw new UnsupportedOperationException();
     }
 
-    public boolean hasContentRoot(Path path) {
-        return basepaths.contains(path);
-    }
-
-    List<Path> getBasePaths() {
+    @ApiStatus.Internal
+    public List<Path> getBasePaths() {
         return this.basepaths;
     }
 

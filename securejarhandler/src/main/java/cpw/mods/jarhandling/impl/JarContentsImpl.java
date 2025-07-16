@@ -17,9 +17,13 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
@@ -169,8 +173,8 @@ public class JarContentsImpl implements JarContents {
     }
 
     @Override
-    public boolean hasContentRoot(Path path) {
-        return filesystem.hasContentRoot(path);
+    public Collection<Path> getContentRoots() {
+        return Collections.unmodifiableCollection(filesystem.getBasePaths());
     }
 
     @Override

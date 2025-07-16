@@ -31,9 +31,11 @@ public interface JarContents extends Closeable {
     Path getPrimaryPath();
 
     /**
-     * Does this mod container have the given file system path as one of its content roots?
+     * Returns locations that form the content roots of this jar content.
+     * <p>The resulting paths do not need to be on the local file-system, they can be from custom NIO filesystem implementations.
+     * <p>The returned list may also not contain all content roots if the the underlying jar content is held in-memory.
      */
-    boolean hasContentRoot(Path path);
+    Collection<Path> getContentRoots();
 
     /**
      * Tries to find a resource with the given path in this jar content.
