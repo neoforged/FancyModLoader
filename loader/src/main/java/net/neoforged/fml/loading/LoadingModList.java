@@ -48,7 +48,7 @@ public class LoadingModList {
     private final Map<String, ModFileInfo> fileById;
     private final List<ModLoadingIssue> modLoadingIssues;
 
-    private LoadingModList(final List<ModFile> plugins, final List<ModFile> gameLibraries, final List<ModFile> modFiles, final List<ModInfo> sortedList, Map<ModInfo, List<ModInfo>> modDependencies) {
+    private LoadingModList(List<ModFile> plugins, List<ModFile> gameLibraries, List<ModFile> modFiles, List<ModInfo> sortedList, Map<ModInfo, List<ModInfo>> modDependencies) {
         this.plugins = plugins.stream()
                 .map(ModFile::getModFileInfo)
                 .collect(Collectors.toList());
@@ -83,7 +83,7 @@ public class LoadingModList {
         modFiles.stream()
                 .map(ModFileInfo::getFile)
                 .forEach(file -> {
-                    final String modId = file.getModInfos().get(0).getModId();
+                    String modId = file.getModInfos().get(0).getModId();
                     for (ModFileParser.MixinConfig potential : file.getMixinConfigs()) {
                         if (potential.requiredMods().stream().allMatch(id -> this.getModFileById(id) != null)) {
                             DeferredMixinConfigRegistration.addMixinConfig(potential.config(), modId);
@@ -135,7 +135,7 @@ public class LoadingModList {
         return modFiles;
     }
 
-    public Path findResource(final String className) {
+    public Path findResource(String className) {
         for (ModFileInfo mf : modFiles) {
             final Path resource = mf.getFile().findResource(className);
             if (Files.exists(resource)) return resource;
@@ -143,8 +143,8 @@ public class LoadingModList {
         return null;
     }
 
-    public Enumeration<URL> findAllURLsForResource(final String resName) {
-        final String resourceName;
+    public Enumeration<URL> findAllURLsForResource(String resName) {
+        String resourceName;
         // strip a leading slash
         if (resName.startsWith("/")) {
             resourceName = resName.substring(1);
@@ -175,8 +175,8 @@ public class LoadingModList {
 
             private URL findNextURL() {
                 while (modFileIterator.hasNext()) {
-                    final ModFileInfo next = modFileIterator.next();
-                    final Path resource = next.getFile().findResource(resourceName);
+                    ModFileInfo next = modFileIterator.next();
+                    Path resource = next.getFile().findResource(resourceName);
                     if (Files.exists(resource)) {
                         return LambdaExceptionUtils.uncheck(() -> new URL("modjar://" + next.getMods().get(0).getModId() + "/" + resourceName));
                     }
