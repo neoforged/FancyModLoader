@@ -143,9 +143,6 @@ public final class ModLoader {
 
     private static void cancelLoading(ModList modList) {
         StartupNotificationManager.modLoaderMessage("ERROR DURING MOD LOADING");
-        for (var modFile : modList.getModFiles()) {
-            ((ModFile) modFile.getFile()).close();
-        }
         modList.setLoadedMods(Collections.emptyList());
     }
 
