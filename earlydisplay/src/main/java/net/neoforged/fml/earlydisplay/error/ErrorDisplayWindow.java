@@ -6,8 +6,8 @@
 package net.neoforged.fml.earlydisplay.error;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.earlydisplay.render.EarlyFramebuffer;
@@ -33,8 +33,8 @@ final class ErrorDisplayWindow {
     private static final int SCROLLER_WIDTH = 15;
     private static final int SCROLLER_HEIGHT = 60;
     private static final int ENTRY_PADDING = 10;
-    private static final int HEADER_ONE_Y = 10;
-    private static final int HEADER_TWO_Y = 28;
+    private static final int HEADER_Y = 10;
+    private static final int HEADER_LINE_HEIGHT = 18;
     private static final int LEFT_BTN_X = DISPLAY_WIDTH / 2 - 10 - BUTTON_WIDTH;
     private static final int RIGHT_BTN_X = DISPLAY_WIDTH / 2 + 10;
     private static final int TOP_BTN_Y = DISPLAY_HEIGHT - 92;
@@ -53,7 +53,6 @@ final class ErrorDisplayWindow {
     private static final int SCROLL_SPEED = 10;
 
     final long windowHandle;
-    private final List<ModLoadingIssue> errors;
     private final MaterializedTheme theme;
     private final SimpleFont font;
     private final int errorLineHeight;
@@ -62,6 +61,7 @@ final class ErrorDisplayWindow {
     final Texture buttonTexture;
     final Texture buttonTextureHover;
     private final List<Button> buttons;
+    private final List<HeaderLine> headerTextLines;
     private final List<ErrorEntry> errorEntries;
     private final int totalEntryHeight;
     private boolean closed = false;
@@ -76,7 +76,6 @@ final class ErrorDisplayWindow {
 
     ErrorDisplayWindow(long windowHandle, List<ModLoadingIssue> errors, Path modsFolder, Path logFile, Path crashReportFile) {
         this.windowHandle = windowHandle;
-        this.errors = errors;
         this.theme = MaterializedTheme.materialize(Theme.createDefaultTheme(), null);
         this.font = theme.getFont(Theme.FONT_DEFAULT);
         this.errorLineHeight = font.lineSpacing() - 5;
@@ -85,15 +84,21 @@ final class ErrorDisplayWindow {
         this.buttonTexture = Button.loadTexture(false);
         this.buttonTextureHover = Button.loadTexture(true);
         FileOpener opener = FileOpener.get();
+        String btnModsText = FMLTranslations.parseEnglishMessage("fml.button.open.mods.folder");
+        String btnReportText = FMLTranslations.parseEnglishMessage("fml.button.open.crashreport");
+        String btnLogText = FMLTranslations.parseEnglishMessage("fml.button.open.log");
+        String btnQuitText = FMLTranslations.parseEnglishMessage("fml.button.quit");
         this.buttons = List.of(
-                new Button(this, LEFT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Open Mods Folder", () -> opener.open(modsFolder)),
-                new Button(this, LEFT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Open crash report", () -> opener.open(crashReportFile)),
-                new Button(this, RIGHT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Open log file", () -> opener.open(logFile)),
-                new Button(this, RIGHT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Quit game", () -> closed = true));
+                new Button(this, LEFT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnModsText, () -> opener.open(modsFolder)),
+                new Button(this, LEFT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnReportText, () -> opener.open(crashReportFile)),
+                new Button(this, RIGHT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnLogText, () -> opener.open(logFile)),
+                new Button(this, RIGHT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnQuitText, () -> closed = true));
         this.errorEntries = errors.stream()
                 .map(FMLTranslations::translateIssueEnglish)
                 .map(ErrorEntry::of)
                 .toList();
+        String headerText = FMLTranslations.parseEnglishMessage("fml.loadingerrorscreen.errorheader", errors.size());
+        this.headerTextLines = HeaderLine.of(headerText, font);
         int entryContentHeight = errorEntries.stream().mapToInt(ErrorEntry::lineCount).sum() * errorLineHeight;
         this.totalEntryHeight = entryContentHeight + errorEntries.size() * ENTRY_PADDING;
     }
@@ -165,13 +170,12 @@ final class ErrorDisplayWindow {
         // List background
         ctx.fillRect(0, LIST_Y_TOP, DISPLAY_WIDTH, LIST_HEIGHT, 0x70000000);
 
-        String text = "Error loading mods";
-        int w = font.stringWidth(text);
-        ctx.renderTextWithShadow(DISPLAY_WIDTH / 2F - w / 2F, HEADER_ONE_Y, font, List.of(new SimpleFont.DisplayText(text, 0xFFFF5555)));
-        String format = errors.size() == 1 ? "%d error has occurred during loading" : "%d errors have occurred during loading";
-        text = String.format(Locale.ROOT, format, errors.size());
-        w = font.stringWidth(text);
-        ctx.renderTextWithShadow(DISPLAY_WIDTH / 2F - w / 2F, HEADER_TWO_Y, font, List.of(new SimpleFont.DisplayText(text, 0xFFFF5555)));
+        for (int i = 0; i < headerTextLines.size(); i++) {
+            HeaderLine line = headerTextLines.get(i);
+            float x = DISPLAY_WIDTH / 2F - line.width / 2F;
+            float y = HEADER_Y + (HEADER_LINE_HEIGHT * i);
+            ctx.renderTextWithShadow(x, y, font, line.parts);
+        }
 
         GlState.scissorTest(true);
         GlState.scissorBox(offsetX, (int) (offsetY + LIST_CONTENT_Y_TOP * scale), (int) (DISPLAY_WIDTH * scale), (int) (LIST_CONTENT_HEIGHT * scale));
@@ -302,5 +306,26 @@ final class ErrorDisplayWindow {
         bufferBuilder.close();
         buttonTexture.close();
         buttonTextureHover.close();
+    }
+
+    private record HeaderLine(List<SimpleFont.DisplayText> parts, int width) {
+        static List<HeaderLine> of(String text, SimpleFont font) {
+            List<HeaderLine> headerLines = new ArrayList<>();
+            for (List<SimpleFont.DisplayText> line : FormatHelper.formatText(text, 0xFFFF5555)) {
+                int width = 0;
+                for (SimpleFont.DisplayText part : line) {
+                    width += font.stringWidth(part.string());
+                }
+                headerLines.add(new HeaderLine(line, width));
+            }
+            return headerLines;
+        }
+    }
+
+    private record ErrorEntry(List<List<SimpleFont.DisplayText>> lines, int lineCount) {
+        static ErrorEntry of(String text) {
+            List<List<SimpleFont.DisplayText>> lines = FormatHelper.formatText(text, 0xFFFFFFFF);
+            return new ErrorEntry(lines, lines.size());
+        }
     }
 }
