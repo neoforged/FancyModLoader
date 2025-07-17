@@ -18,11 +18,11 @@ public class VersionSupportMatrix {
     private static final HashMap<String, List<ArtifactVersion>> overrideVersions = new HashMap<>();
     static {
         final ArtifactVersion version = new DefaultArtifactVersion(FMLLoader.versionInfo().mcVersion());
-        // If the MC version is 1.21.1 and any default version constraint fails,
+        // If the MC version is 1.21.8 and any default version constraint fails,
         // we'll also pass the version check if the versions below match
-        if (MavenVersionAdapter.createFromVersionSpec("[1.21.1]").containsVersion(version)) {
-            add("mod.minecraft", "1.21");
-            add("mod.neoforge", "21.0.166");
+        if (MavenVersionAdapter.createFromVersionSpec("[1.21.8]").containsVersion(version)) {
+            add("mod.minecraft", "1.21.7");
+            add("mod.neoforge", "21.7.26-beta");
         }
     }
 
