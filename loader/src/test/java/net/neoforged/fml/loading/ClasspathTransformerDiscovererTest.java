@@ -65,7 +65,6 @@ class ClasspathTransformerDiscovererTest {
         SimulatedInstallation.writeJarFile(mlServicesJar, ML_SERVICE_FILE);
         SimulatedInstallation.setModFoldersProperty(Map.of("ML_SERVICES_FROM_DIR", gradleModule));
 
-        List<NamedPath> candidates;
         var cl = new URLClassLoader(new URL[] {
                 mlServicesJar.toUri().toURL()
         });
@@ -75,6 +74,7 @@ class ClasspathTransformerDiscovererTest {
             return locator.candidates(simulatedInstallation.getGameDir(), launchTarget);
         } finally {
             Thread.currentThread().setContextClassLoader(previousCl);
+            cl.close();
         }
     }
 }
