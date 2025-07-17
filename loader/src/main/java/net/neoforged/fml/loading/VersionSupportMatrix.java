@@ -22,7 +22,7 @@ public class VersionSupportMatrix {
         // we'll also pass the version check if the versions below match
         if (MavenVersionAdapter.createFromVersionSpec("[1.21.8]").containsVersion(version)) {
             add("mod.minecraft", "1.21.7");
-            add("mod.neoforge", "21.7.25-beta");
+            add("mod.neoforge", "21.7.26-beta");
         }
     }
 
