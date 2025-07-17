@@ -53,17 +53,20 @@ public interface JarContents extends Closeable {
 
     /**
      * Tries to open a file inside the jar content using a path relative to the root.
-     * <p>
-     * The stream will not be buffered.
+     * <p>The stream will not be buffered.
+     * <p>The behavior when {@code relativePath} refers to a directory rather than a file is unspecified. The
+     * method may throw a {@code IOException} immediately, but may also defer this until the first byte is
+     * read from the stream. This behavior is filesystem provider specific.
      *
-     * @return null if the file cannot be found, or if there is a directory with the given name.
+     * @return null if the file cannot be found
      */
     @Nullable
-    InputStream openFile(String name) throws IOException;
+    InputStream openFile(String relativePath) throws IOException;
 
     /**
      * A convenience method that {@linkplain #openFile(String) opens a file} and if the file was found,
      * returns its content.
+     * <p>Trying to read the contents of a directory using this method will result in an {@code IOException}.
      *
      * @return Null if the file does not exist.
      */

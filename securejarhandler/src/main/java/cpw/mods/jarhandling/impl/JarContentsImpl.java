@@ -156,11 +156,6 @@ public class JarContentsImpl implements JarContents {
         var path = fromRelativePath(name);
         try {
             return Files.newInputStream(path);
-        } catch (AccessDeniedException e) {
-            if (Files.isDirectory(path)) {
-                return null;
-            }
-            throw e;
         } catch (NoSuchFileException e) {
             return null;
         }

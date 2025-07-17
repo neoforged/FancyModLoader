@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import cpw.mods.jarhandling.JarContents;
@@ -99,7 +100,11 @@ class JarContentsTest {
     void testOpenFileForFolder() throws IOException {
         Files.createDirectories(tempDir.resolve("folder"));
 
-        assertNull(contents.openFile("folder"));
+        assertThrows(IOException.class, () -> {
+            try (var stream = contents.openFile("folder")) {
+                stream.read();
+            }
+        });
     }
 
     @Test
