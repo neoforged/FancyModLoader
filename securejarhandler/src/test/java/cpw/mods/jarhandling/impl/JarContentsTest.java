@@ -146,7 +146,7 @@ class JarContentsTest {
     void testReadFileForFolder() throws IOException {
         Files.createDirectories(tempDir.resolve("folder"));
 
-        assertNull(contents.readFile("folder"));
+        assertThrows(IOException.class, () -> contents.readFile("folder"));
     }
 
     @Test

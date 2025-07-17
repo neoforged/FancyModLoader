@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
-import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -205,14 +204,14 @@ public class JarContentsImpl implements JarContents {
         Path path = fromRelativePath(relativePath);
         try {
             return Files.readAllBytes(path);
-        } catch (AccessDeniedException e) {
-            if (Files.isDirectory(path)) {
-                return null;
-            }
-            throw e;
         } catch (NoSuchFileException e) {
             return null;
         }
+    }
+
+    @Override
+    public boolean containsFile(String relativePath) {
+        return Files.isRegularFile(fromRelativePath(relativePath));
     }
 
     @Override
