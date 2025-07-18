@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
+import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.SecureJar;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -90,6 +91,11 @@ public class TestDummyJarProvider {
 
         @Override
         public Path getPrimaryPath() {
+            return null;
+        }
+
+        @Override
+        public JarContents contents() {
             return null;
         }
 

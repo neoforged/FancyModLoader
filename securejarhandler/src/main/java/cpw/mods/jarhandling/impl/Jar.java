@@ -1,5 +1,6 @@
 package cpw.mods.jarhandling.impl;
 
+import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.niofs.union.UnionFileSystem;
@@ -51,6 +52,11 @@ public class Jar implements SecureJar {
     @Override
     public Path getPrimaryPath() {
         return filesystem.getPrimaryPath();
+    }
+
+    @Override
+    public JarContents contents() {
+        return contents;
     }
 
     public Optional<URI> findFile(final String name) {

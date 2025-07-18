@@ -83,12 +83,8 @@ public final class TransformerDiscovererConstants {
         // If we get here, the Jar is non-modular, so we check for matching service files
         for (var service : SERVICES) {
             var serviceFile = "META-INF/services/" + service;
-            try {
-                if (jarContents.containsFile(serviceFile)) {
-                    return true; // Found a match
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException("Failed to check for service-file " + serviceFile + " in " + jarContents, e);
+            if (jarContents.containsFile(serviceFile)) {
+                return true; // Found a match
             }
         }
 
