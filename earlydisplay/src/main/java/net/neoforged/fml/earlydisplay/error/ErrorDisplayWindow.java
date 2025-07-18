@@ -8,7 +8,7 @@ package net.neoforged.fml.earlydisplay.error;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.earlydisplay.render.EarlyFramebuffer;
 import net.neoforged.fml.earlydisplay.render.ElementShader;
@@ -24,7 +24,6 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11C;
 
 final class ErrorDisplayWindow {
-    private static final long MINFRAMETIME = TimeUnit.MILLISECONDS.toNanos(10); // This is the FPS cap on the window
     private static final int DISPLAY_WIDTH = 854;
     private static final int DISPLAY_HEIGHT = 480;
     private static final int BUTTON_WIDTH = 320;
@@ -62,10 +61,9 @@ final class ErrorDisplayWindow {
     final Texture buttonTextureHover;
     private final List<Button> buttons;
     private final List<HeaderLine> headerTextLines;
-    private final List<ErrorEntry> errorEntries;
+    private final List<MessageEntry> entries;
     private final int totalEntryHeight;
     private boolean closed = false;
-    private long nextFrameTime = 0;
     private int offsetX = 0;
     private int offsetY = 0;
     private float scale = 1F;
@@ -74,7 +72,7 @@ final class ErrorDisplayWindow {
     private float scrollOffset = 0;
     private boolean draggingScrollbar = false;
 
-    ErrorDisplayWindow(long windowHandle, List<ModLoadingIssue> errors, Path modsFolder, Path logFile, Path crashReportFile) {
+    ErrorDisplayWindow(long windowHandle, List<ModLoadingIssue> issues, Path modsFolder, Path logFile, Path crashReportFile) {
         this.windowHandle = windowHandle;
         this.theme = MaterializedTheme.materialize(Theme.createDefaultTheme(), null);
         this.font = theme.getFont(Theme.FONT_DEFAULT);
@@ -93,23 +91,33 @@ final class ErrorDisplayWindow {
                 new Button(this, LEFT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnReportText, () -> opener.open(crashReportFile)),
                 new Button(this, RIGHT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnLogText, () -> opener.open(logFile)),
                 new Button(this, RIGHT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnQuitText, () -> closed = true));
-        this.errorEntries = errors.stream()
-                .map(FMLTranslations::translateIssueEnglish)
-                .map(ErrorEntry::of)
+        var warningEntries = issues.stream()
+                .filter(issue -> issue.severity() != ModLoadingIssue.Severity.ERROR)
                 .toList();
-        String headerText = FMLTranslations.parseEnglishMessage("fml.loadingerrorscreen.errorheader", errors.size());
-        this.headerTextLines = HeaderLine.of(headerText, font);
-        int entryContentHeight = errorEntries.stream().mapToInt(ErrorEntry::lineCount).sum() * errorLineHeight;
-        this.totalEntryHeight = entryContentHeight + errorEntries.size() * ENTRY_PADDING;
+        var errorEntries = issues.stream()
+                .filter(issue -> issue.severity() == ModLoadingIssue.Severity.ERROR)
+                .toList();
+        // Show errors first, then warnings.
+        this.entries = Stream.concat(errorEntries.stream(), warningEntries.stream())
+                .map(FMLTranslations::translateIssueEnglish)
+                .map(MessageEntry::of)
+                .toList();
+        String headerText;
+        // Prioritize showing errors in the header
+        int headerTextColor;
+        if (!errorEntries.isEmpty()) {
+            headerText = FMLTranslations.parseEnglishMessage("fml.loadingerrorscreen.errorheader", errorEntries.size());
+            headerTextColor = 0xFFFF5555;
+        } else {
+            headerText = FMLTranslations.parseEnglishMessage("fml.loadingerrorscreen.warningheader", warningEntries.size());
+            headerTextColor = 0xFFFFFF55;
+        }
+        this.headerTextLines = HeaderLine.of(headerText, font, headerTextColor);
+        int entryContentHeight = entries.stream().mapToInt(MessageEntry::lineCount).sum() * errorLineHeight;
+        this.totalEntryHeight = entryContentHeight + entries.size() * ENTRY_PADDING;
     }
 
     void render() {
-        long nanoTime = System.nanoTime();
-        if (nanoTime < nextFrameTime) {
-            return;
-        }
-        nextFrameTime = nanoTime + MINFRAMETIME;
-
         framebuffer.activate();
 
         int[] fbWidth = new int[1];
@@ -180,7 +188,7 @@ final class ErrorDisplayWindow {
         GlState.scissorTest(true);
         GlState.scissorBox(offsetX, (int) (offsetY + LIST_CONTENT_Y_TOP * scale), (int) (DISPLAY_WIDTH * scale), (int) (LIST_CONTENT_HEIGHT * scale));
         float y = LIST_Y_TOP - scrollOffset;
-        for (ErrorEntry entry : errorEntries) {
+        for (MessageEntry entry : entries) {
             float entryHeight = errorLineHeight * entry.lineCount();
             if (y + entryHeight < LIST_Y_TOP) {
                 y += entryHeight + ENTRY_PADDING;
@@ -309,9 +317,9 @@ final class ErrorDisplayWindow {
     }
 
     private record HeaderLine(List<SimpleFont.DisplayText> parts, int width) {
-        static List<HeaderLine> of(String text, SimpleFont font) {
+        static List<HeaderLine> of(String text, SimpleFont font, int defaultColor) {
             List<HeaderLine> headerLines = new ArrayList<>();
-            for (List<SimpleFont.DisplayText> line : FormatHelper.formatText(text, 0xFFFF5555)) {
+            for (List<SimpleFont.DisplayText> line : FormatHelper.formatText(text, defaultColor)) {
                 int width = 0;
                 for (SimpleFont.DisplayText part : line) {
                     width += font.stringWidth(part.string());
@@ -322,10 +330,10 @@ final class ErrorDisplayWindow {
         }
     }
 
-    private record ErrorEntry(List<List<SimpleFont.DisplayText>> lines, int lineCount) {
-        static ErrorEntry of(String text) {
+    private record MessageEntry(List<List<SimpleFont.DisplayText>> lines, int lineCount) {
+        static MessageEntry of(String text) {
             List<List<SimpleFont.DisplayText>> lines = FormatHelper.formatText(text, 0xFFFFFFFF);
-            return new ErrorEntry(lines, lines.size());
+            return new MessageEntry(lines, lines.size());
         }
     }
 }

@@ -45,6 +45,9 @@ public class TestErrorDisplay {
                     null,
                     null));
         }
+        issues.add(ModLoadingIssue.warning("fml.modloadingissue.discouragedmod",
+                "dimodid", "ownermodid", "somerange",
+                "1.2.3", "fml.modloadingissue.discouragedmod.noreason"));
         ErrorDisplay.fatal(windowId, issues, Path.of("./tests/mods"), Path.of("./logs/latest.log"), Path.of("./"));
     }
 }
