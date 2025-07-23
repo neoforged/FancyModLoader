@@ -9,6 +9,7 @@ import java.util.List;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.earlydisplay.DisplayWindow;
 import net.neoforged.fml.earlydisplay.error.ErrorDisplay;
+import net.neoforged.fml.earlydisplay.render.LoadingScreenRenderer;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
 import org.lwjgl.opengl.GL;
@@ -28,8 +29,9 @@ public class TestErrorDisplay {
                 "--fml.neoForgeVersion", "21.5.123-beta"
         });
 
-        // Render once, then take over the window to display the error window
-        periodicTick.run();
+        // Render at least one frame of the loading screen, then take over the window to display the error window
+        while (!LoadingScreenRenderer.rendered)
+            periodicTick.run();
         long windowId = window.takeOverGlfwWindow();
         GL.createCapabilities();
         window.close();

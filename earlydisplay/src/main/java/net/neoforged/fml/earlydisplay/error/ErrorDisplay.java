@@ -12,7 +12,6 @@ import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.earlydisplay.render.GlState;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.opengl.GL;
 import org.lwjgl.system.Callback;
 
 public final class ErrorDisplay {
@@ -21,9 +20,6 @@ public final class ErrorDisplay {
     private static final long MINFRAMETIME = TimeUnit.MILLISECONDS.toNanos(10); // This is the FPS cap on the window
 
     public static void fatal(long windowHandle, List<ModLoadingIssue> errors, Path modsFolder, Path logFile, Path crashReportFile) {
-        GLFW.glfwMakeContextCurrent(windowHandle);
-        GL.createCapabilities();
-
         // Pre-clear all callbacks that may be left-over from the previous owner of the window
         clearCallbacks(windowHandle);
 

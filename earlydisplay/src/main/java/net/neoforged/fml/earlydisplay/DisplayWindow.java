@@ -51,6 +51,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.Month;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -65,6 +66,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import joptsimple.OptionParser;
+import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.earlydisplay.error.ErrorDisplay;
 import net.neoforged.fml.earlydisplay.render.LoadingScreenRenderer;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import net.neoforged.fml.earlydisplay.theme.Theme;
@@ -79,6 +82,7 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
@@ -514,6 +518,14 @@ public class DisplayWindow implements ImmediateWindowProvider {
     @Override
     public void crash(final String message) {
         crashElegantly(message);
+    }
+
+    @Override
+    public void displayFatalErrorAndExit(List<ModLoadingIssue> issues, Path modsFolder, Path logFile, Path crashReportFile) {
+        long windowId = this.takeOverGlfwWindow();
+        GL.createCapabilities();
+        this.close();
+        ErrorDisplay.fatal(windowId, issues, modsFolder, logFile, crashReportFile);
     }
 
     private static void dumpBackgroundThreadStack() {

@@ -105,6 +105,13 @@ public class SimpleBufferBuilder implements Closeable {
         glDeleteBuffers(VERTEX_BUFFERS);
         glDeleteBuffers(elementBuffer);
         glDeleteVertexArrays(VERTEX_ARRAYS);
+
+        // Clear buffer IDs and lengths to allow re-initialization
+        Arrays.fill(VERTEX_ARRAYS, 0);
+        Arrays.fill(VERTEX_BUFFERS, 0);
+        Arrays.fill(VERTEX_BUFFER_LENGTHS, 0);
+        elementBuffer = 0;
+        elementBufferVertexLength = 0;
     }
 
     private static void ensureElementBufferLength(int vertices) {

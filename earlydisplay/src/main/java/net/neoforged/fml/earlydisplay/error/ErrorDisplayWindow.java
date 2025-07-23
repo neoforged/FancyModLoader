@@ -314,6 +314,7 @@ final class ErrorDisplayWindow {
         bufferBuilder.close();
         buttonTexture.close();
         buttonTextureHover.close();
+        SimpleBufferBuilder.destroy();
     }
 
     private record HeaderLine(List<SimpleFont.DisplayText> parts, int width) {
