@@ -7,10 +7,12 @@ package net.neoforged.fml.loading;
 
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.api.IModuleLayerManager.Layer;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
+import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
 import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
 import org.apache.logging.log4j.LogManager;
@@ -73,6 +75,12 @@ public class ImmediateWindowHandler {
     public static void crash(final String message) {
         if (provider != null) {
             provider.crash(message);
+        }
+    }
+
+    public static void displayFatalErrorAndExit(List<ModLoadingIssue> issues, Path modsFolder, Path logFile, Path crashReportFile) {
+        if (provider != null) {
+            provider.displayFatalErrorAndExit(issues, modsFolder, logFile, crashReportFile);
         }
     }
 }

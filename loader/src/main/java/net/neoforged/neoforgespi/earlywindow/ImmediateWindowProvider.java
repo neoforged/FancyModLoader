@@ -5,6 +5,9 @@
 
 package net.neoforged.neoforgespi.earlywindow;
 
+import java.nio.file.Path;
+import java.util.List;
+import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.EarlyLoadingScreenController;
 
 /**
@@ -47,4 +50,15 @@ public interface ImmediateWindowProvider extends EarlyLoadingScreenController {
      * @param message The message to display
      */
     void crash(String message);
+
+    /**
+     * This is called when a fatal loading error occurs to show a MC-independent loading error screen and
+     * then terminate the game.
+     *
+     * @param issues          The loading issues that occurred
+     * @param modsFolder      The path to the mods folder
+     * @param logFile         The path to the latest.log file
+     * @param crashReportFile The path to the crash report of the fatal error
+     */
+    void displayFatalErrorAndExit(List<ModLoadingIssue> issues, Path modsFolder, Path logFile, Path crashReportFile);
 }

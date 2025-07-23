@@ -7,6 +7,7 @@ package net.neoforged.fml.earlydisplay.render;
 
 import static org.lwjgl.opengl.GL13C.GL_TEXTURE0;
 
+import com.google.common.collect.Lists;
 import java.util.List;
 import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
@@ -77,6 +78,12 @@ public record RenderContext(
         sharedBuffer.draw();
     }
 
+    public void renderTextWithShadow(float x, float y, SimpleFont font, List<SimpleFont.DisplayText> texts) {
+        List<SimpleFont.DisplayText> shadowTexts = Lists.transform(texts, text -> new SimpleFont.DisplayText(text.string(), ThemeColor.scale(ThemeColor.ofArgb(text.colour()), .25F).toArgb()));
+        renderText(x + 2, y + 2, font, shadowTexts);
+        renderText(x, y, font, texts);
+    }
+
     public void renderText(float x, float y, SimpleFont font, List<SimpleFont.DisplayText> texts) {
         GlState.activeTexture(GL_TEXTURE0);
         GlState.bindTexture2D(font.textureId());
@@ -142,5 +149,19 @@ public record RenderContext(
                 (int) barBounds.height());
         blitTexture(sprites.progressBarForeground(), barBounds, foregroundColor);
         GlState.scissorTest(false);
+    }
+
+    public void fillRect(float x, float y, float width, float height, int color) {
+        fillRect(x, y, width, height, color, color);
+    }
+
+    public void fillRect(float x, float y, float width, float height, int colorTop, int colorBottom) {
+        bindShader("color");
+        sharedBuffer.begin(SimpleBufferBuilder.Format.POS_TEX_COLOR, SimpleBufferBuilder.Mode.QUADS);
+        sharedBuffer.pos(x, y).tex(0, 0).colour(colorTop).endVertex();
+        sharedBuffer.pos(x + width, y).tex(0, 0).colour(colorTop).endVertex();
+        sharedBuffer.pos(x, y + height).tex(0, 0).colour(colorBottom).endVertex();
+        sharedBuffer.pos(x + width, y + height).tex(0, 0).colour(colorBottom).endVertex();
+        sharedBuffer.draw();
     }
 }
