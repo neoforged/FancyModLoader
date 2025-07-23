@@ -31,7 +31,8 @@ public interface JarContents extends Closeable {
     Path getPrimaryPath();
 
     /**
-     * Returns locations that form the content roots of this jar content.
+     * Returns the locations that this Jar content was opened from.
+     * <p>Usually this will only contain a single path, for example to the Jar file that was opened, but especially during development, it can contain multiple build output folders that were joined into a single virtual Jar file.
      * <p>The resulting paths do not need to be on the local file-system, they can be from custom NIO filesystem implementations.
      * <p>The returned list may also not contain all content roots if the the underlying jar content is held in-memory.
      */
