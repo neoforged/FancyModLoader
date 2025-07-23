@@ -19,11 +19,18 @@ public final class ErrorDisplay {
 
     private static final long MINFRAMETIME = TimeUnit.MILLISECONDS.toNanos(10); // This is the FPS cap on the window
 
-    public static void fatal(long windowHandle, List<ModLoadingIssue> errors, Path modsFolder, Path logFile, Path crashReportFile) {
+    public static void fatal(
+            long windowHandle,
+            @Nullable String assetsDir,
+            @Nullable String assetIndex,
+            List<ModLoadingIssue> errors,
+            Path modsFolder,
+            Path logFile,
+            Path crashReportFile) {
         // Pre-clear all callbacks that may be left-over from the previous owner of the window
         clearCallbacks(windowHandle);
 
-        ErrorDisplayWindow window = new ErrorDisplayWindow(windowHandle, errors, modsFolder, logFile, crashReportFile);
+        ErrorDisplayWindow window = new ErrorDisplayWindow(windowHandle, assetsDir, assetIndex, errors, modsFolder, logFile, crashReportFile);
 
         discard(GLFW.glfwSetWindowCloseCallback(window.windowHandle, window::handleClose));
         discard(GLFW.glfwSetCursorPosCallback(window.windowHandle, window::handleCursorPos));

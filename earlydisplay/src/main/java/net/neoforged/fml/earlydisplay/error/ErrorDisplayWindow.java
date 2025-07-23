@@ -8,6 +8,7 @@ package net.neoforged.fml.earlydisplay.error;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.earlydisplay.render.EarlyFramebuffer;
@@ -20,6 +21,7 @@ import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import net.neoforged.fml.earlydisplay.render.Texture;
 import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.i18n.FMLTranslations;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11C;
 
@@ -72,20 +74,30 @@ final class ErrorDisplayWindow {
     private float scrollOffset = 0;
     private boolean draggingScrollbar = false;
 
-    ErrorDisplayWindow(long windowHandle, List<ModLoadingIssue> issues, Path modsFolder, Path logFile, Path crashReportFile) {
+    ErrorDisplayWindow(
+            long windowHandle,
+            @Nullable String assetsDir,
+            @Nullable String assetIndex,
+            List<ModLoadingIssue> issues,
+            Path modsFolder,
+            Path logFile,
+            Path crashReportFile) {
         this.windowHandle = windowHandle;
         this.theme = MaterializedTheme.materialize(Theme.createDefaultTheme(), null);
-        this.font = theme.getFont(Theme.FONT_DEFAULT);
+        SimpleFont mcFont = FontLoader.loadVanillaFont(assetsDir, assetIndex);
+        this.font = mcFont != null ? mcFont : theme.getFont(Theme.FONT_DEFAULT);
         this.errorLineHeight = font.lineSpacing() - 5;
         this.framebuffer = new EarlyFramebuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT);
         this.bufferBuilder = new SimpleBufferBuilder("shared_error", 8192);
         this.buttonTexture = Button.loadTexture(false);
         this.buttonTextureHover = Button.loadTexture(true);
+        boolean translate = mcFont != null;
+        BiFunction<String, Object[], String> translator = translate ? FMLTranslations::parseMessage : FMLTranslations::parseEnglishMessage;
         FileOpener opener = FileOpener.get();
-        String btnModsText = FMLTranslations.parseEnglishMessage("fml.button.open.mods.folder");
-        String btnReportText = FMLTranslations.parseEnglishMessage("fml.button.open.crashreport");
-        String btnLogText = FMLTranslations.parseEnglishMessage("fml.button.open.log");
-        String btnQuitText = FMLTranslations.parseEnglishMessage("fml.button.quit");
+        String btnModsText = translator.apply("fml.button.open.mods.folder", new Object[0]);
+        String btnReportText = translator.apply("fml.button.open.crashreport", new Object[0]);
+        String btnLogText = translator.apply("fml.button.open.log", new Object[0]);
+        String btnQuitText = translator.apply("fml.button.quit", new Object[0]);
         this.buttons = List.of(
                 new Button(this, LEFT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnModsText, () -> opener.open(modsFolder)),
                 new Button(this, LEFT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnReportText, () -> opener.open(crashReportFile)),
@@ -99,17 +111,17 @@ final class ErrorDisplayWindow {
                 .toList();
         // Show errors first, then warnings.
         this.entries = Stream.concat(errorEntries.stream(), warningEntries.stream())
-                .map(FMLTranslations::translateIssueEnglish)
+                .map(translate ? FMLTranslations::translateIssue : FMLTranslations::translateIssueEnglish)
                 .map(MessageEntry::of)
                 .toList();
         String headerText;
         // Prioritize showing errors in the header
         int headerTextColor;
         if (!errorEntries.isEmpty()) {
-            headerText = FMLTranslations.parseEnglishMessage("fml.loadingerrorscreen.errorheader", errorEntries.size());
+            headerText = translator.apply("fml.loadingerrorscreen.errorheader", new Object[] { errorEntries.size() });
             headerTextColor = 0xFFFF5555;
         } else {
-            headerText = FMLTranslations.parseEnglishMessage("fml.loadingerrorscreen.warningheader", warningEntries.size());
+            headerText = translator.apply("fml.loadingerrorscreen.warningheader", new Object[] { warningEntries.size() });
             headerTextColor = 0xFFFFFF55;
         }
         this.headerTextLines = HeaderLine.of(headerText, font, headerTextColor);

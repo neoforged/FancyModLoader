@@ -118,6 +118,10 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private ScheduledExecutorService renderScheduler;
     private int winWidth;
     private int winHeight;
+    @Nullable
+    private String assetsDir;
+    @Nullable
+    private String assetIndex;
 
     private boolean maximized;
     private Map<String, SimpleFont> fonts;
@@ -145,12 +149,19 @@ public class DisplayWindow implements ImmediateWindowProvider {
                 .withRequiredArg().ofType(Integer.class)
                 .defaultsTo(FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_HEIGHT));
         var maximizedopt = parser.accepts("earlywindow.maximized");
+        var assetsDirOpt = parser.accepts("assetsDir").withRequiredArg().ofType(String.class);
+        var assetIndexOpt = parser.accepts("assetIndex").withRequiredArg().ofType(String.class);
         parser.allowsUnrecognizedOptions();
         var parsed = parser.parse(arguments);
         winWidth = parsed.valueOf(widthopt);
         winHeight = parsed.valueOf(heightopt);
         FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_WIDTH, winWidth);
         FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_HEIGHT, winHeight);
+
+        if (parsed.has(assetsDirOpt) && parsed.has(assetIndexOpt)) {
+            assetsDir = parsed.valueOf(assetsDirOpt);
+            assetIndex = parsed.valueOf(assetIndexOpt);
+        }
 
         if (Boolean.getBoolean("fml.earlyWindowDarkMode")) {
             this.darkMode = true;
@@ -525,7 +536,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         long windowId = this.takeOverGlfwWindow();
         GL.createCapabilities();
         this.close();
-        ErrorDisplay.fatal(windowId, issues, modsFolder, logFile, crashReportFile);
+        ErrorDisplay.fatal(windowId, assetsDir, assetIndex, issues, modsFolder, logFile, crashReportFile);
     }
 
     private static void dumpBackgroundThreadStack() {
