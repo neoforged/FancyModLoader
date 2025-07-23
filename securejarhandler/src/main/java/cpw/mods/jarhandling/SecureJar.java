@@ -42,6 +42,8 @@ public interface SecureJar {
         return new Jar((JarContentsImpl) contents, metadata);
     }
 
+    JarContents contents();
+
     ModuleDataProvider moduleDataProvider();
 
     /**
