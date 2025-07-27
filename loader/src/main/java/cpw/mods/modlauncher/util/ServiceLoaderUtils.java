@@ -41,8 +41,7 @@ public final class ServiceLoaderUtils {
 
     private static boolean isNotMixinService(ServiceLoader.Provider<?> provider) {
         var clazz = provider.type();
-        var packageName = clazz.getPackageName();
-        return !packageName.startsWith("org.spongepowered.asm.launch");
+        return !clazz.getModule().getName().equals("org.spongepowered.mixin");
     }
 
     public static String fileNameFor(Class<?> clazz) {
