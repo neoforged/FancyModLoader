@@ -430,6 +430,7 @@ public final class ModLoader {
         TRANSFORMED_CLASS_COUNT++;
     }
 
+    @ApiStatus.Internal
     public static void incrementMixinParsedClasses() {
         MIXIN_PARSED_CLASS_COUNT++;
     }

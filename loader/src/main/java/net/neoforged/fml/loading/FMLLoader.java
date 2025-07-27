@@ -24,7 +24,6 @@ import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.IBindingsProvider;
 import net.neoforged.fml.common.asm.AccessTransformerService;
-import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.mixin.FMLMixinLaunchPlugin;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
@@ -107,7 +106,7 @@ public class FMLLoader {
         }
     }
 
-    static void setupLaunchHandler(IEnvironment environment, VersionInfo versionInfo) {
+    static void setupLaunchHandler(IEnvironment environment, VersionInfo versionInfo, List<String> mixinConfigsArgumentList) {
         var launchTarget = environment.getProperty(IEnvironment.Keys.LAUNCHTARGET.get()).orElse("MISSING");
         final Optional<ILaunchHandlerService> launchHandler = environment.findLaunchHandler(launchTarget);
         LOGGER.debug(LogMarkers.CORE, "Using {} as launch service", launchTarget);
@@ -128,7 +127,7 @@ public class FMLLoader {
         dist = commonLaunchHandler.getDist();
         production = commonLaunchHandler.isProduction();
         neoForgeDevDistCleaner.setDistribution(dist);
-        mixinLaunchPlugin.setup();
+        mixinLaunchPlugin.setup(mixinConfigsArgumentList);
     }
 
     public static List<ITransformationService.Resource> beginModScan(ILaunchContext launchContext) {
@@ -141,14 +140,10 @@ public class FMLLoader {
         return List.of(pluginResources);
     }
 
-    public static List<ITransformationService.Resource> completeScan(ILaunchContext launchContext, List<String> extraMixinConfigs) {
+    public static List<ITransformationService.Resource> completeScan(ILaunchContext launchContext) {
         languageProviderLoader = new LanguageProviderLoader(launchContext);
         backgroundScanHandler = modValidator.stage2Validation();
         loadingModList = backgroundScanHandler.getLoadingModList();
-        if (!loadingModList.hasErrors()) {
-            // Add extra mixin configs
-            extraMixinConfigs.forEach(DeferredMixinConfigRegistration::addMixinConfig);
-        }
         return List.of(modValidator.getModResources());
     }
 

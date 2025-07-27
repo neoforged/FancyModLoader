@@ -47,7 +47,6 @@ class FMLClassBytecodeProvider implements IClassBytecodeProvider {
         byte[] classBytes;
 
         try {
-            // Passing FMLMixinLaunchPlugin.NAME here prevents that plugin from recursively being applied
             classBytes = transformerLoader.buildTransformedClassNodeFor(canonicalName);
         } catch (ClassNotFoundException ex) {
             URL url = Thread.currentThread().getContextClassLoader().getResource(internalName + ".class");

@@ -11,8 +11,6 @@ import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import net.neoforged.fml.loading.FMLLoader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.injection.invoke.arg.ArgsClassGenerator;
@@ -22,8 +20,6 @@ import org.spongepowered.asm.service.MixinService;
  * Encapsulates the code required to interact with Mixin.
  */
 public final class MixinFacade {
-    private static final Logger LOG = LoggerFactory.getLogger(MixinFacade.class);
-
     private final FMLMixinLaunchPlugin launchPlugin;
     private final FMLMixinService service;
 
@@ -32,8 +28,12 @@ public final class MixinFacade {
             throw new IllegalStateException("The dist must be set before initializing Mixin");
         }
 
-        service = (FMLMixinService) MixinService.getService();
+        this.service = (FMLMixinService) MixinService.getService();
         this.launchPlugin = launchPlugin;
+    }
+
+    public FMLMixinService getService() {
+        return this.service;
     }
 
     public void finishInitialization(ILaunchPluginService.ITransformerLoader transformerLoader) {
