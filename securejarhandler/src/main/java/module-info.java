@@ -7,8 +7,6 @@ module cpw.mods.securejarhandler {
     exports cpw.mods.niofs.union;
 
     requires jdk.unsupported;
-    requires org.objectweb.asm;
-    requires org.objectweb.asm.tree;
     requires java.base;
     requires static org.jetbrains.annotations;
 

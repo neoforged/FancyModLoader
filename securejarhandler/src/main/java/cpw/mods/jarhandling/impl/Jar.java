@@ -3,14 +3,12 @@ package cpw.mods.jarhandling.impl;
 import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.niofs.union.UnionFileSystem;
-import cpw.mods.util.LambdaExceptionUtils;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.CodeSigner;
 import java.util.Optional;
 import java.util.jar.Attributes;
@@ -136,7 +134,11 @@ public class Jar implements SecureJar {
 
         @Override
         public Optional<InputStream> open(final String name) {
-            return jar.findFile(name).map(Paths::get).map(LambdaExceptionUtils.rethrowFunction(Files::newInputStream));
+            try {
+                return Optional.ofNullable(jar.contents.openFile(name));
+            } catch (IOException e) {
+                throw new UncheckedIOException("Failed to open " + name, e);
+            }
         }
 
         @Override
