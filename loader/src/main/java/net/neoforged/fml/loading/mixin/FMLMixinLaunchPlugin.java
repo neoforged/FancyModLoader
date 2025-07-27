@@ -99,7 +99,8 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
                         var existingModId = configModIds.putIfAbsent(potential.config(), modId);
                         if (existingModId != null && !existingModId.equals(modId)) {
                             LOGGER.error("Mixin config {} is registered by multiple mods: {} and {}", potential.config(), existingModId, modId);
-                            ModLoader.addLoadingIssue(ModLoadingIssue.error(
+                            // This is a warning, not an error, to be non-breaking; this should be made into an error in the future.
+                            ModLoader.addLoadingIssue(ModLoadingIssue.warning(
                                     "fml.modloadingissue.mixin.duplicate_config",
                                     potential.config(),
                                     existingModId,
@@ -113,6 +114,8 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
                     }
                 });
 
+        registerLegacyDeferredConfigs(configModIds);
+
         final var configMap = Mixins.getConfigs().stream().collect(
                 Collectors.toMap(Config::getName, Config::getConfig));
         configModIds.forEach((fileName, modId) -> {
@@ -125,6 +128,24 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
                 config.decorate(FabricUtil.KEY_MOD_ID, modId);
             }
         });
+    }
+
+    @SuppressWarnings("removal")
+    private static void registerLegacyDeferredConfigs(Map<String, String> configModIds) {
+        MixinBootstrap.getPlatform().addContainer(new FMLMixinContainerHandle());
+        
+        for (var config : DeferredMixinConfigRegistration.legacyConfigs()) {
+            var existingModId = configModIds.putIfAbsent(config.fileName(), config.modId());
+            if (existingModId != null && !existingModId.equals(config.modId())) {
+                LOGGER.error("Mixin config {} is registered by multiple mods: {} and {}", config.fileName(), existingModId, config.modId());
+                ModLoader.addLoadingIssue(ModLoadingIssue.warning(
+                        "fml.modloadingissue.mixin.duplicate_config",
+                        config.fileName(),
+                        existingModId,
+                        config.modId()));
+            }
+            Mixins.addConfiguration(config.fileName());
+        }
     }
 
     private void gotoPhase(MixinEnvironment.Phase phase) {
