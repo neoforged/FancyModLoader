@@ -209,7 +209,7 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
 
     @Override
     public void customAuditConsumer(String className, Consumer<String[]> auditDataAcceptor) {
-        this.service.getAuditTrail().setConsumer(className, auditDataAcceptor);
+        this.service.getInternalAuditTrail().setConsumer(className, auditDataAcceptor);
     }
 
     boolean generatesClass(Type classType) {

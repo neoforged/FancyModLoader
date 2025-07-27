@@ -11,7 +11,7 @@ import org.spongepowered.asm.service.IMixinAuditTrail;
 /**
  * Audit trail adapter for ModLauncher
  */
-public class FMLAuditTrail implements IMixinAuditTrail {
+class FMLAuditTrail implements IMixinAuditTrail {
     private static final String APPLY_MIXIN_ACTIVITY = "APP";
     private static final String POST_PROCESS_ACTIVITY = "DEC";
     private static final String GENERATE_ACTIVITY = "GEN";

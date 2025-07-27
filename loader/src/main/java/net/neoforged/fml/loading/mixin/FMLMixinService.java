@@ -22,6 +22,7 @@ import org.spongepowered.asm.mixin.transformer.IMixinTransformerFactory;
 import org.spongepowered.asm.service.IClassBytecodeProvider;
 import org.spongepowered.asm.service.IClassProvider;
 import org.spongepowered.asm.service.IClassTracker;
+import org.spongepowered.asm.service.IMixinAuditTrail;
 import org.spongepowered.asm.service.IMixinInternal;
 import org.spongepowered.asm.service.IMixinService;
 import org.spongepowered.asm.service.ITransformerProvider;
@@ -150,7 +151,11 @@ public class FMLMixinService implements IMixinService {
     }
 
     @Override
-    public FMLAuditTrail getAuditTrail() {
+    public IMixinAuditTrail getAuditTrail() {
+        return this.auditTrail;
+    }
+
+    FMLAuditTrail getInternalAuditTrail() {
         return this.auditTrail;
     }
 
