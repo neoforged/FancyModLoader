@@ -9,6 +9,7 @@ import org.spongepowered.asm.launch.platform.MixinPlatformAgentAbstract;
 import org.spongepowered.asm.launch.platform.MixinPlatformManager;
 import org.spongepowered.asm.launch.platform.container.IContainerHandle;
 
+@Deprecated(forRemoval = true)
 public class FMLMixinPlatformAgent extends MixinPlatformAgentAbstract {
     @Override
     public AcceptResult accept(MixinPlatformManager manager, IContainerHandle handle) {
@@ -20,7 +21,6 @@ public class FMLMixinPlatformAgent extends MixinPlatformAgentAbstract {
 
     @Override
     public void prepare() {
-        // Load all the mixin configs!!
-        DeferredMixinConfigRegistration.registerConfigs();
+        // No longer does anything, as the launch plugin registers the legacy configs itself
     }
 }
