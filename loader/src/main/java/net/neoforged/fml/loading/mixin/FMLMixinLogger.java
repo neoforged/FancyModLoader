@@ -7,6 +7,7 @@ package net.neoforged.fml.loading.mixin;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.ApiStatus;
 import org.spongepowered.asm.logging.ILogger;
 import org.spongepowered.asm.logging.Level;
 
@@ -14,6 +15,7 @@ import org.spongepowered.asm.logging.Level;
  * NOTE: This class needs to be public due to MixinExtras Logger adapter making indirect use of it:
  * <a href="https://github.com/LlamaLad7/MixinExtras/blob/b2716c2c176966c1dbfc517b9b7e403a509f6120/src/main/java/com/llamalad7/mixinextras/utils/MixinExtrasLogger.java#L38">MixinExtrasLogger.java#L38</a>
  */
+@ApiStatus.Internal
 public class FMLMixinLogger implements ILogger {
     /**
      * Maps from ordinal of the Mixin LEVEL enum to Log4j2 levels.

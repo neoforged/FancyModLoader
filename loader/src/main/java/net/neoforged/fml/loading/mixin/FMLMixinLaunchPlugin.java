@@ -25,6 +25,7 @@ import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModFileParser;
+import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.slf4j.Logger;
@@ -37,6 +38,7 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.ArgsClassGenerator;
 import org.spongepowered.asm.mixin.transformer.Config;
 import org.spongepowered.asm.service.MixinService;
 
+@ApiStatus.Internal
 public class FMLMixinLaunchPlugin implements ILaunchPluginService {
     public static final String NAME = "fml-mixin";
     private static final Logger LOGGER = LogUtils.getLogger();

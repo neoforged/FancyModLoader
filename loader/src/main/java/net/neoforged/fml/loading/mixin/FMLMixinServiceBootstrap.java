@@ -5,8 +5,10 @@
 
 package net.neoforged.fml.loading.mixin;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.spongepowered.asm.service.IMixinServiceBootstrap;
 
+@ApiStatus.Internal
 public class FMLMixinServiceBootstrap implements IMixinServiceBootstrap {
     @Override
     public String getName() {

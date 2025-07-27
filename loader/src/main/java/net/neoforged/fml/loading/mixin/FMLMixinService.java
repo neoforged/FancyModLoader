@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import net.neoforged.fml.loading.FMLLoader;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.launch.platform.container.ContainerHandleVirtual;
 import org.spongepowered.asm.launch.platform.container.IContainerHandle;
@@ -29,6 +30,7 @@ import org.spongepowered.asm.service.ITransformerProvider;
 import org.spongepowered.asm.util.Constants;
 import org.spongepowered.asm.util.ReEntranceLock;
 
+@ApiStatus.Internal
 public class FMLMixinService implements IMixinService {
     private final ConcurrentHashMap<String, FMLMixinLogger> loggers = new ConcurrentHashMap<>();
     private final ReEntranceLock lock = new ReEntranceLock(1);

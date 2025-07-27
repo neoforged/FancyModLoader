@@ -9,9 +9,12 @@ import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
+import org.jetbrains.annotations.ApiStatus;
+
 import java.util.List;
 import java.util.Set;
 
+@ApiStatus.Internal
 public class FMLMixinTransformationService implements ITransformationService {
     @Override
     public String name() {
