@@ -72,7 +72,7 @@ public class FMLServiceProvider implements ITransformationService {
                 modsArgumentList,
                 mavenRootsArgumentList);
         LOGGER.debug(CORE, "Preparing launch handler");
-        FMLLoader.setupLaunchHandler(environment, versionInfo, mixinConfigsArgumentList);
+        FMLLoader.setupLaunchHandler(environment, versionInfo);
         FMLEnvironment.setupInteropEnvironment(environment);
         Environment.build(environment);
     }
@@ -85,7 +85,7 @@ public class FMLServiceProvider implements ITransformationService {
 
     @Override
     public List<Resource> completeScan(final IModuleLayerManager layerManager) {
-        return FMLLoader.completeScan(launchContext);
+        return FMLLoader.completeScan(launchContext, mixinConfigsArgumentList);
     }
 
     @Override
