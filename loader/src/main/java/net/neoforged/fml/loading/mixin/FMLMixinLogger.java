@@ -12,7 +12,7 @@ import org.spongepowered.asm.logging.Level;
 
 /**
  * NOTE: This class needs to be public due to MixinExtras Logger adapter making indirect use of it:
- * https://github.com/LlamaLad7/MixinExtras/blob/b2716c2c176966c1dbfc517b9b7e403a509f6120/src/main/java/com/llamalad7/mixinextras/utils/MixinExtrasLogger.java#L38
+ * <a href="https://github.com/LlamaLad7/MixinExtras/blob/b2716c2c176966c1dbfc517b9b7e403a509f6120/src/main/java/com/llamalad7/mixinextras/utils/MixinExtrasLogger.java#L38">MixinExtrasLogger.java#L38</a>
  */
 public class FMLMixinLogger implements ILogger {
     /**

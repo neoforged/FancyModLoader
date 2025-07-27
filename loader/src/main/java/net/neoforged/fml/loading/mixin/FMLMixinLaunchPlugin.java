@@ -19,6 +19,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import net.neoforged.fml.ModLoader;
+import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
@@ -95,7 +98,11 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
                         var existingModId = configModIds.putIfAbsent(potential.config(), modId);
                         if (existingModId != null && !existingModId.equals(modId)) {
                             LOGGER.error("Mixin config {} is registered by multiple mods: {} and {}", potential.config(), existingModId, modId);
-                            throw new IllegalStateException("Mixin config " + potential.config() + " is registered by multiple mods: " + existingModId + " and " + modId);
+                            ModLoader.addLoadingIssue(ModLoadingIssue.error(
+                                    "fml.modloadingissue.mixin.duplicate_config",
+                                    potential.config(),
+                                    existingModId,
+                                    modId));
                         }
                         if (potential.requiredMods().stream().allMatch(id -> modList.getModFileById(id) != null)) {
                             Mixins.addConfiguration(potential.config());
