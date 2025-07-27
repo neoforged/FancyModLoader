@@ -15,7 +15,7 @@ import org.spongepowered.asm.service.IClassTracker;
  * TCL and class load events so we can report when classes were loaded before
  * we could transform them
  */
-public class FMLClassTracker implements IClassTracker {
+class FMLClassTracker implements IClassTracker {
     private final Set<String> invalidClasses = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<String> loadedClasses = Collections.newSetFromMap(new ConcurrentHashMap<>());
 

@@ -153,7 +153,7 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
 
         // Throw if the class was previously determined to be invalid
         String name = classType.getClassName();
-        if (this.service.getClassTracker().isInvalidClass(name)) {
+        if (this.service.getInternalClassTracker().isInvalidClass(name)) {
             throw new NoClassDefFoundError(String.format("%s is invalid", name));
         }
 
@@ -202,7 +202,7 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
         } finally {
             // Only track the classload if the reason is actually classloading
             if (ITransformerActivity.CLASSLOADING_REASON.equals(reason)) {
-                this.service.getClassTracker().addLoadedClass(classType.getClassName());
+                this.service.getInternalClassTracker().addLoadedClass(classType.getClassName());
             }
         }
     }

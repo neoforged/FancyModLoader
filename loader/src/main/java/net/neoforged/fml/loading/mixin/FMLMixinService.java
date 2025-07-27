@@ -21,6 +21,7 @@ import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 import org.spongepowered.asm.mixin.transformer.IMixinTransformerFactory;
 import org.spongepowered.asm.service.IClassBytecodeProvider;
 import org.spongepowered.asm.service.IClassProvider;
+import org.spongepowered.asm.service.IClassTracker;
 import org.spongepowered.asm.service.IMixinInternal;
 import org.spongepowered.asm.service.IMixinService;
 import org.spongepowered.asm.service.ITransformerProvider;
@@ -140,7 +141,11 @@ public class FMLMixinService implements IMixinService {
     }
 
     @Override
-    public FMLClassTracker getClassTracker() {
+    public IClassTracker getClassTracker() {
+        return this.classTracker;
+    }
+
+    FMLClassTracker getInternalClassTracker() {
         return this.classTracker;
     }
 
