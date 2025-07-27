@@ -133,7 +133,7 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
     @SuppressWarnings("removal")
     private static void registerLegacyDeferredConfigs(Map<String, String> configModIds) {
         MixinBootstrap.getPlatform().addContainer(new FMLMixinContainerHandle());
-        
+
         for (var config : DeferredMixinConfigRegistration.legacyConfigs()) {
             var existingModId = configModIds.putIfAbsent(config.fileName(), config.modId());
             if (existingModId != null && !existingModId.equals(config.modId())) {

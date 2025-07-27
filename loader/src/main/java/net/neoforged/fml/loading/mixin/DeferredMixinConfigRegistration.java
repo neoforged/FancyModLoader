@@ -32,7 +32,7 @@ public class DeferredMixinConfigRegistration {
 
         mixinConfigs.add(new ConfigInfo(config, modId));
     }
-    
+
     static List<ConfigInfo> legacyConfigs() {
         return mixinConfigs;
     }
