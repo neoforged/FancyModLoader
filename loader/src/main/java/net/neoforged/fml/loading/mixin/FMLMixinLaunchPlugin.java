@@ -6,43 +6,82 @@
 package net.neoforged.fml.loading.mixin;
 
 import com.mojang.logging.LogUtils;
+import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.jarhandling.VirtualJar;
 import cpw.mods.modlauncher.api.ITransformerActivity;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModFileParser;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.slf4j.Logger;
+import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.launch.Phases;
 import org.spongepowered.asm.mixin.FabricUtil;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.Mixins;
+import org.spongepowered.asm.mixin.injection.invoke.arg.ArgsClassGenerator;
 import org.spongepowered.asm.mixin.transformer.Config;
+import org.spongepowered.asm.service.MixinService;
 
 public class FMLMixinLaunchPlugin implements ILaunchPluginService {
     public static final String NAME = "fml-mixin";
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private MixinFacade facade;
+    private FMLMixinService service;
+    private List<String> extraMixinConfigs = List.of();
 
     public FMLMixinLaunchPlugin() {
         System.setProperty("mixin.service", FMLMixinService.class.getName());
         System.setProperty("mixin.bootstrapService", FMLMixinServiceBootstrap.class.getName());
     }
 
-    public synchronized void setup(List<String> extraMixinConfigs) {
-        if (this.facade == null) {
-            this.facade = new MixinFacade(this);
+    public synchronized void extraMixinConfigs(List<String> extraMixinConfigs) {
+        this.extraMixinConfigs = extraMixinConfigs;
+    }
+
+    public SecureJar createGeneratedCodeContainer() {
+        try {
+            Path codeSource = Path.of(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
+            return new VirtualJar("mixin_synthetic", codeSource, ArgsClassGenerator.SYNTHETIC_PACKAGE);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void initializeLaunch(ITransformerLoader transformerLoader, NamedPath[] specialPaths) {
+        if (FMLLoader.getDist() == null) {
+            throw new IllegalStateException("The dist must be set before initializing Mixin");
         }
 
+        this.service = (FMLMixinService) MixinService.getService();
+
+        MixinBootstrap.init();
+
+        registerMixinConfigs();
+
+        // We must transition to DEFAULT phase for normal Mixins to be applied at all
+        gotoPhase(MixinEnvironment.Phase.INIT);
+        gotoPhase(MixinEnvironment.Phase.DEFAULT);
+
+        service.setBytecodeProvider(new FMLClassBytecodeProvider(transformerLoader, this));
+        MixinBootstrap.init();
+        MixinBootstrap.getPlatform().inject();
+    }
+
+    private void registerMixinConfigs() {
         Map<String, String> configModIds = new HashMap<>();
         var modList = LoadingModList.get();
 
@@ -80,16 +119,14 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
         });
     }
 
-    public synchronized MixinFacade getFacade() {
-        if (this.facade == null) {
-            throw new IllegalStateException("MixinFacade has not been set up yet");
+    private void gotoPhase(MixinEnvironment.Phase phase) {
+        try {
+            var m = MixinEnvironment.class.getDeclaredMethod("gotoPhase", MixinEnvironment.Phase.class);
+            m.setAccessible(true);
+            m.invoke(null, phase);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        return this.facade;
-    }
-
-    @Override
-    public void initializeLaunch(ITransformerLoader transformerLoader, NamedPath[] specialPaths) {
-        getFacade().finishInitialization(transformerLoader);
     }
 
     @Override
@@ -110,7 +147,7 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
 
         // Throw if the class was previously determined to be invalid
         String name = classType.getClassName();
-        if (this.facade.getService().getClassTracker().isInvalidClass(name)) {
+        if (this.service.getClassTracker().isInvalidClass(name)) {
             throw new NoClassDefFoundError(String.format("%s is invalid", name));
         }
 
@@ -121,7 +158,7 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
             // If there is no chance of the class being processed, we do not bother.
         }
 
-        if (this.facade.getService().getMixinTransformer().getExtensions().getSyntheticClassRegistry() == null) {
+        if (this.service.getMixinTransformer().getExtensions().getSyntheticClassRegistry() == null) {
             return Phases.NONE;
         }
 
@@ -130,7 +167,7 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
 
     private boolean processesClass(Type classType) {
         MixinEnvironment environment = MixinEnvironment.getCurrentEnvironment();
-        return this.facade.getService().getMixinTransformer().couldTransformClass(environment, classType.getClassName());
+        return this.service.getMixinTransformer().couldTransformClass(environment, classType.getClassName());
     }
 
     @Override
@@ -152,28 +189,28 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
 
             MixinEnvironment environment = MixinEnvironment.getCurrentEnvironment();
             if (ITransformerActivity.COMPUTING_FRAMES_REASON.equals(reason)) {
-                return this.facade.getService().getMixinTransformer().computeFramesForClass(environment, classType.getClassName(), classNode);
+                return this.service.getMixinTransformer().computeFramesForClass(environment, classType.getClassName(), classNode);
             }
 
-            return this.facade.getService().getMixinTransformer().transformClass(environment, classType.getClassName(), classNode);
+            return this.service.getMixinTransformer().transformClass(environment, classType.getClassName(), classNode);
         } finally {
             // Only track the classload if the reason is actually classloading
             if (ITransformerActivity.CLASSLOADING_REASON.equals(reason)) {
-                this.facade.getService().getClassTracker().addLoadedClass(classType.getClassName());
+                this.service.getClassTracker().addLoadedClass(classType.getClassName());
             }
         }
     }
 
     @Override
     public void customAuditConsumer(String className, Consumer<String[]> auditDataAcceptor) {
-        this.facade.getService().getAuditTrail().setConsumer(className, auditDataAcceptor);
+        this.service.getAuditTrail().setConsumer(className, auditDataAcceptor);
     }
 
     boolean generatesClass(Type classType) {
-        return this.facade.getService().getMixinTransformer().getExtensions().getSyntheticClassRegistry().findSyntheticClass(classType.getClassName()) != null;
+        return this.service.getMixinTransformer().getExtensions().getSyntheticClassRegistry().findSyntheticClass(classType.getClassName()) != null;
     }
 
     boolean generateClass(Type classType, ClassNode classNode) {
-        return this.facade.getService().getMixinTransformer().generateClass(MixinEnvironment.getCurrentEnvironment(), classType.getClassName(), classNode);
+        return this.service.getMixinTransformer().generateClass(MixinEnvironment.getCurrentEnvironment(), classType.getClassName(), classNode);
     }
 }

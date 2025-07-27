@@ -143,7 +143,7 @@ public class FMLLoader {
         languageProviderLoader = new LanguageProviderLoader(launchContext);
         backgroundScanHandler = modValidator.stage2Validation();
         loadingModList = backgroundScanHandler.getLoadingModList();
-        mixinLaunchPlugin.setup(extraMixinConfigs);
+        mixinLaunchPlugin.extraMixinConfigs(extraMixinConfigs);
         return List.of(modValidator.getModResources());
     }
 
