@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
-import java.util.stream.Stream;
+import java.util.function.Function;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.earlydisplay.render.EarlyFramebuffer;
 import net.neoforged.fml.earlydisplay.render.ElementShader;
@@ -103,30 +103,45 @@ final class ErrorDisplayWindow {
                 new Button(this, LEFT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnReportText, () -> opener.open(crashReportFile)),
                 new Button(this, RIGHT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnLogText, () -> opener.open(logFile)),
                 new Button(this, RIGHT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnQuitText, () -> closed = true));
-        var warningEntries = issues.stream()
+
+        List<ModLoadingIssue> warningEntries = issues.stream()
                 .filter(issue -> issue.severity() != ModLoadingIssue.Severity.ERROR)
                 .toList();
-        var errorEntries = issues.stream()
+        List<ModLoadingIssue> errorEntries = issues.stream()
                 .filter(issue -> issue.severity() == ModLoadingIssue.Severity.ERROR)
                 .toList();
+        String errorHeaderText = translator.apply("fml.loadingerrorscreen.errorheader", new Object[] { errorEntries.size() });
+        String warningHeaderText = translator.apply("fml.loadingerrorscreen.warningheader", new Object[] { warningEntries.size() });
         // Show errors first, then warnings.
-        this.entries = Stream.concat(errorEntries.stream(), warningEntries.stream())
-                .map(translate ? FMLTranslations::translateIssue : FMLTranslations::translateIssueEnglish)
-                .map(MessageEntry::of)
-                .toList();
+        boolean needSeparators = !warningEntries.isEmpty() && !errorEntries.isEmpty();
+        Function<ModLoadingIssue, String> issueTranslator = translate ? FMLTranslations::translateIssue : FMLTranslations::translateIssueEnglish;
+        this.entries = new ArrayList<>(errorEntries.size() + warningEntries.size());
+        if (needSeparators) {
+            this.entries.add(MessageEntry.of(errorHeaderText, 0xFFFF5555, true));
+        }
+        translateEntries(errorEntries, this.entries, issueTranslator);
+        if (needSeparators) {
+            this.entries.add(MessageEntry.of(warningHeaderText, 0xFFFFFF55, true));
+        }
+        translateEntries(warningEntries, this.entries, issueTranslator);
+        int entryContentHeight = entries.stream().mapToInt(MessageEntry::lineCount).sum() * errorLineHeight;
+        this.totalEntryHeight = entryContentHeight + entries.size() * ENTRY_PADDING;
+
         String headerText;
         // Prioritize showing errors in the header
         int headerTextColor;
         if (!errorEntries.isEmpty()) {
-            headerText = translator.apply("fml.loadingerrorscreen.errorheader", new Object[] { errorEntries.size() });
+            headerText = errorHeaderText;
             headerTextColor = 0xFFFF5555;
         } else {
-            headerText = translator.apply("fml.loadingerrorscreen.warningheader", new Object[] { warningEntries.size() });
+            headerText = warningHeaderText;
             headerTextColor = 0xFFFFFF55;
         }
         this.headerTextLines = HeaderLine.of(headerText, font, headerTextColor);
-        int entryContentHeight = entries.stream().mapToInt(MessageEntry::lineCount).sum() * errorLineHeight;
-        this.totalEntryHeight = entryContentHeight + entries.size() * ENTRY_PADDING;
+    }
+
+    private static void translateEntries(List<ModLoadingIssue> issues, List<MessageEntry> entries, Function<ModLoadingIssue, String> translator) {
+        issues.stream().map(translator).map(MessageEntry::of).forEach(entries::add);
     }
 
     void render() {
@@ -210,7 +225,17 @@ final class ErrorDisplayWindow {
             }
 
             for (List<SimpleFont.DisplayText> line : entry.lines()) {
-                ctx.renderText(LIST_ENTRY_X, y, font, line);
+                float textX;
+                if (entry.centered) {
+                    int width = line.stream()
+                            .map(SimpleFont.DisplayText::string)
+                            .mapToInt(font::stringWidth)
+                            .sum();
+                    textX = (DISPLAY_WIDTH / 2F) - (width / 2F);
+                } else {
+                    textX = LIST_ENTRY_X;
+                }
+                ctx.renderText(textX, y, font, line);
                 y += errorLineHeight;
             }
             y += ENTRY_PADDING;
@@ -346,10 +371,14 @@ final class ErrorDisplayWindow {
         }
     }
 
-    private record MessageEntry(List<List<SimpleFont.DisplayText>> lines, int lineCount) {
+    private record MessageEntry(List<List<SimpleFont.DisplayText>> lines, int lineCount, boolean centered) {
         static MessageEntry of(String text) {
-            List<List<SimpleFont.DisplayText>> lines = FormatHelper.formatText(text, 0xFFFFFFFF);
-            return new MessageEntry(lines, lines.size());
+            return of(text, 0xFFFFFFFF, false);
+        }
+
+        static MessageEntry of(String text, int defaultColor, boolean centered) {
+            List<List<SimpleFont.DisplayText>> lines = FormatHelper.formatText(text, defaultColor);
+            return new MessageEntry(lines, lines.size(), centered);
         }
     }
 }
