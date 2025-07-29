@@ -12,7 +12,7 @@ import java.util.Locale;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public abstract sealed class FileOpener {
+abstract sealed class FileOpener {
     private static final Logger LOGGER = LogManager.getLogger();
 
     static FileOpener get() {
@@ -26,7 +26,7 @@ public abstract sealed class FileOpener {
         }
     }
 
-    public final void open(Path path) {
+    final void open(Path path) {
         URI uri = path.toUri();
         try {
             Runtime.getRuntime().exec(getOpenParameters(uri));
