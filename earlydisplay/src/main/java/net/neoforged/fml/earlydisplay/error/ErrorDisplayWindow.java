@@ -234,7 +234,7 @@ final class ErrorDisplayWindow {
 
     private void scroll(double delta) {
         float offY = (float) (delta * SCROLL_SPEED);
-        scrollOffset = Math.clamp(scrollOffset + offY, 0, totalEntryHeight - LIST_CONTENT_HEIGHT);
+        scrollOffset = Math.clamp(scrollOffset + offY, 0, Math.max(totalEntryHeight - LIST_CONTENT_HEIGHT, 0));
     }
 
     void handleCursorPos(long ignoredWindow, double mouseX, double mouseY) {
@@ -262,11 +262,14 @@ final class ErrorDisplayWindow {
                 }
             }
         }
-        if (press && mouseX > DISPLAY_WIDTH - SCROLLER_WIDTH && mouseY > LIST_Y_TOP && mouseY <= LIST_Y_BOTTOM) {
-            draggingScrollbar = true;
-            dragScrollbar(mouseY);
-        } else if (!press) {
-            draggingScrollbar = false;
+
+        if (totalEntryHeight > LIST_CONTENT_HEIGHT) {
+            if (press && mouseX > DISPLAY_WIDTH - SCROLLER_WIDTH && mouseY > LIST_Y_TOP && mouseY <= LIST_Y_BOTTOM) {
+                draggingScrollbar = true;
+                dragScrollbar(mouseY);
+            } else if (!press) {
+                draggingScrollbar = false;
+            }
         }
     }
 
