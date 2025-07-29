@@ -78,8 +78,8 @@
   "fml.modloadingissue.enumextender.argument.constant.invalid_char": "Invalid character {0} at parameter index {1} for field {2} in enum {3}, specified by mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Unsupported immediate argument type {0} at parameter index {1} for field {2} in enum {3}, specified by mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.duplicate": "Found duplicate field {0} for enum {1}, provided by mods {2} and {3}",
-  "fml.button.open.log": "Open log file",
-  "fml.button.open.crashreport": "Open crash report",
+  "fml.button.open.log": "Open Log File",
+  "fml.button.open.crashreport": "Open Crash Report",
   "fml.button.open.mods.folder": "Open Mods Folder",
-  "fml.button.quit": "Quit game"
+  "fml.button.quit": "Quit Game"
 }
