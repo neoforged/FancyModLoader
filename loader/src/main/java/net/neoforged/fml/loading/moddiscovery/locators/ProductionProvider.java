@@ -49,7 +49,7 @@ public class ProductionProvider implements IModFileCandidateLocator {
 
     @Override
     public String toString() {
-        return "production client provider";
+        return "production locator";
     }
 
     @Override

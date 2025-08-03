@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipOutputStream;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModWorkManager;
@@ -402,11 +403,24 @@ class FMLLoaderTest extends LauncherTest {
         }
 
         @Test
+        void testCorruptedMinecraftJarInClientInstallation() throws Exception {
+            installation.setupProductionClient();
+
+            var clientPath = installation.getLibrariesDir().resolve("net/neoforged/minecraft-client-patched/20.4.9999/minecraft-client-patched-20.4.9999.jar");
+            // Replace the jar with an empty zip (no neoforge.mods.toml)
+            new ZipOutputStream(Files.newOutputStream(clientPath)).close();
+
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
+                    "ERROR: The patched Minecraft jar is corrupted. Please try to reinstall NeoForge.");
+        }
+
+        @Test
         void testMissingNeoForgeJarInClientInstallation() throws Exception {
             installation.setupProductionClient();
 
-            var clientPath = installation.getLibrariesDir().resolve("net/neoforged/neoforge/20.4.9999/neoforge-20.4.9999-universal.jar");
-            Files.delete(clientPath);
+            var neoforgePath = installation.getLibrariesDir().resolve("net/neoforged/neoforge/20.4.9999/neoforge-20.4.9999-universal.jar");
+            Files.delete(neoforgePath);
 
             var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
@@ -414,11 +428,24 @@ class FMLLoaderTest extends LauncherTest {
         }
 
         @Test
+        void testCorruptedNeoForgeJarInClientInstallation() throws Exception {
+            installation.setupProductionClient();
+
+            var clientPath = installation.getLibrariesDir().resolve("net/neoforged/neoforge/20.4.9999/neoforge-20.4.9999-universal.jar");
+            // Replace the jar with an empty zip (no neoforge.mods.toml)
+            new ZipOutputStream(Files.newOutputStream(clientPath)).close();
+
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
+                    "ERROR: The NeoForge jar is corrupted. Please try to reinstall NeoForge.");
+        }
+
+        @Test
         void testMissingMinecraftJarInServerInstallation() throws Exception {
             installation.setupProductionServer();
 
-            var clientPath = installation.getLibrariesDir().resolve("net/neoforged/minecraft-server-patched/20.4.9999/minecraft-server-patched-20.4.9999.jar");
-            Files.delete(clientPath);
+            var serverPath = installation.getLibrariesDir().resolve("net/neoforged/minecraft-server-patched/20.4.9999/minecraft-server-patched-20.4.9999.jar");
+            Files.delete(serverPath);
 
             var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeserver"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
@@ -426,15 +453,41 @@ class FMLLoaderTest extends LauncherTest {
         }
 
         @Test
+        void testCorruptedMinecraftJarInServerInstallation() throws Exception {
+            installation.setupProductionServer();
+
+            var serverPath = installation.getLibrariesDir().resolve("net/neoforged/minecraft-server-patched/20.4.9999/minecraft-server-patched-20.4.9999.jar");
+            // Replace the jar with an empty zip (no neoforge.mods.toml)
+            new ZipOutputStream(Files.newOutputStream(serverPath)).close();
+
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeserver"));
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
+                    "ERROR: The patched Minecraft jar is corrupted. Please try to reinstall NeoForge.");
+        }
+
+        @Test
         void testMissingNeoForgeJarInServerInstallation() throws Exception {
             installation.setupProductionServer();
 
-            var clientPath = installation.getLibrariesDir().resolve("net/neoforged/neoforge/20.4.9999/neoforge-20.4.9999-universal.jar");
-            Files.delete(clientPath);
+            var neoforgePath = installation.getLibrariesDir().resolve("net/neoforged/neoforge/20.4.9999/neoforge-20.4.9999-universal.jar");
+            Files.delete(neoforgePath);
 
             var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeserver"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                     "ERROR: The NeoForge jar is missing. Please try to reinstall NeoForge.");
+        }
+
+        @Test
+        void testCorruptedNeoForgeJarInServerInstallation() throws Exception {
+            installation.setupProductionServer();
+
+            var neoforgePath = installation.getLibrariesDir().resolve("net/neoforged/neoforge/20.4.9999/neoforge-20.4.9999-universal.jar");
+            // Replace the jar with an empty zip (no neoforge.mods.toml)
+            new ZipOutputStream(Files.newOutputStream(neoforgePath)).close();
+
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeserver"));
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
+                    "ERROR: The NeoForge jar is corrupted. Please try to reinstall NeoForge.");
         }
 
         /**
