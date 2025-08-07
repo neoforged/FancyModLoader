@@ -41,8 +41,6 @@ import net.neoforged.fml.event.IModBusEvent;
  * while the rest will be registered to the {@code NeoForge#EVENT_BUS}.
  * <p>
  * By default, the subscribers will be registered on both physical sides. This can be customised using {@link #value()}.
- *
- * @see Bus
  */
 // @formatter:on
 @Retention(RetentionPolicy.RUNTIME)
