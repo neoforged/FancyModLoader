@@ -358,6 +358,7 @@ public abstract class LauncherTest {
         var expectedContent = new ArrayList<IdentifiableContent>();
         Collections.addAll(expectedContent, SimulatedInstallation.SERVER_EXTRA_JAR_CONTENT);
         expectedContent.add(SimulatedInstallation.PATCHED_SHARED);
+        expectedContent.add(SimulatedInstallation.MINECRAFT_MODS_TOML);
 
         assertModContent(launchResult, "minecraft", expectedContent);
     }
@@ -367,6 +368,7 @@ public abstract class LauncherTest {
         if (production) {
             expectedContent.add(SimulatedInstallation.SHARED_ASSETS);
             expectedContent.add(SimulatedInstallation.CLIENT_ASSETS);
+            expectedContent.add(SimulatedInstallation.MINECRAFT_MODS_TOML);
         } else {
             Collections.addAll(expectedContent, SimulatedInstallation.CLIENT_EXTRA_JAR_CONTENT);
         }
