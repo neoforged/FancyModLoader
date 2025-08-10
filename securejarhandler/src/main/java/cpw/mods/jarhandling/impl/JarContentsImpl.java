@@ -1,6 +1,9 @@
 package cpw.mods.jarhandling.impl;
 
 import cpw.mods.jarhandling.JarContents;
+import cpw.mods.jarhandling.JarResource;
+import cpw.mods.jarhandling.JarResourceAttributes;
+import cpw.mods.jarhandling.JarResourceVisitor;
 import cpw.mods.niofs.union.UnionFileSystem;
 import cpw.mods.niofs.union.UnionFileSystemProvider;
 import cpw.mods.niofs.union.UnionPathFilter;
@@ -11,8 +14,11 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -130,22 +136,23 @@ public class JarContentsImpl implements JarContents {
         return filesystem.getPrimaryPath();
     }
 
-    @Override
-    public Optional<URI> findFile(String name) {
+    private Path fromRelativePath(String name) {
         var rel = filesystem.getPath(name);
         if (this.nameOverrides.containsKey(rel)) {
             rel = this.filesystem.getPath("META-INF", "versions", this.nameOverrides.get(rel).toString()).resolve(rel);
         }
-        return Optional.of(this.filesystem.getRoot().resolve(rel)).filter(Files::exists).map(Path::toUri);
+        return this.filesystem.getRoot().resolve(rel);
+    }
+
+    @Override
+    public Optional<URI> findFile(String name) {
+        var path = fromRelativePath(name);
+        return Optional.of(path).filter(Files::exists).map(Path::toUri);
     }
 
     @Override
     public InputStream openFile(String name) throws IOException {
-        var rel = filesystem.getPath(name);
-        if (this.nameOverrides.containsKey(rel)) {
-            rel = this.filesystem.getPath("META-INF", "versions", this.nameOverrides.get(rel).toString()).resolve(rel);
-        }
-        var path = this.filesystem.getRoot().resolve(rel);
+        var path = fromRelativePath(name);
         try {
             return Files.newInputStream(path);
         } catch (NoSuchFileException e) {
@@ -164,7 +171,116 @@ public class JarContentsImpl implements JarContents {
     }
 
     @Override
+    public Collection<Path> getContentRoots() {
+        return Collections.unmodifiableCollection(filesystem.getBasePaths());
+    }
+
+    @Override
+    public @Nullable JarResource get(String relativePath) {
+        var path = fromRelativePath(relativePath);
+        if (Files.isRegularFile(path)) {
+            return new JarResource() {
+                @Override
+                public InputStream open() throws IOException {
+                    return Files.newInputStream(path);
+                }
+
+                @Override
+                public JarResourceAttributes attributes() throws IOException {
+                    return readAttributes(path);
+                }
+
+                @Override
+                public JarResource retain() {
+                    return this;
+                }
+            };
+        }
+        return null;
+    }
+
+    @Override
+    public byte[] readFile(String relativePath) throws IOException {
+        Path path = fromRelativePath(relativePath);
+        try {
+            return Files.readAllBytes(path);
+        } catch (NoSuchFileException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public boolean containsFile(String relativePath) {
+        return Files.isRegularFile(fromRelativePath(relativePath));
+    }
+
+    @Override
+    public void visitContent(String startingFolder, JarResourceVisitor visitor) {
+        var startingPoint = getVisitStartingPoint(startingFolder);
+        if (!startingPoint.startsWith(filesystem.getRoot())) {
+            return; // Don't allow ../ escapes
+        }
+        if (!Files.isDirectory(startingPoint)) {
+            return;
+        }
+
+        try (var stream = Files.walk(startingPoint)) {
+            var locatedResource = new PathJarResource(null);
+            stream.forEach(path -> {
+                if (Files.isRegularFile(path)) {
+                    var relativePath = PathNormalization.normalize(path.toString());
+                    locatedResource.path = path;
+                    visitor.visit(relativePath, locatedResource);
+                }
+            });
+        } catch (NoSuchFileException ignored) {
+            // The specific subfolder doesn't exist
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to walk contents of " + this, e);
+        }
+    }
+
+    private Path getVisitStartingPoint(String startingFolder) {
+        startingFolder = PathNormalization.normalize(startingFolder);
+
+        var startingPoint = filesystem.getRoot();
+        if (!startingFolder.isEmpty()) {
+            startingPoint = startingPoint.resolve(startingFolder).normalize();
+        }
+        return startingPoint;
+    }
+
+    private static JarResourceAttributes readAttributes(Path path) throws IOException {
+        var attributes = Files.getFileAttributeView(path, BasicFileAttributeView.class).readAttributes();
+        return new JarResourceAttributes(attributes.lastModifiedTime(), attributes.size());
+    }
+
+    @Override
     public String toString() {
         return getPrimaryPath().toString();
+    }
+
+    private static final class PathJarResource implements JarResource {
+        private Path path;
+
+        public PathJarResource(Path path) {
+            this.path = path;
+        }
+
+        @Override
+        public InputStream open() throws IOException {
+            return Files.newInputStream(path);
+        }
+
+        @Override
+        public JarResourceAttributes attributes() throws IOException {
+            var attributes = Files.getFileAttributeView(path, BasicFileAttributeView.class).readAttributes();
+            return new JarResourceAttributes(attributes.lastModifiedTime(), attributes.size());
+        }
+
+        @Override
+        public JarResource retain() {
+            return new PathJarResource(path);
+        }
     }
 }
