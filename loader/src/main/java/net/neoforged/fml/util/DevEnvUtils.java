@@ -13,13 +13,19 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import org.jetbrains.annotations.ApiStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ApiStatus.Internal
 public final class DevEnvUtils {
+    private static final Logger LOG = LoggerFactory.getLogger(DevEnvUtils.class);
+
     private DevEnvUtils() {}
 
     public static List<Path> findFileSystemRootsOfFileOnClasspath(String relativePath) {
@@ -37,7 +43,8 @@ public final class DevEnvUtils {
             throw new IllegalArgumentException("Failed to enumerate classpath locations of " + relativePath);
         }
 
-        List<Path> result = new ArrayList<>();
+        // Remove duplicates, but maintain order!
+        Set<Path> result = new LinkedHashSet<>();
         while (resourceIt.hasNext()) {
             var resourceUrl = resourceIt.next();
 
@@ -66,7 +73,7 @@ public final class DevEnvUtils {
             }
         }
 
-        return result;
+        return new ArrayList<>(result);
     }
 
     public static Path findFileSystemRootOfFileOnClasspath(String relativePath) {
@@ -75,7 +82,12 @@ public final class DevEnvUtils {
         if (paths.isEmpty()) {
             throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.failed_to_find_on_classpath", relativePath));
         } else if (paths.size() > 1) {
-            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.multiple_copies_on_classpath", relativePath, paths));
+            // Warn for anything past the first. It's impossible to know if the user actually intended this setup,
+            // but to allow launching in uncommon configurations, we'll allow it.
+            for (int i = 1; i < paths.size(); i++) {
+                var path = paths.get(i);
+                LOG.warn("Found multiple copies of {} on classpath. Ignoring copy from {}, using {} instead.", relativePath, path, paths.getFirst());
+            }
         }
 
         return paths.getFirst();
