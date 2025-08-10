@@ -13,6 +13,7 @@ import org.spongepowered.asm.launch.platform.container.IContainerHandle;
  * Container handle representing all of FML's mixin configs.
  * No attribute because we directly load the mixin configs in {@link FMLMixinPlatformAgent}.
  */
+@Deprecated(forRemoval = true)
 public class FMLMixinContainerHandle implements IContainerHandle {
     @Override
     public String getAttribute(String name) {

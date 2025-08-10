@@ -76,7 +76,10 @@ public class LoadingModList {
         return INSTANCE;
     }
 
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
     public void addMixinConfigs() {
+        LOGGER.warn("LoadingModList#addMixinConfigs() was called but should not be");
         modFiles.stream()
                 .map(ModFileInfo::getFile)
                 .forEach(file -> {

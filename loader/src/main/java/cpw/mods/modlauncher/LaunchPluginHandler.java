@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.objectweb.asm.Type;
@@ -105,7 +106,9 @@ public class LaunchPluginHandler {
         return flags;
     }
 
-    void announceLaunch(final TransformingClassLoader transformerLoader, final NamedPath[] specialPaths) {
+    @VisibleForTesting
+    @ApiStatus.Internal
+    public void announceLaunch(final TransformingClassLoader transformerLoader, final NamedPath[] specialPaths) {
         plugins.forEach((k, p) -> p.initializeLaunch((s -> transformerLoader.buildTransformedClassNodeFor(s, k)), specialPaths));
     }
 }
