@@ -216,6 +216,19 @@ public class SimulatedInstallation implements AutoCloseable {
         return additionalClasspath;
     }
 
+    public List<Path> setupUserdevProjectNew() throws IOException {
+        var additionalClasspath = new ArrayList<Path>();
+
+        var universalJar = writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "universal", NEOFORGE_UNIVERSAL_JAR_CONTENT);
+        additionalClasspath.add(universalJar);
+
+        var minecraftJar = projectRoot.resolve("minecraft-patched-client-" + NEOFORGE_VERSION + ".jar");
+        additionalClasspath.add(minecraftJar);
+        writeJarFile(minecraftJar, PATCHED_CLIENT, PATCHED_SHARED, CLIENT_ASSETS, SHARED_ASSETS, MINECRAFT_MODS_TOML, RESOURCES_MANIFEST);
+
+        return additionalClasspath;
+    }
+
     public static void setModFoldersProperty(Map<String, List<Path>> modFolders) {
         var modFolderList = modFolders.entrySet()
                 .stream()

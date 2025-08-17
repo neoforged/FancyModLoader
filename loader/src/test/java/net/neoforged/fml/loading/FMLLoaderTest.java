@@ -105,7 +105,7 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            assertMinecraftClientJar(result, false);
+            assertLegacyMinecraftClientJar(result, false);
             assertNeoForgeJar(result);
         }
 
@@ -117,7 +117,7 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            assertMinecraftClientJar(result, false);
+            assertLegacyMinecraftClientJar(result, false);
             assertNeoForgeJar(result);
         }
 
@@ -129,7 +129,7 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            assertMinecraftClientJar(result, false);
+            assertLegacyMinecraftClientJar(result, false);
             assertNeoForgeJar(result);
         }
 
@@ -141,13 +141,27 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            assertMinecraftClientJar(result, false);
+            assertLegacyMinecraftClientJar(result, false);
             assertNeoForgeJar(result);
         }
 
         @Test
         void testUserDevServerDiscovery() throws Exception {
             var classpath = installation.setupUserdevProject();
+
+            var result = launchAndLoadWithAdditionalClasspath("neoforgeserverdev", classpath);
+            assertThat(result.issues()).isEmpty();
+            assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.pluginLayerModules()).isEmpty();
+
+            assertLegacyMinecraftClientJar(result, false);
+            assertNeoForgeJar(result);
+        }
+
+        @Test
+        void testUserDevClientSeparateJarsDiscovery() throws Exception {
+            var classpath = installation.setupUserdevProjectNew();
 
             var result = launchAndLoadWithAdditionalClasspath("neoforgeserverdev", classpath);
             assertThat(result.issues()).isEmpty();
@@ -169,7 +183,7 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            assertMinecraftClientJar(result, false);
+            assertLegacyMinecraftClientJar(result, false);
             assertNeoForgeJar(result);
         }
 
@@ -183,7 +197,7 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            assertMinecraftClientJar(result, false);
+            assertLegacyMinecraftClientJar(result, false);
             assertNeoForgeJar(result);
         }
 
@@ -197,7 +211,7 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            assertMinecraftClientJar(result, false);
+            assertLegacyMinecraftClientJar(result, false);
             assertNeoForgeJar(result);
         }
     }

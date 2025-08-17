@@ -395,15 +395,15 @@ public abstract class LauncherTest {
 
     public void assertMinecraftClientJar(LaunchResult launchResult, boolean production) throws IOException {
         var expectedContent = new ArrayList<IdentifiableContent>();
-        if (production) {
-            expectedContent.add(SimulatedInstallation.SHARED_ASSETS);
-            expectedContent.add(SimulatedInstallation.CLIENT_ASSETS);
-            expectedContent.add(SimulatedInstallation.MINECRAFT_MODS_TOML);
-        } else {
-            Collections.addAll(expectedContent, SimulatedInstallation.CLIENT_EXTRA_JAR_CONTENT);
-        }
+        expectedContent.add(SimulatedInstallation.SHARED_ASSETS);
+        expectedContent.add(SimulatedInstallation.CLIENT_ASSETS);
+        expectedContent.add(SimulatedInstallation.MINECRAFT_MODS_TOML);
         expectedContent.add(SimulatedInstallation.PATCHED_CLIENT);
         expectedContent.add(SimulatedInstallation.PATCHED_SHARED);
+        // In joined distributions, there's supposed to be a manifest
+        if (!production) {
+            expectedContent.add(SimulatedInstallation.RESOURCES_MANIFEST);
+        }
 
         assertModContent(launchResult, "minecraft", expectedContent);
     }
