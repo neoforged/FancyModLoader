@@ -5,10 +5,15 @@
 
 package net.neoforged.fml.loading.targets;
 
+import java.nio.file.Files;
+import java.util.List;
 import java.util.function.Consumer;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.LibraryFinder;
 import net.neoforged.fml.loading.MavenCoordinate;
 import net.neoforged.fml.loading.VersionInfo;
+import net.neoforged.fml.loading.moddiscovery.locators.PathBasedLocator;
+import net.neoforged.fml.loading.moddiscovery.locators.ProductionClientProvider;
 import net.neoforged.fml.loading.moddiscovery.locators.ProductionProvider;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 
@@ -40,8 +45,20 @@ public class NeoForgeClientLaunchHandler extends CommonLaunchHandler {
     public void collectAdditionalModFileLocators(VersionInfo versionInfo, Consumer<IModFileCandidateLocator> output) {
         super.collectAdditionalModFileLocators(versionInfo, output);
 
-        output.accept(new ProductionProvider(
-                new MavenCoordinate("net.neoforged", "minecraft-client-patched", "", "", versionInfo.neoForgeVersion()),
-                new MavenCoordinate("net.neoforged", "neoforge", "", "universal", versionInfo.neoForgeVersion())));
+        // Detect if the newer Minecraft installation method is available. If not, we assume the old method.
+        MavenCoordinate patchedMinecraftJarCoordinate = new MavenCoordinate("net.neoforged", "minecraft-client-patched", "", "", versionInfo.neoForgeVersion());
+        MavenCoordinate neoforgeCoordinate = new MavenCoordinate("net.neoforged", "neoforge", "", "universal", versionInfo.neoForgeVersion());
+        var patchedMinecraftPath = LibraryFinder.findPathForMaven(patchedMinecraftJarCoordinate);
+
+        if (Files.isRegularFile(patchedMinecraftPath)) {
+            output.accept(new ProductionProvider(patchedMinecraftJarCoordinate, neoforgeCoordinate));
+        } else {
+            // Overlays the unpatched but renamed Minecraft classes with our patched versions of those classes.
+            var additionalContent = List.of(new MavenCoordinate("net.neoforged", "neoforge", "", "client", versionInfo.neoForgeVersion()));
+            output.accept(new ProductionClientProvider(additionalContent));
+
+            var nfJar = LibraryFinder.findPathForMaven(neoforgeCoordinate);
+            output.accept(new PathBasedLocator("neoforge", nfJar));
+        }
     }
 }

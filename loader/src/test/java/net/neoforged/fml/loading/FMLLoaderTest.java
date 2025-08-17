@@ -57,6 +57,19 @@ class FMLLoaderTest extends LauncherTest {
         }
 
         @Test
+        void testProductionClientDiscoveryLegacyApproach() throws Exception {
+            installation.setupProductionClientLegacy();
+
+            var result = launchAndLoad("neoforgeclient");
+            assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.pluginLayerModules()).isEmpty();
+
+            assertLegacyMinecraftClientJar(result, true);
+            assertNeoForgeJar(result);
+        }
+
+        @Test
         void testProductionServerDiscovery() throws Exception {
             installation.setupProductionServer();
 
@@ -67,6 +80,20 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.pluginLayerModules()).isEmpty();
 
             assertMinecraftServerJar(result);
+            assertNeoForgeJar(result);
+        }
+
+        @Test
+        void testProductionServerDiscoveryLegacyApproach() throws Exception {
+            installation.setupProductionServerLegacy();
+
+            var result = launchAndLoad("neoforgeserver");
+            assertThat(result.issues()).isEmpty();
+            assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.pluginLayerModules()).isEmpty();
+
+            assertLegacyMinecraftServerJar(result);
             assertNeoForgeJar(result);
         }
 
@@ -399,7 +426,7 @@ class FMLLoaderTest extends LauncherTest {
 
             var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                    "ERROR: The patched Minecraft jar is missing. Please try to reinstall NeoForge.");
+                    "ERROR: Your NeoForge installation is corrupted. Please try to reinstall NeoForge.");
         }
 
         @Test
@@ -449,7 +476,7 @@ class FMLLoaderTest extends LauncherTest {
 
             var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeserver"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                    "ERROR: The patched Minecraft jar is missing. Please try to reinstall NeoForge.");
+                    "ERROR: Your NeoForge installation is corrupted. Please try to reinstall NeoForge.");
         }
 
         @Test
