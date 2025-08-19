@@ -26,6 +26,7 @@ import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
+import net.neoforged.neoforgespi.locating.IncompatibleFileReporting;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +60,20 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
         }
         // then fall back to finding it on the current classpath
         if (minecraftResourcesRoot == null) {
-            minecraftResourcesRoot = DevEnvUtils.findFileSystemRootOfFileOnClasspath("assets/.mcassetsroot");
+            minecraftResourcesRoot = DevEnvUtils.findFileSystemRootOfFileOnClasspath("data/.mcassetsroot");
+
+            // Heuristic: If only a single path is given in this.paths, and the minecraft resource root
+            // Is in that same file, we assume we're in a "new" environment where Minecraft and neoforge jars are split
+            if (this.paths.size() == 1 && this.paths.getFirst().equals(minecraftResourcesRoot)) {
+                LOG.info("Assuming Minecraft Jar is: {}", minecraftResourcesRoot);
+                var modFile = pipeline.addPath(minecraftResourcesRoot, ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.IGNORE).orElse(null);
+                if (modFile == null) {
+                    pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.corrupted_minecraft_jar"));
+                } else if (modFile.getModInfos().isEmpty() || !modFile.getModInfos().getFirst().getModId().equals("minecraft")) {
+                    throw new IllegalStateException("The detected Minecraft jar " + minecraftResourcesRoot + " does not contain a mod identifying as 'minecraft'. It contains: " + modFile.getModInfos());
+                }
+                return;
+            }
         }
 
         var packages = getNeoForgeSpecificPathPrefixes();
