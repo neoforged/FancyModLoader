@@ -8,6 +8,8 @@ package net.neoforged.fml.loading.mixin;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +24,7 @@ public class DeferredMixinConfigRegistration {
 
     private static boolean added = false;
 
-    record ConfigInfo(String fileName, @Nullable String modId) {}
+    record ConfigInfo(String fileName, @Nullable String modId, int compatibility) {}
 
     private static final List<ConfigInfo> mixinConfigs = new ArrayList<>();
 
@@ -39,11 +41,29 @@ public class DeferredMixinConfigRegistration {
     }
 
     public static void addMixinConfig(String config, @Nullable String modId) {
+        addMixinConfig(config, modId, null);
+    }
+
+    public static void addMixinConfig(String config, @Nullable String modId, @Nullable ArtifactVersion compatibility) {
         if (added) {
             throw new IllegalStateException("Too late to add mixin configs!");
         }
 
-        mixinConfigs.add(new ConfigInfo(config, modId));
+        mixinConfigs.add(new ConfigInfo(config, modId, calculateCompatibility(compatibility)));
+    }
+    
+    // Increment to break compatibility; during a BC window, this should be set to the latest version. This is _not_ set
+    // to COMPATIBILITY_LATEST, so that if mixin is bumped past a BC elsewhere (say, in neo) it does not break mods.
+    private static final int DEFAULT_COMPATIBILITY = FabricUtil.COMPATIBILITY_0_14_0;
+
+    private static int calculateCompatibility(@Nullable ArtifactVersion compatibility) {
+        if (compatibility == null) {
+            return DEFAULT_COMPATIBILITY;
+        }
+        int calculatedCompatibility = compatibility.getMajorVersion() * (1000 * 1000) +
+                compatibility.getMinorVersion() * 1000 +
+                compatibility.getIncrementalVersion(); 
+        return Math.min(calculatedCompatibility, FabricUtil.COMPATIBILITY_LATEST);
     }
 
     static void registerConfigs() {
@@ -59,6 +79,7 @@ public class DeferredMixinConfigRegistration {
                 LOG.warn("Config file {} was not registered!", cfg.fileName());
             } else {
                 config.decorate(FabricUtil.KEY_MOD_ID, cfg.modId());
+                config.decorate(FabricUtil.KEY_COMPATIBILITY, cfg.compatibility());
             }
         });
         mixinConfigs.clear();
