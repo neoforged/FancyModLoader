@@ -10,6 +10,7 @@ import com.electronwill.nightconfig.core.concurrent.ConcurrentConfig;
 import com.electronwill.nightconfig.core.file.FileConfig;
 import com.electronwill.nightconfig.toml.TomlFormat;
 import com.mojang.logging.LogUtils;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
+import org.spongepowered.asm.mixin.FabricUtil;
 
 public class ModFileParser {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -76,6 +78,25 @@ public class ModFileParser {
         }
     }
 
+    private static final ArtifactVersion HIGHEST_COMPATIBILITY;
+
+    static {
+        // we want FabricUtil.COMPATIBILITY_LATEST at _runtime_; if we just do a static field access javac inlines it...
+        int highest;
+        try {
+            var getter = MethodHandles.lookup().findStaticGetter(FabricUtil.class, "COMPATIBILITY_LATEST", int.class);
+            highest = (int) getter.invokeExact();
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+        var incremental = highest % 1000;
+        highest /= 1000;
+        var minor = highest % 1000;
+        highest /= 1000;
+        var major = highest;
+        HIGHEST_COMPATIBILITY = new DefaultArtifactVersion(major + "." + minor + "." + incremental);
+    }
+
     protected static List<MixinConfig> getMixinConfigs(IModFileInfo modFileInfo) {
         try {
             var config = modFileInfo.getConfig();
@@ -89,6 +110,11 @@ public class ModFileParser {
                 var compatibility = mixinsEntry.<String>getConfigElement("compatibility")
                         .map(DefaultArtifactVersion::new)
                         .orElse(null);
+                if (compatibility != null && compatibility.compareTo(HIGHEST_COMPATIBILITY) > 0) {
+                    throw new InvalidModFileException("Specified mixin compatibility version " + compatibility
+                            + " is higher than the highest known mixin compatibility level " + HIGHEST_COMPATIBILITY,
+                            modFileInfo);
+                }
                 potentialMixins.add(new MixinConfig(name, requiredModIds, compatibility));
             }
 

@@ -8,7 +8,6 @@ package net.neoforged.fml.loading.mixin;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -51,7 +50,7 @@ public class DeferredMixinConfigRegistration {
 
         mixinConfigs.add(new ConfigInfo(config, modId, calculateCompatibility(compatibility)));
     }
-    
+
     // Increment to break compatibility; during a BC window, this should be set to the latest version. This is _not_ set
     // to COMPATIBILITY_LATEST, so that if mixin is bumped past a BC elsewhere (say, in neo) it does not break mods.
     private static final int DEFAULT_COMPATIBILITY = FabricUtil.COMPATIBILITY_0_14_0;
@@ -60,10 +59,9 @@ public class DeferredMixinConfigRegistration {
         if (compatibility == null) {
             return DEFAULT_COMPATIBILITY;
         }
-        int calculatedCompatibility = compatibility.getMajorVersion() * (1000 * 1000) +
+        return compatibility.getMajorVersion() * (1000 * 1000) +
                 compatibility.getMinorVersion() * 1000 +
-                compatibility.getIncrementalVersion(); 
-        return Math.min(calculatedCompatibility, FabricUtil.COMPATIBILITY_LATEST);
+                compatibility.getIncrementalVersion();
     }
 
     static void registerConfigs() {
