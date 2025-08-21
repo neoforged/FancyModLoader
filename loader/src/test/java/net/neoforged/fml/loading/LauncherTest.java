@@ -358,11 +358,28 @@ public abstract class LauncherTest {
         var expectedContent = new ArrayList<IdentifiableContent>();
         Collections.addAll(expectedContent, SimulatedInstallation.SERVER_EXTRA_JAR_CONTENT);
         expectedContent.add(SimulatedInstallation.PATCHED_SHARED);
+        expectedContent.add(SimulatedInstallation.MINECRAFT_MODS_TOML);
 
         assertModContent(launchResult, "minecraft", expectedContent);
     }
 
-    public void assertMinecraftClientJar(LaunchResult launchResult, boolean production) throws IOException {
+    /**
+     * Asserts a Minecraft Jar in the legacy installation mode where the Minecraft jar is assembled in-memory from different individual pieces.
+     * The only noticeable difference is that the Minecraft jar does not have a neoforge.mods.toml.
+     */
+    public void assertLegacyMinecraftServerJar(LaunchResult launchResult) throws IOException {
+        var expectedContent = new ArrayList<IdentifiableContent>();
+        Collections.addAll(expectedContent, SimulatedInstallation.SERVER_EXTRA_JAR_CONTENT);
+        expectedContent.add(SimulatedInstallation.PATCHED_SHARED);
+
+        assertModContent(launchResult, "minecraft", expectedContent);
+    }
+
+    /**
+     * Asserts a Minecraft Jar in the legacy installation mode where the Minecraft jar is assembled in-memory from different individual pieces.
+     * The only noticeable difference is that the Minecraft jar does not have a neoforge.mods.toml.
+     */
+    public void assertLegacyMinecraftClientJar(LaunchResult launchResult, boolean production) throws IOException {
         var expectedContent = new ArrayList<IdentifiableContent>();
         if (production) {
             expectedContent.add(SimulatedInstallation.SHARED_ASSETS);
@@ -372,6 +389,21 @@ public abstract class LauncherTest {
         }
         expectedContent.add(SimulatedInstallation.PATCHED_CLIENT);
         expectedContent.add(SimulatedInstallation.PATCHED_SHARED);
+
+        assertModContent(launchResult, "minecraft", expectedContent);
+    }
+
+    public void assertMinecraftClientJar(LaunchResult launchResult, boolean production) throws IOException {
+        var expectedContent = new ArrayList<IdentifiableContent>();
+        expectedContent.add(SimulatedInstallation.SHARED_ASSETS);
+        expectedContent.add(SimulatedInstallation.CLIENT_ASSETS);
+        expectedContent.add(SimulatedInstallation.MINECRAFT_MODS_TOML);
+        expectedContent.add(SimulatedInstallation.PATCHED_CLIENT);
+        expectedContent.add(SimulatedInstallation.PATCHED_SHARED);
+        // In joined distributions, there's supposed to be a manifest
+        if (!production) {
+            expectedContent.add(SimulatedInstallation.RESOURCES_MANIFEST);
+        }
 
         assertModContent(launchResult, "minecraft", expectedContent);
     }
