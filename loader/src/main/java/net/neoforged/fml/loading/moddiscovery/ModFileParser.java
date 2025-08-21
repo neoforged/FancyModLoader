@@ -68,8 +68,8 @@ public class ModFileParser {
     /**
      * Represents a potential mixin configuration.
      *
-     * @param config           The name of the mixin configuration.
-     * @param requiredMods     The mod ids that are required for this mixin configuration to be loaded. If empty, will be loaded regardless.
+     * @param config          The name of the mixin configuration.
+     * @param requiredMods    The mod ids that are required for this mixin configuration to be loaded. If empty, will be loaded regardless.
      * @param behaviorVersion The mixin version whose behavior this configuration requests; if unspecified, the default is provided by FML.
      */
     public record MixinConfig(String config, List<String> requiredMods, @Nullable ArtifactVersion behaviorVersion) {
