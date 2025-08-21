@@ -10,7 +10,6 @@ import com.electronwill.nightconfig.core.concurrent.ConcurrentConfig;
 import com.electronwill.nightconfig.core.file.FileConfig;
 import com.electronwill.nightconfig.toml.TomlFormat;
 import com.mojang.logging.LogUtils;
-import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -81,20 +80,7 @@ public class ModFileParser {
     private static final ArtifactVersion HIGHEST_COMPATIBILITY;
 
     static {
-        // we want FabricUtil.COMPATIBILITY_LATEST at _runtime_; if we just do a static field access javac inlines it...
-        int highest;
-        try {
-            var getter = MethodHandles.lookup().findStaticGetter(FabricUtil.class, "COMPATIBILITY_LATEST", int.class);
-            highest = (int) getter.invokeExact();
-        } catch (Throwable e) {
-            throw new RuntimeException(e);
-        }
-        var incremental = highest % 1000;
-        highest /= 1000;
-        var minor = highest % 1000;
-        highest /= 1000;
-        var major = highest;
-        HIGHEST_COMPATIBILITY = new DefaultArtifactVersion(major + "." + minor + "." + incremental);
+        HIGHEST_COMPATIBILITY = new DefaultArtifactVersion(FabricUtil.class.getPackage().getImplementationVersion());
     }
 
     protected static List<MixinConfig> getMixinConfigs(IModFileInfo modFileInfo) {
