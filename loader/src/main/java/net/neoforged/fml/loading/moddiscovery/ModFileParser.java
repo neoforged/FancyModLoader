@@ -83,7 +83,7 @@ public class ModFileParser {
 
     static {
         HIGHEST_MIXIN_VERSION = new DefaultArtifactVersion(FabricUtil.class.getPackage().getImplementationVersion());
-        int defaultMixinVersion = DeferredMixinConfigRegistration.DEFAULT_COMPATIBILITY;
+        int defaultMixinVersion = DeferredMixinConfigRegistration.DEFAULT_BEHAVIOUR_VERSION;
         int patch = defaultMixinVersion % 1000;
         defaultMixinVersion /= 1000;
         int minor = defaultMixinVersion % 1000;
