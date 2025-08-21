@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,25 +44,27 @@ public class DeferredMixinConfigRegistration {
         addMixinConfig(config, modId, null);
     }
 
-    public static void addMixinConfig(String config, @Nullable String modId, @Nullable ArtifactVersion compatibility) {
+    @ApiStatus.Internal
+    public static void addMixinConfig(String config, @Nullable String modId, @Nullable ArtifactVersion behaviourVersion) {
         if (added) {
             throw new IllegalStateException("Too late to add mixin configs!");
         }
 
-        mixinConfigs.add(new ConfigInfo(config, modId, calculateCompatibility(compatibility)));
+        mixinConfigs.add(new ConfigInfo(config, modId, calculateCompatibility(behaviourVersion)));
     }
 
     // Increment to break compatibility; during a BC window, this should be set to the latest version. This is _not_ set
-    // to COMPATIBILITY_LATEST, so that if mixin is bumped past a BC elsewhere (say, in neo) it does not break mods.
-    private static final int DEFAULT_COMPATIBILITY = FabricUtil.COMPATIBILITY_0_14_0;
+    // to COMPATIBILITY_LATEST, so that if mixin is bumped past a BC it does not break mods.
+    @ApiStatus.Internal
+    public static final int DEFAULT_COMPATIBILITY = FabricUtil.COMPATIBILITY_0_14_0;
 
-    private static int calculateCompatibility(@Nullable ArtifactVersion compatibility) {
-        if (compatibility == null) {
+    private static int calculateCompatibility(@Nullable ArtifactVersion behaviourVersion) {
+        if (behaviourVersion == null) {
             return DEFAULT_COMPATIBILITY;
         }
-        return compatibility.getMajorVersion() * (1000 * 1000) +
-                compatibility.getMinorVersion() * 1000 +
-                compatibility.getIncrementalVersion();
+        return behaviourVersion.getMajorVersion() * (1000 * 1000) +
+                behaviourVersion.getMinorVersion() * 1000 +
+                behaviourVersion.getIncrementalVersion();
     }
 
     static void registerConfigs() {

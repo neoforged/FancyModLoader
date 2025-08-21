@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import net.neoforged.fml.loading.LogMarkers;
+import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.neoforgespi.language.IConfigurable;
 import net.neoforged.neoforgespi.language.IModFileInfo;
@@ -77,10 +78,18 @@ public class ModFileParser {
         }
     }
 
-    private static final ArtifactVersion HIGHEST_COMPATIBILITY;
+    private static final ArtifactVersion HIGHEST_MIXIN_VERSION;
+    private static final ArtifactVersion LOWEST_MIXIN_VERSION;
 
     static {
-        HIGHEST_COMPATIBILITY = new DefaultArtifactVersion(FabricUtil.class.getPackage().getImplementationVersion());
+        HIGHEST_MIXIN_VERSION = new DefaultArtifactVersion(FabricUtil.class.getPackage().getImplementationVersion());
+        int defaultMixinVersion = DeferredMixinConfigRegistration.DEFAULT_COMPATIBILITY;
+        int patch = defaultMixinVersion % 1000;
+        defaultMixinVersion /= 1000;
+        int minor = defaultMixinVersion % 1000;
+        defaultMixinVersion /= 1000;
+        int major = defaultMixinVersion;
+        LOWEST_MIXIN_VERSION = new DefaultArtifactVersion(major + "." + minor + "." + patch);
     }
 
     protected static List<MixinConfig> getMixinConfigs(IModFileInfo modFileInfo) {
@@ -93,15 +102,21 @@ public class ModFileParser {
                 var name = mixinsEntry.<String>getConfigElement("config")
                         .orElseThrow(() -> new InvalidModFileException("Missing \"config\" in [[mixins]] entry", modFileInfo));
                 var requiredModIds = mixinsEntry.<List<String>>getConfigElement("requiredMods").orElse(List.of());
-                var compatibility = mixinsEntry.<String>getConfigElement("compatibility")
+                var behaviourVersion = mixinsEntry.<String>getConfigElement("behaviourVersion")
                         .map(DefaultArtifactVersion::new)
                         .orElse(null);
-                if (compatibility != null && compatibility.compareTo(HIGHEST_COMPATIBILITY) > 0) {
-                    throw new InvalidModFileException("Specified mixin compatibility version " + compatibility
-                            + " is higher than the highest known mixin compatibility level " + HIGHEST_COMPATIBILITY,
-                            modFileInfo);
+                if (behaviourVersion != null) {
+                    if (behaviourVersion.compareTo(HIGHEST_MIXIN_VERSION) > 0) {
+                        throw new InvalidModFileException("Specified mixin behaviour version " + behaviourVersion
+                                + " is higher than the current mixin version " + HIGHEST_MIXIN_VERSION + "; this may be fixable by updating neoforge",
+                                modFileInfo);
+                    } else if (behaviourVersion.compareTo(LOWEST_MIXIN_VERSION) < 0) {
+                        throw new InvalidModFileException("Specified mixin behaviour version " + behaviourVersion
+                                + " is lower than the minimum supported behaviour version " + LOWEST_MIXIN_VERSION,
+                                modFileInfo);
+                    }
                 }
-                potentialMixins.add(new MixinConfig(name, requiredModIds, compatibility));
+                potentialMixins.add(new MixinConfig(name, requiredModIds, behaviourVersion));
             }
 
             return potentialMixins;
