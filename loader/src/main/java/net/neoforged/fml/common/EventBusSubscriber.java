@@ -5,14 +5,15 @@
 
 package net.neoforged.fml.common;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.event.IModBusEvent;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 // @formatter:off - spotless doesn't like @
 /**
@@ -44,7 +45,7 @@ import net.neoforged.fml.event.IModBusEvent;
  */
 // @formatter:on
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
+@Target({ElementType.TYPE, ElementType.FIELD})
 public @interface EventBusSubscriber {
     /**
      * Specify targets to load this event subscriber on. Can be used to avoid loading Client specific events on a dedicated server, for example.

@@ -7,6 +7,7 @@ package net.neoforged.fml.javafmlmod;
 
 import static net.neoforged.fml.Logging.LOADING;
 
+import java.lang.annotation.ElementType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.EnumSet;
@@ -49,45 +50,102 @@ public class AutomaticEventSubscriber {
             final EnumSet<Dist> sides = getSides(ad.annotationData().get("value"));
             final String modId = (String) ad.annotationData().getOrDefault("modid", modids.getOrDefault(ad.clazz().getClassName(), mod.getModId()));
             if (Objects.equals(mod.getModId(), modId) && sides.contains(FMLEnvironment.dist)) {
-                LOGGER.debug(LOADING, "Scanning class {} for @SubscribeEvent-annotated methods", ad.clazz().getClassName());
 
-                try {
-                    var clazz = Class.forName(ad.clazz().getClassName(), true, layer.getClassLoader());
-
-                    for (Method method : clazz.getDeclaredMethods()) {
-                        if (!method.isAnnotationPresent(SubscribeEvent.class)) {
-                            continue;
-                        }
-
-                        if (!Modifier.isStatic(method.getModifiers())) {
-                            throw new IllegalArgumentException("Method " + method + " annotated with @SubscribeEvent is not static");
-                        }
-
-                        if (method.getParameterCount() != 1 || !Event.class.isAssignableFrom(method.getParameterTypes()[0])) {
-                            throw new IllegalArgumentException("Method " + method + " annotated with @SubscribeEvent must have only one parameter that is an Event subtype");
-                        }
-
-                        var eventType = method.getParameterTypes()[0];
-
-                        if (IModBusEvent.class.isAssignableFrom(eventType)) {
-                            var modBus = mod.getEventBus();
-                            if (modBus == null) {
-                                throw new IllegalArgumentException("Method " + method + " attempted to register a mod bus event, but mod " + mod.getModId() + " has no event bus");
-                            } else {
-                                LOGGER.debug(LOADING, "Subscribing method {} to the event bus of mod {}", method, mod.getModId());
-                                modBus.register(method);
-                            }
-                        } else {
-                            LOGGER.debug(LOADING, "Subscribing method {} to the game event bus", method);
-                            FMLLoader.getBindings().getGameBus().register(method);
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.fatal(LOADING, "Failed to register class {} with @EventBusSubscriber annotation", ad.clazz(), e);
-                    throw new RuntimeException(e);
+                if (ad.targetType() == ElementType.TYPE) {
+                    LOGGER.debug(LOADING, "Scanning class {} for @SubscribeEvent-annotated methods", ad.clazz().getClassName());
+                    scanClass(mod, ad, layer);
                 }
+
+                if (ad.targetType() == ElementType.FIELD) {
+                    LOGGER.debug(LOADING, "Scanning class {} for @SubscribeEvent-annotated fields", ad.clazz().getClassName());
+                    scanField(mod, ad, layer);
+                }
+
             }
         });
+    }
+
+    private static void scanClass(ModContainer mod, ModFileScanData.AnnotationData ad, Module layer) {
+        try {
+            var clazz = Class.forName(ad.clazz().getClassName(), true, layer.getClassLoader());
+
+            for (Method method : clazz.getDeclaredMethods()) {
+                if (!method.isAnnotationPresent(SubscribeEvent.class)) {
+                    continue;
+                }
+
+                if (!Modifier.isStatic(method.getModifiers())) {
+                    throw new IllegalArgumentException("Method " + method + " annotated with @SubscribeEvent is not static");
+                }
+
+                if (method.getParameterCount() != 1 || !Event.class.isAssignableFrom(method.getParameterTypes()[0])) {
+                    throw new IllegalArgumentException("Method " + method + " annotated with @SubscribeEvent must have only one parameter that is an Event subtype");
+                }
+
+                var eventType = method.getParameterTypes()[0];
+
+                if (IModBusEvent.class.isAssignableFrom(eventType)) {
+                    var modBus = mod.getEventBus();
+                    if (modBus == null) {
+                        throw new IllegalArgumentException("Method " + method + " attempted to register a mod bus event, but mod " + mod.getModId() + " has no event bus");
+                    } else {
+                        LOGGER.debug(LOADING, "Subscribing method {} to the event bus of mod {}", method, mod.getModId());
+                        modBus.register(method);
+                    }
+                } else {
+                    LOGGER.debug(LOADING, "Subscribing method {} to the game event bus", method);
+                    FMLLoader.getBindings().getGameBus().register(method);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.fatal(LOADING, "Failed to register class {} with @EventBusSubscriber annotation", ad.clazz(), e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void scanField(ModContainer mod, ModFileScanData.AnnotationData ad, Module layer) {
+        try {
+            var clazz = Class.forName(ad.clazz().getClassName(), true, layer.getClassLoader());
+            var field = clazz.getDeclaredField(ad.memberName());
+            if (Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers())) {
+                field.setAccessible(true);
+                boolean registered = false;
+                var value = field.get(null);
+                for (Method method : field.getType().getDeclaredMethods()) {
+
+                    if (registered) {
+                        break;
+                    }
+
+                    if (!method.isAnnotationPresent(SubscribeEvent.class)) {
+                        continue;
+                    }
+
+                    if (method.getParameterCount() == 1 && Event.class.isAssignableFrom(method.getParameterTypes()[0])) {
+                        if (IModBusEvent.class.isAssignableFrom(method.getParameterTypes()[0])) {
+                            var modBus = mod.getEventBus();
+                            if (modBus == null) {
+                                throw new IllegalArgumentException("Field " + field + " attempted to register a mod bus event, but mod " + mod.getModId() + " has no event bus");
+                            } else {
+                                LOGGER.debug(LOADING, "Subscribing field value {} to the event bus of mod {}", field, mod.getModId());
+                                modBus.register(value);
+                                registered = true;
+                            }
+                        } else {
+                            LOGGER.debug(LOADING, "Subscribing field value {} to the game event bus", field);
+                            FMLLoader.getBindings().getGameBus().register(value);
+                            registered = true;
+                        }
+                    }
+                }
+            } else {
+                throw new IllegalArgumentException("Field " + field + " annotated with @SubscribeEvent must be static and final");
+            }
+
+        } catch (Exception e) {
+            LOGGER.fatal(LOADING, "Failed to register field {} in class {} with @EventBusSubscriber annotation", ad.memberName(), ad.clazz(), e);
+            throw new RuntimeException(e);
+        }
     }
 
     @SuppressWarnings("unchecked")

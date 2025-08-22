@@ -182,6 +182,10 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
 
                         @EventBusSubscriber
                         public class Subscriber {
+                        
+                            @EventBusSubscriber
+                            private static final Listener listener = new Listener();
+                        
                             @SubscribeEvent
                             static void onConstruct(FMLConstructModEvent event) {
                                 FMLJavaModLanguageProviderTest.MESSAGES.add("mod event bus event was fired!");
@@ -191,13 +195,20 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
                             static void onTestEvent(FMLJavaModLanguageProviderTest.TestEvent event) {
                                 event.message = "game event bus event was fired!";
                             }
+                        
+                            private static class Listener {
+                                @SubscribeEvent
+                                private void onConstruct(FMLConstructModEvent event) {
+                                    FMLJavaModLanguageProviderTest.MESSAGES.add("mod event bus event from field listener was fired!");
+                                }
+                            }
                         }
                         """)
                 .build();
 
         launchAndLoad("neoforgeclient");
 
-        assertThat(MESSAGES).containsExactly("mod event bus event was fired!");
+        assertThat(MESSAGES).containsAll(List.of("mod event bus event was fired!", "mod event bus event from field listener was fired!"));
 
         final var event = new TestEvent();
         FMLLoader.getBindings().getGameBus().post(event);
