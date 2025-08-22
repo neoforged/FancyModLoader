@@ -182,10 +182,8 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
 
                         @EventBusSubscriber
                         public class Subscriber {
-                        
                             @EventBusSubscriber
                             private static final Listener listener = new Listener();
-                        
                             @SubscribeEvent
                             static void onConstruct(FMLConstructModEvent event) {
                                 FMLJavaModLanguageProviderTest.MESSAGES.add("mod event bus event was fired!");
@@ -195,7 +193,6 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
                             static void onTestEvent(FMLJavaModLanguageProviderTest.TestEvent event) {
                                 event.message = "game event bus event was fired!";
                             }
-                        
                             private static class Listener {
                                 @SubscribeEvent
                                 private void onConstruct(FMLConstructModEvent event) {
