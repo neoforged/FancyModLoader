@@ -81,5 +81,9 @@
   "fml.modloadingissue.enumextender.argument.constant.count_mismatch": "Contagem de parâmetros {0} não bate com a contagem de argumentos {1} do construtor {2} para o campo {3} no enum {4}, especificado pelo mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.invalid_char": "{0} é um caractere inválido no índice {1} para o campo {2} no enum {3}, especificado pelo mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Tipo de argumento {0} não é suportado no índice de parâmetro {1} para o campo {2} no enum {3}, especificado pelo mod {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.duplicate": "Encontrado campo duplicado {0} para enum {1}, causado pelos mods {2} e {3}"
+  "fml.modloadingissue.enumextender.duplicate": "Encontrado campo duplicado {0} para enum {1}, causado pelos mods {2} e {3}",
+  "fml.button.open.log": "Open Log File",
+  "fml.button.open.crashreport": "Open Crash Report",
+  "fml.button.open.mods.folder": "Abrir Pasta de Mods",
+  "fml.button.quit": "Quit Game"
 }
