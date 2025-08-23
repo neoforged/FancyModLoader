@@ -81,5 +81,9 @@
   "fml.modloadingissue.enumextender.argument.constant.count_mismatch": "Kiraan parameter {0} tidak sepadan dengan kiraan argumen {1} pembina {2} untuk medan {3} dalam enum {4}, ditentukan oleh mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.invalid_char": "Aksara tidak sah {0} pada indeks parameter {1} untuk medan {2} dalam enum {3}, ditentukan oleh mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Jenis hujah segera yang tidak disokong {0} pada indeks parameter {1} untuk medan {2} dalam enum {3}, ditentukan oleh mod {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.duplicate": "Mendapati medan pendua {0} untuk enum {1}, disediakan oleh mod {2} dan {3}"
+  "fml.modloadingissue.enumextender.duplicate": "Mendapati medan pendua {0} untuk enum {1}, disediakan oleh mod {2} dan {3}",
+  "fml.button.open.log": "Open Log File",
+  "fml.button.open.crashreport": "Open Crash Report",
+  "fml.button.open.mods.folder": "Open Mods Folder",
+  "fml.button.quit": "Quit Game"
 }
