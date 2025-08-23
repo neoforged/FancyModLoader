@@ -81,5 +81,9 @@
   "fml.modloadingissue.enumextender.argument.constant.count_mismatch": "Parameteranzahl {0} stimmt nicht mit Argumentanzahl {1} von Konstruktor {2} für Feld {3} in Enum {4}, angegeben von Mod {100,modinfo,id}, überein",
   "fml.modloadingissue.enumextender.argument.constant.invalid_char": "Ungültiges Symbol {0} bei Parameter-Index {1} für Feld {2} in Enum {3}, angegeben von Mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Nicht unterstützte direkte Argumentart {0} bei Parameter-Index {1} für Feld {2} in Enum {3}, angegeben von Mod {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.duplicate": "Doppeltes Feld {0} für Enum {1} gefunden, bereitgestellt von Mods {2} und {3}"
+  "fml.modloadingissue.enumextender.duplicate": "Doppeltes Feld {0} für Enum {1} gefunden, bereitgestellt von Mods {2} und {3}",
+  "fml.button.open.log": "Open Log File",
+  "fml.button.open.crashreport": "Open Crash Report",
+  "fml.button.open.mods.folder": "Mods-Ordner öffnen",
+  "fml.button.quit": "Quit Game"
 }
