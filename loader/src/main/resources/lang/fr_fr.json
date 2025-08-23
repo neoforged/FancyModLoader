@@ -81,5 +81,9 @@
   "fml.modloadingissue.enumextender.argument.constant.count_mismatch": "Le nombre de paramètres {0} ne correpsond pas au nombre d'arguments {1} du constructeur {2} pour le champ {3} dans l'enum {4}, spécifié par le mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.invalid_char": "Caractère {0} invalide à l'index des paramètres {1} pour le champ {2} dans l'enum {3}, spécifié par le mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Type d'argument immédiat {0} non supporté à l'index des paramètres {1} pour le champ {2} dans l'enum {3}, spécifié par le mod {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.duplicate": "Champ dupliqué {0} trouvé pour l'enum {1}, fourni par les mods {2} et {3}"
+  "fml.modloadingissue.enumextender.duplicate": "Champ dupliqué {0} trouvé pour l'enum {1}, fourni par les mods {2} et {3}",
+  "fml.button.open.log": "Open Log File",
+  "fml.button.open.crashreport": "Open Crash Report",
+  "fml.button.open.mods.folder": "Ouvrir le dossier Mods",
+  "fml.button.quit": "Quit Game"
 }
