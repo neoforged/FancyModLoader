@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
 import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionSpecBuilder;
 import net.neoforged.fml.ModLoader;
@@ -86,7 +85,6 @@ public class FMLServiceProvider implements ITransformationService {
 
     @Override
     public List<Resource> completeScan(final IModuleLayerManager layerManager) {
-        Supplier<ModuleLayer> gameLayerSupplier = () -> layerManager.getLayer(IModuleLayerManager.Layer.GAME).orElseThrow();
         return FMLLoader.completeScan(launchContext, mixinConfigsArgumentList);
     }
 
