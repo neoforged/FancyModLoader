@@ -81,5 +81,9 @@
   "fml.modloadingissue.enumextender.argument.constant.count_mismatch": "Liczba parametrów {0} nie odpowiada liczbie argumentów {1} konstruktora {2} dla pola {3} w enum {4}, określonej przez modyfikację {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.invalid_char": "Nieprawidłowy znak {0} w indeksie parametru {1} dla pola {2} w enum {3}, określony przez modyfikację {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Nieobsługiwany natychmiastowy typ argumentu {0} indeksem parametru {1} dla pola {2} w enum {3}, określony przez modyfikację {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.duplicate": "Znaleziono duplikowane pole {0} dla wyliczenia {1}, dostarczonego przez modyfikacje {2} i {3}"
+  "fml.modloadingissue.enumextender.duplicate": "Znaleziono duplikowane pole {0} dla wyliczenia {1}, dostarczonego przez modyfikacje {2} i {3}",
+  "fml.button.open.log": "Open Log File",
+  "fml.button.open.crashreport": "Open Crash Report",
+  "fml.button.open.mods.folder": "Otwórz folder modyfikacji",
+  "fml.button.quit": "Quit Game"
 }
