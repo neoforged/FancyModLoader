@@ -29,8 +29,9 @@ import static org.lwjgl.stb.STBTruetype.stbtt_PackSetSkipMissingCodepoints;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Objects;
+import java.util.function.IntFunction;
 import net.neoforged.fml.earlydisplay.theme.ThemeResource;
 import net.neoforged.fml.earlydisplay.util.Size;
 import org.jetbrains.annotations.Nullable;
@@ -43,11 +44,12 @@ import org.lwjgl.stb.STBTTPackRange;
 import org.lwjgl.stb.STBTTPackedchar;
 
 public class SimpleFont implements AutoCloseable {
+    private static final int ASCII_GLYPH_COUNT = 127 - 32;
+
     private int textureId;
     private final int lineSpacing;
     private final int descent;
-    private final int GLYPH_COUNT = 127 - 32;
-    private final Glyph[] glyphs;
+    private final IntFunction<Glyph> glyphGetter;
 
     public Size measureText(CharSequence text) {
         var width = 0f;
@@ -57,17 +59,18 @@ public class SimpleFont implements AutoCloseable {
 
         var codePoints = text.codePoints().iterator();
         while (codePoints.hasNext()) {
-            int codePoint = codePoints.next();
+            int codePoint = codePoints.nextInt();
             switch (codePoint) {
                 case '\n' -> {
                     width = Math.max(width, x);
                     x = 0;
                     y += lineSpacing();
                 }
-                case '\t' -> x += glyphs[0].charwidth() * 4;
+                case '\t' -> x += getSpaceGlyph().charwidth() * 4;
                 default -> {
-                    if (codePoint >= ' ' && codePoint - ' ' < GLYPH_COUNT) {
-                        x += glyphs[codePoint - ' '].charwidth();
+                    Glyph glyph = getGlyph(codePoint);
+                    if (glyph != null) {
+                        x += glyph.charwidth();
                     }
                 }
             }
@@ -90,7 +93,7 @@ public class SimpleFont implements AutoCloseable {
         }
     }
 
-    private record Glyph(char c, int charwidth, int[] pos, float[] uv) {
+    public record Glyph(char c, int charwidth, int[] pos, float[] uv) {
         Pos loadQuad(Pos pos, int colour, SimpleBufferBuilder bb) {
             final var x0 = pos.x() + pos()[0];
             final var y0 = pos.y() + pos()[1];
@@ -102,6 +105,13 @@ public class SimpleFont implements AutoCloseable {
             bb.pos(x1, y1).tex(uv()[2], uv()[3]).colour(colour).endVertex();
             return new Pos(pos.x() + charwidth(), pos.y(), pos.minx());
         }
+    }
+
+    public SimpleFont(int lineSpacing, int descent, int textureId, IntFunction<Glyph> glyphGetter) {
+        this.lineSpacing = lineSpacing;
+        this.descent = descent;
+        this.textureId = textureId;
+        this.glyphGetter = glyphGetter;
     }
 
     /**
@@ -126,13 +136,13 @@ public class SimpleFont implements AutoCloseable {
             GlState.activeTexture(GL_TEXTURE0);
             GlState.bindTexture2D(this.textureId);
             GlDebug.labelTexture(this.textureId, "font texture " + resource);
-            try (var packedchars = STBTTPackedchar.malloc(GLYPH_COUNT)) {
+            try (var packedchars = STBTTPackedchar.malloc(ASCII_GLYPH_COUNT)) {
                 int texwidth = 256;
                 int texheight = 128;
                 try (STBTTPackRange.Buffer packRanges = STBTTPackRange.malloc(1)) {
                     var bitmap = BufferUtils.createByteBuffer(texwidth * texheight);
                     try (STBTTPackRange packRange = STBTTPackRange.malloc()) {
-                        packRanges.put(packRange.set(fontSize, 32, null, GLYPH_COUNT, packedchars, (byte) 1, (byte) 1));
+                        packRanges.put(packRange.set(fontSize, 32, null, ASCII_GLYPH_COUNT, packedchars, (byte) 1, (byte) 1));
                         packRanges.flip();
                     }
 
@@ -152,17 +162,33 @@ public class SimpleFont implements AutoCloseable {
                 try (var q = STBTTAlignedQuad.malloc()) {
                     float[] x = new float[1];
                     float[] y = new float[1];
-                    glyphs = new Glyph[GLYPH_COUNT];
+                    Glyph[] glyphs = new Glyph[ASCII_GLYPH_COUNT];
 
-                    for (int i = 0; i < GLYPH_COUNT; i++) {
+                    for (int i = 0; i < ASCII_GLYPH_COUNT; i++) {
                         x[0] = 0f;
                         y[0] = fontSize;
                         stbtt_GetPackedQuad(packedchars, texwidth, texheight, i, x, y, q, true);
                         glyphs[i] = new Glyph((char) (i + 32), (int) (x[0] - 0f), new int[] { (int) q.x0(), (int) q.y0(), (int) q.x1(), (int) q.y1() }, new float[] { q.s0(), q.t0(), q.s1(), q.t1() });
                     }
+
+                    this.glyphGetter = codepoint -> {
+                        if (codepoint < ' ' || codepoint - ' ' > ASCII_GLYPH_COUNT) {
+                            return null;
+                        }
+                        return glyphs[codepoint - ' '];
+                    };
                 }
             }
         }
+    }
+
+    @Nullable
+    private Glyph getGlyph(int codepoint) {
+        return glyphGetter.apply(codepoint);
+    }
+
+    private Glyph getSpaceGlyph() {
+        return Objects.requireNonNull(getGlyph(' '));
     }
 
     public int lineSpacing() {
@@ -178,19 +204,15 @@ public class SimpleFont implements AutoCloseable {
     }
 
     public int stringWidth(String text) {
-        var bytes = text.getBytes(StandardCharsets.US_ASCII);
         int len = 0;
-        for (int i = 0; i < bytes.length; i++) {
-            final byte c = bytes[i];
+        for (int i = 0; i < text.length(); i++) {
+            final int c = text.codePointAt(i);
             len += switch (c) {
                 case '\n', '\t' -> 0;
-                case ' ' -> glyphs[0].charwidth();
+                case ' ' -> getSpaceGlyph().charwidth();
                 default -> {
-                    if (c - 32 < this.GLYPH_COUNT && c > 32) {
-                        yield this.glyphs[c - 32].charwidth();
-                    } else {
-                        yield 0;
-                    }
+                    Glyph glyph = getGlyph(c);
+                    yield glyph != null ? glyph.charwidth() : 0;
                 }
             };
         }
@@ -206,20 +228,17 @@ public class SimpleFont implements AutoCloseable {
      * @param colour The colour of the text as an RGBA packed int
      */
     public record DisplayText(String string, int colour) {
-        private byte[] asBytes() {
-            return string.getBytes(StandardCharsets.US_ASCII);
-        }
-
         Pos generateStringArray(SimpleFont font, Pos pos, SimpleBufferBuilder bb) {
-            for (int i = 0; i < asBytes().length; i++) {
-                byte c = asBytes()[i];
-                pos = switch (c) {
+            for (int i = 0; i < string.length(); i++) {
+                int codepoint = string.codePointAt(i);
+                pos = switch (codepoint) {
                     case '\n' -> new Pos(pos.minx(), pos.y() + font.lineSpacing(), pos.minx());
-                    case '\t' -> new Pos(pos.x() + font.glyphs[0].charwidth() * 4, pos.y(), pos.minx());
-                    case ' ' -> new Pos(pos.x() + font.glyphs[0].charwidth(), pos.y(), pos.minx());
+                    case '\t' -> new Pos(pos.x() + font.getSpaceGlyph().charwidth() * 4, pos.y(), pos.minx());
+                    case ' ' -> new Pos(pos.x() + font.getSpaceGlyph().charwidth(), pos.y(), pos.minx());
                     default -> {
-                        if (c - 32 < font.GLYPH_COUNT && c > 32) {
-                            pos = font.glyphs[c - 32].loadQuad(pos, colour(), bb);
+                        Glyph glyph = font.getGlyph(codepoint);
+                        if (glyph != null) {
+                            pos = glyph.loadQuad(pos, colour(), bb);
                         }
                         yield pos;
                     }
