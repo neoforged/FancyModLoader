@@ -81,5 +81,9 @@
   "fml.modloadingissue.enumextender.argument.constant.count_mismatch": "Кількість параметрів {0} не збігається з кількістю аргументів {1} конструктора {2} для поля {3} в enum {4}, визначений модом {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.invalid_char": "Некоректний символ {0} в індексі параметра {1} для поля {2} в enum {3}, вказаний в моді {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Непідтримуваний безпосередній тип аргументу {0} в індексі параметра {1} для поля {2} в enum {3}, визначений модом {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.duplicate": "Знайдено дублікатне поле {0} для enum {1}, надано модами {2} та {3}"
+  "fml.modloadingissue.enumextender.duplicate": "Знайдено дублікатне поле {0} для enum {1}, надано модами {2} та {3}",
+  "fml.button.open.log": "Open Log File",
+  "fml.button.open.crashreport": "Open Crash Report",
+  "fml.button.open.mods.folder": "Відкрити теку модів",
+  "fml.button.quit": "Quit Game"
 }
