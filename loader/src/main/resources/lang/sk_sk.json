@@ -81,5 +81,9 @@
   "fml.modloadingissue.enumextender.argument.constant.count_mismatch": "Počet parametrov {0} sa nezhoduje s počtom argumentov {1} konštruktora {2} pre pole {3} v enum {4}, zadané \nmódom {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.invalid_char": "Neplatný znak {0} na indexe parametrov {1} pre pole {2} v enum {3}, špecifikovaný módom {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Nepodporovaný okamžitý typ argumentu {0} na indexe parametrov {1} pre pole {2} v enum {3}, špecifikované módom {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.duplicate": "Nájdené duplicitné polia {0} pre enum {1}, poskytnuté módmi {2} a {3}"
+  "fml.modloadingissue.enumextender.duplicate": "Nájdené duplicitné polia {0} pre enum {1}, poskytnuté módmi {2} a {3}",
+  "fml.button.open.log": "Open Log File",
+  "fml.button.open.crashreport": "Open Crash Report",
+  "fml.button.open.mods.folder": "Otvoriť priečinok pre módy",
+  "fml.button.quit": "Quit Game"
 }
