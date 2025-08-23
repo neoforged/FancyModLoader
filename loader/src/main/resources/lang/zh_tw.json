@@ -81,5 +81,9 @@
   "fml.modloadingissue.enumextender.argument.constant.count_mismatch": "模組 {100,modinfo,id} 指定的列舉 {4} 中，欄位 {3} 的建構函式 {2} 的參數數量 {0} 與引數數量 {1} 不符。",
   "fml.modloadingissue.enumextender.argument.constant.invalid_char": "模組 {100,modinfo,id} 指定的列舉 {3} 中，欄位 {2} 的參數索引 {1} 處出現了無效字元 {0}。",
   "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "模組 {100,modinfo,id} 指定的列舉 {3} 中，欄位 {2} 的參數索引 {1} 處出現了不支援的立即引數類型 {0}。",
-  "fml.modloadingissue.enumextender.duplicate": "在模組 {2} 和 {3} 中發現重複的列舉欄位 {0}（列舉類型：{1}）。"
+  "fml.modloadingissue.enumextender.duplicate": "在模組 {2} 和 {3} 中發現重複的列舉欄位 {0}（列舉類型：{1}）。",
+  "fml.button.open.log": "Open Log File",
+  "fml.button.open.crashreport": "Open Crash Report",
+  "fml.button.open.mods.folder": "開啟模組資料夾",
+  "fml.button.quit": "Quit Game"
 }
