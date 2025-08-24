@@ -331,7 +331,7 @@ class FMLLoaderTest extends LauncherTest {
          * If a library is present in multiple versions, the latest one is used.
          */
         @Test
-        void testHighesLibraryVersionWins() throws Exception {
+        void testHighestLibraryVersionWins() throws Exception {
             installation.setupProductionClient();
             installation.buildModJar("testlib-1.0.jar")
                     .addClass("testlib.TestClass", "class TestClass {}")
