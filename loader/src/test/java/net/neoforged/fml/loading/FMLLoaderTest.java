@@ -308,16 +308,14 @@ class FMLLoaderTest extends LauncherTest {
                     .withManifest(Map.of(
                             "Automatic-Module-Name", "testlib",
                             "FMLModType", "GAMELIBRARY",
-                            "Implementation-Version", "1.0"
-                    ))
+                            "Implementation-Version", "1.0"))
                     .build();
             var pickedJarPath = installation.buildModJar("testlib-2.0.jar")
                     .addClass("testlib.TestClass", "class TestClass {}")
                     .withManifest(Map.of(
                             "Automatic-Module-Name", "testlib",
                             "FMLModType", "GAMELIBRARY",
-                            "Implementation-Version", "2.0"
-                    ))
+                            "Implementation-Version", "2.0"))
                     .build();
 
             var result = launchAndLoad("neoforgeclient");
@@ -338,16 +336,14 @@ class FMLLoaderTest extends LauncherTest {
                     .withManifest(Map.of(
                             "Automatic-Module-Name", "testlib",
                             "FMLModType", "LIBRARY",
-                            "Implementation-Version", "1.0"
-                    ))
+                            "Implementation-Version", "1.0"))
                     .build();
             var pickedJarPath = installation.buildModJar("testlib-2.0.jar")
                     .addClass("testlib.TestClass", "class TestClass {}")
                     .withManifest(Map.of(
                             "Automatic-Module-Name", "testlib",
                             "FMLModType", "LIBRARY",
-                            "Implementation-Version", "2.0"
-                    ))
+                            "Implementation-Version", "2.0"))
                     .build();
 
             var result = launchAndLoad("neoforgeclient");
