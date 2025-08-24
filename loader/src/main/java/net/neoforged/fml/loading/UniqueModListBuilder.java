@@ -109,7 +109,7 @@ public class UniqueModListBuilder {
         loadedList.addAll(uniqueModList);
         loadedList.addAll(uniqueLibListWithVersion);
 
-        // Close any mod files that were removed
+        // Collect any mod files that were removed so they can be closed later
         Set<ModFile> discardedModFiles = Collections.newSetFromMap(new IdentityHashMap<>());
         discardedModFiles.addAll(this.modFiles);
         loadedList.forEach(discardedModFiles::remove);

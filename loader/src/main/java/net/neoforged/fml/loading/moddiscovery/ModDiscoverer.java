@@ -229,7 +229,7 @@ public class ModDiscoverer {
                         if (addModFile(provided)) {
                             return Optional.of(provided);
                         }
-                        // The reader might have returned something other than a ModFile, which we handle elsewhere
+                        // The reader might have returned something other than a ModFile (that is one reason for addModFile rejecting it)
                         if (provided instanceof ModFile modFile) {
                             modFile.close();
                         } else {
