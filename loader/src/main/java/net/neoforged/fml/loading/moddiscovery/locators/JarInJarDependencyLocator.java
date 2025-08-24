@@ -15,12 +15,15 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.jarjar.selection.JarSelector;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IDependencyLocator;
@@ -30,17 +33,23 @@ import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import net.neoforged.neoforgespi.locating.ModFileLoadingException;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
+import org.jetbrains.annotations.ApiStatus;
 import org.slf4j.Logger;
 
+@ApiStatus.Internal
 public class JarInJarDependencyLocator implements IDependencyLocator {
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    record EmbeddedJarKey(IModFile modFile, Path path) {}
+
     @Override
     public void scanMods(List<IModFile> loadedMods, IDiscoveryPipeline pipeline) {
+        // JIJ would repeatedly construct mod files for the same path if we didn't cache them
+        Map<EmbeddedJarKey, IModFile> createdModFiles = new HashMap<>();
         List<IModFile> dependenciesToLoad = JarSelector.detectAndSelect(
                 loadedMods,
                 this::loadResourceFromModFile,
-                (file, path) -> loadModFileFrom(file, path, pipeline),
+                (file, path) -> loadModFileFrom(file, path, pipeline, createdModFiles),
                 this::identifyMod,
                 this::exception);
 
@@ -49,31 +58,37 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
         } else {
             LOGGER.info("Found {} dependencies adding them to mods collection", dependenciesToLoad.size());
             for (var modFile : dependenciesToLoad) {
-                pipeline.addModFile(modFile);
+                if (!pipeline.addModFile(modFile)) {
+                    ((ModFile) modFile).close();
+                }
             }
         }
     }
 
-    @SuppressWarnings("resource")
-    protected Optional<IModFile> loadModFileFrom(IModFile file, final Path path, IDiscoveryPipeline pipeline) {
-        try {
-            var pathInModFile = file.findResource(path.toString());
-            var filePathUri = new URI("jij:" + (pathInModFile.toAbsolutePath().toUri().getRawSchemeSpecificPart())).normalize();
-            var outerFsArgs = ImmutableMap.of("packagePath", pathInModFile);
-            var zipFS = FileSystems.newFileSystem(filePathUri, outerFsArgs);
-            var jar = JarContents.of(zipFS.getPath("/"));
-            var providerResult = pipeline.readModFile(jar, ModFileDiscoveryAttributes.DEFAULT.withParent(file));
-            return Optional.ofNullable(providerResult);
-        } catch (Exception e) {
-            LOGGER.error("Failed to load mod file {} from {}", path, file.getFileName());
-            final RuntimeException exception = new ModFileLoadingException("Failed to load mod file " + file.getFileName());
-            exception.initCause(e);
+    private Optional<IModFile> loadModFileFrom(IModFile file,
+            Path path,
+            IDiscoveryPipeline pipeline,
+            Map<EmbeddedJarKey, IModFile> createdModFiles) {
+        var key = new EmbeddedJarKey(file, path);
+        return Optional.ofNullable(createdModFiles.computeIfAbsent(key, ignored -> {
+            try {
+                var pathInModFile = file.findResource(path.toString());
+                var filePathUri = new URI("jij:" + (pathInModFile.toAbsolutePath().toUri().getRawSchemeSpecificPart())).normalize();
+                var outerFsArgs = ImmutableMap.of("packagePath", pathInModFile);
+                var zipFS = FileSystems.newFileSystem(filePathUri, outerFsArgs);
+                var jar = JarContents.of(zipFS.getPath("/"));
+                return pipeline.readModFile(jar, ModFileDiscoveryAttributes.DEFAULT.withParent(file));
+            } catch (Exception e) {
+                LOGGER.error("Failed to load mod file {} from {}", path, file.getFileName());
+                final RuntimeException exception = new ModFileLoadingException("Failed to load mod file " + file.getFileName());
+                exception.initCause(e);
 
-            throw exception;
-        }
+                throw exception;
+            }
+        }));
     }
 
-    protected ModLoadingException exception(Collection<JarSelector.ResolutionFailureInformation<IModFile>> failedDependencies) {
+    private ModLoadingException exception(Collection<JarSelector.ResolutionFailureInformation<IModFile>> failedDependencies) {
         final List<ModLoadingIssue> errors = failedDependencies.stream()
                 .filter(entry -> !entry.sources().isEmpty()) //Should never be the case, but just to be sure
                 .map(this::buildExceptionData)
@@ -108,7 +123,7 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
         return "\u00a7e" + modWithVersionRange.modInfo().getModId() + "\u00a7r - \u00a74" + modWithVersionRange.versionRange().toString() + "\u00a74 - \u00a72" + modWithVersionRange.artifactVersion().toString() + "\u00a72";
     }
 
-    protected String identifyMod(final IModFile modFile) {
+    private String identifyMod(final IModFile modFile) {
         if (modFile.getModFileInfo() == null) {
             return modFile.getFileName();
         }
@@ -123,7 +138,7 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
 
     private record ModWithVersionRange(IModInfo modInfo, VersionRange versionRange, ArtifactVersion artifactVersion) {}
 
-    protected Optional<InputStream> loadResourceFromModFile(final IModFile modFile, final Path path) {
+    private Optional<InputStream> loadResourceFromModFile(final IModFile modFile, final Path path) {
         try {
             return Optional.of(Files.newInputStream(modFile.findResource(path.toString())));
         } catch (final NoSuchFileException e) {

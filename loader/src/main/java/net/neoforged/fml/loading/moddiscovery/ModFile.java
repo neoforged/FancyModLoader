@@ -221,4 +221,12 @@ public class ModFile implements IModFile {
         final Optional<String> value = Optional.ofNullable(m.getMainAttributes().getValue(TYPE));
         return value.map(Type::valueOf).orElse(Type.MOD);
     }
+
+    public void close() {
+        try {
+            jar.close();
+        } catch (IOException e) {
+            LOGGER.error("Failed to close mod file {}", this, e);
+        }
+    }
 }

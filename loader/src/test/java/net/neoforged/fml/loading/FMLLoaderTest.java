@@ -298,6 +298,62 @@ class FMLLoaderTest extends LauncherTest {
         }
 
         /**
+         * If a game library is present in multiple versions, the latest one is used.
+         */
+        @Test
+        void testHighestGameLibraryVersionWins() throws Exception {
+            installation.setupProductionClient();
+            installation.buildModJar("testlib-1.0.jar")
+                    .addClass("testlib.TestClass", "class TestClass {}")
+                    .withManifest(Map.of(
+                            "Automatic-Module-Name", "testlib",
+                            "FMLModType", "GAMELIBRARY",
+                            "Implementation-Version", "1.0"))
+                    .build();
+            var pickedJarPath = installation.buildModJar("testlib-2.0.jar")
+                    .addClass("testlib.TestClass", "class TestClass {}")
+                    .withManifest(Map.of(
+                            "Automatic-Module-Name", "testlib",
+                            "FMLModType", "GAMELIBRARY",
+                            "Implementation-Version", "2.0"))
+                    .build();
+
+            var result = launchAndLoad("neoforgeclient");
+
+            var loadedMod = result.gameLayerModules().get("testlib");
+            assertNotNull(loadedMod);
+            assertEquals(pickedJarPath, loadedMod.getPrimaryPath());
+        }
+
+        /**
+         * If a library is present in multiple versions, the latest one is used.
+         */
+        @Test
+        void testHighestLibraryVersionWins() throws Exception {
+            installation.setupProductionClient();
+            installation.buildModJar("testlib-1.0.jar")
+                    .addClass("testlib.TestClass", "class TestClass {}")
+                    .withManifest(Map.of(
+                            "Automatic-Module-Name", "testlib",
+                            "FMLModType", "LIBRARY",
+                            "Implementation-Version", "1.0"))
+                    .build();
+            var pickedJarPath = installation.buildModJar("testlib-2.0.jar")
+                    .addClass("testlib.TestClass", "class TestClass {}")
+                    .withManifest(Map.of(
+                            "Automatic-Module-Name", "testlib",
+                            "FMLModType", "LIBRARY",
+                            "Implementation-Version", "2.0"))
+                    .build();
+
+            var result = launchAndLoad("neoforgeclient");
+
+            var loadedMod = result.pluginLayerModules().get("testlib");
+            assertNotNull(loadedMod);
+            assertEquals(pickedJarPath, loadedMod.getPrimaryPath());
+        }
+
+        /**
          * Tests that a lowcode mod is automatically redirected to the javafml loader.
          */
         @Test

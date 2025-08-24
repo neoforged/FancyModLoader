@@ -53,6 +53,7 @@ import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.i18n.FMLTranslations;
+import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.testlib.IdentifiableContent;
 import net.neoforged.fml.testlib.SimulatedInstallation;
 import net.neoforged.neoforgespi.language.IModFileInfo;
@@ -61,14 +62,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoSettings;
 
 @MockitoSettings
 public abstract class LauncherTest {
-    @Mock
-    MockedStatic<ImmediateWindowHandler> immediateWindowHandlerMock;
-
     protected TestModuleLayerManager moduleLayerManager = new TestModuleLayerManager();
 
     protected TestEnvironment environment = new TestEnvironment(moduleLayerManager);
@@ -137,6 +134,17 @@ public abstract class LauncherTest {
 
     @AfterEach
     void clearSystemProperties() throws Exception {
+        if (LoadingModList.get() != null) {
+            for (var modFile : LoadingModList.get().getModFiles()) {
+                modFile.getFile().close();
+            }
+            for (var modFile : LoadingModList.get().getPlugins()) {
+                ((ModFile) modFile.getFile()).close();
+            }
+            for (var modFile : LoadingModList.get().getGameLibraries()) {
+                ((ModFile) modFile).close();
+            }
+        }
         gameClassLoader = null;
         installation.close();
         Launcher.INSTANCE = null;
