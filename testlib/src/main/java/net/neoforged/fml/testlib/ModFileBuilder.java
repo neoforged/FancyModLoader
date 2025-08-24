@@ -105,6 +105,11 @@ public class ModFileBuilder {
         return addService(interfaceClass.getName(), implementationClass.getName());
     }
 
+    public ModFileBuilder addCompileClasspath(Path jar) {
+        compilationBuilder.addClasspath(jar);
+        return this;
+    }
+
     public ModFileBuilder addClass(String name, @Language("java") String content) {
         compilationBuilder.addClass(name, content);
         return this;

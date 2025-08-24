@@ -7,7 +7,6 @@ package net.neoforged.fml.loading;
 
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
-import cpw.mods.niofs.union.UnionFileSystem;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumSet;
@@ -58,9 +57,6 @@ final class LaunchContext implements ILaunchContext {
     }
 
     private Path unpackPath(Path path) {
-        if (path.getFileSystem() instanceof UnionFileSystem unionFileSystem) {
-            return unionFileSystem.getPrimaryPath();
-        }
         return path;
     }
 

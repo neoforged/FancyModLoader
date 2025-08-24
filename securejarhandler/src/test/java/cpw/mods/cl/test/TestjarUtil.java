@@ -3,18 +3,37 @@ package cpw.mods.cl.test;
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.SecureJar;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class TestjarUtil {
-    private record BuiltLayer(ModuleClassLoader cl, ModuleLayer layer) {}
+    public record BuiltLayer(ModuleClassLoader cl, ModuleLayer layer, SecureJar jar) implements AutoCloseable {
+        public AutoCloseable makeLoaderCurrent() {
+            // Replace context classloader during the callback
+            var previousCl = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(cl);
+            return () -> {
+                Thread.currentThread().setContextClassLoader(previousCl);
+            };
+        }
+
+        @Override
+        public void close() throws IOException {
+            jar.close();
+        }
+    }
 
     /**
      * Build a layer for a {@code testjarX} source set.
@@ -22,8 +41,24 @@ public class TestjarUtil {
     private static BuiltLayer buildTestjarLayer(int testjar, List<ModuleLayer> parentLayers) throws IOException {
         var paths = Stream.of(System.getenv("sjh.testjar" + testjar).split(File.pathSeparator))
                 .map(Paths::get)
-                .toArray(Path[]::new);
-        var jar = SecureJar.from(paths);
+                .toList();
+        return buildLayer(paths, parentLayers);
+    }
+
+    public static BuiltLayer buildLayer(Path path, List<ModuleLayer> parentLayers) throws IOException {
+        return buildLayer(List.of(path), parentLayers);
+    }
+
+    public static BuiltLayer buildLayer(Path path, BuiltLayer parentLayer) throws IOException {
+        return buildLayer(List.of(path), List.of(parentLayer.layer()));
+    }
+
+    public static BuiltLayer buildLayer(Path path) throws IOException {
+        return buildLayer(path, List.of(ModuleLayer.boot()));
+    }
+
+    public static BuiltLayer buildLayer(List<Path> paths, List<ModuleLayer> parentLayers) throws IOException {
+        var jar = SecureJar.from(paths.toArray(Path[]::new));
 
         var roots = List.of(jar.name());
         var jf = JarModuleFinder.of(jar);
@@ -32,9 +67,21 @@ public class TestjarUtil {
                 parentLayers.stream().map(ModuleLayer::configuration).toList(),
                 ModuleFinder.of(),
                 roots);
-        var cl = new ModuleClassLoader("testjar2-layer", conf, parentLayers);
+
+        Set<ModuleLayer> allParents = Collections.newSetFromMap(new IdentityHashMap<>());
+        collectAllParents(parentLayers, allParents);
+
+        var cl = new ModuleClassLoader(jar.name(), conf, allParents.stream().toList());
         var layer = ModuleLayer.defineModules(conf, parentLayers, m -> cl).layer();
-        return new BuiltLayer(cl, layer);
+        return new BuiltLayer(cl, layer, jar);
+    }
+
+    private static void collectAllParents(List<ModuleLayer> parentLayers, Set<ModuleLayer> allParents) {
+        for (var parent : parentLayers) {
+            if (allParents.add(parent)) {
+                collectAllParents(parent.parents(), allParents);
+            }
+        }
     }
 
     private static void withClassLoader(ClassLoader cl, TestCallback callback) throws Exception {
@@ -73,17 +120,6 @@ public class TestjarUtil {
     @FunctionalInterface
     public interface TestCallback {
         void test(ClassLoader cl) throws Exception;
-    }
-
-    /**
-     * Instantiates a {@link ServiceLoader} within the testjar1 module.
-     */
-    public static <S> ServiceLoader<S> loadTestjar1(ClassLoader cl, Class<S> clazz) throws Exception {
-        // Use the `load` method from the testjar sourceset.
-        var testClass = cl.loadClass("cpw.mods.cl.testjar1.ServiceLoaderTest");
-        var loadMethod = testClass.getMethod("load", Class.class);
-        //noinspection unchecked
-        return (ServiceLoader<S>) loadMethod.invoke(null, clazz);
     }
 
     /**
