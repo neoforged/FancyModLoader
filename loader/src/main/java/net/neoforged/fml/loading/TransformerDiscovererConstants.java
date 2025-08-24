@@ -47,7 +47,12 @@ public final class TransformerDiscovererConstants {
             net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider.class.getName());
 
     public static boolean shouldLoadInServiceLayer(Collection<Path> paths) {
-        var contents = JarContents.of(paths);
+        JarContents contents;
+        try {
+            contents = JarContents.ofPaths(paths);
+        } catch (IOException e) {
+            return false;
+        }
         try {
             return shouldLoadInServiceLayer(contents);
         } finally {

@@ -1,0 +1,254 @@
+package cpw.mods.jarhandling.impl;
+
+import cpw.mods.jarhandling.JarContents;
+import cpw.mods.jarhandling.JarResource;
+import cpw.mods.jarhandling.JarResourceVisitor;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.HexFormat;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
+import java.util.stream.Collectors;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
+
+@ApiStatus.Internal
+public final class CompositeJarContents implements JarContents {
+    private final JarContents[] delegates;
+    @Nullable
+    private final PathFilter[] filters;
+    private final List<Path> contentRoots;
+
+    public CompositeJarContents(List<JarContents> delegates) {
+        this(delegates, null);
+    }
+
+    public CompositeJarContents(List<JarContents> delegates, @Nullable List<PathFilter> filters) {
+        // Internally the first match gets returned, but the user supplies the list of paths
+        // assuming later entries override earlier entries, so we reverse.
+        delegates = delegates.reversed();
+        filters = filters != null ? filters.reversed() : null;
+
+        this.delegates = delegates.toArray(JarContents[]::new);
+        this.filters = filters != null ? filters.toArray(PathFilter[]::new) : null;
+        if (delegates.isEmpty()) {
+            throw new IllegalArgumentException("Cannot construct an empty mod container");
+        }
+        if (filters != null && delegates.size() != filters.size()) {
+            throw new IllegalArgumentException("The number of delegates and filters must match.");
+        }
+
+        // Collect all unique content roots of our delegates
+        var contentRoots = new ArrayList<Path>();
+        for (var delegate : delegates) {
+            for (var root : delegate.getContentRoots()) {
+                if (!contentRoots.contains(root)) {
+                    contentRoots.add(root);
+                }
+            }
+        }
+        this.contentRoots = List.copyOf(contentRoots);
+    }
+
+    public JarContents[] getDelegates() {
+        return delegates;
+    }
+
+    @Override
+    public Collection<Path> getContentRoots() {
+        return contentRoots;
+    }
+
+    public boolean isFiltered() {
+        return filters != null && Arrays.stream(filters).anyMatch(Objects::nonNull);
+    }
+
+    @Override
+    public Optional<String> getChecksum() {
+        if (isFiltered()) {
+            return Optional.empty();
+        }
+
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+        for (var delegate : delegates) {
+            var delegateChecksum = delegate.getChecksum();
+            if (delegateChecksum.isEmpty()) {
+                return Optional.empty();
+            }
+
+            digest.update(delegateChecksum.get().getBytes());
+        }
+
+        byte[] checksum = digest.digest();
+        return Optional.of(HexFormat.of().formatHex(checksum));
+    }
+
+    @Override
+    public Path getPrimaryPath() {
+        // The last delegate corresponds to the first entry given by the user (we reverse)
+        return delegates[delegates.length - 1].getPrimaryPath();
+    }
+
+    @Override
+    public String toString() {
+        return "[" + Arrays.stream(delegates).map(Object::toString).collect(Collectors.joining(", ")) + "]";
+    }
+
+    @Override
+    public Optional<URI> findFile(String relativePath) {
+        for (int i = 0; i < delegates.length; i++) {
+            if (isMasked(i, relativePath)) {
+                continue;
+            }
+            var delegate = delegates[i];
+            var result = delegate.findFile(relativePath);
+            if (result.isPresent()) {
+                return result;
+            }
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public Manifest getManifest() {
+        for (int i = 0; i < delegates.length; i++) {
+            if (isMasked(i, JarFile.MANIFEST_NAME)) {
+                continue;
+            }
+            var delegate = delegates[i];
+            var manifest = delegate.getManifest();
+            if (manifest != null) {
+                return manifest;
+            }
+        }
+        return EmptyManifest.INSTANCE;
+    }
+
+    @Override
+    public @Nullable JarResource get(String relativePath) {
+        for (int i = 0; i < delegates.length; i++) {
+            if (isMasked(i, relativePath)) {
+                continue;
+            }
+            var delegate = delegates[i];
+            var resource = delegate.get(relativePath);
+            if (resource != null) {
+                return resource;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public boolean containsFile(String relativePath) {
+        for (int i = 0; i < delegates.length; i++) {
+            if (isMasked(i, relativePath)) {
+                continue;
+            }
+            var delegate = delegates[i];
+            if (delegate.containsFile(relativePath)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public InputStream openFile(String relativePath) throws IOException {
+        for (int i = 0; i < delegates.length; i++) {
+            if (isMasked(i, relativePath)) {
+                continue;
+            }
+            var delegate = delegates[i];
+            var stream = delegate.openFile(relativePath);
+            if (stream != null) {
+                return stream;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public byte[] readFile(String relativePath) throws IOException {
+        for (int i = 0; i < delegates.length; i++) {
+            if (isMasked(i, relativePath)) {
+                continue;
+            }
+            var delegate = delegates[i];
+            var content = delegate.readFile(relativePath);
+            if (content != null) {
+                return content;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public void visitContent(String startingFolder, JarResourceVisitor visitor) {
+        // This is based on the logic that openResource will return the file from the *first* delegate
+        // Every relative path we return will not be returned again
+        var distinctVisitor = new JarResourceVisitor() {
+            final Set<String> pathsVisited = new HashSet<>();
+            int delegateIdx;
+
+            @Override
+            public void visit(String relativePath, JarResource resource) {
+                if (!isMasked(delegateIdx, relativePath) && pathsVisited.add(relativePath)) {
+                    visitor.visit(relativePath, resource);
+                }
+            }
+        };
+
+        for (int i = 0; i < delegates.length; i++) {
+            var delegate = delegates[i];
+            distinctVisitor.delegateIdx = i;
+            delegate.visitContent(startingFolder, distinctVisitor);
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        IOException error = null;
+        for (var delegate : delegates) {
+            try {
+                delegate.close();
+            } catch (IOException e) {
+                if (error == null) {
+                    error = new IOException("Failed to close one ore more delegates of " + this);
+                }
+                error.addSuppressed(e);
+            }
+        }
+        if (error != null) {
+            throw error;
+        }
+    }
+
+    /**
+     * Returns true if the given relative path is hidden by the given delegates filter.
+     */
+    private boolean isMasked(int delegateIdx, String relativePath) {
+        if (filters == null) {
+            return false;
+        }
+        var filter = filters[delegateIdx];
+        return filter != null && !filter.test(relativePath);
+    }
+}

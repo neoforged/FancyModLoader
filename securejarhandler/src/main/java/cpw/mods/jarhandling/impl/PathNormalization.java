@@ -5,6 +5,12 @@ final class PathNormalization {
 
     private PathNormalization() {}
 
+    public static void assertNormalized(CharSequence path) {
+        if (!isNormalized(path)) {
+            throw new IllegalArgumentException("Path is not a valid relative path: " + path);
+        }
+    }
+
     public static boolean isNormalized(CharSequence path) {
         if (path.isEmpty()) {
             return true; // This will fail for other reasons

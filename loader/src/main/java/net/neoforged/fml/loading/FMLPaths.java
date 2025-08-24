@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 
 public enum FMLPaths {
     GAMEDIR(),
+    JIJ_CACHEDIR(".cache/jij"),
     MODSDIR("mods"),
     CONFIGDIR("config"),
     FMLCONFIG(false, CONFIGDIR, "fml.toml");

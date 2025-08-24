@@ -1,7 +1,6 @@
 package cpw.mods.jarhandling;
 
 import cpw.mods.jarhandling.impl.Jar;
-import cpw.mods.jarhandling.impl.JarContentsImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.module.ModuleDescriptor;
@@ -9,9 +8,8 @@ import java.lang.module.ModuleReader;
 import java.lang.module.ModuleReference;
 import java.net.URI;
 import java.nio.file.Path;
-import java.security.CodeSigner;
+import java.util.Arrays;
 import java.util.Optional;
-import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,10 +20,10 @@ import org.jetbrains.annotations.Nullable;
 public interface SecureJar {
     /**
      * Creates a jar from a list of paths.
-     * See {@link JarContentsBuilder} for more configuration options.
+     * See {@link JarContents} for more configuration options.
      */
-    static SecureJar from(final Path... paths) {
-        return from(new JarContentsBuilder().paths(paths).build());
+    static SecureJar from(final Path... paths) throws IOException {
+        return from(JarContents.ofPaths(Arrays.asList(paths)));
     }
 
     /**
@@ -39,7 +37,7 @@ public interface SecureJar {
      * Creates a jar from its contents and metadata.
      */
     static SecureJar from(JarContents contents, JarMetadata metadata) {
-        return new Jar((JarContentsImpl) contents, metadata);
+        return new Jar(contents, metadata);
     }
 
     JarContents contents();
@@ -55,29 +53,7 @@ public interface SecureJar {
      */
     Path getPrimaryPath();
 
-    /**
-     * {@return the signers of the manifest, or {@code null} if the manifest is not signed}
-     */
-    @Nullable
-    CodeSigner[] getManifestSigners();
-
-    Status verifyPath(Path path);
-
-    Status getFileStatus(String name);
-
-    @Nullable
-    Attributes getTrustedManifestEntries(String name);
-
-    boolean hasSecurityData();
-
     String name();
-
-    Path getPath(String first, String... rest);
-
-    /**
-     * {@return the root path in the jar's own filesystem}
-     */
-    Path getRootPath();
 
     /**
      * Closes the underlying file system resources (if any).
@@ -119,15 +95,5 @@ public interface SecureJar {
          * {@return the manifest of the jar}
          */
         Manifest getManifest();
-
-        /**
-         * {@return the signers if the class name can be verified, or {@code null} otherwise}
-         */
-        @Nullable
-        CodeSigner[] verifyAndGetSigners(String cname, byte[] bytes);
-    }
-
-    enum Status {
-        NONE, INVALID, UNVERIFIED, VERIFIED
     }
 }

@@ -113,9 +113,39 @@ public class SimulatedInstallation implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        MoreFiles.deleteRecursively(gameDir, RecursiveDeleteOption.ALLOW_INSECURE);
-        MoreFiles.deleteRecursively(librariesDir, RecursiveDeleteOption.ALLOW_INSECURE);
-        MoreFiles.deleteRecursively(projectRoot, RecursiveDeleteOption.ALLOW_INSECURE);
+        for (var i = 0; i < 5; i++) {
+            try {
+                MoreFiles.deleteRecursively(gameDir, RecursiveDeleteOption.ALLOW_INSECURE);
+                break;
+            } catch (IOException e) {
+                if (i + 1 >= 5) {
+                    throw e;
+                }
+                Thread.sleep(100L);
+            }
+        }
+        for (var i = 0; i < 5; i++) {
+            try {
+                MoreFiles.deleteRecursively(librariesDir, RecursiveDeleteOption.ALLOW_INSECURE);
+                break;
+            } catch (IOException e) {
+                if (i + 1 >= 5) {
+                    throw e;
+                }
+                Thread.sleep(100L);
+            }
+        }
+        for (var i = 0; i < 5; i++) {
+            try {
+                MoreFiles.deleteRecursively(projectRoot, RecursiveDeleteOption.ALLOW_INSECURE);
+                break;
+            } catch (IOException e) {
+                if (i + 1 >= 5) {
+                    throw e;
+                }
+                Thread.sleep(100L);
+            }
+        }
         System.clearProperty(LIBRARIES_DIRECTORY_PROPERTY);
         System.clearProperty(MOD_FOLDERS_PROPERTIES);
     }
