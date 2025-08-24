@@ -88,43 +88,14 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
             // Copy the file to the temp-file, while hashing it to produce its final filename
             Path finalPath;
             try {
-                String checksum;
-                try (var inStream = file.getContents().openFile(relativePath); var outStream = Files.newOutputStream(tempFile)) {
-                    if (inStream == null) {
-                        LOGGER.error("Mod file {} declares Jar-in-Jar {} but does not contain it.", file, relativePath);
-                        throw new ModFileLoadingException("Mod file " + file + " declares Jar-in-Jar " + relativePath + " but does not contain it.");
-                    }
+                String checksum = extractEmbeddedJarFile(file, relativePath, tempFile);
 
-                    MessageDigest digest;
-                    try {
-                        digest = MessageDigest.getInstance("SHA-256");
-                    } catch (NoSuchAlgorithmException e) {
-                        throw new RuntimeException("Missing default JCA algorithm SHA-256.", e);
-                    }
-
-                    var digestOut = new DigestOutputStream(outStream, digest);
-                    inStream.transferTo(digestOut);
-
-                    checksum = HexFormat.of().formatHex(digest.digest());
-                } catch (IOException e) {
-                    LOGGER.error("Failed to copy Jar-in-Jar file {} from mod file {} to {}", relativePath, file, tempFile, e);
-                    throw new ModFileLoadingException("Failed to load mod file " + file.getFileName(), e);
-                }
-
+                // We must maintain the original filename, as it could be used to determine the module name and version
                 String filename = relativePath.substring(relativePath.lastIndexOf('/') + 1);
                 finalPath = jijCacheDir.resolve(checksum + "/" + filename);
                 // If the file already exists, reuse it, since it might already be opened.
                 if (!Files.isRegularFile(finalPath)) {
-                    try {
-                        Files.createDirectories(finalPath.getParent());
-                    } catch (IOException e) {
-                        throw new UncheckedIOException("Failed to create parent directory for extracted JiJ-file " + tempFile + " at " + finalPath, e);
-                    }
-                    try {
-                        atomicMoveIfPossible(tempFile, finalPath);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException("Failed to move temporary JiJ-file " + tempFile + " to its final location " + finalPath, e);
-                    }
+                    moveExtractedFileIntoPlace(tempFile, finalPath);
                 }
             } finally {
                 try {
@@ -139,9 +110,7 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
                 jar = JarContents.ofPath(finalPath);
             } catch (IOException e) {
                 LOGGER.error("Failed to read Jar-in-Jar file {} extracted from mod file {} to {}", relativePath, file, finalPath, e);
-                final RuntimeException exception = new ModFileLoadingException("Failed to load mod file " + relativePath + " from " + file);
-                exception.initCause(e);
-                throw exception;
+                throw new ModFileLoadingException("Failed to load mod file " + relativePath + " from " + file, e);
             }
             return pipeline.readModFile(jar, ModFileDiscoveryAttributes.DEFAULT.withParent(file));
         });
@@ -149,19 +118,49 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
         return Optional.ofNullable(innerModFile);
     }
 
+    private static String extractEmbeddedJarFile(IModFile file, String relativePath, Path destination) {
+        try (var inStream = file.getContents().openFile(relativePath); var outStream = Files.newOutputStream(destination)) {
+            if (inStream == null) {
+                LOGGER.error("Mod file {} declares Jar-in-Jar {} but does not contain it.", file, relativePath);
+                throw new ModFileLoadingException("Mod file " + file + " declares Jar-in-Jar " + relativePath + " but does not contain it.");
+            }
+
+            MessageDigest digest;
+            try {
+                digest = MessageDigest.getInstance("SHA-256");
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException("Missing default JCA algorithm SHA-256.", e);
+            }
+
+            var digestOut = new DigestOutputStream(outStream, digest);
+            inStream.transferTo(digestOut);
+
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (IOException e) {
+            LOGGER.error("Failed to copy Jar-in-Jar file {} from mod file {} to {}", relativePath, file, destination, e);
+            throw new ModFileLoadingException("Failed to load mod file " + file.getFileName(), e);
+        }
+    }
+
     /**
-     * Atomically moves the given source file to the given destination file.
-     * If the atomic move is not supported, the file will be moved normally.
-     *
-     * @param source      The source file
-     * @param destination The destination file
-     * @throws IOException If an I/O error occurs
+     * Atomically moves the extracted embedded jar file to its final location.
+     * If an atomic move is not supported, the file will be moved normally.
      */
-    private static void atomicMoveIfPossible(final Path source, final Path destination) throws IOException {
+    private static void moveExtractedFileIntoPlace(Path source, Path destination) {
         try {
-            Files.move(source, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-        } catch (AtomicMoveNotSupportedException ex) {
-            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
+            Files.createDirectories(destination.getParent());
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to create parent directory for extracted JiJ-file " + source + " at " + destination, e);
+        }
+
+        try {
+            try {
+                Files.move(source, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException ex) {
+                Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to move temporary JiJ-file " + source + " to its final location " + destination, e);
         }
     }
 
