@@ -48,13 +48,7 @@ public final class ModuleDescriptorFactory {
         jar.visitContent((relativePath, resource) -> {
             // Ignore all content in META-INF except for service files
             if (relativePath.startsWith("META-INF/services/")) {
-                var lastSeparator = relativePath.lastIndexOf('/');
-                String filename;
-                if (lastSeparator != -1) {
-                    filename = relativePath.substring(lastSeparator + 1);
-                } else {
-                    filename = relativePath;
-                }
+                String filename = relativePath.substring(relativePath.lastIndexOf('/') + 1);
 
                 // Ignore files in META-INF/services/ whose filenames are not valid Java class names
                 if (JlsConstants.isTypeName(filename)) {

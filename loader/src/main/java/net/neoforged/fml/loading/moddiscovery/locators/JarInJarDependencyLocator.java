@@ -108,13 +108,10 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
                     checksum = HexFormat.of().formatHex(digest.digest());
                 } catch (IOException e) {
                     LOGGER.error("Failed to copy Jar-in-Jar file {} from mod file {} to {}", relativePath, file, tempFile, e);
-                    final RuntimeException exception = new ModFileLoadingException("Failed to load mod file " + file.getFileName());
-                    exception.initCause(e);
-                    throw exception;
+                    throw new ModFileLoadingException("Failed to load mod file " + file.getFileName(), e);
                 }
 
-                var lastSeparator = relativePath.lastIndexOf('/');
-                String filename = (lastSeparator != -1) ? relativePath.substring(lastSeparator + 1) : relativePath;
+                String filename = relativePath.substring(relativePath.lastIndexOf('/') + 1);
                 finalPath = jijCacheDir.resolve(checksum + "/" + filename);
                 // If the file already exists, reuse it, since it might already be opened.
                 if (!Files.isRegularFile(finalPath)) {

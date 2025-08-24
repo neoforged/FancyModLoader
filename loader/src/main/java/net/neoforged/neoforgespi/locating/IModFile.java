@@ -73,6 +73,9 @@ public interface IModFile {
      */
     String getId();
 
+    /**
+     * {@return the contents of the mod file, which allow direct access to files in the mods jar file}
+     */
     JarContents getContents();
 
     /**

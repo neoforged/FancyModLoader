@@ -9,7 +9,6 @@ module cpw.mods.securejarhandler {
     requires jdk.unsupported;
     requires java.base;
     requires static org.jetbrains.annotations;
-    requires java.desktop;
 
     provides java.nio.file.spi.FileSystemProvider with UnionFileSystemProvider;
 
