@@ -10,6 +10,7 @@ import com.electronwill.nightconfig.core.concurrent.ConcurrentConfig;
 import com.electronwill.nightconfig.core.file.FileConfig;
 import com.electronwill.nightconfig.toml.TomlFormat;
 import com.mojang.logging.LogUtils;
+import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -82,7 +83,10 @@ public class ModFileParser {
     private static final ArtifactVersion LOWEST_MIXIN_VERSION;
 
     static {
-        HIGHEST_MIXIN_VERSION = new DefaultArtifactVersion(FabricUtil.class.getPackage().getImplementationVersion());
+        HIGHEST_MIXIN_VERSION = new DefaultArtifactVersion(Optional.ofNullable(FabricUtil.class.getModule().getDescriptor())
+                .flatMap(ModuleDescriptor::version).map(ModuleDescriptor.Version::toString)
+                .or(() -> Optional.ofNullable(FabricUtil.class.getPackage().getImplementationVersion()))
+                .orElseThrow(() -> new IllegalStateException("Cannot determine version of currently running mixin")));
         int defaultMixinVersion = DeferredMixinConfigRegistration.DEFAULT_BEHAVIOUR_VERSION;
         int patch = defaultMixinVersion % 1000;
         defaultMixinVersion /= 1000;
