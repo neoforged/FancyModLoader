@@ -8,6 +8,8 @@ package net.neoforged.fml.loading.mixin;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.maven.artifact.versioning.ArtifactVersion;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +24,7 @@ public class DeferredMixinConfigRegistration {
 
     private static boolean added = false;
 
-    record ConfigInfo(String fileName, @Nullable String modId) {}
+    record ConfigInfo(String fileName, @Nullable String modId, int behaviorVersion) {}
 
     private static final List<ConfigInfo> mixinConfigs = new ArrayList<>();
 
@@ -39,11 +41,30 @@ public class DeferredMixinConfigRegistration {
     }
 
     public static void addMixinConfig(String config, @Nullable String modId) {
+        addMixinConfig(config, modId, null);
+    }
+
+    @ApiStatus.Internal
+    public static void addMixinConfig(String config, @Nullable String modId, @Nullable ArtifactVersion behaviorVersion) {
         if (added) {
             throw new IllegalStateException("Too late to add mixin configs!");
         }
 
-        mixinConfigs.add(new ConfigInfo(config, modId));
+        mixinConfigs.add(new ConfigInfo(config, modId, calculateBehaviorVersion(behaviorVersion)));
+    }
+
+    // Increment to break compatibility; during a BC window, this should be set to the latest version. This is _not_ set
+    // to COMPATIBILITY_LATEST, so that if mixin is bumped past a BC it does not break mods.
+    @ApiStatus.Internal
+    public static final int DEFAULT_BEHAVIOUR_VERSION = FabricUtil.COMPATIBILITY_0_14_0;
+
+    private static int calculateBehaviorVersion(@Nullable ArtifactVersion behaviorVersion) {
+        if (behaviorVersion == null) {
+            return DEFAULT_BEHAVIOUR_VERSION;
+        }
+        return behaviorVersion.getMajorVersion() * (1000 * 1000) +
+                behaviorVersion.getMinorVersion() * 1000 +
+                behaviorVersion.getIncrementalVersion();
     }
 
     static void registerConfigs() {
@@ -59,6 +80,7 @@ public class DeferredMixinConfigRegistration {
                 LOG.warn("Config file {} was not registered!", cfg.fileName());
             } else {
                 config.decorate(FabricUtil.KEY_MOD_ID, cfg.modId());
+                config.decorate(FabricUtil.KEY_COMPATIBILITY, cfg.behaviorVersion());
             }
         });
         mixinConfigs.clear();
