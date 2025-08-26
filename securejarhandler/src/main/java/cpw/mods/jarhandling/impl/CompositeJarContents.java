@@ -31,6 +31,8 @@ public final class CompositeJarContents implements JarContents {
     private final PathFilter[] filters;
     private final List<Path> contentRoots;
 
+    private volatile Optional<String> checksum;
+
     public CompositeJarContents(List<JarContents> delegates) {
         this(delegates, null);
     }
@@ -62,10 +64,6 @@ public final class CompositeJarContents implements JarContents {
         this.contentRoots = List.copyOf(contentRoots);
     }
 
-    public JarContents[] getDelegates() {
-        return delegates;
-    }
-
     @Override
     public Collection<Path> getContentRoots() {
         return contentRoots;
@@ -75,8 +73,26 @@ public final class CompositeJarContents implements JarContents {
         return filters != null && Arrays.stream(filters).anyMatch(Objects::nonNull);
     }
 
+    /**
+     * For a composite jar, we compute the checksum as the SHA-256 of the concatenation of the
+     * checksums of the delegates, in order. If the composite jar is filtered, or any delegate
+     * does not have a checksum, then the composite jar does not have a checksum.
+     */
     @Override
     public Optional<String> getChecksum() {
+        var checksum = this.checksum;
+        if (checksum == null) {
+            synchronized (this) {
+                checksum = this.checksum;
+                if (checksum == null) {
+                    this.checksum = checksum = computeChecksum();
+                }
+            }
+        }
+        return checksum;
+    }
+
+    private Optional<String> computeChecksum() {
         if (isFiltered()) {
             return Optional.empty();
         }

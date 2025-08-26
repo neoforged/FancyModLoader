@@ -9,8 +9,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
@@ -19,13 +17,11 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
-import java.util.zip.ZipEntry;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,7 +30,6 @@ public final class JarFileContents implements JarContents {
     private final Path path;
     private final JarFile jarFile;
     private final Manifest jarManifest;
-    private FileSystem zipFs;
 
     public JarFileContents(Path path) throws IOException {
         this.path = path;
@@ -78,7 +73,7 @@ public final class JarFileContents implements JarContents {
 
     @Override
     public String toString() {
-        return path.toString();
+        return "jar(" + path + ")";
     }
 
     @Nullable
@@ -89,39 +84,28 @@ public final class JarFileContents implements JarContents {
 
     @Override
     public JarResource get(String relativePath) {
-        var entry = jarFile.getEntry(relativePath);
+        var entry = jarFile.getJarEntry(relativePath);
         if (entry == null || entry.isDirectory()) {
             return null;
         }
-        return new JarResource() {
-            @Override
-            public InputStream open() throws IOException {
-                return jarFile.getInputStream(entry);
-            }
-
-            @Override
-            public JarResourceAttributes attributes() {
-                return getModContentAttributes(entry);
-            }
-
-            @Override
-            public JarResource retain() {
-                return this;
-            }
-        };
+        return new JarEntryResource(entry, false);
     }
 
     @Override
     public boolean containsFile(String relativePath) {
         PathNormalization.assertNormalized(relativePath);
-        return jarFile.getEntry(relativePath) != null;
+        var entry = jarFile.getEntry(relativePath);
+        return entry != null && !entry.isDirectory();
     }
 
     @Override
     public InputStream openFile(String relativePath) throws IOException {
         PathNormalization.assertNormalized(relativePath);
         var entry = jarFile.getEntry(relativePath);
-        if (entry != null && !entry.isDirectory()) {
+        if (entry != null) {
+            if (entry.isDirectory()) {
+                throw new IOException("The path " + relativePath + " refers to a directory");
+            }
             return jarFile.getInputStream(entry);
         }
         return null;
@@ -131,7 +115,10 @@ public final class JarFileContents implements JarContents {
     public byte[] readFile(String relativePath) throws IOException {
         PathNormalization.assertNormalized(relativePath);
         var entry = jarFile.getEntry(relativePath);
-        if (entry != null && !entry.isDirectory()) {
+        if (entry != null) {
+            if (entry.isDirectory()) {
+                throw new IOException("The path " + relativePath + " refers to a directory");
+            }
             try (var input = jarFile.getInputStream(entry)) {
                 // TODO in theory we can at least use entry uncompressed size as a hint here
                 return input.readAllBytes();
@@ -142,9 +129,9 @@ public final class JarFileContents implements JarContents {
 
     @Override
     public void visitContent(String startingFolder, JarResourceVisitor visitor) {
-        startingFolder = PathNormalization.normalize(startingFolder);
+        startingFolder = PathNormalization.normalizeFolderPrefix(startingFolder);
 
-        var resource = new JarEntryResource();
+        var resource = new JarEntryResource(null, true);
         var it = jarFile.entries().asIterator();
         while (it.hasNext()) {
             var entry = it.next();
@@ -162,14 +149,6 @@ public final class JarFileContents implements JarContents {
         }
     }
 
-    private static JarResourceAttributes getModContentAttributes(ZipEntry entry) {
-        return new JarResourceAttributes(entry.getLastModifiedTime(), entry.getSize());
-    }
-
-    public Path path() {
-        return path;
-    }
-
     @Override
     public void close() {
         try {
@@ -177,30 +156,16 @@ public final class JarFileContents implements JarContents {
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to close ZIP-File " + path, e);
         }
-
-        try {
-            if (zipFs != null) {
-                zipFs.close();
-                zipFs = null;
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to close ZIP-FileSystem " + zipFs, e);
-        }
-    }
-
-    private synchronized FileSystem getOrCreateZipFs() {
-        if (zipFs == null) {
-            try {
-                zipFs = FileSystems.newFileSystem(URI.create("jar:" + path.toUri()), Map.of());
-            } catch (IOException e) {
-                throw new UncheckedIOException("Failed to open Zip FS on-demand for " + this, e);
-            }
-        }
-        return zipFs;
     }
 
     private final class JarEntryResource implements JarResource {
+        private final boolean mutable;
         private JarEntry entry;
+
+        public JarEntryResource(JarEntry entry, boolean mutable) {
+            this.entry = entry;
+            this.mutable = mutable;
+        }
 
         @Override
         public InputStream open() throws IOException {
@@ -209,14 +174,16 @@ public final class JarFileContents implements JarContents {
 
         @Override
         public JarResourceAttributes attributes() {
-            return getModContentAttributes(entry);
+            return new JarResourceAttributes(entry.getLastModifiedTime(), entry.getSize());
         }
 
         @Override
         public JarResource retain() {
-            var result = new JarEntryResource();
-            result.entry = entry;
-            return result;
+            if (mutable) {
+                return new JarEntryResource(entry, false);
+            } else {
+                return this;
+            }
         }
     }
 }

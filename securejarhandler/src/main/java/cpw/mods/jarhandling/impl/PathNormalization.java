@@ -54,6 +54,17 @@ final class PathNormalization {
     }
 
     public static String normalize(CharSequence path) {
+        return normalize(path, false);
+    }
+
+    /**
+     * Normalizing a folder prefix ensures that non-empty paths end with a separator.
+     */
+    public static String normalizeFolderPrefix(CharSequence path) {
+        return normalize(path, true);
+    }
+
+    private static String normalize(CharSequence path, boolean folderPrefix) {
         var result = new StringBuilder(path.length());
 
         int startOfSegment = 0;
@@ -82,6 +93,10 @@ final class PathNormalization {
             var segment = path.subSequence(startOfSegment, path.length());
             validateSegment(segment);
             result.append(segment);
+        }
+
+        if (folderPrefix && !result.isEmpty()) {
+            result.append(SEPARATOR);
         }
 
         return result.toString();

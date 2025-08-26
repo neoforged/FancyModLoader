@@ -21,7 +21,14 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 @ApiStatus.Internal
-public record FolderJarContents(Path path) implements JarContents {
+public final class FolderJarContents implements JarContents {
+    private final Path path;
+    private final Object manifestLock = new Object();
+    private Manifest cachedManifest;
+
+    public FolderJarContents(Path path) {
+        this.path = path;
+    }
 
     @Override
     public Path getPrimaryPath() {
@@ -37,22 +44,7 @@ public record FolderJarContents(Path path) implements JarContents {
     public @Nullable JarResource get(String relativePath) {
         var path = this.path.resolve(relativePath);
         if (Files.isRegularFile(path)) {
-            return new JarResource() {
-                @Override
-                public InputStream open() throws IOException {
-                    return Files.newInputStream(path);
-                }
-
-                @Override
-                public JarResourceAttributes attributes() throws IOException {
-                    return readAttributes(path);
-                }
-
-                @Override
-                public JarResource retain() {
-                    return this;
-                }
-            };
+            return new FileResource(path, false);
         }
         return null;
     }
@@ -96,7 +88,7 @@ public record FolderJarContents(Path path) implements JarContents {
         }
 
         try (var stream = Files.walk(startingPoint)) {
-            var locatedResource = new FileResource(null);
+            var locatedResource = new FileResource(null, true);
             stream.forEach(path -> {
                 if (Files.isRegularFile(path)) {
                     var relativePath = PathNormalization.normalize(this.path.relativize(path).toString());
@@ -121,26 +113,32 @@ public record FolderJarContents(Path path) implements JarContents {
         return startingPoint;
     }
 
-    private static JarResourceAttributes readAttributes(Path path) throws IOException {
-        var attributes = Files.getFileAttributeView(path, BasicFileAttributeView.class).readAttributes();
-        return new JarResourceAttributes(attributes.lastModifiedTime(), attributes.size());
-    }
-
     @Override
     public Optional<URI> findFile(String relativePath) {
         var pathToFile = fromRelativePath(relativePath);
-        return pathToFile.toFile().isFile() ? Optional.of(pathToFile.toUri()) : Optional.empty();
+        return Files.isRegularFile(pathToFile) ? Optional.of(pathToFile.toUri()) : Optional.empty();
     }
 
     @Override
     public Manifest getManifest() {
-        var manifestFile = path.resolve(JarFile.MANIFEST_NAME);
-        try (var in = Files.newInputStream(manifestFile)) {
-            return new Manifest(in);
-        } catch (NoSuchFileException ignored) {} catch (IOException e) {
-            throw new UncheckedIOException("Failed to read manifest " + manifestFile, e);
+        var manifest = cachedManifest;
+        if (manifest == null) {
+            synchronized (manifestLock) {
+                manifest = cachedManifest;
+                if (manifest == null) {
+                    var manifestFile = path.resolve(JarFile.MANIFEST_NAME);
+                    try (var in = Files.newInputStream(manifestFile)) {
+                        manifest = new Manifest(in);
+                    } catch (NoSuchFileException ignored) {
+                        manifest = EmptyManifest.INSTANCE;
+                    } catch (IOException e) {
+                        throw new UncheckedIOException("Failed to read manifest " + manifestFile, e);
+                    }
+                    cachedManifest = manifest;
+                }
+            }
         }
-        return EmptyManifest.INSTANCE;
+        return manifest;
     }
 
     @Override
@@ -148,7 +146,7 @@ public record FolderJarContents(Path path) implements JarContents {
 
     @Override
     public String toString() {
-        return path.toString();
+        return "folder(" + path.toString() + ")";
     }
 
     private Path fromRelativePath(String relativePath) {
@@ -156,11 +154,14 @@ public record FolderJarContents(Path path) implements JarContents {
         PathNormalization.assertNormalized(relativePath);
         return path.resolve(relativePath);
     }
-    private static final class FileResource implements JarResource {
+
+    private static class FileResource implements JarResource {
+        private final boolean mutable;
         private Path path;
 
-        public FileResource(Path path) {
+        public FileResource(Path path, boolean mutable) {
             this.path = path;
+            this.mutable = mutable;
         }
 
         @Override
@@ -176,7 +177,11 @@ public record FolderJarContents(Path path) implements JarContents {
 
         @Override
         public JarResource retain() {
-            return new FileResource(path);
+            if (mutable) {
+                return new FileResource(path, false);
+            } else {
+                return this;
+            }
         }
     }
 }

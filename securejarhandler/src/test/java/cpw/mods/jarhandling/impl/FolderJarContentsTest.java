@@ -12,28 +12,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarResource;
 import cpw.mods.jarhandling.JarResourceVisitor;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.jar.JarEntry;
-import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
-class JarContentsTest {
-    @TempDir
-    Path tempDir;
-
+class FolderJarContentsTest extends AbstractJarContentsTest {
     JarContents contents;
 
     @BeforeEach
@@ -55,6 +46,34 @@ class JarContentsTest {
     void testGetForFolder() throws IOException {
         Files.createDirectory(tempDir.resolve("folder"));
         assertNull(contents.get("folder"));
+    }
+
+    @Test
+    void testPrimaryPathIsFolderPath() {
+        assertEquals(tempDir, contents.getPrimaryPath());
+    }
+
+    @Test
+    void testNoChecksum() {
+        // Folders do not have a meaningful checksum
+        assertThat(contents.getChecksum()).isEmpty();
+    }
+
+    @Test
+    void testFindFileGivesFilesystemUri() throws Exception {
+        var path = writeTextFile("somefile", "somefile");
+        assertThat(contents.findFile("somefile")).contains(path.toUri());
+    }
+
+    @Test
+    void testFindFileForDirectoriesReturnsEmpty() throws Exception {
+        Files.createDirectories(tempDir.resolve("dir"));
+        assertThat(contents.findFile("dir")).isEmpty();
+    }
+
+    @Test
+    void testFindFileForMissingFileReturnsEmpty() {
+        assertThat(contents.findFile("missing")).isEmpty();
     }
 
     @Nested
@@ -89,7 +108,7 @@ class JarContentsTest {
         }
 
         @Test
-        void testRetain() throws IOException {
+        void testRetain() {
             // For resources not obtained from visit, this should be identical
             assertSame(resource, resource.retain());
         }
@@ -163,50 +182,24 @@ class JarContentsTest {
         assertThat(bytes).isEqualTo("hello world".getBytes());
     }
 
-    @Nested
-    class MultiReleaseJar {
-        JarContents contents;
+    @Test
+    void testGetManifest() throws IOException {
+        writeTextFile("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\nCreated-By: Test\n\n");
+        Manifest manifest = contents.getManifest();
+        assertNotNull(manifest);
+        assertEquals("1.0", manifest.getMainAttributes().getValue("Manifest-Version"));
+        assertEquals("Test", manifest.getMainAttributes().getValue("Created-By"));
+    }
 
-        @BeforeEach
-        void setUp() throws IOException {
-            Manifest mf = new Manifest();
-            mf.getMainAttributes().putValue("Manifest-Version", "1.0");
-            mf.getMainAttributes().putValue("Multi-Release", "true");
+    @Test
+    void testGetManifestReturnsEmptyManifestIfManifestIsMissing() {
+        Manifest manifest = contents.getManifest();
+        assertSame(EmptyManifest.INSTANCE, manifest);
+    }
 
-            var tempJar = tempDir.resolve("temp.jar");
-            try (var jarOut = new JarOutputStream(new BufferedOutputStream(Files.newOutputStream(tempJar)), mf)) {
-                jarOut.putNextEntry(new JarEntry("META-INF/versions/9/folder/file"));
-                jarOut.write("hello world".getBytes());
-                jarOut.closeEntry();
-            }
-
-            contents = JarContents.ofPath(tempJar); // Multi-version info only works for Jars, not Folders
-        }
-
-        @AfterEach
-        void closeJar() throws IOException {
-            contents.close();
-        }
-
-        @Test
-        void testContainsFile() throws IOException {
-            assertTrue(contents.containsFile("folder/file"));
-        }
-
-        @Test
-        void testOpenFile() throws IOException {
-            try (var stream = contents.openFile("folder/file")) {
-                assertNotNull(stream);
-                assertThat(stream.readAllBytes()).isEqualTo("hello world".getBytes());
-            }
-        }
-
-        @Test
-        void testReadFile() throws IOException {
-            var bytes = contents.readFile("folder/file");
-            assertNotNull(bytes);
-            assertThat(bytes).isEqualTo("hello world".getBytes());
-        }
+    @Test
+    void testToString() {
+        assertEquals("folder(" + tempDir + ")", contents.toString());
     }
 
     @Nested
@@ -214,12 +207,10 @@ class JarContentsTest {
         @BeforeEach
         void setUp() throws IOException {
             Files.createDirectories(tempDir.resolve("empty_folder"));
-            Files.createDirectories(tempDir.resolve("folder"));
-            Files.writeString(tempDir.resolve("folder/file1"), "folder/file1");
-            Files.writeString(tempDir.resolve("folder/file2"), "folder/file2");
-            Files.createDirectories(tempDir.resolve("folder2/subfolder"));
-            Files.writeString(tempDir.resolve("folder2/subfolder/file"), "folder2/subfolder/file");
-            Files.writeString(tempDir.resolve("root_file"), "root_file");
+            writeTextFile("folder/file1", "folder/file1");
+            writeTextFile("folder/file2", "folder/file2");
+            writeTextFile("folder2/subfolder/file", "folder2/subfolder/file");
+            writeTextFile("root_file", "root_file");
         }
 
         @Test
