@@ -150,7 +150,8 @@ public final class CompositeJarContents implements JarContents {
             }
             var delegate = delegates[i];
             var manifest = delegate.getManifest();
-            if (manifest != null) {
+            // Since we always return a non-null manifest, we consider empty manifests to be "missing"
+            if (!manifest.getMainAttributes().isEmpty() || !manifest.getEntries().isEmpty()) {
                 return manifest;
             }
         }

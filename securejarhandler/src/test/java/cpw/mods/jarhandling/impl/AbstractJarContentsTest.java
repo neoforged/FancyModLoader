@@ -29,20 +29,30 @@ public abstract class AbstractJarContentsTest {
         return makeJar(ignored -> {});
     }
 
+    Path makeJar(String subfolder) throws IOException {
+        return makeJar(subfolder, ignored -> {});
+    }
+
     Path makeJar(Consumer<Manifest> manifestConsumer) throws IOException {
+        return makeJar(null, manifestConsumer);
+    }
+
+    Path makeJar(String subfolder, Consumer<Manifest> manifestConsumer) throws IOException {
         Manifest mf = new Manifest();
         mf.getMainAttributes().putValue("Manifest-Version", "1.0");
         manifestConsumer.accept(mf);
 
+        var root = subfolder != null ? tempDir.resolve(subfolder) : tempDir;
+
         var tempJar = tempDir.resolve("_tempjar" + (++tempJarCounter) + ".jar");
         try (var jarOut = new JarOutputStream(new BufferedOutputStream(Files.newOutputStream(tempJar)), mf)) {
-            try (var stream = Files.walk(tempDir)) {
+            try (var stream = Files.walk(root)) {
                 for (var it = stream.iterator(); it.hasNext();) {
                     var path = it.next();
-                    if (path.getFileName().toString().startsWith("_tempjar") || path.equals(tempDir)) {
+                    if (path.getFileName().toString().startsWith("_tempjar") || path.equals(root)) {
                         continue;
                     }
-                    var relativePath = tempDir.relativize(path).toString().replace('\\', '/');
+                    var relativePath = root.relativize(path).toString().replace('\\', '/');
                     if (Files.isDirectory(path)) {
                         JarEntry entry = new JarEntry(relativePath + "/");
                         jarOut.putNextEntry(entry);
