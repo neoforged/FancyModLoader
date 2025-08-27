@@ -1,21 +1,46 @@
-package cpw.mods.cl.test;
+package cpw.mods.cl;
 
-import cpw.mods.cl.ModuleClassLoader;
-import net.neoforged.fml.testlib.ModFileBuilder;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import java.lang.annotation.Annotation;
 import java.lang.module.ModuleDescriptor;
 import java.net.spi.URLStreamHandlerProvider;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.ServiceLoader;
+import net.neoforged.fml.testlib.ModFileBuilder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestServiceLoader {
+class ModuleClassLoaderTest {
     @TempDir
     Path tempDir;
+
+    @Test
+    public void testPackageInfoAvailability() throws Exception {
+        var testJar = new ModFileBuilder(tempDir.resolve("packagetest.jar"))
+                .addClass("testpkg.package-info", """
+                        @TestAnnotation
+                        package testpkg;
+                        """)
+                .addClass("testpkg.TestAnnotation", """
+                        import java.lang.annotation.Retention;
+                        import java.lang.annotation.RetentionPolicy;
+                        @Retention(RetentionPolicy.RUNTIME)
+                        public @interface TestAnnotation {
+                        }
+                        """)
+                .build();
+
+        try (var layer = TestjarUtil.buildLayer(testJar)) {
+            // Reference package through a class to ensure correct behavior of ModuleClassLoader#findClass(String,String)
+            Class<?> cls = Class.forName("testpkg.TestAnnotation", true, layer.cl());
+            assertThat(cls.getPackage().getDeclaredAnnotations())
+                    .extracting(Annotation::annotationType)
+                    .extracting(Class::getName)
+                    .containsOnly("testpkg.TestAnnotation");
+        }
+    }
 
     /**
      * Tests that services from parent layers are discoverable using normal serviceloader usage.
@@ -52,7 +77,7 @@ public class TestServiceLoader {
                 .addClass("layer3.ServiceLoaderProxy", """
                         import java.util.List;
                         import java.util.ServiceLoader;
-                        
+
                         public class ServiceLoaderProxy {
                             public static List<layer1.DummyService> load() {
                                 return ServiceLoader.load(layer1.DummyService.class).stream()
@@ -63,9 +88,9 @@ public class TestServiceLoader {
                 .build();
 
         try (var layer1 = TestjarUtil.buildLayer(firstLayerJar);
-             var layer2 = TestjarUtil.buildLayer(secondLayerJar, layer1);
-             var layer3 = TestjarUtil.buildLayer(thirdLayerJar, layer2);
-             var ignored = layer3.makeLoaderCurrent()) {
+                var layer2 = TestjarUtil.buildLayer(secondLayerJar, layer1);
+                var layer3 = TestjarUtil.buildLayer(thirdLayerJar, layer2);
+                var ignored = layer3.makeLoaderCurrent()) {
 
             var testClass = layer3.cl().loadClass("layer3.ServiceLoaderProxy");
             var loadMethod = testClass.getMethod("load");
@@ -97,7 +122,7 @@ public class TestServiceLoader {
                         import java.util.List;
                         import java.util.ServiceLoader;
                         import java.net.spi.URLStreamHandlerProvider;
-                        
+
                         public class ServiceLoaderProxy {
                             public static List<URLStreamHandlerProvider> load() {
                                 return ServiceLoader.load(URLStreamHandlerProvider.class).stream()
@@ -108,7 +133,7 @@ public class TestServiceLoader {
                 .build();
 
         try (var consumerLayer = TestjarUtil.buildLayer(consumerJar);
-             var ignored = consumerLayer.makeLoaderCurrent()) {
+                var ignored = consumerLayer.makeLoaderCurrent()) {
             var testClass = consumerLayer.cl().loadClass("consumer.ServiceLoaderProxy");
             var loadMethod = testClass.getMethod("load");
             var loadedServices = (List<?>) loadMethod.invoke(null);

@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -49,6 +50,11 @@ public class ModFileBuilder {
         compiler = RuntimeCompiler.createFolder(memoryFs.getRootDirectories().iterator().next());
         compilationBuilder = compiler.builder();
         memoryFsRoot = memoryFs.getRootDirectories().iterator().next();
+
+        // Add the current classpath to the compile-classpath
+        Arrays.stream(System.getProperty("java.class.path").split(";"))
+                .map(Path::of)
+                .forEach(compilationBuilder::addClasspath);
     }
 
     public ModFileBuilder withTestmodModsToml() {

@@ -85,7 +85,7 @@ public class RuntimeCompiler implements AutoCloseable {
 
         @CheckReturnValue
         public CompilationBuilder addClass(String name, @Language("java") String content) {
-            if (!content.trim().startsWith("package ") && name.contains(".")) {
+            if (!content.trim().startsWith("package ") && name.contains(".") && !name.endsWith(".package-info")) {
                 List<String> nameByDot = new ArrayList<>(Arrays.asList(name.split("\\.")));
                 nameByDot.removeLast();
 

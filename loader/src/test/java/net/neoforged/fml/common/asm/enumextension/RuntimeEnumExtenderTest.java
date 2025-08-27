@@ -266,7 +266,6 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                         }
                         """)
                 .addClass("enumtestmod.EnumWithId", """
-                        package enumtestmod;
                         @net.neoforged.fml.common.asm.enumextension.IndexedEnum
                         @net.neoforged.fml.common.asm.enumextension.NamedEnum(1)
                         public enum EnumWithId implements net.neoforged.fml.common.asm.enumextension.IExtensibleEnum {
