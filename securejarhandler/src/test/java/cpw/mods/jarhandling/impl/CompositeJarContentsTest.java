@@ -6,16 +6,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarContents.FilteredPath;
+import cpw.mods.jarhandling.JarResource;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.jar.Manifest;
+import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,6 +33,11 @@ class CompositeJarContentsTest extends AbstractJarContentsTest {
     private Path path1;
     private Path path2;
     private Path path3;
+    private JarContents delegate1;
+    private JarContents delegate2;
+    private JarContents delegate3;
+    // Maps from relative path to the delegate we expect to contain it
+    private Map<String, JarContents> relativePathToExpectedDelegate;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -34,19 +47,61 @@ class CompositeJarContentsTest extends AbstractJarContentsTest {
         path3 = tempDir.resolve("folder3");
 
         // Folder 1 contents
-        writeTextFile("folder1/file1.txt", "file1 from folder1");
-        writeTextFile("folder1/shared.txt", "shared from folder1");
+        writeTextFile("folder1/file1.txt", "folder1");
+        writeTextFile("folder1/shared.txt", "folder1");
+        writeTextFile("folder1/subdir/shared.txt", "folder1");
+        writeTextFile("folder1/subdir/file1.txt", "folder1");
         writeTextFile("folder1/META-INF/MANIFEST.MF", "Manifest-Version: 1.0\nFrom: folder1\n");
 
         // Folder 2 contents
-        writeTextFile("folder2/file2.txt", "file2 from folder2");
-        writeTextFile("folder2/shared.txt", "shared from folder2");
-        writeTextFile("folder2/subdir/nested.txt", "nested from folder2");
+        writeTextFile("folder2/file2.txt", "folder2");
+        writeTextFile("folder2/shared.txt", "folder2");
+        writeTextFile("folder2/subdir/shared.txt", "folder2");
+        writeTextFile("folder2/subdir/file2.txt", "folder2");
 
         // Folder 3 contents
-        writeTextFile("folder3/file3.txt", "file3 from folder3");
-        writeTextFile("folder3/shared.txt", "shared from folder3");
+        writeTextFile("folder3/file3.txt", "folder3");
+        writeTextFile("folder3/shared.txt", "folder3");
         writeTextFile("folder3/META-INF/MANIFEST.MF", "Manifest-Version: 1.0\nFrom: folder3\n");
+
+        delegate1 = JarContents.ofPath(path1);
+        delegate2 = JarContents.ofPath(path2);
+        delegate3 = JarContents.ofPath(path3);
+
+        relativePathToExpectedDelegate = Map.of(
+                "file1.txt", delegate1,
+                "file2.txt", delegate2,
+                "file3.txt", delegate3,
+                "subdir/shared.txt", delegate2,
+                "subdir/file1.txt", delegate1,
+                "subdir/file2.txt", delegate2,
+                "shared.txt", delegate3,
+                "META-INF/MANIFEST.MF", delegate3);
+    }
+
+    @AfterEach
+    void tearDown() throws IOException {
+        delegate1.close();
+        delegate2.close();
+        delegate3.close();
+    }
+
+    @Test
+    void testCannotCreateAnEmptyComposite() {
+        assertThrows(IllegalArgumentException.class, () -> new CompositeJarContents(List.of()));
+    }
+
+    @Test
+    void testCannotCreateACompositeWithLessThanTwoDelegatesAndNoFilter() throws IOException {
+        assertThrows(IllegalArgumentException.class, () -> new CompositeJarContents(List.of(delegate1), Collections.singletonList(null)));
+        assertThrows(IllegalArgumentException.class, () -> new CompositeJarContents(List.of(delegate1)));
+        // This checks that constructing it with a single path and a filter is allowed
+        new CompositeJarContents(List.of(delegate1), List.of(p -> true)).close();
+    }
+
+    @Test
+    void testCannotCreateACompositeWithMismatchedDelegatesAndFilters() {
+        assertThrows(IllegalArgumentException.class, () -> new CompositeJarContents(List.of(delegate1, delegate2), List.of(relativePath -> true)));
     }
 
     @Test
@@ -57,12 +112,6 @@ class CompositeJarContentsTest extends AbstractJarContentsTest {
         assertThatThrownBy(() -> JarContents.ofFilteredPaths(List.of()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Cannot construct jar contents without any paths.");
-    }
-
-    @Test
-    void testMismatchedFiltersThrows() {
-        // This test is no longer relevant since FilteredPath bundles path and filter together
-        // Remove this test or replace with a different validation test
     }
 
     @Test
@@ -82,43 +131,58 @@ class CompositeJarContentsTest extends AbstractJarContentsTest {
     }
 
     @Test
-    void testDelegationOrder() throws IOException {
-        // Later entries override earlier entries
+    void testGet() throws IOException {
         try (var composite = JarContents.ofPaths(List.of(path1, path2, path3))) {
-            // shared.txt exists in all three, should get from folder3 (last one)
-            var sharedContent = composite.readFile("shared.txt");
-            assertNotNull(sharedContent);
-            assertEquals("shared from folder3", new String(sharedContent));
+            for (var entry : relativePathToExpectedDelegate.entrySet()) {
+                var resource = composite.get(entry.getKey());
+                assertContentMatches(entry, resource.readAllBytes());
+            }
+            assertNull(composite.get("nonexistent.txt"), "Expected nonexistent.txt to be missing");
         }
     }
 
     @Test
-    void testGetUniqueFiles() throws IOException {
+    void testReadFile() throws IOException {
         try (var composite = JarContents.ofPaths(List.of(path1, path2, path3))) {
-            // Each unique file should be accessible
-            assertNotNull(composite.get("file1.txt"));
-            assertNotNull(composite.get("file2.txt"));
-            assertNotNull(composite.get("file3.txt"));
+            for (var entry : relativePathToExpectedDelegate.entrySet()) {
+                var content = composite.readFile(entry.getKey());
+                assertContentMatches(entry, content);
+            }
+            assertNull(composite.readFile("nonexistent.txt"), "Expected nonexistent.txt to be missing");
+        }
+    }
+
+    @Test
+    void testOpenFile() throws IOException {
+        try (var composite = JarContents.ofPaths(List.of(path1, path2, path3))) {
+            for (var entry : relativePathToExpectedDelegate.entrySet()) {
+                try (var content = composite.openFile(entry.getKey())) {
+                    assertNotNull(content, "Expected to find " + entry.getKey());
+                    assertContentMatches(entry, content.readAllBytes());
+                }
+            }
+            assertNull(composite.openFile("nonexistent.txt"), "Expected nonexistent.txt to be missing");
         }
     }
 
     @Test
     void testContainsFile() throws IOException {
         try (var composite = JarContents.ofPaths(List.of(path1, path2, path3))) {
-            assertTrue(composite.containsFile("file1.txt"));
-            assertTrue(composite.containsFile("file2.txt"));
-            assertTrue(composite.containsFile("file3.txt"));
-            assertTrue(composite.containsFile("shared.txt"));
-            assertFalse(composite.containsFile("nonexistent.txt"));
+            for (var entry : relativePathToExpectedDelegate.entrySet()) {
+                assertTrue(composite.containsFile(entry.getKey()), "Expected to find " + entry.getKey());
+            }
+            assertFalse(composite.containsFile("nonexistent.txt"), "Expected nonexistent.txt to be missing");
         }
     }
 
     @Test
     void testFindFile() throws IOException {
         try (var composite = JarContents.ofPaths(List.of(path1, path2, path3))) {
-            assertThat(composite.findFile("file1.txt")).isPresent();
-            assertThat(composite.findFile("shared.txt")).isPresent();
-            assertThat(composite.findFile("nonexistent.txt")).isEmpty();
+            for (var entry : relativePathToExpectedDelegate.entrySet()) {
+                var expectedUri = entry.getValue().findFile(entry.getKey());
+                assertEquals(expectedUri, composite.findFile(entry.getKey()), "Mismatched URI for " + entry.getKey());
+            }
+            assertNotNull(composite.findFile("nonexistent.txt"), "Expected nonexistent.txt to be missing");
         }
     }
 
@@ -135,7 +199,7 @@ class CompositeJarContentsTest extends AbstractJarContentsTest {
 
     @Test
     void testGetManifestFallback() throws IOException {
-        // If later delegates don't have manifest, should fall back to earlier ones
+        // If later delegates don't have a manifest, should fall back to earlier ones
         try (var composite = new CompositeJarContents(List.of(JarContents.ofPath(path1), new EmptyJarContents(Path.of(""))))) {
             Manifest manifest = composite.getManifest();
 
@@ -145,21 +209,25 @@ class CompositeJarContentsTest extends AbstractJarContentsTest {
     }
 
     @Test
+    void testGetManifestWhenNoDelegateHasAManifest() throws IOException {
+        try (var composite = new CompositeJarContents(List.of(new EmptyJarContents(Path.of("")), new EmptyJarContents(Path.of(""))))) {
+            assertSame(EmptyManifest.INSTANCE, composite.getManifest());
+        }
+    }
+
+    @Test
     void testVisitContent() throws IOException {
         try (var composite = JarContents.ofPaths(List.of(path1, path2, path3))) {
-            var visited = new ArrayList<String>();
+            var visited = new HashMap<String, JarResource>();
+            composite.visitContent("", (relativePath, resource) -> visited.put(relativePath, resource.retain()));
 
-            composite.visitContent("", (relativePath, resource) -> visited.add(relativePath));
+            // Should visit all unique files, and shared files only once
+            assertThat(visited.keySet()).containsExactlyInAnyOrderElementsOf(relativePathToExpectedDelegate.keySet());
 
-            // Should visit all unique files
-            assertThat(visited)
-                    .containsExactlyInAnyOrder(
-                            "META-INF/MANIFEST.MF",
-                            "file1.txt",
-                            "file2.txt",
-                            "file3.txt",
-                            "shared.txt",
-                            "subdir/nested.txt");
+            // Check that the shared files are from the right delegate
+            for (var entry : relativePathToExpectedDelegate.entrySet()) {
+                assertContentMatches(entry, visited.get(entry.getKey()).readAllBytes());
+            }
         }
     }
 
@@ -170,30 +238,30 @@ class CompositeJarContentsTest extends AbstractJarContentsTest {
 
             composite.visitContent("subdir", (relativePath, resource) -> visited.add(relativePath));
 
-            assertThat(visited).containsExactly("subdir/nested.txt");
+            assertThat(visited).containsExactlyInAnyOrder(
+                    "subdir/file1.txt",
+                    "subdir/file2.txt",
+                    "subdir/shared.txt");
         }
     }
 
     @Test
     void testClose() throws IOException {
-        var delegate = JarContents.ofPath(path1);
-        var spy = Mockito.spy(delegate);
-        new CompositeJarContents(List.of(spy)).close();
-        verify(spy).close();
+        delegate1 = Mockito.spy(delegate1);
+        delegate2 = Mockito.spy(delegate2);
+        new CompositeJarContents(List.of(delegate1, delegate2)).close();
+        verify(delegate1).close();
+        verify(delegate2).close();
     }
 
     @Test
     void testToString() throws IOException {
-        try (var delegate1 = JarContents.ofPath(path1);
-                var delegate2 = JarContents.ofPath(path2);
-                var composite = new CompositeJarContents(List.of(delegate1, delegate2))) {
-            var result = composite.toString();
+        var filters = new ArrayList<JarContents.PathFilter>();
+        filters.add(null);
+        filters.add(path -> true); // Dummy filter
 
-            assertThat(result)
-                    .startsWith("[")
-                    .endsWith("]")
-                    .contains(delegate1.toString())
-                    .contains(delegate2.toString());
+        try (var composite = new CompositeJarContents(List.of(delegate1, delegate2), filters)) {
+            assertEquals("composite(" + delegate1 + ", filtered(" + delegate2 + "))", composite.toString());
         }
     }
 
@@ -311,7 +379,7 @@ class CompositeJarContentsTest extends AbstractJarContentsTest {
                 assertFalse(filtered.containsFile("file1.txt"));
 
                 // subdir files from path2 are NOT filtered
-                assertTrue(filtered.containsFile("subdir/nested.txt"));
+                assertTrue(filtered.containsFile("subdir/shared.txt"));
             }
         }
     }
@@ -347,5 +415,13 @@ class CompositeJarContentsTest extends AbstractJarContentsTest {
             writeTextFile(name + "/test.txt", "content");
             return makeJar(name);
         }
+    }
+
+    private static void assertContentMatches(Map.Entry<String, JarContents> entry, byte @Nullable [] actual) throws IOException {
+        assertNotNull(actual, "Expected to find " + entry.getKey());
+
+        var expected = entry.getValue().readFile(entry.getKey());
+        assertNotNull(expected, "relativePathToExpectedDelegate is invalid for " + entry.getKey());
+        assertEquals(new String(expected), new String(actual));
     }
 }

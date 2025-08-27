@@ -151,7 +151,7 @@ public final class FolderJarContents implements JarContents {
 
     private Path fromRelativePath(String relativePath) {
         // Checking for normalization here prevents path escapes
-        PathNormalization.assertNormalized(relativePath);
+        relativePath = PathNormalization.normalize(relativePath);
         return path.resolve(relativePath);
     }
 

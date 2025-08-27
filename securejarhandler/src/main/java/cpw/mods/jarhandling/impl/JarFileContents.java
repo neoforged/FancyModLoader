@@ -93,14 +93,14 @@ public final class JarFileContents implements JarContents {
 
     @Override
     public boolean containsFile(String relativePath) {
-        PathNormalization.assertNormalized(relativePath);
+        relativePath = PathNormalization.normalize(relativePath);
         var entry = jarFile.getEntry(relativePath);
         return entry != null && !entry.isDirectory();
     }
 
     @Override
     public InputStream openFile(String relativePath) throws IOException {
-        PathNormalization.assertNormalized(relativePath);
+        relativePath = PathNormalization.normalize(relativePath);
         var entry = jarFile.getEntry(relativePath);
         if (entry != null) {
             if (entry.isDirectory()) {
@@ -113,7 +113,7 @@ public final class JarFileContents implements JarContents {
 
     @Override
     public byte[] readFile(String relativePath) throws IOException {
-        PathNormalization.assertNormalized(relativePath);
+        relativePath = PathNormalization.normalize(relativePath);
         var entry = jarFile.getEntry(relativePath);
         if (entry != null) {
             if (entry.isDirectory()) {

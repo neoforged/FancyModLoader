@@ -20,7 +20,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
-import java.util.stream.Collectors;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 public final class CompositeJarContents implements JarContents {
     private final JarContents[] delegates;
     @Nullable
-    private final PathFilter[] filters;
+    private final PathFilter @Nullable [] filters;
     private final List<Path> contentRoots;
 
     private volatile Optional<String> checksum;
@@ -37,7 +36,18 @@ public final class CompositeJarContents implements JarContents {
         this(delegates, null);
     }
 
-    public CompositeJarContents(List<JarContents> delegates, @Nullable List<PathFilter> filters) {
+    public CompositeJarContents(List<JarContents> delegates, @Nullable List<@Nullable PathFilter> filters) {
+        // These checks are to prevent suboptimal usage. JarContents.ofFilteredPaths is going to guard against this
+        if (delegates.isEmpty()) {
+            throw new IllegalArgumentException("Cannot construct an empty mod container");
+        }
+        if (filters != null && delegates.size() != filters.size()) {
+            throw new IllegalArgumentException("The number of delegates and filters must match.");
+        }
+        if (delegates.size() == 1 && (filters == null || filters.getFirst() == null)) {
+            throw new IllegalArgumentException("Can only construct a composite jar contents with multiple delegates or at least one filter.");
+        }
+
         // Internally the first match gets returned, but the user supplies the list of paths
         // assuming later entries override earlier entries, so we reverse.
         delegates = delegates.reversed();
@@ -45,12 +55,6 @@ public final class CompositeJarContents implements JarContents {
 
         this.delegates = delegates.toArray(JarContents[]::new);
         this.filters = filters != null ? filters.toArray(PathFilter[]::new) : null;
-        if (delegates.isEmpty()) {
-            throw new IllegalArgumentException("Cannot construct an empty mod container");
-        }
-        if (filters != null && delegates.size() != filters.size()) {
-            throw new IllegalArgumentException("The number of delegates and filters must match.");
-        }
 
         // Collect all unique content roots of our delegates
         var contentRoots = new ArrayList<Path>();
@@ -124,7 +128,21 @@ public final class CompositeJarContents implements JarContents {
 
     @Override
     public String toString() {
-        return "[" + Arrays.stream(delegates).map(Object::toString).collect(Collectors.joining(", ")) + "]";
+        var result = new StringBuilder("composite(");
+        // In reverse order as that is how the user passed it
+        for (int i = delegates.length - 1; i >= 0; i--) {
+            var delegate = delegates[i];
+            if (filters != null && filters[i] != null) {
+                result.append("filtered(").append(delegate).append(")");
+            } else {
+                result.append(delegate);
+            }
+            if (i != 0) {
+                result.append(", ");
+            }
+        }
+        result.append(")");
+        return result.toString();
     }
 
     @Override
