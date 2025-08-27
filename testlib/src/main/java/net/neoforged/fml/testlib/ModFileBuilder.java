@@ -7,6 +7,7 @@ package net.neoforged.fml.testlib;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
@@ -16,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -49,6 +51,11 @@ public class ModFileBuilder {
         compiler = RuntimeCompiler.createFolder(memoryFs.getRootDirectories().iterator().next());
         compilationBuilder = compiler.builder();
         memoryFsRoot = memoryFs.getRootDirectories().iterator().next();
+
+        // Add the current classpath as the compile classpath
+        Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
+                .map(Path::of)
+                .forEach(compilationBuilder::addClasspath);
     }
 
     public ModFileBuilder withTestmodModsToml() {
@@ -103,6 +110,11 @@ public class ModFileBuilder {
 
     public ModFileBuilder addService(Class<?> interfaceClass, Class<?> implementationClass) throws IOException {
         return addService(interfaceClass.getName(), implementationClass.getName());
+    }
+
+    public ModFileBuilder addCompileClasspath(Path jar) {
+        compilationBuilder.addClasspath(jar);
+        return this;
     }
 
     public ModFileBuilder addClass(String name, @Language("java") String content) {

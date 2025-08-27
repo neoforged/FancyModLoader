@@ -5,18 +5,18 @@
 
 package net.neoforged.fml.loading.moddiscovery.locators;
 
-import com.google.common.collect.Streams;
 import cpw.mods.jarhandling.JarContents;
-import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.jar.Attributes;
-import java.util.stream.Stream;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
@@ -77,32 +77,41 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
         }
 
         var packages = getNeoForgeSpecificPathPrefixes();
-        var minecraftResourcesPrefix = minecraftResourcesRoot;
 
         var maskedPaths = new HashSet<String>();
-        var mcJarContents = new JarContentsBuilder()
-                .paths(Streams.concat(paths.stream(), Stream.of(minecraftResourcesRoot)).toArray(Path[]::new))
-                .pathFilter((entry, basePath) -> {
-                    if (maskedPaths.contains(entry)) {
-                        LOG.debug("Masking access to {} since it's from a different Minecraft distribution.", entry);
+        var filteredPaths = new ArrayList<JarContents.FilteredPath>();
+        for (var path : paths) {
+            filteredPaths.add(new JarContents.FilteredPath(path, relativePath -> {
+                if (maskedPaths.contains(relativePath)) {
+                    LOG.debug("Masking access to {} since it's from a different Minecraft distribution.", relativePath);
+                    return false;
+                }
+                // Any non-class file will be served from the client extra jar file mentioned above
+                if (!relativePath.endsWith(".class")) {
+                    return false;
+                }
+                for (var pkg : packages) {
+                    if (relativePath.startsWith(pkg)) {
                         return false;
                     }
-                    // We serve everything, except for things in the forge packages.
-                    if (basePath.equals(minecraftResourcesPrefix) || entry.endsWith("/")) {
-                        return true;
-                    }
-                    // Any non-class file will be served from the client extra jar file mentioned above
-                    if (!entry.endsWith(".class")) {
-                        return false;
-                    }
-                    for (var pkg : packages) {
-                        if (entry.startsWith(pkg)) {
-                            return false;
-                        }
-                    }
-                    return true;
-                })
-                .build();
+                }
+                return true;
+            }));
+        }
+        filteredPaths.add(new JarContents.FilteredPath(minecraftResourcesRoot, relativePath -> {
+            if (maskedPaths.contains(relativePath)) {
+                LOG.debug("Masking access to {} since it's from a different Minecraft distribution.", relativePath);
+                return false;
+            }
+            return true;
+        }));
+
+        JarContents mcJarContents;
+        try {
+            mcJarContents = JarContents.ofFilteredPaths(filteredPaths);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to build merged Minecraft jar", e);
+        }
 
         var neoForgeDevDistCleaner = (NeoForgeDevDistCleaner) context.environment().findLaunchPlugin("neoforgedevdistcleaner").orElseThrow();
 
@@ -115,15 +124,17 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
         pipeline.addModFile(minecraftModFile);
 
         // We need to separate out our resources/code so that we can show up as a different data pack.
-        var neoforgeJarContents = new JarContentsBuilder()
-                .paths(paths.toArray(Path[]::new))
-                .pathFilter((entry, basePath) -> {
-                    if (!entry.endsWith(".class")) return true;
-                    for (var pkg : packages)
-                        if (entry.startsWith(pkg)) return true;
-                    return false;
-                })
-                .build();
+        JarContents neoforgeJarContents;
+        try {
+            neoforgeJarContents = JarContents.ofFilteredPaths(paths.stream().map(path -> new JarContents.FilteredPath(path, relativePath -> {
+                if (!relativePath.endsWith(".class")) return true;
+                for (var pkg : packages)
+                    if (relativePath.startsWith(pkg)) return true;
+                return false;
+            })).toList());
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to build merged NeoForge jar", e);
+        }
         pipeline.addModFile(JarModsDotTomlModFileReader.createModFile(neoforgeJarContents, ModFileDiscoveryAttributes.DEFAULT));
     }
 
@@ -133,6 +144,10 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
      */
     private void loadMaskedFiles(JarContents minecraftJar, Set<String> maskedPaths, NeoForgeDevDistCleaner neoForgeDevDistCleaner, IDiscoveryPipeline pipeline) {
         var manifest = minecraftJar.getManifest();
+        if (manifest == null) {
+            pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.neodev_missing_dists_attribute", NAME_DISTS));
+            return; // Jar has no masking attributes; in dev, this is necessary
+        }
         String dists = manifest.getMainAttributes().getValue(NAME_DISTS);
         if (dists == null) {
             pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.neodev_missing_dists_attribute", NAME_DISTS));

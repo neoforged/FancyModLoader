@@ -6,10 +6,8 @@
 package net.neoforged.fml.loading.moddiscovery.locators;
 
 import cpw.mods.jarhandling.JarContents;
-import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import net.neoforged.fml.ModLoadingIssue;
@@ -48,29 +46,22 @@ public class ProductionServerProvider implements IModFileCandidateLocator {
                 return;
             }
 
-            var mcextra_filtered = SecureJar.from(new JarContentsBuilder()
-                    // We only want it for its resources. So filter everything else out.
-                    .pathFilter((path, base) -> {
-                        return path.equals("META-INF/versions/") || // This is required because it bypasses our filter for the manifest, and it's a multi-release jar.
-                                (!path.endsWith(".class") &&
-                                        !path.startsWith("META-INF/"));
-                    })
-                    .paths(mcextra)
-                    .build());
-
-            var content = new ArrayList<Path>();
-            content.add(mc);
-            content.add(mcextra_filtered.getRootPath());
+            var content = new ArrayList<JarContents.FilteredPath>();
+            content.add(new JarContents.FilteredPath(mc));
+            // We only want it for its resources. So filter everything else out.
+            content.add(new JarContents.FilteredPath(mcextra, path -> {
+                return !path.endsWith(".class") && !path.startsWith("META-INF/");
+            }));
             for (var artifact : additionalContent) {
                 var extraPath = LibraryFinder.findPathForMaven(artifact);
                 if (!Files.exists(extraPath)) {
                     pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation").withAffectedPath(extraPath));
                     return;
                 }
-                content.add(extraPath);
+                content.add(new JarContents.FilteredPath(extraPath));
             }
 
-            var mcJarContents = JarContents.of(content);
+            var mcJarContents = JarContents.ofFilteredPaths(content);
 
             var mcJarMetadata = new ModJarMetadata(mcJarContents);
             var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);

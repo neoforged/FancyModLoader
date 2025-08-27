@@ -5,8 +5,8 @@
 
 package net.neoforged.fml.common.asm.enumextension;
 
+import cpw.mods.jarhandling.JarResource;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -483,7 +483,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         }
     }
 
-    public static void loadEnumPrototypes(Map<IModInfo, Path> paths) {
+    public static void loadEnumPrototypes(Map<IModInfo, JarResource> paths) {
         prototypes = paths.entrySet()
                 .stream()
                 .map(entry -> EnumPrototype.load(entry.getKey(), entry.getValue()))

@@ -76,11 +76,16 @@ public class RuntimeCompiler implements AutoCloseable {
     }
 
     public class CompilationBuilder {
+        private final List<Path> classpath = new ArrayList<>();
         private final List<JavaFileObject> files = new ArrayList<>();
+
+        public void addClasspath(Path jar) {
+            classpath.add(jar);
+        }
 
         @CheckReturnValue
         public CompilationBuilder addClass(String name, @Language("java") String content) {
-            if (!content.trim().startsWith("package ") && name.contains(".")) {
+            if (!content.trim().startsWith("package ") && name.contains(".") && !name.endsWith(".package-info")) {
                 List<String> nameByDot = new ArrayList<>(Arrays.asList(name.split("\\.")));
                 nameByDot.removeLast();
 
@@ -93,6 +98,12 @@ public class RuntimeCompiler implements AutoCloseable {
         public void compile() {
             if (files.isEmpty()) {
                 return;
+            }
+
+            try {
+                manager.setLocationFromPaths(StandardLocation.CLASS_PATH, classpath);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to set classpath for compilation", e);
             }
 
             List<String> options = new ArrayList<>();
