@@ -127,6 +127,8 @@ public sealed interface JarContents extends Closeable permits CompositeJarConten
 
     /**
      * Looks for a file in the jar.
+     *
+     * @return A URI for the file, or empty if the file cannot be found or if the name refers to a directory.
      */
     Optional<URI> findFile(String name);
 

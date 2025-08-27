@@ -1,14 +1,6 @@
 package cpw.mods.jarhandling.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import cpw.mods.jarhandling.JarContents;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -18,6 +10,16 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.platform.commons.annotation.Testable;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 /**
  * Tests that different JarContent implementations correctly normalize relative paths and reject invalid paths,
  * and do so consistently.
@@ -25,103 +27,164 @@ import org.junit.platform.commons.annotation.Testable;
 @Testable
 public class JarContentsPathNormalizationTest {
 
-    // Base class that contains the tests and is specialized for each JarContents subtype
-    abstract static class NormalizationTests extends AbstractJarContentsTest {
-        JarContents contents;
+  // Base class that contains the tests and is specialized for each JarContents subtype
+  abstract static class NormalizationTests extends AbstractJarContentsTest {
+    JarContents contents;
 
-        abstract JarContents makeJarContents(String... files) throws IOException;
+    abstract JarContents makeJarContents(String... files) throws IOException;
 
-        @BeforeEach
-        public void setup() throws Exception {
-            contents = makeJarContents("folder/file.txt", "folder/subfolder/file.txt", "root_file.txt");
-        }
-
-        @AfterEach
-        public void tearDown() throws Exception {
-            contents.close();
-        }
-
-        @ParameterizedTest
-        @MethodSource("validPaths")
-        public void testContainsFile(String path, boolean exists) {
-            assertEquals(exists, contents.containsFile(path));
-        }
-
-        @ParameterizedTest
-        @MethodSource("invalidPaths")
-        public void testContainsFileForInvalidPath(String path, String expectedMessage) {
-            assertThrowsInvalidPath(() -> contents.containsFile(path), expectedMessage);
-        }
-
-        @ParameterizedTest
-        @MethodSource("validPaths")
-        public void testOpenFile(String path, boolean exists) throws IOException {
-            try (var is = contents.openFile(path)) {
-                if (exists) {
-                    assertNotNull(is);
-                } else {
-                    assertNull(is);
-                }
-            }
-        }
-
-        @ParameterizedTest
-        @MethodSource("invalidPaths")
-        public void testOpenFileForInvalidPath(String path, String expectedMessage) {
-            assertThrowsInvalidPath(() -> contents.openFile(path), expectedMessage);
-        }
-
-        private void assertThrowsInvalidPath(Executable executable, String expectedMessage) {
-            var e = assertThrows(IllegalArgumentException.class, executable);
-            assertEquals(expectedMessage, e.getMessage());
-        }
-
-        static Arguments[] validPaths() {
-            return new Arguments[] {
-                    Arguments.of("/folder/file.txt", true),
-                    Arguments.of("folder/file.txt", true),
-                    Arguments.of("folder\\file.txt", true),
-                    Arguments.of("folder//file.txt", true),
-                    Arguments.of("folder/subfolder/file.txt", true),
-                    Arguments.of("root_file.txt", true),
-                    Arguments.of("/", false),
-                    Arguments.of("", false),
-                    Arguments.of("does_not_exist.txt", false),
-            };
-        }
-
-        static Arguments[] invalidPaths() {
-            // First element is path, second element is expected exception message
-            return new Arguments[] {
-                    Arguments.of("folder/../file.txt", "./ or ../ segments in paths are not supported"),
-                    Arguments.of("./file.txt", "./ or ../ segments in paths are not supported")
-            };
-        }
+    @BeforeEach
+    public void setup() throws Exception {
+      contents = makeJarContents("folder/file.txt", "folder/subfolder/file.txt", "root_file.txt");
     }
 
-    @Nested
-    class FolderJarContentsTest extends NormalizationTests {
-        @Override
-        JarContents makeJarContents(String... files) throws IOException {
-            for (String file : files) {
-                Path filePath = tempDir.resolve(file);
-                Files.createDirectories(filePath.getParent());
-                Files.createFile(filePath);
-            }
-            return JarContents.ofPath(tempDir);
-        }
+    @AfterEach
+    public void tearDown() throws Exception {
+      contents.close();
     }
 
-    @Nested
-    class JarFileContentsTest extends NormalizationTests {
-        @Override
-        JarContents makeJarContents(String... files) throws IOException {
-            for (String file : files) {
-                Path filePath = tempDir.resolve(file);
-                Files.createDirectories(filePath.getParent());
-                Files.createFile(filePath);
-            }
-            return JarContents.ofPath(makeJar());
-        }
+    @ParameterizedTest
+    @MethodSource("validPaths")
+    public void testContainsFile(String path, boolean exists) {
+      assertEquals(exists, contents.containsFile(path));
     }
+
+    @ParameterizedTest
+    @MethodSource("invalidPaths")
+    public void testContainsFileForInvalidPath(String path, String expectedMessage) {
+      assertThrowsInvalidPath(() -> contents.containsFile(path), expectedMessage);
+    }
+
+    @ParameterizedTest
+    @MethodSource("validPaths")
+    public void testOpenFile(String path, boolean exists) throws IOException {
+      try (var is = contents.openFile(path)) {
+        if (exists) {
+          assertNotNull(is);
+        } else {
+          assertNull(is);
+        }
+      }
+    }
+
+    @ParameterizedTest
+    @MethodSource("directoryPaths")
+    public void testOpenFileForDirectory(String path) {
+      assertThrows(IOException.class, () -> {
+        try (var is = contents.openFile(path)) {
+          is.read(); // On Linux, opening a directory as a file succeeds, but the IOException is thrown on reading
+        }
+      });
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidPaths")
+    public void testOpenFileForInvalidPath(String path, String expectedMessage) {
+      assertThrowsInvalidPath(() -> contents.openFile(path), expectedMessage);
+    }
+
+    @ParameterizedTest
+    @MethodSource("validPaths")
+    public void testReadFile(String path, boolean exists) throws IOException {
+      var content = contents.readFile(path);
+      if (exists) {
+        assertNotNull(content);
+      } else {
+        assertNull(content);
+      }
+    }
+
+    @ParameterizedTest
+    @MethodSource("directoryPaths")
+    public void testReadFileForDirectory(String path) {
+      assertThrows(IOException.class, () -> contents.readFile(path));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidPaths")
+    public void testReadFileForInvalidPath(String path, String expectedMessage) {
+      assertThrowsInvalidPath(() -> contents.readFile(path), expectedMessage);
+    }
+
+    @ParameterizedTest
+    @MethodSource("validPaths")
+    public void testFindFile(String path, boolean exists) {
+      var uri = contents.findFile(path);
+      if (exists) {
+        assertThat(uri).isPresent();
+      } else {
+        assertThat(uri).isEmpty();
+      }
+    }
+
+    @ParameterizedTest
+    @MethodSource("directoryPaths")
+    public void testFindFileForDirectory(String path) {
+      assertThat(contents.findFile(path)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidPaths")
+    public void testFindFileForInvalidPath(String path, String expectedMessage) {
+      assertThrowsInvalidPath(() -> contents.findFile(path), expectedMessage);
+    }
+
+    private void assertThrowsInvalidPath(Executable executable, String expectedMessage) {
+      var e = assertThrows(IllegalArgumentException.class, executable);
+      assertEquals(expectedMessage, e.getMessage());
+    }
+
+    static Arguments[] validPaths() {
+      return new Arguments[]{
+          Arguments.of("/folder/file.txt", true),
+          Arguments.of("folder/file.txt", true),
+          Arguments.of("folder\\file.txt", true),
+          Arguments.of("folder//file.txt", true),
+          Arguments.of("folder/subfolder/file.txt", true),
+          Arguments.of("root_file.txt", true),
+          Arguments.of("does_not_exist.txt", false),
+      };
+    }
+
+    /**
+     * Empty string (and non-normalized forms of it) refer to the root directory and should be treated as such.
+     */
+    static String[] directoryPaths() {
+      return new String[]{"/", "///", "", "folder", "/folder", "/folder/", "folder/"};
+    }
+
+    static Arguments[] invalidPaths() {
+      // First element is path, second element is expected exception message
+      return new Arguments[]{
+          Arguments.of("folder/../file.txt", "./ or ../ segments in paths are not supported"),
+          Arguments.of("./file.txt", "./ or ../ segments in paths are not supported")
+      };
+    }
+  }
+
+  @Nested
+  class FolderJarContentsTest extends NormalizationTests {
+    @Override
+    JarContents makeJarContents(String... files) throws IOException {
+      for (String file : files) {
+        Path filePath = tempDir.resolve(file);
+        Files.createDirectories(filePath.getParent());
+        Files.createFile(filePath);
+      }
+      return JarContents.ofPath(tempDir);
+    }
+  }
+
+  @Nested
+  class JarFileContentsTest extends NormalizationTests {
+    @Override
+    JarContents makeJarContents(String... files) throws IOException {
+      for (String file : files) {
+        Path filePath = tempDir.resolve(file);
+        Files.createDirectories(filePath.getParent());
+        Files.createFile(filePath);
+      }
+      return JarContents.ofPath(makeJar());
+    }
+  }
 }
