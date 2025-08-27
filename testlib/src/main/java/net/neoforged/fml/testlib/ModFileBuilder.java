@@ -29,8 +29,12 @@ import net.neoforged.jarjar.metadata.ContainedVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.intellij.lang.annotations.Language;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ModFileBuilder {
+    private static final Logger LOG = LoggerFactory.getLogger(ModFileBuilder.class);
+
     public static final ContainedVersion JIJ_V1 = new ContainedVersion(VersionRange.createFromVersion("1.0"), new DefaultArtifactVersion("1.0"));
 
     private final RuntimeCompiler compiler;
@@ -52,9 +56,11 @@ public class ModFileBuilder {
         memoryFsRoot = memoryFs.getRootDirectories().iterator().next();
 
         // Add the current classpath to the compile-classpath
-        Arrays.stream(System.getProperty("java.class.path").split(";"))
-                .map(Path::of)
-                .forEach(compilationBuilder::addClasspath);
+        for (String classpathEntry : System.getProperty("java.class.path").split(";")) {
+            Path path = Path.of(classpathEntry);
+            LOG.info("Adding classpath entry: {}", path);
+            compilationBuilder.addClasspath(path);
+        }
     }
 
     public ModFileBuilder withTestmodModsToml() {
