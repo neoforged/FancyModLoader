@@ -1,6 +1,17 @@
 package cpw.mods.jarhandling.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import cpw.mods.jarhandling.JarContents;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -9,18 +20,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.platform.commons.annotation.Testable;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Tests that different JarContent implementations correctly normalize relative paths and reject invalid paths,
@@ -184,7 +183,7 @@ public class JarContentsPathNormalizationTest {
 
         static Arguments[] filePaths() {
             // Second element is whether the file is expected to exist
-            return new Arguments[]{
+            return new Arguments[] {
                     Arguments.of("/folder/file.txt", true),
                     Arguments.of("folder/file.txt", true),
                     Arguments.of("folder\\file.txt", true),
@@ -199,12 +198,12 @@ public class JarContentsPathNormalizationTest {
          * Empty string (and non-normalized forms of it) refer to the root directory and should be treated as such.
          */
         static String[] directoryPaths() {
-            return new String[]{"/", "///", "", "folder", "/folder", "/folder/", "folder/"};
+            return new String[] { "/", "///", "", "folder", "/folder", "/folder/", "folder/" };
         }
 
         static Arguments[] invalidPaths() {
             // First element is path, second element is expected exception message
-            return new Arguments[]{
+            return new Arguments[] {
                     Arguments.of("folder/../file.txt", "./ or ../ segments in paths are not supported"),
                     Arguments.of("./file.txt", "./ or ../ segments in paths are not supported")
             };

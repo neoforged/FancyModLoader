@@ -1,23 +1,22 @@
 package cpw.mods.jarhandling;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import cpw.mods.jarhandling.impl.CompositeJarContents;
 import cpw.mods.jarhandling.impl.EmptyJarContents;
 import cpw.mods.jarhandling.impl.FolderJarContents;
 import cpw.mods.jarhandling.impl.JarFileContents;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.jar.JarOutputStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class JarContentsTest {
     @TempDir
@@ -52,8 +51,7 @@ public class JarContentsTest {
                     new JarContents.FilteredPath(tempDir.resolve("nonexistent1.jar")),
                     new JarContents.FilteredPath(jar1),
                     new JarContents.FilteredPath(tempDir.resolve("nonexistent2.jar")),
-                    new JarContents.FilteredPath(jar2)
-            ))) {
+                    new JarContents.FilteredPath(jar2)))) {
                 assertThat(contents.getPrimaryPath()).isEqualTo(jar1);
                 assertThat(contents.getContentRoots()).containsExactly(jar1, jar2);
             }
@@ -64,9 +62,8 @@ public class JarContentsTest {
             // At least one path must exist, otherwise there is no way to determine the primary path.
             assertThatThrownBy(() -> JarContents.ofFilteredPaths(List.of(
                     new JarContents.FilteredPath(tempDir.resolve("nonexistent1.jar")),
-                    new JarContents.FilteredPath(tempDir.resolve("nonexistent2.jar"))
-            ))).isExactlyInstanceOf(NoSuchFileException.class)
-                    .hasMessageContaining("At least one of the paths must exist when constructing jar contents");
+                    new JarContents.FilteredPath(tempDir.resolve("nonexistent2.jar"))))).isExactlyInstanceOf(NoSuchFileException.class)
+                            .hasMessageContaining("At least one of the paths must exist when constructing jar contents");
         }
     }
 

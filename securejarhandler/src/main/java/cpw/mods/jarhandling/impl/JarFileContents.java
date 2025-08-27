@@ -4,9 +4,6 @@ import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarResource;
 import cpw.mods.jarhandling.JarResourceAttributes;
 import cpw.mods.jarhandling.JarResourceVisitor;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -25,6 +22,8 @@ import java.util.Optional;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 @ApiStatus.Internal
 public final class JarFileContents implements JarContents {

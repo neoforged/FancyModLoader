@@ -47,6 +47,7 @@ test {
             '--add-opens=java.base/java.lang.invoke=cpw.mods.securejarhandler',
             // Allow JUnit to access the tests
             '--add-opens=cpw.mods.securejarhandler/cpw.mods.cl.test=ALL-UNNAMED',
+            '--add-opens=cpw.mods.securejarhandler/cpw.mods.jarhandling=ALL-UNNAMED',
             '--add-opens=cpw.mods.securejarhandler/cpw.mods.jarhandling.impl=ALL-UNNAMED',
             '--add-opens=cpw.mods.securejarhandler/cpw.mods.niofs.union=ALL-UNNAMED',
             // To test reading from the classpath

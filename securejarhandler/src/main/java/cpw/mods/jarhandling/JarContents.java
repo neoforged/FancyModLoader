@@ -4,11 +4,7 @@ import cpw.mods.jarhandling.impl.CompositeJarContents;
 import cpw.mods.jarhandling.impl.EmptyJarContents;
 import cpw.mods.jarhandling.impl.FolderJarContents;
 import cpw.mods.jarhandling.impl.JarFileContents;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.Closeable;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -21,6 +17,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Access to the contents of a list of {@link Path}s, interpreted as a jar file.

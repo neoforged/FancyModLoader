@@ -1,7 +1,5 @@
 package cpw.mods.jarhandling.impl;
 
-import java.io.IOException;
-
 final class PathNormalization {
     private static final char SEPARATOR = '/';
 
