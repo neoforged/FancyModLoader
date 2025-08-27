@@ -14,7 +14,7 @@ import java.util.function.Function;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
-public class ProtectionDomainHelper {
+class ProtectionDomainHelper {
     private static final Map<URL, CodeSource> csCache = new HashMap<>();
 
     public static CodeSource createCodeSource(final URL url, final CodeSigner[] signers) {

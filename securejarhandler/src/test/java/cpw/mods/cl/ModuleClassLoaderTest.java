@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.lang.annotation.Annotation;
 import java.lang.module.ModuleDescriptor;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.net.spi.URLStreamHandlerProvider;
 import java.nio.file.Path;
 import java.util.List;
@@ -108,39 +110,64 @@ class ModuleClassLoaderTest {
      */
     @Test
     public void testClassPathServiceDoesNotLeak() throws Exception {
-        // Check that our current context classloader can load the dummy implementation of URLStreamHandlerProvider
-        // that is provided in the testjar_cp source set, which is on the classpath
-        assertThat(ServiceLoader.load(URLStreamHandlerProvider.class).stream().toList())
-                .extracting(p -> p.type().getName())
-                .contains("cpw.mods.testjar_cp.DummyURLStreamHandlerProvider");
-
-        // Now build a consumer jar in an isolated layer and try to load the same service
-        // It should NOT be able to load the DummyURLStreamHandlerProvider as that is only
-        // on the classpath, and ModuleClassLoader should not delegate to the classpath
-        var consumerJar = new ModFileBuilder(tempDir.resolve("consumer.jar"))
-                .addClass("consumer.ServiceLoaderProxy", """
-                        import java.util.List;
-                        import java.util.ServiceLoader;
+        // Create a provider that would be accessible from the normal classpath
+        var parentJar = tempDir.resolve("cpprovider");
+        new ModFileBuilder(parentJar)
+                .addClass("DummyURLStreamHandlerProvider", """
+                        import java.net.URLStreamHandler;
                         import java.net.spi.URLStreamHandlerProvider;
 
-                        public class ServiceLoaderProxy {
-                            public static List<URLStreamHandlerProvider> load() {
-                                return ServiceLoader.load(URLStreamHandlerProvider.class).stream()
-                                        .map(ServiceLoader.Provider::get).toList();
+                        public class DummyURLStreamHandlerProvider extends URLStreamHandlerProvider {
+                            @Override
+                            public URLStreamHandler createURLStreamHandler(String protocol) {
+                                return null;
                             }
                         }
                         """)
+                .addService(URLStreamHandlerProvider.class, "DummyURLStreamHandlerProvider")
                 .build();
 
-        try (var consumerLayer = TestjarUtil.buildLayer(consumerJar);
-                var ignored = consumerLayer.makeLoaderCurrent()) {
-            var testClass = consumerLayer.cl().loadClass("consumer.ServiceLoaderProxy");
-            var loadMethod = testClass.getMethod("load");
-            var loadedServices = (List<?>) loadMethod.invoke(null);
+        var previousCl = Thread.currentThread().getContextClassLoader();
+        try (var cpLoader = new URLClassLoader(new URL[] { parentJar.toUri().toURL() })) {
+            Thread.currentThread().setContextClassLoader(cpLoader);
 
-            assertThat(loadedServices)
-                    .extracting(o -> o.getClass().getName())
-                    .doesNotContain("cpw.mods.testjar_cp.DummyURLStreamHandlerProvider");
+            // Check that our current context classloader can load the dummy implementation of URLStreamHandlerProvider
+            // that is provided in the testjar_cp source set, which is on the classpath
+            assertThat(ServiceLoader.load(URLStreamHandlerProvider.class).stream().toList())
+                    .extracting(p -> p.type().getName())
+                    .contains("DummyURLStreamHandlerProvider");
+
+            // Now build a consumer jar in an isolated layer and try to load the same service
+            // It should NOT be able to load the DummyURLStreamHandlerProvider as that is only
+            // on the classpath, and ModuleClassLoader should not delegate to the classpath
+            var consumerJar = new ModFileBuilder(tempDir.resolve("consumer.jar"))
+                    .addClass("consumer.ServiceLoaderProxy", """
+                            import java.util.List;
+                            import java.util.ServiceLoader;
+                            import java.net.spi.URLStreamHandlerProvider;
+
+                            public class ServiceLoaderProxy {
+                                public static List<URLStreamHandlerProvider> load() {
+                                    return ServiceLoader.load(URLStreamHandlerProvider.class).stream()
+                                            .map(ServiceLoader.Provider::get).toList();
+                                }
+                            }
+                            """)
+                    .build();
+
+            try (var consumerLayer = TestjarUtil.buildLayer(consumerJar);
+                    var ignored = consumerLayer.makeLoaderCurrent()) {
+                var testClass = consumerLayer.cl().loadClass("consumer.ServiceLoaderProxy");
+                var loadMethod = testClass.getMethod("load");
+                var loadedServices = (List<?>) loadMethod.invoke(null);
+
+                assertThat(loadedServices)
+                        .extracting(o -> o.getClass().getName())
+                        .doesNotContain("DummyURLStreamHandlerProvider");
+            }
+
+        } finally {
+            Thread.currentThread().setContextClassLoader(previousCl);
         }
     }
 }
