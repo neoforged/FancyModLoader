@@ -42,6 +42,6 @@ public enum IncompatibleModReason {
     }
 
     private static Predicate<JarContents> filePresent(String filename) {
-        return jarContents -> jarContents.findFile(filename).isPresent();
+        return jarContents -> jarContents.containsFile(filename);
     }
 }

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
+import cpw.mods.jarhandling.JarResource;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.Environment;
 import cpw.mods.modlauncher.LaunchPluginHandler;
@@ -30,14 +31,15 @@ import java.lang.module.ModuleFinder;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -168,6 +170,7 @@ public abstract class LauncherTest {
 
         var previousCl = Thread.currentThread().getContextClassLoader();
         try (var cl = new URLClassLoader(urls, getClass().getClassLoader())) {
+            System.out.println("Constructed class-loader " + Objects.toIdentityString(cl));
             Thread.currentThread().setContextClassLoader(cl);
             return launchAndLoad(launchTarget);
         } finally {
@@ -442,7 +445,7 @@ public abstract class LauncherTest {
 
         for (var identifiableContent : content) {
             var expectedContent = identifiableContent.content();
-            var actualContent = Files.readAllBytes(paths.get(identifiableContent.relativePath()));
+            var actualContent = paths.get(identifiableContent.relativePath()).readAllBytes();
             if (isPrintableAscii(expectedContent) && isPrintableAscii(actualContent)) {
                 assertThat(new String(actualContent)).isEqualTo(new String(expectedContent));
             } else {
@@ -460,17 +463,11 @@ public abstract class LauncherTest {
         return true;
     }
 
-    private static Map<String, Path> listFilesRecursively(SecureJar jar) throws IOException {
-        Map<String, Path> paths;
-        var rootPath = jar.getRootPath();
-        try (var stream = Files.walk(rootPath)) {
-            paths = stream
-                    .filter(Files::isRegularFile)
-                    .map(rootPath::relativize)
-                    .collect(Collectors.toMap(
-                            path -> path.toString().replace('\\', '/'),
-                            Function.identity()));
-        }
+    private static Map<String, JarResource> listFilesRecursively(SecureJar jar) {
+        Map<String, JarResource> paths = new HashMap<>();
+        jar.contents().visitContent((relativePath, resource) -> {
+            paths.put(relativePath, resource.retain());
+        });
         return paths;
     }
 

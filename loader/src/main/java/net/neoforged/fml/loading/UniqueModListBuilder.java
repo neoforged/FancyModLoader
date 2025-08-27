@@ -136,11 +136,7 @@ public class UniqueModListBuilder {
     }
 
     private static String getModId(ModFile modFile) {
-        if (modFile.getModFileInfo() == null || modFile.getModFileInfo().getMods().isEmpty()) {
-            return modFile.getSecureJar().name();
-        }
-
-        return modFile.getModFileInfo().moduleName();
+        return modFile.getId();
     }
 
     public record UniqueModListData(List<ModFile> modFiles,

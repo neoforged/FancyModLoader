@@ -14,7 +14,6 @@ import static java.util.stream.Collectors.toSet;
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
 import com.mojang.logging.LogUtils;
-import cpw.mods.jarhandling.SecureJar;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,7 +27,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.neoforged.fml.ModLoadingException;
@@ -212,11 +210,7 @@ public class ModSorter {
         systemMods.add("neoforge");
         // Find system mod files and scan them for system mods
         modFiles.stream()
-                .map(ModFile::getSecureJar)
-                .map(SecureJar::moduleDataProvider)
-                .map(SecureJar.ModuleDataProvider::getManifest)
-                .map(Manifest::getMainAttributes)
-                .map(mf -> mf.getValue("FML-System-Mods"))
+                .map(mf -> mf.getContents().getManifest().getMainAttributes().getValue("FML-System-Mods"))
                 .filter(Objects::nonNull)
                 .findFirst()
                 .ifPresent(value -> systemMods.addAll(Arrays.asList(value.split(","))));

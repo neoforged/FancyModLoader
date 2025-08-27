@@ -48,7 +48,7 @@ public class FMLModContainer extends ModContainer {
                 .markerType(IModBusEvent.class)
                 .allowPerPhasePost()
                 .build();
-        this.layer = gameLayer.findModule(info.getOwningFile().moduleName()).orElseThrow();
+        this.layer = gameLayer.findModule(info.getOwningFile().getFile().getId()).orElseThrow();
 
         var context = ModLoadingContext.get();
         try {

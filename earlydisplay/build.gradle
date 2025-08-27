@@ -25,11 +25,13 @@ dependencies {
     implementation("org.lwjgl:lwjgl-tinyfd")
     implementation("org.slf4j:slf4j-api:${slf4j_api_version}")
     implementation("net.sf.jopt-simple:jopt-simple:${jopt_simple_version}")
-    
-    testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiter_version}")
-    testImplementation("org.junit.jupiter:junit-jupiter-params:$jupiter_version")
+
+    testImplementation(platform("org.junit:junit-bom:$jupiter_version"))
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher')
+    testImplementation('org.junit.jupiter:junit-jupiter')
+    testImplementation('org.junit.jupiter:junit-jupiter-params')
+    testImplementation("org.mockito:mockito-junit-jupiter:$mockito_version")
     testImplementation("org.assertj:assertj-core:${assertj_version}")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiter_version}")
     testRuntimeOnly("org.lwjgl:lwjgl") {
         artifact {
             classifier = lwjglNatives
