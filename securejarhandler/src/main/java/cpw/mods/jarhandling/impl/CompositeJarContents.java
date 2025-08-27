@@ -65,7 +65,7 @@ public final class CompositeJarContents implements JarContents {
                 }
             }
         }
-        this.contentRoots = List.copyOf(contentRoots);
+        this.contentRoots = List.copyOf(contentRoots.reversed());
     }
 
     @Override

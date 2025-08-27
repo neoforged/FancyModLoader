@@ -4,20 +4,23 @@ import cpw.mods.jarhandling.impl.CompositeJarContents;
 import cpw.mods.jarhandling.impl.EmptyJarContents;
 import cpw.mods.jarhandling.impl.FolderJarContents;
 import cpw.mods.jarhandling.impl.JarFileContents;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.jar.Manifest;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
+import java.util.stream.Collectors;
 
 /**
  * Access to the contents of a list of {@link Path}s, interpreted as a jar file.
@@ -43,6 +46,11 @@ public sealed interface JarContents extends Closeable permits CompositeJarConten
         }
     }
 
+    /**
+     * Creates jar contents from paths with optional per-path filters.
+     * <p>Non-existent paths are ignored. If all paths are missing, throws {@link NoSuchFileException}.
+     * <p>If only one valid unfiltered path is provided, behaves as {@link #ofPath(Path)}.
+     */
     static JarContents ofFilteredPaths(Collection<FilteredPath> paths) throws IOException {
         if (paths.isEmpty()) {
             throw new IllegalArgumentException("Cannot construct jar contents without any paths.");
@@ -57,7 +65,8 @@ public sealed interface JarContents extends Closeable permits CompositeJarConten
             }
 
             if (contents.isEmpty()) {
-                throw new FileNotFoundException("At least one of the paths must exist when constructing jar contents: " + paths);
+                String pathList = paths.stream().map(f -> f.path.toString()).collect(Collectors.joining(", "));
+                throw new NoSuchFileException("At least one of the paths must exist when constructing jar contents: " + pathList);
             } else if (contents.size() == 1 && filters.getFirst() == null) {
                 return contents.getFirst(); // Uncommon case, but we'll still optimize for it
             }
@@ -66,6 +75,12 @@ public sealed interface JarContents extends Closeable permits CompositeJarConten
         }
     }
 
+    /**
+     * Creates jar contents from multiple paths, treating them as overlay layers.
+     * <p>Later paths override earlier ones for conflicting files.
+     * <p>Non-existent paths are ignored. If all paths are missing, throws {@link NoSuchFileException}.
+     * <p>If only one valid path is provided, behaves as {@link #ofPath(Path)}.
+     */
     static JarContents ofPaths(Collection<Path> paths) throws IOException {
         if (paths.isEmpty()) {
             throw new IllegalArgumentException("Cannot construct jar contents without any paths.");
@@ -78,7 +93,7 @@ public sealed interface JarContents extends Closeable permits CompositeJarConten
             }
 
             if (contents.isEmpty()) {
-                throw new FileNotFoundException("At least one of the paths must exist when constructing jar contents: " + paths);
+                throw new NoSuchFileException("At least one of the paths must exist when constructing jar contents: " + paths);
             } else if (contents.size() == 1) {
                 return contents.getFirst();
             }
@@ -87,16 +102,25 @@ public sealed interface JarContents extends Closeable permits CompositeJarConten
         }
     }
 
+    /**
+     * Creates jar contents from a single path.
+     * <p>The path must exist and be either a regular file (treated as a jar/zip) or a directory.
+     */
     static JarContents ofPath(Path path) throws IOException {
         if (Files.isRegularFile(path)) {
             return new JarFileContents(path);
         } else if (Files.isDirectory(path)) {
             return new FolderJarContents(path);
         } else {
-            throw new FileNotFoundException("Cannot construct mod container from missing " + path);
+            throw new NoSuchFileException("Cannot construct mod container from missing " + path);
         }
     }
 
+    /**
+     * Creates an empty jar contents instance.
+     * <p>The path is used only as an identifier and need not exist.
+     * <p>All content queries will return empty/null results.
+     */
     static JarContents empty(Path path) {
         return new EmptyJarContents(path);
     }
@@ -112,7 +136,7 @@ public sealed interface JarContents extends Closeable permits CompositeJarConten
      * Returns the locations that this Jar content was opened from.
      * <p>Usually this will only contain a single path, for example to the Jar file that was opened, but especially during development, it can contain multiple build output folders that were joined into a single virtual Jar file.
      * <p>The resulting paths do not need to be on the local file-system, they can be from custom NIO filesystem implementations.
-     * <p>The returned list may also not contain all content roots if the the underlying jar content is held in-memory.
+     * <p>The returned list may also not contain all content roots if the underlying jar content is held in-memory.
      */
     Collection<Path> getContentRoots();
 
@@ -120,7 +144,7 @@ public sealed interface JarContents extends Closeable permits CompositeJarConten
      * Tries to find a resource with the given path in this jar content.
      *
      * @param relativePath See {@link JarContents} for a definition of relative paths.
-     * @return Null if the resource could not be found within the jar.
+     * @return Null if the resource could not be found within the jar, or if {@code relativePath} refers to a directory.
      */
     @Nullable
     JarResource get(String relativePath);
@@ -128,9 +152,9 @@ public sealed interface JarContents extends Closeable permits CompositeJarConten
     /**
      * Looks for a file in the jar.
      *
-     * @return A URI for the file, or empty if the file cannot be found or if the name refers to a directory.
+     * @return A URI for the file, or empty if the file cannot be found or if {@code relativePath} refers to a directory.
      */
-    Optional<URI> findFile(String name);
+    Optional<URI> findFile(String relativePath);
 
     /**
      * Tries to open a file inside the jar content using a path relative to the root.
@@ -164,7 +188,7 @@ public sealed interface JarContents extends Closeable permits CompositeJarConten
      * Checks, if a given file exists in this jar.
      *
      * @param relativePath The path to the file, relative to the root of this Jar file.
-     * @return True if the file exists, false if it doesn't or the given path denotes a directory.
+     * @return True if the file exists, false if it doesn't or {@code relativePath} refers to a directory.
      */
     boolean containsFile(String relativePath);
 

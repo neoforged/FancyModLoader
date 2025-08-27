@@ -8,6 +8,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.jar.Manifest;
 import org.jetbrains.annotations.Nullable;
@@ -16,7 +17,7 @@ public final class EmptyJarContents implements JarContents {
     private final Path path;
 
     public EmptyJarContents(Path path) {
-        this.path = path;
+        this.path = Objects.requireNonNull(path, "path");
     }
 
     @Override

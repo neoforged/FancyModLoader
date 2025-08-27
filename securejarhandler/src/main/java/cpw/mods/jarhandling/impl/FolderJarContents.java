@@ -42,7 +42,7 @@ public final class FolderJarContents implements JarContents {
 
     @Override
     public @Nullable JarResource get(String relativePath) {
-        var path = this.path.resolve(relativePath);
+        var path = fromRelativePath(relativePath);
         if (Files.isRegularFile(path)) {
             return new FileResource(path, false);
         }
