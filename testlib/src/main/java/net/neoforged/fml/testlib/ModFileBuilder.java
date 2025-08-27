@@ -7,6 +7,7 @@ package net.neoforged.fml.testlib;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
@@ -16,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -28,12 +30,8 @@ import net.neoforged.jarjar.metadata.ContainedVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.intellij.lang.annotations.Language;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ModFileBuilder {
-    private static final Logger LOG = LoggerFactory.getLogger(ModFileBuilder.class);
-
     public static final ContainedVersion JIJ_V1 = new ContainedVersion(VersionRange.createFromVersion("1.0"), new DefaultArtifactVersion("1.0"));
 
     private final RuntimeCompiler compiler;
@@ -54,12 +52,10 @@ public class ModFileBuilder {
         compilationBuilder = compiler.builder();
         memoryFsRoot = memoryFs.getRootDirectories().iterator().next();
 
-        // Add the current classpath to the compile-classpath
-        for (String classpathEntry : System.getProperty("java.class.path").split(";")) {
-            Path path = Path.of(classpathEntry);
-            LOG.info("Adding classpath entry: {}", path);
-            compilationBuilder.addClasspath(path);
-        }
+        // Add the current classpath as the compile classpath
+        Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
+                .map(Path::of)
+                .forEach(compilationBuilder::addClasspath);
     }
 
     public ModFileBuilder withTestmodModsToml() {
