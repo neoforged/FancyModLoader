@@ -6,6 +6,17 @@
 package net.neoforged.fml.testlib;
 
 import com.google.errorprone.annotations.CheckReturnValue;
+import org.intellij.lang.annotations.Language;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import javax.tools.SimpleJavaFileObject;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.StandardLocation;
+import javax.tools.ToolProvider;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -17,16 +28,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import javax.tools.DiagnosticCollector;
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileObject;
-import javax.tools.SimpleJavaFileObject;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.StandardLocation;
-import javax.tools.ToolProvider;
-import org.intellij.lang.annotations.Language;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class RuntimeCompiler implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(RuntimeCompiler.class);
@@ -77,10 +78,15 @@ public class RuntimeCompiler implements AutoCloseable {
 
     public class CompilationBuilder {
         private final List<Path> classpath = new ArrayList<>();
+        private final List<Path> modulePath = new ArrayList<>();
         private final List<JavaFileObject> files = new ArrayList<>();
 
         public void addClasspath(Path jar) {
             classpath.add(jar);
+        }
+
+        public void addModulePath(Path jar) {
+            modulePath.add(jar);
         }
 
         @CheckReturnValue
@@ -104,6 +110,14 @@ public class RuntimeCompiler implements AutoCloseable {
                 manager.setLocationFromPaths(StandardLocation.CLASS_PATH, classpath);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to set classpath for compilation", e);
+            }
+
+            if (!modulePath.isEmpty()) {
+                try {
+                    manager.setLocationFromPaths(StandardLocation.MODULE_PATH, modulePath);
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to set classpath for compilation", e);
+                }
             }
 
             List<String> options = new ArrayList<>();

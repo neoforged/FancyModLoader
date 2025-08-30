@@ -1,39 +1,46 @@
 package cpw.mods.cl;
 
 import cpw.mods.util.LambdaExceptionUtils;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
+
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleReader;
-import java.lang.module.ModuleReference;
 import java.lang.module.ResolvedModule;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.NoSuchFileException;
+import java.security.AllPermission;
+import java.security.CodeSigner;
+import java.security.CodeSource;
+import java.security.Permissions;
+import java.security.ProtectionDomain;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiFunction;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.VisibleForTesting;
 
-public class ModuleClassLoader extends ClassLoader {
+/**
+ * This classloader implements child-first classloading for any module that is defined
+ * locally.
+ */
+public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
     static {
         ClassLoader.registerAsParallelCapable();
     }
@@ -71,11 +78,11 @@ public class ModuleClassLoader extends ClassLoader {
         }
     }
 
-    private final Configuration configuration;
-    private final Map<String, JarModuleFinder.JarModuleReference> resolvedRoots;
-    private final Map<String, ResolvedModule> packageLookup;
+    private final Map<String, ModuleInfo> moduleInfoCache;
+    private final Map<String, ModuleInfo> packageLookup;
     private final Map<String, ClassLoader> parentLoaders;
     private ClassLoader fallbackClassLoader;
+    private volatile boolean closed = false;
 
     public ModuleClassLoader(final String name, final Configuration configuration, final List<ModuleLayer> parentLayers) {
         this(name, configuration, parentLayers, null);
@@ -98,15 +105,27 @@ public class ModuleClassLoader extends ClassLoader {
     public ModuleClassLoader(final String name, final Configuration configuration, final List<ModuleLayer> parentLayers, @Nullable ClassLoader parentLoader) {
         super(name, parentLoader);
         this.fallbackClassLoader = Objects.requireNonNullElse(parentLoader, ClassLoader.getPlatformClassLoader());
-        this.configuration = configuration;
-        this.packageLookup = new HashMap<>();
-        this.resolvedRoots = configuration.modules().stream()
-                .filter(m -> m.reference() instanceof JarModuleFinder.JarModuleReference)
-                .peek(mod -> {
-                    // Populate packageLookup at the same time, for speed
-                    mod.reference().descriptor().packages().forEach(pk -> this.packageLookup.put(pk, mod));
-                })
-                .collect(Collectors.toMap(mod -> mod.reference().descriptor().name(), mod -> (JarModuleFinder.JarModuleReference) mod.reference()));
+        this.moduleInfoCache = HashMap.newHashMap(configuration.modules().size());
+
+        // Index all modules locally defined to this classloader
+        int packageCount = 0;
+        for (var m : configuration.modules()) {
+            if (m.reference() instanceof JarModuleFinder.JarModuleReference jarRef) {
+                String moduleName = m.reference().descriptor().name();
+                var moduleInfo = new ModuleInfo(this, moduleName, jarRef);
+                moduleInfoCache.put(moduleName, moduleInfo);
+            } else {
+                throw new IllegalArgumentException("Unsupported module reference type: " + m.reference().getClass());
+            }
+        }
+
+        // Index all packages for locally defined modules
+        packageLookup = HashMap.newHashMap(packageCount);
+        for (var moduleInfo : moduleInfoCache.values()) {
+            for (var pk : moduleInfo.moduleReference.descriptor().packages()) {
+                packageLookup.put(pk, moduleInfo);
+            }
+        }
 
         this.parentLoaders = new HashMap<>();
         Set<ModuleDescriptor> processedAutomaticDescriptors = new HashSet<>();
@@ -114,7 +133,7 @@ public class ModuleClassLoader extends ClassLoader {
         Function<ResolvedModule, ClassLoader> findClassLoader = k -> {
             // Loading a class requires its module to be part of resolvedRoots
             // If it's not, we delegate loading to its module's classloader
-            if (!this.resolvedRoots.containsKey(k.name())) {
+            if (!this.moduleInfoCache.containsKey(k.name())) {
                 for (var parentLayer : parentLayers) {
                     if (parentLayer.configuration() == k.configuration()) {
                         var loader = parentLayer.findLoader(k.name());
@@ -164,12 +183,9 @@ public class ModuleClassLoader extends ClassLoader {
         }
     }
 
-    private URL readerToURL(final ModuleReader reader, final ModuleReference ref, final String name) {
-        try {
-            return ModuleClassLoader.toURL(reader.find(name));
-        } catch (IOException e) {
-            return null;
-        }
+    private URL readerToURL(ModuleInfo moduleInfo, String name) throws IOException {
+        var reader = moduleInfo.getReader();
+        return toURL(reader.find(name));
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -190,9 +206,9 @@ public class ModuleClassLoader extends ClassLoader {
         return Optional.ofNullable(is).stream().onClose(() -> Optional.ofNullable(is).ifPresent(LambdaExceptionUtils.rethrowConsumer(InputStream::close)));
     }
 
-    protected byte[] getClassBytes(final ModuleReader reader, final ModuleReference ref, final String name) {
+    private byte[] getClassBytes(ModuleInfo moduleInfo, String name) throws IOException {
         var cname = name.replace('.', '/') + ".class";
-
+        var reader = moduleInfo.getReader();
         try (var istream = closeHandler(Optional.of(reader).flatMap(LambdaExceptionUtils.rethrowFunction(r -> r.open(cname))))) {
             return istream.map(LambdaExceptionUtils.rethrowFunction(InputStream::readAllBytes))
                     .findFirst()
@@ -200,13 +216,25 @@ public class ModuleClassLoader extends ClassLoader {
         }
     }
 
-    private Class<?> readerToClass(final ModuleReader reader, final ModuleReference ref, final String name) {
-        var bytes = maybeTransformClassBytes(getClassBytes(reader, ref, name), name, null);
-        if (bytes.length == 0) return null;
-        var modroot = this.resolvedRoots.get(ref.descriptor().name());
-        ProtectionDomainHelper.tryDefinePackage(this, name, modroot.jar().getManifest(), t -> modroot.jar().getManifest().getAttributes(t), this::definePackage); // Packages are dirctories, and can't be signed, so use raw attributes instead of signed.
-        var cs = ProtectionDomainHelper.createCodeSource(toURL(ref.location()), null);
-        var cls = defineClass(name, bytes, 0, bytes.length, ProtectionDomainHelper.createProtectionDomain(cs, this));
+    /**
+     * {@return null if the class should be treated as if it doesn't exist}
+     */
+    @Nullable
+    private Class<?> readerToClass(ModuleInfo moduleInfo, final String name) throws ClassNotFoundException {
+        byte[] bytes;
+        try {
+            bytes = getClassBytes(moduleInfo, name);
+        } catch (IOException e) {
+            throw new ClassNotFoundException(name, e);
+        }
+
+        bytes = maybeTransformClassBytes(bytes, name, null);
+        if (bytes.length == 0) {
+            return null; // Transformers decided to skip the class
+        }
+
+        ProtectionDomainHelper.tryDefinePackage(this, name, moduleInfo.moduleReference.jar().getManifest(), t -> moduleInfo.moduleReference.jar().getManifest().getAttributes(t), this::definePackage); // Packages are dirctories, and can't be signed, so use raw attributes instead of signed.
+        var cls = defineClass(name, bytes, 0, bytes.length, moduleInfo.protectionDomain);
         ProtectionDomainHelper.trySetPackageModule(cls.getPackage(), cls.getModule());
         return cls;
     }
@@ -220,35 +248,26 @@ public class ModuleClassLoader extends ClassLoader {
         synchronized (getClassLoadingLock(name)) {
             var c = findLoadedClass(name);
             if (c == null) {
-                var index = name.lastIndexOf('.');
-                if (index >= 0) {
-                    final var pname = name.substring(0, index);
-                    if (this.packageLookup.containsKey(pname)) {
-                        c = findClass(this.packageLookup.get(pname).name(), name);
+                var packageName = packageName(name);
+                if (packageName != null) {
+                    var localModule = packageLookup.get(packageName);
+                    if (localModule != null) {
+                        c = readerToClass(localModule, name);
                     } else {
-                        c = this.parentLoaders.getOrDefault(pname, fallbackClassLoader).loadClass(name);
+                        c = this.parentLoaders.getOrDefault(packageName, fallbackClassLoader).loadClass(name);
                     }
+                } else {
+                    c = fallbackClassLoader.loadClass(name);
                 }
             }
-            if (c == null) throw new ClassNotFoundException(name);
-            if (resolve) resolveClass(c);
+            if (c == null) {
+                throw new ClassNotFoundException(name);
+            }
+            if (resolve) {
+                resolveClass(c);
+            }
             return c;
         }
-    }
-
-    @Override
-    protected Class<?> findClass(final String name) throws ClassNotFoundException {
-        final String mname = classNameToModuleName(name);
-        if (mname != null) {
-            return findClass(mname, name);
-        } else {
-            return super.findClass(name);
-        }
-    }
-
-    protected String classNameToModuleName(final String name) {
-        final var pname = name.substring(0, name.lastIndexOf('.'));
-        return Optional.ofNullable(this.packageLookup.get(pname)).map(ResolvedModule::name).orElse(null);
     }
 
     private Package definePackage(final String[] args) {
@@ -259,8 +278,8 @@ public class ModuleClassLoader extends ClassLoader {
     public URL getResource(final String name) {
         try {
             var reslist = findResourceList(name);
-            if (!reslist.isEmpty()) {
-                return reslist.get(0);
+            if (reslist.hasMoreElements()) {
+                return reslist.nextElement();
             } else {
                 return fallbackClassLoader.getResource(name);
             }
@@ -270,73 +289,151 @@ public class ModuleClassLoader extends ClassLoader {
     }
 
     @Override
-    protected URL findResource(final String moduleName, final String name) throws IOException {
-        try {
-            return loadFromModule(moduleName, (reader, ref) -> this.readerToURL(reader, ref, name));
-        } catch (UncheckedIOException ioe) {
-            throw ioe.getCause();
+    protected URL findResource(String moduleName, String name) throws IOException {
+        var localModule = moduleInfoCache.get(moduleName);
+        if (localModule == null) {
+            return null; // This method only finds resources for locally defined modules
         }
+
+        return readerToURL(localModule, name);
     }
 
     @Override
-    public Enumeration<URL> getResources(final String name) throws IOException {
-        return Collections.enumeration(findResourceList(name));
+    public Enumeration<URL> getResources(String name) throws IOException {
+        var localUrls = findResourceList(name);
+        var parentUrls = fallbackClassLoader.getResources(name);
+
+        // Unlike findResources, getResources will delegate to the parent as well
+        // The default implementation actually returns "parent-first", but like the JDKs module loader,
+        // we return our own resources first.
+        return new Enumeration<>() {
+            @Override
+            public boolean hasMoreElements() {
+                return (localUrls.hasMoreElements() || parentUrls.hasMoreElements());
+            }
+            @Override
+            public URL nextElement() {
+                if (localUrls.hasMoreElements()) {
+                    return localUrls.nextElement();
+                } else {
+                    return parentUrls.nextElement();
+                }
+            }
+        };
     }
 
-    private List<URL> findResourceList(final String name) throws IOException {
+    @Override
+    protected Enumeration<URL> findResources(String name) throws IOException {
+        return findResourceList(name);
+    }
+
+    private Enumeration<URL> findResourceList(String name) throws IOException {
         var idx = name.lastIndexOf('/');
         var pkgname = (idx == -1 || idx == name.length() - 1) ? "" : name.substring(0, idx).replace('/', '.');
-        var module = packageLookup.get(pkgname);
-        if (module != null) {
-            var res = findResource(module.name(), name);
-            return res != null ? List.of(res) : List.of();
+        var localModule = packageLookup.get(pkgname);
+
+        if (localModule != null) {
+            var url = readerToURL(localModule, name);
+            return url != null ? singletonEnumeration(url) : Collections.emptyEnumeration();
         } else {
-            return resolvedRoots.values().stream()
-                    .map(JarModuleFinder.JarModuleReference::jar)
-                    .map(jar -> jar.findFile(name))
-                    .map(ModuleClassLoader::toURL)
-                    .filter(Objects::nonNull)
-                    .toList();
+            // This tries to optimize for allocating as little as possible
+            URL firstResult = null;
+            List<URL> multipleResult = null;
+            for (var moduleInfo : moduleInfoCache.values()) {
+                var url = toURL(moduleInfo.getReader().find(name));
+                if (url != null) {
+                    if (firstResult == null) {
+                        firstResult = url;
+                    } else if (multipleResult == null) {
+                        multipleResult = new java.util.ArrayList<>();
+                        multipleResult.add(firstResult);
+                        multipleResult.add(url);
+                    } else {
+                        multipleResult.add(url);
+                    }
+                }
+            }
+            if (multipleResult != null) {
+                return Collections.enumeration(multipleResult);
+            } else if (firstResult != null) {
+                return singletonEnumeration(firstResult);
+            } else {
+                return Collections.emptyEnumeration();
+            }
         }
+    }
+
+    private static Enumeration<URL> singletonEnumeration(URL url) {
+        return new Enumeration<>() {
+            boolean read = false;
+
+            @Override
+            public boolean hasMoreElements() {
+                return !read;
+            }
+
+            @Override
+            public URL nextElement() {
+                if (read) {
+                    throw new NoSuchElementException();
+                }
+                read = true;
+                return url;
+            }
+        };
     }
 
     @Override
-    protected Enumeration<URL> findResources(final String name) throws IOException {
-        return Collections.enumeration(findResourceList(name));
+    protected Class<?> findClass(String moduleName, String name) {
+        var localModule = moduleInfoCache.get(moduleName);
+        if (localModule != null) {
+            try {
+                var c = readerToClass(localModule, name);
+                if (c != null) {
+                    return c;
+                }
+            } catch (ClassNotFoundException ignored) {
+                // Can happen on I/O error
+            }
+        }
+        return null;
     }
 
     @Override
-    protected Class<?> findClass(final String moduleName, final String name) {
-        try {
-            return loadFromModule(moduleName, (reader, ref) -> this.readerToClass(reader, ref, name));
-        } catch (IOException e) {
-            return null;
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+        var packageName = packageName(name);
+        if (packageName != null) {
+            var localModule = packageLookup.get(packageName);
+            if (localModule != null) {
+                var c = readerToClass(localModule, name);
+                if (c != null) {
+                    return c;
+                }
+            }
         }
-    }
 
-    protected <T> T loadFromModule(final String moduleName, BiFunction<ModuleReader, ModuleReference, T> lookup) throws IOException {
-        var module = configuration.findModule(moduleName);
-        if (module.isEmpty()) {
-            throw new NoSuchFileException("module " + moduleName);
-        }
-        var ref = module.get().reference();
-        try (var reader = ref.open()) {
-            return lookup.apply(reader, ref);
-        }
+        throw new ClassNotFoundException(name);
     }
 
     protected byte[] getMaybeTransformedClassBytes(final String name, final String context) throws ClassNotFoundException {
         byte[] bytes = new byte[0];
         Throwable suppressed = null;
         try {
-            final var pname = name.substring(0, name.lastIndexOf('.'));
-            if (this.packageLookup.containsKey(pname)) {
-                bytes = loadFromModule(classNameToModuleName(name), (reader, ref) -> this.getClassBytes(reader, ref, name));
-            } else if (this.parentLoaders.containsKey(pname)) {
-                var cname = name.replace('.', '/') + ".class";
-                try (var is = this.parentLoaders.get(pname).getResourceAsStream(cname)) {
-                    if (is != null)
-                        bytes = is.readAllBytes();
+            final var pname = packageName(name);
+            if (pname != null) {
+                var localModule = packageLookup.get(pname);
+                if (localModule != null) {
+                    bytes = getClassBytes(localModule, name);
+                } else {
+                    var parentLoader = parentLoaders.get(pname);
+                    if (parentLoader != null) {
+                        var cname = name.replace('.', '/') + ".class";
+                        try (var is = parentLoader.getResourceAsStream(cname)) {
+                            if (is != null) {
+                                bytes = is.readAllBytes();
+                            }
+                        }
+                    }
                 }
             }
         } catch (IOException e) {
@@ -353,5 +450,121 @@ public class ModuleClassLoader extends ClassLoader {
 
     public void setFallbackClassLoader(final ClassLoader fallbackClassLoader) {
         this.fallbackClassLoader = fallbackClassLoader;
+    }
+
+    /**
+     * Closes this classloader and all cached ModuleReader instances.
+     * This method is thread-safe and idempotent.
+     *
+     * @throws IOException if an I/O error occurs while closing module readers
+     */
+    @Override
+    public void close() throws IOException {
+        if (closed) {
+            return;
+        }
+
+        closed = true;
+
+        // Close all cached ModuleReader instances
+        IOException firstException = null;
+        for (ModuleInfo moduleInfo : moduleInfoCache.values()) {
+            try {
+                moduleInfo.close();
+            } catch (IOException e) {
+                if (firstException == null) {
+                    firstException = e;
+                } else {
+                    firstException.addSuppressed(e);
+                }
+            }
+        }
+        moduleInfoCache.clear();
+
+        if (firstException != null) {
+            throw firstException;
+        }
+    }
+
+    private static String packageName(String className) {
+        var lastSeparator = className.lastIndexOf('.');
+        if (lastSeparator <= 0) {
+            return null;
+        }
+        return className.substring(0, className.lastIndexOf('.'));
+    }
+
+    /**
+     * Thread-safe record to track module information with cached readers.
+     * This class handles the lifecycle of ModuleReader instances and ensures
+     * proper cleanup when the classloader is closed.
+     */
+    private static final class ModuleInfo implements AutoCloseable {
+        private final String name;
+        private final JarModuleFinder.JarModuleReference moduleReference;
+        private final ReentrantLock lock = new ReentrantLock();
+        private final ProtectionDomain protectionDomain;
+        private volatile ModuleReader cachedReader;
+        private volatile boolean closed = false;
+
+        ModuleInfo(ClassLoader classLoader, String name, JarModuleFinder.JarModuleReference moduleReference) {
+            this.name = name;
+            this.moduleReference = moduleReference;
+
+            var codeSource = new CodeSource(toURL(moduleReference.location()), (CodeSigner[]) null);
+            var perms = new Permissions();
+            perms.add(new AllPermission());
+            this.protectionDomain = new ProtectionDomain(codeSource, perms, classLoader, null);
+        }
+
+        /**
+         * Gets a ModuleReader for this module, creating and caching one if necessary.
+         * Thread-safe and handles proper cleanup.
+         */
+        ModuleReader getReader() throws IOException {
+            if (closed) {
+                throw new IOException("Module " + name + " has been closed");
+            }
+
+            // Fast path - check if reader is already cached
+            ModuleReader reader = cachedReader;
+            if (reader != null) {
+                return reader;
+            }
+
+            // Slow path - create reader under write lock
+            lock.lock();
+            try {
+                if (closed) {
+                    throw new IOException("Module " + name + " has been closed");
+                }
+
+                // Double-check after acquiring lock
+                reader = cachedReader;
+                if (reader == null) {
+                    reader = moduleReference.open();
+                    cachedReader = reader;
+                }
+                return reader;
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            lock.lock();
+            try {
+                if (!closed) {
+                    closed = true;
+                    if (cachedReader != null) {
+                        cachedReader.close();
+                        cachedReader = null;
+                    }
+                }
+            } finally {
+                lock.unlock();
+            }
+        }
     }
 }
