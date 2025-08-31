@@ -277,7 +277,7 @@ public final class CompositeJarContents implements JarContents {
     }
 
     /**
-     * Returns true if the given relative path is hidden by the given delegates filter.
+     * {@return {@code true} if the given relative path is hidden by the given delegates filter}
      */
     private boolean isMasked(int delegateIdx, String relativePath) {
         if (filters == null) {
