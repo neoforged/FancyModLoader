@@ -6,17 +6,6 @@
 package net.neoforged.fml.testlib;
 
 import com.google.errorprone.annotations.CheckReturnValue;
-import org.intellij.lang.annotations.Language;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.tools.DiagnosticCollector;
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileObject;
-import javax.tools.SimpleJavaFileObject;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.StandardLocation;
-import javax.tools.ToolProvider;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -28,6 +17,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import javax.tools.SimpleJavaFileObject;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.StandardLocation;
+import javax.tools.ToolProvider;
+import org.intellij.lang.annotations.Language;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RuntimeCompiler implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(RuntimeCompiler.class);

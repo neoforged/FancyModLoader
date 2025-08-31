@@ -1,9 +1,6 @@
 package cpw.mods.cl;
 
 import cpw.mods.util.LambdaExceptionUtils;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.VisibleForTesting;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandle;
@@ -35,6 +32,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * This classloader implements child-first classloading for any module that is defined
@@ -311,6 +310,7 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
             public boolean hasMoreElements() {
                 return (localUrls.hasMoreElements() || parentUrls.hasMoreElements());
             }
+
             @Override
             public URL nextElement() {
                 if (localUrls.hasMoreElements()) {
