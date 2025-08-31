@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  * for example.
  */
 @ApiStatus.NonExtendable
-public sealed interface JarContents extends Closeable permits CompositeJarContents, FolderJarContents, JarFileContents, EmptyJarContents {
+public interface JarContents extends Closeable {
     @FunctionalInterface
     interface PathFilter {
         boolean test(String relativePath);
@@ -123,6 +123,11 @@ public sealed interface JarContents extends Closeable permits CompositeJarConten
         return new EmptyJarContents(path);
     }
 
+    /**
+     * {@return SHA-256 hash of the contents, if available}
+     * <p>This value is intended to be used as a cache-key, and
+     * will be empty if the jar contents are not stable enough to be cached (i.e. they're sourced from memory or a folder).
+     */
     Optional<String> getChecksum();
 
     /**

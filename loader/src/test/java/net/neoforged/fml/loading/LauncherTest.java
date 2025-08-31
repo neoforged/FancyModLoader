@@ -39,7 +39,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -170,7 +169,6 @@ public abstract class LauncherTest {
 
         var previousCl = Thread.currentThread().getContextClassLoader();
         try (var cl = new URLClassLoader(urls, getClass().getClassLoader())) {
-            System.out.println("Constructed class-loader " + Objects.toIdentityString(cl));
             Thread.currentThread().setContextClassLoader(cl);
             return launchAndLoad(launchTarget);
         } finally {

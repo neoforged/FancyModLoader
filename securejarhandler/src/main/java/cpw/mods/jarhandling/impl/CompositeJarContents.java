@@ -23,6 +23,10 @@ import java.util.jar.Manifest;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * A composite {@link JarContents} implementation which combines the contents of other jar contents transparently,
+ * and optionally applies filtering.
+ */
 @ApiStatus.Internal
 public final class CompositeJarContents implements JarContents {
     private final JarContents[] delegates;
@@ -32,10 +36,25 @@ public final class CompositeJarContents implements JarContents {
 
     private volatile Optional<String> checksum;
 
+    /**
+     * Constructs a new composite jar contents without filtering.
+     *
+     * @see JarContents#ofFilteredPaths
+     * @see JarContents#ofPaths
+     */
     public CompositeJarContents(List<JarContents> delegates) {
         this(delegates, null);
     }
 
+    /**
+     * Constructs a composite jar contents object with optional filtering.
+     *
+     * @param delegates The delegates that are combined. The delegation is last to first, which means the content in later delegates takes priority.
+     * @param filters   Optional filters for each entry in {@code delegates}. If {@code null}, no filtering is applied at all.
+     *                  If the filter for a delegate is {@code null}, no filtering is applied to that delegate.
+     * @see JarContents#ofFilteredPaths
+     * @see JarContents#ofPaths
+     */
     public CompositeJarContents(List<JarContents> delegates, @Nullable List<@Nullable PathFilter> filters) {
         // These checks are to prevent suboptimal usage. JarContents.ofFilteredPaths is going to guard against this
         if (delegates.isEmpty()) {

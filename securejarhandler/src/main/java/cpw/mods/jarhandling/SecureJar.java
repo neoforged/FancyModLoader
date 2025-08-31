@@ -8,7 +8,7 @@ import java.lang.module.ModuleReader;
 import java.lang.module.ModuleReference;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.jar.Manifest;
 import org.jetbrains.annotations.Nullable;
@@ -23,7 +23,7 @@ public interface SecureJar {
      * See {@link JarContents} for more configuration options.
      */
     static SecureJar from(final Path... paths) throws IOException {
-        return from(JarContents.ofPaths(Arrays.asList(paths)));
+        return from(JarContents.ofPaths(List.of(paths)));
     }
 
     /**

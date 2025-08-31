@@ -11,11 +11,19 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.jar.Manifest;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * An immutable, empty jar content, which is identified by a {@link Path}, which may or may not exist.
+ */
+@ApiStatus.Internal
 public final class EmptyJarContents implements JarContents {
     private final Path path;
 
+    /**
+     * @see JarContents#empty(Path)
+     */
     public EmptyJarContents(Path path) {
         this.path = Objects.requireNonNull(path, "path");
     }
