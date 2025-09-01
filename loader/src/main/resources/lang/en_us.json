@@ -52,7 +52,6 @@
   "fml.modloadingissue.neodev_missing_appropriate_dist": "NeoForge dev environment client-extra jar does not have a {0} marker in its {1} attribute in its manifest; this may be because you have an out-of-date gradle plugin",
   "fml.modloadingissue.failed_to_list_folder_content": "Failed to list content of folder {0}",
   "fml.modloadingissue.failed_to_find_on_classpath": "Failed to find {0} on the classpath",
-  "fml.modloadingissue.multiple_copies_on_classpath": "Found multiple copies of {0} on the classpath: {1}",
   "fml.messages.artifactversion.ornotinstalled": "{0,ornull,fml.messages.artifactversion.notinstalled}",
   "fml.messages.artifactversion": "{0,ornull,fml.messages.artifactversion.none}",
   "fml.messages.artifactversion.none": "none",
