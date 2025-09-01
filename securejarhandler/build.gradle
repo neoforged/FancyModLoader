@@ -1,29 +1,3 @@
-import javax.inject.Inject
-
-sourceSets {
-    // Additional test JARs, to be loaded via SecureJar.from(...)
-    testjar1 {}
-    testjar2 {}
-    // Test classpath code, to make sure that ModuleClassLoader is properly isolated from the classpath
-    testjar_cp {}
-    test {
-        runtimeClasspath += sourceSets.testjar_cp.output
-    }
-}
-
-compileJava {
-    options.compilerArgs += [
-            '-Xlint:unchecked',
-            '--add-exports=java.base/sun.security.util=cpw.mods.securejarhandler',
-    ]
-}
-
-compileTestJava {
-    options.compilerArgs += [
-            '--add-modules=jdk.zipfs',
-            '--add-exports=jdk.zipfs/jdk.nio.zipfs=cpw.mods.securejarhandler'
-    ]
-}
 
 dependencies {
     compileOnly("org.jetbrains:annotations:${project.jetbrains_annotations_version}")
@@ -40,50 +14,5 @@ dependencies {
 
 test {
     useJUnitPlatform()
-    jvmArgs += [
-            // Add test sourceset to the SJH module
-            '--patch-module=cpw.mods.securejarhandler=' + sourceSets.test.output.classesDirs.asPath,
-            // SJH needs this for UnionFileSystem
-            '--add-opens=java.base/java.lang.invoke=cpw.mods.securejarhandler',
-            // Allow JUnit to access the tests
-            '--add-opens=cpw.mods.securejarhandler/cpw.mods.cl.test=ALL-UNNAMED',
-            '--add-opens=cpw.mods.securejarhandler/cpw.mods.jarhandling=ALL-UNNAMED',
-            '--add-opens=cpw.mods.securejarhandler/cpw.mods.jarhandling.impl=ALL-UNNAMED',
-            '--add-opens=cpw.mods.securejarhandler/cpw.mods.niofs.union=ALL-UNNAMED',
-            // To test reading from the classpath
-            '--add-reads=cpw.mods.securejarhandler=ALL-UNNAMED',
-    ]
-
-    dependsOn tasks.compileTestjar1Java
-    dependsOn tasks.processTestjar1Resources
-    dependsOn tasks.compileTestjar2Java
-    dependsOn tasks.processTestjar2Resources
-    environment "sjh.testjar1", sourceSets.testjar1.output.classesDirs.asPath + File.pathSeparator + sourceSets.testjar1.output.resourcesDir.absolutePath
-    environment "sjh.testjar2", sourceSets.testjar2.output.classesDirs.asPath + File.pathSeparator + sourceSets.testjar2.output.resourcesDir.absolutePath
-
-    // Add SJH and its dependencies to the module path
-    var commandLineArgs = objects.newInstance(TestsCommandLineArgs)
-    // SJH itself
-    commandLineArgs.modulePath.from(sourceSets.main.output.classesDirs.asPath)
-    jvmArgumentProviders.add(commandLineArgs)
-}
-
-abstract class TestsCommandLineArgs implements CommandLineArgumentProvider {
-    @Inject
-    TestsCommandLineArgs() {}
-
-    @InputFiles
-    @Classpath
-    abstract ConfigurableFileCollection getModulePath()
-
-    @Override
-    Iterable<String> asArguments() {
-        def modulePath = getModulePath().getFiles().join(File.pathSeparator)
-
-        return [
-                "--module-path",
-                modulePath,
-                "--add-modules=ALL-MODULE-PATH",
-        ]
-    }
+    jvmArgs += ['--add-opens=java.base/java.lang.invoke=ALL-UNNAMED']
 }

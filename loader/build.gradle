@@ -30,7 +30,6 @@ dependencies {
     api "net.neoforged:JarJarSelector:${jarjar_version}"
     api "net.neoforged:JarJarMetadata:${jarjar_version}"
     api("net.neoforged:bus:${eventbus_version}")
-    implementation("net.neoforged:JarJarFileSystems:$jarjar_version")
 
     implementation("net.sf.jopt-simple:jopt-simple:${jopt_simple_version}")
     implementation project(":securejarhandler")

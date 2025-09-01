@@ -211,7 +211,7 @@ public class JarMetadataTest {
 
         try (var jc = JarContents.ofPath(testJar)) {
             var metadata = JarMetadata.from(jc);
-            metadata.descriptor(); // This causes the packages to be scanned so we can close the unionfs
+            metadata.descriptor(); // This causes the packages to be scanned so we can close the underlying fs
             return metadata;
         }
     }

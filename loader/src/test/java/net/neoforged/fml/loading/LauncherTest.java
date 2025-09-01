@@ -86,8 +86,8 @@ public abstract class LauncherTest {
     protected TransformingClassLoader gameClassLoader;
 
     @BeforeAll
-    static void ensureAddOpensForUnionFs() {
-        // We abuse the ByteBuddy agent that Mockito also uses to open java.lang to UnionFS
+    static void ensureAddOpensForModularClassLoader() {
+        // We abuse the ByteBuddy agent that Mockito also uses to open java.lang to ModularClassLoader
         var instrumentation = ByteBuddyAgent.install();
         instrumentation.redefineModule(
                 MethodHandles.class.getModule(),

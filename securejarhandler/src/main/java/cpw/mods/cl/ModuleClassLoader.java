@@ -36,8 +36,6 @@ import org.jetbrains.annotations.VisibleForTesting;
 public class ModuleClassLoader extends ClassLoader {
     static {
         ClassLoader.registerAsParallelCapable();
-        URL.setURLStreamHandlerFactory(ModularURLHandler.INSTANCE);
-        ModularURLHandler.initFrom(ModuleClassLoader.class.getModule().getLayer());
     }
 
     // Reflect into JVM internals to associate each ModuleClassLoader with all of its parent layers.
@@ -117,11 +115,15 @@ public class ModuleClassLoader extends ClassLoader {
             // Loading a class requires its module to be part of resolvedRoots
             // If it's not, we delegate loading to its module's classloader
             if (!this.resolvedRoots.containsKey(k.name())) {
-                return parentLayers.stream()
-                        .filter(l -> l.configuration() == k.configuration())
-                        .flatMap(layer -> Optional.ofNullable(layer.findLoader(k.name())).stream())
-                        .findFirst()
-                        .orElse(ClassLoader.getPlatformClassLoader());
+                for (var parentLayer : parentLayers) {
+                    if (parentLayer.configuration() == k.configuration()) {
+                        var loader = parentLayer.findLoader(k.name());
+                        if (loader != null) {
+                            return loader;
+                        }
+                    }
+                }
+                return ClassLoader.getPlatformClassLoader();
             } else {
                 return ModuleClassLoader.this;
             }
