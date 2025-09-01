@@ -19,6 +19,7 @@ import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.IEnvironment;
+import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
@@ -44,8 +45,8 @@ public class LaunchPluginHandler {
     private static final Logger LOGGER = LogManager.getLogger();
     private final Map<String, ILaunchPluginService> plugins;
 
-    public LaunchPluginHandler() {
-        this(ServiceLoaderUtils.streamServiceLoader(() -> ServiceLoader.load(ILaunchPluginService.class),
+    public LaunchPluginHandler(final ModuleLayerHandler layerHandler) {
+        this(ServiceLoaderUtils.streamServiceLoader(() -> ServiceLoader.load(layerHandler.getLayer(IModuleLayerManager.Layer.BOOT).orElseThrow(), ILaunchPluginService.class),
                 e -> LOGGER.fatal(MODLAUNCHER, "Encountered serious error loading launch plugin service. Things will not work well", e)));
     }
 

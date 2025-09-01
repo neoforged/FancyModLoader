@@ -64,16 +64,9 @@ public final class ModuleLayerHandler implements IModuleLayerManager {
         ClassLoader classLoader = getClass().getClassLoader();
         // Create a new ModuleClassLoader from the boot module layer if it doesn't exist already.
         // This allows us to launch without BootstrapLauncher.
-        ModuleClassLoader cl;
-        ModuleLayer layer;
-        if (classLoader instanceof ModuleClassLoader moduleCl) {
-            cl = moduleCl;
-            layer = getClass().getModule().getLayer();
-        } else {
-            layer = ModuleLayer.boot();
-            cl = new ModuleClassLoader("BOOT", layer.configuration(), List.of(), getClass().getClassLoader());
-        }
-        completedLayers.put(Layer.BOOT, new LayerInfo(layer, cl));
+        ModuleClassLoader cl = classLoader instanceof ModuleClassLoader moduleCl ? moduleCl
+                : new ModuleClassLoader("BOOT", ModuleLayer.boot().configuration(), List.of());
+        completedLayers.put(Layer.BOOT, new LayerInfo(getClass().getModule().getLayer(), cl));
     }
 
     void addToLayer(final Layer layer, final SecureJar jar) {
