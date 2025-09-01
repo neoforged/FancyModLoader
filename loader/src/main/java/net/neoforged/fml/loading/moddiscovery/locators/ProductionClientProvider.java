@@ -48,7 +48,7 @@ public class ProductionClientProvider implements IModFileCandidateLocator {
         }
 
         try {
-            var mcJarContents = JarContents.of(content);
+            var mcJarContents = JarContents.ofPaths(content);
 
             var mcJarMetadata = new ModJarMetadata(mcJarContents);
             var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);

@@ -2,14 +2,12 @@ package cpw.mods.jarhandling.impl;
 
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarMetadata;
+import cpw.mods.jarhandling.JarResource;
 import cpw.mods.jarhandling.LazyJarMetadata;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
-import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -21,12 +19,12 @@ public class ModuleJarMetadata extends LazyJarMetadata {
     private final ModuleDescriptor originalDescriptor;
     private final JarContents jar;
 
-    public ModuleJarMetadata(URI uri, JarContents jar) {
+    public ModuleJarMetadata(JarResource moduleInfo, JarContents jar) {
         this.jar = jar;
         try {
-            this.originalDescriptorBytes = Files.readAllBytes(Path.of(uri));
+            this.originalDescriptorBytes = moduleInfo.readAllBytes();
         } catch (IOException e) {
-            throw new UncheckedIOException("Failed to read module-info.class from " + uri, e);
+            throw new UncheckedIOException("Failed to read module-info.class from " + moduleInfo, e);
         }
         this.originalDescriptor = ModuleDescriptor.read(ByteBuffer.wrap(originalDescriptorBytes));
     }

@@ -147,12 +147,17 @@ public class FMLLoader {
         return languageProviderLoader;
     }
 
-    public static void addAccessTransformer(Path atPath, ModFile modName) {
-        LOGGER.debug(LogMarkers.SCAN, "Adding Access Transformer in {}", modName.getFilePath());
-        try {
-            accessTransformer.loadATFromPath(atPath);
+    public static void addAccessTransformer(String atPath, ModFile sourceModFile) {
+        LOGGER.debug(LogMarkers.SCAN, "Adding Access Transformer in {}", sourceModFile.getFilePath());
+        var resource = sourceModFile.getContents().get(atPath);
+        if (resource == null) {
+            LOGGER.error("AT {} is missing in {}", atPath, sourceModFile);
+            return;
+        }
+        try (var reader = resource.bufferedReader()) {
+            accessTransformer.loadAT(reader, atPath);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load AT at " + atPath.toAbsolutePath(), e);
+            throw new RuntimeException("Failed to load AT " + atPath + " from " + sourceModFile, e);
         }
     }
 

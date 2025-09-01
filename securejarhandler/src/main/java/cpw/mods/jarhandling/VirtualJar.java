@@ -1,18 +1,13 @@
 package cpw.mods.jarhandling;
 
-import cpw.mods.niofs.union.UnionFileSystem;
-import cpw.mods.niofs.union.UnionFileSystemProvider;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.module.ModuleDescriptor;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.spi.FileSystemProvider;
-import java.security.CodeSigner;
 import java.util.Optional;
 import java.util.Set;
-import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,24 +34,14 @@ public final class VirtualJar implements SecureJar {
             throw new IllegalArgumentException("VirtualJar reference path " + referencePath + " must exist");
         }
 
+        this.contents = JarContents.empty(referencePath);
         this.moduleDescriptor = ModuleDescriptor.newAutomaticModule(name)
                 .packages(Set.of(packages))
                 .build();
-        // Create a dummy file system from the reference path, with a filter that always returns false
-        this.dummyFileSystem = UFSP.newFileSystem((path, basePath) -> false, referencePath);
-        this.contents = JarContents.of(dummyFileSystem.getRoot());
     }
-
-    // Implementation details below
-    private static final UnionFileSystemProvider UFSP = (UnionFileSystemProvider) FileSystemProvider.installedProviders()
-            .stream()
-            .filter(fsp -> fsp.getScheme().equals("union"))
-            .findFirst()
-            .orElseThrow(() -> new IllegalStateException("Couldn't find UnionFileSystemProvider"));
 
     private final ModuleDescriptor moduleDescriptor;
     private final ModuleDataProvider moduleData = new VirtualJarModuleDataProvider();
-    private final UnionFileSystem dummyFileSystem;
     private final Manifest manifest = new Manifest();
 
     @Override
@@ -66,7 +51,7 @@ public final class VirtualJar implements SecureJar {
 
     @Override
     public Path getPrimaryPath() {
-        return dummyFileSystem.getPrimaryPath();
+        return contents.getPrimaryPath();
     }
 
     @Override
@@ -75,49 +60,12 @@ public final class VirtualJar implements SecureJar {
     }
 
     @Override
-    public @Nullable CodeSigner[] getManifestSigners() {
-        return null;
-    }
-
-    @Override
-    public Status verifyPath(Path path) {
-        return Status.NONE;
-    }
-
-    @Override
-    public Status getFileStatus(String name) {
-        return Status.NONE;
-    }
-
-    @Override
-    public @Nullable Attributes getTrustedManifestEntries(String name) {
-        return null;
-    }
-
-    @Override
-    public boolean hasSecurityData() {
-        return false;
-    }
-
-    @Override
     public String name() {
         return moduleDescriptor.name();
     }
 
     @Override
-    public Path getPath(String first, String... rest) {
-        return dummyFileSystem.getPath(first, rest);
-    }
-
-    @Override
-    public Path getRootPath() {
-        return dummyFileSystem.getRoot();
-    }
-
-    @Override
-    public void close() throws IOException {
-        dummyFileSystem.close();
-    }
+    public void close() throws IOException {}
 
     private class VirtualJarModuleDataProvider implements ModuleDataProvider {
         @Override
@@ -149,12 +97,6 @@ public final class VirtualJar implements SecureJar {
         @Override
         public Manifest getManifest() {
             return manifest;
-        }
-
-        @Override
-        @Nullable
-        public CodeSigner[] verifyAndGetSigners(String cname, byte[] bytes) {
-            return null;
         }
     }
 }
