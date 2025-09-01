@@ -113,8 +113,7 @@ class TransformationServicesHandler {
 
     void discoverServices(final ArgumentHandler.DiscoveryData discoveryData) {
         LOGGER.debug(MODLAUNCHER, "Discovering transformation services");
-        var bootLayer = layerHandler.getLayer(IModuleLayerManager.Layer.BOOT).orElseThrow();
-        var earlyDiscoveryServices = ServiceLoaderUtils.streamServiceLoader(() -> ServiceLoader.load(bootLayer, ITransformerDiscoveryService.class), sce -> LOGGER.fatal(MODLAUNCHER, "Encountered serious error loading transformation discoverer, expect problems", sce))
+        var earlyDiscoveryServices = ServiceLoaderUtils.streamServiceLoader(() -> ServiceLoader.load(ITransformerDiscoveryService.class), sce -> LOGGER.fatal(MODLAUNCHER, "Encountered serious error loading transformation discoverer, expect problems", sce))
                 .toList();
         var additionalPaths = earlyDiscoveryServices.stream()
                 .map(s -> s.candidates(discoveryData.gameDir(), discoveryData.launchTarget()))

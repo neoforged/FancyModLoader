@@ -34,6 +34,10 @@ public class TransformerAuditTrail implements ITransformerAuditTrail {
         return Collections.unmodifiableList(getTransformerActivities(className));
     }
 
+    public void clear() {
+        audit.clear();
+    }
+
     private static class TransformerActivity implements ITransformerActivity {
         private final Type type;
         private final String[] context;

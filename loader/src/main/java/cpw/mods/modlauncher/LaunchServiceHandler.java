@@ -17,7 +17,6 @@ package cpw.mods.modlauncher;
 import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 
 import cpw.mods.modlauncher.api.ILaunchHandlerService;
-import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
 import java.util.ArrayList;
@@ -37,8 +36,8 @@ class LaunchServiceHandler {
     private static final Logger LOGGER = LogManager.getLogger();
     private final Map<String, LaunchServiceHandlerDecorator> launchHandlerLookup;
 
-    public LaunchServiceHandler(final ModuleLayerHandler layerHandler) {
-        this.launchHandlerLookup = ServiceLoaderUtils.streamServiceLoader(() -> ServiceLoader.load(layerHandler.getLayer(IModuleLayerManager.Layer.BOOT).orElseThrow(), ILaunchHandlerService.class), sce -> LOGGER.fatal("Encountered serious error loading transformation service, expect problems", sce))
+    public LaunchServiceHandler() {
+        this.launchHandlerLookup = ServiceLoaderUtils.streamServiceLoader(() -> ServiceLoader.load(ILaunchHandlerService.class), sce -> LOGGER.fatal("Encountered serious error loading transformation service, expect problems", sce))
                 .collect(Collectors.toMap(ILaunchHandlerService::name, LaunchServiceHandlerDecorator::new));
         LOGGER.debug(MODLAUNCHER, "Found launch services [{}]", () -> String.join(",", launchHandlerLookup.keySet()));
     }

@@ -42,7 +42,6 @@ import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.powermock.reflect.Whitebox;
 
 /**
  * Test overall launcher
@@ -53,16 +52,16 @@ class LauncherTests {
     void testLauncher() throws Exception {
         Launcher.main("--version", "1.0", "--launchTarget", "mockLaunch", "--test.mods", "A,B,C,cpw.mods.modlauncher.testjar.TestClass", "--accessToken", "SUPERSECRET!");
         Launcher instance = Launcher.INSTANCE;
-        final Map<String, TransformationServiceDecorator> services = Whitebox.getInternalState(Whitebox.getInternalState(instance, "transformationServicesHandler"), "serviceLookup");
+        final Map<String, TransformationServiceDecorator> services = getField(getField(instance, "transformationServicesHandler"), "serviceLookup");
         final List<ITransformationService> launcherServices = services.values().stream()
-                .map(dec -> Whitebox.<ITransformationService>getInternalState(dec, "service"))
+                .map(dec -> this.<ITransformationService>getField(dec, "service"))
                 .toList();
         assertAll("services are present and correct",
                 () -> assertEquals(1, launcherServices.size(), "Found 1 service"),
                 () -> assertEquals(MockTransformerService.class, launcherServices.get(0).getClass(), "Found Test Launcher Service"));
 
-        final ArgumentHandler argumentHandler = Whitebox.getInternalState(instance, "argumentHandler");
-        final OptionSet options = Whitebox.getInternalState(argumentHandler, "optionSet");
+        final ArgumentHandler argumentHandler = getField(instance, "argumentHandler");
+        final OptionSet options = getField(argumentHandler, "optionSet");
         Map<String, OptionSpec<?>> optionsMap = options.specs().stream().collect(Collectors.toMap(s -> String.join(",", s.options()), s -> s, (u, u2) -> u));
 
         assertAll("options are correctly setup",
@@ -71,14 +70,14 @@ class LauncherTests {
 
         final MockTransformerService mockTransformerService = (MockTransformerService) launcherServices.get(0);
         assertAll("test launcher service is correctly configured",
-                () -> assertIterableEquals(Arrays.asList("A", "B", "C", "cpw.mods.modlauncher.testjar.TestClass"), Whitebox.getInternalState(mockTransformerService, "modList"), "modlist is configured"),
-                () -> assertEquals("INITIALIZED", Whitebox.getInternalState(mockTransformerService, "state"), "Initialized was called"));
+                () -> assertIterableEquals(Arrays.asList("A", "B", "C", "cpw.mods.modlauncher.testjar.TestClass"), getField(mockTransformerService, "modList"), "modlist is configured"),
+                () -> assertEquals("INITIALIZED", getField(mockTransformerService, "state"), "Initialized was called"));
 
         assertAll(
                 () -> assertNotNull(instance.environment().getProperty(IEnvironment.Keys.VERSION.get())));
 
         try {
-            final Stream<Field> transformedFields = Stream.of(Class.forName("cpw.mods.modlauncher.testjar.TestClass", true, Whitebox.getInternalState(Launcher.INSTANCE, "classLoader")).getDeclaredFields());
+            final Stream<Field> transformedFields = Stream.of(Class.forName("cpw.mods.modlauncher.testjar.TestClass", true, getField(Launcher.INSTANCE, "classLoader")).getDeclaredFields());
             assertTrue(transformedFields.anyMatch(f -> f.getName().equals("testfield")), "Found transformed field");
             final Module testJarsModule = Launcher.INSTANCE.findLayerManager()
                     .flatMap(m -> m.getLayer(IModuleLayerManager.Layer.PLUGIN))
@@ -87,7 +86,7 @@ class LauncherTests {
             final Stream<Field> untransformedFields = Stream.of(Class.forName(testJarsModule, "cpw.mods.modlauncher.testjar.TestClass").getDeclaredFields());
             assertTrue(untransformedFields.noneMatch(f -> f.getName().equals("testfield")), "Didn't find transformed field");
 
-            Class<?> resClass = Class.forName("cpw.mods.modlauncher.testjar.ResourceLoadingClass", true, Whitebox.getInternalState(Launcher.INSTANCE, "classLoader"));
+            Class<?> resClass = Class.forName("cpw.mods.modlauncher.testjar.ResourceLoadingClass", true, getField(Launcher.INSTANCE, "classLoader"));
             assertFindResource(resClass);
         } catch (ClassNotFoundException e) {
             fail("Can't load class");
@@ -96,12 +95,23 @@ class LauncherTests {
 
     private void assertFindResource(Class<?> loaded) throws Exception {
         Object instance = loaded.getDeclaredConstructor().newInstance();
-        URL resource = (URL) Whitebox.getField(loaded, "resource").get(instance);
+        URL resource = getField(instance, "resource");
         assertNotNull(resource, "Resource not found");
         // assert that we can find something in the resource, so we know it loaded properly
         try (InputStream in = resource.openStream();
                 Scanner scanner = new Scanner(new InputStreamReader(in, StandardCharsets.UTF_8))) {
             assertTrue(scanner.nextLine().contains("Loaded successfully!"), "Resource has incorrect content");
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T getField(Object o, String name) {
+        try {
+            Field f = o.getClass().getDeclaredField(name);
+            f.setAccessible(true);
+            return (T) f.get(o);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }

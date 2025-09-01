@@ -38,7 +38,6 @@ public class Launcher {
     private final TypesafeMap blackboard;
     private final TransformationServicesHandler transformationServicesHandler;
     private final Environment environment;
-    private final TransformStore transformStore;
     private final ArgumentHandler argumentHandler;
     private final LaunchServiceHandler launchService;
     private final LaunchPluginHandler launchPlugins;
@@ -49,16 +48,15 @@ public class Launcher {
         INSTANCE = this;
         LogManager.getLogger().info(MODLAUNCHER, "ModLauncher {} starting: java version {} by {}; OS {} arch {} version {}", () -> IEnvironment.class.getPackage().getImplementationVersion(), () -> System.getProperty("java.version"), () -> System.getProperty("java.vendor"), () -> System.getProperty("os.name"), () -> System.getProperty("os.arch"), () -> System.getProperty("os.version"));
         this.moduleLayerHandler = new ModuleLayerHandler();
-        this.launchService = new LaunchServiceHandler(this.moduleLayerHandler);
+        this.launchService = new LaunchServiceHandler();
         this.blackboard = new TypesafeMap();
         this.environment = new Environment(this);
         environment.computePropertyIfAbsent(IEnvironment.Keys.MLSPEC_VERSION.get(), s -> IEnvironment.class.getPackage().getSpecificationVersion());
         environment.computePropertyIfAbsent(IEnvironment.Keys.MLIMPL_VERSION.get(), s -> IEnvironment.class.getPackage().getImplementationVersion());
         environment.computePropertyIfAbsent(IEnvironment.Keys.MODLIST.get(), s -> new ArrayList<>());
-        this.transformStore = new TransformStore();
-        this.transformationServicesHandler = new TransformationServicesHandler(this.transformStore, this.moduleLayerHandler);
+        this.transformationServicesHandler = new TransformationServicesHandler(new TransformStore(), this.moduleLayerHandler);
         this.argumentHandler = new ArgumentHandler();
-        this.launchPlugins = new LaunchPluginHandler(this.moduleLayerHandler);
+        this.launchPlugins = new LaunchPluginHandler();
     }
 
     public static void main(String... args) {
