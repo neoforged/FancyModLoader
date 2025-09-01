@@ -130,8 +130,8 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
         Set<ModuleDescriptor> processedAutomaticDescriptors = new HashSet<>();
         Map<ResolvedModule, ClassLoader> classLoaderMap = new HashMap<>();
         Function<ResolvedModule, ClassLoader> findClassLoader = k -> {
-            // Loading a class requires its module to be part of resolvedRoots
-            // If it's not, we delegate loading to its module's classloader
+            // Loading a class in this loader requires its module to be locally defined,
+            // otherwise, we delegate loading to its module's classloader
             if (!this.moduleInfoCache.containsKey(k.name())) {
                 for (var parentLayer : parentLayers) {
                     if (parentLayer.configuration() == k.configuration()) {
@@ -495,9 +495,8 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
     }
 
     /**
-     * Thread-safe record to track module information with cached readers.
-     * This class handles the lifecycle of ModuleReader instances and ensures
-     * proper cleanup when the classloader is closed.
+     * Caches the module reader for a module, including its protection domain.
+     * Ensures that we can clean up module readers when the loader is closed.
      */
     private static final class ModuleInfo implements AutoCloseable {
         private final String name;
@@ -518,21 +517,19 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
         }
 
         /**
-         * Gets a ModuleReader for this module, creating and caching one if necessary.
-         * Thread-safe and handles proper cleanup.
+         * Gets a ModuleReader for this module, opening one on demand if needed.
          */
         ModuleReader getReader() throws IOException {
             if (closed) {
                 throw new IOException("Module " + name + " has been closed");
             }
 
-            // Fast path - check if reader is already cached
+            // Uses double-checked locking idiom
             ModuleReader reader = cachedReader;
             if (reader != null) {
                 return reader;
             }
 
-            // Slow path - create reader under write lock
             lock.lock();
             try {
                 if (closed) {
