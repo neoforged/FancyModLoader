@@ -1,8 +1,6 @@
 package cpw.mods.cl;
 
-import cpw.mods.util.LambdaExceptionUtils;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -31,7 +29,6 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Stream;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -199,19 +196,15 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
         return null;
     }
 
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private static Stream<InputStream> closeHandler(Optional<InputStream> supplier) {
-        final var is = supplier.orElse(null);
-        return Optional.ofNullable(is).stream().onClose(() -> Optional.ofNullable(is).ifPresent(LambdaExceptionUtils.rethrowConsumer(InputStream::close)));
-    }
-
-    private byte[] getClassBytes(ModuleInfo moduleInfo, String name) throws IOException {
+    private static byte[] getClassBytes(ModuleInfo moduleInfo, String name) throws IOException {
         var cname = name.replace('.', '/') + ".class";
         var reader = moduleInfo.getReader();
-        try (var istream = closeHandler(Optional.of(reader).flatMap(LambdaExceptionUtils.rethrowFunction(r -> r.open(cname))))) {
-            return istream.map(LambdaExceptionUtils.rethrowFunction(InputStream::readAllBytes))
-                    .findFirst()
-                    .orElseGet(() -> new byte[0]);
+        try (var istream = reader.open(cname).orElse(null)) {
+            if (istream == null) {
+                return new byte[0];
+            } else {
+                return istream.readAllBytes();
+            }
         }
     }
 
