@@ -123,7 +123,7 @@ public class ModuleClassLoader extends ClassLoader {
                         }
                     }
                 }
-                return fallbackClassLoader;
+                return ClassLoader.getPlatformClassLoader();
             } else {
                 return ModuleClassLoader.this;
             }

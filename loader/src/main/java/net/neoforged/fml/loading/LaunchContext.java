@@ -47,17 +47,13 @@ final class LaunchContext implements ILaunchContext {
                 for (var resolvedModule : layer.configuration().modules()) {
                     resolvedModule.reference().location().ifPresent(moduleUri -> {
                         try {
-                            locatedPaths.add(unpackPath(Paths.get(moduleUri)));
+                            locatedPaths.add(Paths.get(moduleUri));
                         } catch (Exception ignored) {}
                     });
                 }
             });
         }
         LOG.debug(LogMarkers.SCAN, "Located paths when launch context was created: {}", locatedPaths);
-    }
-
-    private Path unpackPath(Path path) {
-        return path;
     }
 
     @Override
@@ -92,11 +88,11 @@ final class LaunchContext implements ILaunchContext {
 
     @Override
     public boolean isLocated(Path path) {
-        return locatedPaths.contains(unpackPath(path));
+        return locatedPaths.contains(path);
     }
 
     public boolean addLocated(Path path) {
-        return locatedPaths.add(unpackPath(path));
+        return locatedPaths.add(path);
     }
 
     @Override
