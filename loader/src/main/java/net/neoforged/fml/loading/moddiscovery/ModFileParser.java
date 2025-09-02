@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import net.neoforged.fml.loading.LogMarkers;
+import net.neoforged.fml.loading.mixin.FMLMixinLaunchPlugin;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.neoforgespi.language.IConfigurable;
 import net.neoforged.neoforgespi.language.IModFileInfo;
@@ -70,7 +71,7 @@ public class ModFileParser {
                 .flatMap(ModuleDescriptor::version).map(ModuleDescriptor.Version::toString)
                 .or(() -> Optional.ofNullable(FabricUtil.class.getPackage().getImplementationVersion()))
                 .orElseThrow(() -> new IllegalStateException("Cannot determine version of currently running mixin")));
-        int defaultMixinVersion = DeferredMixinConfigRegistration.DEFAULT_BEHAVIOUR_VERSION;
+        int defaultMixinVersion = FMLMixinLaunchPlugin.DEFAULT_BEHAVIOUR_VERSION;
         int patch = defaultMixinVersion % 1000;
         defaultMixinVersion /= 1000;
         int minor = defaultMixinVersion % 1000;

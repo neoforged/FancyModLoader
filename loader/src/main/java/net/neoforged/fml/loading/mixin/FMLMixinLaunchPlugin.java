@@ -25,6 +25,9 @@ import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModFileParser;
+import org.apache.maven.artifact.versioning.ArtifactVersion;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.slf4j.Logger;
@@ -83,8 +86,24 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
         MixinBootstrap.getPlatform().inject();
     }
 
+    // Increment to break compatibility; during a BC window, this should be set to the latest version. This is _not_ set
+    // to COMPATIBILITY_LATEST, so that if mixin is bumped past a BC it does not break mods.
+    @ApiStatus.Internal
+    public static final int DEFAULT_BEHAVIOUR_VERSION = FabricUtil.COMPATIBILITY_0_14_0;
+
+    private static int calculateBehaviorVersion(@Nullable ArtifactVersion behaviorVersion) {
+        if (behaviorVersion == null) {
+            return DEFAULT_BEHAVIOUR_VERSION;
+        }
+        return behaviorVersion.getMajorVersion() * (1000 * 1000) +
+                behaviorVersion.getMinorVersion() * 1000 +
+                behaviorVersion.getIncrementalVersion();
+    }
+
     private void registerMixinConfigs() {
-        Map<String, String> configModIds = new HashMap<>();
+        record AnnotationInfo(String modId, int behaviorVersion) {}
+
+        Map<String, AnnotationInfo> configAnnotationInfo = new HashMap<>();
         var modList = LoadingModList.get();
 
         extraMixinConfigs.forEach(Mixins::addConfiguration);
@@ -94,13 +113,14 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
                 .forEach(file -> {
                     final String modId = file.getModInfos().getFirst().getModId();
                     for (ModFileParser.MixinConfig potential : file.getMixinConfigs()) {
-                        var existingModId = configModIds.putIfAbsent(potential.config(), modId);
-                        if (existingModId != null && !existingModId.equals(modId)) {
-                            LOGGER.error("Mixin config {} is registered by multiple mods: {} and {}", potential.config(), existingModId, modId);
+                        final var currentInfo = new AnnotationInfo(modId, calculateBehaviorVersion(potential.behaviorVersion()));
+                        var existingInfo = configAnnotationInfo.putIfAbsent(potential.config(), currentInfo);
+                        if (existingInfo != null && !existingInfo.modId().equals(modId)) {
+                            LOGGER.error("Mixin config {} is registered by multiple mods: {} and {}", potential.config(), existingInfo, modId);
                             ModLoader.addLoadingIssue(ModLoadingIssue.error(
                                     "fml.modloadingissue.mixin.duplicate_config",
                                     potential.config(),
-                                    existingModId,
+                                    existingInfo,
                                     modId));
                         }
                         if (potential.requiredMods().stream().allMatch(id -> modList.getModFileById(id) != null)) {
@@ -113,14 +133,15 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
 
         final var configMap = Mixins.getConfigs().stream().collect(
                 Collectors.toMap(Config::getName, Config::getConfig));
-        configModIds.forEach((fileName, modId) -> {
-            if (modId == null) return;
+        configAnnotationInfo.forEach((fileName, annotationInfo) -> {
+            if (annotationInfo == null) return;
 
             final var config = configMap.get(fileName);
             if (config == null) {
                 LOGGER.error("Config file {} was not registered!", fileName);
             } else {
-                config.decorate(FabricUtil.KEY_MOD_ID, modId);
+                config.decorate(FabricUtil.KEY_MOD_ID, annotationInfo.modId);
+                config.decorate(FabricUtil.KEY_COMPATIBILITY, annotationInfo.behaviorVersion);
             }
         });
     }
