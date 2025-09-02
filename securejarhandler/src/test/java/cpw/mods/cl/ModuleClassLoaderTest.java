@@ -4,20 +4,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIterator;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleReader;
+import java.net.JarURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.spi.URLStreamHandlerProvider;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,7 +40,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.opentest4j.TestAbortedException;
 
 class ModuleClassLoaderTest {
@@ -58,6 +67,7 @@ class ModuleClassLoaderTest {
                         public class DummyServiceImpl implements DummyService {
                         }
                         """)
+                .addClass("DefaultPackageClass", "class DefaultPackageClass {}")
                 .addTextFile("META-INF/dummy.txt", "from layer1")
                 .withModuleInfo(ModuleDescriptor.newModule("layer1")
                         .exports("layer1")
@@ -84,8 +94,16 @@ class ModuleClassLoaderTest {
                         public class DummyServiceImpl implements layer1.DummyService {
                         }
                         """)
+                .withManifest(Map.of(
+                        // For testing the package information
+                        "Implementation-Title", "t",
+                        "Implementation-Version", "t",
+                        "Implementation-Vendor", "t",
+                        "Specification-Title", "t",
+                        "Specification-Version", "t",
+                        "Specification-Vendor", "t"))
                 .addService("layer1.DummyService", "layer3a.DummyServiceImpl")
-                .addTextFile("META-INF/dummy.txt", "from layer3a")
+                .addTextFile("META-INF/dummy.txt", "from layer3.provider.a")
                 // This is a packaged file that should show up in the module packages, but since this is
                 // an automatic module, it doesn't and is visible generally.
                 .addTextFile("layer3resources/dummy.txt", "from layer3")
@@ -113,7 +131,7 @@ class ModuleClassLoaderTest {
                         .provides("layer1.DummyService", List.of("layer3b.DummyServiceImpl"))
                         .packages(Set.of("layer3b", "layer3bresources"))
                         .build())
-                .addTextFile("META-INF/dummy.txt", "from layer3b")
+                .addTextFile("META-INF/dummy.txt", "from layer3.provider.b")
                 // This is a packaged file that should show up in the module packages, but is ultimately not visible
                 // from outside layer3b itself.
                 .addTextFile("layer3bresources/dummy.txt", "from layer3b")
@@ -135,6 +153,24 @@ class ModuleClassLoaderTest {
                                 return ServiceLoader.load(ServiceLoaderProxy.class.getModule().getLayer(), layer1.DummyService.class).stream()
                                         .map(ServiceLoader.Provider::get).toList();
                             }
+                        }
+                        """)
+                .addClass("layer3.PackagesProxy", """
+                        public class PackagesProxy {
+                            public static Package[] load() {
+                                return Package.getPackages();
+                            }
+                        }
+                        """)
+                .addClass("testpkg.package-info", """
+                        @TestAnnotation
+                        package testpkg;
+                        """)
+                .addClass("testpkg.TestAnnotation", """
+                        import java.lang.annotation.Retention;
+                        import java.lang.annotation.RetentionPolicy;
+                        @Retention(RetentionPolicy.RUNTIME)
+                        public @interface TestAnnotation {
                         }
                         """)
                 .addTextFile("META-INF/dummy.txt", "from layer3")
@@ -240,15 +276,23 @@ class ModuleClassLoaderTest {
             if (systemClassloader != null) {
                 systemClassloader.close();
             }
+            if (loader instanceof ModuleClassLoader moduleClassLoader) {
+                moduleClassLoader.close();
+            }
             for (var closeable : closeables) {
                 closeable.close();
             }
             closeLayer(layer1);
             closeLayer(layer2);
             closeLayer(layer3);
+
+            clearJarUrlHandlerCache();
         }
 
         private void closeLayer(ModuleLayer layer) throws Exception {
+            if (layer == null) {
+                return;
+            }
             for (Module module : layer.modules()) {
                 var loader = module.getClassLoader();
                 if (loader instanceof ModuleClassLoader) {
@@ -356,7 +400,7 @@ class ModuleClassLoaderTest {
 
                 // If the same jar is also visible via the parent classloader, it will show up once from there
                 if (scenario.hasParentClassloader()) {
-                    assertThat(urls).containsExactly(new URL("jar:" + thirdLayerProviderBJar.toUri() + "!/layer3bresources/dummy.txt"));
+                    assertThat(urls).containsExactly(URI.create("jar:" + thirdLayerProviderBJar.toUri() + "!/layer3bresources/dummy.txt").toURL());
                 } else {
                     assertThat(urls).isEmpty();
                 }
@@ -370,11 +414,11 @@ class ModuleClassLoaderTest {
                 // If the same jar is also visible via the parent classloader, it will show up once from there
                 if (scenario.hasParentClassloader()) {
                     assertThat(urls).containsExactly(
-                            new URL("jar:" + thirdLayerProviderBJar.toUri() + "!/layer3bresourcesopen/dummy.txt"),
-                            new URL("jar:" + thirdLayerProviderBJar.toUri() + "!/layer3bresourcesopen/dummy.txt"));
+                            URI.create("jar:" + thirdLayerProviderBJar.toUri() + "!/layer3bresourcesopen/dummy.txt").toURL(),
+                            URI.create("jar:" + thirdLayerProviderBJar.toUri() + "!/layer3bresourcesopen/dummy.txt").toURL());
                 } else {
                     assertThat(urls).containsExactly(
-                            new URL("jar:" + thirdLayerProviderBJar.toUri() + "!/layer3bresourcesopen/dummy.txt"));
+                            URI.create("jar:" + thirdLayerProviderBJar.toUri() + "!/layer3bresourcesopen/dummy.txt").toURL());
                 }
             }
 
@@ -386,11 +430,11 @@ class ModuleClassLoaderTest {
                 // If the same jar is also visible via the parent classloader, it will show up once from there
                 if (scenario.hasParentClassloader()) {
                     assertThat(urls).containsExactly(
-                            new URL("jar:" + thirdLayerProviderBJar.toUri() + "!/layer3b/DummyServiceImpl.class"),
-                            new URL("jar:" + thirdLayerProviderBJar.toUri() + "!/layer3b/DummyServiceImpl.class"));
+                            URI.create("jar:" + thirdLayerProviderBJar.toUri() + "!/layer3b/DummyServiceImpl.class").toURL(),
+                            URI.create("jar:" + thirdLayerProviderBJar.toUri() + "!/layer3b/DummyServiceImpl.class").toURL());
                 } else {
                     assertThat(urls).containsExactly(
-                            new URL("jar:" + thirdLayerProviderBJar.toUri() + "!/layer3b/DummyServiceImpl.class"));
+                            URI.create("jar:" + thirdLayerProviderBJar.toUri() + "!/layer3b/DummyServiceImpl.class").toURL());
                 }
             }
 
@@ -403,8 +447,8 @@ class ModuleClassLoaderTest {
                     // But with a parent classloader relationship, we see the class file twice.
                     // Once from being on the root URLClassLoader, but also from its own actual layer.
                     assertThat(urls).containsExactly(
-                            new URL("jar:" + secondLayerJar.toUri() + "!/layer2/DummyServiceImpl.class"),
-                            new URL("jar:" + secondLayerJar.toUri() + "!/layer2/DummyServiceImpl.class"));
+                            URI.create("jar:" + secondLayerJar.toUri() + "!/layer2/DummyServiceImpl.class").toURL(),
+                            URI.create("jar:" + secondLayerJar.toUri() + "!/layer2/DummyServiceImpl.class").toURL());
                 } else {
                     // Without parent classloader relationship, parent layers aren't searched
                     assertThat(urls).isEmpty();
@@ -416,6 +460,41 @@ class ModuleClassLoaderTest {
                 List<URL> urls = new ArrayList<>();
                 loader.getResources("").asIterator().forEachRemaining(urls::add);
                 assertThat(urls).isEmpty();
+            }
+
+            @Test
+            void testGetResourceForNonExistentResource() {
+                assertNull(loader.getResource("doesntexist"));
+            }
+
+            @Test
+            void testGetResourceForResourceInParentLoader() throws Exception {
+                var url = loader.getResource("layer1resources/dummy.txt");
+                if (scenario.hasParentClassloader()) {
+                    assertNotNull(url);
+                    try (var in = url.openStream()) {
+                        assertThat(in).hasContent("from layer1");
+                    }
+                } else {
+                    assertNull(url);
+                }
+            }
+
+            /*
+                Note on this test: findResource(moduleName, resourceName) is protected,
+                but called directly by Module#getResourceAsStream. As such, if that works
+                correctly, we're good.
+                To this end, all modules have a file at META-INF/dummy.txt, which would overlay
+                each other on the classpath, but the modular version should return the content
+                from that module.
+             */
+            @ParameterizedTest
+            @ValueSource(strings = { "layer1", "layer2", "layer3", "layer3.provider.a", "layer3.provider.b" })
+            public void testModularGetResourceAsStream(String moduleName) throws Exception {
+                var module = layer3.findModule(moduleName).get();
+                try (var in = module.getResourceAsStream("META-INF/dummy.txt")) {
+                    assertThat(in).hasContent("from " + moduleName);
+                }
             }
         }
 
@@ -527,141 +606,248 @@ class ModuleClassLoaderTest {
                 assertEquals(systemClassloader, classFromRoot.getClassLoader());
                 assertEquals(layer1.findLoader("layer1"), classFromLayer.getClassLoader());
             }
-        }
 
-        private Class<?> callFindClass(ClassLoader loader, String moduleName, String className) throws Throwable {
-            var methodLookup = getMethodLookup();
-            var findClass = methodLookup.findVirtual(loader.getClass(), "findClass", MethodType.methodType(Class.class, String.class, String.class));
-            return (Class<?>) findClass.invoke(loader, moduleName, className);
-        }
+            @Test
+            void testLoadClassFromDefaultPackage() throws Exception {
+                // If no parent loader is visible up to the classpath, a class from the default package can't be loaded
+                if (!scenario.hasParentClassloader()) {
+                    assertThatThrownBy(() -> loader.loadClass("DefaultPackageClass"))
+                            .isExactlyInstanceOf(ClassNotFoundException.class)
+                            .hasMessage("DefaultPackageClass");
+                } else {
+                    var loadedClass = loader.loadClass("DefaultPackageClass");
+                    // Will be in the unnamed module, obviously
+                    assertFalse(loadedClass.getModule().isNamed());
+                }
+            }
 
-        private Class<?> callFindClass(ClassLoader loader, String className) throws Throwable {
-            var methodLookup = getMethodLookup();
-            var findClass = methodLookup.findVirtual(loader.getClass(), "findClass", MethodType.methodType(Class.class, String.class));
-            return (Class<?>) findClass.invoke(loader, className);
-        }
-    }
+            @ParameterizedTest
+            @ValueSource(strings = {
+                    // Default package goes to parent classloader
+                    "DefaultPackageClassDoesNotExist",
+                    // Package not claimed by any module goes to parent classloader too
+                    "unclaimed.DoesNotExist",
+                    // Local module
+                    "layer3.DoesNotExist",
+                    // Parent layer module
+                    "layer1.DoesNotExist"
+            })
+            void testLoadClassForNonExistentClass(String className) {
+                assertThatThrownBy(() -> loader.loadClass(className))
+                        .isExactlyInstanceOf(ClassNotFoundException.class)
+                        .hasMessage(className);
+            }
 
-    private static MethodHandles.Lookup getMethodLookup() {
-        try {
-            var hackfield = MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP");
-            hackfield.setAccessible(true);
-            return (MethodHandles.Lookup) hackfield.get(null);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Test
-    public void testPackageInfoAvailability() throws Exception {
-        var testJar = new ModFileBuilder(tempDir.resolve("packagetest.jar"))
-                .addClass("testpkg.package-info", """
-                        @TestAnnotation
-                        package testpkg;
-                        """)
-                .addClass("testpkg.TestAnnotation", """
-                        import java.lang.annotation.Retention;
-                        import java.lang.annotation.RetentionPolicy;
-                        @Retention(RetentionPolicy.RUNTIME)
-                        public @interface TestAnnotation {
+            @Test
+            void testFindClassForBrokenJarFileThrowsClassNotFoundException() throws IOException {
+                // Copy the first layer jar and open another layer to test this behavior
+                var corruptedJar = tempDir.resolve("corruptedJar.jar");
+                Files.copy(firstLayerJar, corruptedJar, StandardCopyOption.REPLACE_EXISTING);
+                try (var layer = TestjarUtil.buildLayer(corruptedJar)) {
+                    // This test is slightly different in that it corrupts the existing jar file
+                    try (var file = new RandomAccessFile(corruptedJar.toFile(), "rwd")) {
+                        for (long i = 0; i < file.length(); i++) {
+                            file.writeByte(0);
                         }
-                        """)
-                .build();
+                    }
 
-        try (var layer = TestjarUtil.buildLayer(testJar)) {
-            // Reference package through a class to ensure correct behavior of ModuleClassLoader#findClass(String,String)
-            Class<?> cls = Class.forName("testpkg.TestAnnotation", true, layer.cl());
-            assertThat(cls.getPackage().getDeclaredAnnotations())
-                    .extracting(Annotation::annotationType)
-                    .extracting(Class::getName)
-                    .containsOnly("testpkg.TestAnnotation");
+                    // What we care about here is that the original IOException is the cause of the ClassNotFoundException,
+                    // and it is not swallowed.
+                    assertThatThrownBy(() -> layer.cl().findClass("layer1.DummyService"))
+                            .isExactlyInstanceOf(ClassNotFoundException.class)
+                            .hasMessage("layer1.DummyService")
+                            .hasCauseInstanceOf(IOException.class);
+                }
+            }
+
+            @Test
+            void testGetDefinedPackages() throws Exception {
+                loader.loadClass("layer3.ServiceLoaderProxy");
+                assertThat(loader.getDefinedPackages()).extracting(Package::getName).containsOnly("layer3");
+                loader.loadClass("layer3a.DummyServiceImpl");
+                assertThat(loader.getDefinedPackages()).extracting(Package::getName).containsOnly("layer3", "layer3a");
+                loader.loadClass("layer3b.DummyServiceImpl");
+                assertThat(loader.getDefinedPackages()).extracting(Package::getName).containsOnly("layer3", "layer3a", "layer3b");
+            }
+
+            @Test
+            void testGetDefinedPackagesDoesNotContainParentPackages() throws Exception {
+                loader.loadClass("layer2.DummyServiceImpl");
+                assertThat(loader.getDefinedPackages()).isEmpty();
+            }
+
+            @Test
+            void testGetPackages() throws Exception {
+                loader.loadClass("layer2.DummyServiceImpl");
+                var packages = (Package[]) loader.loadClass("layer3.PackagesProxy").getMethod("load").invoke(null);
+                // The spec says "ancestors" w.r.t. parent packages being present and that doesn't seem to be the case
+                // if there's no actual parent loader, just a parent module layer.
+                if (scenario.hasParentClassloader()) {
+                    assertThat(packages).extracting(Package::getName).contains("layer3", "layer2");
+                } else {
+                    assertThat(packages).extracting(Package::getName).contains("layer3");
+                }
+            }
+
+            @Test
+            void testGetPackageForModule() throws Exception {
+                // See class-doc for Package for details
+                // Note that "unnamed module" doesn't mean automatic module, it really means the unnamed module.
+                var pkg = loader.loadClass("layer3a.DummyServiceImpl").getPackage();
+                assertEquals("layer3a", pkg.getName());
+                assertNull(pkg.getImplementationTitle());
+                assertNull(pkg.getImplementationVendor());
+                assertNull(pkg.getImplementationVersion());
+                assertNull(pkg.getSpecificationTitle());
+                assertNull(pkg.getSpecificationVendor());
+                assertNull(pkg.getSpecificationVersion());
+                assertTrue(pkg.isSealed(thirdLayerProviderAJar.toUri().toURL()));
+            }
+
+            @Test
+            public void testPackageInfoAvailability() throws Exception {
+                var testJar = new ModFileBuilder(tempDir.resolve("packagetest.jar"))
+                        .addClass("testpkg.package-info", """
+                                @TestAnnotation
+                                package testpkg;
+                                """)
+                        .addClass("testpkg.TestAnnotation", """
+                                import java.lang.annotation.Retention;
+                                import java.lang.annotation.RetentionPolicy;
+                                @Retention(RetentionPolicy.RUNTIME)
+                                public @interface TestAnnotation {
+                                }
+                                """)
+                        .build();
+
+                try (var layer = TestjarUtil.buildLayer(testJar)) {
+                    // Reference package through a class to ensure correct behavior of ModuleClassLoader#findClass(String,String)
+                    Class<?> cls = Class.forName("testpkg.TestAnnotation", true, layer.cl());
+                    assertThat(cls.getPackage().getDeclaredAnnotations())
+                            .extracting(Annotation::annotationType)
+                            .extracting(Class::getName)
+                            .containsOnly("testpkg.TestAnnotation");
+                }
+            }
+
+            private Class<?> callFindClass(ClassLoader loader, String moduleName, String className) throws Throwable {
+                var methodLookup = getMethodLookup();
+                var findClass = methodLookup.findVirtual(loader.getClass(), "findClass", MethodType.methodType(Class.class, String.class, String.class));
+                return (Class<?>) findClass.invoke(loader, moduleName, className);
+            }
+
+            private Class<?> callFindClass(ClassLoader loader, String className) throws Throwable {
+                var methodLookup = getMethodLookup();
+                var findClass = methodLookup.findVirtual(loader.getClass(), "findClass", MethodType.methodType(Class.class, String.class));
+                return (Class<?>) findClass.invoke(loader, className);
+            }
         }
-    }
 
-    /**
-     * Tests that services from parent layers are discoverable using normal serviceloader usage.
-     */
-    @Test
-    public void testLoadServiceFromBootLayer() throws Exception {
-        try (var layer1 = TestjarUtil.buildLayer(firstLayerJar);
-                var layer2 = TestjarUtil.buildLayer(secondLayerJar, layer1);
-                var layer3 = TestjarUtil.buildLayer(thirdLayerConsumerJar, layer2);
-                var ignored = layer3.makeLoaderCurrent()) {
-
-            var testClass = layer3.cl().loadClass("layer3.ServiceLoaderProxy");
-            var loadMethod = testClass.getMethod("load");
-            var loadedServices = (List<?>) loadMethod.invoke(null);
-            assertThat(loadedServices)
-                    .extracting(o -> o.getClass().getName())
-                    .containsOnly("layer1.DummyServiceImpl", "layer2.DummyServiceImpl");
+        private static MethodHandles.Lookup getMethodLookup() {
+            try {
+                var hackfield = MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP");
+                hackfield.setAccessible(true);
+                return (MethodHandles.Lookup) hackfield.get(null);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
         }
-    }
 
-    /**
-     * Tests that services that would normally be loaded from the classpath
-     * do not get loaded by {@link ModuleClassLoader}.
-     * In other words, test that our class loader isolation also works with services.
-     */
-    @Test
-    public void testClassPathServiceDoesNotLeak() throws Exception {
-        // Create a provider that would be accessible from the normal classpath
-        var parentJar = tempDir.resolve("cpprovider");
-        new ModFileBuilder(parentJar)
-                .addClass("DummyURLStreamHandlerProvider", """
-                        import java.net.URLStreamHandler;
-                        import java.net.spi.URLStreamHandlerProvider;
+        /**
+         * Tests that services from parent layers are discoverable using normal serviceloader usage.
+         */
+        @Test
+        public void testLoadServiceFromBootLayer() throws Exception {
+            try (var layer1 = TestjarUtil.buildLayer(firstLayerJar);
+                    var layer2 = TestjarUtil.buildLayer(secondLayerJar, layer1);
+                    var layer3 = TestjarUtil.buildLayer(thirdLayerConsumerJar, layer2);
+                    var ignored = layer3.makeLoaderCurrent()) {
 
-                        public class DummyURLStreamHandlerProvider extends URLStreamHandlerProvider {
-                            @Override
-                            public URLStreamHandler createURLStreamHandler(String protocol) {
-                                return null;
-                            }
-                        }
-                        """)
-                .addService(URLStreamHandlerProvider.class, "DummyURLStreamHandlerProvider")
-                .build();
+                var testClass = layer3.cl().loadClass("layer3.ServiceLoaderProxy");
+                var loadMethod = testClass.getMethod("load");
+                var loadedServices = (List<?>) loadMethod.invoke(null);
+                assertThat(loadedServices)
+                        .extracting(o -> o.getClass().getName())
+                        .containsOnly("layer1.DummyServiceImpl", "layer2.DummyServiceImpl");
+            }
+        }
 
-        var previousCl = Thread.currentThread().getContextClassLoader();
-        try (var cpLoader = new URLClassLoader(new URL[] { parentJar.toUri().toURL() })) {
-            Thread.currentThread().setContextClassLoader(cpLoader);
-
-            // Check that our current context classloader can load the dummy implementation of URLStreamHandlerProvider
-            // that is provided in the testjar_cp source set, which is on the classpath
-            assertThat(ServiceLoader.load(URLStreamHandlerProvider.class).stream().toList())
-                    .extracting(p -> p.type().getName())
-                    .contains("DummyURLStreamHandlerProvider");
-
-            // Now build a consumer jar in an isolated layer and try to load the same service
-            // It should NOT be able to load the DummyURLStreamHandlerProvider as that is only
-            // on the classpath, and ModuleClassLoader should not delegate to the classpath
-            var consumerJar = new ModFileBuilder(tempDir.resolve("consumer.jar"))
-                    .addClass("consumer.ServiceLoaderProxy", """
-                            import java.util.List;
-                            import java.util.ServiceLoader;
+        /**
+         * Tests that services that would normally be loaded from the classpath
+         * do not get loaded by {@link ModuleClassLoader}.
+         * In other words, test that our class loader isolation also works with services.
+         */
+        @Test
+        public void testClassPathServiceDoesNotLeak() throws Exception {
+            // Create a provider that would be accessible from the normal classpath
+            var parentJar = tempDir.resolve("cpprovider");
+            new ModFileBuilder(parentJar)
+                    .addClass("DummyURLStreamHandlerProvider", """
+                            import java.net.URLStreamHandler;
                             import java.net.spi.URLStreamHandlerProvider;
 
-                            public class ServiceLoaderProxy {
-                                public static List<URLStreamHandlerProvider> load() {
-                                    return ServiceLoader.load(URLStreamHandlerProvider.class).stream()
-                                            .map(ServiceLoader.Provider::get).toList();
+                            public class DummyURLStreamHandlerProvider extends URLStreamHandlerProvider {
+                                @Override
+                                public URLStreamHandler createURLStreamHandler(String protocol) {
+                                    return null;
                                 }
                             }
                             """)
+                    .addService(URLStreamHandlerProvider.class, "DummyURLStreamHandlerProvider")
                     .build();
 
-            try (var consumerLayer = TestjarUtil.buildLayer(consumerJar);
-                    var ignored = consumerLayer.makeLoaderCurrent()) {
-                var testClass = consumerLayer.cl().loadClass("consumer.ServiceLoaderProxy");
-                var loadMethod = testClass.getMethod("load");
-                var loadedServices = (List<?>) loadMethod.invoke(null);
+            var previousCl = Thread.currentThread().getContextClassLoader();
+            try (var cpLoader = new URLClassLoader(new URL[] { parentJar.toUri().toURL() })) {
+                Thread.currentThread().setContextClassLoader(cpLoader);
 
-                assertThat(loadedServices)
-                        .extracting(o -> o.getClass().getName())
-                        .doesNotContain("DummyURLStreamHandlerProvider");
+                // Check that our current context classloader can load the dummy implementation of URLStreamHandlerProvider
+                // that is provided in the testjar_cp source set, which is on the classpath
+                assertThat(ServiceLoader.load(URLStreamHandlerProvider.class).stream().toList())
+                        .extracting(p -> p.type().getName())
+                        .contains("DummyURLStreamHandlerProvider");
+
+                // Now build a consumer jar in an isolated layer and try to load the same service
+                // It should NOT be able to load the DummyURLStreamHandlerProvider as that is only
+                // on the classpath, and ModuleClassLoader should not delegate to the classpath
+                var consumerJar = new ModFileBuilder(tempDir.resolve("consumer.jar"))
+                        .addClass("consumer.ServiceLoaderProxy", """
+                                import java.util.List;
+                                import java.util.ServiceLoader;
+                                import java.net.spi.URLStreamHandlerProvider;
+
+                                public class ServiceLoaderProxy {
+                                    public static List<URLStreamHandlerProvider> load() {
+                                        return ServiceLoader.load(URLStreamHandlerProvider.class).stream()
+                                                .map(ServiceLoader.Provider::get).toList();
+                                    }
+                                }
+                                """)
+                        .build();
+
+                try (var consumerLayer = TestjarUtil.buildLayer(consumerJar);
+                        var ignored = consumerLayer.makeLoaderCurrent()) {
+                    var testClass = consumerLayer.cl().loadClass("consumer.ServiceLoaderProxy");
+                    var loadMethod = testClass.getMethod("load");
+                    var loadedServices = (List<?>) loadMethod.invoke(null);
+
+                    assertThat(loadedServices)
+                            .extracting(o -> o.getClass().getName())
+                            .doesNotContain("DummyURLStreamHandlerProvider");
+                }
+
+            } finally {
+                Thread.currentThread().setContextClassLoader(previousCl);
             }
+        }
+    }
 
-        } finally {
-            Thread.currentThread().setContextClassLoader(previousCl);
+    private static void clearJarUrlHandlerCache() throws Exception {
+        // Annoyingly, any use of a Jar file via jar: URIs tends to create stale cache entries
+        // in sun.net.www.protocol.jar.JarFileFactory.fileCache
+        // However, we can get such a cached connection and close it explicitly, which then cleans it up from the cache
+        for (var jarPath : List.of(firstLayerJar, secondLayerJar, thirdLayerProviderAJar, thirdLayerProviderBJar, thirdLayerConsumerJar)) {
+            URL url = new URL("jar:" + jarPath.toUri() + "!/");
+            ((JarURLConnection) url.openConnection()).getJarFile().close();
         }
     }
 }

@@ -80,7 +80,7 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
     private ClassLoader fallbackClassLoader;
     private volatile boolean closed = false;
 
-    public ModuleClassLoader(final String name, final Configuration configuration, final List<ModuleLayer> parentLayers) {
+    public ModuleClassLoader(String name, Configuration configuration, List<ModuleLayer> parentLayers) {
         this(name, configuration, parentLayers, null);
     }
 
@@ -98,7 +98,7 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
      * inside the module layers again, otherwise tests throw incompatible exceptions or may not be found at all.
      */
     @VisibleForTesting
-    public ModuleClassLoader(final String name, final Configuration configuration, final List<ModuleLayer> parentLayers, @Nullable ClassLoader parentLoader) {
+    public ModuleClassLoader(String name, Configuration configuration, List<ModuleLayer> parentLayers, @Nullable ClassLoader parentLoader) {
         super(name, parentLoader);
         this.fallbackClassLoader = Objects.requireNonNullElse(parentLoader, ClassLoader.getPlatformClassLoader());
         this.moduleInfoCache = HashMap.newHashMap(configuration.modules().size());
@@ -148,7 +148,7 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
         for (var rm : configuration.modules()) {
             for (var other : rm.reads()) {
                 ClassLoader cl = classLoaderMap.computeIfAbsent(other, findClassLoader);
-                final var descriptor = other.reference().descriptor();
+                var descriptor = other.reference().descriptor();
                 if (descriptor.isAutomatic()) {
                     // No need to run this logic more than once per automatic module
                     if (processedAutomaticDescriptors.add(descriptor)) {
@@ -185,7 +185,7 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private static URL toURL(final Optional<URI> uri) {
+    private static URL toURL(Optional<URI> uri) {
         if (uri.isPresent()) {
             try {
                 return uri.get().toURL();
@@ -212,7 +212,7 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
      * {@return null if the class should be treated as if it doesn't exist}
      */
     @Nullable
-    private Class<?> readerToClass(ModuleInfo moduleInfo, final String name) throws ClassNotFoundException {
+    private Class<?> readerToClass(ModuleInfo moduleInfo, String name) throws ClassNotFoundException {
         byte[] bytes;
         try {
             bytes = getClassBytes(moduleInfo, name);
@@ -225,18 +225,15 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
             return null; // Transformers decided to skip the class
         }
 
-        ProtectionDomainHelper.tryDefinePackage(this, name, moduleInfo.moduleReference.jar().getManifest(), t -> moduleInfo.moduleReference.jar().getManifest().getAttributes(t), this::definePackage); // Packages are dirctories, and can't be signed, so use raw attributes instead of signed.
-        var cls = defineClass(name, bytes, 0, bytes.length, moduleInfo.protectionDomain);
-        ProtectionDomainHelper.trySetPackageModule(cls.getPackage(), cls.getModule());
-        return cls;
+        return defineClass(name, bytes, 0, bytes.length, moduleInfo.protectionDomain);
     }
 
-    protected byte[] maybeTransformClassBytes(final byte[] bytes, final String name, final String context) {
+    protected byte[] maybeTransformClassBytes(byte[] bytes, String name, String context) {
         return bytes;
     }
 
     @Override
-    protected Class<?> loadClass(final String name, final boolean resolve) throws ClassNotFoundException {
+    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         synchronized (getClassLoadingLock(name)) {
             var c = findLoadedClass(name);
             if (c == null) {
@@ -262,14 +259,14 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
         }
     }
 
-    private Package definePackage(final String[] args) {
+    private Package definePackage(String[] args) {
         return definePackage(args[0], args[1], args[2], args[3], args[4], args[5], args[6], null);
     }
 
     @Override
-    public URL getResource(final String name) {
+    public URL getResource(String name) {
         try {
-            var reslist = findResourceList(name);
+            var reslist = enumerateResources(name);
             if (reslist.hasMoreElements()) {
                 return reslist.nextElement();
             } else {
@@ -292,7 +289,7 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
 
     @Override
     public Enumeration<URL> getResources(String name) throws IOException {
-        var localUrls = findResourceList(name);
+        var localUrls = enumerateResources(name);
         var parentUrls = fallbackClassLoader.getResources(name);
 
         // Unlike findResources, getResources will delegate to the parent as well
@@ -317,10 +314,10 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
 
     @Override
     protected Enumeration<URL> findResources(String name) throws IOException {
-        return findResourceList(name);
+        return enumerateResources(name);
     }
 
-    private Enumeration<URL> findResourceList(String name) throws IOException {
+    private Enumeration<URL> enumerateResources(String name) throws IOException {
         var idx = name.lastIndexOf('/');
         var pkgname = (idx == -1 || idx == name.length() - 1) ? "" : name.substring(0, idx).replace('/', '.');
         var localModule = packageLookup.get(pkgname);
@@ -408,11 +405,11 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
         throw new ClassNotFoundException(name);
     }
 
-    protected byte[] getMaybeTransformedClassBytes(final String name, final String context) throws ClassNotFoundException {
+    protected byte[] getMaybeTransformedClassBytes(String name, String context) throws ClassNotFoundException {
         byte[] bytes = new byte[0];
         Throwable suppressed = null;
         try {
-            final var pname = packageName(name);
+            var pname = packageName(name);
             if (pname != null) {
                 var localModule = packageLookup.get(pname);
                 if (localModule != null) {
@@ -441,7 +438,7 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
         return maybeTransformedBytes;
     }
 
-    public void setFallbackClassLoader(final ClassLoader fallbackClassLoader) {
+    public void setFallbackClassLoader(ClassLoader fallbackClassLoader) {
         this.fallbackClassLoader = fallbackClassLoader;
     }
 
