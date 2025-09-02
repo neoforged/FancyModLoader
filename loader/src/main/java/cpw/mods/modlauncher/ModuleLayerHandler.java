@@ -19,6 +19,8 @@ import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.NamedPath;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ResolutionException;
@@ -47,7 +49,11 @@ public final class ModuleLayerHandler implements IModuleLayerManager {
         }
 
         SecureJar build() {
-            return jar != null ? jar : SecureJar.from(path.paths());
+            try {
+                return jar != null ? jar : SecureJar.from(path.paths());
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
     }
 

@@ -27,7 +27,7 @@ public final class ModJarMetadata extends LazyJarMetadata implements JarMetadata
 
     @Override
     public String name() {
-        return modFile.getModFileInfo().moduleName();
+        return modFile.getId();
     }
 
     @Override

@@ -17,10 +17,8 @@ package cpw.mods.bootstraplauncher;
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.JarContents;
-import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.niofs.union.UnionPathFilter;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -112,7 +110,7 @@ public class BootstrapLauncher {
 
             // This computes the module name for the given artifact
             String moduleName;
-            try (var jarContent = JarContents.of(path)) {
+            try (var jarContent = JarContents.ofPath(path)) {
                 moduleName = JarMetadata.from(jarContent).name();
             } catch (UncheckedIOException | IOException e) {
                 if (DEBUG) {
@@ -151,10 +149,14 @@ public class BootstrapLauncher {
             var paths = e.getValue();
             if (paths.size() == 1 && Files.notExists(paths.get(0))) return;
             var pathsArray = paths.toArray(Path[]::new);
-            var jarContents = new JarContentsBuilder()
-                    .paths(pathsArray)
-                    .pathFilter(new PackageTracker(Set.copyOf(previousPackages), pathsArray))
-                    .build();
+            var tracker = new PackageTracker(Set.copyOf(previousPackages), pathsArray);
+            JarContents jarContents;
+            try {
+                jarContents = JarContents.ofFilteredPaths(
+                        paths.stream().map(path -> new JarContents.FilteredPath(path, tracker)).toList());
+            } catch (IOException ex) {
+                throw new UncheckedIOException("Failed to build merged jar from " + paths, ex);
+            }
             var jar = SecureJar.from(jarContents);
             var packages = jar.moduleDataProvider().descriptor().packages();
 
@@ -251,19 +253,19 @@ public class BootstrapLauncher {
         return filenameMap;
     }
 
-    private record PackageTracker(Set<String> packages, Path... paths) implements UnionPathFilter {
+    private record PackageTracker(Set<String> packages, Path... paths) implements JarContents.PathFilter {
         @Override
-        public boolean test(final String path, final Path basePath) {
+        public boolean test(String relativePath) {
             // This method returns true if the given path is allowed within the JAR (filters out 'bad' paths)
 
             if (packages.isEmpty() || // This is the first jar, nothing is claimed yet, so allow everything
-                    path.startsWith("META-INF/")) // Every module can have their own META-INF
+                    relativePath.startsWith("META-INF/")) // Every module can have their own META-INF
                 return true;
 
-            int idx = path.lastIndexOf('/');
+            int idx = relativePath.lastIndexOf('/');
             return idx < 0 || // Resources at the root are allowed to co-exist
-                    idx == path.length() - 1 || // All directories can have a potential to exist without conflict, we only care about real files.
-                    !packages.contains(path.substring(0, idx).replace('/', '.')); // If the package hasn't been used by a previous JAR
+                    idx == relativePath.length() - 1 || // All directories can have a potential to exist without conflict, we only care about real files.
+                    !packages.contains(relativePath.substring(0, idx).replace('/', '.')); // If the package hasn't been used by a previous JAR
         }
     }
 

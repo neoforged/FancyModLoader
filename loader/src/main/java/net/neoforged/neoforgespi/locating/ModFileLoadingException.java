@@ -12,4 +12,8 @@ public class ModFileLoadingException extends RuntimeException {
     public ModFileLoadingException(String message) {
         super(message);
     }
+
+    public ModFileLoadingException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

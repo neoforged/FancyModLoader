@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
+import cpw.mods.jarhandling.JarResource;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.Environment;
 import cpw.mods.modlauncher.LaunchPluginHandler;
@@ -31,11 +32,11 @@ import java.lang.module.ModuleFinder;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,7 @@ import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.i18n.FMLTranslations;
+import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.testlib.IdentifiableContent;
 import net.neoforged.fml.testlib.SimulatedInstallation;
 import net.neoforged.neoforgespi.language.IModFileInfo;
@@ -62,14 +64,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoSettings;
 
 @MockitoSettings
 public abstract class LauncherTest {
-    @Mock
-    MockedStatic<ImmediateWindowHandler> immediateWindowHandlerMock;
-
     protected TestModuleLayerManager moduleLayerManager = new TestModuleLayerManager();
 
     protected TestEnvironment environment = new TestEnvironment(moduleLayerManager);
@@ -89,8 +87,8 @@ public abstract class LauncherTest {
     protected TransformingClassLoader gameClassLoader;
 
     @BeforeAll
-    static void ensureAddOpensForUnionFs() {
-        // We abuse the ByteBuddy agent that Mockito also uses to open java.lang to UnionFS
+    static void ensureAddOpensForModularClassLoader() {
+        // We abuse the ByteBuddy agent that Mockito also uses to open java.lang to ModularClassLoader
         var instrumentation = ByteBuddyAgent.install();
         instrumentation.redefineModule(
                 MethodHandles.class.getModule(),
@@ -138,6 +136,17 @@ public abstract class LauncherTest {
 
     @AfterEach
     void clearSystemProperties() throws Exception {
+        if (LoadingModList.get() != null) {
+            for (var modFile : LoadingModList.get().getModFiles()) {
+                modFile.getFile().close();
+            }
+            for (var modFile : LoadingModList.get().getPlugins()) {
+                ((ModFile) modFile.getFile()).close();
+            }
+            for (var modFile : LoadingModList.get().getGameLibraries()) {
+                ((ModFile) modFile).close();
+            }
+        }
         gameClassLoader = null;
         installation.close();
         Launcher.INSTANCE = null;
@@ -362,11 +371,28 @@ public abstract class LauncherTest {
         var expectedContent = new ArrayList<IdentifiableContent>();
         Collections.addAll(expectedContent, SimulatedInstallation.SERVER_EXTRA_JAR_CONTENT);
         expectedContent.add(SimulatedInstallation.PATCHED_SHARED);
+        expectedContent.add(SimulatedInstallation.MINECRAFT_MODS_TOML);
 
         assertModContent(launchResult, "minecraft", expectedContent);
     }
 
-    public void assertMinecraftClientJar(LaunchResult launchResult, boolean production) throws IOException {
+    /**
+     * Asserts a Minecraft Jar in the legacy installation mode where the Minecraft jar is assembled in-memory from different individual pieces.
+     * The only noticeable difference is that the Minecraft jar does not have a neoforge.mods.toml.
+     */
+    public void assertLegacyMinecraftServerJar(LaunchResult launchResult) throws IOException {
+        var expectedContent = new ArrayList<IdentifiableContent>();
+        Collections.addAll(expectedContent, SimulatedInstallation.SERVER_EXTRA_JAR_CONTENT);
+        expectedContent.add(SimulatedInstallation.PATCHED_SHARED);
+
+        assertModContent(launchResult, "minecraft", expectedContent);
+    }
+
+    /**
+     * Asserts a Minecraft Jar in the legacy installation mode where the Minecraft jar is assembled in-memory from different individual pieces.
+     * The only noticeable difference is that the Minecraft jar does not have a neoforge.mods.toml.
+     */
+    public void assertLegacyMinecraftClientJar(LaunchResult launchResult, boolean production) throws IOException {
         var expectedContent = new ArrayList<IdentifiableContent>();
         if (production) {
             expectedContent.add(SimulatedInstallation.SHARED_ASSETS);
@@ -376,6 +402,21 @@ public abstract class LauncherTest {
         }
         expectedContent.add(SimulatedInstallation.PATCHED_CLIENT);
         expectedContent.add(SimulatedInstallation.PATCHED_SHARED);
+
+        assertModContent(launchResult, "minecraft", expectedContent);
+    }
+
+    public void assertMinecraftClientJar(LaunchResult launchResult, boolean production) throws IOException {
+        var expectedContent = new ArrayList<IdentifiableContent>();
+        expectedContent.add(SimulatedInstallation.SHARED_ASSETS);
+        expectedContent.add(SimulatedInstallation.CLIENT_ASSETS);
+        expectedContent.add(SimulatedInstallation.MINECRAFT_MODS_TOML);
+        expectedContent.add(SimulatedInstallation.PATCHED_CLIENT);
+        expectedContent.add(SimulatedInstallation.PATCHED_SHARED);
+        // In joined distributions, there's supposed to be a manifest
+        if (!production) {
+            expectedContent.add(SimulatedInstallation.RESOURCES_MANIFEST);
+        }
 
         assertModContent(launchResult, "minecraft", expectedContent);
     }
@@ -406,7 +447,7 @@ public abstract class LauncherTest {
 
         for (var identifiableContent : content) {
             var expectedContent = identifiableContent.content();
-            var actualContent = Files.readAllBytes(paths.get(identifiableContent.relativePath()));
+            var actualContent = paths.get(identifiableContent.relativePath()).readAllBytes();
             if (isPrintableAscii(expectedContent) && isPrintableAscii(actualContent)) {
                 assertThat(new String(actualContent)).isEqualTo(new String(expectedContent));
             } else {
@@ -424,17 +465,11 @@ public abstract class LauncherTest {
         return true;
     }
 
-    private static Map<String, Path> listFilesRecursively(SecureJar jar) throws IOException {
-        Map<String, Path> paths;
-        var rootPath = jar.getRootPath();
-        try (var stream = Files.walk(rootPath)) {
-            paths = stream
-                    .filter(Files::isRegularFile)
-                    .map(rootPath::relativize)
-                    .collect(Collectors.toMap(
-                            path -> path.toString().replace('\\', '/'),
-                            Function.identity()));
-        }
+    private static Map<String, JarResource> listFilesRecursively(SecureJar jar) {
+        Map<String, JarResource> paths = new HashMap<>();
+        jar.contents().visitContent((relativePath, resource) -> {
+            paths.put(relativePath, resource.retain());
+        });
         return paths;
     }
 

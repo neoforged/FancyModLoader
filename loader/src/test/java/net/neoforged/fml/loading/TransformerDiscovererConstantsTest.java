@@ -53,7 +53,7 @@ class TransformerDiscovererConstantsTest {
         var e = assertThrows(Exception.class, () -> shouldLoad(builder -> {
             builder.addBinaryFile("module-info.class", new byte[] {});
         }));
-        assertThat(e).hasMessageContaining("Invalid module-info.class in " + testJar);
+        assertThat(e).hasMessageContaining("Invalid module-info.class in jar(" + testJar + ")");
     }
 
     @Test

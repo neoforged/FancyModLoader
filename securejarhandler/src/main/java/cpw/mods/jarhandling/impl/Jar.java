@@ -1,42 +1,27 @@
 package cpw.mods.jarhandling.impl;
 
+import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarMetadata;
 import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.niofs.union.UnionFileSystem;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
 import java.net.URI;
 import java.nio.file.Path;
-import java.security.CodeSigner;
 import java.util.Optional;
-import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import org.jetbrains.annotations.Nullable;
 
 public class Jar implements SecureJar {
-    private final JarContentsImpl contents;
-    private final Manifest manifest;
-    private final JarSigningData signingData;
-    private final UnionFileSystem filesystem;
-
+    private final JarContents contents;
     private final JarModuleDataProvider moduleDataProvider;
 
     private final JarMetadata metadata;
 
-    public Jar(JarContentsImpl contents, JarMetadata metadata) {
+    public Jar(JarContents contents, JarMetadata metadata) {
         this.contents = contents;
-        this.manifest = contents.getManifest();
-        this.signingData = contents.signingData;
-        this.filesystem = contents.filesystem;
-
         this.moduleDataProvider = new JarModuleDataProvider(this);
         this.metadata = metadata;
-    }
-
-    public URI getURI() {
-        return this.filesystem.getRootDirectories().iterator().next().toUri();
     }
 
     public ModuleDescriptor computeDescriptor() {
@@ -50,7 +35,12 @@ public class Jar implements SecureJar {
 
     @Override
     public Path getPrimaryPath() {
-        return filesystem.getPrimaryPath();
+        return contents.getPrimaryPath();
+    }
+
+    @Override
+    public JarContents contents() {
+        return contents;
     }
 
     public Optional<URI> findFile(final String name) {
@@ -58,47 +48,8 @@ public class Jar implements SecureJar {
     }
 
     @Override
-    @Nullable
-    public CodeSigner[] getManifestSigners() {
-        return signingData.getManifestSigners();
-    }
-
-    @Override
-    public Status verifyPath(final Path path) {
-        if (path.getFileSystem() != filesystem) throw new IllegalArgumentException("Wrong filesystem");
-        final var pathname = path.toString();
-        return signingData.verifyPath(manifest, path, pathname);
-    }
-
-    @Override
-    public Status getFileStatus(final String name) {
-        return signingData.getFileStatus(name);
-    }
-
-    @Override
-    @Nullable
-    public Attributes getTrustedManifestEntries(final String name) {
-        return signingData.getTrustedManifestEntries(manifest, name);
-    }
-
-    @Override
-    public boolean hasSecurityData() {
-        return signingData.hasSecurityData();
-    }
-
-    @Override
     public String name() {
         return metadata.name();
-    }
-
-    @Override
-    public Path getPath(String first, String... rest) {
-        return filesystem.getPath(first, rest);
-    }
-
-    @Override
-    public Path getRootPath() {
-        return filesystem.getPath("");
     }
 
     @Override
@@ -108,7 +59,7 @@ public class Jar implements SecureJar {
 
     @Override
     public String toString() {
-        return "Jar[" + getURI() + "]";
+        return "Jar[" + getPrimaryPath() + "]";
     }
 
     private record JarModuleDataProvider(Jar jar) implements ModuleDataProvider {
@@ -124,7 +75,7 @@ public class Jar implements SecureJar {
 
         @Override
         public URI uri() {
-            return jar.getURI();
+            return jar.getPrimaryPath().toUri();
         }
 
         @Override
@@ -143,13 +94,7 @@ public class Jar implements SecureJar {
 
         @Override
         public Manifest getManifest() {
-            return jar.manifest;
-        }
-
-        @Override
-        @Nullable
-        public CodeSigner[] verifyAndGetSigners(final String cname, final byte[] bytes) {
-            return jar.signingData.verifyAndGetSigners(jar.manifest, cname, bytes);
+            return jar.contents.getManifest();
         }
     }
 }

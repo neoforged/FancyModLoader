@@ -14,7 +14,6 @@
 
 package cpw.mods.modlauncher.util;
 
-import cpw.mods.niofs.union.UnionFileSystem;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.ServiceConfigurationError;
@@ -54,7 +53,6 @@ public final class ServiceLoaderUtils {
                 .findModule(clazz.getModule().getName())
                 .flatMap(rm -> rm.reference().location())
                 .map(Path::of)
-                .map(p -> p.getFileSystem() instanceof UnionFileSystem ufs ? ufs.getPrimaryPath() : p)
                 .map(p -> p.getFileName().toString())
                 .orElse("MISSING FILE");
     }

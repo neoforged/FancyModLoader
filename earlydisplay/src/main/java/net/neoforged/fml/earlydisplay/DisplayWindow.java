@@ -51,6 +51,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.Month;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -65,6 +66,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import joptsimple.OptionParser;
+import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.earlydisplay.error.ErrorDisplay;
 import net.neoforged.fml.earlydisplay.render.LoadingScreenRenderer;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import net.neoforged.fml.earlydisplay.theme.Theme;
@@ -79,6 +82,7 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
@@ -114,6 +118,10 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private ScheduledExecutorService renderScheduler;
     private int winWidth;
     private int winHeight;
+    @Nullable
+    private String assetsDir;
+    @Nullable
+    private String assetIndex;
 
     private boolean maximized;
     private Map<String, SimpleFont> fonts;
@@ -141,12 +149,19 @@ public class DisplayWindow implements ImmediateWindowProvider {
                 .withRequiredArg().ofType(Integer.class)
                 .defaultsTo(FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_HEIGHT));
         var maximizedopt = parser.accepts("earlywindow.maximized");
+        var assetsDirOpt = parser.accepts("assetsDir").withRequiredArg().ofType(String.class);
+        var assetIndexOpt = parser.accepts("assetIndex").withRequiredArg().ofType(String.class);
         parser.allowsUnrecognizedOptions();
         var parsed = parser.parse(arguments);
         winWidth = parsed.valueOf(widthopt);
         winHeight = parsed.valueOf(heightopt);
         FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_WIDTH, winWidth);
         FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_HEIGHT, winHeight);
+
+        if (parsed.has(assetsDirOpt) && parsed.has(assetIndexOpt)) {
+            assetsDir = parsed.valueOf(assetsDirOpt);
+            assetIndex = parsed.valueOf(assetIndexOpt);
+        }
 
         if (Boolean.getBoolean("fml.earlyWindowDarkMode")) {
             this.darkMode = true;
@@ -514,6 +529,14 @@ public class DisplayWindow implements ImmediateWindowProvider {
     @Override
     public void crash(final String message) {
         crashElegantly(message);
+    }
+
+    @Override
+    public void displayFatalErrorAndExit(List<ModLoadingIssue> issues, Path modsFolder, Path logFile, Path crashReportFile) {
+        long windowId = this.takeOverGlfwWindow();
+        GL.createCapabilities();
+        this.close();
+        ErrorDisplay.fatal(windowId, assetsDir, assetIndex, issues, modsFolder, logFile, crashReportFile);
     }
 
     private static void dumpBackgroundThreadStack() {
