@@ -24,6 +24,8 @@ import org.jetbrains.annotations.Nullable;
  * and need to make a {@link SecureJar}-based module system implementation aware of these packages.
  */
 public final class VirtualJar implements SecureJar {
+    private final JarContents contents;
+
     /**
      * Creates a new virtual jar.
      *
@@ -42,6 +44,7 @@ public final class VirtualJar implements SecureJar {
                 .build();
         // Create a dummy file system from the reference path, with a filter that always returns false
         this.dummyFileSystem = UFSP.newFileSystem((path, basePath) -> false, referencePath);
+        this.contents = JarContents.of(dummyFileSystem.getRoot());
     }
 
     // Implementation details below
@@ -64,6 +67,11 @@ public final class VirtualJar implements SecureJar {
     @Override
     public Path getPrimaryPath() {
         return dummyFileSystem.getPrimaryPath();
+    }
+
+    @Override
+    public JarContents contents() {
+        return contents;
     }
 
     @Override
