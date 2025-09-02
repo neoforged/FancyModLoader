@@ -17,6 +17,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import net.neoforged.fml.common.asm.AccessTransformerService;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
+import net.neoforged.fml.loading.mixin.FMLMixinLaunchPlugin;
 import net.neoforged.fml.loading.moddiscovery.locators.NeoForgeDevDistCleaner;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,6 +30,8 @@ public class TestEnvironment implements IEnvironment {
     public RuntimeEnumExtender runtimeEnumExtender = new RuntimeEnumExtender();
     @Nullable
     public NeoForgeDevDistCleaner neoForgeDevDistCleaner = new NeoForgeDevDistCleaner();
+    @Nullable
+    public FMLMixinLaunchPlugin fmlMixinLaunchPlugin = new FMLMixinLaunchPlugin();
 
     public TestEnvironment(TestModuleLayerManager moduleLayerManager) {
         this.moduleLayerManager = moduleLayerManager;
@@ -65,6 +68,7 @@ public class TestEnvironment implements IEnvironment {
     public Stream<ILaunchPluginService> getLaunchPlugins() {
         return Stream.of(accessTransformerService,
                 runtimeEnumExtender,
-                neoForgeDevDistCleaner).filter(Objects::nonNull);
+                neoForgeDevDistCleaner,
+                fmlMixinLaunchPlugin).filter(Objects::nonNull);
     }
 }

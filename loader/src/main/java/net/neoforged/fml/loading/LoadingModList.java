@@ -5,7 +5,6 @@
 
 package net.neoforged.fml.loading;
 
-import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.JarResource;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,23 +15,19 @@ import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
-import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
-import net.neoforged.fml.loading.moddiscovery.ModFileParser;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
-import org.slf4j.Logger;
 
 /**
  * Master list of all mods <em>in the loading context. This class cannot refer outside the
  * loading package</em>
  */
 public class LoadingModList {
-    private static final Logger LOGGER = LogUtils.getLogger();
     private static LoadingModList INSTANCE;
     private final List<IModFileInfo> plugins;
     private final List<IModFile> gameLibraries;
@@ -71,21 +66,6 @@ public class LoadingModList {
 
     public static LoadingModList get() {
         return INSTANCE;
-    }
-
-    public void addMixinConfigs() {
-        modFiles.stream()
-                .map(ModFileInfo::getFile)
-                .forEach(file -> {
-                    String modId = file.getModInfos().get(0).getModId();
-                    for (ModFileParser.MixinConfig potential : file.getMixinConfigs()) {
-                        if (potential.requiredMods().stream().allMatch(id -> this.getModFileById(id) != null)) {
-                            DeferredMixinConfigRegistration.addMixinConfig(potential.config(), modId);
-                        } else {
-                            LOGGER.debug("Mixin config {} for mod {} not applied as required mods are missing", potential.config(), modId);
-                        }
-                    }
-                });
     }
 
     public void addAccessTransformers() {

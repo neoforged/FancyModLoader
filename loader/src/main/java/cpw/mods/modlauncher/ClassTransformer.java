@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import net.neoforged.fml.ModLoader;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -76,10 +77,14 @@ public class ClassTransformer {
 
         final EnumMap<ILaunchPluginService.Phase, List<ILaunchPluginService>> launchPluginTransformerSet = pluginHandler.computeLaunchPluginTransformerSet(classDesc, inputClass.length == 0, reason, this.auditTrail);
 
+        ModLoader.incrementLoadedClasses();
+
         final boolean needsTransforming = transformers.needsTransforming(internalName);
         if (!needsTransforming && launchPluginTransformerSet.isEmpty()) {
             return inputClass;
         }
+
+        ModLoader.incrementTransformedClasses();
 
         ClassNode clazz = new ClassNode(Opcodes.ASM9);
         Supplier<byte[]> digest;
