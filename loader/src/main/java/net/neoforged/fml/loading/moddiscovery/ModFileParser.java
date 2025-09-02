@@ -10,19 +10,25 @@ import com.electronwill.nightconfig.core.concurrent.ConcurrentConfig;
 import com.electronwill.nightconfig.core.file.FileConfig;
 import com.electronwill.nightconfig.toml.TomlFormat;
 import com.mojang.logging.LogUtils;
+import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import net.neoforged.fml.loading.LogMarkers;
+import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.neoforgespi.language.IConfigurable;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.InvalidModFileException;
 import net.neoforged.neoforgespi.locating.ModFileInfoParser;
+import org.apache.maven.artifact.versioning.ArtifactVersion;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
+import org.spongepowered.asm.mixin.FabricUtil;
 
 public class ModFileParser {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -63,10 +69,32 @@ public class ModFileParser {
     /**
      * Represents a potential mixin configuration.
      *
-     * @param config       The name of the mixin configuration.
-     * @param requiredMods The mod ids that are required for this mixin configuration to be loaded. If empty, will be loaded regardless.
+     * @param config          The name of the mixin configuration.
+     * @param requiredMods    The mod ids that are required for this mixin configuration to be loaded. If empty, will be loaded regardless.
+     * @param behaviorVersion The mixin version whose behavior this configuration requests; if unspecified, the default is provided by FML.
      */
-    public record MixinConfig(String config, List<String> requiredMods) {}
+    public record MixinConfig(String config, List<String> requiredMods, @Nullable ArtifactVersion behaviorVersion) {
+        public MixinConfig(String config, List<String> requiredMods) {
+            this(config, requiredMods, null);
+        }
+    }
+
+    private static final ArtifactVersion HIGHEST_MIXIN_VERSION;
+    private static final ArtifactVersion LOWEST_MIXIN_VERSION;
+
+    static {
+        HIGHEST_MIXIN_VERSION = new DefaultArtifactVersion(Optional.ofNullable(FabricUtil.class.getModule().getDescriptor())
+                .flatMap(ModuleDescriptor::version).map(ModuleDescriptor.Version::toString)
+                .or(() -> Optional.ofNullable(FabricUtil.class.getPackage().getImplementationVersion()))
+                .orElseThrow(() -> new IllegalStateException("Cannot determine version of currently running mixin")));
+        int defaultMixinVersion = DeferredMixinConfigRegistration.DEFAULT_BEHAVIOUR_VERSION;
+        int patch = defaultMixinVersion % 1000;
+        defaultMixinVersion /= 1000;
+        int minor = defaultMixinVersion % 1000;
+        defaultMixinVersion /= 1000;
+        int major = defaultMixinVersion;
+        LOWEST_MIXIN_VERSION = new DefaultArtifactVersion(major + "." + minor + "." + patch);
+    }
 
     protected static List<MixinConfig> getMixinConfigs(IModFileInfo modFileInfo) {
         try {
@@ -78,7 +106,21 @@ public class ModFileParser {
                 var name = mixinsEntry.<String>getConfigElement("config")
                         .orElseThrow(() -> new InvalidModFileException("Missing \"config\" in [[mixins]] entry", modFileInfo));
                 var requiredModIds = mixinsEntry.<List<String>>getConfigElement("requiredMods").orElse(List.of());
-                potentialMixins.add(new MixinConfig(name, requiredModIds));
+                var behaviorVersion = mixinsEntry.<String>getConfigElement("behaviorVersion")
+                        .map(DefaultArtifactVersion::new)
+                        .orElse(null);
+                if (behaviorVersion != null) {
+                    if (behaviorVersion.compareTo(HIGHEST_MIXIN_VERSION) > 0) {
+                        throw new InvalidModFileException("Specified mixin behavior version " + behaviorVersion
+                                + " is higher than the current mixin version " + HIGHEST_MIXIN_VERSION + "; this may be fixable by updating neoforge",
+                                modFileInfo);
+                    } else if (behaviorVersion.compareTo(LOWEST_MIXIN_VERSION) < 0) {
+                        throw new InvalidModFileException("Specified mixin behavior version " + behaviorVersion
+                                + " is lower than the minimum supported behavior version " + LOWEST_MIXIN_VERSION,
+                                modFileInfo);
+                    }
+                }
+                potentialMixins.add(new MixinConfig(name, requiredModIds, behaviorVersion));
             }
 
             return potentialMixins;
