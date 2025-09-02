@@ -28,7 +28,7 @@ public final class ServiceLoaderUtils {
     }
 
     public static <T> Stream<T> streamWithErrorHandling(ServiceLoader<T> sl, Consumer<ServiceConfigurationError> errorConsumer) {
-        return sl.stream().map(p -> {
+        return sl.stream().filter(ServiceLoaderUtils::isNotMixinService).map(p -> {
             try {
                 return p.get();
             } catch (ServiceConfigurationError sce) {
@@ -36,6 +36,11 @@ public final class ServiceLoaderUtils {
                 return null;
             }
         }).filter(Objects::nonNull);
+    }
+
+    private static boolean isNotMixinService(ServiceLoader.Provider<?> provider) {
+        var clazz = provider.type();
+        return !clazz.getModule().getName().equals("org.spongepowered.mixin");
     }
 
     public static String fileNameFor(Class<?> clazz) {

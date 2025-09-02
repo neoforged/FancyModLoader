@@ -24,6 +24,7 @@ import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
+import cpw.mods.modlauncher.api.NamedPath;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.module.Configuration;
@@ -292,6 +293,9 @@ public abstract class LauncherTest {
                 configuration,
                 parents,
                 getClass().getClassLoader());
+        lph.announceLaunch(
+                gameClassLoader,
+                new NamedPath[0]);
 
         var controller = ModuleLayer.defineModules(
                 configuration,
