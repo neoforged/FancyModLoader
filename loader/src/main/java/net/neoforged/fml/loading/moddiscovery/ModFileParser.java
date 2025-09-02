@@ -5,19 +5,16 @@
 
 package net.neoforged.fml.loading.moddiscovery;
 
-import com.electronwill.nightconfig.core.UnmodifiableConfig;
-import com.electronwill.nightconfig.core.concurrent.ConcurrentConfig;
-import com.electronwill.nightconfig.core.file.FileConfig;
+import com.electronwill.nightconfig.core.UnmodifiableCommentedConfig;
 import com.electronwill.nightconfig.toml.TomlFormat;
 import com.mojang.logging.LogUtils;
 import java.lang.module.ModuleDescriptor;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import net.neoforged.fml.loading.LogMarkers;
-import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.neoforgespi.language.IConfigurable;
 import net.neoforged.neoforgespi.language.IModFileInfo;
@@ -40,30 +37,20 @@ public class ModFileParser {
     public static IModFileInfo modsTomlParser(final IModFile imodFile) {
         ModFile modFile = (ModFile) imodFile;
         LOGGER.debug(LogMarkers.LOADING, "Considering mod file candidate {}", modFile.getFilePath());
-        final Path modsjson = modFile.findResource(JarModsDotTomlModFileReader.MODS_TOML);
-        if (!Files.exists(modsjson)) {
+        var modsjson = modFile.getContents().get(JarModsDotTomlModFileReader.MODS_TOML);
+        if (modsjson == null) {
             LOGGER.warn(LogMarkers.LOADING, "Mod file {} is missing {} file", modFile.getFilePath(), JarModsDotTomlModFileReader.MODS_TOML);
             return null;
         }
 
-        final FileConfig fileConfig = FileConfig.builder(modsjson).build();
-        fileConfig.load();
-        fileConfig.close();
-        // Make an immutable copy of the config. A FileConfig is a ConcurrentConfig,
-        // and we don't want to leak the complexities of ConcurrentConfigs
-        // (such as not supporting `valueMap`) into this read-only code.
-        final NightConfigWrapper configWrapper = new NightConfigWrapper(copyConfig(fileConfig));
+        UnmodifiableCommentedConfig config;
+        try (var reader = modsjson.bufferedReader()) {
+            config = TomlFormat.instance().createParser().parse(reader).unmodifiable();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read " + modsjson + " from " + imodFile, e);
+        }
+        final NightConfigWrapper configWrapper = new NightConfigWrapper(config);
         return new ModFileInfo(modFile, configWrapper, configWrapper::setFile);
-    }
-
-    /**
-     * Creates an immutable copy of a concurrent config.
-     */
-    private static UnmodifiableConfig copyConfig(ConcurrentConfig config) {
-        var format = TomlFormat.instance();
-        // The best I could do given that Config.copy(...) only performs a shallow copy,
-        // and does not work for StampedConfigs anyway.
-        return format.createParser().parse(format.createWriter().writeToString(config)).unmodifiable();
     }
 
     /**
@@ -73,11 +60,7 @@ public class ModFileParser {
      * @param requiredMods    The mod ids that are required for this mixin configuration to be loaded. If empty, will be loaded regardless.
      * @param behaviorVersion The mixin version whose behavior this configuration requests; if unspecified, the default is provided by FML.
      */
-    public record MixinConfig(String config, List<String> requiredMods, @Nullable ArtifactVersion behaviorVersion) {
-        public MixinConfig(String config, List<String> requiredMods) {
-            this(config, requiredMods, null);
-        }
-    }
+    public record MixinConfig(String config, List<String> requiredMods, @Nullable ArtifactVersion behaviorVersion) {}
 
     private static final ArtifactVersion HIGHEST_MIXIN_VERSION;
     private static final ArtifactVersion LOWEST_MIXIN_VERSION;

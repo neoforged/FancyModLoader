@@ -44,9 +44,9 @@ public interface JarMetadata {
      * from {@code Automatic-Module-Name} in the manifest.
      */
     static JarMetadata from(JarContents jar) {
-        var mi = jar.findFile("module-info.class");
-        if (mi.isPresent()) {
-            return new ModuleJarMetadata(mi.get(), jar);
+        var moduleInfoResource = jar.get("module-info.class");
+        if (moduleInfoResource != null) {
+            return new ModuleJarMetadata(moduleInfoResource, jar);
         } else {
             var nav = computeNameAndVersion(jar.getPrimaryPath());
             String name = nav.name();

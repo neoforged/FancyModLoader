@@ -53,6 +53,7 @@
   "fml.modloadingissue.failed_to_list_folder_content": "Failed to list content of folder {0}",
   "fml.modloadingissue.failed_to_find_on_classpath": "Failed to find {0} on the classpath",
   "fml.modloadingissue.multiple_copies_on_classpath": "Found multiple copies of {0} on the classpath: {1}",
+  "fml.modloadingissue.mixin.duplicate_config": "A mixin config named {0} is provided by multiple mods: {1} and {2}",
   "fml.messages.artifactversion.ornotinstalled": "{0,ornull,fml.messages.artifactversion.notinstalled}",
   "fml.messages.artifactversion": "{0,ornull,fml.messages.artifactversion.none}",
   "fml.messages.artifactversion.none": "none",
@@ -81,5 +82,9 @@
   "fml.modloadingissue.enumextender.argument.constant.count_mismatch": "Parameter count {0} does not match argument count {1} of constructor {2} for field {3} in enum {4}, specified by mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.invalid_char": "Invalid character {0} at parameter index {1} for field {2} in enum {3}, specified by mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Unsupported immediate argument type {0} at parameter index {1} for field {2} in enum {3}, specified by mod {100,modinfo,id}",
-  "fml.modloadingissue.enumextender.duplicate": "Found duplicate field {0} for enum {1}, provided by mods {2} and {3}"
+  "fml.modloadingissue.enumextender.duplicate": "Found duplicate field {0} for enum {1}, provided by mods {2} and {3}",
+  "fml.button.open.log": "Open Log File",
+  "fml.button.open.crashreport": "Open Crash Report",
+  "fml.button.open.mods.folder": "Open Mods Folder",
+  "fml.button.quit": "Quit Game"
 }

@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.jar.Manifest;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.LogMarkers;
@@ -39,7 +40,7 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
     public static IModFile createModFile(JarContents contents, ModFileDiscoveryAttributes discoveryAttributes) {
         var type = getModType(contents);
         IModFile mod;
-        if (contents.findFile(MODS_TOML).isPresent()) {
+        if (contents.containsFile(MODS_TOML)) {
             LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MODS_TOML, type, contents.getPrimaryPath());
             var mjm = new ModJarMetadata(contents);
             mod = new ModFile(SecureJar.from(contents, mjm), ModFileParser::modsTomlParser, discoveryAttributes);
@@ -56,7 +57,11 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
 
     @Nullable
     private static IModFile.Type getModType(JarContents jar) {
-        var typeString = jar.getManifest().getMainAttributes().getValue(ModFile.TYPE);
+        Manifest jarManifest = jar.getManifest();
+        if (jarManifest == null) {
+            return null;
+        }
+        var typeString = jarManifest.getMainAttributes().getValue(ModFile.TYPE);
         try {
             return typeString != null ? IModFile.Type.valueOf(typeString) : null;
         } catch (IllegalArgumentException e) {
@@ -66,7 +71,7 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
     }
 
     public static IModFileInfo manifestParser(final IModFile mod) {
-        Function<String, Optional<String>> cfg = name -> Optional.ofNullable(mod.getSecureJar().moduleDataProvider().getManifest().getMainAttributes().getValue(name));
+        Function<String, Optional<String>> cfg = name -> Optional.ofNullable(mod.getContents().getManifest().getMainAttributes().getValue(name));
         var license = cfg.apply("LICENSE").orElse("");
         var dummy = new IConfigurable() {
             @Override
@@ -138,11 +143,6 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
         @Override
         public IConfigurable getConfig() {
             return configurable;
-        }
-
-        @Override
-        public String moduleName() {
-            return mod.getSecureJar().name();
         }
 
         // These Should never be called as it's only called from ModJarMetadata.version and we bypass that

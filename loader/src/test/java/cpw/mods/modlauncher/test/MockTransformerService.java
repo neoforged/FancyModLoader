@@ -23,6 +23,8 @@ import cpw.mods.modlauncher.api.ITransformerVotingContext;
 import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
 import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -72,13 +74,24 @@ public class MockTransformerService implements ITransformationService {
     @Override
     public List<Resource> beginScanning(IEnvironment environment) {
         if (System.getProperty("testJars.location") != null) {
-            SecureJar testjar = SecureJar.from(Path.of(System.getProperty("testJars.location")));
+            SecureJar testjar;
+            try {
+                testjar = SecureJar.from(Path.of(System.getProperty("testJars.location")));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
             return List.of(new Resource(IModuleLayerManager.Layer.PLUGIN, List.of(testjar)));
         } else if (System.getProperty("test.harness") != null) {
             return List.of(new Resource(IModuleLayerManager.Layer.PLUGIN,
                     Arrays.stream(System.getProperty("test.harness").split(","))
                             .map(FileSystems.getDefault()::getPath)
-                            .map(SecureJar::from)
+                            .map(paths -> {
+                                try {
+                                    return SecureJar.from(paths);
+                                } catch (IOException e) {
+                                    throw new UncheckedIOException(e);
+                                }
+                            })
                             .toList()));
         } else {
             return List.of();
@@ -88,7 +101,12 @@ public class MockTransformerService implements ITransformationService {
     @Override
     public List<Resource> completeScan(IModuleLayerManager layerManager) {
         if (System.getProperty("testJars.location") != null) {
-            SecureJar testjar = SecureJar.from(Path.of(System.getProperty("testJars.location")));
+            SecureJar testjar;
+            try {
+                testjar = SecureJar.from(Path.of(System.getProperty("testJars.location")));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
             return List.of(new Resource(IModuleLayerManager.Layer.GAME, List.of(testjar)));
         } else {
             return List.of();

@@ -32,8 +32,7 @@ import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.IModFile;
 
 /**
- * Master list of all mods - game-side version. This is classloaded in the game scope and
- * can dispatch game level events as a result.
+ * Master list of all mods.
  */
 public class ModList {
     private static ModList INSTANCE;
