@@ -61,20 +61,12 @@ public class FMLLoader {
     static void onInitialLoad(IEnvironment environment) throws IncompatibleEnvironmentException {
         final String version = LauncherVersion.getVersion();
         LOGGER.debug(LogMarkers.CORE, "FML {} loading", version);
-        final Package modLauncherPackage = ITransformationService.class.getPackage();
         LOGGER.debug(LogMarkers.CORE, "FML found ModLauncher version : {}", environment.getProperty(IEnvironment.Keys.MLIMPL_VERSION.get()).orElse("unknown"));
 
         accessTransformer = ((AccessTransformerService) environment.findLaunchPlugin("accesstransformer").orElseThrow(() -> {
             LOGGER.error(LogMarkers.CORE, "Access Transformer library is missing, we need this to run");
             return new IncompatibleEnvironmentException("Missing AccessTransformer, cannot run");
         })).engine;
-
-        final Package atPackage = accessTransformer.getClass().getPackage();
-        LOGGER.debug(LogMarkers.CORE, "FML found AccessTransformer version : {}", atPackage.getImplementationVersion());
-        if (!atPackage.isCompatibleWith("1.0")) {
-            LOGGER.error(LogMarkers.CORE, "Found incompatible AccessTransformer specification : {}, version {} from {}", atPackage.getSpecificationVersion(), atPackage.getImplementationVersion(), atPackage.getImplementationVendor());
-            throw new IncompatibleEnvironmentException("Incompatible accesstransformer found " + atPackage.getSpecificationVersion());
-        }
 
         try {
             var eventBus = Class.forName("net.neoforged.bus.api.IEventBus", false, environment.getClass().getClassLoader());
