@@ -21,10 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import cpw.mods.modlauncher.ClassTransformer;
 import cpw.mods.modlauncher.LaunchPluginHandler;
-import cpw.mods.modlauncher.ModuleLayerHandler;
 import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformTargetLabel;
-import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.ITransformerVotingContext;
@@ -32,6 +30,7 @@ import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
 import java.util.Collections;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -42,7 +41,6 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
-import org.powermock.reflect.Whitebox;
 
 /**
  * Test core transformer functionality
@@ -54,12 +52,11 @@ class ClassTransformerTests {
         MarkerManager.getMarker("CLASSDUMP");
         Configurator.setLevel(ClassTransformer.class.getName(), Level.TRACE);
         final TransformStore transformStore = new TransformStore();
-        final ModuleLayerHandler layerHandler = Whitebox.invokeConstructor(ModuleLayerHandler.class);
-        final LaunchPluginHandler lph = new LaunchPluginHandler(layerHandler);
-        final ClassTransformer classTransformer = Whitebox.invokeConstructor(ClassTransformer.class, new Class[] { transformStore.getClass(), lph.getClass(), TransformingClassLoader.class }, new Object[] { transformStore, lph, null });
+        final LaunchPluginHandler lph = new LaunchPluginHandler(Stream.of());
+        final ClassTransformer classTransformer = new ClassTransformer(transformStore, lph, null);
         final ITransformationService dummyService = new MockTransformerService();
-        Whitebox.invokeMethod(transformStore, "addTransformer", new TransformTargetLabel("test.MyClass", TargetType.CLASS), classTransformer(), dummyService);
-        byte[] result = Whitebox.invokeMethod(classTransformer, "transform", new Class[] { byte[].class, String.class, String.class }, new byte[0], "test.MyClass", "testing");
+        transformStore.addTransformer(new TransformTargetLabel("test.MyClass", TargetType.CLASS), classTransformer(), dummyService);
+        byte[] result = classTransformer.transform(new byte[0], "test.MyClass", "testing");
         assertAll("Class loads and is valid",
                 () -> assertNotNull(result),
 //                () -> assertNotNull(new TransformingClassLoader(transformStore, lph, FileSystems.getDefault().getPath(".")).getClass("test.MyClass", result)),
@@ -77,8 +74,8 @@ class ClassTransformerTests {
         dummyClass.fields.add(new FieldNode(Opcodes.ACC_PUBLIC, "dummyfield", "Ljava/lang/String;", null, null));
         ClassWriter cw = new ClassWriter(Opcodes.ASM5);
         dummyClass.accept(cw);
-        Whitebox.invokeMethod(transformStore, "addTransformer", new TransformTargetLabel("test.DummyClass", "dummyfield"), fieldNodeTransformer1(), dummyService);
-        byte[] result1 = Whitebox.invokeMethod(classTransformer, "transform", new Class[] { byte[].class, String.class, String.class }, cw.toByteArray(), "test.DummyClass", "testing");
+        transformStore.addTransformer(new TransformTargetLabel("test.DummyClass", "dummyfield"), fieldNodeTransformer1(), dummyService);
+        byte[] result1 = classTransformer.transform(cw.toByteArray(), "test.DummyClass", "testing");
         assertAll("Class loads and is valid",
                 () -> assertNotNull(result1),
 //                () -> assertNotNull(new TransformingClassLoader(transformStore, lph, FileSystems.getDefault().getPath(".")).getClass("test.DummyClass", result1)),

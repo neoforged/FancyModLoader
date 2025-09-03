@@ -29,7 +29,7 @@ public final class Environment implements IEnvironment {
     private final TypesafeMap environment;
     private final Launcher launcher;
 
-    Environment(Launcher launcher) {
+    public Environment(Launcher launcher) {
         environment = new TypesafeMap(IEnvironment.class);
         this.launcher = launcher;
     }

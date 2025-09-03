@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.VisibleForTesting;
 
 public class TransformerAuditTrail implements ITransformerAuditTrail {
     private Map<String, List<ITransformerActivity>> audit = new ConcurrentHashMap<>();
@@ -32,6 +33,11 @@ public class TransformerAuditTrail implements ITransformerAuditTrail {
     @Override
     public List<ITransformerActivity> getActivityFor(final String className) {
         return Collections.unmodifiableList(getTransformerActivities(className));
+    }
+
+    @VisibleForTesting
+    public void clear() {
+        audit.clear();
     }
 
     private static class TransformerActivity implements ITransformerActivity {
