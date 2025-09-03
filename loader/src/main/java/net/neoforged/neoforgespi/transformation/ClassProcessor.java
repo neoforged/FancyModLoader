@@ -1,12 +1,13 @@
 package net.neoforged.neoforgespi.transformation;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.util.Set;
 
-// TODO: this and IClassProcessorProvider are both on the PLUGIN layer -- the differences from coremods (namely, the
+// TODO: this and ClassProcessorProvider are both on the PLUGIN layer -- the differences from coremods (namely, the
 //  greater flexibility and therefore need to be careful with what you request processing for) should be documented.
 // TODO: should we add some sort of warning screen on load if more than X% of classes are being transformed? This seems doable;
 //  could even count this per-plugin to detect and warn on cases of transform-everything plugins.
@@ -39,17 +40,17 @@ public interface ClassProcessor {
         public static final int COMPUTE_FRAMES = ClassWriter.COMPUTE_FRAMES;
     }
 
-    String COMPUTING_FRAMES = "computing_frames";
+    ProcessorName COMPUTING_FRAMES = new ProcessorName("neoforge", "computing_frames");
 
     /**
      * {@return a unique identifier for this processor}
      */
-    String name();
+    ProcessorName name();
 
     /**
      * {@return processors that this processor must run before}
      */
-    default Set<String> runsBefore() {
+    default Set<ProcessorName> runsBefore() {
         return Set.of();
     }
 
@@ -57,7 +58,7 @@ public interface ClassProcessor {
      * {@return processors that this processor must run after} This should include
      * {@link ClassProcessor#COMPUTING_FRAMES} if the processor returns a result requiring frame re-computation
      */
-    default Set<String> runsAfter() {
+    default Set<ProcessorName> runsAfter() {
         return Set.of(COMPUTING_FRAMES);
     }
 
@@ -70,35 +71,52 @@ public interface ClassProcessor {
     }
 
     /**
-     * {@return whether the processor wants to recieve the class}
-     * 
-     * @param classType the class to consider
-     * @param isEmpty if the class is empty at present (indicates no backing file found) 
+     * Context available when determining whether a processor wants to handle a class
+     * @param type the class to consider
+     * @param empty if the class is empty at present (indicates no backing file found)
      */
-    boolean handlesClass(Type classType, boolean isEmpty);
+    record SelectionContext(Type type, boolean empty) {
+        @ApiStatus.Internal
+        public SelectionContext {}
+    }
+
+    /**
+     * Context available when processing a class
+     * @param type the class to process
+     * @param node the current structure of the class
+     * @param empty if the class is empty at present (indicates no backing file found and no previous processor has created it)
+     */
+    record TransformationContext(Type type, ClassNode node, boolean empty) {
+        @ApiStatus.Internal
+        public TransformationContext {}
+    }
+
+    /**
+     * {@return whether the processor wants to recieve the class}
+     * @param context the context of the class to consider
+     */
+    boolean handlesClass(SelectionContext context);
 
     /**
      * Each class that the processor has opted to recieve is passed to it for processing.
-     * One of this or {@link #processClass(ClassNode, Type)} <em>must</em> be implemented.
+     * One of this or {@link #processClass(TransformationContext)} <em>must</em> be implemented.
      *
-     * @param classNode the classnode to process
-     * @param classType the name of the class
+     * @param context the context of the class to process
      * @return the {@link ComputeFlags} indicating how the class should be rewritten.
      */
-    default int processClassWithFlags(ClassNode classNode, Type classType) {
-        return processClass(classNode, classType) ? ComputeFlags.COMPUTE_FRAMES : ComputeFlags.NO_REWRITE;
+    default int processClassWithFlags(TransformationContext context) {
+        return processClass(context) ? ComputeFlags.COMPUTE_FRAMES : ComputeFlags.NO_REWRITE;
     }
 
     /**
      * Each class that the processor has opted to recieve is passed to it for processing.
-     * One of this or {@link #processClassWithFlags(ClassNode, Type)} <em>must</em> be implemented.
+     * One of this or {@link #processClassWithFlags(TransformationContext)} <em>must</em> be implemented.
      *
-     * @param classNode the classnode to process
-     * @param classType the name of the class
+     * @param context the context of the class to process
      * @return true if the classNode needs rewriting using COMPUTE_FRAMES or false if it needs no NO_REWRITE
      */
-    default boolean processClass(ClassNode classNode, Type classType) {
-        throw new IllegalStateException("YOU NEED TO OVERRIDE ONE OF THE processClass methods");
+    default boolean processClass(TransformationContext context) {
+        throw new IllegalStateException("You need to override one of the processClass methods");
     }
 
     /**

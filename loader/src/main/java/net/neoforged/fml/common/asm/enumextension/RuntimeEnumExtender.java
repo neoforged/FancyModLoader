@@ -22,6 +22,7 @@ import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.asm.ListGeneratorAdapter;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -61,23 +62,27 @@ public class RuntimeEnumExtender implements ClassProcessor {
     private static final int EXT_INFO_FLAGS = Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL;
     private static Map<String, List<EnumPrototype>> prototypes = Map.of();
 
+    public static final ProcessorName NAME = new ProcessorName("neoforge", "runtime_enum_extender");
+    
     @Override
-    public String name() {
-        return "runtime_enum_extender";
+    public ProcessorName name() {
+        return NAME;
     }
 
     @Override
-    public boolean handlesClass(Type classType, boolean isEmpty) {
-        return !isEmpty && prototypes.containsKey(classType.getInternalName());
+    public boolean handlesClass(SelectionContext context) {
+        return !context.empty() && prototypes.containsKey(context.type().getInternalName());
     }
 
     @Override
-    public Set<String> runsBefore() {
+    public Set<ProcessorName> runsBefore() {
         return Set.of("mixin");
     }
 
     @Override
-    public boolean processClass(final ClassNode classNode, final Type classType) {
+    public boolean processClass(final TransformationContext context) {
+        final var classNode = context.node();
+        final var classType = context.type();
         if ((classNode.access & Opcodes.ACC_ENUM) == 0 || !classNode.interfaces.contains(MARKER_IFACE.getInternalName())) {
             throw new IllegalStateException("Tried to extend non-enum class or non-extensible enum: " + classType);
         }

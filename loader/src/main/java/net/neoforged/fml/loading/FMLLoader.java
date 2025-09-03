@@ -62,7 +62,7 @@ public class FMLLoader {
         LOGGER.debug(LogMarkers.CORE, "FML {} loading", version);
         LOGGER.debug(LogMarkers.CORE, "FML found ModLauncher version : {}", environment.getProperty(IEnvironment.Keys.MLIMPL_VERSION.get()).orElse("unknown"));
 
-        accessTransformer = ((AccessTransformerService) environment.findTransformer("accesstransformer").orElseThrow(() -> {
+        accessTransformer = ((AccessTransformerService) environment.findTransformer(AccessTransformerService.NAME).orElseThrow(() -> {
             LOGGER.error(LogMarkers.CORE, "Access Transformer library is missing, we need this to run");
             return new IncompatibleEnvironmentException("Missing AccessTransformer, cannot run");
         })).engine;
@@ -82,7 +82,7 @@ public class FMLLoader {
             throw new IncompatibleEnvironmentException("Missing EventBus, cannot run");
         }
 
-        neoForgeDevDistCleaner = (NeoForgeDevDistCleaner) environment.findTransformer("neoforgedevdistcleaner").orElseThrow(() -> {
+        neoForgeDevDistCleaner = (NeoForgeDevDistCleaner) environment.findTransformer(NeoForgeDevDistCleaner.NAME).orElseThrow(() -> {
             LOGGER.error(LogMarkers.CORE, "NeoForgeDevDistCleaner is missing, we need this to run");
             return new IncompatibleEnvironmentException("Missing NeoForgeDevDistCleaner, cannot run!");
         });

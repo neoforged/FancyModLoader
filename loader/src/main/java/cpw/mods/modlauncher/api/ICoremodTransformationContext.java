@@ -14,11 +14,16 @@
 
 package cpw.mods.modlauncher.api;
 
-public interface ITransformationContext {
+public interface ICoremodTransformationContext {
     /**
      * @return The class name being transformed
      */
     String getClassName();
+
+    /**
+     * @return If the class already existed
+     */
+    boolean doesClassExist();
 
     /**
      * Return the result of applying the supplied field predicate to the current field node.

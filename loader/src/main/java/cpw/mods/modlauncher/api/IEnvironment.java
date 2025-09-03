@@ -14,8 +14,8 @@
 
 package cpw.mods.modlauncher.api;
 
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -54,7 +54,7 @@ public interface IEnvironment {
      * @param name name to lookup
      * @return the launch plugin
      */
-    Optional<ClassProcessor> findTransformer(String name);
+    Optional<ClassProcessor> findTransformer(ProcessorName name);
 
     /**
      * Find the named {@link ILaunchHandlerService}

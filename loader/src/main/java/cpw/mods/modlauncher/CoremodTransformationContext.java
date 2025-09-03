@@ -14,7 +14,8 @@
 
 package cpw.mods.modlauncher;
 
-import cpw.mods.modlauncher.api.ITransformationContext;
+import cpw.mods.modlauncher.api.ICoremodTransformationContext;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -27,22 +28,24 @@ import org.objectweb.asm.tree.MethodNode;
  * The internal vote context structure.
  */
 @ApiStatus.Internal
-public class TransformationContext implements ITransformationContext {
+public class CoremodTransformationContext implements ICoremodTransformationContext {
     private static final Object[] EMPTY = new Object[0];
-    private final String className;
-    private Object node;
+    private final ClassProcessor.TransformationContext context;
+    private final Object node;
 
-    public TransformationContext(String className) {
-        this.className = className;
+    public CoremodTransformationContext(ClassProcessor.TransformationContext context, Object node) {
+        this.context = context;
+        this.node = node;
     }
 
     @Override
     public String getClassName() {
-        return className;
+        return context.type().getClassName();
     }
 
-    public <T> void setNode(final T node) {
-        this.node = node;
+    @Override
+    public boolean doesClassExist() {
+        return !context.empty();
     }
 
     @Override

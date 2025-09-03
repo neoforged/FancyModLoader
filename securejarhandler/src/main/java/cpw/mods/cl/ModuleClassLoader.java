@@ -210,7 +210,7 @@ public class ModuleClassLoader extends ClassLoader {
         return cls;
     }
 
-    protected byte[] maybeTransformClassBytes(final byte[] bytes, final String name, final String context) {
+    protected byte[] maybeTransformClassBytes(final byte[] bytes, final String name, final @Nullable String context) {
         return bytes;
     }
 

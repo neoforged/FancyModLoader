@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,7 +50,7 @@ public class ClassTransformer {
         this.auditTrail = auditTrail;
     }
 
-    byte[] transform(byte[] inputClass, String className, final String upToTransformer) {
+    byte[] transform(byte[] inputClass, String className, final ProcessorName upToTransformer) {
         final String internalName = className.replace('.', '/');
         final Type classDesc = Type.getObjectType(internalName);
         
@@ -59,9 +60,9 @@ public class ClassTransformer {
         }
         
         // TODO: reimplement initial-bytecode-hash stuff for coremods? Uncertain how useful this is or where it's used
-        // TODO: reimplement isEmpty check for coremods -- this does seem useful, and coule be exposed to IClassProcessors in general
 
         ClassNode clazz = new ClassNode(Opcodes.ASM9);
+        boolean isEmpty = inputClass.length == 0;
         if (inputClass.length > 0) {
             final ClassReader classReader = new ClassReader(inputClass);
             classReader.accept(clazz, ClassReader.EXPAND_FRAMES);
@@ -80,7 +81,15 @@ public class ClassTransformer {
             } else {
                 auditTrail.addClassProcessor(classDesc.getClassName(), transformer);
             }
-            flags |= transformer.processClassWithFlags(clazz, classDesc);
+            var context = new ClassProcessor.TransformationContext(
+                    classDesc,
+                    clazz,
+                    isEmpty
+            );
+            flags |= transformer.processClassWithFlags(context);
+            if (flags != 0) {
+                isEmpty = false; // If a transformer makes changes, we are no longer empty
+            }
             if (!allowsComputeFrames) {
                 if ((flags & ClassProcessor.ComputeFlags.COMPUTE_FRAMES) != 0) {
                     LOGGER.error(MODLAUNCHER, "Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer "+ ClassProcessor.COMPUTING_FRAMES, transformer.name());

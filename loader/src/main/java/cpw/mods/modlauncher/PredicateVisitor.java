@@ -14,7 +14,7 @@
 
 package cpw.mods.modlauncher;
 
-import cpw.mods.modlauncher.api.ITransformationContext;
+import cpw.mods.modlauncher.api.ICoremodTransformationContext;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -23,22 +23,22 @@ import org.objectweb.asm.Opcodes;
 class PredicateVisitor extends ClassVisitor {
     private static final int ASM_API = Opcodes.ASM9;
 
-    private ITransformationContext.MethodPredicate methodPredicate;
-    private ITransformationContext.FieldPredicate fieldPredicate;
-    private ITransformationContext.ClassPredicate classPredicate;
+    private ICoremodTransformationContext.MethodPredicate methodPredicate;
+    private ICoremodTransformationContext.FieldPredicate fieldPredicate;
+    private ICoremodTransformationContext.ClassPredicate classPredicate;
     private boolean result;
 
-    PredicateVisitor(final ITransformationContext.FieldPredicate fieldPredicate) {
+    PredicateVisitor(final ICoremodTransformationContext.FieldPredicate fieldPredicate) {
         super(ASM_API);
         this.fieldPredicate = fieldPredicate;
     }
 
-    PredicateVisitor(final ITransformationContext.MethodPredicate methodPredicate) {
+    PredicateVisitor(final ICoremodTransformationContext.MethodPredicate methodPredicate) {
         super(ASM_API);
         this.methodPredicate = methodPredicate;
     }
 
-    PredicateVisitor(final ITransformationContext.ClassPredicate classPredicate) {
+    PredicateVisitor(final ICoremodTransformationContext.ClassPredicate classPredicate) {
         super(ASM_API);
         this.classPredicate = classPredicate;
     }

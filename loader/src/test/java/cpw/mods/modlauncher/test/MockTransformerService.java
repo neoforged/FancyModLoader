@@ -19,7 +19,7 @@ import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
-import cpw.mods.modlauncher.api.ITransformationContext;
+import cpw.mods.modlauncher.api.ICoremodTransformationContext;
 import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
 import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
@@ -108,14 +108,14 @@ public class MockTransformerService implements ITransformationService {
         }
 
         @Override
-        public ClassNode transform(ClassNode input, ITransformationContext context) {
+        public ClassNode transform(ClassNode input, ICoremodTransformationContext context) {
             FieldNode fn = new FieldNode(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "testfield", "Ljava/lang/String;", null, "CHEESE!");
             input.fields.add(fn);
             return input;
         }
 
         @Override
-        public TransformerVoteResult castVote(ITransformationContext context) {
+        public TransformerVoteResult castVote(ICoremodTransformationContext context) {
             return TransformerVoteResult.YES;
         }
 

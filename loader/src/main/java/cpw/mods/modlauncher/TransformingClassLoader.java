@@ -20,6 +20,8 @@ import cpw.mods.modlauncher.api.IEnvironment;
 import java.lang.module.Configuration;
 import java.util.List;
 
+import net.neoforged.neoforgespi.transformation.ProcessorName;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 /**
@@ -45,15 +47,16 @@ public class TransformingClassLoader extends ModuleClassLoader {
     }
 
     @Override
-    protected byte[] maybeTransformClassBytes(final byte[] bytes, final String name, final String upToTransformer) {
-        return classTransformer.transform(bytes, name, upToTransformer);
+    protected byte[] maybeTransformClassBytes(final byte[] bytes, final String name, final @Nullable String upToTransformer) {
+        var upToTransformerName = upToTransformer == null ? null : ProcessorName.parse(upToTransformer);
+        return classTransformer.transform(bytes, name, upToTransformerName);
     }
 
     public Class<?> getLoadedClass(String name) {
         return findLoadedClass(name);
     }
 
-    byte[] buildTransformedClassNodeFor(final String className, final String upToTransformer) throws ClassNotFoundException {
-        return super.getMaybeTransformedClassBytes(className, upToTransformer);
+    byte[] buildTransformedClassNodeFor(final String className, final ProcessorName upToTransformer) throws ClassNotFoundException {
+        return super.getMaybeTransformedClassBytes(className, upToTransformer.toString());
     }
 }

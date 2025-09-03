@@ -34,6 +34,7 @@ import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
 import net.neoforged.fml.loading.FMLServiceProvider;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -116,12 +117,12 @@ public class Launcher {
         
         this.transformStore = new TransformStore(this.fmlServiceProvider.getLaunchContext());
         
-        this.classLoader = buildTransformingClassLoader(this.transformStore, this.moduleLayerHandler);
+        this.classLoader = buildTransformingClassLoader(this.moduleLayerHandler);
         Thread.currentThread().setContextClassLoader(this.classLoader);
         this.launchService.launch(this.argumentHandler, this.moduleLayerHandler.getLayer(IModuleLayerManager.Layer.GAME).orElseThrow(), this.classLoader);
     }
 
-    private TransformingClassLoader buildTransformingClassLoader(TransformStore transformStore, final ModuleLayerHandler layerHandler) {
+    private TransformingClassLoader buildTransformingClassLoader(final ModuleLayerHandler layerHandler) {
         final var layerInfo = layerHandler.buildLayer(IModuleLayerManager.Layer.GAME, (cf, parents) -> new TransformingClassLoader(this.transformStore, this.environment, cf, parents));
         layerHandler.updateLayer(IModuleLayerManager.Layer.PLUGIN, li -> li.cl().setFallbackClassLoader(layerInfo.cl()));
         return (TransformingClassLoader) layerInfo.cl();
@@ -135,14 +136,14 @@ public class Launcher {
         return launchService.findLaunchHandler(name);
     }
     
-    Optional<ClassProcessor> findTransformer(final String name) {
+    Optional<ClassProcessor> findTransformer(final ProcessorName name) {
         return this.transformStore.findTransformer(name);
     }
 
     public Optional<IModuleLayerManager> findLayerManager() {
         return Optional.ofNullable(this.moduleLayerHandler);
     }
-
+    
     private void discoverServices(final ArgumentHandler.DiscoveryData discoveryData, ModuleLayerHandler layerHandler) {
         LOGGER.debug(MODLAUNCHER, "Discovering SERVICE layer services");
         var bootLayer = layerHandler.getLayer(IModuleLayerManager.Layer.BOOT).orElseThrow();

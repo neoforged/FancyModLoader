@@ -16,6 +16,8 @@ package cpw.mods.modlauncher.api;
 
 import java.util.Set;
 
+import net.neoforged.fml.loading.CoreModsTransformerProvider;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -35,7 +37,7 @@ public interface ITransformer<T> {
      *         rounds of voting.
      */
 
-    T transform(T input, ITransformationContext context);
+    T transform(T input, ICoremodTransformationContext context);
 
 /**
      * Return a set of {@link Target} identifying which elements this transformer wishes to try
@@ -50,22 +52,24 @@ public interface ITransformer<T> {
     TargetType getTargetType();
     
     /** 
-     * {@return a unique name for this transformer}
+     * {@return a unique name for this transformer. Defaults to a name derived from the source class and module names}
      */
-    String name();
+    default ProcessorName name() {
+        return new ProcessorName(getClass().getModule().getName(), getClass().getName().replace('$', '.'));
+    }
 
     /**
      * {@return processors or transformers that this transformer must run before}
      */
-    default Set<String> runsBefore() {
+    default Set<ProcessorName> runsBefore() {
         return Set.of();
     }
 
     /**
      * {@return processors or transformers that this transformer must run after}
      */
-    default Set<String> runsAfter() {
-        return Set.of();
+    default Set<ProcessorName> runsAfter() {
+        return Set.of(CoreModsTransformerProvider.COREMODS_GROUP);
     }
 
     /**

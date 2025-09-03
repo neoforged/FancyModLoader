@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.Set;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
@@ -32,26 +33,28 @@ public class NeoForgeDevDistCleaner implements ClassProcessor {
 
     private final Set<String> maskedClasses = new HashSet<>();
 
+    public static final ProcessorName NAME = new ProcessorName("neoforge", "neoforge_dev_dist_cleaner");
+
     @Override
-    public String name() {
-        return "neoforgedevdistcleaner";
+    public ProcessorName name() {
+        return NAME;
     }
 
     @Override
-    public Set<String> runsBefore() {
+    public Set<ProcessorName> runsBefore() {
         // Might as well run as early as we sensibly can, so that we can catch issues before other transformers run their checks
         return Set.of(ClassProcessor.COMPUTING_FRAMES);
     }
 
     @Override
-    public Set<String> runsAfter() {
+    public Set<ProcessorName> runsAfter() {
         return Set.of();
     }
 
     @Override
-    public boolean handlesClass(Type classType, boolean isEmpty) {
-        if (maskedClasses.contains(classType.getClassName())) {
-            String message = String.format("Attempted to load class %s which is not present on the %s", classType.getClassName(), switch (dist) {
+    public boolean handlesClass(SelectionContext context) {
+        if (maskedClasses.contains(context.type().getClassName())) {
+            String message = String.format("Attempted to load class %s which is not present on the %s", context.type().getClassName(), switch (dist) {
                 case CLIENT -> "client";
                 case DEDICATED_SERVER -> "dedicated server";
             });

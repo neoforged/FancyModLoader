@@ -8,6 +8,7 @@ import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -24,7 +25,7 @@ import java.util.function.Function;
 public class TransformStore {
     private static final Logger LOGGER = LogUtils.getLogger();
     
-    private final Map<String, ClassProcessor> transformers = new HashMap<>();
+    private final Map<ProcessorName, ClassProcessor> transformers = new HashMap<>();
     private final List<ClassProcessor> sortedTransformers;
     
     @VisibleForTesting
@@ -43,17 +44,17 @@ public class TransformStore {
             // This "special" transformer never handles a class but is always triggered
 
             @Override
-            public String name() {
+            public ProcessorName name() {
                 return ClassProcessor.COMPUTING_FRAMES;
             }
 
             @Override
-            public boolean handlesClass(Type classType, boolean isEmpty) {
+            public boolean handlesClass(SelectionContext context) {
                 return false;
             }
 
             @Override
-            public boolean processClass(ClassNode classNode, Type classType) {
+            public boolean processClass(TransformationContext context) {
                 return false;
             }
         };
@@ -107,13 +108,13 @@ public class TransformStore {
         transformers.put(transformer.name(), transformer);
     }
 
-    public void initializeBytecodeProvider(Function<String, ClassProcessor.IBytecodeProvider> function) {
+    public void initializeBytecodeProvider(Function<ProcessorName, ClassProcessor.IBytecodeProvider> function) {
         for (var transformer : sortedTransformers) {
             transformer.initializeBytecodeProvider(function.apply(transformer.name()));
         }
     }
 
-    public List<ClassProcessor> transformersFor(Type classDesc, boolean isEmpty, String upToTransformer) {
+    public List<ClassProcessor> transformersFor(Type classDesc, boolean isEmpty, ProcessorName upToTransformer) {
         var out = new ArrayList<ClassProcessor>();
         boolean includesComputingFrames = false;
         for (var transformer : sortedTransformers) {
@@ -122,8 +123,11 @@ public class TransformStore {
             } else if (ClassProcessor.COMPUTING_FRAMES.equals(transformer.name())) {
                 includesComputingFrames = true;
                 out.add(transformer);
-            } else if (transformer.handlesClass(classDesc, isEmpty)) {
-                out.add(transformer);
+            } else {
+                var context = new ClassProcessor.SelectionContext(classDesc, isEmpty);
+                if (transformer.handlesClass(context)) {
+                    out.add(transformer);
+                }
             }
         }
         if (out.size() == 1 && includesComputingFrames) {
@@ -134,7 +138,7 @@ public class TransformStore {
         return out;
     }
 
-    public Optional<ClassProcessor> findTransformer(String name) {
+    public Optional<ClassProcessor> findTransformer(ProcessorName name) {
         return Optional.ofNullable(transformers.get(name));
     }
 }
