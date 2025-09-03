@@ -17,11 +17,15 @@ package cpw.mods.modlauncher;
 import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 
 import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.jarhandling.VirtualJar;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.api.TypesafeMap;
+
+import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -123,6 +127,15 @@ public class Launcher {
     }
 
     private TransformingClassLoader buildTransformingClassLoader(final ModuleLayerHandler layerHandler) {
+        try {
+            layerHandler.addToLayer(IModuleLayerManager.Layer.GAME, new VirtualJar(
+                    ClassProcessor.GENERATED_PACKAGE_MODULE,
+                    Path.of(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI()),
+                    this.transformStore.generatedPackages().toArray(String[]::new)
+            ));
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
         final var layerInfo = layerHandler.buildLayer(IModuleLayerManager.Layer.GAME, (cf, parents) -> new TransformingClassLoader(this.transformStore, this.environment, cf, parents));
         layerHandler.updateLayer(IModuleLayerManager.Layer.PLUGIN, li -> li.cl().setFallbackClassLoader(layerInfo.cl()));
         return (TransformingClassLoader) layerInfo.cl();

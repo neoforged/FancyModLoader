@@ -15,8 +15,10 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,6 +30,7 @@ public class TransformStore {
     
     private final Map<ProcessorName, ClassProcessor> transformers = new HashMap<>();
     private final List<ClassProcessor> sortedTransformers;
+    private final Set<String> generatedPackages = new HashSet<>();
     
     @VisibleForTesting
     public TransformStore(ILaunchContext launchContext) {
@@ -76,6 +79,7 @@ public class TransformStore {
             addTransformer(transformer, graph);
         }
         for (var self : transformers.values()) {
+            this.generatedPackages.addAll(self.generatesPackages());
             // If the targeted transformer is not present, then the ordering does not matter;
             // this allows for e.g. ordering with transformers that may or may not be present.
             for (var targetName : self.runsBefore()) {
@@ -144,6 +148,10 @@ public class TransformStore {
             return List.of();
         }
         return out;
+    }
+    
+    public Set<String> generatedPackages() {
+        return Collections.unmodifiableSet(generatedPackages);
     }
 
     public Optional<ClassProcessor> findClassProcessor(ProcessorName name) {

@@ -68,12 +68,14 @@ public interface ClassProcessor {
     default Set<ProcessorName> runsAfter() {
         return Set.of(COMPUTING_FRAMES);
     }
+    
+    String GENERATED_PACKAGE_MODULE = "net.neoforged.fml.generated";
 
     /**
      * {@return packages that this processor generates classes for, that do not already exist on the game layer}
+     * Generated packages in the game layer will be in the module {@value #GENERATED_PACKAGE_MODULE}.
      */
     default Set<String> generatesPackages() {
-        // TODO: implement
         return Set.of();
     }
 
