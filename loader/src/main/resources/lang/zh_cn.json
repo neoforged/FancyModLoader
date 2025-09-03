@@ -53,6 +53,7 @@
   "fml.modloadingissue.failed_to_list_folder_content": "列出目录 {0} 内容失败",
   "fml.modloadingissue.failed_to_find_on_classpath": "在类路径上找不到 {0}",
   "fml.modloadingissue.multiple_copies_on_classpath": "在类路径上找到多个 {0} 的副本：{1}",
+  "fml.modloadingissue.mixin.duplicate_config": "A mixin config named {0} is provided by multiple mods: {1} and {2}",
   "fml.messages.artifactversion.ornotinstalled": "{0,ornull,fml.messages.artifactversion.notinstalled}",
   "fml.messages.artifactversion": "{0,ornull,fml.messages.artifactversion.none}",
   "fml.messages.artifactversion.none": "无",
