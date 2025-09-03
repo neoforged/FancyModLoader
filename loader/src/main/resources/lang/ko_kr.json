@@ -53,6 +53,7 @@
   "fml.modloadingissue.failed_to_list_folder_content": "폴더 {0} 수색중 IO 오류가 발생했습니다",
   "fml.modloadingissue.failed_to_find_on_classpath": "Classpath에 {0}이(가) 없습니다",
   "fml.modloadingissue.multiple_copies_on_classpath": "Classpath {1}에 {0}이(가) 여러개 있습니다",
+  "fml.modloadingissue.mixin.duplicate_config": "A mixin config named {0} is provided by multiple mods: {1} and {2}",
   "fml.messages.artifactversion.ornotinstalled": "{0,ornull,fml.messages.artifactversion.notinstalled}",
   "fml.messages.artifactversion": "{0,ornull,fml.messages.artifactversion.none}",
   "fml.messages.artifactversion.none": "없음",
