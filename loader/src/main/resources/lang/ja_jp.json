@@ -53,6 +53,7 @@
   "fml.modloadingissue.failed_to_list_folder_content": "フォルダ{0}の内容のリスト表示に失敗しました",
   "fml.modloadingissue.failed_to_find_on_classpath": "クラスパス上で{0}を見つけることができませんでした",
   "fml.modloadingissue.multiple_copies_on_classpath": "クラスパス上で{0}の複数のコピーが見つかりました：{1}",
+  "fml.modloadingissue.mixin.duplicate_config": "A mixin config named {0} is provided by multiple mods: {1} and {2}",
   "fml.messages.artifactversion.ornotinstalled": "{0,ornull,fml.messages.artifactversion.notinstalled}",
   "fml.messages.artifactversion": "{0,ornull,fml.messages.artifactversion.none}",
   "fml.messages.artifactversion.none": "該当なし",
