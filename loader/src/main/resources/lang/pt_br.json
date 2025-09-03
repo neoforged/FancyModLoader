@@ -53,6 +53,7 @@
   "fml.modloadingissue.failed_to_list_folder_content": "Não foi possível listar conteúdo/s da carpeta {0}",
   "fml.modloadingissue.failed_to_find_on_classpath": "Não foi possível encontrar {0} no \"classpath\"",
   "fml.modloadingissue.multiple_copies_on_classpath": "Encontrada múltiplas copias de {0} no \"classpath\": {1}",
+  "fml.modloadingissue.mixin.duplicate_config": "A mixin config named {0} is provided by multiple mods: {1} and {2}",
   "fml.messages.artifactversion.ornotinstalled": "{0,ornull,fml.messages.artifactversion.notinstalled}",
   "fml.messages.artifactversion": "{0,ornull,fml.messages.artifactversion.none}",
   "fml.messages.artifactversion.none": "nenhum",
