@@ -1,5 +1,6 @@
 package net.neoforged.neoforgespi.transformation;
 
+import cpw.mods.modlauncher.api.IEnvironment;
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
@@ -40,6 +41,12 @@ public interface ClassProcessor {
         public static final int COMPUTE_FRAMES = ClassWriter.COMPUTE_FRAMES;
     }
 
+    /**
+     * A dummy processor used to order processors relative to frame computation; anything that requires frame
+     * re-computation should run after this, and anything providing information that should be available for frame
+     * computation should run before this. Thus, any processor that returns {@link ComputeFlags#COMPUTE_FRAMES}
+     * <em>must</em> run after this processor.
+     */
     ProcessorName COMPUTING_FRAMES = new ProcessorName("neoforge", "computing_frames");
 
     /**
@@ -56,7 +63,7 @@ public interface ClassProcessor {
 
     /**
      * {@return processors that this processor must run after} This should include
-     * {@link ClassProcessor#COMPUTING_FRAMES} if the processor returns a result requiring frame re-computation
+     * {@link ClassProcessor#COMPUTING_FRAMES} if the processor returns a result requiring frame re-computation.
      */
     default Set<ProcessorName> runsAfter() {
         return Set.of(COMPUTING_FRAMES);
@@ -92,6 +99,15 @@ public interface ClassProcessor {
     }
 
     /**
+     * Context available in post-processing single-instance callbacks
+     * @param type the class that was processed
+     */
+    record AfterProcessingContext(Type type) {
+        @ApiStatus.Internal
+        public AfterProcessingContext {}
+    }
+
+    /**
      * {@return whether the processor wants to recieve the class}
      * @param context the context of the class to consider
      */
@@ -120,13 +136,24 @@ public interface ClassProcessor {
     }
 
     /**
+     * Where a class may be processed multiple times by the same processor (for example, if in addition to being loaded
+     * a later processor requests the state of the given class using a {@link BytecodeProvider}), an after-processing
+     * callback is guaranteed to run at most once per class, just before class load. A transformer will only see this
+     * context for classes it has processed.
+     * @param context the context of the class that was processed
+     */
+    default void afterProcessing(AfterProcessingContext context) {}
+
+    /**
      * Capture a provider which can be used to view the state of any class, including those not transformed, after all
      * transformations before this one.
+     *
      * @param bytecodeProvider allows querying class bytes
+     * @param environment the current launch environment
      */
-    default void initializeBytecodeProvider(IBytecodeProvider bytecodeProvider) {}
+    default void initializeBytecodeProvider(BytecodeProvider bytecodeProvider, IEnvironment environment) {}
 
-    interface IBytecodeProvider {
+    interface BytecodeProvider {
         byte[] acquireTransformedClassBefore(final String className) throws ClassNotFoundException;
     }
 }

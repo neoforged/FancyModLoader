@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import cpw.mods.modlauncher.api.IEnvironment;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import net.neoforged.fml.ModLoader;
@@ -44,13 +45,14 @@ public class ClassTransformer {
     private final TransformingClassLoader transformingClassLoader;
     private final TransformerAuditTrail auditTrail;
 
-    ClassTransformer(final TransformStore transformStore, final TransformingClassLoader transformingClassLoader, final TransformerAuditTrail auditTrail) {
+    ClassTransformer(final TransformStore transformStore, final TransformingClassLoader transformingClassLoader, final TransformerAuditTrail auditTrail, IEnvironment environment) {
         this.transformers = transformStore;
         this.transformingClassLoader = transformingClassLoader;
-        this.transformers.initializeBytecodeProvider(name -> className -> transformingClassLoader.buildTransformedClassNodeFor(className, name));
+        this.transformers.initializeBytecodeProvider(name -> className -> transformingClassLoader.buildTransformedClassNodeFor(className, name), environment);
+        // TODO: reimplement more specific logging on audit trail
         this.auditTrail = auditTrail;
     }
-
+    
     byte[] transform(byte[] inputClass, String className, final ProcessorName upToTransformer) {
         final String internalName = className.replace('.', '/');
         final Type classDesc = Type.getObjectType(internalName);
@@ -97,9 +99,18 @@ public class ClassTransformer {
             }
             if (!allowsComputeFrames) {
                 if ((flags & ClassProcessor.ComputeFlags.COMPUTE_FRAMES) != 0) {
-                    LOGGER.error(MODLAUNCHER, "Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer "+ ClassProcessor.COMPUTING_FRAMES, transformer.name());
-                    throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before frame information is available"+ ClassProcessor.COMPUTING_FRAMES);
+                    LOGGER.error(MODLAUNCHER, "Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer {}", transformer.name(), ClassProcessor.COMPUTING_FRAMES);
+                    throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer "+ ClassProcessor.COMPUTING_FRAMES);
                 }
+            }
+        }
+        if (upToTransformer == null) {
+            // run post-result callbacks
+            var context = new ClassProcessor.AfterProcessingContext(
+                    classDesc
+            );
+            for (var transformer : transformersToUse) {
+                transformer.afterProcessing(context);
             }
         }
         

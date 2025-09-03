@@ -136,8 +136,8 @@ public class Launcher {
         return launchService.findLaunchHandler(name);
     }
     
-    Optional<ClassProcessor> findTransformer(final ProcessorName name) {
-        return this.transformStore.findTransformer(name);
+    Optional<ClassProcessor> findClassProcessor(final ProcessorName name) {
+        return this.transformStore.findClassProcessor(name);
     }
 
     public Optional<IModuleLayerManager> findLayerManager() {

@@ -23,7 +23,7 @@ import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.IBindingsProvider;
 import net.neoforged.fml.common.asm.AccessTransformerService;
-import net.neoforged.fml.loading.mixin.FMLMixinLaunchPlugin;
+import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModValidator;
@@ -39,7 +39,7 @@ import org.slf4j.Logger;
 public class FMLLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static AccessTransformerEngine accessTransformer;
-    private static FMLMixinLaunchPlugin mixinLaunchPlugin;
+    private static FMLMixinClassProcessor mixinLaunchPlugin;
     private static LanguageProviderLoader languageProviderLoader;
     private static Dist dist;
     private static LoadingModList loadingModList;
@@ -63,7 +63,7 @@ public class FMLLoader {
         LOGGER.debug(LogMarkers.CORE, "FML {} loading", version);
         LOGGER.debug(LogMarkers.CORE, "FML found ModLauncher version : {}", environment.getProperty(IEnvironment.Keys.MLIMPL_VERSION.get()).orElse("unknown"));
 
-        accessTransformer = ((AccessTransformerService) environment.findTransformer(AccessTransformerService.NAME).orElseThrow(() -> {
+        accessTransformer = ((AccessTransformerService) environment.findClassProcessor(AccessTransformerService.NAME).orElseThrow(() -> {
             LOGGER.error(LogMarkers.CORE, "Access Transformer library is missing, we need this to run");
             return new IncompatibleEnvironmentException("Missing AccessTransformer, cannot run");
         })).engine;
@@ -83,17 +83,17 @@ public class FMLLoader {
             throw new IncompatibleEnvironmentException("Missing EventBus, cannot run");
         }
 
-        neoForgeDevDistCleaner = (NeoForgeDevDistCleaner) environment.findTransformer(NeoForgeDevDistCleaner.NAME).orElseThrow(() -> {
+        neoForgeDevDistCleaner = (NeoForgeDevDistCleaner) environment.findClassProcessor(NeoForgeDevDistCleaner.NAME).orElseThrow(() -> {
             LOGGER.error(LogMarkers.CORE, "NeoForgeDevDistCleaner is missing, we need this to run");
             return new IncompatibleEnvironmentException("Missing NeoForgeDevDistCleaner, cannot run!");
         });
         LOGGER.debug(LogMarkers.CORE, "Found NeoForgeDev Dist Cleaner");
 
-        mixinLaunchPlugin = (FMLMixinLaunchPlugin) environment.findLaunchPlugin(FMLMixinLaunchPlugin.NAME).orElseThrow(() -> {
-            LOGGER.error(LogMarkers.CORE, "FMLMixinLaunchPlugin is missing, we need this to run");
-            return new IncompatibleEnvironmentException("Missing FMLMixinLaunchPlugin, cannot run!");
+        mixinLaunchPlugin = (FMLMixinClassProcessor) environment.findClassProcessor(FMLMixinClassProcessor.NAME).orElseThrow(() -> {
+            LOGGER.error(LogMarkers.CORE, "FMLMixinClassProcessor is missing, we need this to run");
+            return new IncompatibleEnvironmentException("Missing FMLMixinClassProcessor, cannot run!");
         });
-        LOGGER.debug(LogMarkers.CORE, "Found FMLMixinLaunchPlugin");
+        LOGGER.debug(LogMarkers.CORE, "Found FMLMixinClassProcessor");
 
         try {
             Class.forName("com.electronwill.nightconfig.core.Config", false, environment.getClass().getClassLoader());

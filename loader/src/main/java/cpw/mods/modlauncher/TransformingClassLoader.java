@@ -43,7 +43,7 @@ public class TransformingClassLoader extends ModuleClassLoader {
         super("TRANSFORMER", configuration, parentLayers, parentClassLoader);
         TransformerAuditTrail tat = new TransformerAuditTrail();
         environment.computePropertyIfAbsent(IEnvironment.Keys.AUDITTRAIL.get(), v -> tat);
-        this.classTransformer = new ClassTransformer(transformStore, this, tat);
+        this.classTransformer = new ClassTransformer(transformStore, this, tat, environment);
     }
 
     @Override

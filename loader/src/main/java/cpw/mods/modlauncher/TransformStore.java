@@ -3,6 +3,7 @@ package cpw.mods.modlauncher;
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
 import com.mojang.logging.LogUtils;
+import cpw.mods.modlauncher.api.IEnvironment;
 import net.neoforged.fml.loading.toposort.TopologicalSort;
 import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.ILaunchContext;
@@ -11,7 +12,6 @@ import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 public class TransformStore {
@@ -54,10 +55,16 @@ public class TransformStore {
             }
 
             @Override
+            public Set<ProcessorName> runsAfter() {
+                return Set.of();
+            }
+
+            @Override
             public boolean processClass(TransformationContext context) {
                 return false;
             }
         };
+        
         graph.addNode(specialComputeFramesNode);
         transformers.put(specialComputeFramesNode.name(), specialComputeFramesNode);
         for (ClassProcessorProvider provider : transformerProviders) {
@@ -108,9 +115,9 @@ public class TransformStore {
         transformers.put(transformer.name(), transformer);
     }
 
-    public void initializeBytecodeProvider(Function<ProcessorName, ClassProcessor.IBytecodeProvider> function) {
+    public void initializeBytecodeProvider(Function<ProcessorName, ClassProcessor.BytecodeProvider> function, IEnvironment environment) {
         for (var transformer : sortedTransformers) {
-            transformer.initializeBytecodeProvider(function.apply(transformer.name()));
+            transformer.initializeBytecodeProvider(function.apply(transformer.name()), environment);
         }
     }
 
@@ -130,15 +137,16 @@ public class TransformStore {
                 }
             }
         }
-        if (out.size() == 1 && includesComputingFrames) {
+        if ((out.size() == 1 && includesComputingFrames)) {
             // The class does not actually require any transformation, as the only transformer present is the special
-            // no-op marker for where class hierarchy computation in frame computation goes up to.
+            // no-op marker for where class hierarchy computation in frame computation goes up to, and potentially the
+            // marker for where results are fixed and may be responded to.
             return List.of();
         }
         return out;
     }
 
-    public Optional<ClassProcessor> findTransformer(ProcessorName name) {
+    public Optional<ClassProcessor> findClassProcessor(ProcessorName name) {
         return Optional.ofNullable(transformers.get(name));
     }
 }

@@ -8,10 +8,9 @@ package net.neoforged.fml.common.asm;
 import java.util.Set;
 
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
+import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
 
 public class AccessTransformerService implements ClassProcessor {
     public final AccessTransformerEngine engine = AccessTransformerEngine.newEngine();
@@ -25,7 +24,7 @@ public class AccessTransformerService implements ClassProcessor {
 
     @Override
     public Set<ProcessorName> runsBefore() {
-        return Set.of("mixin");
+        return Set.of(FMLMixinClassProcessor.NAME);
     }
 
     @Override

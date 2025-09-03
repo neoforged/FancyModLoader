@@ -1,35 +1,19 @@
-/*
- * Copyright (c) NeoForged and contributors
- * SPDX-License-Identifier: LGPL-2.1-only
- */
-
 package net.neoforged.fml.loading.mixin;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.jarhandling.VirtualJar;
-import cpw.mods.modlauncher.api.ITransformerActivity;
-import cpw.mods.modlauncher.api.NamedPath;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import cpw.mods.modlauncher.api.IEnvironment;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModFileParser;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.slf4j.Logger;
 import org.spongepowered.asm.launch.MixinBootstrap;
-import org.spongepowered.asm.launch.Phases;
 import org.spongepowered.asm.mixin.FabricUtil;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.Mixins;
@@ -37,14 +21,21 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.ArgsClassGenerator;
 import org.spongepowered.asm.mixin.transformer.Config;
 import org.spongepowered.asm.service.MixinService;
 
-public class FMLMixinLaunchPlugin implements ILaunchPluginService {
-    public static final String NAME = "fml-mixin";
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+public class FMLMixinClassProcessor implements ClassProcessor {
+    public static final ProcessorName NAME = new ProcessorName("neoforge", "mixin");
+
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private FMLMixinService service;
+    FMLMixinService service;
     private List<String> extraMixinConfigs = List.of();
 
-    public FMLMixinLaunchPlugin() {
+    public FMLMixinClassProcessor() {
         System.setProperty("mixin.service", FMLMixinService.class.getName());
         System.setProperty("mixin.bootstrapService", FMLMixinServiceBootstrap.class.getName());
     }
@@ -53,17 +44,8 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
         this.extraMixinConfigs = extraMixinConfigs;
     }
 
-    public SecureJar createGeneratedCodeContainer() {
-        try {
-            Path codeSource = Path.of(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
-            return new VirtualJar("mixin_synthetic", codeSource, ArgsClassGenerator.SYNTHETIC_PACKAGE);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @Override
-    public void initializeLaunch(ITransformerLoader transformerLoader, NamedPath[] specialPaths) {
+    public void initializeBytecodeProvider(BytecodeProvider bytecodeProvider, IEnvironment environment) {
         if (FMLLoader.getDist() == null) {
             throw new IllegalStateException("The dist must be set before initializing Mixin");
         }
@@ -78,7 +60,7 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
         gotoPhase(MixinEnvironment.Phase.INIT);
         gotoPhase(MixinEnvironment.Phase.DEFAULT);
 
-        service.setBytecodeProvider(new FMLClassBytecodeProvider(transformerLoader, this));
+        service.setBytecodeProvider(new FMLClassBytecodeProvider(bytecodeProvider, this));
         MixinBootstrap.init();
         MixinBootstrap.getPlatform().inject();
     }
@@ -136,80 +118,30 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
     }
 
     @Override
-    public String name() {
-        return NAME;
-    }
-
-    @Override
-    public EnumSet<Phase> handlesClass(Type classType, boolean isEmpty) {
-        throw new IllegalStateException("Outdated ModLauncher");
-    }
-
-    @Override
-    public EnumSet<Phase> handlesClass(Type classType, boolean isEmpty, String reason) {
-        if (NAME.equals(reason)) {
-            return Phases.NONE; // We're recursively loading classes to look up inheritance hierarchies. Avoid infinite recursion.
-        }
-
+    public boolean handlesClass(SelectionContext context) {
         // Throw if the class was previously determined to be invalid
-        String name = classType.getClassName();
+        String name = context.type().getClassName();
         if (this.service.getInternalClassTracker().isInvalidClass(name)) {
             throw new NoClassDefFoundError(String.format("%s is invalid", name));
         }
 
-        if (!isEmpty) {
-            if (processesClass(classType)) {
-                return Phases.AFTER_ONLY;
+        if (!context.empty()) {
+            if (processesClass(context.type())) {
+                return true;
             }
             // If there is no chance of the class being processed, we do not bother.
         }
 
         if (this.service.getMixinTransformer().getExtensions().getSyntheticClassRegistry() == null) {
-            return Phases.NONE;
+            return false;
         }
 
-        return this.generatesClass(classType) ? Phases.AFTER_ONLY : Phases.NONE;
+        return this.generatesClass(context.type());
     }
 
     private boolean processesClass(Type classType) {
         MixinEnvironment environment = MixinEnvironment.getCurrentEnvironment();
         return this.service.getMixinTransformer().couldTransformClass(environment, classType.getClassName());
-    }
-
-    @Override
-    public boolean processClass(Phase phase, ClassNode classNode, Type classType, String reason) {
-        try {
-            if (phase == Phase.BEFORE) {
-                return false;
-            }
-
-            // Don't transform when the reason is mixin (side-loading in progress)
-            // NOTE: we opt-out in handlesClass too
-            if (NAME.equals(reason)) {
-                return false;
-            }
-
-            if (this.generatesClass(classType)) {
-                return this.generateClass(classType, classNode);
-            }
-
-            MixinEnvironment environment = MixinEnvironment.getCurrentEnvironment();
-            if (ITransformerActivity.COMPUTING_FRAMES_REASON.equals(reason)) {
-                return this.service.getMixinTransformer().computeFramesForClass(environment, classType.getClassName(), classNode);
-            }
-
-            return this.service.getMixinTransformer().transformClass(environment, classType.getClassName(), classNode);
-        } finally {
-            // Only track the classload if the reason is actually classloading
-            if (ITransformerActivity.CLASSLOADING_REASON.equals(reason)) {
-                this.service.getInternalClassTracker().addLoadedClass(classType.getClassName());
-            }
-        }
-    }
-
-    @Override
-    public void customAuditConsumer(String className, Consumer<String[]> auditDataAcceptor) {
-        this.service.getInternalAuditTrail().setConsumer(className, auditDataAcceptor);
     }
 
     boolean generatesClass(Type classType) {
@@ -218,5 +150,37 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
 
     boolean generateClass(Type classType, ClassNode classNode) {
         return this.service.getMixinTransformer().generateClass(MixinEnvironment.getCurrentEnvironment(), classType.getClassName(), classNode);
+    }
+
+    @Override
+    public boolean processClass(TransformationContext context) {
+        var classType = context.type();
+        var classNode = context.node();
+        if (this.generatesClass(classType)) {
+            return this.generateClass(classType, classNode);
+        }
+
+        MixinEnvironment environment = MixinEnvironment.getCurrentEnvironment();
+        return this.service.getMixinTransformer().transformClass(environment, classType.getClassName(), classNode);
+    }
+
+    @Override
+    public void afterProcessing(AfterProcessingContext context) {
+        // Mixin wants to know when a class is _loaded_ for its internal tracking (to avoid allowing newly-loaded mixins,
+        // since mixins can be loaded at arbitrary times, to affect already-loaded classes), but processors can
+        // technically run on classes more than once (if, say, another transform requests the state before that
+        // transform would run). Hence, why we are running in a post-result callback, which is guaranteed to be called
+        // once, right before class load.
+        this.service.getInternalClassTracker().addLoadedClass(context.type().getClassName());
+    }
+
+    @Override
+    public ProcessorName name() {
+        return NAME;
+    }
+
+    @Override
+    public Set<String> generatesPackages() {
+        return Set.of(ArgsClassGenerator.SYNTHETIC_PACKAGE);
     }
 }

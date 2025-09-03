@@ -42,8 +42,8 @@ public final class Environment implements IEnvironment {
     }
 
     @Override
-    public Optional<ClassProcessor> findTransformer(final ProcessorName name) {
-        return launcher.findTransformer(name);
+    public Optional<ClassProcessor> findClassProcessor(final ProcessorName name) {
+        return launcher.findClassProcessor(name);
     }
 
     @Override

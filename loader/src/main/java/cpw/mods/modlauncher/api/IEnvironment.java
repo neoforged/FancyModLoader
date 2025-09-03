@@ -54,7 +54,7 @@ public interface IEnvironment {
      * @param name name to lookup
      * @return the launch plugin
      */
-    Optional<ClassProcessor> findTransformer(ProcessorName name);
+    Optional<ClassProcessor> findClassProcessor(ProcessorName name);
 
     /**
      * Find the named {@link ILaunchHandlerService}

@@ -5,14 +5,13 @@ import cpw.mods.modlauncher.CoremodTransformationContext;
 import cpw.mods.modlauncher.api.ITransformer;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
 import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.coremod.ICoreMod;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -61,7 +60,7 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
 
                     @Override
                     public Set<ProcessorName> runsAfter() {
-                        return Set.of(COMPUTING_FRAMES, "mixin");
+                        return Set.of(COMPUTING_FRAMES, FMLMixinClassProcessor.NAME);
                     }
                 });
             } catch (Exception e) {
@@ -81,7 +80,6 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
         Set<ProcessorName> before = new HashSet<>(transformer.runsBefore());
         Set<ProcessorName> after = new HashSet<>(transformer.runsAfter());
         // coremod transformers always imply COMPUTE_FRAMES and thus must always run after it.
-        // TODO: make the default implementation shove stuff in a coremods "group" so that they can all i.e. run after mixin by default.
         after.add(ClassProcessor.COMPUTING_FRAMES);
         
         return new ClassProcessor() {

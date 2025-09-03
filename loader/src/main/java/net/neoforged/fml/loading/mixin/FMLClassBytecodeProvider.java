@@ -6,10 +6,10 @@
 package net.neoforged.fml.loading.mixin;
 
 import com.google.common.io.Resources;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.io.IOException;
 import java.net.URL;
 import net.neoforged.fml.ModLoader;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -17,12 +17,12 @@ import org.spongepowered.asm.service.IClassBytecodeProvider;
 import org.spongepowered.asm.transformers.MixinClassReader;
 
 class FMLClassBytecodeProvider implements IClassBytecodeProvider {
-    private final ILaunchPluginService.ITransformerLoader transformerLoader;
-    private final FMLMixinLaunchPlugin launchPlugin;
+    private final ClassProcessor.BytecodeProvider transformerLoader;
+    private final FMLMixinClassProcessor classProcessor;
 
-    FMLClassBytecodeProvider(ILaunchPluginService.ITransformerLoader transformerLoader, FMLMixinLaunchPlugin launchPlugin) {
+    FMLClassBytecodeProvider(ClassProcessor.BytecodeProvider transformerLoader, FMLMixinClassProcessor classProcessor) {
         this.transformerLoader = transformerLoader;
-        this.launchPlugin = launchPlugin;
+        this.classProcessor = classProcessor;
     }
 
     @Override
@@ -47,7 +47,7 @@ class FMLClassBytecodeProvider implements IClassBytecodeProvider {
         byte[] classBytes;
 
         try {
-            classBytes = transformerLoader.buildTransformedClassNodeFor(canonicalName);
+            classBytes = transformerLoader.acquireTransformedClassBefore(canonicalName);
         } catch (ClassNotFoundException ex) {
             URL url = Thread.currentThread().getContextClassLoader().getResource(internalName + ".class");
             if (url == null) {
@@ -71,9 +71,9 @@ class FMLClassBytecodeProvider implements IClassBytecodeProvider {
         }
 
         Type classType = Type.getObjectType(internalName);
-        if (launchPlugin.generatesClass(classType)) {
+        if (classProcessor.generatesClass(classType)) {
             ClassNode classNode = new ClassNode();
-            if (launchPlugin.generateClass(classType, classNode)) {
+            if (classProcessor.generateClass(classType, classNode)) {
                 return classNode;
             }
         }

@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.asm.ListGeneratorAdapter;
+import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
@@ -76,7 +77,7 @@ public class RuntimeEnumExtender implements ClassProcessor {
 
     @Override
     public Set<ProcessorName> runsBefore() {
-        return Set.of("mixin");
+        return Set.of(FMLMixinClassProcessor.NAME);
     }
 
     @Override
