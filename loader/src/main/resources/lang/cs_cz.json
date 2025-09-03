@@ -53,6 +53,7 @@
   "fml.modloadingissue.failed_to_list_folder_content": "Nepodařilo se zobrazit obsah složky {0}",
   "fml.modloadingissue.failed_to_find_on_classpath": "Nepodařilo se nalézt {0} v cestě třídy",
   "fml.modloadingissue.multiple_copies_on_classpath": "Nalezeno několik kopíí {0} v cestě třídy: {1}",
+  "fml.modloadingissue.mixin.duplicate_config": "A mixin config named {0} is provided by multiple mods: {1} and {2}",
   "fml.messages.artifactversion.ornotinstalled": "{0,ornull,fml.messages.artifactversion.notinstalled}",
   "fml.messages.artifactversion": "{0,ornull,fml.messages.artifactversion.none}",
   "fml.messages.artifactversion.none": "žádné",
