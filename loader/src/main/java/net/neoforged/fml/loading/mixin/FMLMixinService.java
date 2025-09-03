@@ -5,9 +5,12 @@
 
 package net.neoforged.fml.loading.mixin;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import net.neoforged.fml.loading.FMLLoader;
@@ -50,6 +53,8 @@ public class FMLMixinService implements IMixinService {
     private final FMLClassTracker classTracker = new FMLClassTracker();
 
     private final FMLAuditTrail auditTrail = new FMLAuditTrail();
+
+    private final Map<String, byte[]> mixinConfigContents = new HashMap<>();
 
     @Nullable
     private IMixinTransformer mixinTransformer;
@@ -182,6 +187,17 @@ public class FMLMixinService implements IMixinService {
 
     @Override
     public InputStream getResourceAsStream(String name) {
+        var content = mixinConfigContents.get(name);
+        if (content != null) {
+            // Mixin doesn't close this stream, so we use something that doesn't hold
+            // OS resources.
+            return new ByteArrayInputStream(content);
+        }
+
         return Thread.currentThread().getContextClassLoader().getResourceAsStream(name);
+    }
+
+    public void addMixinConfigContent(String config, byte[] resource) {
+        mixinConfigContents.put(config, resource);
     }
 }
