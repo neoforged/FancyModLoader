@@ -10,8 +10,6 @@ import java.util.Set;
 
 // TODO: this and ClassProcessorProvider are both on the PLUGIN layer -- the differences from coremods (namely, the
 //  greater flexibility and therefore need to be careful with what you request processing for) should be documented.
-// TODO: should we add some sort of warning screen on load if more than X% of classes are being transformed? This seems doable;
-//  could even count this per-plugin to detect and warn on cases of transform-everything plugins.
 public interface ClassProcessor {
     class ComputeFlags {
         /**
@@ -95,9 +93,13 @@ public interface ClassProcessor {
      * @param node the current structure of the class
      * @param empty if the class is empty at present (indicates no backing file found and no previous processor has created it)
      */
-    record TransformationContext(Type type, ClassNode node, boolean empty) {
+    record TransformationContext(Type type, ClassNode node, boolean empty, AuditTrail auditTrail) {
         @ApiStatus.Internal
         public TransformationContext {}
+    }
+    
+    interface AuditTrail {
+        void audit(String activity, String... context);
     }
 
     /**

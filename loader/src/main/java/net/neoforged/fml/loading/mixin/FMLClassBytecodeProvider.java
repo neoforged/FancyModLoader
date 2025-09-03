@@ -8,7 +8,8 @@ package net.neoforged.fml.loading.mixin;
 import com.google.common.io.Resources;
 import java.io.IOException;
 import java.net.URL;
-import net.neoforged.fml.ModLoader;
+
+import cpw.mods.modlauncher.ClassTransformStatistics;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
@@ -65,7 +66,7 @@ class FMLClassBytecodeProvider implements IClassBytecodeProvider {
             ClassReader classReader = new MixinClassReader(classBytes, canonicalName);
             classReader.accept(classNode, readerFlags);
 
-            ModLoader.incrementMixinParsedClasses();
+            ClassTransformStatistics.incrementMixinParsedClasses();
 
             return classNode;
         }

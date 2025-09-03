@@ -14,9 +14,10 @@
 
 package cpw.mods.modlauncher;
 
-import cpw.mods.modlauncher.api.ITransformerActivity;
 import cpw.mods.modlauncher.api.ITransformerAuditTrail;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,30 +26,52 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+@ApiStatus.Internal
 public class TransformerAuditTrail implements ITransformerAuditTrail {
-    private final Map<String, List<ITransformerActivity>> audit = new ConcurrentHashMap<>();
+    private final Map<String, List<TransformerActivity>> audit = new ConcurrentHashMap<>();
+    
+    static final class TransformerActivity implements ClassProcessor.AuditTrail {
+        private final ProcessorName processorName;
+        private final List<String> activities = new ArrayList<>();
+        private boolean include = false;
 
-    @Override
-    public List<ITransformerActivity> getActivityFor(final String className) {
-        return Collections.unmodifiableList(getTransformerActivities(className));
-    }
+        private TransformerActivity(ProcessorName processorName) {
+            this.processorName = processorName;
+        }
+        
+        private boolean shouldInclude() {
+            return include || !activities.isEmpty();
+        }
+        
+        void rewrites() {
+            include = true;
+        }
+        
+        private String getActivityString() {
+            return processorName + (activities.isEmpty() ? "" : "[" + String.join(",", activities) + "]");
+        }
 
-    private record TransformerActivity(String... context) implements ITransformerActivity {
-        public String getActivityString() {
-            return String.join(":", this.context);
+        @Override
+        public void audit(String activity, String... context) {
+            activities.add(activity + (context.length == 0 ? "" : ":" + String.join(":", context)));
         }
     }
-
-    public void addClassProcessor(String clazz, ClassProcessor classProcessor) {
-        getTransformerActivities(clazz).add(new TransformerActivity(classProcessor.name()));
+    
+    TransformerActivity forClassProcessor(String clazz, ClassProcessor classProcessor) {
+        var activities = getTransformerActivities(clazz);
+        var activity = new TransformerActivity(classProcessor.name());
+        activities.add(activity);
+        return activity;
     }
 
-    private List<ITransformerActivity> getTransformerActivities(final String clazz) {
+    private List<TransformerActivity> getTransformerActivities(final String clazz) {
         return audit.computeIfAbsent(clazz, k -> new ArrayList<>());
     }
 
     @Override
     public String getAuditString(final String clazz) {
-        return audit.getOrDefault(clazz, Collections.emptyList()).stream().map(ITransformerActivity::getActivityString).collect(Collectors.joining(","));
+        return audit.getOrDefault(clazz, Collections.emptyList()).stream()
+                .filter(TransformerActivity::shouldInclude)
+                .map(TransformerActivity::getActivityString).collect(Collectors.joining(","));
     }
 }

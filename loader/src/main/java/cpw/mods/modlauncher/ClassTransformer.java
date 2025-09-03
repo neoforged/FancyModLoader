@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import cpw.mods.modlauncher.api.IEnvironment;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
-import net.neoforged.fml.ModLoader;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,7 +48,6 @@ public class ClassTransformer {
         this.transformers = transformStore;
         this.transformingClassLoader = transformingClassLoader;
         this.transformers.initializeBytecodeProvider(name -> className -> transformingClassLoader.buildTransformedClassNodeFor(className, name), environment);
-        // TODO: reimplement more specific logging on audit trail
         this.auditTrail = auditTrail;
     }
     
@@ -57,16 +55,17 @@ public class ClassTransformer {
         final String internalName = className.replace('.', '/');
         final Type classDesc = Type.getObjectType(internalName);
 
-        ModLoader.incrementLoadedClasses();
+        ClassTransformStatistics.incrementLoadedClasses();
 
         var transformersToUse = this.transformers.transformersFor(classDesc, inputClass.length == 0, upToTransformer);
         if (transformersToUse.isEmpty()) {
             return inputClass;
         }
+
+        ClassTransformStatistics.incrementTransformedClasses();
+        ClassTransformStatistics.noteHandlingProcessors(transformersToUse);
         
         // TODO: reimplement initial-bytecode-hash stuff for coremods? Uncertain how useful this is or where it's used
-
-        ModLoader.incrementTransformedClasses();
 
         ClassNode clazz = new ClassNode(Opcodes.ASM9);
         boolean isEmpty = inputClass.length == 0;
@@ -85,15 +84,19 @@ public class ClassTransformer {
         for (var transformer : transformersToUse) {
             if (ClassProcessor.COMPUTING_FRAMES.equals(transformer.name())) {
                 allowsComputeFrames = true;
-            } else {
-                auditTrail.addClassProcessor(classDesc.getClassName(), transformer);
             }
+            var trail = auditTrail.forClassProcessor(classDesc.getClassName(), transformer);
             var context = new ClassProcessor.TransformationContext(
                     classDesc,
                     clazz,
-                    isEmpty
+                    isEmpty,
+                    trail
             );
-            flags |= transformer.processClassWithFlags(context);
+            var newFlags = transformer.processClassWithFlags(context);
+            if (newFlags != ClassProcessor.ComputeFlags.NO_REWRITE) {
+                trail.rewrites();
+            }
+            flags |= newFlags;
             if (flags != 0) {
                 isEmpty = false; // If a transformer makes changes, we are no longer empty
             }

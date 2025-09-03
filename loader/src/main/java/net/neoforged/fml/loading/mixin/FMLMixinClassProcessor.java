@@ -156,6 +156,9 @@ public class FMLMixinClassProcessor implements ClassProcessor {
     public boolean processClass(TransformationContext context) {
         var classType = context.type();
         var classNode = context.node();
+        
+        this.service.getInternalAuditTrail().setConsumer(classType.getClassName(), context.auditTrail());
+        
         if (this.generatesClass(classType)) {
             return this.generateClass(classType, classNode);
         }

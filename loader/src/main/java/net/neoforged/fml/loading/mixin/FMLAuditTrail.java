@@ -5,7 +5,7 @@
 
 package net.neoforged.fml.loading.mixin;
 
-import java.util.function.Consumer;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import org.spongepowered.asm.service.IMixinAuditTrail;
 
 /**
@@ -24,13 +24,13 @@ class FMLAuditTrail implements IMixinAuditTrail {
     /**
      * Audit trail consumer
      */
-    private Consumer<String[]> consumer;
+    private ClassProcessor.AuditTrail consumer;
 
     /**
      * @param className current class name
      * @param consumer  audit trail consumer which sinks audit trail actions
      */
-    public void setConsumer(String className, Consumer<String[]> consumer) {
+    public void setConsumer(String className, ClassProcessor.AuditTrail consumer) {
         this.currentClass = className;
         this.consumer = consumer;
     }
@@ -50,9 +50,9 @@ class FMLAuditTrail implements IMixinAuditTrail {
         this.writeActivity(className, FMLAuditTrail.GENERATE_ACTIVITY);
     }
 
-    private void writeActivity(String className, String... activity) {
+    private void writeActivity(String className, String activity, String... context) {
         if (this.consumer != null && className.equals(this.currentClass)) {
-            this.consumer.accept(activity);
+            this.consumer.audit(activity, context);
         }
     }
 }
