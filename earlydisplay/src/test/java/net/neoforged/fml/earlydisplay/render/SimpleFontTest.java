@@ -9,23 +9,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import net.neoforged.fml.earlydisplay.theme.ThemeResource;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(WithOffScreenGLSurface.class)
 class SimpleFontTest {
+    @AutoClose
     private SimpleFont font;
 
     @BeforeEach
     void setUp() throws IOException {
         font = new SimpleFont(new ThemeResource("Monocraft.ttf"), null);
-    }
-
-    @AfterEach
-    void tearDown() {
-        font.close();
     }
 
     @Test

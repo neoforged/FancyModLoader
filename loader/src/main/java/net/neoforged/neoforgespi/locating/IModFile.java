@@ -5,6 +5,7 @@
 
 package net.neoforged.neoforgespi.locating;
 
+import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.SecureJar;
 import java.nio.file.Path;
 import java.util.List;
@@ -64,12 +65,18 @@ public interface IModFile {
     }
 
     /**
-     * Invoked to find a particular resource in this mod file, with the given path.
+     * A unique ID identifying this mod file.
      *
-     * @param pathName The string representation of the path to find the mod resource on.
-     * @return The {@link Path} that represents the requested resource.
+     * <p>For mod files containing mods this will correspond with the mod id of the first mod contained in this file.
+     * <p>For non-mod jar files, an approach to generating a unique id is using the same algorithm used by Java
+     * to determine a Java module name for a given Jar file, but this is not guaranteed.
      */
-    Path findResource(String... pathName);
+    String getId();
+
+    /**
+     * {@return the contents of the mod file, which allow direct access to files in the mods jar file}
+     */
+    JarContents getContents();
 
     /**
      * The mod files specific string data substitution map.
@@ -95,21 +102,6 @@ public interface IModFile {
      * @return The path to the mod file.
      */
     Path getFilePath();
-
-    /**
-     * The secure jar that represents this mod file.
-     *
-     * @return The secure jar.
-     */
-    SecureJar getSecureJar();
-
-    /**
-     * Sets the security status after verification of the mod file has been concluded.
-     * The security status is only determined if the jar is to be loaded into the runtime.
-     *
-     * @param status The new status.
-     */
-    void setSecurityStatus(SecureJar.Status status);
 
     /**
      * Returns a list of all mods located inside this jar.

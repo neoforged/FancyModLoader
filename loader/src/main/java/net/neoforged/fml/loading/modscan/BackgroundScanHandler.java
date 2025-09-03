@@ -10,7 +10,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -20,7 +19,6 @@ import net.neoforged.fml.loading.ImmediateWindowHandler;
 import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
-import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.slf4j.Logger;
 
 public class BackgroundScanHandler {
@@ -67,13 +65,11 @@ public class BackgroundScanHandler {
         ImmediateWindowHandler.updateProgress("Scanning mod candidates");
         allFiles.add(file);
         pendingFiles.add(file);
-        final CompletableFuture<ModFileScanData> future = CompletableFuture.supplyAsync(file::compileContent, modContentScanner)
-                .whenComplete(file::setScanResult)
-                .whenComplete((r, t) -> this.addCompletedFile(file, r, t));
-        file.setFutureScanResult(future);
+        file.startScan(modContentScanner)
+                .whenComplete((ignored, t) -> this.addCompletedFile(file, t));
     }
 
-    private synchronized void addCompletedFile(final ModFile file, final ModFileScanData modFileScanData, final Throwable throwable) {
+    private synchronized void addCompletedFile(final ModFile file, final Throwable throwable) {
         if (throwable != null) {
             status = ScanStatus.ERRORED;
             LOGGER.error(LogMarkers.SCAN, "An error occurred scanning file {}", file, throwable);

@@ -53,8 +53,9 @@ public abstract class NeoForgeDevLaunchHandler extends CommonLaunchHandler {
 
         if (neoForgeProvider == null) {
             // Userdev is similar to neoforge dev with the only real difference being that the combined
-            // output of the neoforge and patched mincraft sources are combined into a jar file
+            // output of the neoforge and patched Minecraft sources are combined into a jar file
             var classesRoot = DevEnvUtils.findFileSystemRootOfFileOnClasspath(MINECRAFT_CLASS_PATH);
+
             LOG.debug("Launching with NeoForge from {}", classesRoot);
             neoForgeProvider = new NeoForgeDevProvider(List.of(classesRoot));
         }

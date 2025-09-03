@@ -10,15 +10,15 @@ import com.electronwill.nightconfig.toml.TomlParser;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.errorprone.annotations.CheckReturnValue;
-import cpw.mods.jarhandling.JarContentsBuilder;
+import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.SecureJar;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.NightConfigWrapper;
-import net.neoforged.fml.loading.modscan.Scanner;
 import net.neoforged.fml.testlib.RuntimeCompiler;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import net.neoforged.neoforgespi.locating.ModFileInfoParser;
@@ -36,10 +36,8 @@ public class TestModFile extends ModFile implements AutoCloseable {
         this.compiler = RuntimeCompiler.createFolder(fileSystem.getPath("/"));
     }
 
-    private static TestModFile buildFile(FileSystem fileSystem, ModFileInfoParser parser) {
-        var jc = new JarContentsBuilder()
-                .paths(fileSystem.getPath("/"))
-                .build();
+    private static TestModFile buildFile(FileSystem fileSystem, ModFileInfoParser parser) throws IOException {
+        var jc = JarContents.ofPath(fileSystem.getPath("/"));
         var metadata = new ModJarMetadata(jc);
         var sj = SecureJar.from(jc, metadata);
         var mod = new TestModFile(sj, fileSystem, parser);
@@ -53,11 +51,11 @@ public class TestModFile extends ModFile implements AutoCloseable {
     }
 
     public void scan() {
-        setScanResult(new Scanner(this).scan(), null);
+        startScan(Runnable::run);
     }
 
     @CheckReturnValue
-    public static TestModFile newInstance(@Language("toml") String modsDotToml) {
+    public static TestModFile newInstance(@Language("toml") String modsDotToml) throws IOException {
         final var fs = Jimfs.newFileSystem(Configuration.unix()
                 .toBuilder()
                 .setWorkingDirectory("/")
@@ -67,9 +65,13 @@ public class TestModFile extends ModFile implements AutoCloseable {
     }
 
     @Override
-    public void close() throws IOException {
-        getSecureJar().getRootPath().getFileSystem().close();
-        fileSystem.close();
+    public void close() {
+        super.close();
+        try {
+            fileSystem.close();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override

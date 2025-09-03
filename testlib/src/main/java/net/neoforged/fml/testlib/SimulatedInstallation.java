@@ -49,6 +49,7 @@ public class SimulatedInstallation implements AutoCloseable {
             throw new RuntimeException(e);
         }
     }
+
     /**
      * A class that is contained in both client and dedicated server distribution, renamed to official mappings.
      */
@@ -62,6 +63,11 @@ public class SimulatedInstallation implements AutoCloseable {
      * A class that is only in the client distribution, renamed to official mappings.
      */
     public static final IdentifiableContent RENAMED_CLIENT = generateClass("RENAMED_CLIENT", "net/minecraft/client/Minecraft.class");
+    /**
+     * A neoforge.mods.toml for the Minecraft jar.
+     */
+    public static final IdentifiableContent MINECRAFT_MODS_TOML = new IdentifiableContent("MINECRAFT_MODS_TOML", "META-INF/neoforge.mods.toml", writeMinecraftModsToml());
+
     /**
      * A class that is contained in both client and dedicated server distribution, renamed to official mappings,
      * and containing NeoForge patches.
@@ -107,9 +113,39 @@ public class SimulatedInstallation implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        MoreFiles.deleteRecursively(gameDir, RecursiveDeleteOption.ALLOW_INSECURE);
-        MoreFiles.deleteRecursively(librariesDir, RecursiveDeleteOption.ALLOW_INSECURE);
-        MoreFiles.deleteRecursively(projectRoot, RecursiveDeleteOption.ALLOW_INSECURE);
+        for (var i = 0; i < 5; i++) {
+            try {
+                MoreFiles.deleteRecursively(gameDir, RecursiveDeleteOption.ALLOW_INSECURE);
+                break;
+            } catch (IOException e) {
+                if (i + 1 >= 5) {
+                    throw e;
+                }
+                Thread.sleep(100L);
+            }
+        }
+        for (var i = 0; i < 5; i++) {
+            try {
+                MoreFiles.deleteRecursively(librariesDir, RecursiveDeleteOption.ALLOW_INSECURE);
+                break;
+            } catch (IOException e) {
+                if (i + 1 >= 5) {
+                    throw e;
+                }
+                Thread.sleep(100L);
+            }
+        }
+        for (var i = 0; i < 5; i++) {
+            try {
+                MoreFiles.deleteRecursively(projectRoot, RecursiveDeleteOption.ALLOW_INSECURE);
+                break;
+            } catch (IOException e) {
+                if (i + 1 >= 5) {
+                    throw e;
+                }
+                Thread.sleep(100L);
+            }
+        }
         System.clearProperty(LIBRARIES_DIRECTORY_PROPERTY);
         System.clearProperty(MOD_FOLDERS_PROPERTIES);
     }
@@ -138,6 +174,13 @@ public class SimulatedInstallation implements AutoCloseable {
     public void setupProductionClient() throws IOException {
         System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
 
+        writeLibrary("net.neoforged", "minecraft-client-patched", NEOFORGE_VERSION, PATCHED_CLIENT, RENAMED_SHARED, CLIENT_ASSETS, SHARED_ASSETS, MINECRAFT_MODS_TOML);
+        writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "universal", NEOFORGE_UNIVERSAL_JAR_CONTENT);
+    }
+
+    public void setupProductionClientLegacy() throws IOException {
+        System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
+
         writeLibrary("net.minecraft", "client", MC_VERSION + "-" + NEOFORM_VERSION, "srg", RENAMED_CLIENT, RENAMED_SHARED);
         writeLibrary("net.minecraft", "client", MC_VERSION + "-" + NEOFORM_VERSION, "extra", CLIENT_ASSETS, SHARED_ASSETS);
         writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "client", PATCHED_CLIENT);
@@ -145,6 +188,13 @@ public class SimulatedInstallation implements AutoCloseable {
     }
 
     public void setupProductionServer() throws IOException {
+        System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
+
+        writeLibrary("net.neoforged", "minecraft-server-patched", NEOFORGE_VERSION, PATCHED_SHARED, SHARED_ASSETS, MINECRAFT_MODS_TOML);
+        writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "universal", NEOFORGE_UNIVERSAL_JAR_CONTENT);
+    }
+
+    public void setupProductionServerLegacy() throws IOException {
         System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
 
         writeLibrary("net.minecraft", "server", MC_VERSION + "-" + NEOFORM_VERSION, "srg", RENAMED_SHARED);
@@ -196,6 +246,19 @@ public class SimulatedInstallation implements AutoCloseable {
         return additionalClasspath;
     }
 
+    public List<Path> setupUserdevProjectNew() throws IOException {
+        var additionalClasspath = new ArrayList<Path>();
+
+        var universalJar = writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "universal", NEOFORGE_UNIVERSAL_JAR_CONTENT);
+        additionalClasspath.add(universalJar);
+
+        var minecraftJar = projectRoot.resolve("minecraft-patched-client-" + NEOFORGE_VERSION + ".jar");
+        additionalClasspath.add(minecraftJar);
+        writeJarFile(minecraftJar, PATCHED_CLIENT, PATCHED_SHARED, CLIENT_ASSETS, SHARED_ASSETS, MINECRAFT_MODS_TOML, RESOURCES_MANIFEST);
+
+        return additionalClasspath;
+    }
+
     public static void setModFoldersProperty(Map<String, List<Path>> modFolders) {
         var modFolderList = modFolders.entrySet()
                 .stream()
@@ -235,12 +298,20 @@ public class SimulatedInstallation implements AutoCloseable {
 
     private static byte[] writeNeoForgeModsToml() {
         return """
-                modLoader = "javafml"
-                loaderVersion = "[3,]"
                 license = "LICENSE"
 
                 [[mods]]
                 modId="neoforge"
+                """.getBytes();
+    }
+
+    private static byte[] writeMinecraftModsToml() {
+        return """
+                loader = "minecraft"
+                license = "See Minecraft EULA"
+
+                [[mods]]
+                modId="minecraft"
                 """.getBytes();
     }
 

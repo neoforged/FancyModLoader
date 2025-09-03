@@ -5,51 +5,43 @@
 
 package net.neoforged.fml.loading;
 
-import com.mojang.logging.LogUtils;
-import cpw.mods.modlauncher.api.LambdaExceptionUtils;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import cpw.mods.jarhandling.JarResource;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
-import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
-import net.neoforged.fml.loading.moddiscovery.ModFileParser;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
-import org.slf4j.Logger;
+import net.neoforged.neoforgespi.locating.IModFile;
 
 /**
  * Master list of all mods <em>in the loading context. This class cannot refer outside the
  * loading package</em>
  */
 public class LoadingModList {
-    private static final Logger LOGGER = LogUtils.getLogger();
     private static LoadingModList INSTANCE;
     private final List<IModFileInfo> plugins;
+    private final List<IModFile> gameLibraries;
     private final List<ModFileInfo> modFiles;
     private final List<ModInfo> sortedList;
     private final Map<ModInfo, List<ModInfo>> modDependencies;
     private final Map<String, ModFileInfo> fileById;
     private final List<ModLoadingIssue> modLoadingIssues;
 
-    private LoadingModList(final List<ModFile> plugins, final List<ModFile> modFiles, final List<ModInfo> sortedList, Map<ModInfo, List<ModInfo>> modDependencies) {
+    private LoadingModList(List<ModFile> plugins, List<ModFile> gameLibraries, List<ModFile> modFiles, List<ModInfo> sortedList, Map<ModInfo, List<ModInfo>> modDependencies) {
         this.plugins = plugins.stream()
                 .map(ModFile::getModFileInfo)
                 .collect(Collectors.toList());
+        this.gameLibraries = List.copyOf(gameLibraries);
         this.modFiles = modFiles.stream()
                 .map(ModFile::getModFileInfo)
                 .map(ModFileInfo.class::cast)
@@ -66,29 +58,14 @@ public class LoadingModList {
         this.modLoadingIssues = new ArrayList<>();
     }
 
-    public static LoadingModList of(List<ModFile> plugins, List<ModFile> modFiles, List<ModInfo> sortedList, List<ModLoadingIssue> issues, Map<ModInfo, List<ModInfo>> modDependencies) {
-        INSTANCE = new LoadingModList(plugins, modFiles, sortedList, modDependencies);
+    public static LoadingModList of(List<ModFile> plugins, List<ModFile> gameLibraries, List<ModFile> modFiles, List<ModInfo> sortedList, List<ModLoadingIssue> issues, Map<ModInfo, List<ModInfo>> modDependencies) {
+        INSTANCE = new LoadingModList(plugins, gameLibraries, modFiles, sortedList, modDependencies);
         INSTANCE.modLoadingIssues.addAll(issues);
         return INSTANCE;
     }
 
     public static LoadingModList get() {
         return INSTANCE;
-    }
-
-    public void addMixinConfigs() {
-        modFiles.stream()
-                .map(ModFileInfo::getFile)
-                .forEach(file -> {
-                    final String modId = file.getModInfos().get(0).getModId();
-                    for (ModFileParser.MixinConfig potential : file.getMixinConfigs()) {
-                        if (potential.requiredMods().stream().allMatch(id -> this.getModFileById(id) != null)) {
-                            DeferredMixinConfigRegistration.addMixinConfig(potential.config(), modId);
-                        } else {
-                            LOGGER.debug("Mixin config {} for mod {} not applied as required mods are missing", potential.config(), modId);
-                        }
-                    }
-                });
     }
 
     public void addAccessTransformers() {
@@ -98,17 +75,17 @@ public class LoadingModList {
     }
 
     public void addEnumExtenders() {
-        Map<IModInfo, Path> pathPerMod = new HashMap<>();
+        Map<IModInfo, JarResource> pathPerMod = new HashMap<>();
         modFiles.stream()
                 .map(ModFileInfo::getMods)
                 .flatMap(List::stream)
                 .forEach(mod -> mod.getConfig().<String>getConfigElement("enumExtensions").ifPresent(file -> {
-                    Path path = mod.getOwningFile().getFile().findResource(file);
-                    if (!Files.isRegularFile(path)) {
-                        ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloadingissue.enumextender.file_not_found", path).withAffectedMod(mod));
+                    var resource = mod.getOwningFile().getFile().getContents().get(file);
+                    if (resource == null) {
+                        ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloadingissue.enumextender.file_not_found", file).withAffectedMod(mod));
                         return;
                     }
-                    pathPerMod.put(mod, path);
+                    pathPerMod.put(mod, resource);
                 }));
         RuntimeEnumExtender.loadEnumPrototypes(pathPerMod);
     }
@@ -124,59 +101,12 @@ public class LoadingModList {
         return plugins;
     }
 
+    public List<IModFile> getGameLibraries() {
+        return gameLibraries;
+    }
+
     public List<ModFileInfo> getModFiles() {
         return modFiles;
-    }
-
-    public Path findResource(final String className) {
-        for (ModFileInfo mf : modFiles) {
-            final Path resource = mf.getFile().findResource(className);
-            if (Files.exists(resource)) return resource;
-        }
-        return null;
-    }
-
-    public Enumeration<URL> findAllURLsForResource(final String resName) {
-        final String resourceName;
-        // strip a leading slash
-        if (resName.startsWith("/")) {
-            resourceName = resName.substring(1);
-        } else {
-            resourceName = resName;
-        }
-        return new Enumeration<URL>() {
-            private final Iterator<ModFileInfo> modFileIterator = modFiles.iterator();
-            private URL next;
-
-            @Override
-            public boolean hasMoreElements() {
-                if (next != null) return true;
-                next = findNextURL();
-                return next != null;
-            }
-
-            @Override
-            public URL nextElement() {
-                if (next == null) {
-                    next = findNextURL();
-                    if (next == null) throw new NoSuchElementException();
-                }
-                URL result = next;
-                next = null;
-                return result;
-            }
-
-            private URL findNextURL() {
-                while (modFileIterator.hasNext()) {
-                    final ModFileInfo next = modFileIterator.next();
-                    final Path resource = next.getFile().findResource(resourceName);
-                    if (Files.exists(resource)) {
-                        return LambdaExceptionUtils.uncheck(() -> new URL("modjar://" + next.getMods().get(0).getModId() + "/" + resourceName));
-                    }
-                }
-                return null;
-            }
-        };
     }
 
     public ModFileInfo getModFileById(String modid) {

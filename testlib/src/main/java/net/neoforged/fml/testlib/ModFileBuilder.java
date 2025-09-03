@@ -7,14 +7,17 @@ package net.neoforged.fml.testlib;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.module.ModuleDescriptor;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -48,6 +51,11 @@ public class ModFileBuilder {
         compiler = RuntimeCompiler.createFolder(memoryFs.getRootDirectories().iterator().next());
         compilationBuilder = compiler.builder();
         memoryFsRoot = memoryFs.getRootDirectories().iterator().next();
+
+        // Add the current classpath as the compile classpath
+        Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
+                .map(Path::of)
+                .forEach(compilationBuilder::addClasspath);
     }
 
     public ModFileBuilder withTestmodModsToml() {
@@ -68,6 +76,10 @@ public class ModFileBuilder {
 
     public ModFileBuilder withModTypeManifest(String type) {
         return withManifest(Map.of("FMLModType", type));
+    }
+
+    public ModFileBuilder withModuleInfo(ModuleDescriptor descriptor) throws IOException {
+        return addBinaryFile("module-info.class", ModuleInfoWriter.toByteArray(descriptor));
     }
 
     public ModFileBuilder withManifest(Map<String, String> manifest) {
@@ -100,6 +112,11 @@ public class ModFileBuilder {
         return addService(interfaceClass.getName(), implementationClass.getName());
     }
 
+    public ModFileBuilder addCompileClasspath(Path jar) {
+        compilationBuilder.addClasspath(jar);
+        return this;
+    }
+
     public ModFileBuilder addClass(String name, @Language("java") String content) {
         compilationBuilder.addClass(name, content);
         return this;
@@ -111,6 +128,15 @@ public class ModFileBuilder {
             Files.createDirectories(p.getParent());
         }
         Files.writeString(p, content, StandardCharsets.UTF_8);
+        return this;
+    }
+
+    public ModFileBuilder addBinaryFile(String path, byte[] content) throws IOException {
+        var p = memoryFsRoot.resolve(path);
+        if (p.getParent() != null) {
+            Files.createDirectories(p.getParent());
+        }
+        Files.write(p, content);
         return this;
     }
 

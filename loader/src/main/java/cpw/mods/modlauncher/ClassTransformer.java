@@ -22,6 +22,7 @@ import java.nio.file.Path;
 
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
+import net.neoforged.fml.ModLoader;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -53,13 +54,17 @@ public class ClassTransformer {
     byte[] transform(byte[] inputClass, String className, final ProcessorName upToTransformer) {
         final String internalName = className.replace('.', '/');
         final Type classDesc = Type.getObjectType(internalName);
-        
+
+        ModLoader.incrementLoadedClasses();
+
         var transformersToUse = this.transformers.transformersFor(classDesc, inputClass.length == 0, upToTransformer);
         if (transformersToUse.isEmpty()) {
             return inputClass;
         }
         
         // TODO: reimplement initial-bytecode-hash stuff for coremods? Uncertain how useful this is or where it's used
+
+        ModLoader.incrementTransformedClasses();
 
         ClassNode clazz = new ClassNode(Opcodes.ASM9);
         boolean isEmpty = inputClass.length == 0;

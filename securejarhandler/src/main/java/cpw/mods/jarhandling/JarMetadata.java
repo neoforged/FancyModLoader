@@ -16,16 +16,6 @@ public interface JarMetadata {
 
     ModuleDescriptor descriptor();
 
-    /**
-     * {@return the provider declarations for this jar}
-     *
-     * <p>Computing the {@link #descriptor()} can be expensive as it requires scanning the jar for packages.
-     * If only the service providers are needed, this method can be used instead.
-     */
-    default List<SecureJar.Provider> providers() {
-        return descriptor().provides().stream().map(p -> new SecureJar.Provider(p.service(), p.providers())).toList();
-    }
-
     // ALL from jdk.internal.module.ModulePath.java
     Pattern DASH_VERSION = Pattern.compile("-([.\\d]+)");
     Pattern NON_ALPHANUM = Pattern.compile("[^A-Za-z0-9]");
@@ -54,9 +44,9 @@ public interface JarMetadata {
      * from {@code Automatic-Module-Name} in the manifest.
      */
     static JarMetadata from(JarContents jar) {
-        var mi = jar.findFile("module-info.class");
-        if (mi.isPresent()) {
-            return new ModuleJarMetadata(mi.get(), jar::getPackages);
+        var moduleInfoResource = jar.get("module-info.class");
+        if (moduleInfoResource != null) {
+            return new ModuleJarMetadata(moduleInfoResource, jar);
         } else {
             var nav = computeNameAndVersion(jar.getPrimaryPath());
             String name = nav.name();
@@ -67,7 +57,7 @@ public interface JarMetadata {
                 name = automaticModuleName;
             }
 
-            return new SimpleJarMetadata(name, version, jar::getPackages, jar.getMetaInfServices());
+            return new SimpleJarMetadata(name, version, jar);
         }
     }
 

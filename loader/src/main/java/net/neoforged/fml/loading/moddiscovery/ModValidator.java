@@ -29,6 +29,7 @@ public class ModValidator {
     private static final Logger LOGGER = LogUtils.getLogger();
     private final Map<IModFile.Type, List<ModFile>> modFiles;
     private final List<ModFile> candidatePlugins;
+    private final List<ModFile> candidateGameLibraries;
     private final List<ModFile> candidateMods;
     private final List<ModLoadingIssue> issues;
     private LoadingModList loadingModList;
@@ -36,7 +37,7 @@ public class ModValidator {
     public ModValidator(Map<IModFile.Type, List<ModFile>> modFiles, List<ModLoadingIssue> issues) {
         this.modFiles = modFiles;
         this.candidateMods = lst(modFiles.get(IModFile.Type.MOD));
-        this.candidateMods.addAll(lst(modFiles.get(IModFile.Type.GAMELIBRARY)));
+        this.candidateGameLibraries = lst(modFiles.get(IModFile.Type.GAMELIBRARY));
         this.candidatePlugins = lst(modFiles.get(IModFile.Type.LIBRARY));
         this.issues = issues;
     }
@@ -46,9 +47,12 @@ public class ModValidator {
     }
 
     public void stage1Validation() {
+        validateFiles(candidateGameLibraries);
         validateFiles(candidateMods);
         if (LOGGER.isDebugEnabled(LogMarkers.SCAN)) {
             LOGGER.debug(LogMarkers.SCAN, "Found {} mod files with {} mods", candidateMods.size(), candidateMods.stream().mapToInt(mf -> mf.getModInfos().size()).sum());
+            LOGGER.debug(LogMarkers.SCAN, "Found {} game libraries", candidateGameLibraries.size());
+            LOGGER.debug(LogMarkers.SCAN, "Found {} plugins", candidatePlugins.size());
         }
         ImmediateWindowHandler.updateProgress("Found " + candidateMods.size() + " mod candidates");
     }
@@ -58,13 +62,14 @@ public class ModValidator {
             var modFile = iterator.next();
             if (!modFile.identifyMods()) {
                 LOGGER.warn(LogMarkers.SCAN, "File {} has been ignored - it is invalid", modFile.getFilePath());
+                modFile.close();
                 iterator.remove();
             }
         }
     }
 
     public FMLServiceProvider.Resource getPluginResources() {
-        return new FMLServiceProvider.Resource(IModuleLayerManager.Layer.PLUGIN, this.candidatePlugins.stream().map(IModFile::getSecureJar).toList());
+        return new FMLServiceProvider.Resource(IModuleLayerManager.Layer.PLUGIN, this.candidatePlugins.stream().map(ModFile::getSecureJar).toList());
     }
 
     public FMLServiceProvider.Resource getModResources() {
@@ -84,9 +89,11 @@ public class ModValidator {
             } catch (ModLoadingException e) {
                 issues.addAll(e.getIssues());
                 iterator.remove();
+                modFile.close();
             } catch (Exception e) {
                 issues.add(ModLoadingIssue.error("fml.modloadingissue.technical_error").withAffectedModFile(modFile).withCause(e));
                 iterator.remove();
+                modFile.close();
             }
         }
     }
@@ -94,9 +101,8 @@ public class ModValidator {
     public BackgroundScanHandler stage2Validation() {
         validateLanguages();
 
-        loadingModList = ModSorter.sort(candidatePlugins, candidateMods, issues);
+        loadingModList = ModSorter.sort(candidatePlugins, candidateGameLibraries, candidateMods, issues);
         loadingModList.addAccessTransformers();
-        loadingModList.addMixinConfigs();
         loadingModList.addEnumExtenders();
         var backgroundScanHandler = new BackgroundScanHandler();
         loadingModList.addForScanning(backgroundScanHandler);

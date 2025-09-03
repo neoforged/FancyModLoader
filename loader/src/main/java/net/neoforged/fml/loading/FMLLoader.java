@@ -23,7 +23,7 @@ import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.IBindingsProvider;
 import net.neoforged.fml.common.asm.AccessTransformerService;
-import net.neoforged.fml.loading.mixin.DeferredMixinConfigRegistration;
+import net.neoforged.fml.loading.mixin.FMLMixinLaunchPlugin;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModValidator;
@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 public class FMLLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static AccessTransformerEngine accessTransformer;
+    private static FMLMixinLaunchPlugin mixinLaunchPlugin;
     private static LanguageProviderLoader languageProviderLoader;
     private static Dist dist;
     private static LoadingModList loadingModList;
@@ -88,6 +89,12 @@ public class FMLLoader {
         });
         LOGGER.debug(LogMarkers.CORE, "Found NeoForgeDev Dist Cleaner");
 
+        mixinLaunchPlugin = (FMLMixinLaunchPlugin) environment.findLaunchPlugin(FMLMixinLaunchPlugin.NAME).orElseThrow(() -> {
+            LOGGER.error(LogMarkers.CORE, "FMLMixinLaunchPlugin is missing, we need this to run");
+            return new IncompatibleEnvironmentException("Missing FMLMixinLaunchPlugin, cannot run!");
+        });
+        LOGGER.debug(LogMarkers.CORE, "Found FMLMixinLaunchPlugin");
+
         try {
             Class.forName("com.electronwill.nightconfig.core.Config", false, environment.getClass().getClassLoader());
             Class.forName("com.electronwill.nightconfig.toml.TomlFormat", false, environment.getClass().getClassLoader());
@@ -134,10 +141,7 @@ public class FMLLoader {
         languageProviderLoader = new LanguageProviderLoader(launchContext);
         backgroundScanHandler = modValidator.stage2Validation();
         loadingModList = backgroundScanHandler.getLoadingModList();
-        if (!loadingModList.hasErrors()) {
-            // Add extra mixin configs
-            extraMixinConfigs.forEach(DeferredMixinConfigRegistration::addMixinConfig);
-        }
+        mixinLaunchPlugin.extraMixinConfigs(extraMixinConfigs);
         return List.of(modValidator.getModResources());
     }
 
@@ -145,12 +149,17 @@ public class FMLLoader {
         return languageProviderLoader;
     }
 
-    public static void addAccessTransformer(Path atPath, ModFile modName) {
-        LOGGER.debug(LogMarkers.SCAN, "Adding Access Transformer in {}", modName.getFilePath());
-        try {
-            accessTransformer.loadATFromPath(atPath);
+    public static void addAccessTransformer(String atPath, ModFile sourceModFile) {
+        LOGGER.debug(LogMarkers.SCAN, "Adding Access Transformer in {}", sourceModFile.getFilePath());
+        var resource = sourceModFile.getContents().get(atPath);
+        if (resource == null) {
+            LOGGER.error("AT {} is missing in {}", atPath, sourceModFile);
+            return;
+        }
+        try (var reader = resource.bufferedReader()) {
+            accessTransformer.loadAT(reader, atPath);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load AT at " + atPath.toAbsolutePath(), e);
+            throw new RuntimeException("Failed to load AT " + atPath + " from " + sourceModFile, e);
         }
     }
 

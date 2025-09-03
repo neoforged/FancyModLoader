@@ -43,6 +43,7 @@ import net.neoforged.fml.earlydisplay.theme.elements.ThemeElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL32C;
@@ -53,6 +54,8 @@ public class LoadingScreenRenderer implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoadingScreenRenderer.class);
     public static final int LAYOUT_WIDTH = 854;
     public static final int LAYOUT_HEIGHT = 480;
+    @VisibleForTesting
+    public static volatile boolean rendered = false;
 
     private final long glfwWindow;
     private final MaterializedTheme theme;
@@ -215,6 +218,7 @@ public class LoadingScreenRenderer implements AutoCloseable {
             if (this.automaticRendering != null)
                 glfwMakeContextCurrent(0); // we release the gl context IF we're running off the main thread
             renderLock.release();
+            rendered = true;
         }
     }
 

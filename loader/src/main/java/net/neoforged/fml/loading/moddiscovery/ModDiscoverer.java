@@ -7,6 +7,7 @@ package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.JarContents;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -86,6 +87,7 @@ public class ModDiscoverer {
         try {
             final UniqueModListBuilder modsUniqueListBuilder = new UniqueModListBuilder(loadedFiles);
             final UniqueModListBuilder.UniqueModListData uniqueModsData = modsUniqueListBuilder.buildUniqueList();
+            uniqueModsData.discardedFiles().forEach(ModFile::close);
 
             //Grab the temporary results.
             //This allows loading to continue to a base state, in case dependency loading fails.
@@ -96,6 +98,7 @@ public class ModDiscoverer {
             LOGGER.error(LogMarkers.SCAN, "Failed to build unique mod list after mod discovery.", exception);
             discoveryIssues.addAll(exception.getIssues());
             successfullyLoadedMods = false;
+            loadedFiles.forEach(ModFile::close);
         }
 
         //We can continue loading if prime mods loaded successfully.
@@ -116,6 +119,7 @@ public class ModDiscoverer {
             try {
                 final UniqueModListBuilder modsAndDependenciesUniqueListBuilder = new UniqueModListBuilder(loadedFiles);
                 final UniqueModListBuilder.UniqueModListData uniqueModsAndDependenciesData = modsAndDependenciesUniqueListBuilder.buildUniqueList();
+                uniqueModsAndDependenciesData.discardedFiles().forEach(ModFile::close);
 
                 //We now only need the mod files map, not the list.
                 modFilesMap = uniqueModsAndDependenciesData.modFiles().stream()
@@ -187,7 +191,7 @@ public class ModDiscoverer {
 
             JarContents jarContents;
             try {
-                jarContents = JarContents.of(groupedPaths);
+                jarContents = JarContents.ofPaths(groupedPaths);
             } catch (Exception e) {
                 if (causeChainContains(e, ZipException.class)) {
                     addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile.invalidzip").withAffectedPath(primaryPath).withCause(e));
@@ -225,6 +229,12 @@ public class ModDiscoverer {
                         if (addModFile(provided)) {
                             return Optional.of(provided);
                         }
+                        // The reader might have returned something other than a ModFile (that is one reason for addModFile rejecting it)
+                        if (provided instanceof ModFile modFile) {
+                            modFile.close();
+                        } else {
+                            closeJarContents(jarContents);
+                        }
                         return Optional.empty();
                     }
                 } catch (ModLoadingException e) {
@@ -232,6 +242,8 @@ public class ModDiscoverer {
                     // We'll stash them here in case no other reader successfully reads the file.
                     incompatibilityIssues.addAll(e.getIssues());
                 } catch (Exception e) {
+                    closeJarContents(jarContents); // Ensure the jar contents are closed
+
                     // When a reader just outright crashes while reading the file, we do error intentionally.
                     addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile").withAffectedPath(jarContents.getPrimaryPath()).withCause(e));
                     return Optional.empty();
@@ -261,6 +273,9 @@ public class ModDiscoverer {
                 }
             }
 
+            // No reader successfully parsed the contents, ensure they're properly closed now
+            closeJarContents(jarContents);
+
             return Optional.empty();
         }
 
@@ -289,6 +304,14 @@ public class ModDiscoverer {
                 case WARNING -> warningCount++;
                 case ERROR -> errorCount++;
             }
+        }
+    }
+
+    private static void closeJarContents(JarContents jarContents) {
+        try {
+            jarContents.close();
+        } catch (IOException e) {
+            LOGGER.error("Failed to close jar contents {}", jarContents, e);
         }
     }
 

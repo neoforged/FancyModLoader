@@ -5,7 +5,7 @@
 
 package net.neoforged.fml.common.asm.enumextension;
 
-import java.nio.file.Path;
+import cpw.mods.jarhandling.JarResource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -490,7 +490,7 @@ public class RuntimeEnumExtender implements ClassProcessor {
         }
     }
 
-    public static void loadEnumPrototypes(Map<IModInfo, Path> paths) {
+    public static void loadEnumPrototypes(Map<IModInfo, JarResource> paths) {
         prototypes = paths.entrySet()
                 .stream()
                 .map(entry -> EnumPrototype.load(entry.getKey(), entry.getValue()))

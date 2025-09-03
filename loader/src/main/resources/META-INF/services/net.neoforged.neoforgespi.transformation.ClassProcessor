@@ -1,3 +1,4 @@
 net.neoforged.fml.common.asm.AccessTransformerService
 net.neoforged.fml.loading.moddiscovery.locators.NeoForgeDevDistCleaner
 net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender
+net.neoforged.fml.loading.mixin.FMLMixinLaunchPlugin

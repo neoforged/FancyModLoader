@@ -83,7 +83,6 @@ public class FMLServiceProvider {
     }
 
     public List<Resource> completeScan(final IModuleLayerManager layerManager) {
-        Supplier<ModuleLayer> gameLayerSupplier = () -> layerManager.getLayer(IModuleLayerManager.Layer.GAME).orElseThrow();
         return FMLLoader.completeScan(launchContext, mixinConfigsArgumentList);
     }
 

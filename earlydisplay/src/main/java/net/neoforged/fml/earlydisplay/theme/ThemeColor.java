@@ -77,4 +77,12 @@ public record ThemeColor(float r, float g, float b, float a) {
     public static ThemeColor ofHsb(float h, float s, float b) {
         return ofRgb(Color.HSBtoRGB(h, s, Math.clamp(b, 0, 1)));
     }
+
+    public static ThemeColor scale(ThemeColor color, float scale) {
+        return new ThemeColor(
+                Math.clamp(color.r() * scale, 0, 1F),
+                Math.clamp(color.g() * scale, 0, 1F),
+                Math.clamp(color.b() * scale, 0, 1F),
+                color.a());
+    }
 }

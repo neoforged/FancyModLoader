@@ -28,6 +28,7 @@ import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.TypesafeMap;
+import java.io.IOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.lang.reflect.Constructor;
@@ -77,7 +78,7 @@ class TransformingClassLoaderTests {
         assertEquals(aClass, newClass, "Class instance is the same from Class.forName and tcl.loadClass");
     }
 
-    private Configuration createTestJarsConfiguration() {
+    private Configuration createTestJarsConfiguration() throws IOException {
         SecureJar testJars = SecureJar.from(Path.of(System.getProperty("testJars.location")));
         JarModuleFinder finder = JarModuleFinder.of(testJars);
         return ModuleLayer.boot().configuration().resolveAndBind(finder, ModuleFinder.ofSystem(), Set.of("cpw.mods.modlauncher.testjars"));

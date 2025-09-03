@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.cl.ModuleClassLoader;
+import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.SecureJar;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -12,11 +13,9 @@ import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.net.URI;
 import java.nio.file.Path;
-import java.security.CodeSigner;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassWriter;
@@ -75,11 +74,6 @@ public class TestDummyJarProvider {
         public Manifest getManifest() {
             return null;
         }
-
-        @Override
-        public CodeSigner[] verifyAndGetSigners(final String cname, final byte[] bytes) {
-            return new CodeSigner[0];
-        }
     }
 
     record DummyJar() implements SecureJar {
@@ -89,47 +83,17 @@ public class TestDummyJarProvider {
         }
 
         @Override
+        public JarContents contents() {
+            return JarContents.empty(Path.of("dummy"));
+        }
+
+        @Override
         public Path getPrimaryPath() {
             return null;
         }
 
         @Override
-        public CodeSigner[] getManifestSigners() {
-            return new CodeSigner[0];
-        }
-
-        @Override
-        public Status verifyPath(final Path path) {
-            return null;
-        }
-
-        @Override
-        public Status getFileStatus(final String name) {
-            return null;
-        }
-
-        @Override
-        public Attributes getTrustedManifestEntries(final String name) {
-            return null;
-        }
-
-        @Override
-        public boolean hasSecurityData() {
-            return false;
-        }
-
-        @Override
         public String name() {
-            return null;
-        }
-
-        @Override
-        public Path getPath(final String first, final String... rest) {
-            return null;
-        }
-
-        @Override
-        public Path getRootPath() {
             return null;
         }
 
