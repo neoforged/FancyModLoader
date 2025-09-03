@@ -53,6 +53,7 @@
   "fml.modloadingissue.failed_to_list_folder_content": "無法列出資料夾 {0} 的內容",
   "fml.modloadingissue.failed_to_find_on_classpath": "未能在類別路徑中找到 {0}",
   "fml.modloadingissue.multiple_copies_on_classpath": "在類別路徑上找到了 {0} 的多個副本：{1}",
+  "fml.modloadingissue.mixin.duplicate_config": "A mixin config named {0} is provided by multiple mods: {1} and {2}",
   "fml.messages.artifactversion.ornotinstalled": "{0,ornull,fml.messages.artifactversion.notinstalled}",
   "fml.messages.artifactversion": "{0,ornull,fml.messages.artifactversion.none}",
   "fml.messages.artifactversion.none": "無",
