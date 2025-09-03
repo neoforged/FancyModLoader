@@ -63,7 +63,6 @@ public class ClassTransformer {
         }
 
         ClassTransformStatistics.incrementTransformedClasses();
-        ClassTransformStatistics.noteHandlingProcessors(transformersToUse);
         
         // TODO: reimplement initial-bytecode-hash stuff for coremods? Uncertain how useful this is or where it's used
 

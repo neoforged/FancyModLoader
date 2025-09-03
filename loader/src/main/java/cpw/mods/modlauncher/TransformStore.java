@@ -135,8 +135,11 @@ public class TransformStore {
                 includesComputingFrames = true;
                 out.add(transformer);
             } else {
+                ClassTransformStatistics.incrementAskedForTransform(transformer);
+                
                 var context = new ClassProcessor.SelectionContext(classDesc, isEmpty);
                 if (transformer.handlesClass(context)) {
+                    ClassTransformStatistics.incrementTransforms(transformer);
                     out.add(transformer);
                 }
             }

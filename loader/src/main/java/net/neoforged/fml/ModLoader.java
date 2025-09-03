@@ -26,6 +26,8 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import cpw.mods.modlauncher.ClassTransformStatistics;
 import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.fml.event.IModBusEvent;
@@ -69,6 +71,7 @@ public final class ModLoader {
         CrashReportCallables.registerCrashCallable("ModLauncher launch target", FMLLoader::launcherHandlerName);
         CrashReportCallables.registerCrashCallable("ModLauncher services", ModLoader::computeModLauncherServiceList);
         CrashReportCallables.registerCrashCallable("FML Language Providers", ModLoader::computeLanguageList);
+        CrashReportCallables.registerCrashCallable("Class Transformation Statistics", ClassTransformStatistics::computeCrashReportEntry);
     }
 
     private static String computeLanguageList() {

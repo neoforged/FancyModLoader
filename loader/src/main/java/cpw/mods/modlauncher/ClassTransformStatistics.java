@@ -7,15 +7,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.ApiStatus;
 
-import java.util.HashMap;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @ApiStatus.Internal
 public class ClassTransformStatistics {
     private static final Logger LOGGER = LogManager.getLogger();
-    
-    private static final Map<ProcessorName, Integer> TRANSFORMS_BY_PROCESSOR = new HashMap<>();
+
+    private static final Map<ProcessorName, Integer> TRANSFORMS_BY_PROCESSOR = new ConcurrentHashMap<>();
+    private static final Map<ProcessorName, Integer> POTENTIAL_BY_PROCESSOR = new ConcurrentHashMap<>();
     private static int LOADED_CLASS_COUNT = 0;
     private static int TRANSFORMED_CLASS_COUNT = 0;
     private static int MIXIN_PARSED_CLASS_COUNT = 0;
@@ -25,11 +28,15 @@ public class ClassTransformStatistics {
         MIXIN_PARSED_CLASS_COUNT++;
     }
     
-    synchronized static void noteHandlingProcessors(List<ClassProcessor> processors) {
-        for (var processor : processors) {
-            if (!processor.name().equals(ClassProcessor.COMPUTING_FRAMES)) {
-                TRANSFORMS_BY_PROCESSOR.compute(processor.name(), (k, v) -> v == null ? 1 : v + 1);
-            }
+    static void incrementAskedForTransform(ClassProcessor processor) {
+        if (!processor.name().equals(ClassProcessor.COMPUTING_FRAMES)) {
+            POTENTIAL_BY_PROCESSOR.compute(processor.name(), (k, v) -> v == null ? 1 : v + 1);
+        }
+    }
+    
+    static void incrementTransforms(ClassProcessor processor) {
+        if (!processor.name().equals(ClassProcessor.COMPUTING_FRAMES)) {
+            TRANSFORMS_BY_PROCESSOR.compute(processor.name(), (k, v) -> v == null ? 1 : v + 1);
         }
     }
 
@@ -63,8 +70,11 @@ public class ClassTransformStatistics {
     public synchronized static void checkTransformationBehavior() {
         // Checks if any transformers are acting suspiciously like they're targeting everything; logs an error for any
         // that are.
-        TRANSFORMS_BY_PROCESSOR.forEach((name, count) -> {
-            var ratio = ((double) count) / LOADED_CLASS_COUNT;
+        var keys = new ArrayList<>(TRANSFORMS_BY_PROCESSOR.keySet());
+        keys.forEach(name -> {
+            var actual = TRANSFORMS_BY_PROCESSOR.get(name);
+            var potential = POTENTIAL_BY_PROCESSOR.get(name);
+            var ratio = ((double) actual) / potential;
             if (ratio > 0.25) {
                 if (name.equals(FMLMixinClassProcessor.NAME)) {
                     // We special-case mixin in order to provide a more useful message, as the root issue here could be
@@ -75,5 +85,22 @@ public class ClassTransformStatistics {
                 }
             }
         });
+    }
+
+    @ApiStatus.Internal
+    public static String computeCrashReportEntry() {
+        var keys = new ArrayList<>(TRANSFORMS_BY_PROCESSOR.keySet());
+        record Entry(double ratio, ProcessorName name) {}
+        var entries = new ArrayList<Entry>();
+        for (var name : keys) {
+            var actual = TRANSFORMS_BY_PROCESSOR.get(name);
+            var potential = POTENTIAL_BY_PROCESSOR.get(name);
+            var ratio = 100d * ((double) actual) / potential;
+            entries.add(new Entry(ratio, name));
+        }
+        entries.sort(Comparator.comparing(Entry::ratio).thenComparing(Entry::name));
+        return entries.stream()
+                .map(e -> String.format("%.2f%%: %s", e.ratio, e.name))
+                .collect(Collectors.joining("\n\t\t", "\n\t\t", ""));
     }
 }
