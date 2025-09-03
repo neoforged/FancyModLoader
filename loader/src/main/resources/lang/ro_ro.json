@@ -53,6 +53,7 @@
   "fml.modloadingissue.failed_to_list_folder_content": "Nu s-a putut lista conținutul dosarului {0}",
   "fml.modloadingissue.failed_to_find_on_classpath": "Nu s-a putut găsi {0} în classpath",
   "fml.modloadingissue.multiple_copies_on_classpath": "S-au găsit mai multe copii ale {0} în classpath: {1}",
+  "fml.modloadingissue.mixin.duplicate_config": "A mixin config named {0} is provided by multiple mods: {1} and {2}",
   "fml.messages.artifactversion.ornotinstalled": "{0,ornull,fml.messages.artifactversion.notinstalled}",
   "fml.messages.artifactversion": "{0,ornull,fml.messages.artifactversion.none}",
   "fml.messages.artifactversion.none": "niciuna",
