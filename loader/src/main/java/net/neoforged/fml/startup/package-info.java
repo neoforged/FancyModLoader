@@ -4,6 +4,6 @@
  */
 
 @ApiStatus.Internal
-package net.neoforged.fml.earlydisplay;
+package net.neoforged.fml.startup;
 
 import org.jetbrains.annotations.ApiStatus;
