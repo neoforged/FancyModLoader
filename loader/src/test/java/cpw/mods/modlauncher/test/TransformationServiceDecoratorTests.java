@@ -19,12 +19,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import cpw.mods.modlauncher.TransformList;
 import cpw.mods.modlauncher.TransformStore;
-import cpw.mods.modlauncher.TransformTargetLabel;
 import cpw.mods.modlauncher.TransformationServiceDecorator;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.ITransformerVotingContext;
 import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
+import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +34,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.powermock.reflect.Whitebox;
 
 class TransformationServiceDecoratorTests {
     private final ClassNodeTransformer classNodeTransformer = new ClassNodeTransformer();
@@ -50,22 +49,25 @@ class TransformationServiceDecoratorTests {
         };
         TransformStore store = new TransformStore();
 
-        TransformationServiceDecorator sd = Whitebox.invokeConstructor(TransformationServiceDecorator.class, mockTransformerService);
+        TransformationServiceDecorator sd = new TransformationServiceDecorator(mockTransformerService);
         sd.gatherTransformers(store);
-        Map<TargetType<?>, TransformList<?>> transformers = Whitebox.getInternalState(store, "transformers");
-        Set<String> targettedClasses = Whitebox.getInternalState(store, "classNeedsTransforming");
+        Map<TargetType<?>, TransformList<?>> transformers = getField(store, "transformers");
+        Set<String> targettedClasses = getField(store, "classNeedsTransforming");
         assertAll(
                 () -> assertTrue(transformers.containsKey(TargetType.CLASS), "transformers contains class"),
-                () -> assertTrue(getTransformers(transformers.get(TargetType.CLASS)).values().stream().flatMap(Collection::stream).allMatch(s -> Whitebox.getInternalState(s, "wrapped") == classNodeTransformer), "transformers contains classTransformer"),
+                () -> assertTrue(transformers.get(TargetType.CLASS).getTransformers().values().stream().flatMap(Collection::stream).allMatch(s -> getField(s, "wrapped") == classNodeTransformer), "transformers contains classTransformer"),
                 () -> assertTrue(targettedClasses.contains("cheese/Puffs"), "targetted classes contains class name cheese/Puffs"),
                 () -> assertTrue(transformers.containsKey(TargetType.METHOD), "transformers contains method"),
-                () -> assertTrue(getTransformers(transformers.get(TargetType.METHOD)).values().stream().flatMap(Collection::stream).allMatch(s -> Whitebox.getInternalState(s, "wrapped") == methodNodeTransformer), "transformers contains methodTransformer"),
+                () -> assertTrue(transformers.get(TargetType.METHOD).getTransformers().values().stream().flatMap(Collection::stream).allMatch(s -> getField(s, "wrapped") == methodNodeTransformer), "transformers contains methodTransformer"),
                 () -> assertTrue(targettedClasses.contains("cheesy/PuffMethod"), "targetted classes contains class name cheesy/PuffMethod"));
     }
 
-    private static <T> Map<TransformTargetLabel, List<ITransformer<T>>> getTransformers(TransformList<T> list) {
+    @SuppressWarnings("unchecked")
+    private <T> T getField(Object o, String name) {
         try {
-            return Whitebox.invokeMethod(list, "getTransformers");
+            Field f = o.getClass().getDeclaredField(name);
+            f.setAccessible(true);
+            return (T) f.get(o);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
