@@ -125,6 +125,10 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
         for (var modFileInfo : modList.getModFiles()) {
             var modFile = modFileInfo.getFile();
             for (var mixinConfig : modFile.getMixinConfigs()) {
+                if (!areRequiredModsPresent(modFile, mixinConfig, modList)) {
+                    continue;
+                }
+
                 // Validate the mixin version is supported
                 if (!validateMixinBehavior(modFile, mixinConfig)) {
                     continue;
@@ -156,12 +160,8 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
                     continue;
                 }
 
-                if (mixinConfig.requiredMods().stream().allMatch(id -> modList.getModFileById(id) != null)) {
-                    service.addMixinConfigContent(mixinConfig.config(), configContent);
-                    Mixins.addConfiguration(mixinConfig.config());
-                } else {
-                    LOGGER.info("Mixin config {} from {} not applied as required mods are missing", mixinConfig.config(), modFile);
-                }
+                service.addMixinConfigContent(mixinConfig.config(), configContent);
+                Mixins.addConfiguration(mixinConfig.config());
             }
         }
 
@@ -178,6 +178,16 @@ public class FMLMixinLaunchPlugin implements ILaunchPluginService {
                 config.decorate(FabricUtil.KEY_COMPATIBILITY, annotationInfo.behaviorVersion());
             }
         }
+    }
+
+    private static boolean areRequiredModsPresent(ModFile modFile, ModFileParser.MixinConfig mixinConfig, LoadingModList modList) {
+        for (var requiredModId : mixinConfig.requiredMods()) {
+            if (modList.getModFileById(requiredModId) == null) {
+                LOGGER.info("Mixin config {} from {} not applied as required mod '{}' is missing", mixinConfig.config(), modFile, requiredModId);
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean validateMixinBehavior(ModFile modFile, ModFileParser.MixinConfig mixinConfig) {
