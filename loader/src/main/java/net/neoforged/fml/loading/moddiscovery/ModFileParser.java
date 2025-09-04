@@ -20,6 +20,9 @@ import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.InvalidModFileException;
 import net.neoforged.neoforgespi.locating.ModFileInfoParser;
+import org.apache.maven.artifact.versioning.ArtifactVersion;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 public class ModFileParser {
@@ -51,10 +54,11 @@ public class ModFileParser {
     /**
      * Represents a potential mixin configuration.
      *
-     * @param config       The name of the mixin configuration.
-     * @param requiredMods The mod ids that are required for this mixin configuration to be loaded. If empty, will be loaded regardless.
+     * @param config          The name of the mixin configuration.
+     * @param requiredMods    The mod ids that are required for this mixin configuration to be loaded. If empty, will be loaded regardless.
+     * @param behaviorVersion The mixin version whose behavior this configuration requests; if unspecified, the default is provided by FML.
      */
-    public record MixinConfig(String config, List<String> requiredMods) {}
+    public record MixinConfig(String config, List<String> requiredMods, @Nullable ArtifactVersion behaviorVersion) {}
 
     protected static List<MixinConfig> getMixinConfigs(IModFileInfo modFileInfo) {
         try {
@@ -66,7 +70,10 @@ public class ModFileParser {
                 var name = mixinsEntry.<String>getConfigElement("config")
                         .orElseThrow(() -> new InvalidModFileException("Missing \"config\" in [[mixins]] entry", modFileInfo));
                 var requiredModIds = mixinsEntry.<List<String>>getConfigElement("requiredMods").orElse(List.of());
-                potentialMixins.add(new MixinConfig(name, requiredModIds));
+                var behaviorVersion = mixinsEntry.<String>getConfigElement("behaviorVersion")
+                        .map(DefaultArtifactVersion::new)
+                        .orElse(null);
+                potentialMixins.add(new MixinConfig(name, requiredModIds, behaviorVersion));
             }
 
             return potentialMixins;

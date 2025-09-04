@@ -41,6 +41,27 @@ public class ModsTomlBuilder {
         return setLoader("javafml", "[1,)");
     }
 
+    public ModsTomlBuilder addMixinConfig(String name) {
+        return addMixinConfig(name, null);
+    }
+
+    public ModsTomlBuilder addMixinConfig(String name, @Nullable String behaviorVersion) {
+        return addMixinConfig(name, behaviorVersion, List.of());
+    }
+
+    public ModsTomlBuilder addMixinConfig(String name, @Nullable String behaviorVersion, List<String> requiredMods) {
+        var configEntry = Config.inMemory();
+        configEntry.set("config", name);
+        if (behaviorVersion != null) {
+            configEntry.set("behaviorVersion", behaviorVersion);
+        }
+        if (!requiredMods.isEmpty()) {
+            configEntry.set("requiredMods", requiredMods);
+        }
+        config.add("mixins", List.of(configEntry));
+        return this;
+    }
+
     public ModsTomlBuilder setLoader(String loader, String versionRange) {
         config.set("modLoader", loader);
         config.set("loaderVersion", versionRange);
