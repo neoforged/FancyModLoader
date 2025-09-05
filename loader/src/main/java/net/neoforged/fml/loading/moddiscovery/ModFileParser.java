@@ -12,12 +12,9 @@ import com.electronwill.nightconfig.toml.TomlFormat;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.mojang.logging.LogUtils;
-<<<<<<< HEAD
 import java.io.IOException;
 import java.lang.reflect.Type;
-=======
 import java.lang.module.ModuleDescriptor;
->>>>>>> ae253e10 (Annotate mixin configs with compat level)
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
