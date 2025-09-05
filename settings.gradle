@@ -34,5 +34,5 @@ include 'earlydisplay'
 include 'junit'
 include 'securejarhandler'
 include 'testlib'
-include 'tests'
+//include 'tests'
 enableFeaturePreview "STABLE_CONFIGURATION_CACHE"

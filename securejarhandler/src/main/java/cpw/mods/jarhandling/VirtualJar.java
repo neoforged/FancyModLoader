@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.module.ModuleDescriptor;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
@@ -25,16 +24,10 @@ public final class VirtualJar implements SecureJar {
      * Creates a new virtual jar.
      *
      * @param name          the name of the virtual jar; will be used as the module name
-     * @param referencePath a path to an existing directory or jar file, for debugging and display purposes
-     *                      (for example a path to the real jar of the caller)
      * @param packages      the list of packages in this virtual jar
      */
-    public VirtualJar(String name, Path referencePath, String... packages) {
-        if (!Files.exists(referencePath)) {
-            throw new IllegalArgumentException("VirtualJar reference path " + referencePath + " must exist");
-        }
-
-        this.contents = JarContents.empty(referencePath);
+    public VirtualJar(String name, String... packages) {
+        this.contents = JarContents.empty(Path.of("VirtualJar/" + name));
         this.moduleDescriptor = ModuleDescriptor.newAutomaticModule(name)
                 .packages(Set.of(packages))
                 .build();

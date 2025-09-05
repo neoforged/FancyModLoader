@@ -30,6 +30,8 @@ import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.IModFile;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * Master list of all mods.
@@ -175,5 +177,11 @@ public class ModList {
 
     public <T> Stream<T> applyForEachModContainer(Function<ModContainer, T> function) {
         return indexedMods.values().stream().map(function);
+    }
+
+    @ApiStatus.Internal
+    @VisibleForTesting
+    public static void clear() {
+        INSTANCE = null;
     }
 }

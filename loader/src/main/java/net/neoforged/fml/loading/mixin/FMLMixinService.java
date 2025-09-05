@@ -89,7 +89,7 @@ public class FMLMixinService implements IMixinService {
         };
     }
 
-    public void setBytecodeProvider(IClassBytecodeProvider bytecodeProvider) {
+    public void setBytecodeProvider(@Nullable IClassBytecodeProvider bytecodeProvider) {
         this.bytecodeProvider = bytecodeProvider;
     }
 

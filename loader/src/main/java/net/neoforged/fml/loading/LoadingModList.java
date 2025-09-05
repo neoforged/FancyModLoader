@@ -68,28 +68,6 @@ public class LoadingModList {
         return INSTANCE;
     }
 
-    public void addAccessTransformers() {
-        modFiles.stream()
-                .map(ModFileInfo::getFile)
-                .forEach(mod -> mod.getAccessTransformers().forEach(path -> FMLLoader.addAccessTransformer(path, mod)));
-    }
-
-    public void addEnumExtenders() {
-        Map<IModInfo, JarResource> pathPerMod = new HashMap<>();
-        modFiles.stream()
-                .map(ModFileInfo::getMods)
-                .flatMap(List::stream)
-                .forEach(mod -> mod.getConfig().<String>getConfigElement("enumExtensions").ifPresent(file -> {
-                    var resource = mod.getOwningFile().getFile().getContents().get(file);
-                    if (resource == null) {
-                        ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloadingissue.enumextender.file_not_found", file).withAffectedMod(mod));
-                        return;
-                    }
-                    pathPerMod.put(mod, resource);
-                }));
-        RuntimeEnumExtender.loadEnumPrototypes(pathPerMod);
-    }
-
     public void addForScanning(BackgroundScanHandler backgroundScanHandler) {
         backgroundScanHandler.setLoadingModList(this);
         modFiles.stream()

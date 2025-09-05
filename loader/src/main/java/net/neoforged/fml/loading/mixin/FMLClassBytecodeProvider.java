@@ -6,7 +6,8 @@
 package net.neoforged.fml.loading.mixin;
 
 import com.google.common.io.Resources;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
+import cpw.mods.modlauncher.TransformingClassLoader;
+
 import java.io.IOException;
 import java.net.URL;
 import net.neoforged.fml.ModLoader;
@@ -17,11 +18,11 @@ import org.spongepowered.asm.service.IClassBytecodeProvider;
 import org.spongepowered.asm.transformers.MixinClassReader;
 
 class FMLClassBytecodeProvider implements IClassBytecodeProvider {
-    private final ILaunchPluginService.ITransformerLoader transformerLoader;
+    private final TransformingClassLoader classLoader;
     private final FMLMixinLaunchPlugin launchPlugin;
 
-    FMLClassBytecodeProvider(ILaunchPluginService.ITransformerLoader transformerLoader, FMLMixinLaunchPlugin launchPlugin) {
-        this.transformerLoader = transformerLoader;
+    FMLClassBytecodeProvider(TransformingClassLoader classLoader, FMLMixinLaunchPlugin launchPlugin) {
+        this.classLoader = classLoader;
         this.launchPlugin = launchPlugin;
     }
 
@@ -47,7 +48,8 @@ class FMLClassBytecodeProvider implements IClassBytecodeProvider {
         byte[] classBytes;
 
         try {
-            classBytes = transformerLoader.buildTransformedClassNodeFor(canonicalName);
+            // Passing FMLMixinLaunchPlugin.NAME here prevents that plugin from recursively being applied
+            classBytes = classLoader.buildTransformedClassNodeFor(canonicalName, FMLMixinLaunchPlugin.NAME);
         } catch (ClassNotFoundException ex) {
             URL url = Thread.currentThread().getContextClassLoader().getResource(internalName + ".class");
             if (url == null) {

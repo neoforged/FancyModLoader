@@ -40,12 +40,12 @@ public class ProductionClientProvider implements IModFileCandidateLocator {
     public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {
         var vers = FMLLoader.versionInfo();
 
+        var neoforgeArtifact = new MavenCoordinate("net.neoforged", "neoforge", "", "universal", vers.neoForgeVersion());
+
         var content = new ArrayList<Path>();
         addRequiredLibrary(new MavenCoordinate("net.minecraft", "client", "", "srg", vers.mcAndNeoFormVersion()), content);
         addRequiredLibrary(new MavenCoordinate("net.minecraft", "client", "", "extra", vers.mcAndNeoFormVersion()), content);
-        for (var artifact : additionalContent) {
-            addRequiredLibrary(artifact, content);
-        }
+        addRequiredLibrary(neoforgeArtifact, content);
 
         try {
             var mcJarContents = JarContents.ofPaths(content);

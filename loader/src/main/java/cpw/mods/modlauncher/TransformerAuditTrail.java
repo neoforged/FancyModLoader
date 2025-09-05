@@ -14,7 +14,6 @@
 
 package cpw.mods.modlauncher;
 
-import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.ITransformerActivity;
 import cpw.mods.modlauncher.api.ITransformerAuditTrail;
@@ -76,8 +75,8 @@ public class TransformerAuditTrail implements ITransformerAuditTrail {
         getTransformerActivities(clazz).add(new TransformerActivity(ITransformerActivity.Type.PLUGIN, plugin.name(), phase.name().substring(0, 1)));
     }
 
-    public void addTransformerAuditTrail(String clazz, ITransformationService transformService, ITransformer<?> transformer) {
-        getTransformerActivities(clazz).add(new TransformerActivity(ITransformerActivity.Type.TRANSFORMER, concat(transformService.name(), transformer.labels())));
+    public void addTransformerAuditTrail(String clazz, String ownerName, ITransformer<?> transformer) {
+        getTransformerActivities(clazz).add(new TransformerActivity(ITransformerActivity.Type.TRANSFORMER, concat(ownerName, transformer.labels())));
     }
 
     private String[] concat(String first, String[] rest) {

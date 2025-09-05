@@ -54,9 +54,8 @@ class ClassTransformerTests {
         final TransformStore transformStore = new TransformStore();
         final LaunchPluginHandler lph = new LaunchPluginHandler(Stream.of());
         final ClassTransformer classTransformer = new ClassTransformer(transformStore, lph, null);
-        final ITransformationService dummyService = new MockTransformerService();
-        transformStore.addTransformer(new TransformTargetLabel("test.MyClass", TargetType.CLASS), classTransformer(), dummyService);
-        byte[] result = classTransformer.transform(new byte[0], "test.MyClass", "testing");
+        transformStore.addTransformer(classTransformer(), "test");
+        byte[] result = classTransformer.transform(null, new byte[0], "test.MyClass", "testing");
         assertAll("Class loads and is valid",
                 () -> assertNotNull(result),
 //                () -> assertNotNull(new TransformingClassLoader(transformStore, lph, FileSystems.getDefault().getPath(".")).getClass("test.MyClass", result)),
@@ -74,8 +73,8 @@ class ClassTransformerTests {
         dummyClass.fields.add(new FieldNode(Opcodes.ACC_PUBLIC, "dummyfield", "Ljava/lang/String;", null, null));
         ClassWriter cw = new ClassWriter(Opcodes.ASM5);
         dummyClass.accept(cw);
-        transformStore.addTransformer(new TransformTargetLabel("test.DummyClass", "dummyfield"), fieldNodeTransformer1(), dummyService);
-        byte[] result1 = classTransformer.transform(cw.toByteArray(), "test.DummyClass", "testing");
+        transformStore.addTransformer(fieldNodeTransformer1(), "testing");
+        byte[] result1 = classTransformer.transform(null, cw.toByteArray(), "test.DummyClass", "testing");
         assertAll("Class loads and is valid",
                 () -> assertNotNull(result1),
 //                () -> assertNotNull(new TransformingClassLoader(transformStore, lph, FileSystems.getDefault().getPath(".")).getClass("test.DummyClass", result1)),
