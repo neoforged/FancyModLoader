@@ -56,7 +56,7 @@ public class ModFile implements IModFile {
     private ModFileScanData fileModFileScanData;
     private volatile CompletableFuture<ModFileScanData> futureScanResult;
     private List<CoreModFile> coreMods;
-    private List<String> mixinConfigs;
+    private List<ModFileParser.MixinConfig> mixinConfigs;
     private List<Path> accessTransformers;
 
     public static final Attributes.Name TYPE = new Attributes.Name("FMLModType");
@@ -115,7 +115,7 @@ public class ModFile implements IModFile {
         if (this.modFileInfo == null) return this.getType() != Type.MOD;
         LOGGER.debug(LogMarkers.LOADING, "Loading mod file {} with languages {}", this.getFilePath(), this.modFileInfo.requiredLanguageLoaders());
         this.coreMods = ModFileParser.getCoreMods(this);
-        this.mixinConfigs = ModFileParser.getMixinConfigs(this.modFileInfo);
+        this.mixinConfigs = ModFileParser.getAnnotatedMixinConfigs(this.modFileInfo);
         this.mixinConfigs.forEach(mc -> LOGGER.debug(LogMarkers.LOADING, "Found mixin config {}", mc));
         this.accessTransformers = ModFileParser.getAccessTransformers(this.modFileInfo)
                 .map(list -> list.stream().map(this::findResource).filter(path -> {
@@ -136,6 +136,10 @@ public class ModFile implements IModFile {
     }
 
     public List<String> getMixinConfigs() {
+        return mixinConfigs.stream.map(c -> c.config()).toList();
+    }
+
+    public List<ModFileParser.MixinConfig> getAnnotatedMixinConfigs() {
         return mixinConfigs;
     }
 
