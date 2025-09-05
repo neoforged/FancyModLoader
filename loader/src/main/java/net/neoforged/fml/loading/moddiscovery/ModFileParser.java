@@ -10,8 +10,8 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.mojang.logging.LogUtils;
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.lang.module.ModuleDescriptor;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -118,34 +118,33 @@ public class ModFileParser {
         LOWEST_MIXIN_VERSION = new DefaultArtifactVersion(major + "." + minor + "." + patch);
     }
 
-
     protected static List<MixinConfig> getAnnotatedMixinConfigs(IModFileInfo modFileInfo) {
         try {
             var config = modFileInfo.getConfig();
             var mixinsEntries = config.getConfigList("mixins");
 
-            var mixins = new ArrayList<MixinConfig>();
-            for (IConfigurable mixinsEntry : mixinsEntries) {
-                var name = mixinsEntry.<String>getConfigElement("config")
-                        .orElseThrow(() -> new InvalidModFileException("Missing \"config\" in [[mixins]] entry", modFileInfo));
-                var behaviorVersion = mixinsEntry.<String>getConfigElement("behaviorVersion")
-                        .map(DefaultArtifactVersion::new)
-                        .orElse(null);
-                if (behaviorVersion != null) {
-                    if (behaviorVersion.compareTo(HIGHEST_MIXIN_VERSION) > 0) {
-                        throw new InvalidModFileException("Specified mixin behavior version " + behaviorVersion
-                                + " is higher than the current mixin version " + HIGHEST_MIXIN_VERSION + "; this may be fixable by updating neoforge",
-                                modFileInfo);
-                    } else if (behaviorVersion.compareTo(LOWEST_MIXIN_VERSION) < 0) {
-                        throw new InvalidModFileException("Specified mixin behavior version " + behaviorVersion
-                                + " is lower than the minimum supported behavior version " + LOWEST_MIXIN_VERSION,
-                                modFileInfo);
-                    }
-                }
-                mixins.add(new MixinConfig(name, requiredModIds, behaviorVersion));
-            }
-
-            return mixins;
+            return mixinsEntries
+                    .stream()
+                    .map(mixinsEntry -> {
+                        var name = mixinsEntry.<String>getConfigElement("config")
+                                .orElseThrow(() -> new InvalidModFileException("Missing \"config\" in [[mixins]] entry", modFileInfo));
+                        var behaviorVersion = mixinsEntry.<String>getConfigElement("behaviorVersion")
+                                .map(DefaultArtifactVersion::new)
+                                .orElse(null);
+                        if (behaviorVersion != null) {
+                            if (behaviorVersion.compareTo(HIGHEST_MIXIN_VERSION) > 0) {
+                                throw new InvalidModFileException("Specified mixin behavior version " + behaviorVersion
+                                        + " is higher than the current mixin version " + HIGHEST_MIXIN_VERSION + "; this may be fixable by updating neoforge",
+                                        modFileInfo);
+                            } else if (behaviorVersion.compareTo(LOWEST_MIXIN_VERSION) < 0) {
+                                throw new InvalidModFileException("Specified mixin behavior version " + behaviorVersion
+                                        + " is lower than the minimum supported behavior version " + LOWEST_MIXIN_VERSION,
+                                        modFileInfo);
+                            }
+                        }
+                        return new MixinConfig(name, behaviorVersion);
+                    })
+                    .toList();
         } catch (Exception exception) {
             LOGGER.error("Failed to load mixin configs from mod file", exception);
             return List.of();
