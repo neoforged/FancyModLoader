@@ -136,7 +136,7 @@ public class ModFile implements IModFile {
     }
 
     public List<String> getMixinConfigs() {
-        return mixinConfigs.stream.map(c -> c.config()).toList();
+        return mixinConfigs.stream().map(c -> c.config()).toList();
     }
 
     public List<ModFileParser.MixinConfig> getAnnotatedMixinConfigs() {
