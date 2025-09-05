@@ -102,7 +102,7 @@ public final class ModLoader {
         if (hasErrors()) {
             var loadingErrors = getLoadingErrors();
             for (var loadingError : loadingErrors) {
-                LOGGER.fatal(CORE, "Error during pre-loading phase: {}", FMLTranslations.translateIssueEnglish(loadingError), loadingError.cause());
+                LOGGER.fatal(CORE, "Error during pre-loading phase: {}\n{}", FMLTranslations.translateIssueEnglish(loadingError), loadingError.cause() != null ? loadingError.cause() : "");
             }
             cancelLoading(modList);
             throw new ModLoadingException(loadingIssues);

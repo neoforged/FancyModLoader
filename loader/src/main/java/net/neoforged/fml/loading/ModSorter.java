@@ -244,9 +244,16 @@ public class ModSorter {
         public List<ModLoadingIssue> buildErrorMessages() {
             return Stream.concat(
                     versionResolution.stream()
-                            .map(mv -> ModLoadingIssue.error(mv.getType() == IModInfo.DependencyType.REQUIRED ? "fml.modloadingissue.missingdependency" : "fml.modloadingissue.missingdependency.optional",
-                                    mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
-                                    modVersions.getOrDefault(mv.getModId(), new DefaultArtifactVersion("null")), mv.getReason()).withAffectedMod(mv.getOwner())),
+                            .map(mv -> switch (mv.getType()) {
+                                case REQUIRED:
+                                    yield ModLoadingIssue.error("fml.modloadingissue.missingdependency", mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(), modVersions.getOrDefault(mv.getModId(), new DefaultArtifactVersion("null")), mv.getReason()).withAffectedMod(mv.getOwner());
+                                case OPTIONAL:
+                                    yield ModLoadingIssue.error("fml.modloadingissue.missingdependency.optional", mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(), modVersions.getOrDefault(mv.getModId(), new DefaultArtifactVersion("null")), mv.getReason()).withAffectedMod(mv.getOwner());
+                                case CONDITIONAL:
+                                    yield ModLoadingIssue.error("fml.modloadingissue.missingdependency.conditional", mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(), mv.getConditionalModIds().map(ids -> String.join(", ", ids)).orElse(""), modVersions.getOrDefault(mv.getModId(), new DefaultArtifactVersion("null")), mv.getReason()).withAffectedMod(mv.getOwner());
+                                default:
+                                    throw new IllegalStateException("Unexpected value: " + mv.getType());
+                            }),
                     incompatibilities.stream()
                             .map(mv -> ModLoadingIssue.error("fml.modloadingissue.incompatiblemod",
                                     mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
@@ -285,9 +292,9 @@ public class ModSorter {
         final long mandatoryRequired = modRequirements.stream().filter(ver -> ver.getType() == IModInfo.DependencyType.REQUIRED).count();
         LOGGER.debug(LogMarkers.LOADING, "Found {} mod requirements ({} mandatory, {} optional)", modRequirements.size(), mandatoryRequired, modRequirements.size() - mandatoryRequired);
         final var missingVersions = modRequirements.stream()
-                .filter(mv -> (mv.getType() == IModInfo.DependencyType.REQUIRED || (modVersions.containsKey(mv.getModId()) && mv.getType() == IModInfo.DependencyType.OPTIONAL)) && this.modVersionNotContained(mv, modVersions))
+                .filter(mv -> (mv.getType() == IModInfo.DependencyType.REQUIRED || (modVersions.containsKey(mv.getModId()) && mv.getType() == IModInfo.DependencyType.OPTIONAL) || (mv.getConditionalModIds().map((condIds) -> condIds.stream().anyMatch(modVersions::containsKey)).orElse(false) && mv.getType() == IModInfo.DependencyType.CONDITIONAL)) && this.modVersionNotContained(mv, modVersions))
                 .collect(toSet());
-        final long mandatoryMissing = missingVersions.stream().filter(mv -> mv.getType() == IModInfo.DependencyType.REQUIRED).count();
+        final long mandatoryMissing = missingVersions.stream().filter((mv) -> mv.getType() == IModInfo.DependencyType.REQUIRED || mv.getType() == IModInfo.DependencyType.CONDITIONAL).count();
         LOGGER.debug(LogMarkers.LOADING, "Found {} mod requirements missing ({} mandatory, {} optional)", missingVersions.size(), mandatoryMissing, missingVersions.size() - mandatoryMissing);
 
         final var incompatibleVersions = modRequirements.stream().filter(ver -> ver.getType() == IModInfo.DependencyType.INCOMPATIBLE)
@@ -312,7 +319,7 @@ public class ModSorter {
                     LogMarkers.LOADING,
                     "Missing or unsupported mandatory dependencies:\n{}",
                     missingVersions.stream()
-                            .filter(mv -> mv.getType() == IModInfo.DependencyType.REQUIRED)
+                            .filter(mv -> mv.getType() == IModInfo.DependencyType.REQUIRED || mv.getType() == IModInfo.DependencyType.CONDITIONAL)
                             .map(ver -> formatDependencyError(ver, modVersions))
                             .collect(Collectors.joining("\n")));
         }

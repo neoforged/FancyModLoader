@@ -207,6 +207,7 @@ public class ModInfo implements IModInfo, IConfigurable {
         private final VersionRange versionRange;
         private final DependencyType type;
         private final Optional<String> reason;
+        private final Optional<List<String>> conditionalModIds;
         private final Ordering ordering;
         private final DependencySide side;
         private Optional<URL> referralUrl;
@@ -217,6 +218,7 @@ public class ModInfo implements IModInfo, IConfigurable {
                     .orElseThrow(() -> new InvalidModFileException("Missing required field modid in dependency", getOwningFile()));
             this.type = config.<String>getConfigElement("type")
                     .map(str -> str.toUpperCase(Locale.ROOT)).map(DependencyType::valueOf).orElse(DependencyType.REQUIRED);
+            this.conditionalModIds = config.getConfigElement("conditionalModIds");
             this.reason = config.<String>getConfigElement("reason");
             this.versionRange = config.<String>getConfigElement("versionRange")
                     .map(MavenVersionAdapter::createFromVersionSpec)
@@ -244,6 +246,11 @@ public class ModInfo implements IModInfo, IConfigurable {
         @Override
         public DependencyType getType() {
             return type;
+        }
+
+        @Override
+        public Optional<List<String>> getConditionalModIds() {
+            return conditionalModIds;
         }
 
         @Override
