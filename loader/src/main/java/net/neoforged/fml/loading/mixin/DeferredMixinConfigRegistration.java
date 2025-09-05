@@ -56,7 +56,7 @@ public class DeferredMixinConfigRegistration {
     // Increment to break compatibility; during a BC window, this should be set to the latest version. This is _not_ set
     // to COMPATIBILITY_LATEST, so that if mixin is bumped past a BC it does not break mods.
     @ApiStatus.Internal
-    public static final int DEFAULT_BEHAVIOUR_VERSION = FabricUtil.COMPATIBILITY_0_14_0;
+    public static final int DEFAULT_BEHAVIOUR_VERSION = FabricUtil.COMPATIBILITY_0_10_0;
 
     private static int calculateBehaviorVersion(@Nullable ArtifactVersion behaviorVersion) {
         if (behaviorVersion == null) {
