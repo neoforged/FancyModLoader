@@ -91,7 +91,6 @@ public class ModFileParser {
                 .toList();
     }
 
-<<<<<<< HEAD
     @Deprecated
     protected static List<String> getMixinConfigs(IModFileInfo modFileInfo) {
         try {
