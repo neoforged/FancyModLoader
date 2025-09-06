@@ -5,16 +5,15 @@
 
 package net.neoforged.fml.loading;
 
-import cpw.mods.jarhandling.JarResource;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
-import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
@@ -36,6 +35,7 @@ public class LoadingModList {
     private final Map<ModInfo, List<ModInfo>> modDependencies;
     private final Map<String, ModFileInfo> fileById;
     private final List<ModLoadingIssue> modLoadingIssues;
+    private final Set<IModFile> allModFiles = Collections.newSetFromMap(new IdentityHashMap<>());
 
     private LoadingModList(List<ModFile> plugins, List<ModFile> gameLibraries, List<ModFile> modFiles, List<ModInfo> sortedList, Map<ModInfo, List<ModInfo>> modDependencies) {
         this.plugins = plugins.stream()
@@ -46,9 +46,7 @@ public class LoadingModList {
                 .map(ModFile::getModFileInfo)
                 .map(ModFileInfo.class::cast)
                 .collect(Collectors.toList());
-        this.sortedList = sortedList.stream()
-                .map(ModInfo.class::cast)
-                .collect(Collectors.toList());
+        this.sortedList = new ArrayList<>(sortedList);
         this.modDependencies = modDependencies;
         this.fileById = this.modFiles.stream()
                 .map(ModFileInfo::getMods)
@@ -56,6 +54,10 @@ public class LoadingModList {
                 .map(ModInfo.class::cast)
                 .collect(Collectors.toMap(ModInfo::getModId, ModInfo::getOwningFile));
         this.modLoadingIssues = new ArrayList<>();
+
+        this.allModFiles.addAll(this.gameLibraries);
+        this.allModFiles.addAll(modFiles);
+        this.allModFiles.addAll(plugins);
     }
 
     public static LoadingModList of(List<ModFile> plugins, List<ModFile> gameLibraries, List<ModFile> modFiles, List<ModInfo> sortedList, List<ModLoadingIssue> issues, Map<ModInfo, List<ModInfo>> modDependencies) {
@@ -73,6 +75,10 @@ public class LoadingModList {
         modFiles.stream()
                 .map(ModFileInfo::getFile)
                 .forEach(backgroundScanHandler::submitForScanning);
+    }
+
+    public boolean contains(IModFile modFile) {
+        return allModFiles.contains(modFile);
     }
 
     public List<IModFileInfo> getPlugins() {

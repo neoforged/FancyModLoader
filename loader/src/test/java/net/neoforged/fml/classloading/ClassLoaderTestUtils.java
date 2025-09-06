@@ -5,11 +5,10 @@
 
 package net.neoforged.fml.classloading;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.jetbrains.annotations.Nullable;
 
 public final class ClassLoaderTestUtils {
     private ClassLoaderTestUtils() {}

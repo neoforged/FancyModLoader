@@ -10,7 +10,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.Stream;
-
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.VersionInfo;
 import org.slf4j.Logger;
@@ -36,11 +35,11 @@ public interface ILaunchContext {
      */
     boolean isLocated(Path path);
 
-
     /**
      * Marks a path as being located and returns true if it was not previously located.
      */
     boolean addLocated(Path path);
+
     /**
      * Returns the list of yet {@link #addLocated(Path) unclaimed} class path entries.
      */

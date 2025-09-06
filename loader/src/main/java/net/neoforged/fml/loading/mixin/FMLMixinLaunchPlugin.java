@@ -7,15 +7,14 @@ package net.neoforged.fml.loading.mixin;
 
 import cpw.mods.modlauncher.api.ITransformerActivity;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
+import java.util.EnumSet;
+import java.util.function.Consumer;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.launch.Phases;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 import org.spongepowered.asm.service.ISyntheticClassRegistry;
-
-import java.util.EnumSet;
-import java.util.function.Consumer;
 
 public class FMLMixinLaunchPlugin implements ILaunchPluginService {
     public static final String NAME = "fml-mixin";

@@ -8,12 +8,17 @@ package net.neoforged.fml.loading.mixin;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.jarhandling.VirtualJar;
 import cpw.mods.modlauncher.TransformingClassLoader;
+import java.io.IOException;
+import java.lang.module.ModuleDescriptor;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
-import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModFileParser;
 import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
@@ -29,14 +34,6 @@ import org.spongepowered.asm.mixin.Mixins;
 import org.spongepowered.asm.mixin.injection.invoke.arg.ArgsClassGenerator;
 import org.spongepowered.asm.mixin.transformer.Config;
 import org.spongepowered.asm.service.MixinService;
-
-import java.io.IOException;
-import java.lang.module.ModuleDescriptor;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Encapsulates the code required to interact with Mixin.
@@ -90,7 +87,6 @@ public final class MixinFacade {
         }
     }
 
-
     // Increment to break compatibility; during a BC window, this should be set to the latest version. This is _not_ set
     // to COMPATIBILITY_LATEST, so that if mixin is bumped past a BC it does not break mods.
     @VisibleForTesting
@@ -135,9 +131,9 @@ public final class MixinFacade {
                 var existingInfo = configAnnotationInfo.putIfAbsent(mixinConfig.config(), currentInfo);
                 if (existingInfo != null && existingInfo.modFile() != modFile) {
                     ModLoader.addLoadingIssue(ModLoadingIssue.error(
-                                    "fml.modloadingissue.mixin.duplicate_config",
-                                    mixinConfig.config(),
-                                    existingInfo.modFile)
+                            "fml.modloadingissue.mixin.duplicate_config",
+                            mixinConfig.config(),
+                            existingInfo.modFile)
                             .withAffectedModFile(modFile));
                     continue;
                 }
@@ -151,8 +147,8 @@ public final class MixinFacade {
                 }
                 if (configContent == null) {
                     ModLoader.addLoadingIssue(ModLoadingIssue.error(
-                                    "fml.modloadingissue.mixin.missing_config",
-                                    mixinConfig.config())
+                            "fml.modloadingissue.mixin.missing_config",
+                            mixinConfig.config())
                             .withAffectedModFile(modFile));
                     continue;
                 }

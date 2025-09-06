@@ -80,7 +80,7 @@ public class ModDiscoverer {
             } catch (ModLoadingException e) {
                 discoveryIssues.addAll(e.getIssues());
             } catch (Exception e) {
-                discoveryIssues.add(ModLoadingIssue.error("fml.modloadingissue.technical_error", locator.toString() + "failed").withCause(e));
+                discoveryIssues.add(ModLoadingIssue.error("fml.modloadingissue.technical_error", locator.toString() + " failed").withCause(e));
             }
 
             LOGGER.debug(LogMarkers.SCAN, "Locator {} found {} mods, {} warnings, {} errors and skipped {} candidates", locator,

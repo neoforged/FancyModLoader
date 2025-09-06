@@ -5,6 +5,7 @@
 
 package net.neoforged.fml.loading.moddiscovery.locators;
 
+import java.nio.file.Files;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.neoforgespi.ILaunchContext;
@@ -12,8 +13,6 @@ import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.IncompatibleFileReporting;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
-
-import java.nio.file.Files;
 
 /**
  * This locator finds mods and game libraries that are passed as jar files on the classpath.

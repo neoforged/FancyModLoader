@@ -8,14 +8,12 @@ package net.neoforged.fml.loading;
 import static net.neoforged.fml.loading.LogMarkers.CORE;
 
 import com.mojang.logging.LogUtils;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-
 import org.jetbrains.annotations.ApiStatus;
 import org.slf4j.Logger;
 

@@ -7,11 +7,21 @@ package net.neoforged.fml.testlib;
 
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
+import com.google.gson.JsonObject;
+import net.neoforged.jarjar.metadata.ContainedJarMetadata;
+import net.neoforged.jarjar.metadata.Metadata;
+import net.neoforged.jarjar.metadata.MetadataIOHandler;
+import net.neoforged.jarjar.selection.util.Constants;
+import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -25,13 +35,6 @@ import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import net.neoforged.jarjar.metadata.ContainedJarMetadata;
-import net.neoforged.jarjar.metadata.Metadata;
-import net.neoforged.jarjar.metadata.MetadataIOHandler;
-import net.neoforged.jarjar.selection.util.Constants;
-import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Opcodes;
 
 /**
  * Simulates various installation types for NeoForge
@@ -81,9 +84,16 @@ public class SimulatedInstallation implements AutoCloseable {
     public static final String LIBRARIES_DIRECTORY_PROPERTY = "libraryDirectory";
     public static final String MOD_FOLDERS_PROPERTIES = "fml.modFolders";
     public static final String NEOFORGE_VERSION = "20.4.9999";
-    public static final String FML_VERSION = "3.0.9999";
     public static final String MC_VERSION = "1.20.4";
     public static final String NEOFORM_VERSION = "202401020304";
+    public static final IdentifiableContent MINECRAFT_VERSION_JSON = new IdentifiableContent("MC_VERSION_JSON", "version.json", buildVersionJson(MC_VERSION));
+
+    private static byte[] buildVersionJson(String mcVersion) {
+        var obj = new JsonObject();
+        obj.addProperty("id", mcVersion);
+        return obj.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
     // Simulates the runtime directory passed to the game (present in every directory)
     private final Path gameDir;
     // Simulates the libraries directory found in production installations (both client & server)
@@ -91,10 +101,10 @@ public class SimulatedInstallation implements AutoCloseable {
     // Used for testing running out of a Gradle project. Is the simulated Gradle project root directory.
     private final Path projectRoot;
 
-    public static final IdentifiableContent[] SERVER_EXTRA_JAR_CONTENT = { SHARED_ASSETS };
-    public static final IdentifiableContent[] CLIENT_EXTRA_JAR_CONTENT = { CLIENT_ASSETS, SHARED_ASSETS, RESOURCES_MANIFEST };
-    public static final IdentifiableContent[] NEOFORGE_UNIVERSAL_JAR_CONTENT = { NEOFORGE_ASSETS, NEOFORGE_CLASSES, NEOFORGE_MODS_TOML, NEOFORGE_MANIFEST };
-    public static final IdentifiableContent[] USERDEV_CLIENT_JAR_CONTENT = { PATCHED_CLIENT, PATCHED_SHARED };
+    public static final IdentifiableContent[] SERVER_EXTRA_JAR_CONTENT = {SHARED_ASSETS, MINECRAFT_VERSION_JSON};
+    public static final IdentifiableContent[] CLIENT_EXTRA_JAR_CONTENT = {CLIENT_ASSETS, SHARED_ASSETS, RESOURCES_MANIFEST, MINECRAFT_VERSION_JSON};
+    public static final IdentifiableContent[] NEOFORGE_UNIVERSAL_JAR_CONTENT = {NEOFORGE_ASSETS, NEOFORGE_CLASSES, NEOFORGE_MODS_TOML, NEOFORGE_MANIFEST};
+    public static final IdentifiableContent[] USERDEV_CLIENT_JAR_CONTENT = {PATCHED_CLIENT, PATCHED_SHARED};
 
     // For a production client: Simulates the "libraries" directory found in the Vanilla Minecraft installation directory (".minecraft")
     // For a production server: The NF installer creates a "libraries" directory in the server root
@@ -174,7 +184,7 @@ public class SimulatedInstallation implements AutoCloseable {
     public void setupProductionClient() throws IOException {
         System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
 
-        writeLibrary("net.neoforged", "minecraft-client-patched", NEOFORGE_VERSION, PATCHED_CLIENT, RENAMED_SHARED, CLIENT_ASSETS, SHARED_ASSETS, MINECRAFT_MODS_TOML);
+        writeLibrary("net.neoforged", "minecraft-client-patched", NEOFORGE_VERSION, PATCHED_CLIENT, RENAMED_SHARED, CLIENT_ASSETS, SHARED_ASSETS, MINECRAFT_MODS_TOML, MINECRAFT_VERSION_JSON);
         writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "universal", NEOFORGE_UNIVERSAL_JAR_CONTENT);
     }
 
@@ -182,7 +192,7 @@ public class SimulatedInstallation implements AutoCloseable {
         System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
 
         writeLibrary("net.minecraft", "client", MC_VERSION + "-" + NEOFORM_VERSION, "srg", RENAMED_CLIENT, RENAMED_SHARED);
-        writeLibrary("net.minecraft", "client", MC_VERSION + "-" + NEOFORM_VERSION, "extra", CLIENT_ASSETS, SHARED_ASSETS);
+        writeLibrary("net.minecraft", "client", MC_VERSION + "-" + NEOFORM_VERSION, "extra", CLIENT_ASSETS, SHARED_ASSETS, MINECRAFT_VERSION_JSON);
         writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "client", PATCHED_CLIENT);
         writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "universal", NEOFORGE_UNIVERSAL_JAR_CONTENT);
     }
@@ -190,7 +200,7 @@ public class SimulatedInstallation implements AutoCloseable {
     public void setupProductionServer() throws IOException {
         System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
 
-        writeLibrary("net.neoforged", "minecraft-server-patched", NEOFORGE_VERSION, PATCHED_SHARED, SHARED_ASSETS, MINECRAFT_MODS_TOML);
+        writeLibrary("net.neoforged", "minecraft-server-patched", NEOFORGE_VERSION, PATCHED_SHARED, SHARED_ASSETS, MINECRAFT_MODS_TOML, MINECRAFT_VERSION_JSON);
         writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "universal", NEOFORGE_UNIVERSAL_JAR_CONTENT);
     }
 
@@ -254,7 +264,7 @@ public class SimulatedInstallation implements AutoCloseable {
 
         var minecraftJar = projectRoot.resolve("minecraft-patched-client-" + NEOFORGE_VERSION + ".jar");
         additionalClasspath.add(minecraftJar);
-        writeJarFile(minecraftJar, PATCHED_CLIENT, PATCHED_SHARED, CLIENT_ASSETS, SHARED_ASSETS, MINECRAFT_MODS_TOML, RESOURCES_MANIFEST);
+        writeJarFile(minecraftJar, PATCHED_CLIENT, PATCHED_SHARED, CLIENT_ASSETS, SHARED_ASSETS, MINECRAFT_MODS_TOML, RESOURCES_MANIFEST, MINECRAFT_VERSION_JSON);
 
         return additionalClasspath;
     }
@@ -299,7 +309,7 @@ public class SimulatedInstallation implements AutoCloseable {
     private static byte[] writeNeoForgeModsToml() {
         return """
                 license = "LICENSE"
-
+                
                 [[mods]]
                 modId="neoforge"
                 """.getBytes();
@@ -309,7 +319,7 @@ public class SimulatedInstallation implements AutoCloseable {
         return """
                 loader = "minecraft"
                 license = "See Minecraft EULA"
-
+                
                 [[mods]]
                 modId="minecraft"
                 """.getBytes();
@@ -333,7 +343,7 @@ public class SimulatedInstallation implements AutoCloseable {
                 modLoader = "javafml"
                 loaderVersion = "[3,]"
                 license = "LICENSE"
-
+                
                 [[mods]]
                 modId="%s"
                 version="%s"
@@ -346,11 +356,11 @@ public class SimulatedInstallation implements AutoCloseable {
                 modLoader = "javafml"
                 loaderVersion = "[3,]"
                 license = "LICENSE"
-
+                
                 [[mods]]
                 modId="%s"
                 version="%s"
-
+                
                 [[mods]]
                 modId="%s"
                 version="%s"

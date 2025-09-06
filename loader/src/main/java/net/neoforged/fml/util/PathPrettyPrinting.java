@@ -18,8 +18,7 @@ public final class PathPrettyPrinting {
 
     private static volatile List<PathSubstitution> SUBSTITUTIONS = new ArrayList<>();
 
-    private PathPrettyPrinting() {
-    }
+    private PathPrettyPrinting() {}
 
     public static void addRoot(Path root) {
         addSubstitution(root, "", "");
@@ -48,7 +47,7 @@ public final class PathPrettyPrinting {
             if (Files.isDirectory(path)) {
                 resultPath = path.toAbsolutePath().toString();
             } else {
-                resultPath = path.getFileName().toString();
+                resultPath = path.toString();
             }
         }
 

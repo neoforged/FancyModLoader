@@ -1,8 +1,5 @@
 package net.neoforged.fml.classloading;
 
-import net.neoforged.fml.util.ClasspathResourceUtils;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -10,6 +7,8 @@ import java.util.Enumeration;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import net.neoforged.fml.util.ClasspathResourceUtils;
+import org.jetbrains.annotations.Nullable;
 
 public class ResourceMaskingClassLoader extends ClassLoader {
     static {

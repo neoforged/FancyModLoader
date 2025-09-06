@@ -7,7 +7,6 @@ package net.neoforged.fml.loading.mixin;
 
 import com.google.common.io.Resources;
 import cpw.mods.modlauncher.TransformingClassLoader;
-
 import java.io.IOException;
 import java.net.URL;
 import net.neoforged.fml.ModLoader;

@@ -7,12 +7,10 @@ package net.neoforged.fml.loading;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 import cpw.mods.jarhandling.JarResource;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.TransformingClassLoader;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
@@ -29,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
-
 import net.bytebuddy.agent.ByteBuddyAgent;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.BusBuilder;
@@ -37,6 +34,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.IBindingsProvider;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoader;
+import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.i18n.FMLTranslations;
@@ -167,6 +165,8 @@ public abstract class LauncherTest {
         LaunchResult result;
         try {
             result = launch(launchTarget, List.of());
+        } catch (ModLoadingException e) {
+            throw e;
         } catch (Exception e) {
             throw new LaunchException(e);
         }
@@ -191,11 +191,13 @@ public abstract class LauncherTest {
 
         public static LaunchMode fromLaunchTarget(String launchTarget) {
             return switch (launchTarget) {
-              case "neoforgeclient" -> PROD_CLIENT;
-              case "neoforgeserver" -> PROD_SERVER;
-              case "neoforgeclientdev" -> DEV_CLIENT;
-              case "neoforgeserverdev" -> DEV_SERVER;
-              default -> throw new IllegalArgumentException("Unsupported launch target: " + launchTarget);
+                case "neoforgeclient" -> PROD_CLIENT;
+                case "neoforgeserver" -> PROD_SERVER;
+                case "neoforgeclientdev" -> DEV_CLIENT;
+                case "neoforgeserverdev" -> DEV_SERVER;
+                case "neoforgeclientdatadev" -> DEV_CLIENT_DATA;
+                case "neoforgeserverdatadev" -> DEV_SERVER_DATA;
+                default -> throw new IllegalArgumentException("Unsupported launch target: " + launchTarget);
             };
         }
     }
@@ -249,13 +251,11 @@ public abstract class LauncherTest {
                 discoveryResult.pluginContent().stream().collect(
                         Collectors.toMap(
                                 ModFile::getId,
-                                ModFile::getSecureJar)
-                ),
+                                ModFile::getSecureJar)),
                 discoveryResult.gameContent().stream().collect(
                         Collectors.toMap(
                                 ModFile::getId,
-                                ModFile::getSecureJar)
-                ),
+                                ModFile::getSecureJar)),
                 loadingModList.getModLoadingIssues(),
                 loadedMods.stream().collect(Collectors.toMap(
                         o -> o.getMods().getFirst().getModId(),
@@ -293,7 +293,6 @@ public abstract class LauncherTest {
 
         return text;
     }
-
 
     protected final <T> T withGameClassloader(Callable<T> r) throws Exception {
         var previous = Thread.currentThread().getContextClassLoader();
@@ -360,6 +359,7 @@ public abstract class LauncherTest {
 
     public void assertMinecraftClientJar(LaunchResult launchResult, boolean production) throws IOException {
         var expectedContent = new ArrayList<IdentifiableContent>();
+        expectedContent.add(SimulatedInstallation.MINECRAFT_VERSION_JSON);
         expectedContent.add(SimulatedInstallation.SHARED_ASSETS);
         expectedContent.add(SimulatedInstallation.CLIENT_ASSETS);
         expectedContent.add(SimulatedInstallation.MINECRAFT_MODS_TOML);

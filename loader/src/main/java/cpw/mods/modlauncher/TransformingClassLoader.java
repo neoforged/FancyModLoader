@@ -15,12 +15,10 @@
 package cpw.mods.modlauncher;
 
 import cpw.mods.cl.ModuleClassLoader;
-import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformerActivity;
-import org.jetbrains.annotations.VisibleForTesting;
-
 import java.lang.module.Configuration;
 import java.util.List;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * Module transforming class loader

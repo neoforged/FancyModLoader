@@ -18,7 +18,6 @@ import static cpw.mods.modlauncher.LogMarkers.LAUNCHPLUGIN;
 import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 
 import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import cpw.mods.modlauncher.util.ServiceLoaderUtils;
@@ -28,7 +27,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;

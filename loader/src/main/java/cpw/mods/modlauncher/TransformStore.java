@@ -14,13 +14,13 @@
 
 package cpw.mods.modlauncher;
 
+import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
+
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.TargetType;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +32,6 @@ import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
-
-import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 
 /**
  * Transformer store - holds all the transformers

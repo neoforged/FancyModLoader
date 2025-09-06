@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.neoforged.fml.ModLoadingException;
-import net.neoforged.fml.loading.mixin.FMLMixinLaunchPlugin;
 import net.neoforged.fml.loading.mixin.MixinFacade;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

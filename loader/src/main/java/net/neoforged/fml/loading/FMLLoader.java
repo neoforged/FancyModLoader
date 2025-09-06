@@ -16,7 +16,9 @@ import cpw.mods.jarhandling.impl.FolderJarContents;
 import cpw.mods.jarhandling.impl.JarFileContents;
 import cpw.mods.modlauncher.ClassTransformer;
 import cpw.mods.modlauncher.LaunchPluginHandler;
-
+import cpw.mods.modlauncher.TransformingClassLoader;
+import cpw.mods.modlauncher.api.NamedPath;
+import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -31,7 +33,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -48,11 +49,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import cpw.mods.modlauncher.TransformStore;
-import cpw.mods.modlauncher.TransformingClassLoader;
-import cpw.mods.modlauncher.api.NamedPath;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.FMLVersion;
@@ -65,11 +61,11 @@ import net.neoforged.fml.common.asm.AccessTransformerService;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
 import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.fml.jfr.ClassTransformerProfiler;
-import net.neoforged.fml.loading.mixin.FMLMixinLaunchPlugin;
 import net.neoforged.fml.loading.mixin.FMLMixinService;
 import net.neoforged.fml.loading.mixin.MixinFacade;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
+import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.locators.GameLocator;
 import net.neoforged.fml.loading.moddiscovery.locators.InDevFolderLocator;
 import net.neoforged.fml.loading.moddiscovery.locators.InDevJarLocator;
@@ -85,7 +81,6 @@ import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
-import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
@@ -126,11 +121,11 @@ public final class FMLLoader implements AutoCloseable {
     private final Set<Path> locatedPaths = new HashSet<>();
     private final List<File> unclaimedClassPathEntries = new ArrayList<>();
 
-    private  VersionInfo versionInfo;
-    public  BackgroundScanHandler backgroundScanHandler;
-    private  boolean production;
+    private VersionInfo versionInfo;
+    public BackgroundScanHandler backgroundScanHandler;
+    private boolean production;
     @Nullable
-    private  ModuleLayer gameLayer;
+    private ModuleLayer gameLayer;
     @VisibleForTesting
     DiscoveryResult discoveryResult;
     private ClassTransformer classTransformer;
@@ -213,6 +208,8 @@ public final class FMLLoader implements AutoCloseable {
         // If a client class is available, then it's client, otherwise DEDICATED_SERVER
         // The auto-detection never detects JOINED since it's impossible to do so
         var initialLoader = Objects.requireNonNullElse(startupArgs.parentClassLoader(), ClassLoader.getSystemClassLoader());
+
+        PathPrettyPrinting.addRoot(startupArgs.gameDirectory());
 
         var loader = new FMLLoader(
                 initialLoader,
@@ -331,7 +328,7 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     private TransformingClassLoader buildTransformingLoader(ClassTransformer classTransformer,
-                                                            List<SecureJar> content) {
+            List<SecureJar> content) {
         maskContentAlreadyOnClasspath(content);
 
         long start = System.currentTimeMillis();
@@ -410,8 +407,7 @@ public final class FMLLoader implements AutoCloseable {
                     result.addAll(getBasePaths(delegate, ignoreFilter));
                 }
             }
-            case EmptyJarContents ignored -> {
-            }
+            case EmptyJarContents ignored -> {}
             case FolderJarContents folderModContainer -> result.add(folderModContainer.getPrimaryPath());
             case JarFileContents jarModContainer -> result.add(jarModContainer.getPrimaryPath());
             default -> throw new IllegalStateException("Don't know how to handle " + contents);
@@ -509,8 +505,8 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     private static <T extends ILaunchPluginService> T addLaunchPlugin(ILaunchContext launchContext,
-                                                                      Map<String, ILaunchPluginService> services,
-                                                                      T service) {
+            Map<String, ILaunchPluginService> services,
+            T service) {
         LOGGER.debug("Adding launch plugin {}", service.name());
         var previous = services.put(service.name(), service);
         if (previous != null) {
@@ -585,27 +581,14 @@ public final class FMLLoader implements AutoCloseable {
 
         progress.complete();
 
-        var gameContent = new ArrayList<ModFile>(discoveryResult.modFiles().size());
-        var gameLibraryContent = new ArrayList<ModFile>(discoveryResult.modFiles().size());
-        var pluginContent = new ArrayList<ModFile>(discoveryResult.modFiles().size());
-        for (var modFile : discoveryResult.modFiles()) {
-            if (modFile.getType() == IModFile.Type.LIBRARY) {
-                pluginContent.add(modFile);
-            } else if (modFile.getType() == IModFile.Type.GAMELIBRARY) {
-                gameLibraryContent.add(modFile);
-            } else {
-                gameContent.add(modFile);
-            }
-        }
-
-        loadingModList = ModSorter.sort(pluginContent, gameLibraryContent, gameContent, issues);
+        loadingModList = ModSorter.sort(discoveryResult.modFiles(), issues);
 
         backgroundScanHandler = new BackgroundScanHandler();
         backgroundScanHandler.setLoadingModList(loadingModList);
 
         Map<IModInfo, JarResource> enumExtensionsByMod = new HashMap<>();
         for (var modFile : modFiles) {
-            if (!modFile.identifyMods()) {
+            if (!loadingModList.contains(modFile) || !modFile.identifyMods()) {
                 continue;
             }
 
@@ -631,9 +614,9 @@ public final class FMLLoader implements AutoCloseable {
         RuntimeEnumExtender.loadEnumPrototypes(enumExtensionsByMod);
 
         return this.discoveryResult = new DiscoveryResult(
-                pluginContent,
-                gameContent,
-                gameLibraryContent,
+                loadingModList.getPlugins().stream().map(mfi -> (ModFile) mfi.getFile()).toList(),
+                loadingModList.getModFiles().stream().map(ModFileInfo::getFile).toList(),
+                loadingModList.getGameLibraries().stream().map(mf -> (ModFile) mf).toList(),
                 issues);
     }
 

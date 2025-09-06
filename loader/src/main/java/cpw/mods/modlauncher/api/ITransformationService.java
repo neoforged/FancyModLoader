@@ -14,12 +14,7 @@
 
 package cpw.mods.modlauncher.api;
 
-import cpw.mods.jarhandling.SecureJar;
 import java.util.List;
-import java.util.Set;
-import java.util.function.BiFunction;
-import joptsimple.OptionSpec;
-import joptsimple.OptionSpecBuilder;
 
 /**
  * Users who wish to provide a mod service which plugs into this API

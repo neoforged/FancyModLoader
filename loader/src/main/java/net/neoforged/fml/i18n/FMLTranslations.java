@@ -20,8 +20,8 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import net.neoforged.fml.Logging;
 import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.StringUtils;
+import net.neoforged.fml.util.PathPrettyPrinting;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.ForgeFeature;
 import org.apache.commons.lang3.text.ExtendedMessageFormat;
@@ -160,12 +160,7 @@ public class FMLTranslations {
 
     private static Object formatArg(Object arg) {
         if (arg instanceof Path path) {
-            var gameDir = FMLLoader.getGamePath();
-            if (gameDir != null && path.startsWith(gameDir)) {
-                return gameDir.relativize(path).toString();
-            } else {
-                return path.toString();
-            }
+            return PathPrettyPrinting.prettyPrint(path);
         } else {
             return arg;
         }

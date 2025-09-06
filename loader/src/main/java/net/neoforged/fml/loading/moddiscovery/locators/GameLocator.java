@@ -7,13 +7,18 @@ package net.neoforged.fml.loading.moddiscovery.locators;
 
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.SecureJar;
-import net.neoforged.api.distmarker.Dist;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.jar.Manifest;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LibraryFinder;
 import net.neoforged.fml.loading.MavenCoordinate;
-import net.neoforged.fml.loading.VersionInfo;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.util.ClasspathResourceUtils;
@@ -25,15 +30,6 @@ import net.neoforged.neoforgespi.locating.IncompatibleFileReporting;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.jar.Manifest;
 
 public class GameLocator implements IModFileCandidateLocator {
     public static final String CLIENT_CLASS = "net/minecraft/client/Minecraft.class";
@@ -153,44 +149,51 @@ public class GameLocator implements IModFileCandidateLocator {
         }
 
         // Detect if the newer Minecraft installation method is available. If not, we assume the old method.
-        var patchedMinecraftPath = (switch (context.getRequiredDistribution()) {
+        var patchedMinecraftPath = librariesRoot.resolve((switch (context.getRequiredDistribution()) {
             case CLIENT -> new MavenCoordinate("net.neoforged", "minecraft-client-patched", "", "", versions.neoForgeVersion());
             case DEDICATED_SERVER -> new MavenCoordinate("net.neoforged", "minecraft-server-patched", "", "", versions.neoForgeVersion());
-        }).toRelativeRepositoryPath();
-        var neoforgeCoordinate = new MavenCoordinate("net.neoforged", "neoforge", "", "universal", versions.neoForgeVersion());
+        }).toRelativeRepositoryPath());
 
         if (Files.isRegularFile(patchedMinecraftPath)) {
             if (pipeline.addPath(patchedMinecraftPath, ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.IGNORE).isEmpty()) {
                 throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.corrupted_minecraft_jar").withAffectedPath(patchedMinecraftPath));
             }
-            return;
+        } else {
+            var content = new ArrayList<Path>();
+            switch (context.getRequiredDistribution()) {
+                case CLIENT -> {
+                    addRequiredLibrary(new MavenCoordinate("net.minecraft", "client", "", "srg", versions.mcAndNeoFormVersion()), content);
+                    addRequiredLibrary(new MavenCoordinate("net.minecraft", "client", "", "extra", versions.mcAndNeoFormVersion()), content);
+                    addRequiredLibrary(new MavenCoordinate("net.neoforged", "neoforge", "", "client", versions.neoForgeVersion()), content);
+                }
+                case DEDICATED_SERVER -> {
+                    addRequiredLibrary(new MavenCoordinate("net.minecraft", "server", "", "srg", versions.mcAndNeoFormVersion()), content);
+                    addRequiredLibrary(new MavenCoordinate("net.minecraft", "server", "", "extra", versions.mcAndNeoFormVersion()), content);
+                    addRequiredLibrary(new MavenCoordinate("net.neoforged", "neoforge", "", "server", versions.neoForgeVersion()), content);
+                }
+            }
+
+            try {
+                var mcJarContents = JarContents.ofPaths(content);
+
+                var mcJarMetadata = new ModJarMetadata(mcJarContents);
+                var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);
+                var mcjar = IModFile.create(mcSecureJar, new MinecraftModInfo(minecraftVersion)::buildMinecraftModInfo);
+                mcJarMetadata.setModFile(mcjar);
+
+                pipeline.addModFile(mcjar);
+            } catch (Exception e) {
+                pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation").withCause(e));
+            }
         }
 
-        var content = new ArrayList<Path>();
-        switch (context.getRequiredDistribution()) {
-            case CLIENT -> {
-                addRequiredLibrary(new MavenCoordinate("net.minecraft", "client", "", "srg", versions.mcAndNeoFormVersion()), content);
-                addRequiredLibrary(new MavenCoordinate("net.minecraft", "client", "", "extra", versions.mcAndNeoFormVersion()), content);
-                addRequiredLibrary(new MavenCoordinate("net.neoforged", "neoforge", "", "client", versions.neoForgeVersion()), content);
-            }
-            case DEDICATED_SERVER -> {
-                addRequiredLibrary(new MavenCoordinate("net.minecraft", "server", "", "srg", versions.mcAndNeoFormVersion()), content);
-                addRequiredLibrary(new MavenCoordinate("net.minecraft", "server", "", "extra", versions.mcAndNeoFormVersion()), content);
-                addRequiredLibrary(new MavenCoordinate("net.neoforged", "neoforge", "", "server", versions.neoForgeVersion()), content);
-            }
+        var neoforgeCoordinate = new MavenCoordinate("net.neoforged", "neoforge", "", "universal", versions.neoForgeVersion());
+        var neoforgeJar = librariesRoot.resolve(neoforgeCoordinate.toRelativeRepositoryPath());
+        if (!Files.exists(neoforgeJar)) {
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.missing_neoforge_jar").withAffectedPath(neoforgeJar));
         }
-
-        try {
-            var mcJarContents = JarContents.ofPaths(content);
-
-            var mcJarMetadata = new ModJarMetadata(mcJarContents);
-            var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);
-            var mcjar = IModFile.create(mcSecureJar, MinecraftModInfo::buildMinecraftModInfo);
-            mcJarMetadata.setModFile(mcjar);
-
-            pipeline.addModFile(mcjar);
-        } catch (Exception e) {
-            pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation").withCause(e));
+        if (pipeline.addPath(neoforgeJar, ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.IGNORE).isEmpty()) {
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.corrupted_neoforge_jar").withAffectedPath(neoforgeJar));
         }
     }
 
@@ -249,7 +252,7 @@ public class GameLocator implements IModFileCandidateLocator {
 
         var mcJarMetadata = new ModJarMetadata(mcJarContents);
         var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);
-        var minecraftModFile = IModFile.create(mcSecureJar, MinecraftModInfo::buildMinecraftModInfo);
+        var minecraftModFile = IModFile.create(mcSecureJar, new MinecraftModInfo(null)::buildMinecraftModInfo);
         mcJarMetadata.setModFile(minecraftModFile);
         pipeline.addModFile(minecraftModFile);
 
@@ -270,7 +273,7 @@ public class GameLocator implements IModFileCandidateLocator {
         }
         JarContents neoforgeJarContents;
         try {
-            neoforgeJarContents = JarContents.ofFilteredPaths(mcJarPaths);
+            neoforgeJarContents = JarContents.ofFilteredPaths(neoforgeJarPaths);
         } catch (IOException e) {
             pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation").withCause(e));
             return;
