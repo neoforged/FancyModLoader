@@ -66,12 +66,25 @@ dependencies {
     }
 }
 
-final generatedVersionDir = layout.buildDirectory.dir('generated/version')
 final generateVersionTask = tasks.register("generateVersion", fmlbuild.GenerateVersionClass) {
     output = layout.buildDirectory.file('generated/version')
     className = "net.neoforged.fml.FMLVersionProperties"
 }
 sourceSets.main.java.srcDir generateVersionTask
+
+license {
+    exclude 'net/neoforged/fml/FMLVersionProperties.java'
+}
+immaculate {
+    workflows.named("java").configure {
+        var sourceDirs = files()
+        sourceSets.configureEach { sourceDirs.from(it.getAllSource()) }
+        var buildDir = layout.buildDirectory.asFile
+        getFiles().setFrom(sourceDirs.filter {
+            !it.toPath().startsWith(buildDir.get().toPath()) && it.getName().endsWith(".java")
+        } )
+    }
+}
 
 configurations.jmhImplementation.extendsFrom(configurations.implementation)
 
