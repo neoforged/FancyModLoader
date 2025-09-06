@@ -320,6 +320,7 @@ class FMLLoaderTest extends LauncherTest {
                     .build();
 
             var result = launchAndLoad("neoforgeclient");
+            assertThat(result.gameLayerModules()).containsKey("testlib");
 
             var loadedMod = result.gameLayerModules().get("testlib");
             assertNotNull(loadedMod);

@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fml.util;
 
 import java.nio.file.Files;
@@ -37,7 +42,8 @@ public final class PathPrettyPrinting {
         var currentSubstitutions = SUBSTITUTIONS;
         for (var substitution : currentSubstitutions) {
             if (path.startsWith(substitution.basePath)) {
-                resultPath = substitution.basePath.relativize(path).toString();
+                resultPath = substitution.prefix + substitution.basePath.relativize(path)
+                        + substitution.suffix;
                 break;
             }
         }

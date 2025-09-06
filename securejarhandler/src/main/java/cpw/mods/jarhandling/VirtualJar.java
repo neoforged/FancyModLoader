@@ -23,8 +23,8 @@ public final class VirtualJar implements SecureJar {
     /**
      * Creates a new virtual jar.
      *
-     * @param name          the name of the virtual jar; will be used as the module name
-     * @param packages      the list of packages in this virtual jar
+     * @param name     the name of the virtual jar; will be used as the module name
+     * @param packages the list of packages in this virtual jar
      */
     public VirtualJar(String name, String... packages) {
         this.contents = JarContents.empty(Path.of("VirtualJar/" + name));

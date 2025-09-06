@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.jar.Manifest;
-
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
@@ -24,6 +23,7 @@ import net.neoforged.fml.loading.MavenCoordinate;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.util.ClasspathResourceUtils;
+import net.neoforged.fml.util.PathPrettyPrinting;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
 import net.neoforged.neoforgespi.locating.IModFile;
@@ -128,6 +128,8 @@ public class GameLocator implements IModFileCandidateLocator {
             pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation"));
             return;
         }
+
+        PathPrettyPrinting.addSubstitution(librariesRoot, "~libraries/", "");
 
         // The versions for Minecraft and NeoForge, etc. must be given on the CLI
         var versions = context.getVersions();
@@ -247,10 +249,19 @@ public class GameLocator implements IModFileCandidateLocator {
             return;
         }
 
-        // Figure out resources we have to filter out (i.e. if running a dedicated server)
-        maskedPaths.addAll(NeoForgeDevDistCleaner.getMaskedFiles(mcJarContents, requiredDistribution)
-                .filter(path -> !path.endsWith(".class"))
-                .toList());
+        try {
+            // Figure out resources we have to filter out (i.e. if running a dedicated server)
+            maskedPaths.addAll(NeoForgeDevDistCleaner.getMaskedFiles(mcJarContents, requiredDistribution)
+                    .filter(path -> !path.endsWith(".class"))
+                    .toList());
+        } catch (Exception e) {
+            try {
+                mcJarContents.close();
+            } catch (IOException ex) {
+                e.addSuppressed(ex);
+            }
+            throw e;
+        }
 
         var mcJarMetadata = new ModJarMetadata(mcJarContents);
         var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);

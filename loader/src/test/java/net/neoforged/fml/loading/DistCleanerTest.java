@@ -87,8 +87,7 @@ class DistCleanerTest extends LauncherTest {
                 loadsMaskedClassContent,
                 SimulatedInstallation.CLIENT_ASSETS,
                 SimulatedInstallation.SHARED_ASSETS,
-                SimulatedInstallation.MINECRAFT_VERSION_JSON
-                );
+                SimulatedInstallation.MINECRAFT_VERSION_JSON);
 
         var result = launchAndLoadWithAdditionalClasspath("neoforgeserverdev", classpath);
         assertThat(result.issues()).isEmpty();

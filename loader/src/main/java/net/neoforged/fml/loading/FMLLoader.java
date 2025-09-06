@@ -19,7 +19,6 @@ import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +29,6 @@ import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
@@ -138,8 +136,7 @@ public final class FMLLoader implements AutoCloseable {
             List<ModFile> pluginContent,
             List<ModFile> gameContent,
             List<ModFile> gameLibraryContent,
-            List<ModLoadingIssue> discoveryIssues
-    ) {}
+            List<ModLoadingIssue> discoveryIssues) {}
 
     private FMLLoader(ClassLoader currentClassLoader, String[] programArgs, Dist dist, boolean production, Path gameDir, Path cacheDir) {
         this.currentClassLoader = currentClassLoader;
@@ -301,6 +298,9 @@ public final class FMLLoader implements AutoCloseable {
             // BUILD GAME LAYER
             // NOTE: This is where Mixin contributes its synthetic SecureJar to ensure it's generated classes are handled by the TCL
             var gameContent = new ArrayList<SecureJar>();
+            for (var modFile : discoveryResult.gameLibraryContent) {
+                gameContent.add(modFile.getSecureJar());
+            }
             for (var modFile : discoveryResult.gameContent) {
                 gameContent.add(modFile.getSecureJar());
             }
@@ -340,7 +340,6 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     private static ILaunchPluginService createAccessTransformerService(DiscoveryResult discoveryResult) {
-
         var engine = AccessTransformerEngine.newEngine();
         for (var modFile : discoveryResult.gameContent()) {
             for (var atPath : modFile.getAccessTransformers()) {
@@ -358,7 +357,6 @@ public final class FMLLoader implements AutoCloseable {
             }
         }
         return new AccessTransformerService(engine);
-
     }
 
     private TransformingClassLoader buildTransformingLoader(ClassTransformer classTransformer,
@@ -457,7 +455,7 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     private static String getNiceModuleLocation(ModuleReference moduleRef) {
-        return moduleRef.location().map(URI::getPath).orElse("-");
+        return moduleRef.location().map(Path::of).map(PathPrettyPrinting::prettyPrint).orElse("-");
     }
 
     private static Dist detectDist(ClassLoader classLoader) {

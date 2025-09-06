@@ -18,11 +18,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.spongepowered.asm.mixin.Mixins;
 import org.spongepowered.asm.mixin.transformer.Config;
+import org.spongepowered.asm.service.ServiceNotAvailableError;
 
 public class MixinConfigTest extends LauncherTest {
     @BeforeEach
     void cleanUpMixins() throws Exception {
-        Mixins.getConfigs().clear();
+        // What a mess. If we never successfully initialized Mixin
+        // we cannot even load the class, since it'd try to initialize a default service.
+        // See MixinFacade for details
+        if (System.getProperty("mixin.service") == null) {
+            return;
+        }
+
+        try {
+            Mixins.getConfigs().clear();
+        } catch (ServiceNotAvailableError ignored) {}
 
         Field field = Config.class.getDeclaredField("allConfigs");
         field.setAccessible(true);

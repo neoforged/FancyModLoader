@@ -1,12 +1,19 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fml.classloading;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.net.JarURLConnection;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 import net.neoforged.fml.testlib.SimulatedInstallation;
 import org.junit.jupiter.api.AfterEach;
@@ -54,6 +61,14 @@ class ResourceMaskingClassLoaderTest {
     void tearDown() throws Exception {
         if (simulatedAppClassLoader != null) {
             simulatedAppClassLoader.close();
+        }
+        // Clear JarUrlConnection cache
+        // Annoyingly, any use of a Jar file via jar: URIs tends to create stale cache entries
+        // in sun.net.www.protocol.jar.JarFileFactory.fileCache
+        // However, we can get such a cached connection and close it explicitly, which then cleans it up from the cache
+        for (var jarPath : List.of(maskedJar, unmaskedJar)) {
+            URL url = new URL("jar:" + jarPath.toUri() + "!/");
+            ((JarURLConnection) url.openConnection()).getJarFile().close();
         }
         if (installation != null) {
             installation.close();

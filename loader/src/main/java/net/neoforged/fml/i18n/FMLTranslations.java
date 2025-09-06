@@ -24,6 +24,7 @@ import net.neoforged.fml.loading.StringUtils;
 import net.neoforged.fml.util.PathPrettyPrinting;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.ForgeFeature;
+import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.commons.lang3.text.ExtendedMessageFormat;
 import org.apache.commons.lang3.text.FormatFactory;
 import org.apache.logging.log4j.LogManager;
@@ -159,7 +160,9 @@ public class FMLTranslations {
     }
 
     private static Object formatArg(Object arg) {
-        if (arg instanceof Path path) {
+        if (arg instanceof IModFile modFile) {
+            return PathPrettyPrinting.prettyPrint(modFile.getFilePath());
+        } else if (arg instanceof Path path) {
             return PathPrettyPrinting.prettyPrint(path);
         } else {
             return arg;

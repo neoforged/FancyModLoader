@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import net.bytebuddy.agent.ByteBuddyAgent;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.BusBuilder;
@@ -249,15 +248,24 @@ public abstract class LauncherTest {
 
         loader.getClassTransformer().getTransformers();
 
+        Map<String, SecureJar> gameLayerModules = new HashMap<>();
+        for (var module : gameClassLoader.getConfiguration().modules()) {
+            String moduleName = module.name();
+            // Find matching mod file
+            Stream.concat(
+                    discoveryResult.gameContent().stream(),
+                    discoveryResult.gameLibraryContent().stream())
+                    .filter(mf -> mf.getId().equals(moduleName))
+                    .findFirst()
+                    .ifPresent(mf -> gameLayerModules.put(mf.getId(), mf.getSecureJar()));
+        }
+
         return new LaunchResult(
                 discoveryResult.pluginContent().stream().collect(
                         Collectors.toMap(
                                 ModFile::getId,
                                 ModFile::getSecureJar)),
-                Stream.concat(discoveryResult.gameContent().stream(), discoveryResult.gameLibraryContent().stream()).collect(
-                        Collectors.toMap(
-                                ModFile::getId,
-                                ModFile::getSecureJar)),
+                gameLayerModules,
                 loadingModList.getModLoadingIssues(),
                 loadedMods.stream().collect(Collectors.toMap(
                         o -> o.getMods().getFirst().getModId(),
