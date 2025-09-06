@@ -80,6 +80,7 @@ subprojects { subProject ->
         skipExistingHeaders true
 
         include 'net/neoforged/'
+        exclude 'build/**/*'
     }
 
     artifacts {
