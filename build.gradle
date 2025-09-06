@@ -80,7 +80,7 @@ subprojects { subProject ->
         skipExistingHeaders true
 
         include 'net/neoforged/'
-        exclude 'build/**/*'
+        exclude 'net/neoforged/fml/FMLVersionProperties.java'
     }
 
     artifacts {
