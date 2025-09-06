@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.jar.Manifest;
+
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.LibraryFinder;
@@ -68,7 +70,7 @@ public class GameLocator implements IModFileCandidateLocator {
             if (Files.isRegularFile(mcClassesRoot) && Files.isRegularFile(mcResourceRoot)) {
                 context.addLocated(mcClassesRoot);
                 context.addLocated(mcResourceRoot);
-                addDevelopmentModFiles(List.of(mcClassesRoot), mcResourceRoot, pipeline);
+                addDevelopmentModFiles(List.of(mcClassesRoot), mcResourceRoot, context.getRequiredDistribution(), pipeline);
                 return;
             }
 
@@ -86,7 +88,7 @@ public class GameLocator implements IModFileCandidateLocator {
                         context.addLocated(mcClassesRoot);
                         context.addLocated(manifestRoot);
                         context.addLocated(mcResourceRoot);
-                        addDevelopmentModFiles(List.of(mcClassesRoot, manifestRoot), mcResourceRoot, pipeline);
+                        addDevelopmentModFiles(List.of(mcClassesRoot, manifestRoot), mcResourceRoot, context.getRequiredDistribution(), pipeline);
                         return;
                     }
                 }
@@ -222,26 +224,21 @@ public class GameLocator implements IModFileCandidateLocator {
         } catch (IOException ignored) {}
     }
 
-    private static boolean resolveLibraries(Path libraryDirectory, List<Path> paths, IDiscoveryPipeline pipeline, MavenCoordinate... coordinates) {
-        for (var coordinate : coordinates) {
-            var path = libraryDirectory.resolve(coordinate.toRelativeRepositoryPath());
-            if (!Files.isReadable(path)) {
-                LOG.error("Couldn't find or read required Minecraft jar: {}.", path);
-                pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation"));
-                return false;
-            }
-            paths.add(path);
-        }
-
-        return true;
-    }
-
-    private void addDevelopmentModFiles(List<Path> paths, Path minecraftResourcesRoot, IDiscoveryPipeline pipeline) {
+    private void addDevelopmentModFiles(List<Path> paths, Path minecraftResourcesRoot, Dist requiredDistribution, IDiscoveryPipeline pipeline) {
         var mcJarPaths = new ArrayList<JarContents.FilteredPath>();
         for (var path : paths) {
             mcJarPaths.add(new JarContents.FilteredPath(path, GameLocator::isNotNeoForgeSpecificClass));
         }
-        mcJarPaths.add(new JarContents.FilteredPath(minecraftResourcesRoot));
+
+        var maskedPaths = new HashSet<String>();
+        mcJarPaths.add(new JarContents.FilteredPath(minecraftResourcesRoot, relativePath -> {
+            if (maskedPaths.contains(relativePath)) {
+                LOG.debug("Masking access to {} since it's from a different Minecraft distribution.", relativePath);
+                return false;
+            }
+            return true;
+        }));
+
         JarContents mcJarContents;
         try {
             mcJarContents = JarContents.ofFilteredPaths(mcJarPaths);
@@ -249,6 +246,11 @@ public class GameLocator implements IModFileCandidateLocator {
             pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation").withCause(e));
             return;
         }
+
+        // Figure out resources we have to filter out (i.e. if running a dedicated server)
+        maskedPaths.addAll(NeoForgeDevDistCleaner.getMaskedFiles(mcJarContents, requiredDistribution)
+                .filter(path -> !path.endsWith(".class"))
+                .toList());
 
         var mcJarMetadata = new ModJarMetadata(mcJarContents);
         var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);

@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import net.bytebuddy.agent.ByteBuddyAgent;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.BusBuilder;
@@ -252,7 +254,7 @@ public abstract class LauncherTest {
                         Collectors.toMap(
                                 ModFile::getId,
                                 ModFile::getSecureJar)),
-                discoveryResult.gameContent().stream().collect(
+                Stream.concat(discoveryResult.gameContent().stream(), discoveryResult.gameLibraryContent().stream()).collect(
                         Collectors.toMap(
                                 ModFile::getId,
                                 ModFile::getSecureJar)),
@@ -348,6 +350,7 @@ public abstract class LauncherTest {
         if (production) {
             expectedContent.add(SimulatedInstallation.SHARED_ASSETS);
             expectedContent.add(SimulatedInstallation.CLIENT_ASSETS);
+            expectedContent.add(SimulatedInstallation.MINECRAFT_VERSION_JSON);
         } else {
             Collections.addAll(expectedContent, SimulatedInstallation.CLIENT_EXTRA_JAR_CONTENT);
         }

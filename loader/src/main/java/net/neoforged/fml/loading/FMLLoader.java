@@ -19,6 +19,8 @@ import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
+
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -110,11 +112,8 @@ public final class FMLLoader implements AutoCloseable {
     private final List<AutoCloseable> ownedResources = new ArrayList<>();
     private final ProgramArgs programArgs;
 
-    private AccessTransformerEngine accessTransformer;
-    @Nullable
-    private NeoForgeDevDistCleaner distCleaner;
     private LanguageProviderLoader languageProviderLoader;
-    private Dist dist;
+    private final Dist dist;
     private LoadingModList loadingModList;
     private final Path gameDir;
     private final Path cacheDir;
@@ -123,18 +122,24 @@ public final class FMLLoader implements AutoCloseable {
 
     private VersionInfo versionInfo;
     public BackgroundScanHandler backgroundScanHandler;
-    private boolean production;
+    private final boolean production;
     @Nullable
     private ModuleLayer gameLayer;
     @VisibleForTesting
     DiscoveryResult discoveryResult;
     private ClassTransformer classTransformer;
 
+    // TODO Make sure this isn't static
     @Nullable
     static volatile IBindingsProvider bindings;
 
     @VisibleForTesting
-    record DiscoveryResult(List<ModFile> pluginContent, List<ModFile> gameContent, List<ModFile> gameLibraryContent, List<ModLoadingIssue> discoveryIssues) {}
+    record DiscoveryResult(
+            List<ModFile> pluginContent,
+            List<ModFile> gameContent,
+            List<ModFile> gameLibraryContent,
+            List<ModLoadingIssue> discoveryIssues
+    ) {}
 
     private FMLLoader(ClassLoader currentClassLoader, String[] programArgs, Dist dist, boolean production, Path gameDir, Path cacheDir) {
         this.currentClassLoader = currentClassLoader;
@@ -223,8 +228,6 @@ public final class FMLLoader implements AutoCloseable {
             FMLPaths.loadAbsolutePaths(startupArgs.gameDirectory());
             FMLConfig.load();
 
-            var launchPlugins = new HashMap<String, ILaunchPluginService>();
-
             var launchContext = loader.new LaunchContextAdapter();
             for (var claimedFile : startupArgs.claimedFiles()) {
                 launchContext.addLocated(claimedFile.toPath());
@@ -233,17 +236,6 @@ public final class FMLLoader implements AutoCloseable {
             loader.loadEarlyServices();
 
             ImmediateWindowHandler.load(startupArgs.headless(), loader.programArgs);
-
-            var mixinFacade = new MixinFacade();
-
-            // Add our own launch plugins explicitly. These do need to exist before mod discovery,
-            // as mod discovery will add its results to these engines directly.
-            loader.accessTransformer = addLaunchPlugin(launchContext, launchPlugins, new AccessTransformerService()).engine;
-            addLaunchPlugin(launchContext, launchPlugins, new RuntimeEnumExtender());
-            if (startupArgs.cleanDist()) {
-                loader.distCleaner = addLaunchPlugin(launchContext, launchPlugins, new NeoForgeDevDistCleaner());
-            }
-            addLaunchPlugin(launchContext, launchPlugins, mixinFacade.getLaunchPlugin());
 
             DiscoveryResult discoveryResult;
             if (startupArgs.headless()) {
@@ -262,6 +254,26 @@ public final class FMLLoader implements AutoCloseable {
                         .setCause(issue.cause())
                         .log("{}", FMLTranslations.translateIssueEnglish(issue));
             }
+
+            var mixinFacade = new MixinFacade();
+
+            // Add our own launch plugins explicitly.
+            var launchPlugins = new HashMap<String, ILaunchPluginService>();
+            addLaunchPlugin(launchContext, launchPlugins, createAccessTransformerService(discoveryResult));
+
+            addLaunchPlugin(launchContext, launchPlugins, new RuntimeEnumExtender());
+
+            if (startupArgs.cleanDist()) {
+                var minecraftModFile = discoveryResult.gameContent().stream()
+                        .filter(mf -> mf.getId().equals("minecraft"))
+                        .findFirst()
+                        .map(ModFile::getContents)
+                        .orElse(null);
+                if (minecraftModFile != null && NeoForgeDevDistCleaner.supportsDistCleaning(minecraftModFile)) {
+                    addLaunchPlugin(launchContext, launchPlugins, new NeoForgeDevDistCleaner(minecraftModFile, startupArgs.dist()));
+                }
+            }
+            addLaunchPlugin(launchContext, launchPlugins, mixinFacade.getLaunchPlugin());
 
             // Discover third party launch plugins
             for (var launchPlugin : ServiceLoaderUtil.loadServices(
@@ -325,6 +337,28 @@ public final class FMLLoader implements AutoCloseable {
             loader.close();
             throw e;
         }
+    }
+
+    private static ILaunchPluginService createAccessTransformerService(DiscoveryResult discoveryResult) {
+
+        var engine = AccessTransformerEngine.newEngine();
+        for (var modFile : discoveryResult.gameContent()) {
+            for (var atPath : modFile.getAccessTransformers()) {
+                LOGGER.debug(LogMarkers.SCAN, "Adding Access Transformer {} in {}", atPath, modFile);
+                try (var in = modFile.getContents().openFile(atPath)) {
+                    if (in == null) {
+                        LOGGER.error(LogMarkers.LOADING, "Access transformer file {} provided by {} does not exist!", atPath, modFile);
+                    } else {
+                        engine.loadAT(new InputStreamReader(new BufferedInputStream(in)), atPath);
+                    }
+                } catch (IOException e) {
+                    // TODO: Convert to translated issue?
+                    throw new RuntimeException("Failed to load AT at " + atPath + " from " + modFile, e);
+                }
+            }
+        }
+        return new AccessTransformerService(engine);
+
     }
 
     private TransformingClassLoader buildTransformingLoader(ClassTransformer classTransformer,
@@ -553,7 +587,6 @@ public final class FMLLoader implements AutoCloseable {
         // TODO ImmediateWindowHandler.updateProgress("Found " + candidateMods.size() + " mod candidates");
 
         // Now we should have a mod for "minecraft" and "neoforge" allowing us to fill in the versions
-        List<ModFile> fallbackModFiles = new ArrayList<>();
         var neoForgeVersion = versionInfo.neoForgeVersion();
         var minecraftVersion = versionInfo.mcVersion();
         for (var modFile : discoveryResult.modFiles()) {
@@ -562,15 +595,9 @@ public final class FMLLoader implements AutoCloseable {
                 continue;
             }
             var mainMod = mods.getFirst();
-            switch (mainMod.getModId()) {
-                case "minecraft" -> {
-                    minecraftVersion = mainMod.getVersion().toString();
-                    fallbackModFiles.add(modFile);
-                }
-                case "neoforge" -> {
-                    neoForgeVersion = mainMod.getVersion().toString();
-                    fallbackModFiles.add(modFile);
-                }
+            switch (modFile.getId()) {
+                case "minecraft" -> minecraftVersion = mainMod.getVersion().toString();
+                case "neoforge" -> neoForgeVersion = mainMod.getVersion().toString();
             }
         }
         versionInfo = new VersionInfo(
@@ -588,14 +615,6 @@ public final class FMLLoader implements AutoCloseable {
 
         Map<IModInfo, JarResource> enumExtensionsByMod = new HashMap<>();
         for (var modFile : modFiles) {
-            if (!loadingModList.contains(modFile) || !modFile.identifyMods()) {
-                continue;
-            }
-
-            for (var accessTransformer : modFile.getAccessTransformers()) {
-                addAccessTransformer(modFile, accessTransformer);
-            }
-
             var mods = modFile.getModInfos();
 
             for (var mod : mods) {
@@ -652,19 +671,6 @@ public final class FMLLoader implements AutoCloseable {
         return current().languageProviderLoader;
     }
 
-    private void addAccessTransformer(ModFile modFile, String atPath) {
-        LOGGER.debug(LogMarkers.SCAN, "Adding Access Transformer in {}", modFile.getFilePath());
-        try (var in = modFile.getContents().openFile(atPath)) {
-            if (in == null) {
-                LOGGER.error(LogMarkers.LOADING, "Access transformer file {} provided by {} does not exist!", atPath, modFile);
-                return;
-            }
-            accessTransformer.loadAT(new InputStreamReader(in), atPath);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load AT at " + atPath + " from " + modFile, e);
-        }
-    }
-
     public static FMLLoader current() {
         var current = currentOrNull();
         if (current == null) {
@@ -700,11 +706,6 @@ public final class FMLLoader implements AutoCloseable {
             throw new IllegalStateException("This can only be called after mod discovery is completed");
         }
         return gameLayer;
-    }
-
-    @ApiStatus.Internal
-    public @Nullable NeoForgeDevDistCleaner getDistCleaner() {
-        return distCleaner;
     }
 
     public static VersionInfo versionInfo() {

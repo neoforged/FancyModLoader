@@ -37,7 +37,7 @@ class DistCleanerTest extends LauncherTest {
                 .isExactlyInstanceOf(ModLoadingException.class)
                 .hasMessage("""
                         Loading errors encountered:
-                        \t- NeoForge dev environment client-extra jar does not have a Minecraft-Dists attribute in its manifest; this may be because you have an out-of-date gradle plugin
+                        \t- NeoForge dev environment Minecraft jar does not have a Minecraft-Dists attribute in its manifest; this may be because you have an out-of-date gradle plugin
                         """);
     }
 
@@ -86,7 +86,9 @@ class DistCleanerTest extends LauncherTest {
                 maskedClassContent,
                 loadsMaskedClassContent,
                 SimulatedInstallation.CLIENT_ASSETS,
-                SimulatedInstallation.SHARED_ASSETS);
+                SimulatedInstallation.SHARED_ASSETS,
+                SimulatedInstallation.MINECRAFT_VERSION_JSON
+                );
 
         var result = launchAndLoadWithAdditionalClasspath("neoforgeserverdev", classpath);
         assertThat(result.issues()).isEmpty();
@@ -96,7 +98,8 @@ class DistCleanerTest extends LauncherTest {
                 maskedClassContent,
                 loadsMaskedClassContent,
                 SimulatedInstallation.CLIENT_ASSETS,
-                SimulatedInstallation.SHARED_ASSETS));
+                SimulatedInstallation.SHARED_ASSETS,
+                SimulatedInstallation.MINECRAFT_VERSION_JSON));
         content.addAll(List.of(SimulatedInstallation.USERDEV_CLIENT_JAR_CONTENT));
         assertModContent(result, "minecraft", content);
         assertThatThrownBy(() -> Class.forName("test.Masked", true, gameClassLoader))

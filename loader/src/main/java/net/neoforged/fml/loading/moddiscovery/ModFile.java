@@ -51,10 +51,10 @@ public class ModFile implements IModFile {
     private final SecureJar jar;
     private final Type modFileType;
     private final IModFileInfo modFileInfo;
+    private final List<ModFileParser.MixinConfig> mixinConfigs;
+    private final List<String> accessTransformers;
     @Nullable
     private CompletableFuture<ModFileScanData> futureScanResult;
-    private List<ModFileParser.MixinConfig> mixinConfigs;
-    private List<String> accessTransformers;
 
     public static final Attributes.Name TYPE = new Attributes.Name("FMLModType");
 
@@ -73,6 +73,31 @@ public class ModFile implements IModFile {
             this.id = modFileInfo.getMods().getFirst().getModId();
         } else {
             this.id = jar.name();
+        }
+
+        if (this.modFileInfo != null) {
+            LOGGER.debug(LogMarkers.LOADING, "Loading mod file {} with languages {}", this.getFilePath(), this.modFileInfo.requiredLanguageLoaders());
+            this.mixinConfigs = ModFileParser.getMixinConfigs(this.modFileInfo);
+            this.mixinConfigs.forEach(mc -> LOGGER.debug(LogMarkers.LOADING, "Found mixin config {}", mc));
+            this.accessTransformers = ModFileParser.getAccessTransformers(this.modFileInfo)
+                    .map(list -> list.stream().filter(path -> {
+                        if (!getContents().containsFile(path)) {
+                            LOGGER.error(LogMarkers.LOADING, "Access transformer file {} provided by mod {} does not exist!", path, id);
+                            return false;
+                        }
+                        return true;
+                    }))
+                    .orElseGet(() -> {
+                        if (getContents().containsFile(DEFAULT_ACCESS_TRANSFORMER)) {
+                            return Stream.of(DEFAULT_ACCESS_TRANSFORMER);
+                        } else {
+                            return Stream.empty();
+                        }
+                    })
+                    .toList();
+        } else {
+            this.mixinConfigs = List.of();
+            this.accessTransformers = List.of();
         }
     }
 
@@ -116,32 +141,6 @@ public class ModFile implements IModFile {
 
     public List<String> getAccessTransformers() {
         return accessTransformers;
-    }
-
-    public boolean identifyMods() {
-        if (this.modFileInfo == null) {
-            return this.getType() != Type.MOD;
-        }
-        LOGGER.debug(LogMarkers.LOADING, "Loading mod file {} with languages {}", this.getFilePath(), this.modFileInfo.requiredLanguageLoaders());
-        this.mixinConfigs = ModFileParser.getMixinConfigs(this.modFileInfo);
-        this.mixinConfigs.forEach(mc -> LOGGER.debug(LogMarkers.LOADING, "Found mixin config {}", mc));
-        this.accessTransformers = ModFileParser.getAccessTransformers(this.modFileInfo)
-                .map(list -> list.stream().filter(path -> {
-                    if (!getContents().containsFile(path)) {
-                        LOGGER.error(LogMarkers.LOADING, "Access transformer file {} provided by mod {} does not exist!", path, id);
-                        return false;
-                    }
-                    return true;
-                }))
-                .orElseGet(() -> {
-                    if (getContents().containsFile(DEFAULT_ACCESS_TRANSFORMER)) {
-                        return Stream.of(DEFAULT_ACCESS_TRANSFORMER);
-                    } else {
-                        return Stream.empty();
-                    }
-                })
-                .toList();
-        return true;
     }
 
     public List<ModFileParser.MixinConfig> getMixinConfigs() {

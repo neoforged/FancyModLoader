@@ -6,13 +6,18 @@
 package net.neoforged.fml.common.asm;
 
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-import java.util.EnumSet;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
+import java.util.EnumSet;
+
 public class AccessTransformerService implements ILaunchPluginService {
-    public final AccessTransformerEngine engine = AccessTransformerEngine.newEngine();
+    private final AccessTransformerEngine engine;
+
+    public AccessTransformerService(AccessTransformerEngine engine) {
+        this.engine = engine;
+    }
 
     @Override
     public String name() {
