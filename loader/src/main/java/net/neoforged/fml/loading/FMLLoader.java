@@ -254,32 +254,7 @@ public final class FMLLoader implements AutoCloseable {
 
             var mixinFacade = new MixinFacade();
 
-            // Add our own launch plugins explicitly.
-            var launchPlugins = new HashMap<String, ILaunchPluginService>();
-            addLaunchPlugin(launchContext, launchPlugins, createAccessTransformerService(discoveryResult));
-
-            addLaunchPlugin(launchContext, launchPlugins, new RuntimeEnumExtender());
-
-            if (startupArgs.cleanDist()) {
-                var minecraftModFile = discoveryResult.gameContent().stream()
-                        .filter(mf -> mf.getId().equals("minecraft"))
-                        .findFirst()
-                        .map(ModFile::getContents)
-                        .orElse(null);
-                if (minecraftModFile != null && NeoForgeDevDistCleaner.supportsDistCleaning(minecraftModFile)) {
-                    addLaunchPlugin(launchContext, launchPlugins, new NeoForgeDevDistCleaner(minecraftModFile, startupArgs.dist()));
-                }
-            }
-            addLaunchPlugin(launchContext, launchPlugins, mixinFacade.getLaunchPlugin());
-
-            // Discover third party launch plugins
-            for (var launchPlugin : ServiceLoaderUtil.loadServices(
-                    launchContext,
-                    ILaunchPluginService.class,
-                    List.of(),
-                    FMLLoader::isValidLaunchPlugin)) {
-                addLaunchPlugin(launchContext, launchPlugins, launchPlugin);
-            }
+            var launchPlugins = createLaunchPlugins(startupArgs, launchContext, discoveryResult, mixinFacade);
 
             var launchPluginHandler = new LaunchPluginHandler(launchPlugins.values().stream());
 
@@ -309,9 +284,6 @@ public final class FMLLoader implements AutoCloseable {
             gameContent.add(mixinFacade.createGeneratedCodeContainer());
             launchPluginHandler.offerScanResultsToPlugins(gameContent);
 
-            // We do not do this: launchService.validateLaunchTarget(argumentHandler);
-            // We inlined this: transformationServicesHandler.buildTransformingClassLoader...
-
             loader.classTransformer = ClassTransformerFactory.create(launchContext, launchPluginHandler);
             loader.ownedResources.add(new ClassTransformerProfiler(loader.classTransformer));
             var transformingLoader = loader.buildTransformingLoader(loader.classTransformer, gameContent);
@@ -337,6 +309,48 @@ public final class FMLLoader implements AutoCloseable {
             loader.close();
             throw e;
         }
+    }
+
+    private static Map<String, ILaunchPluginService> createLaunchPlugins(StartupArgs startupArgs,
+            LaunchContextAdapter launchContext,
+            DiscoveryResult discoveryResult,
+            MixinFacade mixinFacade) {
+        // Add our own launch plugins explicitly.
+        var builtInPlugins = new ArrayList<ILaunchPluginService>();
+        builtInPlugins.add(createAccessTransformerService(discoveryResult));
+        builtInPlugins.add(new RuntimeEnumExtender());
+
+        if (startupArgs.cleanDist()) {
+            var minecraftModFile = discoveryResult.gameContent().stream()
+                    .filter(mf -> mf.getId().equals("minecraft"))
+                    .findFirst()
+                    .map(ModFile::getContents)
+                    .orElse(null);
+            if (minecraftModFile != null && NeoForgeDevDistCleaner.supportsDistCleaning(minecraftModFile)) {
+                builtInPlugins.add(new NeoForgeDevDistCleaner(minecraftModFile, startupArgs.dist()));
+            }
+        }
+
+        builtInPlugins.add(mixinFacade.getLaunchPlugin());
+
+        // Discover third party launch plugins
+        var result = new HashMap<String, ILaunchPluginService>();
+        for (var launchPlugin : ServiceLoaderUtil.loadServices(
+                launchContext,
+                ILaunchPluginService.class,
+                builtInPlugins,
+                FMLLoader::isValidLaunchPlugin)) {
+            LOGGER.debug("Adding launch plugin {}", launchPlugin.name());
+            var previous = result.put(launchPlugin.name(), launchPlugin);
+            if (previous != null) {
+                var source1 = ServiceLoaderUtil.identifySourcePath(launchContext, launchPlugin);
+                var source2 = ServiceLoaderUtil.identifySourcePath(launchContext, previous);
+
+                throw new FatalStartupException("Multiple launch plugin services of the same name '"
+                        + previous.name() + "' are present: " + source1 + " and " + source2);
+            }
+        }
+        return result;
     }
 
     private static ILaunchPluginService createAccessTransformerService(DiscoveryResult discoveryResult) {
@@ -396,7 +410,7 @@ public final class FMLLoader implements AutoCloseable {
     /**
      * If any location being added is already on the classpath, we add a masking classloader to ensure
      * that resources are not double-reported when using getResources/getResource.
-     *
+     * <p>
      * The primary purpose of this is in mod and NeoForge development environments, where IDEs put the mod
      * on the app classpath, but we also add it as content to the game layer. This method is responsible
      * for setting up a classloader that prevents getResource/getResources from reporting Jar resources
@@ -534,21 +548,6 @@ public final class FMLLoader implements AutoCloseable {
 
         // Blacklist all Mixin services, since we implement all of them ourselves
         return !MixinFacade.isMixinServiceClass(serviceClass);
-    }
-
-    private static <T extends ILaunchPluginService> T addLaunchPlugin(ILaunchContext launchContext,
-            Map<String, ILaunchPluginService> services,
-            T service) {
-        LOGGER.debug("Adding launch plugin {}", service.name());
-        var previous = services.put(service.name(), service);
-        if (previous != null) {
-            var source1 = ServiceLoaderUtil.identifySourcePath(launchContext, service);
-            var source2 = ServiceLoaderUtil.identifySourcePath(launchContext, previous);
-
-            throw new FatalStartupException("Multiple launch plugin services of the same name '"
-                    + previous.name() + "' are present: " + source1 + " and " + source2);
-        }
-        return service;
     }
 
     private DiscoveryResult runDiscovery() {
