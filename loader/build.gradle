@@ -67,11 +67,11 @@ dependencies {
 }
 
 final generatedVersionDir = layout.buildDirectory.dir('generated/version')
-sourceSets.main.java.srcDir generatedVersionDir
-tasks.register("generateVersion", fmlbuild.GenerateVersionClass) {
+final generateVersionTask = tasks.register("generateVersion", fmlbuild.GenerateVersionClass) {
     output = layout.buildDirectory.file('generated/version')
     className = "net.neoforged.fml.FMLVersionProperties"
 }
+sourceSets.main.java.srcDir generateVersionTask
 
 configurations.jmhImplementation.extendsFrom(configurations.implementation)
 
