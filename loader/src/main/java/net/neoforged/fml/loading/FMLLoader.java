@@ -74,6 +74,7 @@ import net.neoforged.fml.loading.moddiscovery.locators.NeoForgeDevDistCleaner;
 import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import net.neoforged.fml.startup.FatalStartupException;
+import net.neoforged.fml.startup.FmlInstrumentation;
 import net.neoforged.fml.startup.StartupArgs;
 import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.fml.util.PathPrettyPrinting;
@@ -114,7 +115,6 @@ public final class FMLLoader implements AutoCloseable {
     private final Dist dist;
     private LoadingModList loadingModList;
     private final Path gameDir;
-    private final Path cacheDir;
     private final Set<Path> locatedPaths = new HashSet<>();
     private final List<File> unclaimedClassPathEntries = new ArrayList<>();
 
@@ -138,13 +138,12 @@ public final class FMLLoader implements AutoCloseable {
             List<ModFile> gameLibraryContent,
             List<ModLoadingIssue> discoveryIssues) {}
 
-    private FMLLoader(ClassLoader currentClassLoader, String[] programArgs, Dist dist, boolean production, Path gameDir, Path cacheDir) {
+    private FMLLoader(ClassLoader currentClassLoader, String[] programArgs, Dist dist, boolean production, Path gameDir) {
         this.currentClassLoader = currentClassLoader;
         this.programArgs = ProgramArgs.from(programArgs);
         this.dist = dist;
         this.production = production;
         this.gameDir = gameDir;
-        this.cacheDir = cacheDir;
 
         versionInfo = new VersionInfo(
                 this.programArgs.remove("fml.neoForgeVersion"),
@@ -206,6 +205,11 @@ public final class FMLLoader implements AutoCloseable {
         return classTransformer;
     }
 
+    public static FMLLoader create(StartupArgs startupArgs) {
+        var instrumentation = FmlInstrumentation.obtainInstrumentation();
+        return create(instrumentation, startupArgs);
+    }
+
     public static FMLLoader create(@Nullable Instrumentation instrumentation, StartupArgs startupArgs) {
         // If a client class is available, then it's client, otherwise DEDICATED_SERVER
         // The auto-detection never detects JOINED since it's impossible to do so
@@ -218,8 +222,7 @@ public final class FMLLoader implements AutoCloseable {
                 startupArgs.programArgs(),
                 Objects.requireNonNullElseGet(startupArgs.dist(), () -> detectDist(initialLoader)),
                 detectProduction(initialLoader),
-                startupArgs.gameDirectory(),
-                startupArgs.cacheRoot());
+                startupArgs.gameDirectory());
 
         try {
             FMLPaths.loadAbsolutePaths(startupArgs.gameDirectory());

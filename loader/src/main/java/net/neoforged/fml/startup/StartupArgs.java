@@ -27,7 +27,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public record StartupArgs(
         Path gameDirectory,
-        Path cacheRoot,
         boolean headless,
         @Nullable Dist dist,
         boolean cleanDist,

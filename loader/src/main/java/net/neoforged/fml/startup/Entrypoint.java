@@ -6,7 +6,6 @@
 package net.neoforged.fml.startup;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandle;
@@ -15,7 +14,6 @@ import java.lang.invoke.MethodType;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -28,7 +26,7 @@ import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.Configurator;
 
 public abstract class Entrypoint {
-    Entrypoint() {}
+    protected Entrypoint() {}
 
     protected static FMLLoader startup(String[] args, boolean headless, Dist dist) {
         StartupLog.debug("JVM Uptime: {}ms", ManagementFactory.getRuntimeMXBean().getUptime());
@@ -45,17 +43,6 @@ public abstract class Entrypoint {
         var gameDir = getGameDir(args);
         StartupLog.info("Game Directory: {}", gameDir);
 
-        var cacheDir = gameDir.resolve(".neoforgecache");
-        if (!Files.isDirectory(cacheDir)) {
-            try {
-                Files.createDirectories(cacheDir);
-            } catch (IOException e) {
-                StartupLog.error("Failed to create cache directory {}: {}", cacheDir, e);
-            }
-        }
-
-        var instrumentation = FmlInstrumentation.obtainInstrumentation();
-
         // Disabling JMX for JUnit improves startup time
         if (System.getProperty("log4j2.disable.jmx") == null) {
             System.setProperty("log4j2.disable.jmx", "true");
@@ -63,7 +50,6 @@ public abstract class Entrypoint {
 
         var startupArgs = new StartupArgs(
                 gameDir,
-                cacheDir,
                 headless,
                 dist,
                 true,
@@ -73,7 +59,7 @@ public abstract class Entrypoint {
                 Thread.currentThread().getContextClassLoader());
 
         try {
-            return FMLLoader.create(instrumentation, startupArgs);
+            return FMLLoader.create(startupArgs);
         } catch (Exception e) {
             var sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));

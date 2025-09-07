@@ -212,7 +212,6 @@ public abstract class LauncherTest {
         var classLoader = Thread.currentThread().getContextClassLoader();
         var startupArgs = new StartupArgs(
                 installation.getGameDir(),
-                installation.getGameDir().resolve(".cache"),
                 true,
                 launchMode.forcedDist,
                 true,
