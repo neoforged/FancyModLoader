@@ -5,16 +5,21 @@
 
 package net.neoforged.fml.startup;
 
-import java.awt.GraphicsEnvironment;
-import java.lang.reflect.InvocationTargetException;
-import javax.swing.JOptionPane;
-import javax.swing.UIManager;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
+import javax.swing.JOptionPane;
+import javax.swing.UIManager;
+import java.awt.GraphicsEnvironment;
+import java.lang.reflect.InvocationTargetException;
+
 public final class FatalErrorReporting {
-    private FatalErrorReporting() {}
+    private FatalErrorReporting() {
+    }
 
     private static Throwable unwrapException(Throwable t) {
+        if (t == null) {
+            return null;
+        }
         var cause = t.getCause();
         if (cause == null) {
             return t; // Cannot unwrap without a cause.
@@ -30,9 +35,33 @@ public final class FatalErrorReporting {
         t = unwrapException(t);
 
         if (t instanceof FatalStartupException e) {
-            reportFatalError(e.getMessage());
+            var errorText = new StringBuilder(e.getMessage());
+            if (e.getCause() != null) {
+                errorText.append("\n\nTechnical Details:\n");
+                appendAbbreviatedExceptionChain(unwrapException(e.getCause()), errorText);
+            }
+
+            reportFatalError(errorText.toString());
         } else {
-            reportFatalError(t.toString());
+            var exceptionText = new StringBuilder();
+            // TODO Translate
+            exceptionText.append("An uncaught technical error occurred:\n");
+            appendAbbreviatedExceptionChain(t, exceptionText);
+
+            reportFatalError(exceptionText.toString());
+        }
+    }
+
+    private static void appendAbbreviatedExceptionChain(Throwable t, StringBuilder exceptionText) {
+        boolean first = true;
+        while (t != null) {
+            if (first) {
+                exceptionText.append("  ").append(t).append('\n');
+                first = false;
+            } else {
+                exceptionText.append(" ↳").append(t).append('\n');
+            }
+            t = unwrapException(t.getCause());
         }
     }
 
@@ -48,13 +77,7 @@ public final class FatalErrorReporting {
     public static void reportFatalError(String message) {
         System.setProperty("java.awt.headless", "false"); // Overriding what MC set
         if (!GraphicsEnvironment.isHeadless()) {
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception ignored) {}
-            String html = "<html><body width='400'><strong>Fatal Startup Error</strong>"
-                    + "<p>";
-            html += message.replace("<", "&lt;").replace("\n", "<br>");
-            JOptionPane.showMessageDialog(null, html, "Fatal Error", JOptionPane.ERROR_MESSAGE);
+            showErrorUsingSwing(message);
         } else {
             // TinyFD refuses to let us use quotes
             message = message.replace('"', '`');
@@ -68,5 +91,31 @@ public final class FatalErrorReporting {
                     false);
         }
         System.exit(1);
+    }
+
+    private static void showErrorUsingSwing(String message) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ignored) {}
+        String html = "<html><body width='400'><strong>Fatal Startup Error</strong>"
+                + "<p><pre>";
+        html += escapeHtmlContent(message);
+        JOptionPane.showMessageDialog(null, html, "Fatal Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    /**
+     * &    &amp;
+     * <    &lt;
+     * >    &gt;
+     * "    &quot;
+     * '    &#x27;
+     */
+    private static String escapeHtmlContent(String content) {
+        return content
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#x27;");
     }
 }

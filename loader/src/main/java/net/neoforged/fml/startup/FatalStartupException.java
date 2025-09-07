@@ -9,4 +9,8 @@ public class FatalStartupException extends RuntimeException {
     public FatalStartupException(String message) {
         super(message);
     }
+
+    public FatalStartupException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

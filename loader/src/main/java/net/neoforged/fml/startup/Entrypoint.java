@@ -133,7 +133,7 @@ public abstract class Entrypoint {
         } catch (NoSuchMethodException e) {
             throw new FatalStartupException(mainClassName + " is missing a static 'main' method.");
         } catch (Throwable e) {
-            throw new FatalStartupException("Failed to create entrypoint object: " + e);
+            throw new FatalStartupException("Failed to create entrypoint object.", e);
         }
     }
 }
