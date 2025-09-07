@@ -5,16 +5,14 @@
 
 package net.neoforged.fml.startup;
 
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
-
-import javax.swing.JOptionPane;
-import javax.swing.UIManager;
 import java.awt.GraphicsEnvironment;
 import java.lang.reflect.InvocationTargetException;
+import javax.swing.JOptionPane;
+import javax.swing.UIManager;
+import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 public final class FatalErrorReporting {
-    private FatalErrorReporting() {
-    }
+    private FatalErrorReporting() {}
 
     private static Throwable unwrapException(Throwable t) {
         if (t == null) {
@@ -104,11 +102,11 @@ public final class FatalErrorReporting {
     }
 
     /**
-     * &    &amp;
-     * <    &lt;
-     * >    &gt;
-     * "    &quot;
-     * '    &#x27;
+     * & &amp;
+     * < &lt;
+     * > &gt;
+     * " &quot;
+     * ' &#x27;
      */
     private static String escapeHtmlContent(String content) {
         return content
