@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.jar.Manifest;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 public class GameLocator implements IModFileCandidateLocator {
     public static final String CLIENT_CLASS = "net/minecraft/client/Minecraft.class";
+    public static final String COMMON_CLASS = "net/minecraft/server/MinecraftServer.class";
     private static final Logger LOG = LoggerFactory.getLogger(GameLocator.class);
     public static final String LIBRARIES_DIRECTORY_PROPERTY = "libraryDirectory";
     public static final String[] NEOFORGE_SPECIFIC_PATH_PREFIXES = { "net/neoforged/neoforge/", "META-INF/services/", JarModsDotTomlModFileReader.MODS_TOML };
@@ -63,8 +65,8 @@ public class GameLocator implements IModFileCandidateLocator {
         // 1b) It's on the classpath, but as a jar
         var ourCl = Thread.currentThread().getContextClassLoader();
 
-        var mcClassesRoot = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath(ourCl, CLIENT_CLASS);
-        var mcResourceRoot = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath(ourCl, "assets/.mcassetsroot");
+        var mcClassesRoot = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath(ourCl, COMMON_CLASS);
+        var mcResourceRoot = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath(ourCl, "data/.mcassetsroot");
         if (mcClassesRoot != null && mcResourceRoot != null) {
             // Determine if we're dealing with a split jar-file situation (moddev)
             if (Files.isRegularFile(mcClassesRoot) && Files.isRegularFile(mcResourceRoot)) {
@@ -85,10 +87,20 @@ public class GameLocator implements IModFileCandidateLocator {
                     }
 
                     if (isNeoForgeManifest(manifestRoot.resolve(JarModsDotTomlModFileReader.MANIFEST))) {
+                        var contentRoots = new ArrayList<Path>();
+                        Collections.addAll(contentRoots, mcClassesRoot, manifestRoot);
+
+                        // Newer NeoForge versions have a split classes sourceset
+                        var mcClientClassRoot = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath(ourCl, CLIENT_CLASS);
+                        if (mcClientClassRoot != null && !mcClientClassRoot.equals(mcClassesRoot)) {
+                            context.addLocated(mcClientClassRoot);
+                            contentRoots.add(mcClientClassRoot);
+                        }
+
                         context.addLocated(mcClassesRoot);
                         context.addLocated(manifestRoot);
                         context.addLocated(mcResourceRoot);
-                        addDevelopmentModFiles(List.of(mcClassesRoot, manifestRoot), mcResourceRoot, context.getRequiredDistribution(), pipeline);
+                        addDevelopmentModFiles(contentRoots, mcResourceRoot, context.getRequiredDistribution(), pipeline);
                         return;
                     }
                 }

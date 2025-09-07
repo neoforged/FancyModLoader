@@ -75,6 +75,7 @@ public class SimulatedInstallation implements AutoCloseable {
      * and containing NeoForge patches.
      */
     public static final IdentifiableContent PATCHED_CLIENT = generateClass("PATCHED_CLIENT", "net/minecraft/client/Minecraft.class");
+    public static final IdentifiableContent NEOFORGE_CLIENT_CLASSES = generateClass("NEOFORGE_CLIENT_CLASSES", "net/neoforged/neoforge/client/ClientNeoForgeMod.class");
     public static final IdentifiableContent NEOFORGE_CLASSES = generateClass("NEOFORGE_CLASSES", "net/neoforged/neoforge/common/NeoForgeMod.class");
     public static final IdentifiableContent NEOFORGE_MODS_TOML = new IdentifiableContent("NEOFORGE_MODS_TOML", "META-INF/neoforge.mods.toml", writeNeoForgeModsToml());
     public static final IdentifiableContent NEOFORGE_MANIFEST = new IdentifiableContent("NEOFORGE_MANIFEST", JarFile.MANIFEST_NAME, writeNeoForgeManifest());
@@ -102,7 +103,7 @@ public class SimulatedInstallation implements AutoCloseable {
 
     public static final IdentifiableContent[] SERVER_EXTRA_JAR_CONTENT = { SHARED_ASSETS, MINECRAFT_VERSION_JSON };
     public static final IdentifiableContent[] CLIENT_EXTRA_JAR_CONTENT = { CLIENT_ASSETS, SHARED_ASSETS, RESOURCES_MANIFEST, MINECRAFT_VERSION_JSON };
-    public static final IdentifiableContent[] NEOFORGE_UNIVERSAL_JAR_CONTENT = { NEOFORGE_ASSETS, NEOFORGE_CLASSES, NEOFORGE_MODS_TOML, NEOFORGE_MANIFEST };
+    public static final IdentifiableContent[] NEOFORGE_UNIVERSAL_JAR_CONTENT = { NEOFORGE_ASSETS, NEOFORGE_CLIENT_CLASSES, NEOFORGE_CLASSES, NEOFORGE_MODS_TOML, NEOFORGE_MANIFEST };
     public static final IdentifiableContent[] USERDEV_CLIENT_JAR_CONTENT = { PATCHED_CLIENT, PATCHED_SHARED };
 
     // For a production client: Simulates the "libraries" directory found in the Vanilla Minecraft installation directory (".minecraft")
@@ -219,10 +220,14 @@ public class SimulatedInstallation implements AutoCloseable {
         var additionalClasspath = new ArrayList<Path>();
 
         // Emulate the layout of a NeoForge development environment
-        // In dev, we have a joined distribution containing both dedicated server and client
-        var classesDir = projectRoot.resolve("projects/neoforge/build/classes/java/main");
-        additionalClasspath.add(classesDir);
-        writeFiles(classesDir, PATCHED_CLIENT, PATCHED_SHARED, NEOFORGE_CLASSES);
+        // In dev, the NeoForge sources itself are joined, but the Minecraft sources are not
+        var clientClassesDir = projectRoot.resolve("projects/neoforge/build/classes/java/client");
+        additionalClasspath.add(clientClassesDir);
+        writeFiles(clientClassesDir, PATCHED_CLIENT, NEOFORGE_CLIENT_CLASSES);
+
+        var commonClassesDir = projectRoot.resolve("projects/neoforge/build/classes/java/main");
+        additionalClasspath.add(commonClassesDir);
+        writeFiles(commonClassesDir, PATCHED_SHARED, NEOFORGE_CLASSES);
 
         var resourcesDir = projectRoot.resolve("projects/neoforge/build/resources/main");
         additionalClasspath.add(resourcesDir);
@@ -232,7 +237,7 @@ public class SimulatedInstallation implements AutoCloseable {
         additionalClasspath.add(clientExtraJar);
         writeJarFile(clientExtraJar, CLIENT_EXTRA_JAR_CONTENT);
 
-        setModFoldersProperty(Map.of("minecraft", List.of(classesDir, resourcesDir)));
+        setModFoldersProperty(Map.of("minecraft", List.of(clientClassesDir, commonClassesDir, resourcesDir, clientExtraJar)));
 
         return additionalClasspath;
     }

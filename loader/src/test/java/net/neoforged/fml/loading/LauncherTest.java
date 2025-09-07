@@ -216,6 +216,7 @@ public abstract class LauncherTest {
                 launchMode.forcedDist,
                 true,
                 new String[] {
+                        // TODO: We can pass less in certain scenarios and should (i.e. development)
                         "--fml.mcVersion", SimulatedInstallation.MC_VERSION,
                         "--fml.neoForgeVersion", SimulatedInstallation.NEOFORGE_VERSION,
                         "--fml.neoFormVersion", SimulatedInstallation.NEOFORM_VERSION
@@ -387,6 +388,7 @@ public abstract class LauncherTest {
         var expectedContent = List.of(
                 SimulatedInstallation.NEOFORGE_ASSETS,
                 SimulatedInstallation.NEOFORGE_CLASSES,
+                SimulatedInstallation.NEOFORGE_CLIENT_CLASSES,
                 SimulatedInstallation.NEOFORGE_MODS_TOML,
                 SimulatedInstallation.NEOFORGE_MANIFEST);
 
