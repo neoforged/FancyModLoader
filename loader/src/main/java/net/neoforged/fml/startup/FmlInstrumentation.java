@@ -7,6 +7,7 @@ package net.neoforged.fml.startup;
 
 import java.lang.instrument.Instrumentation;
 import java.util.ArrayList;
+import net.neoforged.fml.loading.FMLLoader;
 
 public final class FmlInstrumentation {
     private FmlInstrumentation() {}
@@ -14,7 +15,8 @@ public final class FmlInstrumentation {
     public static Instrumentation obtainInstrumentation() {
         var stackWalker = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
         var callingPackage = stackWalker.getCallerClass().getPackageName();
-        if (!callingPackage.equals(DevAgent.class.getPackage().getName())
+        if (!callingPackage.equals(DevAgent.class.getPackageName())
+                && !callingPackage.equals(FMLLoader.class.getPackageName())
                 && !callingPackage.equals("net.neoforged.fml.junit")) {
             throw new IllegalStateException("This method may only be called by FML");
         }

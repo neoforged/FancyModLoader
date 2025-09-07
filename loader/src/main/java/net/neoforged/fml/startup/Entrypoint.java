@@ -59,7 +59,7 @@ public abstract class Entrypoint {
                 Thread.currentThread().getContextClassLoader());
 
         try {
-            return FMLLoader.create(startupArgs);
+            return FMLLoader.create(DevAgent.getInstrumentation(), startupArgs);
         } catch (Exception e) {
             var sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
