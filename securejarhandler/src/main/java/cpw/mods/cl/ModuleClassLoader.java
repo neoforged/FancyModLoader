@@ -324,6 +324,9 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
 
         if (localModule != null) {
             var url = readerToURL(localModule, name);
+            // NOTE: To implement resource encapsulation for named modules, we'd have to check here the module opens
+            // the package unconditionally, but since our modules are generally all force-opened or automatic modules,
+            // we don't replicate that functionality.
             return url != null ? singletonEnumeration(url) : Collections.emptyEnumeration();
         } else {
             // This tries to optimize for allocating as little as possible
@@ -476,6 +479,7 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
         }
     }
 
+    @Nullable
     private static String packageName(String className) {
         var lastSeparator = className.lastIndexOf('.');
         if (lastSeparator <= 0) {
