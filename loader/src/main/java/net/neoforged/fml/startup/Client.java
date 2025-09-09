@@ -18,7 +18,7 @@ public class Client extends Entrypoint {
     private Client() {}
 
     public static void main(String[] args) {
-        try (var loader = startup(args, false, Dist.CLIENT)) {
+        try (var loader = startup(args, false, Dist.CLIENT, true)) {
             if (!FMLLoader.isProduction()) {
                 preProcessDevArguments(loader.programArgs());
             }

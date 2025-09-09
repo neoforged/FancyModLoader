@@ -24,11 +24,12 @@ import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.ConfigurationFactory;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.jetbrains.annotations.Nullable;
 
 public abstract class Entrypoint {
     protected Entrypoint() {}
 
-    protected static FMLLoader startup(String[] args, boolean headless, Dist dist) {
+    protected static FMLLoader startup(String[] args, boolean headless, Dist dist, boolean cleanDist) {
         StartupLog.debug("JVM Uptime: {}ms", ManagementFactory.getRuntimeMXBean().getUptime());
 
         args = ArgFileExpander.expandArgFiles(args);
@@ -52,7 +53,7 @@ public abstract class Entrypoint {
                 gameDir,
                 headless,
                 dist,
-                true,
+                cleanDist,
                 args,
                 new HashSet<>(),
                 listClasspathEntries(),
@@ -135,5 +136,20 @@ public abstract class Entrypoint {
         } catch (Throwable e) {
             throw new FatalStartupException("Failed to create entrypoint object.", e);
         }
+    }
+
+    protected static @Nullable Thread findThread(String threadName) {
+        Thread serverThread = null;
+        for (var thread : Thread.getAllStackTraces().keySet()) {
+            if (threadName.equals(thread.getName())) {
+                // While there's no guarantee for thread ids to be monotonically increasing
+                // if there's ever a conflict between threads named "Server thread" because a mod spawned one
+                // with that name, we'll pick the lower.
+                if (serverThread == null || thread.threadId() <= serverThread.threadId()) {
+                    serverThread = thread;
+                }
+            }
+        }
+        return serverThread;
     }
 }

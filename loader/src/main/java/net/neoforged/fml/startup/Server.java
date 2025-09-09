@@ -6,7 +6,6 @@
 package net.neoforged.fml.startup;
 
 import net.neoforged.api.distmarker.Dist;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * The entrypoint for starting a modded Minecraft server.
@@ -15,11 +14,11 @@ public class Server extends Entrypoint {
     private Server() {}
 
     public static void main(String[] args) {
-        try (var loader = startup(args, true, Dist.DEDICATED_SERVER)) {
+        try (var loader = startup(args, true, Dist.DEDICATED_SERVER, true)) {
             var main = createMainMethodCallable(loader, "net.minecraft.server.Main");
             main.invokeExact(loader.programArgs().getArguments());
 
-            var serverThread = findServerThread();
+            var serverThread = findThread("Server thread");
             if (serverThread == null) {
                 throw new FatalStartupException("Couldn't find Minecraft server thread. Startup likely failed.");
             }
@@ -29,20 +28,5 @@ public class Server extends Entrypoint {
             FatalErrorReporting.reportFatalErrorOnConsole(t);
             System.exit(1);
         }
-    }
-
-    private static @Nullable Thread findServerThread() {
-        Thread serverThread = null;
-        for (var thread : Thread.getAllStackTraces().keySet()) {
-            if ("Server thread".equals(thread.getName())) {
-                // While there's no guarantee for thread ids to be monotonically increasing
-                // if there's ever a conflict between threads named "Server thread" because a mod spawned one
-                // with that name, we'll pick the lower.
-                if (serverThread == null || thread.threadId() <= serverThread.threadId()) {
-                    serverThread = thread;
-                }
-            }
-        }
-        return serverThread;
     }
 }
