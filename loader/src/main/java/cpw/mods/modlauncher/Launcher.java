@@ -47,13 +47,13 @@ public class Launcher {
 
     private Launcher() {
         INSTANCE = this;
-        LogManager.getLogger().info(MODLAUNCHER, "ModLauncher {} starting: java version {} by {}; OS {} arch {} version {}", () -> IEnvironment.class.getPackage().getImplementationVersion(), () -> System.getProperty("java.version"), () -> System.getProperty("java.vendor"), () -> System.getProperty("os.name"), () -> System.getProperty("os.arch"), () -> System.getProperty("os.version"));
+        LogManager.getLogger().info(MODLAUNCHER, "ModLauncher starting: java version {} by {}; OS {} arch {} version {}", System.getProperty("java.version"), System.getProperty("java.vendor"), System.getProperty("os.name"), System.getProperty("os.arch"), System.getProperty("os.version"));
         this.moduleLayerHandler = new ModuleLayerHandler();
         this.launchService = new LaunchServiceHandler(this.moduleLayerHandler);
         this.blackboard = new TypesafeMap();
         this.environment = new Environment(this);
-        environment.computePropertyIfAbsent(IEnvironment.Keys.MLSPEC_VERSION.get(), s -> IEnvironment.class.getPackage().getSpecificationVersion());
-        environment.computePropertyIfAbsent(IEnvironment.Keys.MLIMPL_VERSION.get(), s -> IEnvironment.class.getPackage().getImplementationVersion());
+        environment.computePropertyIfAbsent(IEnvironment.Keys.MLSPEC_VERSION.get(), s -> "11.0");
+        environment.computePropertyIfAbsent(IEnvironment.Keys.MLIMPL_VERSION.get(), s -> "11.0");
         environment.computePropertyIfAbsent(IEnvironment.Keys.MODLIST.get(), s -> new ArrayList<>());
         this.transformStore = new TransformStore();
         this.transformationServicesHandler = new TransformationServicesHandler(this.transformStore, this.moduleLayerHandler);

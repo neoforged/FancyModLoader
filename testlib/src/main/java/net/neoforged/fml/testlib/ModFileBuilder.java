@@ -117,6 +117,11 @@ public class ModFileBuilder {
         return this;
     }
 
+    public ModFileBuilder addModulePath(Path jar) {
+        compilationBuilder.addModulePath(jar);
+        return this;
+    }
+
     public ModFileBuilder addClass(String name, @Language("java") String content) {
         compilationBuilder.addClass(name, content);
         return this;
