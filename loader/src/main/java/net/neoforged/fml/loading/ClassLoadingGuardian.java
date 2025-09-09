@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
+import net.neoforged.fml.startup.Entrypoint;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
@@ -97,6 +98,14 @@ public final class ClassLoadingGuardian implements AutoCloseable {
         for (var loadedClass : instrumentation.getAllLoadedClasses()) {
             if (loadedClass.getClassLoader() == null) {
                 continue; // JDK built-in
+            }
+            // As an exception to the general rule, we allow Entrypoint classes to be loaded from the App CL.
+            // This allows NeoForge to define additional entrypoints from within its main jar, even though that jar
+            // is on the transforming classloader.
+            // The entrypoint will not reference other classes directly, or pass an instance of itself down to other
+            // classes, which means it should be fine.
+            if (Entrypoint.class.isAssignableFrom(loadedClass)) {
+                continue;
             }
             var physicalPackage = loadedClass.getPackageName().replace('.', '/');
             if (protectedPackages.contains(physicalPackage)) {
