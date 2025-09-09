@@ -15,8 +15,7 @@ public final class DevAgent {
     public static Instrumentation getInstrumentation() {
         var stackWalker = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
         var callingPackage = stackWalker.getCallerClass().getPackageName();
-        if (!callingPackage.equals(DevAgent.class.getPackage().getName())
-                && !callingPackage.equals("net.neoforged.fml.junit")) {
+        if (!callingPackage.equals(DevAgent.class.getPackageName())) {
             throw new IllegalStateException("This method may only be called by FML");
         }
         return instrumentation;

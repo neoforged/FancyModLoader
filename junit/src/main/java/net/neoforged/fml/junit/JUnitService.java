@@ -76,7 +76,7 @@ public class JUnitService implements LauncherSessionListener {
                 Set.of(),
                 List.of(),
                 previousLoader);
-        var loader = FMLLoader.create(null, startupArgs);
+        var loader = FMLLoader.create(startupArgs);
 
         LOG.info("Starting FML took {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - fmlStart));
 

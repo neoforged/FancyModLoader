@@ -15,9 +15,7 @@ public final class FmlInstrumentation {
     public static Instrumentation obtainInstrumentation() {
         var stackWalker = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
         var callingPackage = stackWalker.getCallerClass().getPackageName();
-        if (!callingPackage.equals(DevAgent.class.getPackageName())
-                && !callingPackage.equals(FMLLoader.class.getPackageName())
-                && !callingPackage.equals("net.neoforged.fml.junit")) {
+        if (!callingPackage.equals(FMLLoader.class.getPackageName())) {
             throw new IllegalStateException("This method may only be called by FML");
         }
 
