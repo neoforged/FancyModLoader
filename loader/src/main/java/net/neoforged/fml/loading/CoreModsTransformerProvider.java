@@ -15,6 +15,7 @@ import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +29,7 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
     private static final Logger LOGGER = LogUtils.getLogger();
     
     @Override
-    public List<ClassProcessor> makeTransformers(ILaunchContext launchContext) {
+    public Collection<ClassProcessor> makeTransformers(ILaunchContext launchContext) {
         LOGGER.debug(LOADING, "Loading coremod transformers");
 
         var result = new ArrayList<ClassProcessor>();
