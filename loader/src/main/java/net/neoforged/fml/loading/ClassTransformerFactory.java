@@ -61,17 +61,19 @@ final class ClassTransformerFactory {
             }
         }
 
-        for (var xform : getCoreModTransformers(launchContext)) {
-            transformStore.addTransformer(xform, "");
+        for (var coremodTransformer : getCoreModTransformers(launchContext)) {
+            transformStore.addTransformer(coremodTransformer.transformer(), coremodTransformer.owner());
         }
 
         return new ClassTransformer(transformStore, launchPluginHandler);
     }
 
-    private static List<? extends ITransformer<?>> getCoreModTransformers(ILaunchContext launchContext) {
+    private record CoremodTransformer(String owner, ITransformer<?> transformer) {}
+
+    private static List<CoremodTransformer> getCoreModTransformers(ILaunchContext launchContext) {
         LOGGER.debug(LOADING, "Loading coremod transformers");
 
-        var result = new ArrayList<ITransformer<?>>();
+        var result = new ArrayList<CoremodTransformer>();
 
         // Find all Java core mods
         for (var coreMod : ServiceLoaderUtil.loadServices(launchContext, ICoreMod.class)) {
@@ -81,7 +83,7 @@ final class ClassTransformerFactory {
             try {
                 for (var transformer : coreMod.getTransformers()) {
                     LOGGER.debug(CORE, "Adding {} transformer from core-mod {} in {}", transformer.targets(), coreMod, sourceFile);
-                    result.add(transformer);
+                    result.add(new CoremodTransformer(sourceFile, transformer));
                 }
             } catch (Exception e) {
                 // Throwing here would cause the game to immediately crash without a proper error screen,

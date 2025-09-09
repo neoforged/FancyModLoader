@@ -41,12 +41,19 @@ public class TransformStore {
     private final Map<String, ClassTransformations> transforms = new HashMap<>();
     private final IdentityHashMap<ITransformer<?>, String> ownerTracking = new IdentityHashMap<>();
 
+    /**
+     * @param className The classes binary name
+     */
     ClassTransformations getClassTransforms(String className) {
-        return transforms.get(className);
+        return transforms.get(normalizeClass(className));
     }
 
     private ClassTransformations getOrCreateClassTransforms(String className) {
-        return transforms.computeIfAbsent(className, ignored -> new ClassTransformations());
+        return transforms.computeIfAbsent(normalizeClass(className), ignored -> new ClassTransformations());
+    }
+
+    private static String normalizeClass(String className) {
+        return className.replace('.', '/');
     }
 
     @SuppressWarnings("unchecked")

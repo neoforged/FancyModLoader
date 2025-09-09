@@ -79,7 +79,7 @@ public class ClassTransformer {
 
         var launchPluginTransformerSet = pluginHandler.computeLaunchPluginTransformerSet(classDesc, inputClass.length == 0, reason, this.auditTrail);
 
-        var classTransforms = transformers.getClassTransforms(className);
+        var classTransforms = transformers.getClassTransforms(internalName);
         if (classTransforms == null && launchPluginTransformerSet.isEmpty()) {
             return inputClass;
         }
