@@ -34,10 +34,8 @@ public interface ITransformer<T> {
      *
      * @param input   The ASM input node, which can be mutated directly
      * @param context The voting context
-     * @return An ASM node of the same type as that supplied. It will be used for subsequent
-     *         rounds of voting.
      */
-    T transform(T input, CoremodTransformationContext context);
+    void transform(T input, CoremodTransformationContext context);
 
 /**
      * Return a set of {@link Target} identifying which elements this transformer wishes to try
