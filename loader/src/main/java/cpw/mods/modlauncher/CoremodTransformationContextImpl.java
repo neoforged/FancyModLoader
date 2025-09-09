@@ -14,7 +14,7 @@
 
 package cpw.mods.modlauncher;
 
-import cpw.mods.modlauncher.api.ICoremodTransformationContext;
+import cpw.mods.modlauncher.api.CoremodTransformationContext;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -28,12 +28,12 @@ import org.objectweb.asm.tree.MethodNode;
  * The internal vote context structure.
  */
 @ApiStatus.Internal
-public class CoremodTransformationContext implements ICoremodTransformationContext {
+public class CoremodTransformationContextImpl implements CoremodTransformationContext {
     private static final Object[] EMPTY = new Object[0];
     private final ClassProcessor.TransformationContext context;
     private final Object node;
 
-    public CoremodTransformationContext(ClassProcessor.TransformationContext context, Object node) {
+    public CoremodTransformationContextImpl(ClassProcessor.TransformationContext context, Object node) {
         this.context = context;
         this.node = node;
     }
@@ -46,6 +46,11 @@ public class CoremodTransformationContext implements ICoremodTransformationConte
     @Override
     public boolean doesClassExist() {
         return !context.empty();
+    }
+
+    @Override
+    public byte[] getInitialClassSha256() {
+        return context.initialSha256();
     }
 
     @Override
@@ -84,12 +89,10 @@ public class CoremodTransformationContext implements ICoremodTransformationConte
     }
 
     private Object[] toObjectArray(final AbstractInsnNode insnNode) {
-        if (insnNode instanceof MethodInsnNode) {
-            final MethodInsnNode methodInsnNode = (MethodInsnNode) insnNode;
+        if (insnNode instanceof MethodInsnNode methodInsnNode) {
             return new Object[] { methodInsnNode.name, methodInsnNode.desc, methodInsnNode.owner, methodInsnNode.itf };
         }
-        if (insnNode instanceof FieldInsnNode) {
-            final FieldInsnNode fieldInsnNode = (FieldInsnNode) insnNode;
+        if (insnNode instanceof FieldInsnNode fieldInsnNode) {
             return new Object[] { fieldInsnNode.name, fieldInsnNode.desc, fieldInsnNode.owner };
         }
         return EMPTY;

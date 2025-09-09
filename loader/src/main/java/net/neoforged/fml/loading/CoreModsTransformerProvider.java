@@ -1,7 +1,7 @@
 package net.neoforged.fml.loading;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.modlauncher.CoremodTransformationContext;
+import cpw.mods.modlauncher.CoremodTransformationContextImpl;
 import cpw.mods.modlauncher.api.ITransformer;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
@@ -27,8 +27,6 @@ import static net.neoforged.fml.loading.LogMarkers.LOADING;
 public class CoreModsTransformerProvider implements ClassProcessorProvider {
     private static final Logger LOGGER = LogUtils.getLogger();
     
-    public static final ProcessorName COREMODS_GROUP = new ProcessorName("neoforge", "coremods_default");
-    
     @Override
     public List<ClassProcessor> makeTransformers(ILaunchContext launchContext) {
         LOGGER.debug(LOADING, "Loading coremod transformers");
@@ -50,7 +48,7 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
                     
                     @Override
                     public ProcessorName name() {
-                        return COREMODS_GROUP;
+                        return ITransformer.COREMODS_GROUP;
                     }
 
                     @Override
@@ -113,7 +111,7 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
                 boolean transformed = false;
                 switch (transformer.getTargetType()) {
                     case CLASS -> {
-                        var context = new CoremodTransformationContext(processContext, processContext.node());
+                        var context = new CoremodTransformationContextImpl(processContext, processContext.node());
                         transformer.transform((T) processContext.node(), context);
                         transformed = true;
                     }
@@ -124,7 +122,7 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
                         }
                         for (var method : processContext.node().methods) {
                             if (methodNameDescs.contains(method.name + method.desc)) {
-                                var context = new CoremodTransformationContext(processContext, method);
+                                var context = new CoremodTransformationContextImpl(processContext, method);
                                 transformer.transform((T) method, context);
                                 transformed = true;
                             }
@@ -137,7 +135,7 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
                         }
                         for (var field : processContext.node().fields) {
                             if (fieldNames.contains(field.name)) {
-                                var context = new CoremodTransformationContext(processContext, field);
+                                var context = new CoremodTransformationContextImpl(processContext, field);
                                 transformer.transform((T) field, context);
                                 transformed = true;
                             }

@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import cpw.mods.modlauncher.api.ITransformer;
-import cpw.mods.modlauncher.api.ICoremodTransformationContext;
+import cpw.mods.modlauncher.api.CoremodTransformationContext;
 import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
 import java.util.Set;
@@ -29,13 +29,13 @@ public class CoreModTest extends LauncherTest {
     // A transformer that just adds a @Deprecated annotation, which is easy to assert for
     public static final ITransformer<ClassNode> TEST_TRANSFORMER = new ITransformer<>() {
         @Override
-        public ClassNode transform(ClassNode classNode, ICoremodTransformationContext context) {
+        public ClassNode transform(ClassNode classNode, CoremodTransformationContext context) {
             classNode.visitAnnotation("Ljava/lang/Deprecated;", true);
             return classNode;
         }
 
         @Override
-        public TransformerVoteResult castVote(ICoremodTransformationContext context) {
+        public TransformerVoteResult castVote(CoremodTransformationContext context) {
             return TransformerVoteResult.YES;
         }
 

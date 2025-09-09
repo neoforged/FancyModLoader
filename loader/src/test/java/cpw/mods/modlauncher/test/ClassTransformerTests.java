@@ -27,7 +27,7 @@ import cpw.mods.modlauncher.TransformTargetLabel;
 import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
-import cpw.mods.modlauncher.api.ICoremodTransformationContext;
+import cpw.mods.modlauncher.api.CoremodTransformationContext;
 import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
 import java.util.Collections;
@@ -93,13 +93,13 @@ class ClassTransformerTests {
     private ITransformer<FieldNode> fieldNodeTransformer1() {
         return new ITransformer<>() {
             @Override
-            public FieldNode transform(FieldNode input, ICoremodTransformationContext context) {
+            public FieldNode transform(FieldNode input, CoremodTransformationContext context) {
                 input.value = "CHEESE";
                 return input;
             }
 
             @Override
-            public TransformerVoteResult castVote(ICoremodTransformationContext context) {
+            public TransformerVoteResult castVote(CoremodTransformationContext context) {
                 return TransformerVoteResult.YES;
             }
 
@@ -118,7 +118,7 @@ class ClassTransformerTests {
     private ITransformer<ClassNode> classTransformer() {
         return new ITransformer<>() {
             @Override
-            public ClassNode transform(ClassNode input, ICoremodTransformationContext context) {
+            public ClassNode transform(ClassNode input, CoremodTransformationContext context) {
                 input.superName = "java/lang/Object";
                 FieldNode fn = new FieldNode(Opcodes.ACC_PUBLIC, "testfield", "Ljava/lang/String;", null, null);
                 input.fields.add(fn);
@@ -126,7 +126,7 @@ class ClassTransformerTests {
             }
 
             @Override
-            public TransformerVoteResult castVote(ICoremodTransformationContext context) {
+            public TransformerVoteResult castVote(CoremodTransformationContext context) {
                 return TransformerVoteResult.YES;
             }
 

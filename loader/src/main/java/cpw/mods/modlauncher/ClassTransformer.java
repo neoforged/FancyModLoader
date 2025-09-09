@@ -19,6 +19,9 @@ import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.function.Supplier;
 
 import cpw.mods.modlauncher.api.IEnvironment;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
@@ -38,6 +41,7 @@ import org.objectweb.asm.tree.ClassNode;
  * Transforms classes using the supplied launcher services
  */
 public class ClassTransformer {
+    private static final byte[] EMPTY = new byte[0];
     private static final Logger LOGGER = LogManager.getLogger();
     private final Marker CLASSDUMP = MarkerManager.getMarker("CLASSDUMP");
     private final TransformStore transformers;
@@ -63,18 +67,19 @@ public class ClassTransformer {
         }
 
         ClassTransformStatistics.incrementTransformedClasses();
-        
-        // TODO: reimplement initial-bytecode-hash stuff for coremods? Uncertain how useful this is or where it's used
 
+        Supplier<byte[]> digest;
         ClassNode clazz = new ClassNode(Opcodes.ASM9);
         boolean isEmpty = inputClass.length == 0;
         if (inputClass.length > 0) {
             final ClassReader classReader = new ClassReader(inputClass);
             classReader.accept(clazz, ClassReader.EXPAND_FRAMES);
+            digest = () -> getSha256().digest(inputClass);
         } else {
             clazz.name = classDesc.getInternalName();
             clazz.version = Opcodes.V1_8;
             clazz.superName = Type.getInternalName(Object.class);
+            digest = () -> getSha256().digest(EMPTY);
         }
         
         boolean allowsComputeFrames = false;
@@ -89,7 +94,8 @@ public class ClassTransformer {
                     classDesc,
                     clazz,
                     isEmpty,
-                    trail
+                    trail,
+                    digest
             );
             var newFlags = transformer.processClassWithFlags(context);
             if (newFlags != ClassProcessor.ComputeFlags.NO_REWRITE) {
@@ -150,6 +156,14 @@ public class ClassTransformer {
             LOGGER.info(MODLAUNCHER, "Wrote {} byte class file {} to {}", clazz.length, className, tempFile);
         } catch (IOException e) {
             LOGGER.error(MODLAUNCHER, "Failed to write class file {}", className, e);
+        }
+    }
+
+    private MessageDigest getSha256() {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("HUH");
         }
     }
 

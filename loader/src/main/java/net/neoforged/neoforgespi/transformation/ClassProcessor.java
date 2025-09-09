@@ -7,9 +7,16 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.util.Set;
+import java.util.function.Supplier;
 
-// TODO: this and ClassProcessorProvider are both on the PLUGIN layer -- the differences from coremods (namely, the
-//  greater flexibility and therefore need to be careful with what you request processing for) should be documented.
+/**
+ * Class processors, like coremods, provide an API for transforming classes as they are loaded. They are more flexible
+ * than coremods, but take more care to use correctly and efficiently. The main pieces of a processor are
+ * {@link #handlesClass(SelectionContext)} and {@link #processClass(TransformationContext)} (or {@link #processClassWithFlags(TransformationContext)}),
+ * which allow processors to say whether they want to process a given class and allow them to transform the class.
+ * Processors are named and should have sensible namespaces; ordering is accomplished by specifying names that processors
+ * should run before or after if present.
+ */
 public interface ClassProcessor {
     class ComputeFlags {
         /**
@@ -89,13 +96,42 @@ public interface ClassProcessor {
 
     /**
      * Context available when processing a class
-     * @param type the class to process
-     * @param node the current structure of the class
-     * @param empty if the class is empty at present (indicates no backing file found and no previous processor has created it)
      */
-    record TransformationContext(Type type, ClassNode node, boolean empty, AuditTrail auditTrail) {
+    final class TransformationContext {
+        private final Type type;
+        private final ClassNode node;
+        private final boolean empty;
+        private final AuditTrail auditTrail;
+        private final Supplier<byte[]> initialSha256;
+    
         @ApiStatus.Internal
-        public TransformationContext {}
+        public TransformationContext(Type type, ClassNode node, boolean empty, AuditTrail auditTrail, Supplier<byte[]> initialSha256) {
+            this.type = type;
+            this.node = node;
+            this.empty = empty;
+            this.auditTrail = auditTrail;
+            this.initialSha256 = initialSha256;
+        }
+
+        public Type type() {
+            return type;
+        }
+
+        public ClassNode node() {
+            return node;
+        }
+
+        public boolean empty() {
+            return empty;
+        }
+
+        public AuditTrail auditTrail() {
+            return auditTrail;
+        }
+
+        public byte[] initialSha256() {
+            return initialSha256.get();
+        }
     }
     
     interface AuditTrail {

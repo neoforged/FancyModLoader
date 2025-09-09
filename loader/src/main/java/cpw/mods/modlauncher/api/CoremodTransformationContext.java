@@ -14,9 +14,9 @@
 
 package cpw.mods.modlauncher.api;
 
-public interface ICoremodTransformationContext {
+public interface CoremodTransformationContext {
     /**
-     * @return The class name being transformed
+     * {@return The binary class name being transformed, as {@link Class#getName()}}
      */
     String getClassName();
 
@@ -25,6 +25,8 @@ public interface ICoremodTransformationContext {
      */
     boolean doesClassExist();
 
+    byte[] getInitialClassSha256();
+        
     /**
      * Return the result of applying the supplied field predicate to the current field node.
      * Can only be used on a Field target.

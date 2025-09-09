@@ -16,7 +16,6 @@ package cpw.mods.modlauncher.api;
 
 import java.util.Set;
 
-import net.neoforged.fml.loading.CoreModsTransformerProvider;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -27,6 +26,8 @@ import org.objectweb.asm.tree.MethodNode;
  * it is designated to target.
  */
 public interface ITransformer<T> {
+    ProcessorName COREMODS_GROUP = new ProcessorName("neoforge", "coremods_default");
+    
     /**
      * Transform the input to the ITransformer's desire. The context from the last vote is
      * provided as well.
@@ -36,8 +37,7 @@ public interface ITransformer<T> {
      * @return An ASM node of the same type as that supplied. It will be used for subsequent
      *         rounds of voting.
      */
-
-    T transform(T input, ICoremodTransformationContext context);
+    T transform(T input, CoremodTransformationContext context);
 
 /**
      * Return a set of {@link Target} identifying which elements this transformer wishes to try
@@ -64,18 +64,18 @@ public interface ITransformer<T> {
     default Set<ProcessorName> runsBefore() {
         return Set.of();
     }
-
+    
     /**
-     * {@return processors or transformers that this transformer must run after}
+     * {@return processors or transformers that this transformer must run after} Defaults to running after {@link ITransformer#COREMODS_GROUP}, which runs after mixins.
      */
     default Set<ProcessorName> runsAfter() {
-        return Set.of(CoreModsTransformerProvider.COREMODS_GROUP);
+        return Set.of(ITransformer.COREMODS_GROUP);
     }
 
     /**
      * Simple data holder indicating where the {@link ITransformer} can target.
      * 
-     * @param className         The name of the class being targetted
+     * @param className         The binary name of the class being targetted, as {@link Class#getName()}
      * @param elementName       The name of the element being targetted. This is the field name for a field,
      *                          the method name for a method. Empty string for other types
      * @param elementDescriptor The method's descriptor. Empty string for other types
@@ -86,7 +86,7 @@ public interface ITransformer<T> {
         /**
          * Convenience method returning a {@link Target} for a class
          *
-         * @param className The name of the class
+         * @param className The binary name of the class, as {@link Class#getName()}
          * @return A target for the named class
          */
 
@@ -97,7 +97,7 @@ public interface ITransformer<T> {
         /**
          * Convenience method return a {@link Target} for a method
          *
-         * @param className        The name of the class containing the method
+         * @param className        The binary name of the class containing the method, as {@link Class#getName()}
          * @param methodName       The name of the method
          * @param methodDescriptor The method's descriptor string
          * @return A target for the named method
@@ -110,7 +110,7 @@ public interface ITransformer<T> {
         /**
          * Convenience method returning a {@link Target} for a field
          *
-         * @param className The name of the class containing the field
+         * @param className The binary name of the class containing the field, as {@link Class#getName()}
          * @param fieldName The name of the field
          * @return A target for the named field
          */
