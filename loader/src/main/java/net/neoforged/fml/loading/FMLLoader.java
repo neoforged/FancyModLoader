@@ -27,8 +27,8 @@ import java.io.UncheckedIOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
-import java.lang.module.ModuleReference;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
@@ -46,6 +46,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -390,8 +391,8 @@ public final class FMLLoader implements AutoCloseable {
                 ModuleFinder.of(),
                 content.stream().map(SecureJar::name).toList());
 
-        var moduleNames = getModuleNameList(cf);
-        LOGGER.info("Building module layer GAME:\n{}", moduleNames);
+        var moduleNames = getModuleNameList(cf, content);
+        LOGGER.info("Building game content classloader:\n{}", moduleNames);
         var loader = new TransformingClassLoader(classTransformer, cf, parentLayers, currentClassLoader);
 
         var layer = ModuleLayer.defineModules(
@@ -400,7 +401,7 @@ public final class FMLLoader implements AutoCloseable {
                 f -> loader).layer();
 
         var elapsed = System.currentTimeMillis() - start;
-        LOGGER.info("Built game layer in {}ms", elapsed);
+        LOGGER.info("Built game content classloader in {}ms", elapsed);
 
         loader.setFallbackClassLoader(currentClassLoader);
 
@@ -464,15 +465,17 @@ public final class FMLLoader implements AutoCloseable {
         return result;
     }
 
-    private static String getModuleNameList(Configuration cf) {
+    private static String getModuleNameList(Configuration cf, List<SecureJar> content) {
+        var jarsById = content.stream().collect(Collectors.toMap(SecureJar::name, Function.identity()));
+
         return cf.modules().stream()
-                .map(module -> " - " + module.name() + " (" + getNiceModuleLocation(module.reference()) + ")")
+                .map(module -> {
+                    var jar = jarsById.get(module.name());
+                    var contentList = jar != null ? jar.contents() : module.reference().location().map(URI::toString).orElse("unknown");
+                    return " - " + module.name() + " (" + contentList + ")";
+                })
                 .sorted()
                 .collect(Collectors.joining("\n"));
-    }
-
-    private static String getNiceModuleLocation(ModuleReference moduleRef) {
-        return moduleRef.location().map(Path::of).map(PathPrettyPrinting::prettyPrint).orElse("-");
     }
 
     private static Dist detectDist(ClassLoader classLoader) {
