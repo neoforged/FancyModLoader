@@ -6,6 +6,7 @@
 package net.neoforged.fml.loading;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Fail.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -120,6 +121,11 @@ class FMLLoaderTest extends LauncherTest {
 
             assertLegacyMinecraftClientJar(result, false);
             assertNeoForgeJar(result);
+        }
+
+        @Test
+        void testNeoForgeDevJarClientDiscovery() throws Exception {
+            fail("TODO: Write a test case, where NeoForge is passed in jar form (happens when running from Gradle)");
         }
 
         @Test

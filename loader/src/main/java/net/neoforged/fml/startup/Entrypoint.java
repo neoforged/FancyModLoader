@@ -126,6 +126,9 @@ public abstract class Entrypoint {
     protected static MethodHandle createMainMethodCallable(FMLLoader loader, String mainClassName) {
         try {
             var mainClass = Class.forName(mainClassName, true, loader.currentClassLoader());
+            if (mainClass.getClassLoader() != loader.currentClassLoader()) {
+                throw new FatalStartupException("Missing main class " + mainClassName + " from the game content loader (but available on " + mainClass.getClassLoader() + ").");
+            }
             var lookup = MethodHandles.publicLookup();
             var methodType = MethodType.methodType(void.class, String[].class);
             return lookup.findStatic(mainClass, "main", methodType);
