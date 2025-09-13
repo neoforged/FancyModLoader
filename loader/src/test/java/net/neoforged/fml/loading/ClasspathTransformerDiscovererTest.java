@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 
 class ClasspathTransformerDiscovererTest {
     // A service locator file that should be picked up by the locator
-    private static final IdentifiableContent ML_SERVICE_FILE = new IdentifiableContent("ML_SERVICE", "META-INF/services/cpw.mods.modlauncher.api.ITransformationService", "some.Class".getBytes());
+    private static final IdentifiableContent ML_SERVICE_FILE = new IdentifiableContent("ML_SERVICE", "META-INF/services/net.neoforged.neoforgespi.locating.IModFileCandidateLocator", "some.Class".getBytes());
 
     SimulatedInstallation simulatedInstallation;
     private Path mlServicesJar;
@@ -39,7 +39,7 @@ class ClasspathTransformerDiscovererTest {
     }
 
     @Test
-    void testLocateTransformerServiceInDev() throws Exception {
+    void testLocateServiceLayerServiceInDev() throws Exception {
         var candidates = runLocator("neoforgeclientdev");
 
         assertThat(candidates)
@@ -54,7 +54,7 @@ class ClasspathTransformerDiscovererTest {
     }
 
     @Test
-    void testLocateTransformerServiceNotInDev() throws Exception {
+    void testLocateServiceLayerServiceNotInDev() throws Exception {
         var candidates = runLocator("neoforgeclient");
         assertThat(candidates).isEmpty();
     }

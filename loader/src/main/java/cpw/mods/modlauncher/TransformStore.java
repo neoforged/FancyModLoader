@@ -52,11 +52,21 @@ public class TransformStore {
     }
 
     @VisibleForTesting
+    public TransformStore(ILaunchContext launchContext, List<ClassProcessorProvider> transformerProviders, List<ClassProcessor> existingTransformers) {
+        this.sortedTransformers = sortTransformers(launchContext, transformerProviders, existingTransformers);
+    }
+
+    @VisibleForTesting
     public TransformStore(ILaunchContext launchContext) {
         this.sortedTransformers = sortTransformers(
                 launchContext,
                 ServiceLoaderUtil.loadServices(launchContext, ClassProcessorProvider.class),
                 ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class));
+    }
+
+    @VisibleForTesting
+    public List<ClassProcessor> getSortedTransformers() {
+        return sortedTransformers;
     }
 
     private List<ClassProcessor> sortTransformers(ILaunchContext launchContext, List<ClassProcessorProvider> transformerProviders, List<ClassProcessor> existingTransformers) {

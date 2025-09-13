@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.neoforged.fml.ModLoadingException;
-import net.neoforged.fml.loading.mixin.FMLMixinLaunchPlugin;
+import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.spongepowered.asm.mixin.Mixins;
@@ -85,7 +85,7 @@ public class MixinConfigTest extends LauncherTest {
         var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                 "ERROR: Mixin config test.mixins.json from mods/mixin-test.jar requests Mixin behavior version 0, which is older than the lowest supported version $MV"
-                        .replace("$MV", FMLMixinLaunchPlugin.LOWEST_MIXIN_VERSION.toString()));
+                        .replace("$MV", FMLMixinClassProcessor.LOWEST_MIXIN_VERSION.toString()));
     }
 
     @Test
@@ -99,7 +99,7 @@ public class MixinConfigTest extends LauncherTest {
         var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                 "ERROR: Mixin config test.mixins.json from mods/mixin-test.jar requests Mixin behavior version 9999999, which is newer than the highest supported version $MV. This may be fixable by updating NeoForge"
-                        .replace("$MV", FMLMixinLaunchPlugin.HIGHEST_MIXIN_VERSION.toString()));
+                        .replace("$MV", FMLMixinClassProcessor.HIGHEST_MIXIN_VERSION.toString()));
     }
 
     @Test

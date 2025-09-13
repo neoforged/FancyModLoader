@@ -14,6 +14,8 @@
 
 package cpw.mods.modlauncher.api;
 
+import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.objectweb.asm.tree.ClassNode;
@@ -52,7 +54,9 @@ public interface ITransformer<T> {
      * {@return a unique name for this transformer. Defaults to a name derived from the source class and module names}
      */
     default ProcessorName name() {
-        return new ProcessorName(getClass().getModule().getName(), getClass().getName().replace('$', '.'));
+        return new ProcessorName(
+                Objects.requireNonNull(getClass().getModule(), "coremod must be in named module or have explicit name").getName(),
+                getClass().getName().replace('$', '.').toLowerCase(Locale.ROOT));
     }
 
     /**

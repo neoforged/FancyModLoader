@@ -15,16 +15,11 @@ import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.jarhandling.JarResource;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.Environment;
-import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.TransformStore;
-import cpw.mods.modlauncher.TransformationServiceDecorator;
 import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
-import cpw.mods.modlauncher.api.ITransformationService;
-import cpw.mods.modlauncher.api.ITransformer;
-import cpw.mods.modlauncher.api.NamedPath;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.module.Configuration;
@@ -186,11 +181,9 @@ public abstract class LauncherTest {
             throw new LaunchException(e);
         }
         // while loadMods is usually triggered from NeoForge
-        loadMods(result);
-        return result;
+        return loadMods(result);
     }
 
-    @SuppressWarnings("unchecked")
     private LaunchResult launch(String launchTarget) throws Exception {
         ModLoader.clearLoadingIssues();
 
@@ -200,16 +193,16 @@ public abstract class LauncherTest {
 
         createModuleLayer(IModuleLayerManager.Layer.SERVICE, List.of());
 
-        serviceProvider.onLoad(environment, Set.of());
+        serviceProvider.onLoad(environment);
 
         OptionParser parser = new OptionParser();
-        serviceProvider.arguments((a, b) -> parser.accepts(serviceProvider.name() + "." + a, b));
+        serviceProvider.arguments((a, b) -> parser.accepts("fml." + a, b));
         var result = parser.parse(
                 "--fml.fmlVersion", SimulatedInstallation.FML_VERSION,
                 "--fml.mcVersion", SimulatedInstallation.MC_VERSION,
                 "--fml.neoForgeVersion", SimulatedInstallation.NEOFORGE_VERSION,
                 "--fml.neoFormVersion", SimulatedInstallation.NEOFORM_VERSION);
-        serviceProvider.argumentValues(new ITransformationService.OptionResult() {
+        serviceProvider.argumentValues(new FMLServiceProvider.OptionResult() {
             @Override
             public <V> V value(OptionSpec<V> options) {
                 return result.valueOf(options);
@@ -231,15 +224,12 @@ public abstract class LauncherTest {
 
         var pluginResources = serviceProvider.beginScanning(environment);
         // In this phase, FML should only return plugin libraries
-        assertThat(pluginResources).extracting(ITransformationService.Resource::target).containsOnly(IModuleLayerManager.Layer.PLUGIN);
+        assertThat(pluginResources).extracting(FMLServiceProvider.Resource::target).containsOnly(IModuleLayerManager.Layer.PLUGIN);
         createModuleLayer(IModuleLayerManager.Layer.PLUGIN, pluginResources.stream().flatMap(resource -> resource.resources().stream()).toList());
 
         var gameLayerResources = serviceProvider.completeScan(moduleLayerManager);
         // In this phase, FML should only return game layer content
-        assertThat(gameLayerResources).extracting(ITransformationService.Resource::target).containsOnly(IModuleLayerManager.Layer.GAME);
-
-        // Query transformers now, which ML does before building the transforming class loader and launching the game
-        var transformers = serviceProvider.transformers();
+        assertThat(gameLayerResources).extracting(FMLServiceProvider.Resource::target).containsOnly(IModuleLayerManager.Layer.GAME);
 
         var loadingModList = LoadingModList.get();
         var loadedMods = loadingModList.getModFiles();
@@ -267,10 +257,10 @@ public abstract class LauncherTest {
                 loadedMods.stream().collect(Collectors.toMap(
                         o -> o.getMods().getFirst().getModId(),
                         o -> o)),
-                (List<ITransformer<?>>) transformers);
+                List.of());
     }
 
-    private void loadMods(LaunchResult launchResult) throws Exception {
+    private LaunchResult loadMods(LaunchResult launchResult) {
         FMLLoader.progressWindowTick = () -> {};
 
         // build the game layer
@@ -278,23 +268,15 @@ public abstract class LauncherTest {
         var parentConfigs = parents.stream().map(ModuleLayer::configuration).toList();
         var gameLayerFinder = JarModuleFinder.of(launchResult.gameLayerModules().values().toArray(new SecureJar[0]));
         var configuration = Configuration.resolveAndBind(ModuleFinder.of(), parentConfigs, gameLayerFinder, launchResult.gameLayerModules().keySet());
-        /*
-         * Does the minimum to get a transforming classloader.
-         */
-        var transformStore = new TransformStore();
-        new TransformationServiceDecorator(serviceProvider).gatherTransformers(transformStore);
 
         Launcher.INSTANCE.environment().computePropertyIfAbsent(IEnvironment.Keys.MODLIST.get(), ignored1 -> new ArrayList<>());
-        var lph = new LaunchPluginHandler(environment.getLaunchPlugins());
+        var transformers = new TransformStore(serviceProvider.launchContext, environment.getClassProcessorProviders().toList(), environment.getClassProcessors().toList());
         gameClassLoader = new TransformingClassLoader(
-                transformStore,
+                transformers,
                 launcher.environment(),
                 configuration,
                 parents,
                 getClass().getClassLoader());
-        lph.announceLaunch(
-                gameClassLoader,
-                new NamedPath[0]);
 
         var controller = ModuleLayer.defineModules(
                 configuration,
@@ -309,6 +291,13 @@ public abstract class LauncherTest {
                 Runnable::run,
                 Runnable::run,
                 () -> {});
+
+        return new LaunchResult(
+                launchResult.pluginLayerModules(),
+                launchResult.gameLayerModules(),
+                ModLoader.getLoadingIssues(),
+                launchResult.loadedMods(),
+                transformers.getSortedTransformers());
     }
 
     protected static List<String> getTranslatedIssues(LaunchResult launchResult) {
