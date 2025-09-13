@@ -15,7 +15,6 @@
 package cpw.mods.modlauncher;
 
 import com.google.common.graph.GraphBuilder;
-import com.google.common.graph.MutableGraph;
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.IEnvironment;
 import java.util.ArrayList;
@@ -34,16 +33,23 @@ import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 
+@ApiStatus.Internal
 public class TransformStore {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private final Map<ProcessorName, ClassProcessor> transformers = new HashMap<>();
     private final List<ClassProcessor> sortedTransformers;
     private final Set<String> generatedPackages = new HashSet<>();
+
+    @VisibleForTesting
+    public TransformStore(List<ClassProcessor> processors) {
+        this.sortedTransformers = sortTransformers(processors);
+    }
 
     @VisibleForTesting
     public TransformStore(ILaunchContext launchContext) {
@@ -53,8 +59,16 @@ public class TransformStore {
                 ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class));
     }
 
-    @SuppressWarnings("UnstableApiUsage")
     private List<ClassProcessor> sortTransformers(ILaunchContext launchContext, List<ClassProcessorProvider> transformerProviders, List<ClassProcessor> existingTransformers) {
+        var allTransformers = new ArrayList<>(existingTransformers);
+        for (ClassProcessorProvider provider : transformerProviders) {
+            allTransformers.addAll(provider.makeTransformers(launchContext));
+        }
+        return sortTransformers(allTransformers);
+    }
+
+    @SuppressWarnings("UnstableApiUsage")
+    private List<ClassProcessor> sortTransformers(List<ClassProcessor> allTransformers) {
         final var graph = GraphBuilder.directed().<ClassProcessor>build();
         var specialComputeFramesNode = new ClassProcessor() {
             // This "special" transformer never handles a class but is always triggered
@@ -81,13 +95,17 @@ public class TransformStore {
 
         graph.addNode(specialComputeFramesNode);
         transformers.put(specialComputeFramesNode.name(), specialComputeFramesNode);
-        for (ClassProcessorProvider provider : transformerProviders) {
-            for (var transformer : provider.makeTransformers(launchContext)) {
-                addTransformer(transformer, graph);
+        for (var transformer : allTransformers) {
+            if (transformers.containsKey(transformer.name())) {
+                LOGGER.error(
+                        "Duplicate transformers with name {}, of types {} and {}",
+                        transformer.name(),
+                        transformers.get(transformer.name()).getClass().getName(),
+                        transformer.getClass().getName());
+                throw new IllegalStateException("Duplicate transformers with name: " + transformer.name());
             }
-        }
-        for (var transformer : existingTransformers) {
-            addTransformer(transformer, graph);
+            graph.addNode(transformer);
+            transformers.put(transformer.name(), transformer);
         }
         for (var self : transformers.values()) {
             this.generatedPackages.addAll(self.generatesPackages());
@@ -113,20 +131,6 @@ public class TransformStore {
             }
         }
         return TopologicalSort.topologicalSort(graph, Comparator.comparing(ClassProcessor::name));
-    }
-
-    @SuppressWarnings("UnstableApiUsage")
-    private void addTransformer(ClassProcessor transformer, MutableGraph<ClassProcessor> graph) {
-        if (transformers.containsKey(transformer.name())) {
-            LOGGER.error(
-                    "Duplicate transformers with name {}, of types {} and {}",
-                    transformer.name(),
-                    transformers.get(transformer.name()).getClass().getName(),
-                    transformer.getClass().getName());
-            throw new IllegalStateException("Duplicate transformers with name: " + transformer.name());
-        }
-        graph.addNode(transformer);
-        transformers.put(transformer.name(), transformer);
     }
 
     public void initializeBytecodeProvider(Function<ProcessorName, ClassProcessor.BytecodeProvider> function, IEnvironment environment) {

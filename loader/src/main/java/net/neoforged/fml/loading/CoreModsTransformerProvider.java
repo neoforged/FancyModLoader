@@ -27,8 +27,11 @@ import net.neoforged.neoforgespi.coremod.ICoreMod;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 
+@ApiStatus.Internal
 public class CoreModsTransformerProvider implements ClassProcessorProvider {
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -76,7 +79,8 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
         return result;
     }
 
-    private <T> ClassProcessor makeTransformer(ITransformer<T> transformer) {
+    @VisibleForTesting
+    public static <T> ClassProcessor makeTransformer(ITransformer<T> transformer) {
         Map<String, List<ITransformer.Target<T>>> targetsByClassName = transformer.targets().stream()
                 .collect(Collectors.groupingBy(ITransformer.Target::className));
         Set<ProcessorName> before = new HashSet<>(transformer.runsBefore());

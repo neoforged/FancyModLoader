@@ -20,17 +20,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import cpw.mods.modlauncher.ClassTransformer;
-import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.TransformStore;
-import cpw.mods.modlauncher.TransformTargetLabel;
 import cpw.mods.modlauncher.api.CoremodTransformationContext;
-import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.TargetType;
-import cpw.mods.modlauncher.api.TransformerVoteResult;
-import java.util.Collections;
+import java.util.List;
 import java.util.Set;
-import java.util.stream.Stream;
+import net.neoforged.fml.loading.CoreModsTransformerProvider;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -51,12 +47,11 @@ class ClassTransformerTests {
     void testClassTransformer() throws Exception {
         MarkerManager.getMarker("CLASSDUMP");
         Configurator.setLevel(ClassTransformer.class.getName(), Level.TRACE);
-        final TransformStore transformStore = new TransformStore();
-        final LaunchPluginHandler lph = new LaunchPluginHandler(Stream.of());
-        final ClassTransformer classTransformer = new ClassTransformer(transformStore, lph, null);
-        final ITransformationService dummyService = new MockTransformerService();
-        transformStore.addTransformer(new TransformTargetLabel("test.MyClass", TargetType.CLASS), classTransformer(), dummyService);
-        byte[] result = classTransformer.transform(new byte[0], "test.MyClass", "testing");
+        ClassTransformer classTransformer = new ClassTransformer(new TransformStore(List.of(
+                CoreModsTransformerProvider.makeTransformer(classTransformer(
+                        ITransformer.Target.targetClass("test.MyClass"))))),
+                null, null);
+        byte[] result = classTransformer.transform(new byte[0], "test.MyClass", null);
         assertAll("Class loads and is valid",
                 () -> assertNotNull(result),
 //                () -> assertNotNull(new TransformingClassLoader(transformStore, lph, FileSystems.getDefault().getPath(".")).getClass("test.MyClass", result)),
@@ -74,8 +69,11 @@ class ClassTransformerTests {
         dummyClass.fields.add(new FieldNode(Opcodes.ACC_PUBLIC, "dummyfield", "Ljava/lang/String;", null, null));
         ClassWriter cw = new ClassWriter(Opcodes.ASM5);
         dummyClass.accept(cw);
-        transformStore.addTransformer(new TransformTargetLabel("test.DummyClass", "dummyfield"), fieldNodeTransformer1(), dummyService);
-        byte[] result1 = classTransformer.transform(cw.toByteArray(), "test.DummyClass", "testing");
+        classTransformer = new ClassTransformer(new TransformStore(List.of(
+                CoreModsTransformerProvider.makeTransformer(fieldNodeTransformer1(
+                        ITransformer.Target.targetField("test.DummyClass", "dummyfield"))))),
+                null, null);
+        byte[] result1 = classTransformer.transform(cw.toByteArray(), "test.DummyClass", null);
         assertAll("Class loads and is valid",
                 () -> assertNotNull(result1),
 //                () -> assertNotNull(new TransformingClassLoader(transformStore, lph, FileSystems.getDefault().getPath(".")).getClass("test.DummyClass", result1)),
@@ -87,53 +85,41 @@ class ClassTransformerTests {
                 });
     }
 
-    private ITransformer<FieldNode> fieldNodeTransformer1() {
+    private ITransformer<FieldNode> fieldNodeTransformer1(ITransformer.Target<FieldNode> target) {
         return new ITransformer<>() {
             @Override
-            public FieldNode transform(FieldNode input, CoremodTransformationContext context) {
+            public void transform(FieldNode input, CoremodTransformationContext context) {
                 input.value = "CHEESE";
-                return input;
-            }
-
-            @Override
-            public TransformerVoteResult castVote(CoremodTransformationContext context) {
-                return TransformerVoteResult.YES;
             }
 
             @Override
             public Set<Target<FieldNode>> targets() {
-                return Collections.emptySet();
+                return Set.of(target);
             }
 
             @Override
-            public TargetType<FieldNode> getTargetType() {
+            public TargetType getTargetType() {
                 return TargetType.FIELD;
             }
         };
     }
 
-    private ITransformer<ClassNode> classTransformer() {
+    private ITransformer<ClassNode> classTransformer(ITransformer.Target<ClassNode> target) {
         return new ITransformer<>() {
             @Override
-            public ClassNode transform(ClassNode input, CoremodTransformationContext context) {
+            public void transform(ClassNode input, CoremodTransformationContext context) {
                 input.superName = "java/lang/Object";
                 FieldNode fn = new FieldNode(Opcodes.ACC_PUBLIC, "testfield", "Ljava/lang/String;", null, null);
                 input.fields.add(fn);
-                return input;
-            }
-
-            @Override
-            public TransformerVoteResult castVote(CoremodTransformationContext context) {
-                return TransformerVoteResult.YES;
             }
 
             @Override
             public Set<Target<ClassNode>> targets() {
-                return Collections.emptySet();
+                return Set.of(target);
             }
 
             @Override
-            public TargetType<ClassNode> getTargetType() {
+            public TargetType getTargetType() {
                 return TargetType.CLASS;
             }
         };

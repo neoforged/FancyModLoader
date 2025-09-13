@@ -19,12 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.Environment;
-import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.TransformStore;
-import cpw.mods.modlauncher.TransformationServiceDecorator;
 import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.TypesafeMap;
 import java.io.IOException;
 import java.lang.module.Configuration;
@@ -32,8 +29,6 @@ import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -44,22 +39,14 @@ class TransformingClassLoaderTests {
 
     @Test
     void testClassLoader() throws Exception {
-        MockTransformerService mockTransformerService = new MockTransformerService() {
-            @Override
-            public List<? extends ITransformer<?>> transformers() {
-                return Stream.of(new ClassNodeTransformer(List.of(TARGET_CLASS))).collect(Collectors.toList());
-            }
-        };
+        MockClassProcessor mockClassProcessor = new MockClassProcessor(TARGET_CLASS);
 
-        TransformStore transformStore = new TransformStore();
-        LaunchPluginHandler lph = new LaunchPluginHandler(Stream.of());
-        TransformationServiceDecorator sd = new TransformationServiceDecorator(mockTransformerService);
-        sd.gatherTransformers(transformStore);
+        TransformStore transformStore = new TransformStore(List.of(mockClassProcessor));
 
         Environment environment = new Environment(null);
         new TypesafeMap(IEnvironment.class);
         Configuration configuration = createTestJarsConfiguration();
-        TransformingClassLoader tcl = new TransformingClassLoader(transformStore, lph, environment, configuration, List.of(ModuleLayer.boot()));
+        TransformingClassLoader tcl = new TransformingClassLoader(transformStore, environment, configuration, List.of(ModuleLayer.boot()));
         ModuleLayer.boot().defineModules(configuration, s -> tcl);
 
         final Class<?> aClass = Class.forName(TARGET_CLASS, true, tcl);
