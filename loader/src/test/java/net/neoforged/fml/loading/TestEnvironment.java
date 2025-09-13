@@ -9,7 +9,6 @@ import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.TypesafeMap;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
@@ -17,8 +16,11 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import net.neoforged.fml.common.asm.AccessTransformerService;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
-import net.neoforged.fml.loading.mixin.FMLMixinLaunchPlugin;
+import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
 import net.neoforged.fml.loading.moddiscovery.locators.NeoForgeDevDistCleaner;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.Nullable;
 
 public class TestEnvironment implements IEnvironment {
@@ -31,7 +33,9 @@ public class TestEnvironment implements IEnvironment {
     @Nullable
     public NeoForgeDevDistCleaner neoForgeDevDistCleaner = new NeoForgeDevDistCleaner();
     @Nullable
-    public FMLMixinLaunchPlugin fmlMixinLaunchPlugin = new FMLMixinLaunchPlugin();
+    public FMLMixinClassProcessor fmlMixinClassProcessor = new FMLMixinClassProcessor();
+    @Nullable
+    public CoreModsTransformerProvider coreModsTransformerProvider = new CoreModsTransformerProvider();
 
     public TestEnvironment(TestModuleLayerManager moduleLayerManager) {
         this.moduleLayerManager = moduleLayerManager;
@@ -48,8 +52,8 @@ public class TestEnvironment implements IEnvironment {
     }
 
     @Override
-    public Optional<ILaunchPluginService> findLaunchPlugin(String name) {
-        return getLaunchPlugins().filter(lp -> lp.name().equals(name)).findFirst();
+    public Optional<ClassProcessor> findClassProcessor(ProcessorName name) {
+        return getClassProcessors().filter(cp -> cp.name().equals(name)).findFirst();
     }
 
     @Override
@@ -65,10 +69,14 @@ public class TestEnvironment implements IEnvironment {
         return Optional.of(moduleLayerManager);
     }
 
-    public Stream<ILaunchPluginService> getLaunchPlugins() {
+    public Stream<ClassProcessor> getClassProcessors() {
         return Stream.of(accessTransformerService,
                 runtimeEnumExtender,
                 neoForgeDevDistCleaner,
-                fmlMixinLaunchPlugin).filter(Objects::nonNull);
+                fmlMixinClassProcessor).filter(Objects::nonNull);
+    }
+
+    public Stream<ClassProcessorProvider> getClassProcessorProviders() {
+        return Stream.<ClassProcessorProvider>of(coreModsTransformerProvider).filter(Objects::nonNull);
     }
 }

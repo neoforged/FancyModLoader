@@ -15,25 +15,19 @@
 package cpw.mods.modlauncher.test;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import cpw.mods.modlauncher.ArgumentHandler;
 import cpw.mods.modlauncher.Launcher;
-import cpw.mods.modlauncher.TransformationServiceDecorator;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
-import cpw.mods.modlauncher.api.ITransformationService;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Collectors;
@@ -52,14 +46,6 @@ class LauncherTests {
     void testLauncher() throws Exception {
         Launcher.main("--version", "1.0", "--launchTarget", "mockLaunch", "--test.mods", "A,B,C,cpw.mods.modlauncher.testjar.TestClass", "--accessToken", "SUPERSECRET!");
         Launcher instance = Launcher.INSTANCE;
-        final Map<String, TransformationServiceDecorator> services = getField(getField(instance, "transformationServicesHandler"), "serviceLookup");
-        final List<ITransformationService> launcherServices = services.values().stream()
-                .map(dec -> this.<ITransformationService>getField(dec, "service"))
-                .toList();
-        assertAll("services are present and correct",
-                () -> assertEquals(1, launcherServices.size(), "Found 1 service"),
-                () -> assertEquals(MockTransformerService.class, launcherServices.get(0).getClass(), "Found Test Launcher Service"));
-
         final ArgumentHandler argumentHandler = getField(instance, "argumentHandler");
         final OptionSet options = getField(argumentHandler, "optionSet");
         Map<String, OptionSpec<?>> optionsMap = options.specs().stream().collect(Collectors.toMap(s -> String.join(",", s.options()), s -> s, (u, u2) -> u));
@@ -68,10 +54,10 @@ class LauncherTests {
                 () -> assertTrue(optionsMap.containsKey("version"), "Version field is correct"),
                 () -> assertTrue(optionsMap.containsKey("test.mods"), "Test service option is correct"));
 
-        final MockTransformerService mockTransformerService = (MockTransformerService) launcherServices.get(0);
+        /*final MockClassProcessor mockClassProcessor = ...
         assertAll("test launcher service is correctly configured",
-                () -> assertIterableEquals(Arrays.asList("A", "B", "C", "cpw.mods.modlauncher.testjar.TestClass"), getField(mockTransformerService, "modList"), "modlist is configured"),
-                () -> assertEquals("INITIALIZED", getField(mockTransformerService, "state"), "Initialized was called"));
+                () -> assertIterableEquals(Arrays.asList("A", "B", "C", "cpw.mods.modlauncher.testjar.TestClass"), getField(mockClassProcessor, "modList"), "modlist is configured"),
+                () -> assertEquals("INITIALIZED", getField(mockClassProcessor, "state"), "Initialized was called"));*/
 
         assertAll(
                 () -> assertNotNull(instance.environment().getProperty(IEnvironment.Keys.VERSION.get())));

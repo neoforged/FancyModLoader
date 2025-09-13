@@ -14,11 +14,9 @@
 
 package cpw.mods.modlauncher.api;
 
-import java.util.List;
-
-public interface ITransformerVotingContext {
+public interface CoremodTransformationContext {
     /**
-     * @return The class name being transformed
+     * {@return The binary class name being transformed, as {@link Class#getName()}}
      */
     String getClassName();
 
@@ -27,17 +25,7 @@ public interface ITransformerVotingContext {
      */
     boolean doesClassExist();
 
-    /**
-     * @return The initial sha256 checksum of the class bytes.
-     */
     byte[] getInitialClassSha256();
-
-    /**
-     * @return The activities already performed on this class. This list is read only, but will change as activities happen.
-     */
-    List<ITransformerActivity> getAuditActivities();
-
-    String getReason();
 
     /**
      * Return the result of applying the supplied field predicate to the current field node.

@@ -14,7 +14,10 @@
 
 package cpw.mods.modlauncher.api;
 
+import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -24,7 +27,7 @@ import org.objectweb.asm.tree.MethodNode;
  * it is designated to target.
  */
 public interface ITransformer<T> {
-    String[] DEFAULT_LABEL = { "default" };
+    ProcessorName COREMODS_GROUP = new ProcessorName("neoforge", "coremods_default");
 
     /**
      * Transform the input to the ITransformer's desire. The context from the last vote is
@@ -32,38 +35,8 @@ public interface ITransformer<T> {
      *
      * @param input   The ASM input node, which can be mutated directly
      * @param context The voting context
-     * @return An ASM node of the same type as that supplied. It will be used for subsequent
-     *         rounds of voting.
      */
-
-    T transform(T input, ITransformerVotingContext context);
-
-    /**
-     * Return the {@link TransformerVoteResult} for this transformer.
-     * The transformer should evaluate whether or not is is a candidate to apply during
-     * the round of voting in progress, represented by the context parameter.
-     * How the vote works:
-     * <ul>
-     * <li>If the transformer wishes to be a candidate, it should return {@link TransformerVoteResult#YES}.</li>
-     * <li>If the transformer wishes to exit the voting (the transformer has already
-     * has its intended change applied, for example), it should return {@link TransformerVoteResult#NO}</li>
-     * <li>If the transformer wishes to wait for future rounds of voting it should return
-     * {@link TransformerVoteResult#DEFER}. Note that if there is <em>no</em> YES candidate, but DEFER
-     * candidates remain, this is a DEFERRAL stalemate and the game will crash.</li>
-     * <li>If the transformer wishes to crash the game, it should return {@link TransformerVoteResult#REJECT}.
-     * This is extremely frowned upon, and should not be used except in extreme circumstances. If an
-     * incompatibility is present, it should detect and handle it in the {@link ITransformationService#onLoad}
-     * </li>
-     * </ul>
-     * After all votes from candidate transformers are collected, the NOs are removed from the
-     * current set of voters, one from the set of YES voters is selected and it's {@link ITransformer#transform(Object, ITransformerVotingContext)}
-     * method called. It is then removed from the set of transformers and another round is performed.
-     *
-     * @param context The context of the vote
-     * @return A TransformerVoteResult indicating the desire of this transformer
-     */
-
-    TransformerVoteResult castVote(ITransformerVotingContext context);
+    void transform(T input, CoremodTransformationContext context);
 
     /**
      * Return a set of {@link Target} identifying which elements this transformer wishes to try
@@ -75,30 +48,46 @@ public interface ITransformer<T> {
 
     Set<Target<T>> targets();
 
-    TargetType<T> getTargetType();
+    TargetType getTargetType();
 
     /**
-     * @return A string array for uniquely identifying this transformer instance within the service.
+     * {@return a unique name for this transformer. Defaults to a name derived from the source class and module names}
      */
-    default String[] labels() {
-        return DEFAULT_LABEL;
+    default ProcessorName name() {
+        return new ProcessorName(
+                Objects.requireNonNull(getClass().getModule(), "coremod must be in named module or have explicit name").getName(),
+                getClass().getName().replace('$', '.').toLowerCase(Locale.ROOT));
+    }
+
+    /**
+     * {@return processors or transformers that this transformer must run before}
+     */
+    default Set<ProcessorName> runsBefore() {
+        return Set.of();
+    }
+
+    /**
+     * {@return processors or transformers that this transformer must run after} Defaults to running after {@link ITransformer#COREMODS_GROUP}, which runs after mixins.
+     */
+    default Set<ProcessorName> runsAfter() {
+        return Set.of(ITransformer.COREMODS_GROUP);
     }
 
     /**
      * Simple data holder indicating where the {@link ITransformer} can target.
      * 
-     * @param className         The name of the class being targetted
+     * @param className         The binary name of the class being targetted, as {@link Class#getName()}
      * @param elementName       The name of the element being targetted. This is the field name for a field,
      *                          the method name for a method. Empty string for other types
      * @param elementDescriptor The method's descriptor. Empty string for other types
      * @param targetType        The {@link TargetType} for this target - it should match the ITransformer
      *                          type variable T
      */
-    record Target<T>(String className, String elementName, String elementDescriptor, TargetType<T> targetType) {
+    record Target<T>(String className, String elementName, String elementDescriptor, TargetType targetType) {
         /**
          * Convenience method returning a {@link Target} for a class
          *
-         * @param className The name of the class
+         * @param className The binary name of the class, as {@link Class#getName()}
          * @return A target for the named class
          */
 
@@ -107,20 +96,9 @@ public interface ITransformer<T> {
         }
 
         /**
-         * Convenience method returning a {@link Target} for a class (prior to other loading operations)
-         *
-         * @param className The name of the class
-         * @return A target for the named class
-         */
-
-        public static Target<ClassNode> targetPreClass(String className) {
-            return new Target<>(className, "", "", TargetType.PRE_CLASS);
-        }
-
-        /**
          * Convenience method return a {@link Target} for a method
          *
-         * @param className        The name of the class containing the method
+         * @param className        The binary name of the class containing the method, as {@link Class#getName()}
          * @param methodName       The name of the method
          * @param methodDescriptor The method's descriptor string
          * @return A target for the named method
@@ -133,7 +111,7 @@ public interface ITransformer<T> {
         /**
          * Convenience method returning a {@link Target} for a field
          *
-         * @param className The name of the class containing the field
+         * @param className The binary name of the class containing the field, as {@link Class#getName()}
          * @param fieldName The name of the field
          * @return A target for the named field
          */

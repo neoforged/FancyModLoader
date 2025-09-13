@@ -113,7 +113,7 @@ public class NeoForgeDevProvider implements IModFileCandidateLocator {
             throw new RuntimeException("Failed to build merged Minecraft jar", e);
         }
 
-        var neoForgeDevDistCleaner = (NeoForgeDevDistCleaner) context.environment().findLaunchPlugin("neoforgedevdistcleaner").orElseThrow();
+        var neoForgeDevDistCleaner = (NeoForgeDevDistCleaner) context.environment().findClassProcessor(NeoForgeDevDistCleaner.NAME).orElseThrow();
 
         loadMaskedFiles(mcJarContents, maskedPaths, neoForgeDevDistCleaner, pipeline);
 

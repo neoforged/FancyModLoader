@@ -14,66 +14,174 @@
 
 package cpw.mods.modlauncher;
 
-import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
-
-import cpw.mods.modlauncher.api.ITransformationService;
-import cpw.mods.modlauncher.api.ITransformer;
-import cpw.mods.modlauncher.api.TargetType;
+import com.google.common.graph.GraphBuilder;
+import com.mojang.logging.LogUtils;
+import cpw.mods.modlauncher.api.IEnvironment;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.MethodNode;
+import java.util.function.Function;
+import net.neoforged.fml.loading.toposort.TopologicalSort;
+import net.neoforged.fml.util.ServiceLoaderUtil;
+import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.VisibleForTesting;
+import org.objectweb.asm.Type;
+import org.slf4j.Logger;
 
-/**
- * Transformer store - holds all the transformers
- */
+@ApiStatus.Internal
 public class TransformStore {
-    private static final Logger LOGGER = LogManager.getLogger();
-    private final Set<String> classNeedsTransforming = new HashSet<>();
-    private final Map<TargetType<?>, TransformList<?>> transformers;
+    private static final Logger LOGGER = LogUtils.getLogger();
 
-    public TransformStore() {
-        transformers = new HashMap<>();
-        for (TargetType<?> type : TargetType.VALUES)
-            transformers.put(type, new TransformList<>(type.getNodeType()));
+    private final Map<ProcessorName, ClassProcessor> transformers = new HashMap<>();
+    private final List<ClassProcessor> sortedTransformers;
+    private final Set<String> generatedPackages = new HashSet<>();
+
+    @VisibleForTesting
+    public TransformStore(List<ClassProcessor> processors) {
+        this.sortedTransformers = sortTransformers(processors);
     }
 
-    List<ITransformer<FieldNode>> getTransformersFor(String className, FieldNode field) {
-        TransformTargetLabel tl = new TransformTargetLabel(className, field.name);
-        TransformList<FieldNode> transformerlist = TargetType.FIELD.get(this.transformers);
-        return transformerlist.getTransformersForLabel(tl);
+    @VisibleForTesting
+    public TransformStore(ILaunchContext launchContext, List<ClassProcessorProvider> transformerProviders, List<ClassProcessor> existingTransformers) {
+        this.sortedTransformers = sortTransformers(launchContext, transformerProviders, existingTransformers);
     }
 
-    List<ITransformer<MethodNode>> getTransformersFor(String className, MethodNode method) {
-        TransformTargetLabel tl = new TransformTargetLabel(className, method.name, method.desc);
-        TransformList<MethodNode> transformerlist = TargetType.METHOD.get(this.transformers);
-        return transformerlist.getTransformersForLabel(tl);
+    @VisibleForTesting
+    public TransformStore(ILaunchContext launchContext) {
+        this.sortedTransformers = sortTransformers(
+                launchContext,
+                ServiceLoaderUtil.loadServices(launchContext, ClassProcessorProvider.class),
+                ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class));
     }
 
-    List<ITransformer<ClassNode>> getTransformersFor(String className, TargetType<ClassNode> classType) {
-        TransformTargetLabel tl = new TransformTargetLabel(className, classType);
-        TransformList<ClassNode> transformerlist = classType.get(this.transformers);
-        return transformerlist.getTransformersForLabel(tl);
+    @VisibleForTesting
+    public List<ClassProcessor> getSortedTransformers() {
+        return sortedTransformers;
     }
 
-    @SuppressWarnings("unchecked")
-    public <T> void addTransformer(TransformTargetLabel targetLabel, ITransformer<T> transformer, ITransformationService service) {
-        LOGGER.debug(MODLAUNCHER, "Adding transformer {} to {}", () -> transformer, () -> targetLabel);
-        classNeedsTransforming.add(targetLabel.getClassName().getInternalName());
-        final TransformList<T> transformList = (TransformList<T>) this.transformers.get(targetLabel.getTargetType());
-        transformList.addTransformer(targetLabel, new TransformerHolder<>(transformer, service));
+    private List<ClassProcessor> sortTransformers(ILaunchContext launchContext, List<ClassProcessorProvider> transformerProviders, List<ClassProcessor> existingTransformers) {
+        var allTransformers = new ArrayList<>(existingTransformers);
+        for (ClassProcessorProvider provider : transformerProviders) {
+            allTransformers.addAll(provider.makeTransformers(launchContext));
+        }
+        return sortTransformers(allTransformers);
     }
 
-    /**
-     * Requires internal class name (using '/' instead of '.')
-     */
-    boolean needsTransforming(String internalClassName) {
-        return classNeedsTransforming.contains(internalClassName);
+    @SuppressWarnings("UnstableApiUsage")
+    private List<ClassProcessor> sortTransformers(List<ClassProcessor> allTransformers) {
+        final var graph = GraphBuilder.directed().<ClassProcessor>build();
+        var specialComputeFramesNode = new ClassProcessor() {
+            // This "special" transformer never handles a class but is always triggered
+            @Override
+            public ProcessorName name() {
+                return ClassProcessor.COMPUTING_FRAMES;
+            }
+
+            @Override
+            public boolean handlesClass(SelectionContext context) {
+                return false;
+            }
+
+            @Override
+            public Set<ProcessorName> runsAfter() {
+                return Set.of();
+            }
+
+            @Override
+            public boolean processClass(TransformationContext context) {
+                return false;
+            }
+        };
+
+        graph.addNode(specialComputeFramesNode);
+        transformers.put(specialComputeFramesNode.name(), specialComputeFramesNode);
+        for (var transformer : allTransformers) {
+            if (transformers.containsKey(transformer.name())) {
+                LOGGER.error(
+                        "Duplicate transformers with name {}, of types {} and {}",
+                        transformer.name(),
+                        transformers.get(transformer.name()).getClass().getName(),
+                        transformer.getClass().getName());
+                throw new IllegalStateException("Duplicate transformers with name: " + transformer.name());
+            }
+            graph.addNode(transformer);
+            transformers.put(transformer.name(), transformer);
+        }
+        for (var self : transformers.values()) {
+            this.generatedPackages.addAll(self.generatesPackages());
+            // If the targeted transformer is not present, then the ordering does not matter;
+            // this allows for e.g. ordering with transformers that may or may not be present.
+            for (var targetName : self.runsBefore()) {
+                var target = transformers.get(targetName);
+                if (target == self) {
+                    continue;
+                }
+                if (target != null) {
+                    graph.putEdge(self, target);
+                }
+            }
+            for (var targetName : self.runsAfter()) {
+                var target = transformers.get(targetName);
+                if (target == self) {
+                    continue;
+                }
+                if (target != null) {
+                    graph.putEdge(target, self);
+                }
+            }
+        }
+        return TopologicalSort.topologicalSort(graph, Comparator.comparing(ClassProcessor::name));
+    }
+
+    public void initializeBytecodeProvider(Function<ProcessorName, ClassProcessor.BytecodeProvider> function, IEnvironment environment) {
+        for (var transformer : sortedTransformers) {
+            transformer.initializeBytecodeProvider(function.apply(transformer.name()), environment);
+        }
+    }
+
+    public List<ClassProcessor> transformersFor(Type classDesc, boolean isEmpty, ProcessorName upToTransformer) {
+        var out = new ArrayList<ClassProcessor>();
+        boolean includesComputingFrames = false;
+        for (var transformer : sortedTransformers) {
+            if (upToTransformer != null && upToTransformer.equals(transformer.name())) {
+                break;
+            } else if (ClassProcessor.COMPUTING_FRAMES.equals(transformer.name())) {
+                includesComputingFrames = true;
+                out.add(transformer);
+            } else {
+                ClassTransformStatistics.incrementAskedForTransform(transformer);
+
+                var context = new ClassProcessor.SelectionContext(classDesc, isEmpty);
+                if (transformer.handlesClass(context)) {
+                    ClassTransformStatistics.incrementTransforms(transformer);
+                    out.add(transformer);
+                }
+            }
+        }
+        if ((out.size() == 1 && includesComputingFrames)) {
+            // The class does not actually require any transformation, as the only transformer present is the special
+            // no-op marker for where class hierarchy computation in frame computation goes up to, and potentially the
+            // marker for where results are fixed and may be responded to.
+            return List.of();
+        }
+        return out;
+    }
+
+    public Set<String> generatedPackages() {
+        return Collections.unmodifiableSet(generatedPackages);
+    }
+
+    public Optional<ClassProcessor> findClassProcessor(ProcessorName name) {
+        return Optional.ofNullable(transformers.get(name));
     }
 }

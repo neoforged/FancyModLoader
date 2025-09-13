@@ -5,30 +5,34 @@
 
 package net.neoforged.fml.common.asm;
 
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-import java.util.EnumSet;
+import java.util.Set;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
+import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
 
-public class AccessTransformerService implements ILaunchPluginService {
+public class AccessTransformerService implements ClassProcessor {
     public final AccessTransformerEngine engine = AccessTransformerEngine.newEngine();
 
+    public static final ProcessorName NAME = new ProcessorName("neoforge", "access_transformer");
+
     @Override
-    public String name() {
-        return "accesstransformer";
+    public ProcessorName name() {
+        return NAME;
     }
 
     @Override
-    public int processClassWithFlags(final Phase phase, final ClassNode classNode, final Type classType, final String reason) {
-        return engine.transform(classNode, classType) ? ComputeFlags.SIMPLE_REWRITE : ComputeFlags.NO_REWRITE;
+    public Set<ProcessorName> runsBefore() {
+        return Set.of(FMLMixinClassProcessor.NAME);
     }
 
-    private static final EnumSet<Phase> YAY = EnumSet.of(Phase.BEFORE);
-    private static final EnumSet<Phase> NAY = EnumSet.noneOf(Phase.class);
+    @Override
+    public int processClassWithFlags(final TransformationContext context) {
+        return engine.transform(context.node(), context.type()) ? ComputeFlags.SIMPLE_REWRITE : ComputeFlags.NO_REWRITE;
+    }
 
     @Override
-    public EnumSet<Phase> handlesClass(final Type classType, final boolean isEmpty) {
-        return !isEmpty && engine.getTargets().contains(classType) ? YAY : NAY;
+    public boolean handlesClass(final SelectionContext context) {
+        return !context.empty() && engine.getTargets().contains(context.type());
     }
 }

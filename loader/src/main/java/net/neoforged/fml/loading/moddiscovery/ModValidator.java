@@ -7,7 +7,6 @@ package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
-import cpw.mods.modlauncher.api.ITransformationService;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -15,6 +14,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.loading.FMLServiceProvider;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
 import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.LogMarkers;
@@ -67,17 +67,17 @@ public class ModValidator {
         }
     }
 
-    public ITransformationService.Resource getPluginResources() {
-        return new ITransformationService.Resource(IModuleLayerManager.Layer.PLUGIN, this.candidatePlugins.stream().map(ModFile::getSecureJar).toList());
+    public FMLServiceProvider.Resource getPluginResources() {
+        return new FMLServiceProvider.Resource(IModuleLayerManager.Layer.PLUGIN, this.candidatePlugins.stream().map(ModFile::getSecureJar).toList());
     }
 
-    public ITransformationService.Resource getModResources() {
+    public FMLServiceProvider.Resource getModResources() {
         var modFilesToLoad = Stream.concat(
                 // mods
                 this.loadingModList.getModFiles().stream().map(ModFileInfo::getFile),
                 // game libraries
                 lst(this.modFiles.get(IModFile.Type.GAMELIBRARY)).stream());
-        return new ITransformationService.Resource(IModuleLayerManager.Layer.GAME, modFilesToLoad.map(ModFile::getSecureJar).toList());
+        return new FMLServiceProvider.Resource(IModuleLayerManager.Layer.GAME, modFilesToLoad.map(ModFile::getSecureJar).toList());
     }
 
     private void validateLanguages() {

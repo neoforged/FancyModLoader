@@ -14,31 +14,31 @@
 
 package cpw.mods.modlauncher;
 
-import cpw.mods.modlauncher.api.ITransformerVotingContext;
+import cpw.mods.modlauncher.api.CoremodTransformationContext;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-public class PredicateVisitor extends ClassVisitor {
+class PredicateVisitor extends ClassVisitor {
     private static final int ASM_API = Opcodes.ASM9;
 
-    private ITransformerVotingContext.MethodPredicate methodPredicate;
-    private ITransformerVotingContext.FieldPredicate fieldPredicate;
-    private ITransformerVotingContext.ClassPredicate classPredicate;
+    private CoremodTransformationContext.MethodPredicate methodPredicate;
+    private CoremodTransformationContext.FieldPredicate fieldPredicate;
+    private CoremodTransformationContext.ClassPredicate classPredicate;
     private boolean result;
 
-    PredicateVisitor(final ITransformerVotingContext.FieldPredicate fieldPredicate) {
+    PredicateVisitor(final CoremodTransformationContext.FieldPredicate fieldPredicate) {
         super(ASM_API);
         this.fieldPredicate = fieldPredicate;
     }
 
-    PredicateVisitor(final ITransformerVotingContext.MethodPredicate methodPredicate) {
+    PredicateVisitor(final CoremodTransformationContext.MethodPredicate methodPredicate) {
         super(ASM_API);
         this.methodPredicate = methodPredicate;
     }
 
-    PredicateVisitor(final ITransformerVotingContext.ClassPredicate classPredicate) {
+    PredicateVisitor(final CoremodTransformationContext.ClassPredicate classPredicate) {
         super(ASM_API);
         this.classPredicate = classPredicate;
     }

@@ -18,9 +18,10 @@ import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.TypesafeMap;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.util.Optional;
 import java.util.function.Function;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
 
 /**
  * Environment implementation class
@@ -40,8 +41,8 @@ public final class Environment implements IEnvironment {
     }
 
     @Override
-    public Optional<ILaunchPluginService> findLaunchPlugin(final String name) {
-        return launcher.findLaunchPlugin(name);
+    public Optional<ClassProcessor> findClassProcessor(final ProcessorName name) {
+        return launcher.findClassProcessor(name);
     }
 
     @Override

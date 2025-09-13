@@ -14,10 +14,9 @@
 
 package cpw.mods.modlauncher;
 
-import cpw.mods.modlauncher.api.ITransformerActivity;
-import cpw.mods.modlauncher.api.ITransformerVotingContext;
-import java.util.List;
-import java.util.function.Supplier;
+import cpw.mods.modlauncher.api.CoremodTransformationContext;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
@@ -28,50 +27,30 @@ import org.objectweb.asm.tree.MethodNode;
 /**
  * The internal vote context structure.
  */
-class VotingContext implements ITransformerVotingContext {
+@ApiStatus.Internal
+public class CoremodTransformationContextImpl implements CoremodTransformationContext {
     private static final Object[] EMPTY = new Object[0];
-    private final String className;
-    private final boolean classExists;
-    private final Supplier<byte[]> sha256;
-    private final List<ITransformerActivity> auditActivities;
-    private final String reason;
-    private Object node;
+    private final ClassProcessor.TransformationContext context;
+    private final Object node;
 
-    VotingContext(String className, boolean classExists, Supplier<byte[]> sha256sum, final List<ITransformerActivity> activities, final String reason) {
-        this.className = className;
-        this.classExists = classExists;
-        this.sha256 = sha256sum;
-        this.auditActivities = activities;
-        this.reason = reason;
+    public CoremodTransformationContextImpl(ClassProcessor.TransformationContext context, Object node) {
+        this.context = context;
+        this.node = node;
     }
 
     @Override
     public String getClassName() {
-        return className;
+        return context.type().getClassName();
     }
 
     @Override
     public boolean doesClassExist() {
-        return classExists;
+        return !context.empty();
     }
 
     @Override
     public byte[] getInitialClassSha256() {
-        return sha256.get();
-    }
-
-    @Override
-    public List<ITransformerActivity> getAuditActivities() {
-        return auditActivities;
-    }
-
-    @Override
-    public String getReason() {
-        return reason;
-    }
-
-    <T> void setNode(final T node) {
-        this.node = node;
+        return context.initialSha256();
     }
 
     @Override
@@ -110,12 +89,10 @@ class VotingContext implements ITransformerVotingContext {
     }
 
     private Object[] toObjectArray(final AbstractInsnNode insnNode) {
-        if (insnNode instanceof MethodInsnNode) {
-            final MethodInsnNode methodInsnNode = (MethodInsnNode) insnNode;
+        if (insnNode instanceof MethodInsnNode methodInsnNode) {
             return new Object[] { methodInsnNode.name, methodInsnNode.desc, methodInsnNode.owner, methodInsnNode.itf };
         }
-        if (insnNode instanceof FieldInsnNode) {
-            final FieldInsnNode fieldInsnNode = (FieldInsnNode) insnNode;
+        if (insnNode instanceof FieldInsnNode fieldInsnNode) {
             return new Object[] { fieldInsnNode.name, fieldInsnNode.desc, fieldInsnNode.owner };
         }
         return EMPTY;
