@@ -81,12 +81,12 @@ public class SimulatedInstallation implements AutoCloseable {
     /**
      * A class that is contained in both client and dedicated server distribution, renamed to official mappings.
      */
-    public static final IdentifiableContent RENAMED_SHARED = generateClass("RENAMED_SHARED", "net/minecraft/server/MinecraftServer.class");
+    public static final IdentifiableContent RENAMED_SHARED = generateClass("RENAMED_SHARED", "net/minecraft/DetectedVersion.class");
     /**
      * A class that is contained in both client and dedicated server distribution, renamed to official mappings,
      * and containing NeoForge patches.
      */
-    public static final IdentifiableContent PATCHED_SHARED = generateClass("PATCHED_SHARED", "net/minecraft/server/MinecraftServer.class");
+    public static final IdentifiableContent PATCHED_SHARED = generateClass("PATCHED_SHARED", "net/minecraft/DetectedVersion.class");
     /**
      * A class that is only in the client distribution, renamed to official mappings.
      */
@@ -133,6 +133,8 @@ public class SimulatedInstallation implements AutoCloseable {
     private final Path gameDir;
     // Simulates the libraries directory found in production installations (both client & server)
     private final Path librariesDir;
+    // Simulates the versions directory found in production installations (only on client)
+    private final Path versionsDir;
     // Used for testing running out of a Gradle project. Is the simulated Gradle project root directory.
     private final Path projectRoot;
 
@@ -150,6 +152,7 @@ public class SimulatedInstallation implements AutoCloseable {
     public SimulatedInstallation() throws IOException {
         gameDir = Files.createTempDirectory("gameDir");
         librariesDir = Files.createTempDirectory("librariesDir");
+        versionsDir = Files.createTempDirectory("versionsDir");
         projectRoot = Files.createTempDirectory("projectRoot");
     }
 
@@ -160,6 +163,22 @@ public class SimulatedInstallation implements AutoCloseable {
 
                 var patchedClientJar = writeLibrary(GAV_PATCHED_CLIENT, PATCHED_CLIENT, RENAMED_SHARED, CLIENT_ASSETS, SHARED_ASSETS, MINECRAFT_MODS_TOML, MINECRAFT_VERSION_JSON);
                 var universalJar = writeLibrary(GAV_NEOFORGE_UNIVERSAL, NEOFORGE_UNIVERSAL_JAR_CONTENT);
+
+                // For the production client, the Vanilla launcher puts the original, obfuscated client jar on the classpath
+                // Since this can influence our detection logic, let's make sure it's included for the tests.
+                Path obfuscatedClientJar = versionsDir.resolve(MC_VERSION).resolve(MC_VERSION + ".jar");
+                writeJarFile(
+                        obfuscatedClientJar,
+                        generateClass("CLIENT_MAIN", "net/minecraft/client/main/Main.class"),
+                        generateClass("CLIENT_DATA_MAIN", "net/minecraft/client/data/Main.class"),
+                        generateClass("SERVER_MAIN", "net/minecraft/server/Main.class"),
+                        generateClass("SERVER_DATA_MAIN", "net/minecraft/data/Main.class"),
+                        generateClass("GAMETEST_MAIN", "net/minecraft/gametest/Main.class"),
+                        generateClass("MINECRAFT_SERVER", "net/minecraft/server/MinecraftServer.class"),
+                        MINECRAFT_VERSION_JSON,
+                        SHARED_ASSETS,
+                        CLIENT_ASSETS);
+                launchClasspath.add(obfuscatedClientJar);
 
                 componentRoots = InstallationComponents.productionJars(patchedClientJar, universalJar);
             }
@@ -213,6 +232,15 @@ public class SimulatedInstallation implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
+        tryDeleteDirectory(gameDir);
+        tryDeleteDirectory(librariesDir);
+        tryDeleteDirectory(versionsDir);
+        tryDeleteDirectory(projectRoot);
+        System.clearProperty(LIBRARIES_DIRECTORY_PROPERTY);
+        System.clearProperty(MOD_FOLDERS_PROPERTIES);
+    }
+
+    private void tryDeleteDirectory(Path gameDir) throws IOException, InterruptedException {
         for (var i = 0; i < 5; i++) {
             try {
                 MoreFiles.deleteRecursively(gameDir, RecursiveDeleteOption.ALLOW_INSECURE);
@@ -224,30 +252,6 @@ public class SimulatedInstallation implements AutoCloseable {
                 Thread.sleep(100L);
             }
         }
-        for (var i = 0; i < 5; i++) {
-            try {
-                MoreFiles.deleteRecursively(librariesDir, RecursiveDeleteOption.ALLOW_INSECURE);
-                break;
-            } catch (IOException e) {
-                if (i + 1 >= 5) {
-                    throw e;
-                }
-                Thread.sleep(100L);
-            }
-        }
-        for (var i = 0; i < 5; i++) {
-            try {
-                MoreFiles.deleteRecursively(projectRoot, RecursiveDeleteOption.ALLOW_INSECURE);
-                break;
-            } catch (IOException e) {
-                if (i + 1 >= 5) {
-                    throw e;
-                }
-                Thread.sleep(100L);
-            }
-        }
-        System.clearProperty(LIBRARIES_DIRECTORY_PROPERTY);
-        System.clearProperty(MOD_FOLDERS_PROPERTIES);
     }
 
     public void setupPlainJarInModsFolder(String filename) throws IOException {
@@ -599,6 +603,7 @@ public class SimulatedInstallation implements AutoCloseable {
     }
 
     public static void writeJarFile(Path file, IdentifiableContent... content) throws IOException {
+        Files.createDirectories(file.getParent());
         try (var fout = Files.newOutputStream(file)) {
             writeJarFile(fout, content);
         }

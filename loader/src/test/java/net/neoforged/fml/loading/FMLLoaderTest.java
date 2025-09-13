@@ -615,7 +615,7 @@ class FMLLoaderTest extends LauncherTest {
 
             var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                    "ERROR: A technical error occurred during mod loading: Unexpected IModFile subclass: class net.neoforged.neoforgespi.locating.IModFile");
+                    "ERROR: A technical error occurred during mod loading: Unexpected IModFile subclass: class org.mockito.codegen.IModFile");
         }
 
         @Test

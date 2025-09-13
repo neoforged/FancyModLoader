@@ -152,39 +152,50 @@ public abstract class LauncherTest {
     }
 
     protected LaunchResult launchAndLoadWithAdditionalClasspath(String launchTarget) throws Exception {
-        return launchAndLoadWithAdditionalClasspath(launchTarget, installation.getLaunchClasspath());
+        return launchAndLoad(launchTarget);
     }
 
     protected LaunchResult launchAndLoadWithAdditionalClasspath(String launchTarget, List<Path> additionalClassPath) throws Exception {
-        var urls = additionalClassPath.stream().map(path -> {
-            try {
-                return path.toUri().toURL();
-            } catch (MalformedURLException e) {
-                throw new RuntimeException(e);
-            }
-        }).toArray(URL[]::new);
-
-        var previousCl = Thread.currentThread().getContextClassLoader();
-        try (var cl = new URLClassLoader(urls, getClass().getClassLoader())) {
-            Thread.currentThread().setContextClassLoader(cl);
-            return launchAndLoad(launchTarget);
-        } finally {
-            Thread.currentThread().setContextClassLoader(previousCl);
-        }
+        return launchAndLoad(launchTarget, additionalClassPath);
     }
 
     protected LaunchResult launchAndLoad(String launchTarget) throws Exception {
-        LaunchResult result;
-        try {
-            result = launch(launchTarget, List.of());
-        } catch (ModLoadingException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new LaunchException(e);
+        return launchAndLoad(launchTarget, installation.getLaunchClasspath());
+    }
+
+    protected LaunchResult launchAndLoad(String launchTarget, List<Path> additionalClassPath) throws Exception {
+        var previousCl = Thread.currentThread().getContextClassLoader();
+        URLClassLoader cl = null;
+        if (!additionalClassPath.isEmpty()) {
+            var urls = additionalClassPath.stream().map(path -> {
+                try {
+                    return path.toUri().toURL();
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                }
+            }).toArray(URL[]::new);
+            cl = new URLClassLoader(urls, getClass().getClassLoader());
+            Thread.currentThread().setContextClassLoader(cl);
         }
-        // loadMods is usually triggered from NeoForge
-        loadMods();
-        return result;
+
+        try {
+            LaunchResult result;
+            try {
+                result = launch(launchTarget, additionalClassPath);
+            } catch (ModLoadingException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new LaunchException(e);
+            }
+            // loadMods is usually triggered from NeoForge
+            loadMods();
+            return result;
+        } finally {
+            if (cl != null) {
+                cl.close();
+            }
+            Thread.currentThread().setContextClassLoader(previousCl);
+        }
     }
 
     protected enum LaunchMode {
@@ -217,8 +228,6 @@ public abstract class LauncherTest {
     private LaunchResult launch(String launchTarget, List<Path> additionalClassPath) {
         var launchMode = LaunchMode.fromLaunchTarget(launchTarget);
         ModLoader.clear();
-
-        System.setProperty("fml.earlyWindowControl", "false");
 
         var classLoader = Thread.currentThread().getContextClassLoader();
         var startupArgs = new StartupArgs(

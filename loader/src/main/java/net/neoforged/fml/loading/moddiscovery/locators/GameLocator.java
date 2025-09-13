@@ -45,15 +45,15 @@ public class GameLocator implements IModFileCandidateLocator {
 
     @Override
     public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {
-        // 0) Vanilla Launcher puts the obfuscated jar on the classpath. We mark it as claimed to prevent it from
-        // being hoisted into a module, occupying the entrypoint packages.
-        preventLoadingOfObfuscatedClientJar(context);
-
         var ourCl = Thread.currentThread().getContextClassLoader();
 
-        // We look for a class present in both Minecraft distributions on the classpath, which would be obfuscated in production (MinecraftServer)
+        // 0) Vanilla Launcher puts the obfuscated jar on the classpath. We mark it as claimed to prevent it from
+        // being hoisted into a module, occupying the entrypoint packages.
+        preventLoadingOfObfuscatedClientJar(context, ourCl);
+
+        // We look for a class present in both Minecraft distributions on the classpath, which would be obfuscated in production (DetectedVersion)
         // If that is present, we assume we're launching in dev (NeoDev or ModDev).
-        try (var systemFiles = RequiredSystemFiles.find(ourCl)) {
+        try (var systemFiles = RequiredSystemFiles.find(context, ourCl)) {
             if (!systemFiles.isEmpty()) {
                 // If we've only been able to find some of the required files, we need to error
                 systemFiles.checkForMissingMinecraftFiles(context.getRequiredDistribution() == Dist.CLIENT);
@@ -336,19 +336,17 @@ public class GameLocator implements IModFileCandidateLocator {
         }
     }
 
-    private void preventLoadingOfObfuscatedClientJar(ILaunchContext context) {
-        // TODO: Only relevant in dev
-
+    private void preventLoadingOfObfuscatedClientJar(ILaunchContext context, ClassLoader ourCl) {
         try {
             var jarsWithEntrypoint = new HashSet<Path>();
 
-            var resources = getClass().getClassLoader().getResources("net/minecraft/client/main/Main.class");
+            var resources = ourCl.getResources("net/minecraft/client/main/Main.class");
             while (resources.hasMoreElements()) {
                 jarsWithEntrypoint.add(ClasspathResourceUtils.findJarPathFor("net/minecraft/client/main/Main.class", "minecraft jar", resources.nextElement()));
             }
 
             // This class would only be present in deobfuscated jars
-            resources = getClass().getClassLoader().getResources("net/minecraft/client/Minecraft.class");
+            resources = ourCl.getResources("net/minecraft/client/Minecraft.class");
             while (resources.hasMoreElements()) {
                 jarsWithEntrypoint.remove(ClasspathResourceUtils.findJarPathFor("net/minecraft/client/Minecraft.class", "minecraft jar", resources.nextElement()));
             }

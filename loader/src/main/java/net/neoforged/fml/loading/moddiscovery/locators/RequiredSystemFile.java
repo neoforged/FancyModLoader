@@ -20,6 +20,7 @@ import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.util.ClasspathResourceUtils;
+import net.neoforged.neoforgespi.ILaunchContext;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +32,7 @@ import org.slf4j.LoggerFactory;
 final class RequiredSystemFiles implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(RequiredSystemFiles.class);
 
-    private static final String COMMON_CLASS = "net/minecraft/server/MinecraftServer.class";
+    private static final String COMMON_CLASS = "net/minecraft/DetectedVersion.class";
     private static final String CLIENT_CLASS = "net/minecraft/client/Minecraft.class";
     private static final String COMMON_RESOURCE_ROOT = "data/.mcassetsroot";
     private static final String CLIENT_RESOURCE_ROOT = "assets/.mcassetsroot";
@@ -80,23 +81,25 @@ final class RequiredSystemFiles implements AutoCloseable {
             }
         }
 
+        // Note that finding a common class is the minimum requirement, since other classes are available from the obfuscated client jar
         if (!missingFiles.isEmpty()) {
-            LOG.error("Couldn't find {} on classpath.", missingFiles);
+            var foundRoots = getAll().stream().distinct().toList();
+            LOG.error("Couldn't find {} on classpath, while we did find other required files in: {}", missingFiles, foundRoots);
             throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.missing_minecraft_jar"));
         }
     }
 
-    public static RequiredSystemFiles find(ClassLoader loader) {
+    public static RequiredSystemFiles find(ILaunchContext context, ClassLoader loader) {
         var locatedRoots = new ArrayList<JarContents>();
 
         var result = new RequiredSystemFiles();
         try {
-            result.commonClasses = findAndOpen(loader, locatedRoots, COMMON_CLASS);
-            result.commonResources = findAndOpen(loader, locatedRoots, COMMON_RESOURCE_ROOT);
-            result.clientClasses = findAndOpen(loader, locatedRoots, CLIENT_CLASS);
-            result.clientResources = findAndOpen(loader, locatedRoots, CLIENT_RESOURCE_ROOT);
-            result.neoForgeCommonClasses = findAndOpen(loader, locatedRoots, NEOFORGE_COMMON_CLASS);
-            result.neoForgeClientClasses = findAndOpen(loader, locatedRoots, NEOFORGE_CLIENT_CLASS);
+            result.commonClasses = findAndOpen(context, loader, locatedRoots, COMMON_CLASS);
+            result.commonResources = findAndOpen(context, loader, locatedRoots, COMMON_RESOURCE_ROOT);
+            result.clientClasses = findAndOpen(context, loader, locatedRoots, CLIENT_CLASS);
+            result.clientResources = findAndOpen(context, loader, locatedRoots, CLIENT_RESOURCE_ROOT);
+            result.neoForgeCommonClasses = findAndOpen(context, loader, locatedRoots, NEOFORGE_COMMON_CLASS);
+            result.neoForgeClientClasses = findAndOpen(context, loader, locatedRoots, NEOFORGE_CLIENT_CLASS);
             result.neoForgeResources = findNeoForgeResources(locatedRoots, loader);
         } catch (Exception e) {
             closeAll(locatedRoots);
@@ -133,7 +136,10 @@ final class RequiredSystemFiles implements AutoCloseable {
     }
 
     @Nullable
-    private static JarContents findAndOpen(ClassLoader loader, List<JarContents> alreadyOpened, String relativePath) {
+    private static JarContents findAndOpen(ILaunchContext context,
+            ClassLoader loader,
+            List<JarContents> alreadyOpened,
+            String relativePath) {
         // First test the already opened jars for speed
         for (var contents : alreadyOpened) {
             if (contents.containsFile(relativePath)) {
@@ -141,14 +147,19 @@ final class RequiredSystemFiles implements AutoCloseable {
             }
         }
 
-        var root = ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath(loader, relativePath);
-        if (root == null) {
-            return null;
+        var roots = ClasspathResourceUtils.findFileSystemRootsOfFileOnClasspath(loader, relativePath);
+
+        for (var path : roots) {
+            // The obfuscated client jar is on the classpath in production, and we mark it as located earlier.
+            // This check prevents us trying to load our files from it.
+            if (!context.isLocated(path)) {
+                var jar = openOrThrow(path);
+                alreadyOpened.add(jar);
+                return jar;
+            }
         }
 
-        var jar = openOrThrow(root);
-        alreadyOpened.add(jar);
-        return jar;
+        return null;
     }
 
     private static JarContents openOrThrow(Path root) {
