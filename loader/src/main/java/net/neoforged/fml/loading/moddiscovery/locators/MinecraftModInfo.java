@@ -6,50 +6,22 @@
 package net.neoforged.fml.loading.moddiscovery.locators;
 
 import com.electronwill.nightconfig.core.Config;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.NightConfigWrapper;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
-import org.jetbrains.annotations.Nullable;
 
 final class MinecraftModInfo {
-    @Nullable
-    private String minecraftVersion;
+    private final String minecraftVersion;
 
-    public MinecraftModInfo(@Nullable String minecraftVersion) {
+    public MinecraftModInfo(String minecraftVersion) {
         this.minecraftVersion = minecraftVersion;
     }
 
     public IModFileInfo buildMinecraftModInfo(IModFile iModFile) {
         final ModFile modFile = (ModFile) iModFile;
-
-        // TODO COnsider moving this out to the game locator as "detectMinecraftVersion" since it only matters for dev anyway
-        if (minecraftVersion == null) {
-            try (var in = modFile.getContents().openFile("version.json")) {
-                if (in == null) {
-                    // TODO: Translate, attribute to MC (corrupted installation)
-                    throw new IllegalStateException("Failed to find version.json in Minecraft jar");
-                }
-                var reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-                var versionElement = new Gson().fromJson(reader, JsonObject.class);
-                var idPrimitive = versionElement.getAsJsonPrimitive("id");
-                if (idPrimitive == null) {
-                    throw new IllegalArgumentException("Minecraft version.json found in " + modFile.getFilePath() + " is missing 'id' field. Available fields are: " + versionElement.keySet());
-                }
-                minecraftVersion = idPrimitive.getAsString();
-            } catch (IOException e) {
-                // TODO: Translate, attribute to MC (corrupted installation)
-                throw new IllegalStateException("Failed to read Minecraft version.json", e);
-            }
-        }
 
         // We haven't changed this in years, and I can't be asked right now to special case this one file in the path.
         final var conf = Config.inMemory();

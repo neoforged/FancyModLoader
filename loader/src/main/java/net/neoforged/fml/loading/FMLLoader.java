@@ -434,8 +434,8 @@ public final class FMLLoader implements AutoCloseable {
         }
 
         if (!needsMasking.isEmpty()) {
-            if (LOGGER.isInfoEnabled()) {
-                LOGGER.info("Masking classpath elements: {}", needsMasking.stream().map(PathPrettyPrinting::prettyPrint).toList());
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Masking classpath elements: {}", needsMasking.stream().map(PathPrettyPrinting::prettyPrint).toList());
             }
 
             var maskedLoader = new ResourceMaskingClassLoader(currentClassLoader, needsMasking);

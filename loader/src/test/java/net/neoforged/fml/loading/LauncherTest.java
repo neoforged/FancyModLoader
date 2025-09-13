@@ -12,6 +12,7 @@ import cpw.mods.jarhandling.JarResource;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.TransformingClassLoader;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -65,6 +66,14 @@ public abstract class LauncherTest {
 
     protected TransformingClassLoader gameClassLoader;
 
+    public LauncherTest() {
+        try {
+            installation = new SimulatedInstallation();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     @BeforeAll
     static void ensureAddOpensForModularClassLoader() {
         // We abuse the ByteBuddy agent that Mockito also uses to open java.lang to ModularClassLoader
@@ -107,8 +116,6 @@ public abstract class LauncherTest {
                 return bus;
             }
         };
-
-        installation = new SimulatedInstallation();
     }
 
     @AfterEach
@@ -142,6 +149,10 @@ public abstract class LauncherTest {
         var additionalClasspath = installation.setupNeoForgeDevProject();
 
         return launchAndLoadWithAdditionalClasspath(launchTarget, additionalClasspath);
+    }
+
+    protected LaunchResult launchAndLoadWithAdditionalClasspath(String launchTarget) throws Exception {
+        return launchAndLoadWithAdditionalClasspath(launchTarget, installation.getLaunchClasspath());
     }
 
     protected LaunchResult launchAndLoadWithAdditionalClasspath(String launchTarget, List<Path> additionalClassPath) throws Exception {
@@ -413,16 +424,27 @@ public abstract class LauncherTest {
             var expectedContent = identifiableContent.content();
             var actualContent = paths.get(identifiableContent.relativePath()).readAllBytes();
             if (isPrintableAscii(expectedContent) && isPrintableAscii(actualContent)) {
-                assertThat(new String(actualContent)).isEqualTo(new String(expectedContent));
+                var actualContentText = new String(expectedContent);
+                var expectedContentText = new String(actualContent);
+                if (!actualContentText.equals(expectedContentText) && actualContentText.replace("\r\n", "\n").equals(expectedContentText.replace("\r\n", "\n"))) {
+                    assertThat(new String(actualContent))
+                            .as("Content of %s doesn't match in line-endings", identifiableContent.relativePath())
+                            .isEqualTo(new String(expectedContent));
+                }
+                assertThat(new String(actualContent))
+                        .as("Content of %s doesn't match", identifiableContent.relativePath())
+                        .isEqualTo(new String(expectedContent));
             } else {
-                assertThat(actualContent).isEqualTo(expectedContent);
+                assertThat(actualContent)
+                        .as("Content of %s doesn't match", identifiableContent.relativePath())
+                        .isEqualTo(expectedContent);
             }
         }
     }
 
     private boolean isPrintableAscii(byte[] potentialText) {
         for (byte b : potentialText) {
-            if (b < 0x20 || b == 0x7f) {
+            if ((b < 0x20 || b == 0x7f) && b != '\n' && b != '\r' && b != '\t') {
                 return false;
             }
         }

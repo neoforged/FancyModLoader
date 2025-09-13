@@ -6,7 +6,6 @@
 package net.neoforged.fml.loading;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Fail.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -125,7 +124,16 @@ class FMLLoaderTest extends LauncherTest {
 
         @Test
         void testNeoForgeDevJarClientDiscovery() throws Exception {
-            fail("TODO: Write a test case, where NeoForge is passed in jar form (happens when running from Gradle)");
+            var additionalClasspath = installation.setupSplitNeoForgeDevProjectForClientLaunch();
+            var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdatadev", additionalClasspath);
+
+            assertThat(result.issues()).isEmpty();
+            assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.pluginLayerModules()).isEmpty();
+
+            assertLegacyMinecraftClientJar(result, false);
+            assertNeoForgeJar(result);
         }
 
         @Test
@@ -587,7 +595,7 @@ class FMLLoaderTest extends LauncherTest {
         void testCorruptedNeoForgeJarInServerInstallation() throws Exception {
             installation.setupProductionServer();
 
-            var neoforgePath = installation.getLibrariesDir().resolve("net/neoforged/neoforge/20.4.9999/neoforge-20.4.9999-universal.jar");
+            var neoforgePath = installation.getComponentRoots().neoforgeCommonClassesRoot();
             // Replace the jar with an empty zip (no neoforge.mods.toml)
             new ZipOutputStream(Files.newOutputStream(neoforgePath)).close();
 

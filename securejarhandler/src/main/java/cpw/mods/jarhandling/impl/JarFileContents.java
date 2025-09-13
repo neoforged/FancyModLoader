@@ -8,12 +8,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HexFormat;
 import java.util.List;
@@ -31,10 +33,16 @@ public final class JarFileContents implements JarContents {
     private final JarFile jarFile;
     private final Manifest jarManifest;
 
+    private static final List<WeakReference<JarFileContents>> active = new ArrayList<>();
+    private final StackTraceElement[] stack;
+
     public JarFileContents(Path path) throws IOException {
         this.path = path;
         this.jarFile = new JarFile(path.toFile(), true, JarFile.OPEN_READ, JarFile.runtimeVersion());
         this.jarManifest = Objects.requireNonNullElse(this.jarFile.getManifest(), EmptyManifest.INSTANCE);
+
+        stack = Thread.currentThread().getStackTrace();
+        active.add(new WeakReference<>(this));
     }
 
     @Override
@@ -163,6 +171,12 @@ public final class JarFileContents implements JarContents {
 
     @Override
     public void close() {
+        for (WeakReference<JarFileContents> ref : active) {
+            if (ref.get() == this) {
+                ref.clear();
+            }
+        }
+        active.removeIf(s -> s.get() == null);
         try {
             jarFile.close();
         } catch (IOException e) {
