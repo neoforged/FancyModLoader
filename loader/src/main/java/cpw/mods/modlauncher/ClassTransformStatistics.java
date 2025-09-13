@@ -1,17 +1,16 @@
 package cpw.mods.modlauncher;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.ApiStatus;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @ApiStatus.Internal
 public class ClassTransformStatistics {
@@ -27,13 +26,13 @@ public class ClassTransformStatistics {
     public static void incrementMixinParsedClasses() {
         MIXIN_PARSED_CLASS_COUNT++;
     }
-    
+
     static void incrementAskedForTransform(ClassProcessor processor) {
         if (!processor.name().equals(ClassProcessor.COMPUTING_FRAMES)) {
             POTENTIAL_BY_PROCESSOR.compute(processor.name(), (k, v) -> v == null ? 1 : v + 1);
         }
     }
-    
+
     static void incrementTransforms(ClassProcessor processor) {
         if (!processor.name().equals(ClassProcessor.COMPUTING_FRAMES)) {
             TRANSFORMS_BY_PROCESSOR.compute(processor.name(), (k, v) -> v == null ? 1 : v + 1);
@@ -65,7 +64,7 @@ public class ClassTransformStatistics {
     public static void logTransformationSummary() {
         LOGGER.debug("Transformed/total loaded classes: {} and {} parsed for mixin", getTransformationSummary(), getMixinParsedClassesSummary());
     }
-    
+
     @ApiStatus.Internal
     public synchronized static void checkTransformationBehavior() {
         // Checks if any transformers are acting suspiciously like they're targeting everything; logs an error for any

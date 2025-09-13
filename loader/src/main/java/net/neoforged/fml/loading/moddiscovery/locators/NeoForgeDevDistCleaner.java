@@ -6,7 +6,6 @@
 package net.neoforged.fml.loading.moddiscovery.locators;
 
 import com.mojang.logging.LogUtils;
-
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;

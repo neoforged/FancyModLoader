@@ -1,8 +1,18 @@
 package net.neoforged.fml.loading;
 
+import static net.neoforged.fml.loading.LogMarkers.CORE;
+import static net.neoforged.fml.loading.LogMarkers.LOADING;
+
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.CoremodTransformationContextImpl;
 import cpw.mods.modlauncher.api.ITransformer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
@@ -14,20 +24,9 @@ import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static net.neoforged.fml.loading.LogMarkers.CORE;
-import static net.neoforged.fml.loading.LogMarkers.LOADING;
-
 public class CoreModsTransformerProvider implements ClassProcessorProvider {
     private static final Logger LOGGER = LogUtils.getLogger();
-    
+
     @Override
     public Collection<ClassProcessor> makeTransformers(ILaunchContext launchContext) {
         LOGGER.debug(LOADING, "Loading coremod transformers");
@@ -46,7 +45,6 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
                 }
                 result.add(new ClassProcessor() {
                     // For ordering purposes only; allows making transformers that run before/after all "default" coremods
-                    
                     @Override
                     public ProcessorName name() {
                         return ITransformer.COREMODS_GROUP;
@@ -69,7 +67,7 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
                         ModLoadingIssue.error("fml.modloadingissue.coremod_error", coreMod.getClass().getName(), sourceFile).withCause(e));
             }
         }
-        
+
         return result;
     }
 
@@ -80,7 +78,7 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
         Set<ProcessorName> after = new HashSet<>(transformer.runsAfter());
         // coremod transformers always imply COMPUTE_FRAMES and thus must always run after it.
         after.add(ClassProcessor.COMPUTING_FRAMES);
-        
+
         return new ClassProcessor() {
             @Override
             public ProcessorName name() {

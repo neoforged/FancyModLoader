@@ -1,13 +1,12 @@
 package net.neoforged.neoforgespi.transformation;
 
 import cpw.mods.modlauncher.api.IEnvironment;
+import java.util.Set;
+import java.util.function.Supplier;
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
-
-import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  * Class processors, like coremods, provide an API for transforming classes as they are loaded. They are more flexible
@@ -73,7 +72,7 @@ public interface ClassProcessor {
     default Set<ProcessorName> runsAfter() {
         return Set.of(COMPUTING_FRAMES);
     }
-    
+
     String GENERATED_PACKAGE_MODULE = "net.neoforged.fml.generated";
 
     /**
@@ -86,7 +85,8 @@ public interface ClassProcessor {
 
     /**
      * Context available when determining whether a processor wants to handle a class
-     * @param type the class to consider
+     * 
+     * @param type  the class to consider
      * @param empty if the class is empty at present (indicates no backing file found)
      */
     record SelectionContext(Type type, boolean empty) {
@@ -103,7 +103,7 @@ public interface ClassProcessor {
         private final boolean empty;
         private final AuditTrail auditTrail;
         private final Supplier<byte[]> initialSha256;
-    
+
         @ApiStatus.Internal
         public TransformationContext(Type type, ClassNode node, boolean empty, AuditTrail auditTrail, Supplier<byte[]> initialSha256) {
             this.type = type;
@@ -133,13 +133,14 @@ public interface ClassProcessor {
             return initialSha256.get();
         }
     }
-    
+
     interface AuditTrail {
         void audit(String activity, String... context);
     }
 
     /**
      * Context available in post-processing single-instance callbacks
+     * 
      * @param type the class that was processed
      */
     record AfterProcessingContext(Type type) {
@@ -149,6 +150,7 @@ public interface ClassProcessor {
 
     /**
      * {@return whether the processor wants to recieve the class}
+     * 
      * @param context the context of the class to consider
      */
     boolean handlesClass(SelectionContext context);
@@ -180,6 +182,7 @@ public interface ClassProcessor {
      * a later processor requests the state of the given class using a {@link BytecodeProvider}), an after-processing
      * callback is guaranteed to run at most once per class, just before class load. A transformer will only see this
      * context for classes it has processed.
+     * 
      * @param context the context of the class that was processed
      */
     default void afterProcessing(AfterProcessingContext context) {}
@@ -189,7 +192,7 @@ public interface ClassProcessor {
      * transformations before this one.
      *
      * @param bytecodeProvider allows querying class bytes
-     * @param environment the current launch environment
+     * @param environment      the current launch environment
      */
     default void initializeBytecodeProvider(BytecodeProvider bytecodeProvider, IEnvironment environment) {}
 

@@ -1,7 +1,5 @@
 package net.neoforged.neoforgespi.transformation;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Comparator;
 import java.util.regex.Pattern;
 
@@ -11,7 +9,7 @@ import java.util.regex.Pattern;
 public record ProcessorName(String namespace, String path) implements Comparable<ProcessorName> {
     private static final Pattern NAMESPACE_PATTERN = Pattern.compile("^[a-z0-9_.-]+$");
     private static final Pattern PATH_PATTERN = Pattern.compile("^[a-z0-9_./-]+$");
-    
+
     public ProcessorName {
         // We enforce the same requirements as ResourceLocation
         if (!NAMESPACE_PATTERN.asMatchPredicate().test(namespace)) {

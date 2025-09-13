@@ -15,7 +15,6 @@
 package cpw.mods.modlauncher.api;
 
 public interface ITransformerAuditTrail {
-
     /**
      * Retrieve a formatted string summarizing actions for the supplied class
      * 

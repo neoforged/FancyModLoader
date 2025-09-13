@@ -64,7 +64,7 @@ public class RuntimeEnumExtender implements ClassProcessor {
     private static Map<String, List<EnumPrototype>> prototypes = Map.of();
 
     public static final ProcessorName NAME = new ProcessorName("neoforge", "runtime_enum_extender");
-    
+
     @Override
     public ProcessorName name() {
         return NAME;

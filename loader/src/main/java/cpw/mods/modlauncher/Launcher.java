@@ -23,7 +23,8 @@ import cpw.mods.modlauncher.api.ILaunchHandlerService;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.api.TypesafeMap;
-
+import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
+import cpw.mods.modlauncher.util.ServiceLoaderUtils;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -33,9 +34,6 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
-import cpw.mods.modlauncher.util.ServiceLoaderUtils;
 import net.neoforged.fml.loading.FMLServiceProvider;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
@@ -47,7 +45,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class Launcher {
     private static final Logger LOGGER = LogManager.getLogger();
-    
+
     public static Launcher INSTANCE;
     private final TypesafeMap blackboard;
     private final Environment environment;
@@ -98,8 +96,7 @@ public class Launcher {
         this.argumentHandler.processArguments(
                 this.environment,
                 parser -> this.fmlServiceProvider.arguments((a, b) -> parser.accepts("fml." + a, b)),
-                (options, resultHandler) -> fmlServiceProvider.argumentValues(resultHandler.apply("fml", options))
-        );
+                (options, resultHandler) -> fmlServiceProvider.argumentValues(resultHandler.apply("fml", options)));
         this.fmlServiceProvider.initialize(this.environment);
 
         final var scanResults = this.fmlServiceProvider.beginScanning(this.environment)
@@ -116,11 +113,11 @@ public class Launcher {
                 .<SecureJar>mapMulti((resource, action) -> resource.resources().forEach(action))
                 .toList();
         gameContents.forEach(j -> this.moduleLayerHandler.addToLayer(IModuleLayerManager.Layer.GAME, j));
-        
+
         this.launchService.validateLaunchTarget(this.argumentHandler);
-        
+
         this.transformStore = new TransformStore(this.fmlServiceProvider.getLaunchContext());
-        
+
         this.classLoader = buildTransformingClassLoader(this.moduleLayerHandler);
         Thread.currentThread().setContextClassLoader(this.classLoader);
         this.launchService.launch(this.argumentHandler, this.moduleLayerHandler.getLayer(IModuleLayerManager.Layer.GAME).orElseThrow(), this.classLoader);
@@ -131,8 +128,7 @@ public class Launcher {
             layerHandler.addToLayer(IModuleLayerManager.Layer.GAME, new VirtualJar(
                     ClassProcessor.GENERATED_PACKAGE_MODULE,
                     Path.of(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI()),
-                    this.transformStore.generatedPackages().toArray(String[]::new)
-            ));
+                    this.transformStore.generatedPackages().toArray(String[]::new)));
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -148,7 +144,7 @@ public class Launcher {
     Optional<ILaunchHandlerService> findLaunchHandler(final String name) {
         return launchService.findLaunchHandler(name);
     }
-    
+
     Optional<ClassProcessor> findClassProcessor(final ProcessorName name) {
         return this.transformStore.findClassProcessor(name);
     }
@@ -156,7 +152,7 @@ public class Launcher {
     public Optional<IModuleLayerManager> findLayerManager() {
         return Optional.ofNullable(this.moduleLayerHandler);
     }
-    
+
     private void discoverServices(final ArgumentHandler.DiscoveryData discoveryData, ModuleLayerHandler layerHandler) {
         LOGGER.debug(MODLAUNCHER, "Discovering SERVICE layer services");
         var bootLayer = layerHandler.getLayer(IModuleLayerManager.Layer.BOOT).orElseThrow();

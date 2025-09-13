@@ -7,7 +7,6 @@ package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
-import cpw.mods.modlauncher.api.ITransformationService;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

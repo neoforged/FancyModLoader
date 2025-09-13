@@ -15,17 +15,16 @@
 package cpw.mods.modlauncher;
 
 import cpw.mods.modlauncher.api.ITransformerAuditTrail;
-import net.neoforged.neoforgespi.transformation.ClassProcessor;
-import net.neoforged.neoforgespi.transformation.ProcessorName;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.VisibleForTesting;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.VisibleForTesting;
 
 @ApiStatus.Internal
 public class TransformerAuditTrail implements ITransformerAuditTrail {
@@ -35,7 +34,7 @@ public class TransformerAuditTrail implements ITransformerAuditTrail {
     public void clear() {
         audit.clear();
     }
-    
+
     static final class TransformerActivity implements ClassProcessor.AuditTrail {
         private final ProcessorName processorName;
         private final List<String> activities = new ArrayList<>();
@@ -44,15 +43,15 @@ public class TransformerAuditTrail implements ITransformerAuditTrail {
         private TransformerActivity(ProcessorName processorName) {
             this.processorName = processorName;
         }
-        
+
         private boolean shouldInclude() {
             return include || !activities.isEmpty();
         }
-        
+
         void rewrites() {
             include = true;
         }
-        
+
         private String getActivityString() {
             return processorName + (activities.isEmpty() ? "" : "[" + String.join(",", activities) + "]");
         }
@@ -62,7 +61,7 @@ public class TransformerAuditTrail implements ITransformerAuditTrail {
             activities.add(activity + (context.length == 0 ? "" : ":" + String.join(":", context)));
         }
     }
-    
+
     TransformerActivity forClassProcessor(String clazz, ClassProcessor classProcessor) {
         var activities = getTransformerActivities(clazz);
         var activity = new TransformerActivity(classProcessor.name());

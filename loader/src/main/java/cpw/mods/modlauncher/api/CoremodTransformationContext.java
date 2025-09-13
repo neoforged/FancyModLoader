@@ -26,7 +26,7 @@ public interface CoremodTransformationContext {
     boolean doesClassExist();
 
     byte[] getInitialClassSha256();
-        
+
     /**
      * Return the result of applying the supplied field predicate to the current field node.
      * Can only be used on a Field target.

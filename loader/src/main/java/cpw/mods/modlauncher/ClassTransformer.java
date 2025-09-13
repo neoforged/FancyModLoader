@@ -16,14 +16,13 @@ package cpw.mods.modlauncher;
 
 import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 
+import cpw.mods.modlauncher.api.IEnvironment;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.function.Supplier;
-
-import cpw.mods.modlauncher.api.IEnvironment;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.apache.logging.log4j.Level;
@@ -53,14 +52,14 @@ public class ClassTransformer {
     public ClassTransformer(final TransformStore transformStore, final TransformingClassLoader transformingClassLoader, IEnvironment environment) {
         this(transformStore, transformingClassLoader, new TransformerAuditTrail(), environment);
     }
-    
+
     public ClassTransformer(final TransformStore transformStore, final TransformingClassLoader transformingClassLoader, final TransformerAuditTrail auditTrail, IEnvironment environment) {
         this.transformers = transformStore;
         this.transformingClassLoader = transformingClassLoader;
         this.transformers.initializeBytecodeProvider(name -> className -> transformingClassLoader.buildTransformedClassNodeFor(className, name), environment);
         this.auditTrail = auditTrail;
     }
-    
+
     public byte[] transform(byte[] inputClass, String className, final ProcessorName upToTransformer) {
         final String internalName = className.replace('.', '/');
         final Type classDesc = Type.getObjectType(internalName);
@@ -87,9 +86,9 @@ public class ClassTransformer {
             clazz.superName = Type.getInternalName(Object.class);
             digest = () -> getSha256().digest(EMPTY);
         }
-        
+
         boolean allowsComputeFrames = false;
-        
+
         int flags = 0;
         for (var transformer : transformersToUse) {
             if (ClassProcessor.COMPUTING_FRAMES.equals(transformer.name())) {
@@ -101,8 +100,7 @@ public class ClassTransformer {
                     clazz,
                     isEmpty,
                     trail,
-                    digest
-            );
+                    digest);
             var newFlags = transformer.processClassWithFlags(context);
             if (newFlags != ClassProcessor.ComputeFlags.NO_REWRITE) {
                 trail.rewrites();
@@ -114,20 +112,19 @@ public class ClassTransformer {
             if (!allowsComputeFrames) {
                 if ((flags & ClassProcessor.ComputeFlags.COMPUTE_FRAMES) != 0) {
                     LOGGER.error(MODLAUNCHER, "Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer {}", transformer.name(), ClassProcessor.COMPUTING_FRAMES);
-                    throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer "+ ClassProcessor.COMPUTING_FRAMES);
+                    throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer " + ClassProcessor.COMPUTING_FRAMES);
                 }
             }
         }
         if (upToTransformer == null) {
             // run post-result callbacks
             var context = new ClassProcessor.AfterProcessingContext(
-                    classDesc
-            );
+                    classDesc);
             for (var transformer : transformersToUse) {
                 transformer.afterProcessing(context);
             }
         }
-        
+
         if (flags == 0) {
             return inputClass; // No changes were made, return the original class
         }

@@ -15,7 +15,6 @@
 package cpw.mods.modlauncher.api;
 
 import java.util.Set;
-
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -27,7 +26,7 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public interface ITransformer<T> {
     ProcessorName COREMODS_GROUP = new ProcessorName("neoforge", "coremods_default");
-    
+
     /**
      * Transform the input to the ITransformer's desire. The context from the last vote is
      * provided as well.
@@ -37,7 +36,7 @@ public interface ITransformer<T> {
      */
     void transform(T input, CoremodTransformationContext context);
 
-/**
+    /**
      * Return a set of {@link Target} identifying which elements this transformer wishes to try
      * and apply to. The {@link Target#getTargetType()} must match the T variable for the transformer
      * as documented in {@link TargetType}, other combinations will be rejected.
@@ -48,8 +47,8 @@ public interface ITransformer<T> {
     Set<Target<T>> targets();
 
     TargetType getTargetType();
-    
-    /** 
+
+    /**
      * {@return a unique name for this transformer. Defaults to a name derived from the source class and module names}
      */
     default ProcessorName name() {
@@ -62,7 +61,7 @@ public interface ITransformer<T> {
     default Set<ProcessorName> runsBefore() {
         return Set.of();
     }
-    
+
     /**
      * {@return processors or transformers that this transformer must run after} Defaults to running after {@link ITransformer#COREMODS_GROUP}, which runs after mixins.
      */

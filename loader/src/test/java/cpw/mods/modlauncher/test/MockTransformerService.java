@@ -15,11 +15,11 @@
 package cpw.mods.modlauncher.test;
 
 import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.modlauncher.api.CoremodTransformationContext;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
-import cpw.mods.modlauncher.api.CoremodTransformationContext;
 import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
 import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;

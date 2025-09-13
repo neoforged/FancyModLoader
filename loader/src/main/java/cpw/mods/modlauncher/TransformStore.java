@@ -18,16 +18,6 @@ import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.IEnvironment;
-import net.neoforged.fml.loading.toposort.TopologicalSort;
-import net.neoforged.fml.util.ServiceLoaderUtil;
-import net.neoforged.neoforgespi.ILaunchContext;
-import net.neoforged.neoforgespi.transformation.ClassProcessor;
-import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
-import net.neoforged.neoforgespi.transformation.ProcessorName;
-import org.jetbrains.annotations.VisibleForTesting;
-import org.objectweb.asm.Type;
-import org.slf4j.Logger;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -38,29 +28,36 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import net.neoforged.fml.loading.toposort.TopologicalSort;
+import net.neoforged.fml.util.ServiceLoaderUtil;
+import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
+import org.jetbrains.annotations.VisibleForTesting;
+import org.objectweb.asm.Type;
+import org.slf4j.Logger;
 
 public class TransformStore {
     private static final Logger LOGGER = LogUtils.getLogger();
-    
+
     private final Map<ProcessorName, ClassProcessor> transformers = new HashMap<>();
     private final List<ClassProcessor> sortedTransformers;
     private final Set<String> generatedPackages = new HashSet<>();
-    
+
     @VisibleForTesting
     public TransformStore(ILaunchContext launchContext) {
         this.sortedTransformers = sortTransformers(
                 launchContext,
                 ServiceLoaderUtil.loadServices(launchContext, ClassProcessorProvider.class),
-                ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class)
-        );
+                ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class));
     }
-    
+
     @SuppressWarnings("UnstableApiUsage")
     private List<ClassProcessor> sortTransformers(ILaunchContext launchContext, List<ClassProcessorProvider> transformerProviders, List<ClassProcessor> existingTransformers) {
         final var graph = GraphBuilder.directed().<ClassProcessor>build();
         var specialComputeFramesNode = new ClassProcessor() {
             // This "special" transformer never handles a class but is always triggered
-
             @Override
             public ProcessorName name() {
                 return ClassProcessor.COMPUTING_FRAMES;
@@ -81,7 +78,7 @@ public class TransformStore {
                 return false;
             }
         };
-        
+
         graph.addNode(specialComputeFramesNode);
         transformers.put(specialComputeFramesNode.name(), specialComputeFramesNode);
         for (ClassProcessorProvider provider : transformerProviders) {
@@ -125,8 +122,7 @@ public class TransformStore {
                     "Duplicate transformers with name {}, of types {} and {}",
                     transformer.name(),
                     transformers.get(transformer.name()).getClass().getName(),
-                    transformer.getClass().getName()
-            );
+                    transformer.getClass().getName());
             throw new IllegalStateException("Duplicate transformers with name: " + transformer.name());
         }
         graph.addNode(transformer);
@@ -150,7 +146,7 @@ public class TransformStore {
                 out.add(transformer);
             } else {
                 ClassTransformStatistics.incrementAskedForTransform(transformer);
-                
+
                 var context = new ClassProcessor.SelectionContext(classDesc, isEmpty);
                 if (transformer.handlesClass(context)) {
                     ClassTransformStatistics.incrementTransforms(transformer);
@@ -166,7 +162,7 @@ public class TransformStore {
         }
         return out;
     }
-    
+
     public Set<String> generatedPackages() {
         return Collections.unmodifiableSet(generatedPackages);
     }

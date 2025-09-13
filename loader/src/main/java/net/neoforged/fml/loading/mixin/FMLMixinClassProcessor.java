@@ -7,21 +7,13 @@ package net.neoforged.fml.loading.mixin;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.jarhandling.VirtualJar;
-import cpw.mods.modlauncher.api.ITransformerActivity;
-import cpw.mods.modlauncher.api.NamedPath;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.io.IOException;
 import java.lang.module.ModuleDescriptor;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
+import java.util.Set;
 import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
@@ -29,9 +21,9 @@ import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileParser;
+import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
-import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jetbrains.annotations.Nullable;
@@ -46,12 +38,6 @@ import org.spongepowered.asm.mixin.Mixins;
 import org.spongepowered.asm.mixin.injection.invoke.arg.ArgsClassGenerator;
 import org.spongepowered.asm.mixin.transformer.Config;
 import org.spongepowered.asm.service.MixinService;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class FMLMixinClassProcessor implements ClassProcessor {
     public static final ProcessorName NAME = new ProcessorName("neoforge", "mixin");
@@ -272,9 +258,9 @@ public class FMLMixinClassProcessor implements ClassProcessor {
     public boolean processClass(TransformationContext context) {
         var classType = context.type();
         var classNode = context.node();
-        
+
         this.service.getInternalAuditTrail().setConsumer(classType.getClassName(), context.auditTrail());
-        
+
         if (this.generatesClass(classType)) {
             return this.generateClass(classType, classNode);
         }

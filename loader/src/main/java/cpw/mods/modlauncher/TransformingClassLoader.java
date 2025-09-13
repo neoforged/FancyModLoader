@@ -16,10 +16,8 @@ package cpw.mods.modlauncher;
 
 import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.modlauncher.api.IEnvironment;
-
 import java.lang.module.Configuration;
 import java.util.List;
-
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;

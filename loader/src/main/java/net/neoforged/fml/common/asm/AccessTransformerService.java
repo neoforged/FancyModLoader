@@ -6,7 +6,6 @@
 package net.neoforged.fml.common.asm;
 
 import java.util.Set;
-
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;

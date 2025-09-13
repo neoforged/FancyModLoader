@@ -9,24 +9,13 @@ import static net.neoforged.fml.loading.LogMarkers.CORE;
 
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.modlauncher.ArgumentHandler;
-import cpw.mods.modlauncher.Launcher;
-import cpw.mods.modlauncher.ModuleLayerHandler;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.ServiceLoader;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import cpw.mods.modlauncher.api.NamedPath;
-import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
-import cpw.mods.modlauncher.util.ServiceLoaderUtils;
 import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionSpec;
 import joptsimple.OptionSpecBuilder;

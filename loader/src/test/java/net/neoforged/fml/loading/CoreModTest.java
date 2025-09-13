@@ -8,8 +8,8 @@ package net.neoforged.fml.loading;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.CoremodTransformationContext;
+import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
 import java.util.Set;
