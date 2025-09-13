@@ -53,10 +53,10 @@
   "fml.modloadingissue.failed_to_list_folder_content": "Nie udało się wyświetlić zawartości folderu {0}",
   "fml.modloadingissue.failed_to_find_on_classpath": "Nie udało się odnaleźć {0} w klasie",
   "fml.modloadingissue.multiple_copies_on_classpath": "Znaleziono wiele kopii {0} na klasie: {1}",
-  "fml.modloadingissue.mixin.duplicate_config": "A mixin config named {0} is provided by both {101} and {1}",
-  "fml.modloadingissue.mixin.missing_config": "A mixin config named {0} was declared in {101}, but doesn''t exist",
-  "fml.modloadingissue.mixin.requested_behavior_too_old": "Mixin config {0} from {101} requests Mixin behavior version {1}, which is older than the lowest supported version {2}",
-  "fml.modloadingissue.mixin.requested_behavior_too_new": "Mixin config {0} from {101} requests Mixin behavior version {1}, which is newer than the highest supported version {2}. This may be fixable by updating NeoForge",
+  "fml.modloadingissue.mixin.duplicate_config": "Konfiguracja mixin o nazwie {0} jest dostarczona przez {101} i {1}",
+  "fml.modloadingissue.mixin.missing_config": "Konfiguracja mixin o nazwie {0} została zadeklarowana w {101}, ale nie istnieje",
+  "fml.modloadingissue.mixin.requested_behavior_too_old": "Mixin config {0} z {101} żąda wersji zachowania Mixin {1}, która jest starsza od najniższej obsługiwanej wersji {2}",
+  "fml.modloadingissue.mixin.requested_behavior_too_new": "Mixin config {0} z {101} żąda zachowania Mixin w wersji {1}, która jest nowsza niż najlepsza obsługiwana wersja {2}. Może to być naprawione przez aktualizację NeoForge",
   "fml.messages.artifactversion.ornotinstalled": "{0,ornull,fml.messages.artifactversion.notinstalled}",
   "fml.messages.artifactversion": "{0,ornull,fml.messages.artifactversion.none}",
   "fml.messages.artifactversion.none": "brak",
@@ -86,8 +86,8 @@
   "fml.modloadingissue.enumextender.argument.constant.invalid_char": "Nieprawidłowy znak {0} w indeksie parametru {1} dla pola {2} w enum {3}, określony przez modyfikację {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Nieobsługiwany natychmiastowy typ argumentu {0} indeksem parametru {1} dla pola {2} w enum {3}, określony przez modyfikację {100,modinfo,id}",
   "fml.modloadingissue.enumextender.duplicate": "Znaleziono duplikowane pole {0} dla wyliczenia {1}, dostarczonego przez modyfikacje {2} i {3}",
-  "fml.button.open.log": "Open Log File",
-  "fml.button.open.crashreport": "Open Crash Report",
+  "fml.button.open.log": "Otwórz plik logów",
+  "fml.button.open.crashreport": "Otwórz raport o awarii",
   "fml.button.open.mods.folder": "Otwórz folder modyfikacji",
-  "fml.button.quit": "Quit Game"
+  "fml.button.quit": "Wyjdź z gry"
 }
