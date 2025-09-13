@@ -21,7 +21,6 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.IModBusEvent;
-import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.modscan.ModAnnotation;
 import net.neoforged.neoforgespi.language.ModFileScanData;
@@ -48,7 +47,7 @@ public class AutomaticEventSubscriber {
         ebsTargets.forEach(ad -> {
             final EnumSet<Dist> sides = getSides(ad.annotationData().get("value"));
             final String modId = (String) ad.annotationData().getOrDefault("modid", modids.getOrDefault(ad.clazz().getClassName(), mod.getModId()));
-            if (Objects.equals(mod.getModId(), modId) && sides.contains(FMLEnvironment.dist)) {
+            if (Objects.equals(mod.getModId(), modId) && sides.contains(FMLLoader.getDist())) {
                 LOGGER.debug(LOADING, "Scanning class {} for @SubscribeEvent-annotated methods", ad.clazz().getClassName());
 
                 try {

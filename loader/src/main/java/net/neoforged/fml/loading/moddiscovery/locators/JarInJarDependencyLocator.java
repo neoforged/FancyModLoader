@@ -30,6 +30,7 @@ import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
+import net.neoforged.fml.util.PathPrettyPrinting;
 import net.neoforged.jarjar.selection.JarSelector;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IDependencyLocator;
@@ -96,6 +97,10 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
                 // If the file already exists, reuse it, since it might already be opened.
                 if (!Files.isRegularFile(finalPath)) {
                     moveExtractedFileIntoPlace(tempFile, finalPath);
+
+                    // Mark the extracted file with its source for the duration of this session
+                    PathPrettyPrinting.addSubstitution(
+                            finalPath, PathPrettyPrinting.prettyPrint(file.getFilePath()) + " > " + filename, "");
                 }
             } finally {
                 try {

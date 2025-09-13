@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.zip.ZipException;
@@ -57,7 +58,11 @@ public class ModDiscoverer {
         dependencyLocators = ServiceLoaderUtil.loadServices(launchContext, IDependencyLocator.class);
     }
 
-    public ModValidator discoverMods() {
+    public record Result(
+            List<ModFile> modFiles,
+            List<ModLoadingIssue> discoveryIssues) {}
+
+    public Result discoverMods() {
         LOGGER.debug(LogMarkers.SCAN, "Scanning for mods and other resources to load. We know {} ways to find mods", modFileLocators.size());
         List<ModFile> loadedFiles = new ArrayList<>();
         List<ModLoadingIssue> discoveryIssues = new ArrayList<>();
@@ -75,7 +80,7 @@ public class ModDiscoverer {
             } catch (ModLoadingException e) {
                 discoveryIssues.addAll(e.getIssues());
             } catch (Exception e) {
-                discoveryIssues.add(ModLoadingIssue.error("fml.modloadingissue.technical_error", locator.toString() + "failed").withCause(e));
+                discoveryIssues.add(ModLoadingIssue.error("fml.modloadingissue.technical_error", locator.toString() + " failed").withCause(e));
             }
 
             LOGGER.debug(LogMarkers.SCAN, "Locator {} found {} mods, {} warnings, {} errors and skipped {} candidates", locator,
@@ -136,11 +141,9 @@ public class ModDiscoverer {
 
         LOGGER.info("\n     Mod List:\n\t\tName Version (Mod Id)\n\n{}", logReport(modFilesMap.values()));
 
-        //Validate the loading. With a deduplicated list, we can now successfully process the artifacts and load
-        //transformer plugins.
-        var validator = new ModValidator(modFilesMap, discoveryIssues);
-        validator.stage1Validation();
-        return validator;
+        var modFiles = new ArrayList<ModFile>();
+        modFilesMap.values().forEach(modFiles::addAll);
+        return new Result(modFiles, discoveryIssues);
     }
 
     private String logReport(Collection<List<ModFile>> modFiles) {
@@ -281,6 +284,7 @@ public class ModDiscoverer {
 
         @Override
         public boolean addModFile(IModFile mf) {
+            Objects.requireNonNull(mf, "mf");
             if (!(mf instanceof ModFile modFile)) {
                 String detail = "Unexpected IModFile subclass: " + mf.getClass();
                 addIssue(ModLoadingIssue.error("fml.modloadingissue.technical_error", detail).withAffectedModFile(mf));

@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipOutputStream;
+import net.neoforged.fml.FMLVersion;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModWorkManager;
@@ -112,6 +113,20 @@ class FMLLoaderTest extends LauncherTest {
         @Test
         void testNeoForgeDevClientDataDiscovery() throws Exception {
             var result = launchAndLoadInNeoForgeDevEnvironment("neoforgeclientdatadev");
+            assertThat(result.issues()).isEmpty();
+            assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.pluginLayerModules()).isEmpty();
+
+            assertLegacyMinecraftClientJar(result, false);
+            assertNeoForgeJar(result);
+        }
+
+        @Test
+        void testNeoForgeDevJarClientDiscovery() throws Exception {
+            var additionalClasspath = installation.setupSplitNeoForgeDevProjectForClientLaunch();
+            var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdatadev", additionalClasspath);
+
             assertThat(result.issues()).isEmpty();
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
@@ -319,6 +334,7 @@ class FMLLoaderTest extends LauncherTest {
                     .build();
 
             var result = launchAndLoad("neoforgeclient");
+            assertThat(result.gameLayerModules()).containsKey("testlib");
 
             var loadedMod = result.gameLayerModules().get("testlib");
             assertNotNull(loadedMod);
@@ -469,11 +485,12 @@ class FMLLoaderTest extends LauncherTest {
         @ParameterizedTest
         @CsvSource(textBlock = """
                 unknownloader|[1.0]|ERROR: Mod File mods/testmod.jar needs language provider unknownloader to load
-                javafml|[1.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:1.0 to load\\nWe have found 3.0.9999
-                javafml|[999.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:999.0 to load\\nWe have found 3.0.9999
+                javafml|[1.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:1.0 to load\\nWe have found $VERSION
+                javafml|[999.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:999.0 to load\\nWe have found $VERSION
                 """, delimiter = '|')
         void testIncompatibleLoaderVersions(String requestedLoader, String requestedVersionRange, String expectedError) throws Exception {
             expectedError = expectedError.replace("\\n", "\n");
+            expectedError = expectedError.replace("$VERSION", FMLVersion.getVersion());
 
             installation.setupProductionClient();
             installation.buildModJar("testmod.jar")
@@ -578,7 +595,7 @@ class FMLLoaderTest extends LauncherTest {
         void testCorruptedNeoForgeJarInServerInstallation() throws Exception {
             installation.setupProductionServer();
 
-            var neoforgePath = installation.getLibrariesDir().resolve("net/neoforged/neoforge/20.4.9999/neoforge-20.4.9999-universal.jar");
+            var neoforgePath = installation.getComponentRoots().neoforgeCommonClassesRoot();
             // Replace the jar with an empty zip (no neoforge.mods.toml)
             new ZipOutputStream(Files.newOutputStream(neoforgePath)).close();
 
