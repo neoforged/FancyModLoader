@@ -51,13 +51,10 @@ dependencies {
     testImplementation('org.junit.jupiter:junit-jupiter-params')
     testImplementation("org.mockito:mockito-junit-jupiter:$mockito_version")
     testImplementation("org.assertj:assertj-core:$assertj_version")
-    testImplementation("org.powermock:powermock-core:${powermock_version}")
-    testImplementation("org.powermock:powermock-reflect:${powermock_version}")
 
     jmhImplementation(sourceSets.main.output)
     jmhImplementation(sourceSets.testJars.output)
     jmhImplementation("org.openjdk.jmh:jmh-core:${jmh_version}")
-    jmhImplementation("org.powermock:powermock-core:${powermock_version}")
     jmhAnnotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:${jmh_version}")
 
     // Provides the JUnit project as a BOM entry

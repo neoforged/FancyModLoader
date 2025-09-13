@@ -18,6 +18,7 @@ import cpw.mods.modlauncher.api.ITransformerAuditTrail;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,6 +30,11 @@ import java.util.stream.Collectors;
 @ApiStatus.Internal
 public class TransformerAuditTrail implements ITransformerAuditTrail {
     private final Map<String, List<TransformerActivity>> audit = new ConcurrentHashMap<>();
+
+    @VisibleForTesting
+    public void clear() {
+        audit.clear();
+    }
     
     static final class TransformerActivity implements ClassProcessor.AuditTrail {
         private final ProcessorName processorName;

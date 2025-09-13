@@ -68,16 +68,8 @@ public class FMLLoader {
             return new IncompatibleEnvironmentException("Missing AccessTransformer, cannot run");
         })).engine;
 
-        final Package atPackage = accessTransformer.getClass().getPackage();
-        LOGGER.debug(LogMarkers.CORE, "FML found AccessTransformer version : {}", atPackage.getImplementationVersion());
-        if (!atPackage.isCompatibleWith("1.0")) {
-            LOGGER.error(LogMarkers.CORE, "Found incompatible AccessTransformer specification : {}, version {} from {}", atPackage.getSpecificationVersion(), atPackage.getImplementationVersion(), atPackage.getImplementationVendor());
-            throw new IncompatibleEnvironmentException("Incompatible accesstransformer found " + atPackage.getSpecificationVersion());
-        }
-
         try {
-            var eventBus = Class.forName("net.neoforged.bus.api.IEventBus", false, environment.getClass().getClassLoader());
-            LOGGER.debug(LogMarkers.CORE, "FML found EventBus version : {}", eventBus.getPackage().getImplementationVersion());
+            Class.forName("net.neoforged.bus.api.IEventBus", false, environment.getClass().getClassLoader());
         } catch (ClassNotFoundException e) {
             LOGGER.error(LogMarkers.CORE, "Event Bus library is missing, we need this to run");
             throw new IncompatibleEnvironmentException("Missing EventBus, cannot run");

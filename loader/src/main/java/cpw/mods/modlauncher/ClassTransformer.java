@@ -31,6 +31,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
+import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -40,6 +41,7 @@ import org.objectweb.asm.tree.ClassNode;
 /**
  * Transforms classes using the supplied launcher services
  */
+@ApiStatus.Internal
 public class ClassTransformer {
     private static final byte[] EMPTY = new byte[0];
     private static final Logger LOGGER = LogManager.getLogger();
@@ -48,14 +50,18 @@ public class ClassTransformer {
     private final TransformingClassLoader transformingClassLoader;
     private final TransformerAuditTrail auditTrail;
 
-    ClassTransformer(final TransformStore transformStore, final TransformingClassLoader transformingClassLoader, final TransformerAuditTrail auditTrail, IEnvironment environment) {
+    public ClassTransformer(final TransformStore transformStore, final TransformingClassLoader transformingClassLoader, IEnvironment environment) {
+        this(transformStore, transformingClassLoader, new TransformerAuditTrail(), environment);
+    }
+    
+    public ClassTransformer(final TransformStore transformStore, final TransformingClassLoader transformingClassLoader, final TransformerAuditTrail auditTrail, IEnvironment environment) {
         this.transformers = transformStore;
         this.transformingClassLoader = transformingClassLoader;
         this.transformers.initializeBytecodeProvider(name -> className -> transformingClassLoader.buildTransformedClassNodeFor(className, name), environment);
         this.auditTrail = auditTrail;
     }
     
-    byte[] transform(byte[] inputClass, String className, final ProcessorName upToTransformer) {
+    public byte[] transform(byte[] inputClass, String className, final ProcessorName upToTransformer) {
         final String internalName = className.replace('.', '/');
         final Type classDesc = Type.getObjectType(internalName);
 
