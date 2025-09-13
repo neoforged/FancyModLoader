@@ -6,7 +6,6 @@
 package net.neoforged.neoforgespi;
 
 import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.TypesafeMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -21,7 +20,6 @@ public class Environment {
     public static final class Keys {
         /**
          * The @{@link Dist} which is running.
-         * Populated by forge during {@link ITransformationService#initialize(IEnvironment)}
          */
         public static final Supplier<TypesafeMap.Key<Dist>> DIST = IEnvironment.buildKey("FORGEDIST", Dist.class);
         /**

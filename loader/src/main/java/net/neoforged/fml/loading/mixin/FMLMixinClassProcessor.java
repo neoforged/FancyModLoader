@@ -91,7 +91,7 @@ public class FMLMixinClassProcessor implements ClassProcessor {
                 .flatMap(ModuleDescriptor::version).map(ModuleDescriptor.Version::toString)
                 .or(() -> Optional.ofNullable(FabricUtil.class.getPackage().getImplementationVersion()))
                 .orElseThrow(() -> new IllegalStateException("Cannot determine version of currently running mixin")));
-        int defaultMixinVersion = FMLMixinLaunchPlugin.DEFAULT_BEHAVIOUR_VERSION;
+        int defaultMixinVersion = FMLMixinClassProcessor.DEFAULT_BEHAVIOUR_VERSION;
         int patch = defaultMixinVersion % 1000;
         defaultMixinVersion /= 1000;
         int minor = defaultMixinVersion % 1000;
