@@ -28,27 +28,27 @@ import org.slf4j.Logger;
 public class ModFileParser {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public static IModFileInfo readModList(ModFile modFile, ModFileInfoParser parser) {
+    public static IModFileInfo readModList(final ModFile modFile, final ModFileInfoParser parser) {
         return parser.build(modFile);
     }
 
-    public static IModFileInfo modsTomlParser(IModFile modFile) {
-        var contents = modFile.getContents();
-        LOGGER.debug(LogMarkers.LOADING, "Considering mod file candidate {}", contents);
-        var tomlFile = contents.get(JarModsDotTomlModFileReader.MODS_TOML);
-        if (tomlFile == null) {
-            LOGGER.warn(LogMarkers.LOADING, "Mod file {} is missing {} file", contents, JarModsDotTomlModFileReader.MODS_TOML);
+    public static IModFileInfo modsTomlParser(final IModFile imodFile) {
+        ModFile modFile = (ModFile) imodFile;
+        LOGGER.debug(LogMarkers.LOADING, "Considering mod file candidate {}", modFile.getFilePath());
+        var modsjson = modFile.getContents().get(JarModsDotTomlModFileReader.MODS_TOML);
+        if (modsjson == null) {
+            LOGGER.warn(LogMarkers.LOADING, "Mod file {} is missing {} file", modFile.getFilePath(), JarModsDotTomlModFileReader.MODS_TOML);
             return null;
         }
 
         UnmodifiableCommentedConfig config;
-        try (var reader = tomlFile.bufferedReader()) {
+        try (var reader = modsjson.bufferedReader()) {
             config = TomlFormat.instance().createParser().parse(reader).unmodifiable();
         } catch (IOException e) {
-            throw new UncheckedIOException("Failed to read " + tomlFile + " from " + contents, e);
+            throw new UncheckedIOException("Failed to read " + modsjson + " from " + imodFile, e);
         }
-        var configWrapper = new NightConfigWrapper(config);
-        return new ModFileInfo((ModFile) modFile, configWrapper, configWrapper::setFile);
+        final NightConfigWrapper configWrapper = new NightConfigWrapper(config);
+        return new ModFileInfo(modFile, configWrapper, configWrapper::setFile);
     }
 
     /**

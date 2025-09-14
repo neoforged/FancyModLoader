@@ -22,7 +22,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.util.Constants;
 
-public final class ClassLoadingGuardian implements AutoCloseable {
+/**
+ * Implements protections against accidentally loading classes owned by mods or Minecraft from any classloader
+ * but a given, blessed loader (the transforming class loader).
+ */
+final class ClassLoadingGuardian implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClassLoadingGuardian.class);
 
     private final Instrumentation instrumentation;
@@ -87,6 +91,10 @@ public final class ClassLoadingGuardian implements AutoCloseable {
         this.instrumentation.addTransformer(guardianTransformer);
     }
 
+    /**
+     * NOTE: this is referenced by the generated self-destructing classes when an incorrect
+     * class is accessed via the transformer.
+     */
     public static void fail() {
         throw new IllegalStateException();
     }

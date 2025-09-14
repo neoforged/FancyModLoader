@@ -15,6 +15,10 @@ import java.util.Set;
 import net.neoforged.fml.util.ClasspathResourceUtils;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * This class loader will filter the resources returned from {@link #getResources(String)} and {@link #getResource(String)}
+ * by removing any results that come from a given set of classpath items (folders or jars).
+ */
 public class ResourceMaskingClassLoader extends ClassLoader {
     static {
         ClassLoader.registerAsParallelCapable();

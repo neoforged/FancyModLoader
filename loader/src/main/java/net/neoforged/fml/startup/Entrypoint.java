@@ -28,6 +28,9 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Provides a convenient base-class for our entry point classes.
+ */
 public abstract class Entrypoint {
     private static final Logger LOG = LoggerFactory.getLogger(Entrypoint.class);
 
