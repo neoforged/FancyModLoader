@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.testlib;
+package net.neoforged.fml.testlib.args;
 
 import java.util.Arrays;
 import java.util.stream.Stream;

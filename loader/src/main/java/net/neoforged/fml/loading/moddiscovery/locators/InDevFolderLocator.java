@@ -6,22 +6,14 @@
 package net.neoforged.fml.loading.moddiscovery.locators;
 
 import cpw.mods.jarhandling.JarContents;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoadingIssue;
@@ -50,99 +42,18 @@ public class InDevFolderLocator implements IModFileCandidateLocator {
 
     @Override
     public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {
-        // Prioritize the "old" way of specifying a grouping
         loadFromSystemProperty();
 
-        // Try to find the groupings based on CWD
-        try {
-            attemptToFindManifest(new File(".").getAbsoluteFile());
-        } catch (IOException e) {
-            pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.technical_error").withCause(e));
-            return;
-        }
-
-        var groupedEntries = new IdentityHashMap<VirtualJarManifestEntry, List<File>>(virtualJarMemberIndex.size());
-
-        for (var file : context.getUnclaimedClassPathEntries()) {
-            var virtualJarSpec = virtualJarMemberIndex.get(file);
-            if (virtualJarSpec != null) {
-                var contentList = groupedEntries.computeIfAbsent(virtualJarSpec, k -> new ArrayList<>());
-                contentList.add(file);
-            }
-        }
-
-        for (var entry : groupedEntries.entrySet()) {
-            var locations = entry.getValue();
-            var paths = new ArrayList<Path>(locations.size());
-            for (var location : locations) {
-                var path = location.toPath();
-                context.addLocated(path);
-                paths.add(path);
-            }
-            try {
-                pipeline.addJarContent(JarContents.ofPaths(paths), ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.ERROR);
-            } catch (IOException e) {
-                pipeline.addIssue(ModLoadingIssue.error("")); // TODO
-            }
-        }
-
-        // Add groups that remain but are not on the classpath at all to support legacy configurations
-        // TODO: Decide whether to keep this or not
         for (var entry : new HashSet<>(virtualJarMemberIndex.values())) {
             var paths = entry.files.stream().map(File::toPath).toList();
             if (paths.stream().noneMatch(context::isLocated)) {
                 try {
                     pipeline.addJarContent(JarContents.ofPaths(paths), ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.ERROR);
                 } catch (IOException e) {
-                    pipeline.addIssue(ModLoadingIssue.error("")); // TODO
+                    pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile.invalidzip").withAffectedPath(paths.getFirst()));
                 }
             }
         }
-    }
-
-    public void attemptToFindManifest(File file) throws IOException {
-        if (manifestLoaded) {
-            return;
-        }
-
-        if (file.isDirectory() && searchedDirectories.add(file)) {
-            var groupingsFile = new File(file, VIRTUAL_JAR_MANIFEST_PATH);
-
-            if (groupingsFile.exists() && loadVirtualJarManifest(groupingsFile)) {
-                return;
-            }
-        }
-
-        var parent = file.getParentFile();
-        if (parent != null) {
-            attemptToFindManifest(parent);
-        }
-    }
-
-    private boolean loadVirtualJarManifest(File manifestFile) throws IOException {
-        Properties p = new Properties();
-        try (var input = new BufferedReader(new InputStreamReader(new FileInputStream(manifestFile)))) {
-            p.load(input);
-        } catch (FileNotFoundException ignored) {
-            return false;
-        }
-
-        LOGGER.info("Loading Virtual Jar manifest from {}", manifestFile);
-
-        for (var virtualJarId : p.stringPropertyNames()) {
-            var paths = p.getProperty(virtualJarId).split(File.pathSeparator);
-            var files = new ArrayList<File>(paths.length);
-            for (String path : paths) {
-                files.add(new File(path));
-            }
-
-            var entry = new VirtualJarManifestEntry(virtualJarId, files);
-            for (var containedFile : files) {
-                virtualJarMemberIndex.put(containedFile, entry);
-            }
-        }
-        manifestLoaded = true;
-        return true;
     }
 
     private void loadFromSystemProperty() {

@@ -68,7 +68,7 @@ class TransformerDiscovererConstantsTest {
         testJar = tempDir.resolve("test.jar");
         Files.createDirectories(testJar.getParent());
 
-        var builder = new ModFileBuilder(testJar);
+        var builder = ModFileBuilder.toJar(testJar);
         try {
             customizer.customize(builder);
         } catch (Throwable e) {

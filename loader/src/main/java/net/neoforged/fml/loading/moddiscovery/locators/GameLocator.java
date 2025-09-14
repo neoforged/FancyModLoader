@@ -362,6 +362,7 @@ public class GameLocator implements IModFileCandidateLocator {
     private static void addRequiredLibrary(MavenCoordinate coordinate, List<Path> content) {
         var path = LibraryFinder.findPathForMaven(coordinate);
         if (!Files.exists(path)) {
+            LOG.error("Failed to find required file {}", path);
             throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation").withAffectedPath(path));
         } else {
             content.add(path);

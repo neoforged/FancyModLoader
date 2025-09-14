@@ -21,9 +21,9 @@ import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.testlib.IdentifiableContent;
-import net.neoforged.fml.testlib.InstallationTypeSource;
 import net.neoforged.fml.testlib.RuntimeCompiler;
 import net.neoforged.fml.testlib.SimulatedInstallation;
+import net.neoforged.fml.testlib.args.InstallationTypeSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedClass;
 

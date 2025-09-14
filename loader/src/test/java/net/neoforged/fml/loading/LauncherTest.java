@@ -66,6 +66,8 @@ public abstract class LauncherTest {
 
     protected TransformingClassLoader gameClassLoader;
 
+    protected boolean headless = true;
+
     public LauncherTest() {
         try {
             installation = new SimulatedInstallation();
@@ -145,6 +147,22 @@ public abstract class LauncherTest {
         FMLLoader.bindings = null;
     }
 
+    /**
+     * Launch whatever the installation can support. For userdev, this'll launch a client. For production
+     * it'll launch the appropriate side.
+     */
+    LaunchResult launchInstalledDist() throws Exception {
+        var supportedDist = switch (installation.getType()) {
+            case PRODUCTION_CLIENT, USERDEV, USERDEV_LEGACY -> Dist.CLIENT;
+            case PRODUCTION_SERVER -> Dist.DEDICATED_SERVER;
+        };
+        return launchAndLoad(supportedDist, true, List.of());
+    }
+
+    LaunchResult launchClient() throws Exception {
+        return launchAndLoad(Dist.CLIENT, true, List.of());
+    }
+
     protected LaunchResult launchAndLoadInNeoForgeDevEnvironment(String launchTarget) throws Exception {
         var additionalClasspath = installation.setupNeoForgeDevProject();
 
@@ -160,14 +178,22 @@ public abstract class LauncherTest {
     }
 
     protected LaunchResult launchAndLoad(String launchTarget) throws Exception {
-        return launchAndLoad(launchTarget, installation.getLaunchClasspath());
+        return launchAndLoad(launchTarget, List.of());
     }
 
     protected LaunchResult launchAndLoad(String launchTarget, List<Path> additionalClassPath) throws Exception {
+        var launchMode = LaunchMode.fromLaunchTarget(launchTarget);
+        return launchAndLoad(launchMode.forcedDist, launchMode.cleanDist, additionalClassPath);
+    }
+
+    private LaunchResult launchAndLoad(Dist launchDist, boolean cleanDist, List<Path> additionalClassPath) throws Exception {
+        var actualClasspath = new ArrayList<>(installation.getLaunchClasspath());
+        actualClasspath.addAll(additionalClassPath);
+
         var previousCl = Thread.currentThread().getContextClassLoader();
         URLClassLoader cl = null;
-        if (!additionalClassPath.isEmpty()) {
-            var urls = additionalClassPath.stream().map(path -> {
+        if (!actualClasspath.isEmpty()) {
+            var urls = actualClasspath.stream().map(path -> {
                 try {
                     return path.toUri().toURL();
                 } catch (MalformedURLException e) {
@@ -181,7 +207,7 @@ public abstract class LauncherTest {
         try {
             LaunchResult result;
             try {
-                result = launch(launchTarget, additionalClassPath);
+                result = launch(launchDist, cleanDist, additionalClassPath);
             } catch (ModLoadingException e) {
                 throw e;
             } catch (Exception e) {
@@ -198,18 +224,23 @@ public abstract class LauncherTest {
         }
     }
 
+    /**
+     * This models the FML entrypoint.
+     */
     protected enum LaunchMode {
-        PROD_CLIENT(Dist.CLIENT),
-        PROD_SERVER(Dist.DEDICATED_SERVER),
-        DEV_CLIENT(Dist.CLIENT),
-        DEV_SERVER(Dist.DEDICATED_SERVER),
-        DEV_CLIENT_DATA(Dist.CLIENT),
-        DEV_SERVER_DATA(Dist.DEDICATED_SERVER);
+        PROD_CLIENT(Dist.CLIENT, true),
+        PROD_SERVER(Dist.DEDICATED_SERVER, true),
+        DEV_CLIENT(Dist.CLIENT, true),
+        DEV_SERVER(Dist.DEDICATED_SERVER, true),
+        DEV_CLIENT_DATA(Dist.CLIENT, false),
+        DEV_SERVER_DATA(Dist.DEDICATED_SERVER, false);
 
         final Dist forcedDist;
+        final boolean cleanDist;
 
-        LaunchMode(Dist forcedDist) {
+        LaunchMode(Dist forcedDist, boolean cleanDist) {
             this.forcedDist = forcedDist;
+            this.cleanDist = cleanDist;
         }
 
         public static LaunchMode fromLaunchTarget(String launchTarget) {
@@ -225,16 +256,15 @@ public abstract class LauncherTest {
         }
     }
 
-    private LaunchResult launch(String launchTarget, List<Path> additionalClassPath) {
-        var launchMode = LaunchMode.fromLaunchTarget(launchTarget);
+    private LaunchResult launch(Dist launchDist, boolean cleanDist, List<Path> additionalClassPath) {
         ModLoader.clear();
 
         var classLoader = Thread.currentThread().getContextClassLoader();
         var startupArgs = new StartupArgs(
                 installation.getGameDir(),
-                true,
-                launchMode.forcedDist,
-                true,
+                headless,
+                launchDist,
+                cleanDist,
                 new String[] {
                         // TODO: We can pass less in certain scenarios and should (i.e. development)
                         "--fml.mcVersion", SimulatedInstallation.MC_VERSION,

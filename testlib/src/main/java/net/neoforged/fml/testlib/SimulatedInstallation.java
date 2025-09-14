@@ -67,6 +67,11 @@ public class SimulatedInstallation implements AutoCloseable {
          * - The unmodified NeoForge universal jar
          */
         USERDEV,
+        ;
+
+        public boolean isProduction() {
+            return this == PRODUCTION_CLIENT || this == PRODUCTION_SERVER;
+        }
     }
 
     static {
@@ -590,9 +595,52 @@ public class SimulatedInstallation implements AutoCloseable {
         return path;
     }
 
-    public ModFileBuilder buildModJar(String filename) throws IOException {
+    /**
+     * This method of building a mod jar will use the current installation type to decide whether an exploded mod jar
+     * is suitable, or a jar file in the mods/ folder.
+     */
+    public void buildInstallationAppropriateModProject(@Nullable String gradleProjectName, String jarFilename, ModFileBuilder.ModJarCustomizer customizer) throws IOException {
+        if (type == null) {
+            throw new IllegalStateException("Installation hasn't been setup yet.");
+        }
+
+        if (type.isProduction()) {
+            var builder = buildModJar(jarFilename);
+            customizer.customize(builder);
+            builder.build();
+        } else {
+            var builder = buildGradleModProject(gradleProjectName);
+            customizer.customize(builder);
+            launchClasspath.addAll(builder.build());
+        }
+    }
+
+    public ModFileBuilder.ModJarBuilder buildModJar(String filename) throws IOException {
         var path = getModsFolder().resolve(filename);
-        return new ModFileBuilder(path);
+        return ModFileBuilder.toJar(path);
+    }
+
+    public ModFileBuilder.ModFoldersBuilder buildGradleModProject() throws IOException {
+        return buildGradleModProject(null);
+    }
+
+    /**
+     * @param projectSubfolder Can be null to place output into the root project, but can also be a path relative
+     *                         to the root project referring to the submodule.
+     */
+    public ModFileBuilder.ModFoldersBuilder buildGradleModProject(@Nullable String projectSubfolder) throws IOException {
+        Path moduleRoot = projectRoot;
+        if (projectSubfolder != null) {
+            moduleRoot = moduleRoot.resolve(projectSubfolder);
+        }
+
+        // Build typical single-module gradle output directories
+        var classesDir = moduleRoot.resolve("build/classes/java/main");
+        Files.createDirectories(classesDir);
+        var resourcesDir = moduleRoot.resolve("build/resources/main");
+        Files.createDirectories(resourcesDir);
+
+        return ModFileBuilder.toGradleOutputFolders(classesDir, resourcesDir);
     }
 
     public void writeConfig(String... lines) throws IOException {

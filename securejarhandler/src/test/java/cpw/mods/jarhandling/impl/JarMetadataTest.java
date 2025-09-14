@@ -201,7 +201,7 @@ public class JarMetadataTest {
     private JarMetadata getJarMetadata(Path testJar, ModFileCustomizer consumer) throws IOException {
         Files.createDirectories(testJar.getParent());
 
-        var builder = new ModFileBuilder(testJar);
+        var builder = ModFileBuilder.toJar(testJar);
         try {
             consumer.customize(builder);
         } catch (Throwable e) {

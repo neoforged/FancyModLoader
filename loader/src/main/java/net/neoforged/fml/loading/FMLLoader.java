@@ -20,7 +20,6 @@ import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.NamedPath;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.io.BufferedInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
@@ -117,7 +116,6 @@ public final class FMLLoader implements AutoCloseable {
     private LoadingModList loadingModList;
     private final Path gameDir;
     private final Set<Path> locatedPaths = new HashSet<>();
-    private final List<File> unclaimedClassPathEntries = new ArrayList<>();
 
     private VersionInfo versionInfo;
     public BackgroundScanHandler backgroundScanHandler;
@@ -504,6 +502,13 @@ public final class FMLLoader implements AutoCloseable {
                 }
             }).toList();
             appendLoader("FML Early Services", earlyServiceJars);
+            for (var earlyServiceJar : earlyServiceJars) {
+                try {
+                    earlyServiceJar.close();
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
         }
     }
 
@@ -671,10 +676,10 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     public static LanguageProviderLoader getLanguageLoadingProvider() {
-        return current().languageProviderLoader;
+        return getCurrent().languageProviderLoader;
     }
 
-    public static FMLLoader current() {
+    public static FMLLoader getCurrent() {
         var current = currentOrNull();
         if (current == null) {
             throw new IllegalStateException("There is no current FML Loader");
@@ -688,23 +693,23 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     public static Dist getDist() {
-        return current().dist;
+        return getCurrent().dist;
     }
 
     public static LoadingModList getLoadingModList() {
-        return current().loadingModList;
+        return getCurrent().loadingModList;
     }
 
     public static Path getGamePath() {
-        return current().gameDir;
+        return getCurrent().gameDir;
     }
 
     public static boolean isProduction() {
-        return current().production;
+        return getCurrent().production;
     }
 
     public static ModuleLayer getGameLayer() {
-        var gameLayer = current().gameLayer;
+        var gameLayer = getCurrent().gameLayer;
         if (gameLayer == null) {
             throw new IllegalStateException("This can only be called after mod discovery is completed");
         }
@@ -712,7 +717,7 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     public static VersionInfo versionInfo() {
-        return current().versionInfo;
+        return getCurrent().versionInfo;
     }
 
     @ApiStatus.Internal
@@ -757,14 +762,6 @@ public final class FMLLoader implements AutoCloseable {
         @Override
         public boolean addLocated(Path path) {
             return FMLLoader.this.locatedPaths.add(path);
-        }
-
-        @Override
-        public List<File> getUnclaimedClassPathEntries() {
-            // TODO: not really used anymore
-            return unclaimedClassPathEntries.stream()
-                    .filter(p -> !isLocated(p.toPath()))
-                    .toList();
         }
 
         @Override

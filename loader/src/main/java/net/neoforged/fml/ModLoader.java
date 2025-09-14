@@ -74,7 +74,7 @@ public final class ModLoader {
         loadingIssues.addAll(loadingModList.getModLoadingIssues());
 
         ForgeFeature.registerFeature("javaVersion", ForgeFeature.VersionFeatureTest.forVersionString(IModInfo.DependencySide.BOTH, System.getProperty("java.version")));
-        FMLLoader.current().backgroundScanHandler.waitForScanToComplete(periodicTask);
+        FMLLoader.getCurrent().backgroundScanHandler.waitForScanToComplete(periodicTask);
         final ModList modList = ModList.of(loadingModList.getModFiles().stream().map(ModFileInfo::getFile).toList(),
                 loadingModList.getMods());
 
