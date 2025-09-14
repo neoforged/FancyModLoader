@@ -74,7 +74,7 @@ import net.neoforged.fml.loading.moddiscovery.locators.NeoForgeDevDistCleaner;
 import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import net.neoforged.fml.startup.FatalStartupException;
-import net.neoforged.fml.startup.FmlInstrumentation;
+import net.neoforged.fml.startup.InstrumentationHelper;
 import net.neoforged.fml.startup.StartupArgs;
 import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.fml.util.PathPrettyPrinting;
@@ -205,7 +205,7 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     public static FMLLoader create(StartupArgs startupArgs) {
-        var instrumentation = FmlInstrumentation.obtainInstrumentation();
+        var instrumentation = InstrumentationHelper.obtainInstrumentation();
         return create(instrumentation, startupArgs);
     }
 

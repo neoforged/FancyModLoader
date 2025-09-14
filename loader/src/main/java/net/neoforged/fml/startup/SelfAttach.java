@@ -15,7 +15,8 @@ import net.neoforged.fml.util.ClasspathResourceUtils;
 
 /**
  * Used out-of-process to attach our agent to the current VM.
- * Please red JEP to understand that this will likely be disabled in a future LTS of Java:
+ * Please red JEP to understand that this will likely be disabled in a future LTS of Java, but at the time this
+ * Javadoc is written, it still works on Java 21 and 25.
  * https://openjdk.org/jeps/451
  * <p>
  * We expect the ecosystem to allow for easier attachment of agents via the intended way (command-line) by then.

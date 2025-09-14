@@ -14,7 +14,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.LogMarkers;
@@ -32,11 +31,7 @@ import org.slf4j.LoggerFactory;
 public class InDevFolderLocator implements IModFileCandidateLocator {
     private static final Logger LOGGER = LoggerFactory.getLogger(InDevFolderLocator.class);
 
-    private static final String VIRTUAL_JAR_MANIFEST_PATH = "build/virtualJarManifest.properties";
-
-    final Set<File> searchedDirectories = new HashSet<>();
     private final Map<File, VirtualJarManifestEntry> virtualJarMemberIndex = new HashMap<>();
-    private boolean manifestLoaded;
 
     record VirtualJarManifestEntry(String name, List<File> files) {}
 

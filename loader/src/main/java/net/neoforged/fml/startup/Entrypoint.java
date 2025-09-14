@@ -25,12 +25,16 @@ import org.apache.logging.log4j.core.config.ConfigurationFactory;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class Entrypoint {
+    private static final Logger LOG = LoggerFactory.getLogger(Entrypoint.class);
+
     protected Entrypoint() {}
 
     protected static FMLLoader startup(String[] args, boolean headless, Dist dist, boolean cleanDist) {
-        StartupLog.debug("JVM Uptime: {}ms", ManagementFactory.getRuntimeMXBean().getUptime());
+        LOG.info("JVM Uptime: {}ms", ManagementFactory.getRuntimeMXBean().getUptime());
 
         args = ArgFileExpander.expandArgFiles(args);
 
@@ -42,7 +46,7 @@ public abstract class Entrypoint {
         }
 
         var gameDir = getGameDir(args);
-        StartupLog.info("Game Directory: {}", gameDir);
+        LOG.info("Game Directory: {}", gameDir);
 
         // Disabling JMX for JUnit improves startup time
         if (System.getProperty("log4j2.disable.jmx") == null) {
@@ -64,7 +68,7 @@ public abstract class Entrypoint {
         } catch (Exception e) {
             var sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
-            StartupLog.error("Failed to start FML: {}", sw);
+            LOG.error("Failed to start FML: {}", sw);
             throw new FatalStartupException("Failed to start FML: " + e);
         }
     }
@@ -110,10 +114,10 @@ public abstract class Entrypoint {
             try {
                 loggingConfigUri = loggingConfigUrl.toURI();
             } catch (URISyntaxException e) {
-                StartupLog.error("Failed to read FML logging configuration: {}", loggingConfigUrl, e);
+                LOG.error("Failed to read FML logging configuration: {}", loggingConfigUrl, e);
                 return;
             }
-            StartupLog.debug("Reconfiguring logging with configuration from {}", loggingConfigUri);
+            LOG.debug("Reconfiguring logging with configuration from {}", loggingConfigUri);
             var configSource = ConfigurationSource.fromUri(loggingConfigUri);
             Configurator.reconfigure(ConfigurationFactory.getInstance().getConfiguration(LoggerContext.getContext(), configSource));
         }

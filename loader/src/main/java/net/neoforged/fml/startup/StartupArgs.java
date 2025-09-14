@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
  * @param headless
  * @param dist                      If set to null, the distribution being launched is auto-detected, otherwise it is set to this.
  *                                  In a dev-environment where a "joined" distribution is being used, this parameter also disables
- *                                  access to classes and resources of the inactive distribution.
+ *                                  access to classes and resources of the inactive distribution, if {@code cleanDist} is also set.
  * @param cleanDist                 If enabled, the loader will try to prevent loading Minecraft classes that do not belong to {@code dist}, but are
  *                                  otherwise present on the classpath (i.e. in joined distribution scenarios in development).
  * @param programArgs

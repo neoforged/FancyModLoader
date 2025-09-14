@@ -8,10 +8,22 @@ package net.neoforged.fml.startup;
 import java.lang.instrument.Instrumentation;
 import java.util.ArrayList;
 import net.neoforged.fml.loading.FMLLoader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public final class FmlInstrumentation {
-    private FmlInstrumentation() {}
+/**
+ * Facade for obtaining {@link Instrumentation} in {@link FMLLoader}.
+ */
+public final class InstrumentationHelper {
+    private static final Logger LOG = LoggerFactory.getLogger(InstrumentationHelper.class);
 
+    private InstrumentationHelper() {}
+
+    /**
+     * {@returns a javaagent instrumentation object if possible}
+     * 
+     * @throws IllegalStateException If instrumentation cannot be obtained.
+     */
     public static Instrumentation obtainInstrumentation() {
         var stackWalker = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
         var callingPackage = stackWalker.getCallerClass().getPackageName();
@@ -54,7 +66,7 @@ public final class FmlInstrumentation {
         try {
             var byteBuddyAgent = Class.forName("net.bytebuddy.agent.ByteBuddyAgent", true, ClassLoader.getSystemClassLoader());
             var instrumentation = (Instrumentation) byteBuddyAgent.getMethod("install").invoke(null);
-            StartupLog.info("Using byte-buddy fallback");
+            LOG.info("Using byte-buddy fallback");
             return instrumentation;
         } catch (Exception e) {
             storedExceptions.add(e);
@@ -74,7 +86,7 @@ public final class FmlInstrumentation {
         if (instrumentation == null) {
             throw new IllegalStateException("Our DevAgent was not attached. Pass an appropriate -javaagent parameter.");
         }
-        StartupLog.info("Using our own agent");
+        LOG.info("Using our own agent");
         return instrumentation;
     }
 }
