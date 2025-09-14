@@ -8,6 +8,7 @@ package net.neoforged.fml.loading;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import cpw.mods.modlauncher.TransformerHolder;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.ITransformerVotingContext;
 import cpw.mods.modlauncher.api.TargetType;
@@ -116,7 +117,9 @@ public class CoreModTest extends LauncherTest {
                 .build();
 
         var transformers = launchAndLoad("neoforgeclient").transformers();
-        assertThat(transformers).containsOnly(TEST_TRANSFORMER);
+        assertThat(transformers)
+                .extracting(t -> t instanceof TransformerHolder<?> transformerHolder ? transformerHolder.getTransformer() : t)
+                .containsOnly(TEST_TRANSFORMER);
 
         var testClass = Class.forName("testmod.TestClass", true, gameClassLoader);
         assertThat(testClass).hasAnnotation(Deprecated.class); // This is added by the transformer

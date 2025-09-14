@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import cpw.mods.modlauncher.ClassTransformer;
 import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.TransformStore;
+import cpw.mods.modlauncher.TransformTargetLabel;
+import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.ITransformerVotingContext;
 import cpw.mods.modlauncher.api.TargetType;
@@ -52,8 +54,10 @@ class ClassTransformerTests {
         final TransformStore transformStore = new TransformStore();
         final LaunchPluginHandler lph = new LaunchPluginHandler(Stream.of());
         final ClassTransformer classTransformer = new ClassTransformer(transformStore, lph, null);
-        transformStore.addTransformer(classTransformer(), "test");
-        byte[] result = classTransformer.transform(null, new byte[0], "test.MyClass", "testing");
+        final ITransformationService dummyService = new MockTransformerService();
+        transformStore.addTransformer(new TransformTargetLabel("test.MyClass", TargetType.CLASS), classTransformer(), dummyService);
+        byte[] result = classTransformer.transform(new byte[0], "test.MyClass", "testing");
+
         assertAll("Class loads and is valid",
                 () -> assertNotNull(result),
 //                () -> assertNotNull(new TransformingClassLoader(transformStore, lph, FileSystems.getDefault().getPath(".")).getClass("test.MyClass", result)),
@@ -71,8 +75,8 @@ class ClassTransformerTests {
         dummyClass.fields.add(new FieldNode(Opcodes.ACC_PUBLIC, "dummyfield", "Ljava/lang/String;", null, null));
         ClassWriter cw = new ClassWriter(Opcodes.ASM5);
         dummyClass.accept(cw);
-        transformStore.addTransformer(fieldNodeTransformer1(), "testing");
-        byte[] result1 = classTransformer.transform(null, cw.toByteArray(), "test.DummyClass", "testing");
+        transformStore.addTransformer(new TransformTargetLabel("test.DummyClass", "dummyfield"), fieldNodeTransformer1(), null);
+        byte[] result1 = classTransformer.transform(cw.toByteArray(), "test.DummyClass", "testing");
         assertAll("Class loads and is valid",
                 () -> assertNotNull(result1),
 //                () -> assertNotNull(new TransformingClassLoader(transformStore, lph, FileSystems.getDefault().getPath(".")).getClass("test.DummyClass", result1)),

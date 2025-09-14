@@ -60,7 +60,6 @@ import net.neoforged.fml.classloading.ResourceMaskingClassLoader;
 import net.neoforged.fml.common.asm.AccessTransformerService;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
 import net.neoforged.fml.i18n.FMLTranslations;
-import net.neoforged.fml.jfr.ClassTransformerProfiler;
 import net.neoforged.fml.loading.mixin.FMLMixinService;
 import net.neoforged.fml.loading.mixin.MixinFacade;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
@@ -287,7 +286,6 @@ public final class FMLLoader implements AutoCloseable {
             launchPluginHandler.offerScanResultsToPlugins(gameContent);
 
             loader.classTransformer = ClassTransformerFactory.create(launchContext, launchPluginHandler);
-            loader.ownedResources.add(new ClassTransformerProfiler(loader.classTransformer));
             var transformingLoader = loader.buildTransformingLoader(loader.classTransformer, gameContent);
 
             // From here on out, try loading through the TCL

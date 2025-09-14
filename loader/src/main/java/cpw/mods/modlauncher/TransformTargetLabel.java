@@ -33,7 +33,7 @@ public final class TransformTargetLabel {
     private final Type elementDescriptor;
     private final TargetType<?> labelType;
 
-    public TransformTargetLabel(ITransformer.Target<?> target) {
+    TransformTargetLabel(ITransformer.Target<?> target) {
         this(target.className(), target.elementName(), target.elementDescriptor(), target.targetType());
     }
 
@@ -48,7 +48,7 @@ public final class TransformTargetLabel {
         this(className, fieldName, "", FIELD);
     }
 
-    TransformTargetLabel(String className, String methodName, String methodDesc) {
+    public TransformTargetLabel(String className, String methodName, String methodDesc) {
         this(className, methodName, methodDesc, METHOD);
     }
 
@@ -61,19 +61,19 @@ public final class TransformTargetLabel {
         this(className, "", "", type);
     }
 
-    public Type getClassName() {
+    final Type getClassName() {
         return this.className;
     }
 
-    public String getElementName() {
+    public final String getElementName() {
         return this.elementName;
     }
 
-    public Type getElementDescriptor() {
+    public final Type getElementDescriptor() {
         return this.elementDescriptor;
     }
 
-    public TargetType<?> getTargetType() {
+    final TargetType<?> getTargetType() {
         return this.labelType;
     }
 

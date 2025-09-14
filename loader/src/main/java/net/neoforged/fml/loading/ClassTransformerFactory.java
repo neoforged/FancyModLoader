@@ -11,10 +11,15 @@ import static net.neoforged.fml.loading.LogMarkers.LOADING;
 import cpw.mods.modlauncher.ClassTransformer;
 import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.TransformStore;
+import cpw.mods.modlauncher.TransformTargetLabel;
+import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
+import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
+import cpw.mods.modlauncher.api.TargetType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.mixin.MixinFacade;
@@ -48,7 +53,9 @@ final class ClassTransformerFactory {
             try {
                 var transformers = service.transformers();
                 for (var transform : transformers) {
-                    transformStore.addTransformer(transform, service.name());
+                    for (var target : transform.targets()) {
+                        transformStore.addTransformer(getLabel(target), transform, service);
+                    }
                 }
                 LOGGER.debug("Initialized transformers for transformation service {}", service.name());
             } catch (Exception e) {
@@ -62,10 +69,29 @@ final class ClassTransformerFactory {
         }
 
         for (var coremodTransformer : getCoreModTransformers(launchContext)) {
-            transformStore.addTransformer(coremodTransformer.transformer(), coremodTransformer.owner());
+            var ownerService = new CoremodTransformationService(coremodTransformer.owner);
+            ITransformer<?> transformer = coremodTransformer.transformer();
+            for (var target : transformer.targets()) {
+                transformStore.addTransformer(getLabel(target), transformer, ownerService);
+            }
         }
 
-        return new ClassTransformer(transformStore, launchPluginHandler);
+        return new ClassTransformer(transformStore, launchPluginHandler, null);
+    }
+
+    private static TransformTargetLabel getLabel(ITransformer.Target<?> target) {
+        var targetType = target.targetType();
+        if (targetType == TargetType.PRE_CLASS) {
+            return new TransformTargetLabel(target.className());
+        } else if (targetType == TargetType.CLASS) {
+            return new TransformTargetLabel(target.className());
+        } else if (targetType == TargetType.METHOD) {
+            return new TransformTargetLabel(target.className(), target.elementName(), target.elementDescriptor());
+        } else if (targetType == TargetType.FIELD) {
+            return new TransformTargetLabel(target.className(), target.elementName());
+        } else {
+            throw new IllegalArgumentException("Unrecognized target type: " + targetType);
+        }
     }
 
     private record CoremodTransformer(String owner, ITransformer<?> transformer) {}
@@ -99,5 +125,30 @@ final class ClassTransformerFactory {
     private static <T extends ITransformationService> boolean isValidTransformationService(Class<T> serviceClass) {
         // Blacklist all Mixin services, since we implement all of them ourselves
         return !MixinFacade.isMixinServiceClass(serviceClass);
+    }
+
+    @Deprecated(forRemoval = true)
+    private static class CoremodTransformationService implements ITransformationService {
+        private final String owner;
+
+        public CoremodTransformationService(String owner) {
+            this.owner = owner;
+        }
+
+        @Override
+        public String name() {
+            return owner;
+        }
+
+        @Override
+        public void initialize(IEnvironment environment) {}
+
+        @Override
+        public void onLoad(IEnvironment env, Set<String> otherServices) throws IncompatibleEnvironmentException {}
+
+        @Override
+        public List<? extends ITransformer<?>> transformers() {
+            return List.of();
+        }
     }
 }

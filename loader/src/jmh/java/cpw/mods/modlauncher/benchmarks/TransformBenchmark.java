@@ -63,7 +63,7 @@ public class TransformBenchmark {
                     }
                 }));
         auditTrail = new TransformerAuditTrail();
-        classTransformer = new ClassTransformer(transformStore, lph, auditTrail);
+        classTransformer = new ClassTransformer(transformStore, lph, null, auditTrail);
         try (InputStream is = getClass().getClassLoader().getResourceAsStream("cpw/mods/modlauncher/testjar/TestClass.class")) {
             classBytes = is.readAllBytes();
         }
@@ -71,7 +71,7 @@ public class TransformBenchmark {
 
     @Benchmark
     public int transformNoop() {
-        byte[] result = classTransformer.transform(null, new byte[0], "test.MyClass", "jmh");
+        byte[] result = classTransformer.transform(new byte[0], "test.MyClass", "jmh");
         return result.length + 1;
     }
 
@@ -82,7 +82,7 @@ public class TransformBenchmark {
 
     @Benchmark
     public int transformDummyClass() {
-        byte[] result = classTransformer.transform(null, classBytes, "cpw.mods.modlauncher.testjar.TestClass", "jmh");
+        byte[] result = classTransformer.transform(classBytes, "cpw.mods.modlauncher.testjar.TestClass", "jmh");
         return result.length + 1;
     }
 }

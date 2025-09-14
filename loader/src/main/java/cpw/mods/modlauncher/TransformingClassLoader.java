@@ -15,6 +15,7 @@
 package cpw.mods.modlauncher;
 
 import cpw.mods.cl.ModuleClassLoader;
+import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ITransformerActivity;
 import java.lang.module.Configuration;
 import java.util.List;
@@ -27,29 +28,38 @@ public class TransformingClassLoader extends ModuleClassLoader {
     static {
         ClassLoader.registerAsParallelCapable();
     }
-
     private final ClassTransformer classTransformer;
+
+    @Deprecated(forRemoval = true)
+    public TransformingClassLoader(TransformStore transformStore, LaunchPluginHandler pluginHandler, final Environment environment, final Configuration configuration, List<ModuleLayer> parentLayers) {
+        this(transformStore, pluginHandler, environment, configuration, parentLayers, null);
+    }
+
+    @Deprecated(forRemoval = true)
+    public TransformingClassLoader(TransformStore transformStore, LaunchPluginHandler pluginHandler, final Environment environment, final Configuration configuration, List<ModuleLayer> parentLayers, ClassLoader parentClassLoader) {
+        super("TRANSFORMER", configuration, parentLayers, parentClassLoader);
+        TransformerAuditTrail tat = new TransformerAuditTrail();
+        environment.computePropertyIfAbsent(IEnvironment.Keys.AUDITTRAIL.get(), v -> tat);
+        this.classTransformer = new ClassTransformer(transformStore, pluginHandler, this, tat);
+    }
 
     @VisibleForTesting
     public TransformingClassLoader(ClassTransformer classTransformer, Configuration configuration, List<ModuleLayer> parentLayers, ClassLoader parentClassLoader) {
         super("TRANSFORMER", configuration, parentLayers, parentClassLoader);
         this.classTransformer = classTransformer;
+        classTransformer.setTransformingClassLoader(this);
     }
 
     @Override
-    protected byte[] maybeTransformClassBytes(byte[] bytes, String name, String context) {
-        return classTransformer.transform(this, bytes, name, context != null ? context : ITransformerActivity.CLASSLOADING_REASON);
+    protected byte[] maybeTransformClassBytes(final byte[] bytes, final String name, final String context) {
+        return classTransformer.transform(bytes, name, context != null ? context : ITransformerActivity.CLASSLOADING_REASON);
     }
 
     public Class<?> getLoadedClass(String name) {
         return findLoadedClass(name);
     }
 
-    public byte[] buildTransformedClassNodeFor(String className, String reason) throws ClassNotFoundException {
+    public byte[] buildTransformedClassNodeFor(final String className, final String reason) throws ClassNotFoundException {
         return super.getMaybeTransformedClassBytes(className, reason);
-    }
-
-    public ClassTransformer getClassTransformer() {
-        return classTransformer;
     }
 }

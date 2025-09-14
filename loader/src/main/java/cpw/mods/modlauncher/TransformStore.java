@@ -16,19 +16,19 @@ package cpw.mods.modlauncher;
 
 import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 
+import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.TargetType;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -38,136 +38,55 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class TransformStore {
     private static final Logger LOGGER = LogManager.getLogger();
-    private final Map<String, ClassTransformations> transforms = new HashMap<>();
-    private final IdentityHashMap<ITransformer<?>, String> ownerTracking = new IdentityHashMap<>();
+    private final Set<String> classNeedsTransforming = new HashSet<>();
+    private final Map<TargetType<?>, TransformList<?>> transformers;
 
-    /**
-     * @param className The classes binary name
-     */
-    ClassTransformations getClassTransforms(String className) {
-        return transforms.get(normalizeClass(className));
+    public TransformStore() {
+        transformers = new HashMap<>();
+        for (TargetType<?> type : TargetType.VALUES)
+            transformers.put(type, new TransformList<>(type.getNodeType()));
     }
 
-    private ClassTransformations getOrCreateClassTransforms(String className) {
-        return transforms.computeIfAbsent(normalizeClass(className), ignored -> new ClassTransformations());
+    List<ITransformer<FieldNode>> getTransformersFor(String className, FieldNode field) {
+        TransformTargetLabel tl = new TransformTargetLabel(className, field.name);
+        TransformList<FieldNode> transformerlist = TargetType.FIELD.get(this.transformers);
+        return transformerlist.getTransformersForLabel(tl);
     }
 
-    private static String normalizeClass(String className) {
-        return className.replace('.', '/');
+    List<ITransformer<MethodNode>> getTransformersFor(String className, MethodNode method) {
+        TransformTargetLabel tl = new TransformTargetLabel(className, method.name, method.desc);
+        TransformList<MethodNode> transformerlist = TargetType.METHOD.get(this.transformers);
+        return transformerlist.getTransformersForLabel(tl);
+    }
+
+    List<ITransformer<ClassNode>> getTransformersFor(String className, TargetType<ClassNode> classType) {
+        TransformTargetLabel tl = new TransformTargetLabel(className, classType);
+        TransformList<ClassNode> transformerlist = classType.get(this.transformers);
+        return transformerlist.getTransformersForLabel(tl);
     }
 
     @SuppressWarnings("unchecked")
-    public <T> void addTransformer(ITransformer<T> xform, @Nullable String owner) {
-        var targetType = Objects.requireNonNull(xform.getTargetType(), "Transformer type must not be null");
-
-        // Validate that the target type matches all targets
-        for (var target : xform.targets()) {
-            if (target.targetType() != targetType) {
-                throw new IllegalArgumentException("Transformer " + xform + " has target " + target
-                        + " that doesn't match its own target type " + targetType);
-            }
-        }
-
-        if (targetType == TargetType.PRE_CLASS) {
-            addPreClassTransformer((ITransformer<ClassNode>) xform);
-        } else if (targetType == TargetType.CLASS) {
-            addClassTransformer((ITransformer<ClassNode>) xform);
-        } else if (targetType == TargetType.METHOD) {
-            addMethodTransformer((ITransformer<MethodNode>) xform);
-        } else if (targetType == TargetType.FIELD) {
-            addFieldTransformer((ITransformer<FieldNode>) xform);
-        } else {
-            throw new IllegalArgumentException("Unrecognized target type: " + targetType);
-        }
-
-        if (owner != null) {
-            ownerTracking.put(xform, owner);
-        }
-    }
-
-    private void addPreClassTransformer(ITransformer<ClassNode> transformer) {
-        for (var target : transformer.targets()) {
-            LOGGER.debug(MODLAUNCHER, "Adding pre-class transformer {} to {}", transformer, target.className());
-            getOrCreateClassTransforms(target.className()).preTransformers.add(transformer);
-        }
-    }
-
-    private void addClassTransformer(ITransformer<ClassNode> transformer) {
-        for (var target : transformer.targets()) {
-            LOGGER.debug(MODLAUNCHER, "Adding class transformer {} to {}", transformer, target.className());
-            getOrCreateClassTransforms(target.className()).postTransformers.add(transformer);
-        }
-    }
-
-    private void addMethodTransformer(ITransformer<MethodNode> transformer) {
-        for (var target : transformer.targets()) {
-            LOGGER.debug(MODLAUNCHER, "Adding method transformer {} to {}#{}{}", transformer, target.className(), target.elementName(), target.elementDescriptor());
-            var elementKey = new ClassElementKey(target.elementName(), target.elementDescriptor());
-            getOrCreateClassTransforms(target.className()).methodTransformers.computeIfAbsent(elementKey, ignored -> new ArrayList<>()).add(transformer);
-        }
-    }
-
-    private void addFieldTransformer(ITransformer<FieldNode> transformer) {
-        for (var target : transformer.targets()) {
-            LOGGER.debug(MODLAUNCHER, "Adding field transformer {} to {}#{}{}", transformer, target.className(), target.elementName(), target.elementDescriptor());
-            if (target.elementDescriptor().isEmpty()) {
-                getOrCreateClassTransforms(target.className()).legacyFieldTransformers.computeIfAbsent(target.elementName(), ignored -> new ArrayList<>()).add(transformer);
-            } else {
-                var elementKey = new ClassElementKey(target.elementName(), target.elementDescriptor());
-                getOrCreateClassTransforms(target.className()).fieldTransformers.computeIfAbsent(elementKey, ignored -> new ArrayList<>()).add(transformer);
-            }
-        }
-    }
-
-    @Nullable
-    public String getOwner(ITransformer<?> transformer) {
-        return ownerTracking.get(transformer);
+    public <T> void addTransformer(TransformTargetLabel targetLabel, ITransformer<T> transformer, ITransformationService service) {
+        LOGGER.debug(MODLAUNCHER, "Adding transformer {} to {}", () -> transformer, () -> targetLabel);
+        classNeedsTransforming.add(targetLabel.getClassName().getInternalName());
+        final TransformList<T> transformList = (TransformList<T>) this.transformers.get(targetLabel.getTargetType());
+        transformList.addTransformer(targetLabel, new TransformerHolder<>(transformer, service));
     }
 
     /**
-     * Requires source-form class name (java.lang.String)
+     * Requires internal class name (using '/' instead of '.')
      */
-    boolean needsTransforming(String className) {
-        return transforms.containsKey(className);
+    boolean needsTransforming(String internalClassName) {
+        return classNeedsTransforming.contains(internalClassName);
     }
-
-    Set<String> getTransformedClasses() {
-        return transforms.keySet();
-    }
-
-    static final class ClassTransformations {
-        final List<ITransformer<ClassNode>> preTransformers = new ArrayList<>();
-        final Map<ClassElementKey, List<ITransformer<MethodNode>>> methodTransformers = new HashMap<>();
-        final Map<ClassElementKey, List<ITransformer<FieldNode>>> fieldTransformers = new HashMap<>();
-        // Field transformers without a descriptor apply to all fields of that name
-        final Map<String, List<ITransformer<FieldNode>>> legacyFieldTransformers = new HashMap<>();
-        final List<ITransformer<ClassNode>> postTransformers = new ArrayList<>();
-
-        public List<ITransformer<FieldNode>> getForField(String name, String desc) {
-            var legacy = legacyFieldTransformers.get(name);
-            var transforms = fieldTransformers.get(new ClassElementKey(name, desc));
-            if (legacy != null && transforms != null) {
-                var combined = new ArrayList<ITransformer<FieldNode>>(legacy.size() + transforms.size());
-                combined.addAll(legacy);
-                combined.addAll(transforms);
-                return combined;
-            } else if (legacy != null) {
-                return legacy;
-            } else if (transforms != null) {
-                return transforms;
-            } else {
-                return List.of();
-            }
-        }
-
-        public List<ITransformer<MethodNode>> getForMethod(String name, String desc) {
-            return methodTransformers.getOrDefault(new ClassElementKey(name, desc), List.of());
-        }
-    }
-
-    record ClassElementKey(String name, String descriptor) {}
 
     public Collection<ITransformer<?>> getTransformers() {
-        return ownerTracking.keySet();
+        Set<ITransformer<?>> transformers = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (var entry : this.transformers.values()) {
+            for (var list : entry.getTransformers().values()) {
+                transformers.addAll(list);
+            }
+        }
+        return transformers;
     }
 }

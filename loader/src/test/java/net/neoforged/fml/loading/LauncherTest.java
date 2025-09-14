@@ -296,8 +296,6 @@ public abstract class LauncherTest {
 
         gameClassLoader = (TransformingClassLoader) launchClassLoader;
 
-        loader.getClassTransformer().getTransformers();
-
         Map<String, SecureJar> gameLayerModules = new HashMap<>();
         for (var module : gameClassLoader.getConfiguration().modules()) {
             String moduleName = module.name();
