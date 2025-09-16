@@ -270,7 +270,7 @@ public class GameLocator implements IModFileCandidateLocator {
         var versions = context.getVersions();
         var minecraftVersion = versions.mcVersion();
         if (minecraftVersion == null) {
-            LOG.error("When launching in production, --fml.minecraftVersion must be present as a command-line argument");
+            LOG.error("When launching in production, --fml.mcVersion must be present as a command-line argument");
             pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation"));
             return;
         }

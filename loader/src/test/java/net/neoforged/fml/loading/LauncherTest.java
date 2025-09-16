@@ -131,18 +131,6 @@ public abstract class LauncherTest {
         }
         ownedResources.clear();
 
-        if (LoadingModList.get() != null) {
-            for (var modFile : LoadingModList.get().getModFiles()) {
-                modFile.getFile().close();
-            }
-            for (var modFile : LoadingModList.get().getPlugins()) {
-                ((ModFile) modFile.getFile()).close();
-            }
-            for (var modFile : LoadingModList.get().getGameLibraries()) {
-                ((ModFile) modFile).close();
-            }
-        }
-
         installation.close();
         FMLLoader.bindings = null;
     }

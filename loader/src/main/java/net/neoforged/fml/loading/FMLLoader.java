@@ -163,6 +163,18 @@ public final class FMLLoader implements AutoCloseable {
         LOGGER.info("Closing FML Loader {}", Integer.toHexString(System.identityHashCode(this)));
         if (this == current.compareAndExchange(this, null)) {
             // Clean up some further shared state
+            if (LoadingModList.get() != null) {
+                for (var modFile : LoadingModList.get().getModFiles()) {
+                    modFile.getFile().close();
+                }
+                for (var modFile : LoadingModList.get().getPlugins()) {
+                    ((ModFile) modFile.getFile()).close();
+                }
+                for (var modFile : LoadingModList.get().getGameLibraries()) {
+                    ((ModFile) modFile).close();
+                }
+            }
+
             ModList.clear();
             ModLoader.clear();
             // The bytecode provider holds a static global strong reference to the entire class-loader chain
@@ -402,6 +414,7 @@ public final class FMLLoader implements AutoCloseable {
         loader.setFallbackClassLoader(currentClassLoader);
 
         gameLayer = layer;
+        ownedResources.add(loader);
         currentClassLoader = loader;
         Thread.currentThread().setContextClassLoader(loader);
         return loader;
