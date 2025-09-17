@@ -37,7 +37,7 @@ public class ImmediateWindowHandler {
                 .map(ServiceLoader.Provider::get)
                 .forEach(bootstrap -> {
                     LOGGER.info("Running graphics bootstrap plugin {}", bootstrap.name());
-                    bootstrap.bootstrap(arguments.getArguments()); // TODO: Should take ProgramArgs
+                    bootstrap.bootstrap(arguments.getArguments()); // TODO: Should take ProgramArgs so it can *remove* args
                 });
 
         if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)) {

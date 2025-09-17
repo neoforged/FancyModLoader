@@ -24,37 +24,36 @@ import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.ConfigurationFactory;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.status.StatusLogger;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Provides a convenient base-class for our entry point classes.
  */
 public abstract class Entrypoint {
-    private static final Logger LOG = LoggerFactory.getLogger(Entrypoint.class);
-
     protected Entrypoint() {}
 
     protected static FMLLoader startup(String[] args, boolean headless, Dist dist, boolean cleanDist) {
-        LOG.info("JVM Uptime: {}ms", ManagementFactory.getRuntimeMXBean().getUptime());
+        // Wait to log this until Log4j2 is initialized properly.
+        long startupUptime = ManagementFactory.getRuntimeMXBean().getUptime();
 
         args = ArgFileExpander.expandArgFiles(args);
 
         // In dev, do not overwrite the logging configuration if the user explicitly set another one.
         // In production, always overwrite the vanilla configuration.
         // TODO: Update this comment and coordinate with launchers to determine how to use THEIR logging config
-        if (System.getProperty("log4j2.configurationFile") == null) {
+        if (!hasCustomLoggingConfiguration()) {
             overwriteLoggingConfiguration();
         }
 
-        var gameDir = getGameDir(args);
-        LOG.info("Game Directory: {}", gameDir);
+        // Try to avoid accessing this class before initializing Log4j2 to avoid reconfiguration
+        var logger = LoggerFactory.getLogger(Entrypoint.class);
 
-        // Disabling JMX for JUnit improves startup time
-        if (System.getProperty("log4j2.disable.jmx") == null) {
-            System.setProperty("log4j2.disable.jmx", "true");
-        }
+        logger.info("JVM Uptime: {}ms", startupUptime);
+
+        var gameDir = getGameDir(args);
+        logger.info("Game Directory: {}", gameDir);
 
         var startupArgs = new StartupArgs(
                 gameDir,
@@ -71,7 +70,7 @@ public abstract class Entrypoint {
         } catch (Exception e) {
             var sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
-            LOG.error("Failed to start FML: {}", sw);
+            logger.error("Failed to start FML: {}", sw);
             throw new FatalStartupException("Failed to start FML: " + e);
         }
     }
@@ -108,21 +107,37 @@ public abstract class Entrypoint {
     }
 
     /**
+     * If a user (or launcher) supplies an explicit Log4j2 configuration file, it should be used over the one
+     * we ship with FML. We try to detect whether one is given using the usual Log4j2 configuration properties.
+     * <p>See <a href="https://logging.apache.org/log4j/2.x/manual/systemproperties.html#log4j2.configurationFile">Log4j2 documentation</a>.
+     */
+    private static boolean hasCustomLoggingConfiguration() {
+        return System.getProperty("log4j2.configurationFile") != null
+                || System.getProperty("log4j.configurationFile") != null
+                || System.getenv("LOG4J_CONFIGURATION_FILE") != null;
+    }
+
+    /**
      * Forces the log4j2 logging context to use the configuration shipped with fml_loader.
      */
     static void overwriteLoggingConfiguration() {
+        // Disabling JMX for Log4j2 improves startup time
+        if (System.getProperty("log4j2.disable.jmx") == null && System.getenv("LOG4J_DISABLE_JMX") == null) {
+            System.setProperty("log4j2.disable.jmx", "true");
+        }
+
         var loggingConfigUrl = Entrypoint.class.getResource("log4j2.xml");
         if (loggingConfigUrl != null) {
             URI loggingConfigUri;
             try {
                 loggingConfigUri = loggingConfigUrl.toURI();
             } catch (URISyntaxException e) {
-                LOG.error("Failed to read FML logging configuration: {}", loggingConfigUrl, e);
+                StatusLogger.getLogger().error("Failed to read FML logging configuration: {}", loggingConfigUrl, e);
                 return;
             }
-            LOG.debug("Reconfiguring logging with configuration from {}", loggingConfigUri);
             var configSource = ConfigurationSource.fromUri(loggingConfigUri);
             Configurator.reconfigure(ConfigurationFactory.getInstance().getConfiguration(LoggerContext.getContext(), configSource));
+            StatusLogger.getLogger().debug("Reconfiguring logging with configuration from {}", loggingConfigUri);
         }
     }
 
