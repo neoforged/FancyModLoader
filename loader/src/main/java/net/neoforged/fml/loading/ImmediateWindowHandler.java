@@ -8,7 +8,6 @@ package net.neoforged.fml.loading;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.ServiceLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
@@ -51,10 +50,16 @@ public class ImmediateWindowHandler {
                     .map(ServiceLoader.Provider::get)
                     .filter(p -> Objects.equals(p.name(), providername))
                     .findFirst();
-            provider = maybeProvider.or(() -> {
+            provider = maybeProvider.orElse(null);
+            if (provider == null) {
                 LOGGER.info("Failed to find ImmediateWindowProvider {}, disabling", providername);
-                return Optional.empty();
-            }).orElse(null);
+            }
+            try {
+                provider.initialize(arguments.getArguments());
+            } catch (Exception e) {
+                LOGGER.error("Failed to initialize ImmediateWindowProvider '{}'", providername, e);
+                provider = null;
+            }
         }
         // Only update config if the provider isn't the dummy provider
         if (provider != null) {
