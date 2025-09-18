@@ -60,7 +60,6 @@ import net.neoforged.fml.classloading.ResourceMaskingClassLoader;
 import net.neoforged.fml.common.asm.AccessTransformerService;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
 import net.neoforged.fml.i18n.FMLTranslations;
-import net.neoforged.fml.loading.mixin.FMLMixinService;
 import net.neoforged.fml.loading.mixin.MixinFacade;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
@@ -87,7 +86,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
-import org.spongepowered.asm.service.MixinService;
 
 public final class FMLLoader implements AutoCloseable {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -177,9 +175,6 @@ public final class FMLLoader implements AutoCloseable {
 
             ModList.clear();
             ModLoader.clear();
-            // The bytecode provider holds a static global strong reference to the entire class-loader chain
-            // which will keep JAR files opened.
-            ((FMLMixinService) MixinService.getService()).setBytecodeProvider(null);
         }
 
         for (var ownedResource : ownedResources) {
@@ -266,6 +261,7 @@ public final class FMLLoader implements AutoCloseable {
             }
 
             var mixinFacade = new MixinFacade();
+            loader.ownedResources.add(mixinFacade);
 
             var launchPlugins = createLaunchPlugins(startupArgs, launchContext, discoveryResult, mixinFacade);
 
@@ -318,7 +314,11 @@ public final class FMLLoader implements AutoCloseable {
 
             return loader;
         } catch (RuntimeException | Error e) {
-            loader.close();
+            try {
+                loader.close();
+            } catch (Throwable t) {
+                e.addSuppressed(t);
+            }
             throw e;
         }
     }
