@@ -8,6 +8,12 @@ package net.neoforged.fml.loading.mixin;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.jarhandling.VirtualJar;
 import cpw.mods.modlauncher.TransformingClassLoader;
+import java.io.IOException;
+import java.lang.module.ModuleDescriptor;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.FMLLoader;
@@ -28,13 +34,6 @@ import org.spongepowered.asm.mixin.Mixins;
 import org.spongepowered.asm.mixin.injection.invoke.arg.ArgsClassGenerator;
 import org.spongepowered.asm.mixin.transformer.Config;
 import org.spongepowered.asm.service.MixinService;
-
-import java.io.IOException;
-import java.lang.module.ModuleDescriptor;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Encapsulates the code required to interact with Mixin.
@@ -112,8 +111,7 @@ public final class MixinFacade implements AutoCloseable {
     }
 
     private void addMixins(LoadingModList modList) {
-        record AnnotationInfo(IModFile modFile, int behaviorVersion) {
-        }
+        record AnnotationInfo(IModFile modFile, int behaviorVersion) {}
 
         Map<String, AnnotationInfo> configAnnotationInfo = new HashMap<>();
 
@@ -133,9 +131,9 @@ public final class MixinFacade implements AutoCloseable {
                 var existingInfo = configAnnotationInfo.putIfAbsent(mixinConfig.config(), currentInfo);
                 if (existingInfo != null && existingInfo.modFile() != modFile) {
                     ModLoader.addLoadingIssue(ModLoadingIssue.error(
-                                    "fml.modloadingissue.mixin.duplicate_config",
-                                    mixinConfig.config(),
-                                    existingInfo.modFile)
+                            "fml.modloadingissue.mixin.duplicate_config",
+                            mixinConfig.config(),
+                            existingInfo.modFile)
                             .withAffectedModFile(modFile));
                     continue;
                 }
@@ -149,8 +147,8 @@ public final class MixinFacade implements AutoCloseable {
                 }
                 if (configContent == null) {
                     ModLoader.addLoadingIssue(ModLoadingIssue.error(
-                                    "fml.modloadingissue.mixin.missing_config",
-                                    mixinConfig.config())
+                            "fml.modloadingissue.mixin.missing_config",
+                            mixinConfig.config())
                             .withAffectedModFile(modFile));
                     continue;
                 }
