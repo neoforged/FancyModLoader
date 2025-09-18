@@ -241,6 +241,13 @@ public final class FMLLoader implements AutoCloseable {
             loader.loadEarlyServices();
 
             ImmediateWindowHandler.load(startupArgs.headless(), loader.programArgs);
+            // Report known versions no
+            if (loader.versionInfo.neoForgeVersion() != null) {
+                ImmediateWindowHandler.setNeoForgeVersion(loader.versionInfo.neoForgeVersion());
+            }
+            if (loader.versionInfo.mcVersion() != null) {
+                ImmediateWindowHandler.setMinecraftVersion(loader.versionInfo.mcVersion());
+            }
 
             DiscoveryResult discoveryResult;
             if (startupArgs.headless()) {
@@ -624,8 +631,10 @@ public final class FMLLoader implements AutoCloseable {
                 versionInfo().fmlVersion(),
                 minecraftVersion,
                 versionInfo().neoFormVersion());
-
         progress.complete();
+
+        ImmediateWindowHandler.setMinecraftVersion(versionInfo.mcVersion());
+        ImmediateWindowHandler.setNeoForgeVersion(versionInfo.neoForgeVersion());
 
         loadingModList = ModSorter.sort(discoveryResult.modFiles(), issues);
 

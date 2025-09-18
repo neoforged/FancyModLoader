@@ -55,7 +55,7 @@ public class ImmediateWindowHandler {
                 LOGGER.info("Failed to find ImmediateWindowProvider {}, disabling", providername);
             }
             try {
-                provider.initialize(arguments.getArguments());
+                provider.initialize(arguments);
             } catch (Exception e) {
                 LOGGER.error("Failed to initialize ImmediateWindowProvider '{}'", providername, e);
                 provider = null;
@@ -64,6 +64,18 @@ public class ImmediateWindowHandler {
         // Only update config if the provider isn't the dummy provider
         if (provider != null) {
             FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER, provider.name());
+        }
+    }
+
+    public static void setNeoForgeVersion(String version) {
+        if (provider != null) {
+            provider.setNeoForgeVersion(version);
+        }
+    }
+
+    public static void setMinecraftVersion(String version) {
+        if (provider != null) {
+            provider.setMinecraftVersion(version);
         }
     }
 
