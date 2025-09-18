@@ -8,11 +8,11 @@ package net.neoforged.fml.loading;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
 import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
-import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProviderFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.ApiStatus;
@@ -26,12 +26,6 @@ public class ImmediateWindowHandler {
     static ImmediateWindowProvider provider;
 
     public static void load(boolean headless, ProgramArgs arguments) {
-        if (headless) {
-            provider = null;
-            LOGGER.info("Not loading early display in headless mode.");
-            return;
-        }
-
         ServiceLoader.load(GraphicsBootstrapper.class)
                 .stream()
                 .map(ServiceLoader.Provider::get)
@@ -40,26 +34,31 @@ public class ImmediateWindowHandler {
                     bootstrap.bootstrap(arguments.getArguments()); // TODO: Should take ProgramArgs so it can *remove* args
                 });
 
+        if (headless) {
+            provider = null;
+            LOGGER.info("Not loading early display in headless mode.");
+            return;
+        }
+
         if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)) {
             provider = null;
             LOGGER.info("ImmediateWindowProvider not loading because splash screen is disabled");
         } else {
             final var providername = FMLConfig.getConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER);
             LOGGER.info("Loading ImmediateWindowProvider {}", providername);
-            final var maybeProvider = ServiceLoader.load(ImmediateWindowProviderFactory.class)
+            final var maybeProvider = ServiceLoader.load(ImmediateWindowProvider.class)
                     .stream()
                     .map(ServiceLoader.Provider::get)
                     .filter(p -> Objects.equals(p.name(), providername))
                     .findFirst();
-            provider = maybeProvider
-                    .map(factory -> factory.create(arguments))
-                    .orElseGet(() -> {
-                        LOGGER.info("Failed to find ImmediateWindowProvider {}, disabling", providername);
-                        return null;
-                    });
-            if (provider != null) {
-                FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER, provider.name());
-            }
+            provider = maybeProvider.or(() -> {
+                LOGGER.info("Failed to find ImmediateWindowProvider {}, disabling", providername);
+                return Optional.empty();
+            }).orElse(null);
+        }
+        // Only update config if the provider isn't the dummy provider
+        if (provider != null) {
+            FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER, provider.name());
         }
     }
 
