@@ -37,7 +37,6 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.IBindingsProvider;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoader;
-import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.i18n.FMLTranslations;
@@ -200,7 +199,7 @@ public abstract class LauncherTest {
             LaunchResult result;
             try {
                 result = launch(launchDist, cleanDist, additionalClassPath);
-            } catch (ModLoadingException e) {
+            } catch (RuntimeException e) {
                 throw e;
             } catch (Exception e) {
                 throw new LaunchException(e);

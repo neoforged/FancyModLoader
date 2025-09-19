@@ -474,7 +474,17 @@ public class SimulatedInstallation implements AutoCloseable {
         var className = relativePath.replace(".class", "");
         var classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
         classWriter.visitAnnotation("Lfake/ClassAnnotation;", true);
-        classWriter.visit(Opcodes.V21, 0, className, null, null, null);
+        classWriter.visit(Opcodes.V21, Opcodes.ACC_PUBLIC, className, null, "java/lang/Object", null);
+        var constructor = classWriter.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
+        constructor.visitCode();
+        constructor.visitVarInsn(Opcodes.ALOAD, 0);  // Load 'this'
+        constructor.visitMethodInsn(Opcodes.INVOKESPECIAL,
+                "java/lang/Object", "<init>", "()V", false);  // Call super()
+        constructor.visitInsn(Opcodes.RETURN);  // Return
+        constructor.visitMaxs(0, 0); // Let COMPUTE_MAXS handle this
+        constructor.visitEnd();
+        classWriter.visitEnd();
+
         return new IdentifiableContent(id, relativePath, classWriter.toByteArray());
     }
 

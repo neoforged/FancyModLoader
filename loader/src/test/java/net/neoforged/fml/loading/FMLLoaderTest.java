@@ -28,6 +28,7 @@ import net.neoforged.fml.testlib.SimulatedInstallation;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.ContainedVersion;
+import net.neoforged.neoforgespi.locating.IModFileReader;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.junit.jupiter.api.Nested;
@@ -753,6 +754,29 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                     "ERROR: An uncaught parallel processing error has occurred."
                             + "\njava.lang.IllegalStateException: Exception Message");
+        }
+
+        @Test
+        void testClassloadingGuardian() throws Exception {
+            installation.setupUserdevProjectNew();
+            installation.buildInstallationAppropriateModProject("test", "test.jar", builder -> builder
+                    .withModTypeManifest("LIBRARY")
+                    .addClass("test.DummyReader", """
+                            public class DummyReader implements net.neoforged.neoforgespi.locating.IModFileReader {
+                                public DummyReader() throws Exception {
+                                    Class.forName("net.minecraft.DetectedVersion");
+                                }
+
+                                @Override
+                                public net.neoforged.neoforgespi.locating.IModFile read(cpw.mods.jarhandling.JarContents jar, net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes attributes) {
+                                    return null;
+                                }
+                            }
+                            """)
+                    .addService(IModFileReader.class, "test.DummyReader"));
+
+            var e = assertThrows(IllegalArgumentException.class, () -> launchClient());
+            assertThat(e).hasMessageStartingWith("Classes were loaded on the wrong class-loader:\n net.minecraft.DetectedVersion from java.net.URLClassLoader");
         }
     }
 }

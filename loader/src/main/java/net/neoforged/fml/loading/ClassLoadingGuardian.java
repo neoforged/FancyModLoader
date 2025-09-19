@@ -8,11 +8,11 @@ package net.neoforged.fml.loading;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
-import net.neoforged.fml.startup.Entrypoint;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
@@ -61,11 +61,7 @@ final class ClassLoadingGuardian implements AutoCloseable {
 
                 var packageName = getPackageName(className);
                 if (packageName != null && protectedPackages.contains(packageName)) {
-                    try {
-                        throw new RuntimeException();
-                    } catch (RuntimeException e) {
-                        LOGGER.error("Illegal load of protected class {} into class-loader {}", className, loader, e);
-                    }
+                    LOGGER.error("Illegal load of protected class {} into class-loader {}", className, loader, new Throwable());
 
                     // Transformers are actually not allowed to throw. So we have to
                     // construct class bytecode that ruins the day for everyone.
@@ -103,27 +99,30 @@ final class ClassLoadingGuardian implements AutoCloseable {
         this.allowedClassLoader = allowedClassLoader;
 
         // Final check for class-loading bugs
+        var foundIssues = new ArrayList<Class<?>>();
         for (var loadedClass : instrumentation.getAllLoadedClasses()) {
             if (loadedClass.getClassLoader() == null) {
                 continue; // JDK built-in
             }
-            // As an exception to the general rule, we allow Entrypoint classes to be loaded from the App CL.
-            // This allows NeoForge to define additional entrypoints from within its main jar, even though that jar
-            // is on the transforming classloader.
-            // The entrypoint will not reference other classes directly, or pass an instance of itself down to other
-            // classes, which means it should be fine.
-            if (Entrypoint.class.isAssignableFrom(loadedClass)) {
-                continue;
-            }
+
             var physicalPackage = loadedClass.getPackageName().replace('.', '/');
             if (protectedPackages.contains(physicalPackage)) {
                 // It's ok if the class is not reachable from the now current class-loader,
                 // since we get reported ALL loaded classes, they may be unrelated class-loader hierarchies,
                 // especially in testing scenarios.
                 if (isReachableFrom(loadedClass.getClassLoader(), allowedClassLoader)) {
-                    throw new IllegalArgumentException("Class " + loadedClass + " is incorrectly class-loaded in " + loadedClass.getClassLoader() + "!");
+                    foundIssues.add(loadedClass);
                 }
             }
+        }
+
+        if (!foundIssues.isEmpty()) {
+            var message = new StringBuilder();
+            message.append("Classes were loaded on the wrong class-loader:\n");
+            for (var offendingClass : foundIssues) {
+                message.append(' ').append(offendingClass.getName()).append(" from ").append(offendingClass.getClassLoader()).append('\n');
+            }
+            throw new IllegalArgumentException(message.toString());
         }
     }
 
