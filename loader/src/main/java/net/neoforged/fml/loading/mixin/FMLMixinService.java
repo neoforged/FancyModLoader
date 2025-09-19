@@ -6,7 +6,9 @@
 package net.neoforged.fml.loading.mixin;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -191,14 +193,19 @@ public class FMLMixinService implements IMixinService {
 
     @Override
     public InputStream getResourceAsStream(String name) {
+        // Mixin doesn't close this stream, so we use something that doesn't hold OS resources.
         var content = mixinConfigContents.get(name);
-        if (content != null) {
-            // Mixin doesn't close this stream, so we use something that doesn't hold
-            // OS resources.
-            return new ByteArrayInputStream(content);
+        if (content == null) {
+            try (var stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(name)) {
+                if (stream != null) {
+                    content = stream.readAllBytes();
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
 
-        return Thread.currentThread().getContextClassLoader().getResourceAsStream(name);
+        return content != null ? new ByteArrayInputStream(content) : null;
     }
 
     public void addMixinConfigContent(String config, byte[] resource) {

@@ -14,7 +14,6 @@ import java.util.Map;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.loading.mixin.FMLMixinService;
 import net.neoforged.fml.loading.mixin.MixinFacade;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -64,11 +63,6 @@ public class MixinConfigTest extends LauncherTest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @AfterEach
-    void tearDown() {
-        System.gc(); // Mixin is opening streams without closing them.
     }
 
     private static <T> void setField(Class<?> clazz, T instance, String fieldName, Object value) {
