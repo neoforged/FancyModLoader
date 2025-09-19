@@ -158,6 +158,14 @@ public final class MixinFacade implements AutoCloseable {
             }
         }
 
+        // Besides mods, also add plugins and game libraries so Mixin can scan their manifest attributes
+        for (var plugin : modList.getPlugins()) {
+            service.addMixinContainer(new FMLModFileContainerHandle(plugin.getFile()));
+        }
+        for (var gameLibrary : modList.getGameLibraries()) {
+            service.addMixinContainer(new FMLModFileContainerHandle(gameLibrary));
+        }
+
         var configMap = Mixins.getConfigs().stream().collect(Collectors.toMap(Config::getName, Config::getConfig));
         for (var entry : configAnnotationInfo.entrySet()) {
             var mixinConfigName = entry.getKey();

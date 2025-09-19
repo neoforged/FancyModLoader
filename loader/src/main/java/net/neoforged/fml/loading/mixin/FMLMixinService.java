@@ -7,6 +7,7 @@ package net.neoforged.fml.loading.mixin;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import net.neoforged.fml.loading.FMLLoader;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.spongepowered.asm.launch.platform.container.ContainerHandleVirtual;
 import org.spongepowered.asm.launch.platform.container.IContainerHandle;
 import org.spongepowered.asm.logging.ILogger;
@@ -58,6 +60,10 @@ public class FMLMixinService implements IMixinService {
 
     @Nullable
     private IMixinTransformer mixinTransformer;
+
+    private final ContainerHandleVirtual primaryContainer = new ContainerHandleVirtual("fml");
+
+    private final List<IContainerHandle> mixinContainers = new ArrayList<>();
 
     @Override
     public void prepare() {}
@@ -173,8 +179,6 @@ public class FMLMixinService implements IMixinService {
         return List.of("org.spongepowered.asm.launch.platform.MixinPlatformAgentDefault");
     }
 
-    private final IContainerHandle primaryContainer = new ContainerHandleVirtual("fml");
-
     @Override
     public IContainerHandle getPrimaryContainer() {
         return primaryContainer;
@@ -182,7 +186,7 @@ public class FMLMixinService implements IMixinService {
 
     @Override
     public Collection<IContainerHandle> getMixinContainers() {
-        return List.of();
+        return mixinContainers;
     }
 
     @Override
@@ -199,5 +203,14 @@ public class FMLMixinService implements IMixinService {
 
     public void addMixinConfigContent(String config, byte[] resource) {
         mixinConfigContents.put(config, resource);
+    }
+
+    public void addMixinContainer(IContainerHandle handle) {
+        this.mixinContainers.add(handle);
+    }
+
+    @VisibleForTesting
+    public void clearMixinContainers() {
+        mixinContainers.clear();
     }
 }

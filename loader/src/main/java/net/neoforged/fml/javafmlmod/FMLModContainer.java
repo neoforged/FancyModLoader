@@ -41,7 +41,7 @@ public class FMLModContainer extends ModContainer {
 
     public FMLModContainer(IModInfo info, List<String> entrypoints, ModFileScanData modFileScanResults, ModuleLayer gameLayer) {
         super(info);
-        LOGGER.debug(LOADING, "Creating FMLModContainer instance for {}", entrypoints);
+        LOGGER.debug(LOADING, "Creating FMLModContainer instance for {} with entrypoints {}", info.getModId(), entrypoints);
         this.scanResults = modFileScanResults;
         this.eventBus = BusBuilder.builder()
                 .setExceptionHandler(this::onEventFailed)

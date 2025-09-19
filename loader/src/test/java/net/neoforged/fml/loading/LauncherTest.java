@@ -17,6 +17,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.net.URLConnection;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -74,6 +75,9 @@ public abstract class LauncherTest {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+
+        // Ensure that JarFiles opened through jar: URLs are not cached, otherwise we can't clean up the temp directory
+        URLConnection.setDefaultUseCaches("jar", false);
     }
 
     @BeforeAll

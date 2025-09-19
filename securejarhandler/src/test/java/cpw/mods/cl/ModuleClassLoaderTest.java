@@ -17,10 +17,10 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleReader;
-import java.net.JarURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.net.URLConnection;
 import java.net.spi.URLStreamHandlerProvider;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -177,6 +177,9 @@ class ModuleClassLoaderTest {
                 // This is a packaged file that should show up in the module packages
                 .addTextFile("layer3resources/dummy.txt", "from layer3")
                 .build();
+
+        // Avoids being unable to delete the temp directory because of cached JarFiles held by JarURLConnection
+        URLConnection.setDefaultUseCaches("jar", false);
     }
 
     enum ConformanceScenario {
@@ -285,8 +288,6 @@ class ModuleClassLoaderTest {
             closeLayer(layer1);
             closeLayer(layer2);
             closeLayer(layer3);
-
-            clearJarUrlHandlerCache();
         }
 
         private void closeLayer(ModuleLayer layer) throws Exception {
@@ -838,16 +839,6 @@ class ModuleClassLoaderTest {
             } finally {
                 Thread.currentThread().setContextClassLoader(previousCl);
             }
-        }
-    }
-
-    private static void clearJarUrlHandlerCache() throws Exception {
-        // Annoyingly, any use of a Jar file via jar: URIs tends to create stale cache entries
-        // in sun.net.www.protocol.jar.JarFileFactory.fileCache
-        // However, we can get such a cached connection and close it explicitly, which then cleans it up from the cache
-        for (var jarPath : List.of(firstLayerJar, secondLayerJar, thirdLayerProviderAJar, thirdLayerProviderBJar, thirdLayerConsumerJar)) {
-            URL url = new URL("jar:" + jarPath.toUri() + "!/");
-            ((JarURLConnection) url.openConnection()).getJarFile().close();
         }
     }
 }
