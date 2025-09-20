@@ -379,13 +379,19 @@ class FMLLoaderTest extends LauncherTest {
             installation.buildInstallationAppropriateModProject("lib", "lib.jar", builder -> {
                 builder.withManifest(Map.of(
                         "Automatic-Module-Name", "lib",
-                        "FMLModType", "LIBRARY"));
+                        "FMLModType", "LIBRARY"))
+                        .addClass("lib.TestClass", "class TestClass {}");
             });
-            launchClient();
+            var result = launchClient();
 
             assertThat(LoadingModList.get().getPlugins())
                     .extracting(mfi -> mfi.getFile().getId())
                     .contains("lib");
+
+            var testClass = result.launchClassLoader().loadClass("lib.TestClass");
+            var modFile = loader.getModFileByClass(testClass);
+            assertNotNull(modFile, "expected to be able to get the mod file for a class from the library");
+            assertEquals("lib", modFile.getId(), "expected the lib mod file to have the right id");
         }
 
         @ParameterizedTest
@@ -395,7 +401,8 @@ class FMLLoaderTest extends LauncherTest {
             installation.buildInstallationAppropriateModProject("gamelib", "gamelib.jar", builder -> {
                 builder.withManifest(Map.of(
                         "Automatic-Module-Name", "gamelib",
-                        "FMLModType", "GAMELIBRARY"));
+                        "FMLModType", "GAMELIBRARY"))
+                        .addClass("gamelib.TestClass", "class TestClass {}");
             });
             var result = launchClient();
 
@@ -404,6 +411,10 @@ class FMLLoaderTest extends LauncherTest {
                     .extracting(IModFile::getId)
                     .contains("gamelib");
             assertThat(result.gameLayerModules()).containsKey("gamelib");
+            var testClass = result.launchClassLoader().loadClass("gamelib.TestClass");
+            var modFile = loader.getModFileByClass(testClass);
+            assertNotNull(modFile, "expected to be able to get the mod file for a class from the library");
+            assertEquals("gamelib", modFile.getId(), "expected the gamelib mod file to have the right id");
         }
 
         /**

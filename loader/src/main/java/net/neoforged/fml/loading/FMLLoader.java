@@ -80,6 +80,7 @@ import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
@@ -155,6 +156,20 @@ public final class FMLLoader implements AutoCloseable {
         LOGGER.info("Game directory: {}", gameDir);
 
         makeCurrent();
+    }
+
+    /**
+     * Tries to get the mod file that a given class belongs to.
+     * 
+     * @return Null, if the class doesn't belong to a mod file.
+     */
+    @Nullable
+    public IModFile getModFileByClass(Class<?> clazz) {
+        var packageName = clazz.getPackageName();
+        if (packageName.isEmpty()) {
+            return null;
+        }
+        return loadingModList.getPackageIndex().get(packageName);
     }
 
     @Override

@@ -8,25 +8,31 @@ package net.neoforged.fml.loading;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
-import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Master list of all mods <em>in the loading context. This class cannot refer outside the
  * loading package</em>
  */
 public class LoadingModList {
+    private static final Logger LOG = LoggerFactory.getLogger(LoadingModList.class);
+
     private static LoadingModList INSTANCE;
     private final List<IModFileInfo> plugins;
     private final List<IModFile> gameLibraries;
@@ -34,6 +40,8 @@ public class LoadingModList {
     private final List<ModInfo> sortedList;
     private final Map<ModInfo, List<ModInfo>> modDependencies;
     private final Map<String, ModFileInfo> fileById;
+    @Nullable
+    private volatile Map<String, IModFile> fileByPackage;
     private final List<ModLoadingIssue> modLoadingIssues;
     private final Set<IModFile> allModFiles = Collections.newSetFromMap(new IdentityHashMap<>());
 
@@ -68,13 +76,6 @@ public class LoadingModList {
 
     public static LoadingModList get() {
         return INSTANCE;
-    }
-
-    public void addForScanning(BackgroundScanHandler backgroundScanHandler) {
-        backgroundScanHandler.setLoadingModList(this);
-        modFiles.stream()
-                .map(ModFileInfo::getFile)
-                .forEach(backgroundScanHandler::submitForScanning);
     }
 
     public boolean contains(IModFile modFile) {
@@ -118,5 +119,32 @@ public class LoadingModList {
 
     public List<ModLoadingIssue> getModLoadingIssues() {
         return modLoadingIssues;
+    }
+
+    Map<String, IModFile> getPackageIndex() {
+        var fileByPackage = this.fileByPackage;
+        if (fileByPackage == null) {
+            synchronized (this) {
+                if (this.fileByPackage == null) {
+                    this.fileByPackage = buildPackageIndex();
+                }
+                fileByPackage = this.fileByPackage;
+            }
+        }
+        return fileByPackage;
+    }
+
+    private Map<String, IModFile> buildPackageIndex() {
+        long start = System.nanoTime();
+        Map<String, IModFile> result = new HashMap<>();
+        for (var modFile : this.allModFiles) {
+            for (var packageName : ((ModFile) modFile).getSecureJar().moduleDataProvider().descriptor().packages()) {
+                result.put(packageName, modFile);
+            }
+        }
+        result = Map.copyOf(result);
+        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        LOG.debug("Built package index ({} entries) in {}ms", result.size(), elapsed);
+        return result;
     }
 }
