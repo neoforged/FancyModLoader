@@ -73,6 +73,9 @@ public class LoadingModList {
         return list;
     }
 
+    /**
+     * @deprecated Use {@code FMLLoader.getCurrent().getLoadingModList()} instead.
+     */
     @Deprecated(forRemoval = true)
     public static LoadingModList get() {
         return FMLLoader.getCurrent().getLoadingModList();
