@@ -660,10 +660,6 @@ public class SimulatedInstallation implements AutoCloseable {
         return ModFileBuilder.toJar(path);
     }
 
-    public ModFileBuilder.ModFoldersBuilder buildGradleModProject() throws IOException {
-        return buildGradleModProject(null);
-    }
-
     /**
      * @param projectSubfolder Can be null to place output into the root project, but can also be a path relative
      *                         to the root project referring to the submodule.

@@ -94,6 +94,14 @@ public class LoadingModList {
         return modFiles;
     }
 
+    /**
+     * @return All {@linkplain #getModFiles() mod files}, {@linkplain #getPlugins() plugins} and
+     *         {@linkplain #getGameLibraries() game libraries}.
+     */
+    public Set<IModFile> getAllModFiles() {
+        return allModFiles;
+    }
+
     public ModFileInfo getModFileById(String modid) {
         return this.fileById.get(modid);
     }

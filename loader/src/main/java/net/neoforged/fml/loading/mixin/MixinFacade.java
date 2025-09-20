@@ -142,8 +142,24 @@ public final class MixinFacade implements AutoCloseable {
                 byte[] configContent;
                 try {
                     configContent = modFile.getContents().readFile(mixinConfig.config());
-                } catch (IOException e) {
+                } catch (IOException ignored) {
                     configContent = null;
+                }
+                // NOTE: Archloom does not put common modules into the same MOD_CLASSES/modFolders group as the
+                //       NeoForge module, which leads to our restriction on it coming from the same modfile failing.
+                if (configContent == null) {
+                    for (var otherModFile : modList.getAllModFiles()) {
+                        if (otherModFile != modFile) {
+                            try {
+                                configContent = otherModFile.getContents().readFile(mixinConfig.config());
+                            } catch (IOException ignored) {}
+                            if (configContent != null) {
+                                LOG.warn("Mod file {} declares mixin config {}, but it actually comes from {}",
+                                        modFile, mixinConfig.config(), otherModFile);
+                                break;
+                            }
+                        }
+                    }
                 }
                 if (configContent == null) {
                     ModLoader.addLoadingIssue(ModLoadingIssue.error(

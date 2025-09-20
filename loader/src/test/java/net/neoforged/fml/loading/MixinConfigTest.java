@@ -133,6 +133,21 @@ public class MixinConfigTest extends LauncherTest {
                 "ERROR: A mixin config named test.mixins.json was declared in mods/mixin-test.jar, but doesn't exist");
     }
 
+    // This test is for Archloom and mixin configs coming from the common module (which Archloom puts on the classpath separately)
+    @Test
+    void testMixinConfigComesFromOtherModFile() throws Exception {
+        installation.setupUserdevProjectNew();
+        installation.buildInstallationAppropriateModProject(null, "main.jar", builder -> builder.withTestmodModsToml(modsToml -> modsToml.addMixinConfig("testcommon.mixins.json")));
+        installation.buildModJar("mixin-common.jar")
+                .withMod("generated", "1.0")
+                .addTextFile("testcommon.mixins.json", "{}")
+                .build();
+
+        var result = launchClient();
+        assertThat(result.issues()).isEmpty();
+        assertThat(Mixins.getConfigs()).extracting("name").containsOnly("testcommon.mixins.json");
+    }
+
     @Test
     void testRequestedMixinBehaviorIsTooOld() throws Exception {
         installation.setupProductionClient();
