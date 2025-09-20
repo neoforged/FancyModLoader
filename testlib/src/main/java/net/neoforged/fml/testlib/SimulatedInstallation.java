@@ -58,6 +58,9 @@ public class SimulatedInstallation implements AutoCloseable {
          * - A jar with all Minecraft Classes, NeoForge Classes and Resources
          * - A second jar with the original non-class content of the Minecraft jar
          * The Minecraft classes and resources are merged from server+client distributions.
+         *
+         * The difference between FOLDERS and JAR relates to how the "installation appropriate" mod project
+         * is put onto the classpath (as folders, or built as a jar file).
          */
         USERDEV_LEGACY_FOLDERS,
         USERDEV_LEGACY_JAR,
@@ -66,6 +69,9 @@ public class SimulatedInstallation implements AutoCloseable {
          * It puts two jars on the classpath:
          * - The merged, patched Minecraft jar, including classes and resources from both distributions
          * - The unmodified NeoForge universal jar
+         *
+         * The difference between FOLDERS and JAR relates to how the "installation appropriate" mod project
+         * is put onto the classpath (as folders, or built as a jar file).
          */
         USERDEV_FOLDERS,
         USERDEV_JAR,
