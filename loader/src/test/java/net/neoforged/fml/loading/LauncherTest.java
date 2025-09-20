@@ -93,34 +93,13 @@ public abstract class LauncherTest {
     }
 
     @BeforeEach
-    void setUp() throws Exception {
-        if (FMLLoader.currentOrNull() != null) {
+    void setUp() {
+        if (FMLLoader.getCurrentOrNull() != null) {
             throw new IllegalStateException("A previous test leaked an active FMLLoader. These tests will fail.");
         }
 
         // Clear in case other tests have set it and failed to reset it
         SimulatedInstallation.setModFoldersProperty(Map.of());
-
-        FMLLoader.bindings = new IBindingsProvider() {
-            private volatile IEventBus bus;
-
-            @Override
-            public IEventBus getGameBus() {
-                if (bus == null) {
-                    synchronized (this) {
-                        if (bus == null) {
-                            bus = BusBuilder.builder()
-                                    .classChecker(eventType -> {
-                                        if (IModBusEvent.class.isAssignableFrom(eventType)) {
-                                            throw new IllegalArgumentException("IModBusEvent events are not allowed on the game bus!");
-                                        }
-                                    }).build();
-                        }
-                    }
-                }
-                return bus;
-            }
-        };
     }
 
     @AfterEach
@@ -135,7 +114,6 @@ public abstract class LauncherTest {
         ownedResources.clear();
 
         installation.close();
-        FMLLoader.bindings = null;
     }
 
     /**
@@ -275,6 +253,27 @@ public abstract class LauncherTest {
             Thread.currentThread().setContextClassLoader(classLoader);
         }
 
+        loader.bindings = new IBindingsProvider() {
+            private volatile IEventBus bus;
+
+            @Override
+            public IEventBus getGameBus() {
+                if (bus == null) {
+                    synchronized (this) {
+                        if (bus == null) {
+                            bus = BusBuilder.builder()
+                                    .classChecker(eventType -> {
+                                        if (IModBusEvent.class.isAssignableFrom(eventType)) {
+                                            throw new IllegalArgumentException("IModBusEvent events are not allowed on the game bus!");
+                                        }
+                                    }).build();
+                        }
+                    }
+                }
+                return bus;
+            }
+        };
+
         var loadingModList = FMLLoader.getLoadingModList();
         var loadedMods = loadingModList.getModFiles();
 
@@ -346,7 +345,7 @@ public abstract class LauncherTest {
     protected final <T> T withGameClassloader(Callable<T> r) throws Exception {
         var previous = Thread.currentThread().getContextClassLoader();
         try {
-            Thread.currentThread().setContextClassLoader(loader.currentClassLoader());
+            Thread.currentThread().setContextClassLoader(loader.getCurrentClassLoader());
             return r.call();
         } finally {
             Thread.currentThread().setContextClassLoader(previous);

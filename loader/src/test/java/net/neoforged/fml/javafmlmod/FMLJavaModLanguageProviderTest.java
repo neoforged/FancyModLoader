@@ -188,7 +188,7 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
         assertThat(MESSAGES).containsExactly("mod event bus event was fired!");
 
         final var event = new TestEvent();
-        FMLLoader.getBindings().getGameBus().post(event);
+        FMLLoader.getCurrent().getBindings().getGameBus().post(event);
         assertThat(event.message).isEqualTo("game event bus event was fired!");
     }
 

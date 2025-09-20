@@ -122,10 +122,9 @@ public final class FMLLoader implements AutoCloseable {
     @VisibleForTesting
     DiscoveryResult discoveryResult;
     private ClassTransformer classTransformer;
-
-    // TODO Make sure this isn't static
     @Nullable
-    static volatile IBindingsProvider bindings;
+    @VisibleForTesting
+    volatile IBindingsProvider bindings;
 
     @VisibleForTesting
     record DiscoveryResult(
@@ -198,16 +197,38 @@ public final class FMLLoader implements AutoCloseable {
         }
     }
 
-    public ClassLoader currentClassLoader() {
+    public ClassLoader getCurrentClassLoader() {
         return currentClassLoader;
     }
 
-    public ProgramArgs programArgs() {
+    public ProgramArgs getProgramArgs() {
         return programArgs;
     }
 
     ClassTransformer getClassTransformer() {
         return classTransformer;
+    }
+
+    @ApiStatus.Internal
+    public IBindingsProvider getBindings() {
+        if (bindings == null) {
+            synchronized (this) {
+                if (bindings == null) {
+                    if (gameLayer == null) {
+                        throw new IllegalStateException("Cannot retrieve bindings before the game layer is initialized.");
+                    }
+                    var providers = ServiceLoader.load(gameLayer, IBindingsProvider.class).stream().toList();
+                    if (providers.isEmpty()) {
+                        throw new IllegalStateException("Could not find bindings provider");
+                    } else if (providers.size() > 1) {
+                        String providerList = providers.stream().map(p -> p.type().getName()).collect(Collectors.joining(", "));
+                        throw new IllegalStateException("Found more than one bindings provider: " + providerList);
+                    }
+                    bindings = providers.getFirst().get();
+                }
+            }
+        }
+        return bindings;
     }
 
     public static FMLLoader create(StartupArgs startupArgs) {
@@ -273,9 +294,6 @@ public final class FMLLoader implements AutoCloseable {
             var launchPlugins = createLaunchPlugins(startupArgs, launchContext, discoveryResult, mixinFacade);
 
             var launchPluginHandler = new LaunchPluginHandler(launchPlugins.values().stream());
-
-            // TODO -> MANIFEST.MF declaration GraphicsBootstrapper.class.getName(),
-            // TODO -> MANIFEST.MF declaration net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider.class.getName()
 
             // Load Plugins
             loader.loadPlugins(loader.loadingModList.getPlugins());
@@ -594,24 +612,6 @@ public final class FMLLoader implements AutoCloseable {
         var modFiles = new ArrayList<>(discoveryResult.modFiles());
         var issues = new ArrayList<>(discoveryResult.discoveryIssues());
 
-        // this.candidateMods = lst(modFiles.get(IModFile.Type.MOD));
-        //        this.candidateMods.addAll(lst(modFiles.get(IModFile.Type.GAMELIBRARY)));
-        // Validate the loading.
-        // With a deduplicated list, we can now successfully process the artifacts and load
-        // transformer plugins.
-        // for (Iterator<ModFile> iterator = mods.iterator(); iterator.hasNext();) {
-        //     var modFile = iterator.next();
-        //     if (!modFile.identifyMods()) {
-        //         LOGGER.warn(LogMarkers.SCAN, "File {} has been ignored - it is invalid", modFile.getFilePath());
-        //         iterator.remove();
-        //     }
-        // }
-        // TODO validateFiles(candidateMods);
-        // TODO if (LOGGER.isDebugEnabled(LogMarkers.SCAN)) {
-        // TODO     LOGGER.debug(LogMarkers.SCAN, "Found {} mod files with {} mods", candidateMods.size(), candidateMods.stream().mapToInt(mf -> mf.getModInfos().size()).sum());
-        // TODO }
-        // TODO ImmediateWindowHandler.updateProgress("Found " + candidateMods.size() + " mod candidates");
-
         // Now we should have a mod for "minecraft" and "neoforge" allowing us to fill in the versions
         var neoForgeVersion = versionInfo.neoForgeVersion();
         var minecraftVersion = versionInfo.mcVersion();
@@ -700,7 +700,7 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     public static FMLLoader getCurrent() {
-        var current = currentOrNull();
+        var current = getCurrentOrNull();
         if (current == null) {
             throw new IllegalStateException("There is no current FML Loader");
         }
@@ -708,7 +708,7 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     @Nullable
-    public static FMLLoader currentOrNull() {
+    public static FMLLoader getCurrentOrNull() {
         return current.get();
     }
 
@@ -738,23 +738,6 @@ public final class FMLLoader implements AutoCloseable {
 
     public static VersionInfo versionInfo() {
         return getCurrent().versionInfo;
-    }
-
-    @ApiStatus.Internal
-    public static IBindingsProvider getBindings() {
-        if (bindings == null) {
-            synchronized (FMLLoader.class) {
-                if (bindings == null) {
-                    var providers = ServiceLoader.load(FMLLoader.getGameLayer(), IBindingsProvider.class)
-                            .stream().toList();
-                    if (providers.size() != 1) {
-                        throw new IllegalStateException("Could not find bindings provider");
-                    }
-                    bindings = providers.get(0).get();
-                }
-            }
-        }
-        return bindings;
     }
 
     class LaunchContextAdapter implements ILaunchContext {

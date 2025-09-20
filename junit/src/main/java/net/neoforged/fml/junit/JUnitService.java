@@ -84,7 +84,7 @@ public class JUnitService implements LauncherSessionListener {
             throw new ModLoadingException(LoadingModList.get().getModLoadingIssues());
         }
 
-        for (var bootstrapper : ServiceLoader.load(JUnitGameBootstrapper.class, loader.currentClassLoader())) {
+        for (var bootstrapper : ServiceLoader.load(JUnitGameBootstrapper.class, loader.getCurrentClassLoader())) {
             long bootstrapStart = System.nanoTime();
             bootstrapper.bootstrap(loader);
             LOG.info("Running game bootstrapper {} took {}ms", bootstrapper.getClass().getName(), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - bootstrapStart));

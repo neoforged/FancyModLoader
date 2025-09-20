@@ -78,7 +78,7 @@ public class AutomaticEventSubscriber {
                             }
                         } else {
                             LOGGER.debug(LOADING, "Subscribing method {} to the game event bus", method);
-                            FMLLoader.getBindings().getGameBus().register(method);
+                            FMLLoader.getCurrent().getBindings().getGameBus().register(method);
                         }
                     }
                 } catch (Exception e) {

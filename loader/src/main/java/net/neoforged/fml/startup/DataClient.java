@@ -13,7 +13,7 @@ public class DataClient extends Entrypoint {
     public static void main(String[] args) {
         try (var loader = startup(args, true, Dist.CLIENT, false)) {
             var main = createMainMethodCallable(loader, "net.minecraft.client.data.Main");
-            main.invokeExact(loader.programArgs().getArguments());
+            main.invokeExact(loader.getProgramArgs().getArguments());
         } catch (Throwable t) {
             FatalErrorReporting.reportFatalErrorOnConsole(t);
             System.exit(1);

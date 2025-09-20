@@ -16,7 +16,7 @@ public class GameTestServer extends Entrypoint {
     public static void main(String[] args) {
         try (var loader = startup(args, true, Dist.DEDICATED_SERVER, false)) {
             var main = createMainMethodCallable(loader, "net.minecraft.gametest.Main");
-            main.invokeExact(loader.programArgs().getArguments());
+            main.invokeExact(loader.getProgramArgs().getArguments());
 
             var serverThread = findThread("Server thread");
             if (serverThread == null) {
