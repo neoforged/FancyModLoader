@@ -16,4 +16,5 @@ public record LaunchResult(Map<String, SecureJar> pluginLayerModules,
         Map<String, SecureJar> gameLayerModules,
         List<ModLoadingIssue> issues,
         Map<String, ModFileInfo> loadedMods,
-        List<ITransformer<?>> transformers) {}
+        List<ITransformer<?>> transformers,
+        ClassLoader launchClassLoader) {}

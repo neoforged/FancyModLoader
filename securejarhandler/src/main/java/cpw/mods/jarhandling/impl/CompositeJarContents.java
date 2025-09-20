@@ -305,4 +305,8 @@ public final class CompositeJarContents implements JarContents {
         var filter = filters[delegateIdx];
         return filter != null && !filter.test(relativePath);
     }
+
+    public List<JarContents> getDelegates() {
+        return List.of(delegates);
+    }
 }

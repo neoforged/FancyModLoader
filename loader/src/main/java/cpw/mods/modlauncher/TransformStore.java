@@ -19,8 +19,11 @@ import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.TargetType;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -75,5 +78,15 @@ public class TransformStore {
      */
     boolean needsTransforming(String internalClassName) {
         return classNeedsTransforming.contains(internalClassName);
+    }
+
+    public Collection<ITransformer<?>> getTransformers() {
+        Set<ITransformer<?>> transformers = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (var entry : this.transformers.values()) {
+            for (var list : entry.getTransformers().values()) {
+                transformers.addAll(list);
+            }
+        }
+        return transformers;
     }
 }

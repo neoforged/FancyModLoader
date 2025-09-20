@@ -58,4 +58,8 @@ public class TransformerHolder<T> implements ITransformer<T> {
     public ITransformationService owner() {
         return owner;
     }
+
+    public ITransformer<T> getTransformer() {
+        return wrapped;
+    }
 }

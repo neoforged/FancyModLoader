@@ -16,7 +16,6 @@ package cpw.mods.modlauncher;
 
 import cpw.mods.cl.ModuleClassLoader;
 import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformerActivity;
 import java.lang.module.Configuration;
 import java.util.List;
@@ -31,22 +30,24 @@ public class TransformingClassLoader extends ModuleClassLoader {
     }
     private final ClassTransformer classTransformer;
 
-    public TransformingClassLoader(TransformStore transformStore, LaunchPluginHandler pluginHandler, IModuleLayerManager moduleLayerHandler) {
-        super("TRANSFORMER", moduleLayerHandler.getLayer(IModuleLayerManager.Layer.GAME).orElseThrow().configuration(), List.of(moduleLayerHandler.getLayer(IModuleLayerManager.Layer.SERVICE).orElseThrow()));
-        this.classTransformer = new ClassTransformer(transformStore, pluginHandler, this);
-    }
-
-    @VisibleForTesting
+    @Deprecated(forRemoval = true)
     public TransformingClassLoader(TransformStore transformStore, LaunchPluginHandler pluginHandler, final Environment environment, final Configuration configuration, List<ModuleLayer> parentLayers) {
         this(transformStore, pluginHandler, environment, configuration, parentLayers, null);
     }
 
-    @VisibleForTesting
+    @Deprecated(forRemoval = true)
     public TransformingClassLoader(TransformStore transformStore, LaunchPluginHandler pluginHandler, final Environment environment, final Configuration configuration, List<ModuleLayer> parentLayers, ClassLoader parentClassLoader) {
         super("TRANSFORMER", configuration, parentLayers, parentClassLoader);
         TransformerAuditTrail tat = new TransformerAuditTrail();
         environment.computePropertyIfAbsent(IEnvironment.Keys.AUDITTRAIL.get(), v -> tat);
         this.classTransformer = new ClassTransformer(transformStore, pluginHandler, this, tat);
+    }
+
+    @VisibleForTesting
+    public TransformingClassLoader(ClassTransformer classTransformer, Configuration configuration, List<ModuleLayer> parentLayers, ClassLoader parentClassLoader) {
+        super("TRANSFORMER", configuration, parentLayers, parentClassLoader);
+        this.classTransformer = classTransformer;
+        classTransformer.setTransformingClassLoader(this);
     }
 
     @Override
@@ -58,7 +59,7 @@ public class TransformingClassLoader extends ModuleClassLoader {
         return findLoadedClass(name);
     }
 
-    byte[] buildTransformedClassNodeFor(final String className, final String reason) throws ClassNotFoundException {
+    public byte[] buildTransformedClassNodeFor(final String className, final String reason) throws ClassNotFoundException {
         return super.getMaybeTransformedClassBytes(className, reason);
     }
 }

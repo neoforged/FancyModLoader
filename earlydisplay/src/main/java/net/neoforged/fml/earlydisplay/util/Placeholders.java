@@ -14,6 +14,9 @@ public final class Placeholders {
     private Placeholders() {}
 
     public static String resolve(String text, Map<String, String> placeholders) {
+        if (!text.contains("$")) {
+            return text;
+        }
         return PATTERN.matcher(text).replaceAll(matchResult -> {
             var placeholder = matchResult.group(1);
             return placeholders.getOrDefault(placeholder, "${" + placeholder + "}");

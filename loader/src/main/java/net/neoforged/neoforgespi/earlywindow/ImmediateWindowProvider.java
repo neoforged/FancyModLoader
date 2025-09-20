@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.List;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.EarlyLoadingScreenController;
+import net.neoforged.fml.loading.ProgramArgs;
 
 /**
  * This is for allowing the plugging in of alternative early display implementations.
@@ -32,16 +33,21 @@ public interface ImmediateWindowProvider extends EarlyLoadingScreenController {
     /**
      * This is called very early on to initialize ourselves. Use this to initialize the window and other GL core resources.
      *
-     * One thing we want to ensure is that we try and create the highest GL_PROFILE we can accomplish.
-     * GLFW_CONTEXT_VERSION_MAJOR,GLFW_CONTEXT_VERSION_MINOR should be as high as possible on the created window,
-     * and it should have all the typical profile settings.
-     *
-     * @param arguments The arguments provided to the Java process. This is the entire command line, so you can process
-     *                  stuff from it.
-     * @return A runnable that will be periodically ticked by FML during startup ON THE MAIN THREAD. This is usually
-     *         a good place to put glfwPollEvents() tests.
+     * @param args The current program arguments. You can mutate this.
      */
-    Runnable initialize(String[] arguments);
+    void initialize(ProgramArgs args);
+
+    /**
+     * Sets the Minecraft version, once it has been determined. This may be some time after {@link #initialize}
+     * was called, or never, if Minecraft can't be found.
+     */
+    void setMinecraftVersion(String version);
+
+    /**
+     * Sets the NeoForge version, once it has been determined. This may be some time after {@link #initialize}
+     * was called, or never, if NeoForge can't be found.
+     */
+    void setNeoForgeVersion(String version);
 
     /**
      * This is called during some very early startup routines to show a crash dialog
