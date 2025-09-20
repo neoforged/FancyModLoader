@@ -80,7 +80,7 @@ public interface IModInfo {
         }
 
         public boolean isCorrectSide() {
-            return this == BOTH || FMLLoader.getDist().equals(this.dist[0]);
+            return this == BOTH || FMLLoader.getCurrent().getDist().equals(this.dist[0]);
         }
     }
 

@@ -272,7 +272,7 @@ public abstract class LauncherTest {
             }
         };
 
-        var loadingModList = FMLLoader.getLoadingModList();
+        var loadingModList = loader.getLoadingModList();
         var loadedMods = loadingModList.getModFiles();
 
         // Wait for background scans of all mods to complete
@@ -358,7 +358,7 @@ public abstract class LauncherTest {
     }
 
     protected Map<String, IModFileInfo> getLoadedPlugins() {
-        return LoadingModList.get().getPlugins().stream()
+        return loader.getLoadingModList().getPlugins().stream()
                 .collect(Collectors.toMap(
                         f -> f.getMods().getFirst().getModId(),
                         f -> f));

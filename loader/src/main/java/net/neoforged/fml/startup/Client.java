@@ -8,7 +8,6 @@ package net.neoforged.fml.startup;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.ProgramArgs;
 
 /**
@@ -19,7 +18,7 @@ public class Client extends Entrypoint {
 
     public static void main(String[] args) {
         try (var loader = startup(args, false, Dist.CLIENT, true)) {
-            if (!FMLLoader.isProduction()) {
+            if (!loader.isProduction()) {
                 preProcessDevArguments(loader.getProgramArgs());
             }
 

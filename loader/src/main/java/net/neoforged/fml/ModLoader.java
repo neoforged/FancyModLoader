@@ -70,7 +70,7 @@ public final class ModLoader {
      * @param periodicTask     Optional periodic task to perform on the main thread while other activities run
      */
     public static void gatherAndInitializeMods(final Executor syncExecutor, final Executor parallelExecutor, final Runnable periodicTask) {
-        var loadingModList = FMLLoader.getLoadingModList();
+        var loadingModList = FMLLoader.getCurrent().getLoadingModList();
         loadingIssues.addAll(loadingModList.getModLoadingIssues());
 
         ForgeFeature.registerFeature("javaVersion", ForgeFeature.VersionFeatureTest.forVersionString(IModInfo.DependencySide.BOTH, System.getProperty("java.version")));
@@ -89,7 +89,7 @@ public final class ModLoader {
         List<? extends ForgeFeature.Bound> failedBounds = loadingModList.getMods().stream()
                 .map(ModInfo::getForgeFeatures)
                 .flatMap(Collection::stream)
-                .filter(bound -> !ForgeFeature.testFeature(FMLLoader.getDist(), bound))
+                .filter(bound -> !ForgeFeature.testFeature(FMLLoader.getCurrent().getDist(), bound))
                 .toList();
 
         if (!failedBounds.isEmpty()) {
@@ -180,7 +180,7 @@ public final class ModLoader {
             var futureList = modList.getSortedMods().stream()
                     .map(modContainer -> {
                         // Collect futures for all dependencies first
-                        var depFutures = LoadingModList.get().getDependencies(modContainer.getModInfo()).stream()
+                        var depFutures = FMLLoader.getCurrent().getLoadingModList().getDependencies(modContainer.getModInfo()).stream()
                                 .map(modInfo -> {
                                     var future = modFutures.get(modInfo);
                                     if (future == null) {
@@ -298,7 +298,7 @@ public final class ModLoader {
 
     private static ModContainer buildModContainerFromTOML(final IModInfo modInfo, final ModFileScanData scanData) {
         try {
-            return modInfo.getLoader().loadMod(modInfo, scanData, FMLLoader.getGameLayer());
+            return modInfo.getLoader().loadMod(modInfo, scanData, FMLLoader.getCurrent().getGameLayer());
         } catch (ModLoadingException mle) {
             // exceptions are caught and added to the error list for later handling
             loadingIssues.addAll(mle.getIssues());

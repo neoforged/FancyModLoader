@@ -116,6 +116,7 @@ public final class FMLLoader implements AutoCloseable {
     private final Set<Path> locatedPaths = new HashSet<>();
 
     private VersionInfo versionInfo;
+    private VersionSupportMatrix versionSupportMatrix;
     public BackgroundScanHandler backgroundScanHandler;
     private final boolean production;
     @Nullable
@@ -143,7 +144,6 @@ public final class FMLLoader implements AutoCloseable {
 
         versionInfo = new VersionInfo(
                 this.programArgs.remove("fml.neoForgeVersion"),
-                FMLVersion.getVersion(),
                 this.programArgs.remove("fml.mcVersion"),
                 this.programArgs.remove("fml.neoFormVersion"));
 
@@ -175,20 +175,19 @@ public final class FMLLoader implements AutoCloseable {
     @Override
     public void close() {
         LOGGER.info("Closing FML Loader {}", Integer.toHexString(System.identityHashCode(this)));
-        if (this == current.compareAndExchange(this, null)) {
-            // Clean up some further shared state
-            if (LoadingModList.get() != null) {
-                for (var modFile : LoadingModList.get().getModFiles()) {
-                    modFile.getFile().close();
-                }
-                for (var modFile : LoadingModList.get().getPlugins()) {
-                    ((ModFile) modFile.getFile()).close();
-                }
-                for (var modFile : LoadingModList.get().getGameLibraries()) {
-                    ((ModFile) modFile).close();
-                }
+        if (loadingModList != null) {
+            for (var modFile : loadingModList.getModFiles()) {
+                modFile.getFile().close();
             }
-
+            for (var modFile : loadingModList.getPlugins()) {
+                ((ModFile) modFile.getFile()).close();
+            }
+            for (var modFile : loadingModList.getGameLibraries()) {
+                ((ModFile) modFile).close();
+            }
+        }
+        // Clean up some further shared state
+        if (this == current.compareAndExchange(this, null)) {
             ModList.clear();
             ModLoader.clear();
         }
@@ -645,9 +644,9 @@ public final class FMLLoader implements AutoCloseable {
         }
         versionInfo = new VersionInfo(
                 neoForgeVersion,
-                versionInfo().fmlVersion(),
                 minecraftVersion,
-                versionInfo().neoFormVersion());
+                getVersionInfo().neoFormVersion());
+        versionSupportMatrix = new VersionSupportMatrix(versionInfo);
         progress.complete();
 
         ImmediateWindowHandler.setMinecraftVersion(versionInfo.mcVersion());
@@ -729,35 +728,51 @@ public final class FMLLoader implements AutoCloseable {
         return current.get();
     }
 
-    public static Dist getDist() {
-        return getCurrent().dist;
+    public Dist getDist() {
+        return dist;
     }
 
-    public static LoadingModList getLoadingModList() {
-        return getCurrent().loadingModList;
+    /**
+     * @throws IllegalStateException if the loading mod list hasn't been built yet.
+     */
+    public LoadingModList getLoadingModList() {
+        if (loadingModList == null) {
+            throw new IllegalStateException("The loading mod list isn't built yet.");
+        }
+        return loadingModList;
     }
 
-    public static Path getGamePath() {
-        return getCurrent().gameDir;
+    public Path getGameDir() {
+        return gameDir;
     }
 
-    public static boolean isProduction() {
-        return getCurrent().production;
+    public boolean isProduction() {
+        return production;
     }
 
-    public static ModuleLayer getGameLayer() {
-        var gameLayer = getCurrent().gameLayer;
+    public ModuleLayer getGameLayer() {
         if (gameLayer == null) {
             throw new IllegalStateException("This can only be called after mod discovery is completed");
         }
         return gameLayer;
     }
 
-    public static VersionInfo versionInfo() {
-        return getCurrent().versionInfo;
+    /**
+     * Please note that the returned version information can be incomplete until mod discovery has been completed.
+     * This is only relevant for early FML services.
+     */
+    public VersionInfo getVersionInfo() {
+        return versionInfo;
     }
 
-    class LaunchContextAdapter implements ILaunchContext {
+    VersionSupportMatrix getVersionSupportMatrix() {
+        if (versionSupportMatrix == null) {
+            throw new IllegalStateException("Mod discovery has not completed yet, versions may not be known.");
+        }
+        return versionSupportMatrix;
+    }
+
+    private class LaunchContextAdapter implements ILaunchContext {
         @Override
         public Dist getRequiredDistribution() {
             return dist;

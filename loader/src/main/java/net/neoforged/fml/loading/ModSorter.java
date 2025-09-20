@@ -42,7 +42,7 @@ import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.slf4j.Logger;
 
-public class ModSorter {
+class ModSorter {
     private static final Logger LOGGER = LogUtils.getLogger();
     private final UniqueModListBuilder uniqueModListBuilder;
     private List<ModFile> modFiles;
@@ -376,7 +376,9 @@ public class ModSorter {
     }
 
     private boolean modVersionNotContained(IModInfo.ModVersion mv, Map<String, ArtifactVersion> modVersions) {
-        return !(VersionSupportMatrix.testVersionSupportMatrix(mv.getVersionRange(), mv.getModId(), "mod", (modId, range) -> {
+        var versionSupportMatrix = FMLLoader.getCurrent().getVersionSupportMatrix();
+
+        return !(versionSupportMatrix.testVersionSupportMatrix(mv.getVersionRange(), mv.getModId(), "mod", (modId, range) -> {
             return modVersions.containsKey(modId) &&
                     (range.containsVersion(modVersions.get(modId)) || modVersions.get(modId).toString().equals("0.0NONE"));
         }));

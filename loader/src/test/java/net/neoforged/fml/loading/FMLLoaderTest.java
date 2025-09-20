@@ -387,7 +387,7 @@ class FMLLoaderTest extends LauncherTest {
             });
             var result = launchClient();
 
-            assertThat(LoadingModList.get().getPlugins())
+            assertThat(loader.getLoadingModList().getPlugins())
                     .extracting(mfi -> mfi.getFile().getId())
                     .contains("lib");
 
@@ -409,7 +409,7 @@ class FMLLoaderTest extends LauncherTest {
             });
             var result = launchClient();
 
-            assertThat(LoadingModList.get().getGameLibraries())
+            assertThat(loader.getLoadingModList().getGameLibraries())
                     .as("Should be present in LoadingModList")
                     .extracting(IModFile::getId)
                     .contains("gamelib");

@@ -91,7 +91,7 @@ public class FMLMixinService implements IMixinService {
 
     @Override
     public String getSideName() {
-        return switch (FMLLoader.getDist()) {
+        return switch (FMLLoader.getCurrent().getDist()) {
             case CLIENT -> Constants.SIDE_CLIENT;
             case DEDICATED_SERVER -> Constants.SIDE_SERVER;
         };

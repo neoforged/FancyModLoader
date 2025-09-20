@@ -13,7 +13,6 @@ import java.util.concurrent.TimeUnit;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.startup.JUnitGameBootstrapper;
 import net.neoforged.fml.startup.StartupArgs;
 import org.junit.platform.engine.support.store.Namespace;
@@ -80,8 +79,8 @@ public class JUnitService implements LauncherSessionListener {
 
         LOG.info("Starting FML took {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - fmlStart));
 
-        if (LoadingModList.get().hasErrors()) {
-            throw new ModLoadingException(LoadingModList.get().getModLoadingIssues());
+        if (loader.getLoadingModList().hasErrors()) {
+            throw new ModLoadingException(loader.getLoadingModList().getModLoadingIssues());
         }
 
         for (var bootstrapper : ServiceLoader.load(JUnitGameBootstrapper.class, loader.getCurrentClassLoader())) {

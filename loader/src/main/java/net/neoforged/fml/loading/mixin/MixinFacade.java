@@ -45,7 +45,7 @@ public final class MixinFacade implements AutoCloseable {
     private final FMLMixinService service;
 
     public MixinFacade() {
-        if (FMLLoader.getDist() == null) {
+        if (FMLLoader.getCurrent().getDist() == null) {
             throw new IllegalStateException("The dist must be set before initializing Mixin");
         }
 

@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 public class LoadingModList {
     private static final Logger LOG = LoggerFactory.getLogger(LoadingModList.class);
 
-    private static LoadingModList INSTANCE;
     private final List<IModFileInfo> plugins;
     private final List<IModFile> gameLibraries;
     private final List<ModFileInfo> modFiles;
@@ -69,13 +68,14 @@ public class LoadingModList {
     }
 
     public static LoadingModList of(List<ModFile> plugins, List<ModFile> gameLibraries, List<ModFile> modFiles, List<ModInfo> sortedList, List<ModLoadingIssue> issues, Map<ModInfo, List<ModInfo>> modDependencies) {
-        INSTANCE = new LoadingModList(plugins, gameLibraries, modFiles, sortedList, modDependencies);
-        INSTANCE.modLoadingIssues.addAll(issues);
-        return INSTANCE;
+        var list = new LoadingModList(plugins, gameLibraries, modFiles, sortedList, modDependencies);
+        list.modLoadingIssues.addAll(issues);
+        return list;
     }
 
+    @Deprecated(forRemoval = true)
     public static LoadingModList get() {
-        return INSTANCE;
+        return FMLLoader.getCurrent().getLoadingModList();
     }
 
     public boolean contains(IModFile modFile) {

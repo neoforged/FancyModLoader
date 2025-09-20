@@ -47,7 +47,7 @@ public class AutomaticEventSubscriber {
         ebsTargets.forEach(ad -> {
             final EnumSet<Dist> sides = getSides(ad.annotationData().get("value"));
             final String modId = (String) ad.annotationData().getOrDefault("modid", modids.getOrDefault(ad.clazz().getClassName(), mod.getModId()));
-            if (Objects.equals(mod.getModId(), modId) && sides.contains(FMLLoader.getDist())) {
+            if (Objects.equals(mod.getModId(), modId) && sides.contains(FMLLoader.getCurrent().getDist())) {
                 LOGGER.debug(LOADING, "Scanning class {} for @SubscribeEvent-annotated methods", ad.clazz().getClassName());
 
                 try {

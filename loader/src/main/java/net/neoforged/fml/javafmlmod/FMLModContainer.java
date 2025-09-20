@@ -93,7 +93,7 @@ public class FMLModContainer extends ModContainer {
                         IEventBus.class, eventBus,
                         ModContainer.class, this,
                         FMLModContainer.class, this,
-                        Dist.class, FMLLoader.getDist());
+                        Dist.class, FMLLoader.getCurrent().getDist());
 
                 var parameterTypes = constructor.getParameterTypes();
                 Object[] constructorArgs = new Object[parameterTypes.length];
