@@ -13,5 +13,10 @@ import net.neoforged.fml.testlib.SimulatedInstallation;
  * Supplies all installation types from development.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@InstallationTypeSource({ SimulatedInstallation.Type.USERDEV, SimulatedInstallation.Type.USERDEV_LEGACY, SimulatedInstallation.Type.PRODUCTION_CLIENT })
+@InstallationTypeSource({
+        SimulatedInstallation.Type.USERDEV_FOLDERS,
+        SimulatedInstallation.Type.USERDEV_JAR,
+        SimulatedInstallation.Type.USERDEV_LEGACY_FOLDERS,
+        SimulatedInstallation.Type.USERDEV_LEGACY_JAR,
+        SimulatedInstallation.Type.PRODUCTION_CLIENT })
 public @interface ClientInstallationTypesSource {}

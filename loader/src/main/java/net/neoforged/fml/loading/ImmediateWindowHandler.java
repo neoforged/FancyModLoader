@@ -53,12 +53,13 @@ public class ImmediateWindowHandler {
             provider = maybeProvider.orElse(null);
             if (provider == null) {
                 LOGGER.info("Failed to find ImmediateWindowProvider {}, disabling", providername);
-            }
-            try {
-                provider.initialize(arguments);
-            } catch (Exception e) {
-                LOGGER.error("Failed to initialize ImmediateWindowProvider '{}'", providername, e);
-                provider = null;
+            } else {
+                try {
+                    provider.initialize(arguments);
+                } catch (Exception e) {
+                    LOGGER.error("Failed to initialize ImmediateWindowProvider '{}'", providername, e);
+                    provider = null;
+                }
             }
         }
         // Only update config if the provider isn't the dummy provider

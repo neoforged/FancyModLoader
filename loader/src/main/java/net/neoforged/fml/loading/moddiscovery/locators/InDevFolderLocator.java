@@ -45,7 +45,7 @@ public class InDevFolderLocator implements IModFileCandidateLocator {
                 try {
                     pipeline.addJarContent(JarContents.ofPaths(paths), ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.ERROR);
                 } catch (IOException e) {
-                    pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile.invalidzip").withAffectedPath(paths.getFirst()));
+                    pipeline.addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile.invalidzip").withAffectedPath(paths.getFirst()).withCause(e));
                 }
             }
         }

@@ -21,7 +21,7 @@ public class EarlyServicesTest extends LauncherTest {
     void testGraphicsBootstrapper(SimulatedInstallation.Type type) throws Exception {
         installation.setup(type);
 
-        installation.buildInstallationAppropriateModProject(null, "bootstrap.jar", builder -> builder.addClass("bootstrap.Bootstrapper", """
+        installation.buildInstallationAppropriateNonModProject(null, "bootstrap.jar", builder -> builder.addClass("bootstrap.Bootstrapper", """
                                 public class Bootstrapper implements net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper {
                                     @Override
                                     public String name() {

@@ -122,7 +122,7 @@ public abstract class LauncherTest {
      */
     LaunchResult launchInstalledDist() throws Exception {
         var supportedDist = switch (installation.getType()) {
-            case PRODUCTION_CLIENT, USERDEV, USERDEV_LEGACY -> Dist.CLIENT;
+            case PRODUCTION_CLIENT, USERDEV_FOLDERS, USERDEV_JAR, USERDEV_LEGACY_FOLDERS, USERDEV_LEGACY_JAR -> Dist.CLIENT;
             case PRODUCTION_SERVER -> Dist.DEDICATED_SERVER;
         };
         return launchAndLoad(supportedDist, true, List.of());

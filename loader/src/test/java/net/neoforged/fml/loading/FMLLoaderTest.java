@@ -25,9 +25,11 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.javafmlmod.FMLJavaModLanguageProvider;
 import net.neoforged.fml.testlib.IdentifiableContent;
 import net.neoforged.fml.testlib.SimulatedInstallation;
+import net.neoforged.fml.testlib.args.ClientInstallationTypesSource;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.ContainedVersion;
+import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileReader;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
@@ -368,6 +370,40 @@ class FMLLoaderTest extends LauncherTest {
             var loadedMod = result.pluginLayerModules().get("testlib");
             assertNotNull(loadedMod);
             assertEquals(pickedJarPath, loadedMod.getPrimaryPath());
+        }
+
+        @ParameterizedTest
+        @ClientInstallationTypesSource
+        void testLibraryIsLoaded(SimulatedInstallation.Type type) throws Exception {
+            installation.setup(type);
+            installation.buildInstallationAppropriateModProject("lib", "lib.jar", builder -> {
+                builder.withManifest(Map.of(
+                        "Automatic-Module-Name", "lib",
+                        "FMLModType", "LIBRARY"));
+            });
+            launchClient();
+
+            assertThat(LoadingModList.get().getPlugins())
+                    .extracting(mfi -> mfi.getFile().getId())
+                    .contains("lib");
+        }
+
+        @ParameterizedTest
+        @ClientInstallationTypesSource
+        void testGameLibraryIsLoaded(SimulatedInstallation.Type type) throws Exception {
+            installation.setup(type);
+            installation.buildInstallationAppropriateModProject("gamelib", "gamelib.jar", builder -> {
+                builder.withManifest(Map.of(
+                        "Automatic-Module-Name", "gamelib",
+                        "FMLModType", "GAMELIBRARY"));
+            });
+            var result = launchClient();
+
+            assertThat(LoadingModList.get().getGameLibraries())
+                    .as("Should be present in LoadingModList")
+                    .extracting(IModFile::getId)
+                    .contains("gamelib");
+            assertThat(result.gameLayerModules()).containsKey("gamelib");
         }
 
         /**

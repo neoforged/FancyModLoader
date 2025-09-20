@@ -59,14 +59,16 @@ public class SimulatedInstallation implements AutoCloseable {
          * - A second jar with the original non-class content of the Minecraft jar
          * The Minecraft classes and resources are merged from server+client distributions.
          */
-        USERDEV_LEGACY,
+        USERDEV_LEGACY_FOLDERS,
+        USERDEV_LEGACY_JAR,
         /**
          * Not used by any tooling yet.
          * It puts two jars on the classpath:
          * - The merged, patched Minecraft jar, including classes and resources from both distributions
          * - The unmodified NeoForge universal jar
          */
-        USERDEV,
+        USERDEV_FOLDERS,
+        USERDEV_JAR,
         ;
 
         public boolean isProduction() {
@@ -195,7 +197,7 @@ public class SimulatedInstallation implements AutoCloseable {
 
                 componentRoots = InstallationComponents.productionJars(patchedServerJar, universalJar);
             }
-            case USERDEV_LEGACY -> {
+            case USERDEV_LEGACY_FOLDERS, USERDEV_LEGACY_JAR -> {
                 var neoforgeJar = projectRoot.resolve("neoforge-joined.jar");
                 launchClasspath.add(neoforgeJar);
                 writeJarFile(neoforgeJar, Stream.concat(Stream.of(USERDEV_CLIENT_JAR_CONTENT), Stream.of(NEOFORGE_UNIVERSAL_JAR_CONTENT)).toArray(IdentifiableContent[]::new));
@@ -214,7 +216,7 @@ public class SimulatedInstallation implements AutoCloseable {
                         neoforgeJar,
                         neoforgeJar);
             }
-            case USERDEV -> {
+            case USERDEV_FOLDERS, USERDEV_JAR -> {
                 var universalJar = writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "universal", NEOFORGE_UNIVERSAL_JAR_CONTENT);
                 launchClasspath.add(universalJar);
 
@@ -368,12 +370,12 @@ public class SimulatedInstallation implements AutoCloseable {
     }
 
     public List<Path> setupUserdevProject() throws IOException {
-        setup(Type.USERDEV_LEGACY);
+        setup(Type.USERDEV_LEGACY_FOLDERS);
         return launchClasspath;
     }
 
     public List<Path> setupUserdevProjectNew() throws IOException {
-        setup(Type.USERDEV);
+        setup(Type.USERDEV_FOLDERS);
         return launchClasspath;
     }
 
@@ -610,6 +612,17 @@ public class SimulatedInstallation implements AutoCloseable {
      * is suitable, or a jar file in the mods/ folder.
      */
     public void buildInstallationAppropriateModProject(@Nullable String gradleProjectName, String jarFilename, ModFileBuilder.ModJarCustomizer customizer) throws IOException {
+        buildInstallationAppropriateProject(gradleProjectName, jarFilename, customizer, true);
+    }
+
+    /**
+     * Like buildInstallationAppropriateModProject, but doesn't add the created folders as mods to the run (like you'd do in one of our Gradle plugins).
+     */
+    public void buildInstallationAppropriateNonModProject(@Nullable String gradleProjectName, String jarFilename, ModFileBuilder.ModJarCustomizer customizer) throws IOException {
+        buildInstallationAppropriateProject(gradleProjectName, jarFilename, customizer, false);
+    }
+
+    private void buildInstallationAppropriateProject(@Nullable String gradleProjectName, String jarFilename, ModFileBuilder.ModJarCustomizer customizer, boolean addModFolders) throws IOException {
         if (type == null) {
             throw new IllegalStateException("Installation hasn't been setup yet.");
         }
@@ -619,9 +632,22 @@ public class SimulatedInstallation implements AutoCloseable {
             customizer.customize(builder);
             builder.build();
         } else {
-            var builder = buildGradleModProject(gradleProjectName);
-            customizer.customize(builder);
-            launchClasspath.addAll(builder.build());
+            var buildJar = type == Type.USERDEV_JAR || type == Type.USERDEV_LEGACY_JAR;
+
+            if (buildJar) {
+                var builder = buildModJar(jarFilename);
+                customizer.customize(builder);
+                launchClasspath.add(builder.build());
+            } else {
+                var builder = buildGradleModProject(gradleProjectName);
+                customizer.customize(builder);
+                List<Path> pathItems = builder.build();
+                launchClasspath.addAll(pathItems);
+                var projectId = gradleProjectName == null ? "root" : gradleProjectName;
+                if (addModFolders) {
+                    setModFoldersProperty(Map.of(projectId, pathItems));
+                }
+            }
         }
     }
 

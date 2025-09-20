@@ -29,7 +29,7 @@ import org.junit.jupiter.params.ParameterizedClass;
 
 @ParameterizedClass
 // Masking files is only relevant for installations that have a merged distribution.
-@InstallationTypeSource({ SimulatedInstallation.Type.USERDEV, SimulatedInstallation.Type.USERDEV_LEGACY })
+@InstallationTypeSource({ SimulatedInstallation.Type.USERDEV_FOLDERS, SimulatedInstallation.Type.USERDEV_LEGACY_FOLDERS })
 class DistCleanerTest extends LauncherTest {
     public DistCleanerTest(SimulatedInstallation.Type type) throws IOException {
         installation.setup(type);
@@ -107,7 +107,7 @@ class DistCleanerTest extends LauncherTest {
                 SimulatedInstallation.SHARED_ASSETS,
                 SimulatedInstallation.MINECRAFT_VERSION_JSON));
         content.addAll(List.of(SimulatedInstallation.USERDEV_CLIENT_JAR_CONTENT));
-        if (installation.getType() == SimulatedInstallation.Type.USERDEV) {
+        if (installation.getType() == SimulatedInstallation.Type.USERDEV_FOLDERS || installation.getType() == SimulatedInstallation.Type.USERDEV_JAR) {
             // Combined resources + classes + mods toml
             content.add(SimulatedInstallation.MINECRAFT_MODS_TOML);
         }
