@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.zip.ZipOutputStream;
 import net.neoforged.fml.FMLVersion;
 import net.neoforged.fml.ModLoader;
@@ -26,6 +27,7 @@ import net.neoforged.fml.javafmlmod.FMLJavaModLanguageProvider;
 import net.neoforged.fml.testlib.IdentifiableContent;
 import net.neoforged.fml.testlib.SimulatedInstallation;
 import net.neoforged.fml.testlib.args.ClientInstallationTypesSource;
+import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.ContainedVersion;
@@ -37,6 +39,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.lwjgl.system.FunctionProvider;
 
 class FMLLoaderTest extends LauncherTest {
     private static final ContainedVersion JIJ_V1 = new ContainedVersion(VersionRange.createFromVersion("1.0"), new DefaultArtifactVersion("1.0"));
@@ -452,7 +455,7 @@ class FMLLoaderTest extends LauncherTest {
             additionalClasspath.addAll(mainModule);
 
             // Tell FML that the classes and resources directory belong together
-            SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
+            installation.getLaunchModFolders().put("mod", mainModule);
 
             var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdev", additionalClasspath);
             assertThat(result.pluginLayerModules()).doesNotContainKey("mod");
@@ -475,7 +478,7 @@ class FMLLoaderTest extends LauncherTest {
             // NOTE: mainModule is not added to the classpath here
 
             // Tell FML that the classes and resources directory belong together
-            SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
+            installation.getLaunchModFolders().put("mod", mainModule);
 
             var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdev", additionalClasspath);
             assertThat(result.pluginLayerModules()).doesNotContainKey("mod");
@@ -494,7 +497,7 @@ class FMLLoaderTest extends LauncherTest {
             additionalClasspath.addAll(mainModule);
 
             // Tell FML that the classes and resources directory belong together
-            SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
+            installation.getLaunchModFolders().put("mod", mainModule);
 
             var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdev", additionalClasspath);
             assertThat(result.pluginLayerModules()).containsKey("mod");
@@ -518,13 +521,96 @@ class FMLLoaderTest extends LauncherTest {
 
             // Tell FML that the classes and resources directory belong together, this would also be read
             // by the Classpath ML locator
-            SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
+            installation.getLaunchModFolders().put("mod", mainModule);
             locatedPaths.add(mainModule.getFirst()); // Mark the primary path as located by ML so it gets skipped by FML
 
             var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdev", additionalClasspath);
             assertThat(result.pluginLayerModules()).doesNotContainKey("mod");
             assertThat(result.gameLayerModules()).doesNotContainKey("mod");
             assertThat(result.loadedMods()).doesNotContainKey("mod");
+        }
+
+        /**
+         * Tests how a GAMELIBRARY with a module-info interacts with non-modular LIBRARIES.
+         */
+        @ParameterizedTest
+        @ClientInstallationTypesSource
+        void testModularAndNonModularInteractionBetweenLayers(SimulatedInstallation.Type type) throws Exception {
+            installation.setup(type);
+
+            // The jar name differs to ensure the module-info name is used for the actual module
+            installation.buildInstallationAppropriateModProject("gamelib", "differentname.jar", builder -> {
+                builder.addModulePath(ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath("org/lwjgl/Version.class"))
+                        .withModTypeManifest("GAMELIBRARY")
+                        .addClass("module-info", """
+                                module gamelib {
+                                    requires org.lwjgl;
+                                    // Test uses/provides as well
+                                    uses org.lwjgl.PointerBuffer;
+                                    provides org.lwjgl.system.FunctionProvider with gamelib.Test;
+                                }
+                                """)
+                        .addClass("gamelib.Test", """
+                                public class Test implements org.lwjgl.system.FunctionProvider {
+                                    public static java.util.ServiceLoader<?> test() {
+                                        return java.util.ServiceLoader.load(org.lwjgl.system.FunctionProvider.class);
+                                    }
+
+                                    @Override
+                                    public long getFunctionAddress(java.nio.ByteBuffer functionName) {
+                                        return 123;
+                                    }
+                                }
+                                """);
+            });
+            // Build a non-modular LIBRARY that also provides a service for FunctionProvider and check that the modular
+            // jar can see it.
+            installation.buildInstallationAppropriateModProject("nonmodular", "nonmodular.jar", builder -> {
+                builder.withManifest(Map.of("Automatic-Module-Name", "nonmodular", "FMLModType", "LIBRARY"))
+                        .addClass("nonmodular.Test", """
+                                public class Test implements org.lwjgl.system.FunctionProvider {
+                                    public static java.util.ServiceLoader<?> test() {
+                                        return java.util.ServiceLoader.load(org.lwjgl.system.FunctionProvider.class);
+                                    }
+
+                                    @Override
+                                    public long getFunctionAddress(java.nio.ByteBuffer functionName) {
+                                        return 123;
+                                    }
+                                }
+                                """)
+                        .addService(FunctionProvider.class, "nonmodular.Test");
+            });
+
+            var result = launchClient();
+
+            // Just ensure both are loaded
+            assertThat(result.gameLayerModules()).containsKey("gamelib");
+            assertThat(result.pluginLayerModules()).containsKey("nonmodular");
+
+            // The GAMELIBRARY should see both service implementations (its own, and the one from the LIBRARY)
+            withGameClassloader(() -> {
+                var testClass = result.launchClassLoader().loadClass("gamelib.Test");
+                assertThat((ServiceLoader<?>) testClass.getMethod("test").invoke(null))
+                        .extracting(fp -> fp.getClass().getName())
+                        .containsOnly("gamelib.Test", "nonmodular.Test");
+                return null;
+            });
+
+            // The LIBRARY should also see both
+            withGameClassloader(() -> {
+                var testClass = result.launchClassLoader().loadClass("nonmodular.Test");
+                assertThat((ServiceLoader<?>) testClass.getMethod("test").invoke(null))
+                        .extracting(fp -> fp.getClass().getName())
+                        .containsOnly("gamelib.Test", "nonmodular.Test");
+                return null;
+            });
+
+            // Since ServiceLoader is caller-sensitive, we also check that a third-party can see both serices.
+            var services = ServiceLoader.load(FunctionProvider.class, result.launchClassLoader());
+            assertThat(services)
+                    .extracting(fp -> fp.getClass().getName())
+                    .contains("gamelib.Test", "nonmodular.Test");
         }
     }
 

@@ -97,9 +97,6 @@ public abstract class LauncherTest {
         if (FMLLoader.getCurrentOrNull() != null) {
             throw new IllegalStateException("A previous test leaked an active FMLLoader. These tests will fail.");
         }
-
-        // Clear in case other tests have set it and failed to reset it
-        SimulatedInstallation.setModFoldersProperty(Map.of());
     }
 
     @AfterEach
@@ -227,6 +224,7 @@ public abstract class LauncherTest {
 
     private LaunchResult launch(Dist launchDist, boolean cleanDist, List<Path> additionalClassPath) {
         ModLoader.clear();
+        SimulatedInstallation.setModFoldersProperty(installation.getLaunchModFolders());
 
         var classLoader = Thread.currentThread().getContextClassLoader();
         var startupArgs = new StartupArgs(

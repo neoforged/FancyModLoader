@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -155,6 +156,7 @@ public class SimulatedInstallation implements AutoCloseable {
 
     // Launch classpath
     private final List<Path> launchClasspath = new ArrayList<>();
+    private final Map<String, List<Path>> launchModFolders = new HashMap<>();
 
     // As the installation is setup, we record where which components are
     private InstallationComponents componentRoots;
@@ -280,14 +282,6 @@ public class SimulatedInstallation implements AutoCloseable {
         writeJarFile(modsDir.resolve(filename), modEntrypointClass, modsToml);
     }
 
-    public void setup(String modId, String version) throws IOException {
-        var modsDir = getModsFolder();
-        var filename = modId + "-" + version + ".jar";
-        var modEntrypointClass = generateClass(modId + "_ENTRYPOINT", modId + "/ModEntrypoint.class");
-        var modsToml = createModsToml(modId, version);
-        writeJarFile(modsDir.resolve(filename), modEntrypointClass, modsToml);
-    }
-
     public void setupProductionClient() throws IOException {
         setup(Type.PRODUCTION_CLIENT);
     }
@@ -329,7 +323,7 @@ public class SimulatedInstallation implements AutoCloseable {
         additionalClasspath.add(folders.commonResourcesDir);
         additionalClasspath.add(folders.clientExtraJar);
 
-        setModFoldersProperty(Map.of("minecraft", List.of(folders.clientClassesDir, folders.commonClassesDir, folders.commonResourcesDir, folders.clientExtraJar)));
+        launchModFolders.put("minecraft", List.of(folders.clientClassesDir, folders.commonClassesDir, folders.commonResourcesDir, folders.clientExtraJar));
 
         return additionalClasspath;
     }
@@ -342,7 +336,7 @@ public class SimulatedInstallation implements AutoCloseable {
         Path commonJarFile = projectRoot.resolve("build/libs/neoforge-common.jar");
         createJarFileFromFolders(commonJarFile, folders.commonClassesDir, folders.commonResourcesDir);
 
-        setModFoldersProperty(Map.of("minecraft", List.of(folders.clientClassesDir, folders.commonClassesDir, folders.commonResourcesDir, folders.clientExtraJar)));
+        launchModFolders.put("minecraft", List.of(folders.clientClassesDir, folders.commonClassesDir, folders.commonResourcesDir, folders.clientExtraJar));
 
         return List.of(folders.clientClassesDir, commonJarFile, folders.clientExtraJar);
     }
@@ -391,7 +385,11 @@ public class SimulatedInstallation implements AutoCloseable {
                 .flatMap(entry -> entry.getValue().stream().map(path -> entry.getKey() + "%%" + path))
                 .collect(Collectors.joining(File.pathSeparator));
 
-        System.setProperty(MOD_FOLDERS_PROPERTIES, modFolderList);
+        if (modFolderList.isEmpty()) {
+            System.clearProperty(MOD_FOLDERS_PROPERTIES);
+        } else {
+            System.setProperty(MOD_FOLDERS_PROPERTIES, modFolderList);
+        }
     }
 
     public Path getLibrariesDir() {
@@ -651,7 +649,7 @@ public class SimulatedInstallation implements AutoCloseable {
                 launchClasspath.addAll(pathItems);
                 var projectId = gradleProjectName == null ? "root" : gradleProjectName;
                 if (addModFolders) {
-                    setModFoldersProperty(Map.of(projectId, pathItems));
+                    launchModFolders.put(projectId, pathItems);
                 }
             }
         }
@@ -826,5 +824,9 @@ public class SimulatedInstallation implements AutoCloseable {
 
     public List<Path> getLaunchClasspath() {
         return launchClasspath;
+    }
+
+    public Map<String, List<Path>> getLaunchModFolders() {
+        return launchModFolders;
     }
 }

@@ -45,12 +45,16 @@ public class JarMetadataTest {
             assertEquals(originalDescriptor.name(), descriptor.name());
             assertEquals(originalDescriptor.rawVersion(), descriptor.rawVersion());
             assertEquals(originalDescriptor.packages(), descriptor.packages());
-            assertEquals(originalDescriptor.exports(), descriptor.exports());
             assertEquals(originalDescriptor.provides(), descriptor.provides());
-            assertEquals(originalDescriptor.uses(), descriptor.uses());
 
-            assertEquals(Set.of(ModuleDescriptor.Modifier.OPEN), descriptor.modifiers(), "All modules should be opened automatically.");
-            assertEquals(Set.of(), descriptor.opens(), "Open modules has no explicit set of opens");
+            assertEquals(Set.of(ModuleDescriptor.Modifier.AUTOMATIC), descriptor.modifiers(), "Should be converted to an automatic module so it can have non-modular deps.");
+            assertEquals(Set.of(), descriptor.opens(), "Automatic modules have no explicit set of opens");
+            assertEquals(
+                    ModuleDescriptor.newAutomaticModule("xxx").build().requires(),
+                    descriptor.requires(),
+                    "Automatic modules have no explicit set of requires besides the default");
+            assertEquals(Set.of(), descriptor.exports(), "Automatic modules have no explicit set of exports");
+            assertEquals(Set.of(), descriptor.uses(), "Automatic modules don't have to declare their service uses");
         }
 
         @Test
