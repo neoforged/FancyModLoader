@@ -152,6 +152,8 @@ public final class FMLLoader implements AutoCloseable {
                 dist,
                 production ? "PROD" : "DEV");
 
+        LOGGER.info("Game directory: {}", gameDir);
+
         makeCurrent();
     }
 

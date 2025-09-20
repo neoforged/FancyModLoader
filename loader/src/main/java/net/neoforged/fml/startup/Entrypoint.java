@@ -38,8 +38,6 @@ public abstract class Entrypoint {
         // Wait to log this until Log4j2 is initialized properly.
         long startupUptime = ManagementFactory.getRuntimeMXBean().getUptime();
 
-        args = ArgFileExpander.expandArgFiles(args);
-
         // In dev, do not overwrite the logging configuration if the user explicitly set another one.
         // In production, always overwrite the vanilla configuration.
         // TODO: Update this comment and coordinate with launchers to determine how to use THEIR logging config
@@ -50,13 +48,10 @@ public abstract class Entrypoint {
         // Try to avoid accessing this class before initializing Log4j2 to avoid reconfiguration
         var logger = LoggerFactory.getLogger(Entrypoint.class);
 
-        logger.info("JVM Uptime: {}ms", startupUptime);
-
-        var gameDir = getGameDir(args);
-        logger.info("Game Directory: {}", gameDir);
+        logger.info("JVM Uptime at startup: {}ms", startupUptime);
 
         var startupArgs = new StartupArgs(
-                gameDir,
+                getGameDir(args),
                 headless,
                 dist,
                 cleanDist,
