@@ -16,7 +16,6 @@ package cpw.mods.modlauncher;
 
 import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 
-import cpw.mods.modlauncher.api.ITransformerAuditTrail;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,7 +49,7 @@ public class ClassTransformer {
     private final TransformStore transformers;
     private final TransformerAuditTrail auditTrail;
 
-    public ClassTransformer(final TransformStore transformStore, final TransformerAuditTrail auditTrail) {
+    public ClassTransformer(TransformStore transformStore, TransformerAuditTrail auditTrail) {
         this.transformers = transformStore;
         this.auditTrail = auditTrail;
     }
@@ -122,8 +121,7 @@ public class ClassTransformer {
         }
         if (upToTransformer == null) {
             // run post-result callbacks
-            var context = new ClassProcessor.AfterProcessingContext(
-                    classDesc);
+            var context = new ClassProcessor.AfterProcessingContext(classDesc);
             for (var transformer : transformersToUse) {
                 transformer.afterProcessing(context);
             }
@@ -142,7 +140,7 @@ public class ClassTransformer {
         return cw.toByteArray();
     }
 
-    private static Path tempDir;
+    private static volatile Path tempDir;
 
     private void dumpClass(final byte[] clazz, String className) {
         if (tempDir == null) {
@@ -176,9 +174,5 @@ public class ClassTransformer {
 
     public Set<String> generatedPackages() {
         return transformers.generatedPackages();
-    }
-
-    public ITransformerAuditTrail getAuditLog() {
-        return auditTrail;
     }
 }

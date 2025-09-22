@@ -14,6 +14,7 @@
 
 package cpw.mods.modlauncher.benchmarks;
 
+import cpw.mods.modlauncher.ClassHierarchyRecomputationContext;
 import cpw.mods.modlauncher.ClassTransformer;
 import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformerAuditTrail;
@@ -32,6 +33,7 @@ import org.openjdk.jmh.annotations.TearDown;
 public class TransformBenchmark {
     public volatile ClassTransformer classTransformer;
     public volatile TransformerAuditTrail auditTrail;
+    private volatile ClassHierarchyRecomputationContext classHierarchyContext;
     byte[] classBytes;
 
     @Setup
@@ -54,15 +56,31 @@ public class TransformBenchmark {
                     }
                 }));
         auditTrail = new TransformerAuditTrail();
-        classTransformer = new ClassTransformer(transformStore, null, auditTrail, null);
+        classTransformer = new ClassTransformer(transformStore, auditTrail);
         try (InputStream is = getClass().getClassLoader().getResourceAsStream("cpw/mods/modlauncher/testjar/TestClass.class")) {
             classBytes = is.readAllBytes();
         }
+        classHierarchyContext = new ClassHierarchyRecomputationContext() {
+            @Override
+            public Class<?> findLoadedClass(String name) {
+                return null;
+            }
+
+            @Override
+            public byte[] upToFrames(String className) throws ClassNotFoundException {
+                throw new ClassNotFoundException();
+            }
+
+            @Override
+            public Class<?> locateSuperClass(String className) throws ClassNotFoundException {
+                throw new ClassNotFoundException();
+            }
+        };
     }
 
     @Benchmark
     public int transformNoop() {
-        byte[] result = classTransformer.transform(new byte[0], "test.MyClass", null);
+        byte[] result = classTransformer.transform(new byte[0], "test.MyClass", null, classHierarchyContext);
         return result.length + 1;
     }
 
@@ -73,7 +91,7 @@ public class TransformBenchmark {
 
     @Benchmark
     public int transformDummyClass() {
-        byte[] result = classTransformer.transform(classBytes, "cpw.mods.modlauncher.testjar.TestClass", null);
+        byte[] result = classTransformer.transform(classBytes, "cpw.mods.modlauncher.testjar.TestClass", null, classHierarchyContext);
         return result.length + 1;
     }
 }

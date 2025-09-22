@@ -6,6 +6,7 @@
 package net.neoforged.neoforgespi.transformation;
 
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
@@ -16,6 +17,8 @@ public record ProcessorName(String namespace, String path) implements Comparable
     private static final Pattern PATH_PATTERN = Pattern.compile("^[a-z0-9_./-]+$");
 
     public ProcessorName {
+        Objects.requireNonNull(namespace, "namespace");
+        Objects.requireNonNull(path, "path");
         // We enforce the same requirements as ResourceLocation
         if (!NAMESPACE_PATTERN.asMatchPredicate().test(namespace)) {
             throw new IllegalArgumentException("Invalid namespace for processor name: " + namespace);

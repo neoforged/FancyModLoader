@@ -16,6 +16,8 @@ import cpw.mods.jarhandling.impl.EmptyJarContents;
 import cpw.mods.jarhandling.impl.FolderJarContents;
 import cpw.mods.jarhandling.impl.JarFileContents;
 import cpw.mods.modlauncher.ClassTransformer;
+import cpw.mods.modlauncher.TransformStore;
+import cpw.mods.modlauncher.TransformerAuditTrail;
 import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.ITransformerAuditTrail;
 import java.io.BufferedInputStream;
@@ -123,13 +125,14 @@ public final class FMLLoader implements AutoCloseable {
     private ModuleLayer gameLayer;
     @VisibleForTesting
     DiscoveryResult discoveryResult;
+    private final TransformerAuditTrail classTransformerAuditLog = new TransformerAuditTrail();
     private ClassTransformer classTransformer;
     @Nullable
     @VisibleForTesting
     volatile IBindingsProvider bindings;
 
     public ITransformerAuditTrail getClassTransformerAuditLog() {
-        return getClassTransformer().getAuditLog();
+        return classTransformerAuditLog;
     }
 
     @VisibleForTesting
@@ -331,7 +334,8 @@ public final class FMLLoader implements AutoCloseable {
             }
 
             var classProcessors = locateClassProcessors(startupArgs, launchContext, discoveryResult, mixinFacade);
-            loader.classTransformer = ClassTransformerFactory.create(classProcessors);
+            var transformStore = new TransformStore(classProcessors);
+            loader.classTransformer = new ClassTransformer(transformStore, loader.classTransformerAuditLog);
             gameContent.add(new VirtualJar(
                     ClassProcessor.GENERATED_PACKAGE_MODULE,
                     loader.classTransformer.generatedPackages().toArray(String[]::new)));

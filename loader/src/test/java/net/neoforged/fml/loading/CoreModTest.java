@@ -6,18 +6,18 @@
 package net.neoforged.fml.loading;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import cpw.mods.modlauncher.TransformerHolder;
+import cpw.mods.modlauncher.api.CoremodTransformationContext;
 import cpw.mods.modlauncher.api.ITransformer;
-import cpw.mods.modlauncher.api.ITransformerVotingContext;
 import cpw.mods.modlauncher.api.TargetType;
-import cpw.mods.modlauncher.api.TransformerVoteResult;
 import java.util.Set;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.neoforgespi.coremod.ICoreMod;
 import net.neoforged.neoforgespi.locating.IModFile;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -30,14 +30,13 @@ public class CoreModTest extends LauncherTest {
     // A transformer that just adds a @Deprecated annotation, which is easy to assert for
     public static final ITransformer<ClassNode> TEST_TRANSFORMER = new ITransformer<>() {
         @Override
-        public ClassNode transform(ClassNode classNode, ITransformerVotingContext context) {
-            classNode.visitAnnotation("Ljava/lang/Deprecated;", true);
-            return classNode;
+        public ProcessorName name() {
+            return new ProcessorName("fml", "test");
         }
 
         @Override
-        public TransformerVoteResult castVote(ITransformerVotingContext context) {
-            return TransformerVoteResult.YES;
+        public void transform(ClassNode classNode, CoremodTransformationContext context) {
+            classNode.visitAnnotation("Ljava/lang/Deprecated;", true);
         }
 
         @Override
@@ -46,7 +45,7 @@ public class CoreModTest extends LauncherTest {
         }
 
         @Override
-        public TargetType<ClassNode> getTargetType() {
+        public TargetType getTargetType() {
             return TargetType.CLASS;
         }
     };
@@ -116,12 +115,11 @@ public class CoreModTest extends LauncherTest {
                 })
                 .build();
 
-        var transformers = launchAndLoad("neoforgeclient").transformers();
-        assertThat(transformers)
-                .extracting(t -> t instanceof TransformerHolder<?> transformerHolder ? transformerHolder.getTransformer() : t)
-                .containsOnly(TEST_TRANSFORMER);
+        var result = launchAndLoad("neoforgeclient");
 
-        var testClass = Class.forName("testmod.TestClass", true, gameClassLoader);
+        var testClass = Class.forName("testmod.TestClass", true, result.launchClassLoader());
         assertThat(testClass).hasAnnotation(Deprecated.class); // This is added by the transformer
+
+        assertEquals("neoforge:computing_frames,fml:test", loader.getClassTransformerAuditLog().getAuditString("testmod.TestClass"));
     }
 }

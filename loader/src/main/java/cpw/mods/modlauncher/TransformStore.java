@@ -115,7 +115,15 @@ public class TransformStore {
                 }
             }
         }
-        return TopologicalSort.topologicalSort(graph, Comparator.comparing(ClassProcessor::name));
+        return TopologicalSort.topologicalSort(graph, Comparator.comparing(TransformStore::getNameSafe));
+    }
+
+    private static ProcessorName getNameSafe(ClassProcessor classProcessor) {
+        var name = classProcessor.name();
+        if (name == null) {
+            throw new IllegalStateException("Class processor " + classProcessor.getClass().getName() + " returns a null name");
+        }
+        return name;
     }
 
     public void initializeBytecodeProvider(Function<ProcessorName, ClassProcessor.BytecodeProvider> function) {

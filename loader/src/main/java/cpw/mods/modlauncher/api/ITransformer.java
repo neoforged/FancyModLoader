@@ -55,7 +55,7 @@ public interface ITransformer<T> {
      */
     default ProcessorName name() {
         return new ProcessorName(
-                Objects.requireNonNull(getClass().getModule(), "coremod must be in named module or have explicit name").getName(),
+                Objects.requireNonNull(getClass().getModule().getName(), "coremod must be in named module or have explicit name"),
                 getClass().getName().replace('$', '.').toLowerCase(Locale.ROOT));
     }
 
