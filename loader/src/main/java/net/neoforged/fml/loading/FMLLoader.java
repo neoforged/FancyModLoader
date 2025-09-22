@@ -17,6 +17,7 @@ import cpw.mods.jarhandling.impl.FolderJarContents;
 import cpw.mods.jarhandling.impl.JarFileContents;
 import cpw.mods.modlauncher.ClassTransformer;
 import cpw.mods.modlauncher.TransformingClassLoader;
+import cpw.mods.modlauncher.api.ITransformerAuditTrail;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -126,6 +127,10 @@ public final class FMLLoader implements AutoCloseable {
     @Nullable
     @VisibleForTesting
     volatile IBindingsProvider bindings;
+
+    public ITransformerAuditTrail getClassTransformerAuditLog() {
+        return getClassTransformer().getAuditLog();
+    }
 
     @VisibleForTesting
     record DiscoveryResult(

@@ -16,6 +16,7 @@ package cpw.mods.modlauncher;
 
 import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 
+import cpw.mods.modlauncher.api.ITransformerAuditTrail;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -175,5 +176,9 @@ public class ClassTransformer {
 
     public Set<String> generatedPackages() {
         return transformers.generatedPackages();
+    }
+
+    public ITransformerAuditTrail getAuditLog() {
+        return auditTrail;
     }
 }

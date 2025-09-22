@@ -18,11 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.modlauncher.Environment;
 import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformingClassLoader;
-import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.modlauncher.api.TypesafeMap;
 import java.io.IOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
@@ -43,8 +40,6 @@ class TransformingClassLoaderTests {
 
         TransformStore transformStore = new TransformStore(List.of(mockClassProcessor));
 
-        Environment environment = new Environment(null);
-        new TypesafeMap(IEnvironment.class);
         Configuration configuration = createTestJarsConfiguration();
         TransformingClassLoader tcl = new TransformingClassLoader(transformStore, configuration, List.of(ModuleLayer.boot()));
         ModuleLayer.boot().defineModules(configuration, s -> tcl);

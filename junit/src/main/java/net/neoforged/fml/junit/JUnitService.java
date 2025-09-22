@@ -47,7 +47,7 @@ public class JUnitService implements LauncherSessionListener {
         var store = session.getStore();
 
         // When the tests are started we want to make sure that they run on the transforming class loader which is set up by
-        // bootstrapping BSL which will then load the launch target
+        // creating a FML loader.
         var loader = store.getOrComputeIfAbsent(NAMESPACE, KEY_ACTIVE_LOADER, ignored -> createLoader(), ActivatedLoader.class);
         LOG.info("Active FML loader {}", Integer.toHexString(System.identityHashCode(loader.loader)));
     }
