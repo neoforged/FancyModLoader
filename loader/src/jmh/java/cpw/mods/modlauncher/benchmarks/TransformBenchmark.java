@@ -49,8 +49,8 @@ public class TransformBenchmark {
                     }
 
                     @Override
-                    public boolean processClass(TransformationContext context) {
-                        return true;
+                    public ComputeFlags processClass(TransformationContext context) {
+                        return ComputeFlags.COMPUTE_FRAMES;
                     }
                 }));
         auditTrail = new TransformerAuditTrail();

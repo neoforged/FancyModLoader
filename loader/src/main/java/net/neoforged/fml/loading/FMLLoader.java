@@ -326,7 +326,7 @@ public final class FMLLoader implements AutoCloseable {
             }
 
             var classProcessors = locateClassProcessors(startupArgs, launchContext, discoveryResult, mixinFacade);
-            loader.classTransformer = ClassTransformerFactory.create(launchContext, classProcessors);
+            loader.classTransformer = ClassTransformerFactory.create(classProcessors);
             gameContent.add(new VirtualJar(
                     ClassProcessor.GENERATED_PACKAGE_MODULE,
                     loader.classTransformer.generatedPackages().toArray(String[]::new)));

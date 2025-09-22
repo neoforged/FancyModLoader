@@ -78,18 +78,18 @@ public class FMLMixinClassProcessor implements ClassProcessor {
     }
 
     @Override
-    public boolean processClass(TransformationContext context) {
+    public ComputeFlags processClass(TransformationContext context) {
         var classType = context.type();
         var classNode = context.node();
 
-        this.auditTrail.setConsumer(classType.getClassName(), context.auditTrail());
+        this.auditTrail.setConsumer(classType.getClassName(), context::audit);
 
         if (this.generatesClass(classType)) {
-            return this.generateClass(classType, classNode);
+            return this.generateClass(classType, classNode) ? ComputeFlags.COMPUTE_FRAMES : ComputeFlags.NO_REWRITE;
         }
 
         MixinEnvironment environment = MixinEnvironment.getCurrentEnvironment();
-        return this.transformer.transformClass(environment, classType.getClassName(), classNode);
+        return this.transformer.transformClass(environment, classType.getClassName(), classNode) ? ComputeFlags.COMPUTE_FRAMES : ComputeFlags.NO_REWRITE;
     }
 
     @Override

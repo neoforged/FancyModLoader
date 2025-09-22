@@ -37,11 +37,15 @@ class TransformerClassWriter extends ClassWriter {
     private boolean computedThis = false;
     private final ClassHierarchyRecomputationContext recomputationContext;
 
-    public static ClassWriter createClassWriter(final int mlFlags, final ClassNode clazzAccessor, ClassHierarchyRecomputationContext locator) {
-        final int writerFlag = mlFlags & ~ClassProcessor.ComputeFlags.SIMPLE_REWRITE; //Strip any modlauncher-custom fields
+    public static ClassWriter createClassWriter(ClassProcessor.ComputeFlags flags, final ClassNode clazzAccessor, ClassHierarchyRecomputationContext locator) {
+        final int writerFlag = switch (flags) {
+            case COMPUTE_MAXS -> ClassWriter.COMPUTE_MAXS;
+            case COMPUTE_FRAMES -> ClassWriter.COMPUTE_FRAMES;
+            default -> 0;
+        };
 
         //Only use the TransformerClassWriter when needed as it's slower, and only COMPUTE_FRAMES calls getCommonSuperClass
-        return (writerFlag & ClassProcessor.ComputeFlags.COMPUTE_FRAMES) != 0 ? new TransformerClassWriter(writerFlag, clazzAccessor, locator) : new ClassWriter(writerFlag);
+        return flags.ordinal() >= ClassProcessor.ComputeFlags.COMPUTE_FRAMES.ordinal() ? new TransformerClassWriter(writerFlag, clazzAccessor, locator) : new ClassWriter(writerFlag);
     }
 
     private TransformerClassWriter(final int writerFlags, final ClassNode clazzAccessor, final ClassHierarchyRecomputationContext recomputationContext) {

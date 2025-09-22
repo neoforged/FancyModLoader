@@ -31,7 +31,7 @@ public class AccessTransformerService implements ClassProcessor {
     }
 
     @Override
-    public int processClassWithFlags(final TransformationContext context) {
+    public ComputeFlags processClass(final TransformationContext context) {
         return engine.transform(context.node(), context.type()) ? ComputeFlags.SIMPLE_REWRITE : ComputeFlags.NO_REWRITE;
     }
 

@@ -40,9 +40,9 @@ public class MockClassProcessor implements ClassProcessor {
     }
 
     @Override
-    public boolean processClass(TransformationContext context) {
+    public ComputeFlags processClass(TransformationContext context) {
         FieldNode fn = new FieldNode(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "testfield", "Ljava/lang/String;", null, "CHEESE!");
         context.node().fields.add(fn);
-        return true;
+        return ComputeFlags.COMPUTE_FRAMES;
     }
 }

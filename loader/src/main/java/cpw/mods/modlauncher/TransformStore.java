@@ -73,8 +73,8 @@ public class TransformStore {
             }
 
             @Override
-            public boolean processClass(TransformationContext context) {
-                return false;
+            public ComputeFlags processClass(TransformationContext context) {
+                return ComputeFlags.COMPUTE_FRAMES;
             }
         };
 

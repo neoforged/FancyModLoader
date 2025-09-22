@@ -7,47 +7,43 @@ package net.neoforged.neoforgespi.transformation;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.jetbrains.annotations.ApiStatus;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
 /**
  * Class processors, like coremods, provide an API for transforming classes as they are loaded. They are more flexible
  * than coremods, but take more care to use correctly and efficiently. The main pieces of a processor are
- * {@link #handlesClass(SelectionContext)} and {@link #processClass(TransformationContext)} (or {@link #processClassWithFlags(TransformationContext)}),
+ * {@link #handlesClass(SelectionContext)} and {@link #processClass(TransformationContext)} (or {@link #processClass(TransformationContext)}),
  * which allow processors to say whether they want to process a given class and allow them to transform the class.
  * Processors are named and should have sensible namespaces; ordering is accomplished by specifying names that processors
  * should run before or after if present.
  */
 public interface ClassProcessor {
-    class ComputeFlags {
+    enum ComputeFlags {
         /**
          * This plugin did not change the class and therefor requires no rewrite of the class.
          * This is the fastest option
          */
-        public static final int NO_REWRITE = 0;
-
+        NO_REWRITE,
         /**
          * The plugin did change the class and requires a rewrite, but does not require any additional computation
          * as frames and maxs in the class did not change of have been corrected by the plugin.
-         * Should not be combined with {@link #COMPUTE_FRAMES} or {@link #COMPUTE_MAXS}
          */
-        public static final int SIMPLE_REWRITE = 0x100; //leave some space for eventual new flags in ClassWriter
-
+        SIMPLE_REWRITE,
         /**
          * The plugin did change the class and requires a rewrite, and requires max re-computation,
          * but frames are unchanged or corrected by the plugin
          */
-        public static final int COMPUTE_MAXS = ClassWriter.COMPUTE_MAXS;
-
+        COMPUTE_MAXS,
         /**
          * The plugin did change the class and requires a rewrite, and requires frame re-computation.
-         * This is the slowest, but also safest method if you don't know what level is required.
+         * This is the slowest, but also the safest method if you don't know what level is required.
          * This implies {@link #COMPUTE_MAXS}, so maxs will also be recomputed.
          */
-        public static final int COMPUTE_FRAMES = ClassWriter.COMPUTE_FRAMES;
+        COMPUTE_FRAMES
     }
 
     /**
@@ -103,6 +99,10 @@ public interface ClassProcessor {
         Optional<ClassProcessor> find(ProcessorName name);
     }
 
+    interface BytecodeProvider {
+        byte[] acquireTransformedClassBefore(final String className) throws ClassNotFoundException;
+    }
+
     /**
      * Context available when initializing a processor with a bytecode provider
      * 
@@ -121,11 +121,11 @@ public interface ClassProcessor {
         private final Type type;
         private final ClassNode node;
         private final boolean empty;
-        private final AuditTrail auditTrail;
+        private final BiConsumer<String, String[]> auditTrail;
         private final Supplier<byte[]> initialSha256;
 
         @ApiStatus.Internal
-        public TransformationContext(Type type, ClassNode node, boolean empty, AuditTrail auditTrail, Supplier<byte[]> initialSha256) {
+        public TransformationContext(Type type, ClassNode node, boolean empty, BiConsumer<String, String[]> auditTrail, Supplier<byte[]> initialSha256) {
             this.type = type;
             this.node = node;
             this.empty = empty;
@@ -145,17 +145,13 @@ public interface ClassProcessor {
             return empty;
         }
 
-        public AuditTrail auditTrail() {
-            return auditTrail;
+        public void audit(String activity, String... context) {
+            auditTrail.accept(activity, context);
         }
 
         public byte[] initialSha256() {
             return initialSha256.get();
         }
-    }
-
-    interface AuditTrail {
-        void audit(String activity, String... context);
     }
 
     /**
@@ -176,26 +172,12 @@ public interface ClassProcessor {
     boolean handlesClass(SelectionContext context);
 
     /**
-     * Each class that the processor has opted to recieve is passed to it for processing.
-     * One of this or {@link #processClass(TransformationContext)} <em>must</em> be implemented.
+     * Each class that the processor has opted to recieve is passed to this method for processing.
      *
      * @param context the context of the class to process
      * @return the {@link ComputeFlags} indicating how the class should be rewritten.
      */
-    default int processClassWithFlags(TransformationContext context) {
-        return processClass(context) ? ComputeFlags.COMPUTE_FRAMES : ComputeFlags.NO_REWRITE;
-    }
-
-    /**
-     * Each class that the processor has opted to recieve is passed to it for processing.
-     * One of this or {@link #processClassWithFlags(TransformationContext)} <em>must</em> be implemented.
-     *
-     * @param context the context of the class to process
-     * @return true if the classNode needs rewriting using COMPUTE_FRAMES or false if it needs no NO_REWRITE
-     */
-    default boolean processClass(TransformationContext context) {
-        throw new IllegalStateException("You need to override one of the processClass methods");
-    }
+    ComputeFlags processClass(TransformationContext context);
 
     /**
      * Where a class may be processed multiple times by the same processor (for example, if in addition to being loaded
@@ -213,9 +195,6 @@ public interface ClassProcessor {
      *
      * @param context the context for initialization
      */
+    // TODO: It would be nice to pass this context at construction (from a classprocessor), though that may be a bit difficult with the timing of everything
     default void initializeBytecodeProvider(InitializationContext context) {}
-
-    interface BytecodeProvider {
-        byte[] acquireTransformedClassBefore(final String className) throws ClassNotFoundException;
-    }
 }

@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
@@ -35,7 +36,7 @@ public class TransformerAuditTrail implements ITransformerAuditTrail {
         audit.clear();
     }
 
-    static final class TransformerActivity implements ClassProcessor.AuditTrail {
+    static final class TransformerActivity implements BiConsumer<String, String[]> {
         private final ProcessorName processorName;
         private final List<String> activities = new ArrayList<>();
         private boolean include = false;
@@ -57,7 +58,7 @@ public class TransformerAuditTrail implements ITransformerAuditTrail {
         }
 
         @Override
-        public void audit(String activity, String... context) {
+        public void accept(String activity, String... context) {
             activities.add(activity + (context.length == 0 ? "" : ":" + String.join(":", context)));
         }
     }

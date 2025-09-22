@@ -67,6 +67,11 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
                     public Set<ProcessorName> runsAfter() {
                         return Set.of(COMPUTING_FRAMES, FMLMixinClassProcessor.NAME);
                     }
+
+                    @Override
+                    public ComputeFlags processClass(TransformationContext context) {
+                        return ComputeFlags.NO_REWRITE;
+                    }
                 });
             } catch (Exception e) {
                 // Throwing here would cause the game to immediately crash without a proper error screen,
@@ -111,10 +116,10 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
 
             @SuppressWarnings("unchecked")
             @Override
-            public boolean processClass(TransformationContext processContext) {
+            public ComputeFlags processClass(TransformationContext processContext) {
                 var targets = targetsByClassName.get(processContext.type().getClassName());
                 if (targets.isEmpty()) {
-                    return false;
+                    return ComputeFlags.NO_REWRITE;
                 }
                 boolean transformed = false;
                 switch (transformer.getTargetType()) {
@@ -150,7 +155,7 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
                         }
                     }
                 }
-                return transformed;
+                return transformed ? ComputeFlags.COMPUTE_FRAMES : ComputeFlags.NO_REWRITE;
             }
         };
     }

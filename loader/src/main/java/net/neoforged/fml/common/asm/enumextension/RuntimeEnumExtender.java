@@ -81,7 +81,7 @@ public class RuntimeEnumExtender implements ClassProcessor {
     }
 
     @Override
-    public boolean processClass(final TransformationContext context) {
+    public ComputeFlags processClass(final TransformationContext context) {
         final var classNode = context.node();
         final var classType = context.type();
         if ((classNode.access & Opcodes.ACC_ENUM) == 0 || !classNode.interfaces.contains(MARKER_IFACE.getInternalName())) {
@@ -90,7 +90,7 @@ public class RuntimeEnumExtender implements ClassProcessor {
 
         List<EnumPrototype> protos = prototypes.getOrDefault(classType.getInternalName(), List.of());
         if (protos.isEmpty()) {
-            return false;
+            return ComputeFlags.NO_REWRITE;
         }
 
         MethodNode clinit = findMethod(classNode, mth -> mth.name.equals("<clinit>"));
@@ -148,7 +148,7 @@ public class RuntimeEnumExtender implements ClassProcessor {
             clinit.instructions.insertBefore(putStaticInsn, appendValuesGenerator.insnList);
         }
 
-        return true;
+        return ComputeFlags.COMPUTE_FRAMES;
     }
 
     /**

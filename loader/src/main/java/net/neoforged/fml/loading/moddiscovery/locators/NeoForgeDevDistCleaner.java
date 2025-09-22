@@ -76,6 +76,11 @@ public class NeoForgeDevDistCleaner implements ClassProcessor {
     }
 
     @Override
+    public ComputeFlags processClass(TransformationContext context) {
+        return ComputeFlags.NO_REWRITE;
+    }
+
+    @Override
     public boolean handlesClass(SelectionContext context) {
         if (maskedClasses.contains(context.type().getClassName())) {
             String message = String.format("Attempted to load class %s which is not present on the %s", context.type().getClassName(), switch (dist) {

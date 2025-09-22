@@ -9,7 +9,6 @@ import cpw.mods.modlauncher.ClassTransformer;
 import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformerAuditTrail;
 import java.util.List;
-import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 
 /**
@@ -18,8 +17,7 @@ import net.neoforged.neoforgespi.transformation.ClassProcessor;
 final class ClassTransformerFactory {
     private ClassTransformerFactory() {}
 
-    public static ClassTransformer create(ILaunchContext launchContext,
-            List<ClassProcessor> classProcessors) {
+    public static ClassTransformer create(List<ClassProcessor> classProcessors) {
         var transformStore = new TransformStore(classProcessors);
 
         var auditTrail = new TransformerAuditTrail();

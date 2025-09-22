@@ -58,6 +58,13 @@ public class ClassTransformer {
         this.transformers.initializeBytecodeProvider(function);
     }
 
+    private ClassProcessor.ComputeFlags combineFlags(ClassProcessor.ComputeFlags a, ClassProcessor.ComputeFlags b) {
+        if (a.ordinal() > b.ordinal()) {
+            return a;
+        }
+        return b;
+    }
+
     public byte[] transform(byte[] inputClass, String className, final ProcessorName upToTransformer, ClassHierarchyRecomputationContext locator) {
         final String internalName = className.replace('.', '/');
         final Type classDesc = Type.getObjectType(internalName);
@@ -87,7 +94,7 @@ public class ClassTransformer {
 
         boolean allowsComputeFrames = false;
 
-        int flags = 0;
+        var flags = ClassProcessor.ComputeFlags.NO_REWRITE;
         for (var transformer : transformersToUse) {
             if (ClassProcessor.COMPUTING_FRAMES.equals(transformer.name())) {
                 allowsComputeFrames = true;
@@ -99,16 +106,14 @@ public class ClassTransformer {
                     isEmpty,
                     trail,
                     digest);
-            var newFlags = transformer.processClassWithFlags(context);
+            var newFlags = transformer.processClass(context);
             if (newFlags != ClassProcessor.ComputeFlags.NO_REWRITE) {
                 trail.rewrites();
+                isEmpty = false;
             }
-            flags |= newFlags;
-            if (flags != 0) {
-                isEmpty = false; // If a transformer makes changes, we are no longer empty
-            }
+            flags = combineFlags(flags, newFlags);
             if (!allowsComputeFrames) {
-                if ((flags & ClassProcessor.ComputeFlags.COMPUTE_FRAMES) != 0) {
+                if (flags.ordinal() >= ClassProcessor.ComputeFlags.COMPUTE_FRAMES.ordinal()) {
                     LOGGER.error(MODLAUNCHER, "Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer {}", transformer.name(), ClassProcessor.COMPUTING_FRAMES);
                     throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer " + ClassProcessor.COMPUTING_FRAMES);
                 }
@@ -123,7 +128,7 @@ public class ClassTransformer {
             }
         }
 
-        if (flags == 0) {
+        if (flags == ClassProcessor.ComputeFlags.NO_REWRITE) {
             return inputClass; // No changes were made, return the original class
         }
 
