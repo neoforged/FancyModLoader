@@ -53,7 +53,7 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -69,12 +69,12 @@ import joptsimple.OptionParser;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.earlydisplay.error.ErrorDisplay;
 import net.neoforged.fml.earlydisplay.render.LoadingScreenRenderer;
-import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.ThemeIds;
 import net.neoforged.fml.earlydisplay.theme.ThemeLoader;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.fml.loading.ProgramArgs;
 import net.neoforged.fml.loading.progress.ProgressMeter;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
@@ -124,9 +124,10 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private String assetIndex;
 
     private boolean maximized;
-    private Map<String, SimpleFont> fonts;
     private Runnable repaintTick = () -> {};
     private volatile boolean closed;
+    private String neoForgeVersion;
+    private String minecraftVersion;
 
     public DisplayWindow() {
         mainProgress = StartupNotificationManager.addProgressBar("", 0);
@@ -138,10 +139,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     @Override
-    public Runnable initialize(String[] arguments) {
+    public void initialize(ProgramArgs arguments) {
         final OptionParser parser = new OptionParser();
-        var mcversionopt = parser.accepts("fml.mcVersion").withRequiredArg().ofType(String.class);
-        var forgeversionopt = parser.accepts("fml.neoForgeVersion").withRequiredArg().ofType(String.class);
         var widthopt = parser.accepts("width")
                 .withRequiredArg().ofType(Integer.class)
                 .defaultsTo(FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_WIDTH));
@@ -152,7 +151,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         var assetsDirOpt = parser.accepts("assetsDir").withRequiredArg().ofType(String.class);
         var assetIndexOpt = parser.accepts("assetIndex").withRequiredArg().ofType(String.class);
         parser.allowsUnrecognizedOptions();
-        var parsed = parser.parse(arguments);
+        var parsed = parser.parse(arguments.getArguments());
         winWidth = parsed.valueOf(widthopt);
         winHeight = parsed.valueOf(heightopt);
         FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_WIDTH, winWidth);
@@ -186,9 +185,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
         }
         this.maximized = parsed.has(maximizedopt) || FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_MAXIMIZED);
 
-        var forgeVersion = parsed.valueOf(forgeversionopt);
-        StartupNotificationManager.modLoaderConsumer().ifPresent(c -> c.accept("NeoForge loading " + forgeVersion));
-
         this.renderScheduler = Executors.newSingleThreadScheduledExecutor(
                 Thread.ofPlatform().group(BACKGROUND_THREAD_GROUP)
                         .name("fml-loadingscreen")
@@ -199,20 +195,30 @@ public class DisplayWindow implements ImmediateWindowProvider {
                         })
                         .factory());
 
-        var mcVersion = parsed.valueOf(mcversionopt);
-        initWindow(mcVersion);
+        initWindow();
 
         this.rendererFuture = renderScheduler.schedule(() -> new LoadingScreenRenderer(
                 renderScheduler,
                 window,
                 theme,
                 getThemePath(),
-                mcVersion,
-                forgeVersion), 1, TimeUnit.MILLISECONDS);
+                () -> minecraftVersion,
+                () -> neoForgeVersion), 1, TimeUnit.MILLISECONDS);
 
         updateProgress("Initializing Game Graphics");
+    }
 
-        return this::periodicTick;
+    @Override
+    public void setMinecraftVersion(String version) {
+        minecraftVersion = version;
+    }
+
+    @Override
+    public void setNeoForgeVersion(String version) {
+        if (!Objects.equals(neoForgeVersion, version)) {
+            neoForgeVersion = version;
+            StartupNotificationManager.modLoaderConsumer().ifPresent(c -> c.accept("Starting NeoForge " + version));
+        }
     }
 
     private static Theme loadTheme(boolean darkMode) {
@@ -298,10 +304,9 @@ public class DisplayWindow implements ImmediateWindowProvider {
      * It's then our job to make sure this doesn't happen, only calling GL functions where the Context is Current.
      * As long as we can verify that, then GL (and things like OS X) have no complaints with doing this.
      *
-     * @param mcVersion Minecraft Version
      * @return The selected GL profile as an integer pair
      */
-    public void initWindow(@Nullable String mcVersion) {
+    public void initWindow() {
         // Initialize GLFW with a time guard, in case something goes wrong
         long glfwInitBegin = System.nanoTime();
         if (!glfwInit()) {
@@ -329,14 +334,12 @@ public class DisplayWindow implements ImmediateWindowProvider {
         // End of flags copied from Vanilla Minecraft
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-        if (mcVersion != null) {
-            // this emulates what we would get without early progress window
-            // as vanilla never sets these, so GLFW uses the first window title
-            // set them explicitly to avoid it using "FML early loading progress" as the class
-            String vanillaWindowTitle = "Minecraft* " + mcVersion;
-            glfwWindowHintString(GLFW_X11_CLASS_NAME, vanillaWindowTitle);
-            glfwWindowHintString(GLFW_X11_INSTANCE_NAME, vanillaWindowTitle);
-        }
+        // this emulates what we would get without early progress window
+        // as vanilla never sets these, so GLFW uses the first window title
+        // set them explicitly to avoid it using "FML early loading progress" as the class
+        String vanillaWindowTitle = "Minecraft*";
+        glfwWindowHintString(GLFW_X11_CLASS_NAME, vanillaWindowTitle);
+        glfwWindowHintString(GLFW_X11_INSTANCE_NAME, vanillaWindowTitle);
         if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DEBUG_OPENGL)) {
             LOGGER.info("Requesting the creation of an OpenGL debug context");
             glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);

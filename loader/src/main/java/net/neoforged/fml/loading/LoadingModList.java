@@ -5,37 +5,44 @@
 
 package net.neoforged.fml.loading;
 
-import cpw.mods.jarhandling.JarResource;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
-import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Master list of all mods <em>in the loading context. This class cannot refer outside the
  * loading package</em>
  */
 public class LoadingModList {
-    private static LoadingModList INSTANCE;
+    private static final Logger LOG = LoggerFactory.getLogger(LoadingModList.class);
+
     private final List<IModFileInfo> plugins;
     private final List<IModFile> gameLibraries;
     private final List<ModFileInfo> modFiles;
     private final List<ModInfo> sortedList;
     private final Map<ModInfo, List<ModInfo>> modDependencies;
     private final Map<String, ModFileInfo> fileById;
+    @Nullable
+    private volatile Map<String, IModFile> fileByPackage;
     private final List<ModLoadingIssue> modLoadingIssues;
+    private final Set<IModFile> allModFiles = Collections.newSetFromMap(new IdentityHashMap<>());
 
     private LoadingModList(List<ModFile> plugins, List<ModFile> gameLibraries, List<ModFile> modFiles, List<ModInfo> sortedList, Map<ModInfo, List<ModInfo>> modDependencies) {
         this.plugins = plugins.stream()
@@ -46,9 +53,7 @@ public class LoadingModList {
                 .map(ModFile::getModFileInfo)
                 .map(ModFileInfo.class::cast)
                 .collect(Collectors.toList());
-        this.sortedList = sortedList.stream()
-                .map(ModInfo.class::cast)
-                .collect(Collectors.toList());
+        this.sortedList = new ArrayList<>(sortedList);
         this.modDependencies = modDependencies;
         this.fileById = this.modFiles.stream()
                 .map(ModFileInfo::getMods)
@@ -56,45 +61,28 @@ public class LoadingModList {
                 .map(ModInfo.class::cast)
                 .collect(Collectors.toMap(ModInfo::getModId, ModInfo::getOwningFile));
         this.modLoadingIssues = new ArrayList<>();
+
+        this.allModFiles.addAll(this.gameLibraries);
+        this.allModFiles.addAll(modFiles);
+        this.allModFiles.addAll(plugins);
     }
 
     public static LoadingModList of(List<ModFile> plugins, List<ModFile> gameLibraries, List<ModFile> modFiles, List<ModInfo> sortedList, List<ModLoadingIssue> issues, Map<ModInfo, List<ModInfo>> modDependencies) {
-        INSTANCE = new LoadingModList(plugins, gameLibraries, modFiles, sortedList, modDependencies);
-        INSTANCE.modLoadingIssues.addAll(issues);
-        return INSTANCE;
+        var list = new LoadingModList(plugins, gameLibraries, modFiles, sortedList, modDependencies);
+        list.modLoadingIssues.addAll(issues);
+        return list;
     }
 
+    /**
+     * @deprecated Use {@code FMLLoader.getCurrent().getLoadingModList()} instead.
+     */
+    @Deprecated(forRemoval = true)
     public static LoadingModList get() {
-        return INSTANCE;
+        return FMLLoader.getCurrent().getLoadingModList();
     }
 
-    public void addAccessTransformers() {
-        modFiles.stream()
-                .map(ModFileInfo::getFile)
-                .forEach(mod -> mod.getAccessTransformers().forEach(path -> FMLLoader.addAccessTransformer(path, mod)));
-    }
-
-    public void addEnumExtenders() {
-        Map<IModInfo, JarResource> pathPerMod = new HashMap<>();
-        modFiles.stream()
-                .map(ModFileInfo::getMods)
-                .flatMap(List::stream)
-                .forEach(mod -> mod.getConfig().<String>getConfigElement("enumExtensions").ifPresent(file -> {
-                    var resource = mod.getOwningFile().getFile().getContents().get(file);
-                    if (resource == null) {
-                        ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloadingissue.enumextender.file_not_found", file).withAffectedMod(mod));
-                        return;
-                    }
-                    pathPerMod.put(mod, resource);
-                }));
-        RuntimeEnumExtender.loadEnumPrototypes(pathPerMod);
-    }
-
-    public void addForScanning(BackgroundScanHandler backgroundScanHandler) {
-        backgroundScanHandler.setLoadingModList(this);
-        modFiles.stream()
-                .map(ModFileInfo::getFile)
-                .forEach(backgroundScanHandler::submitForScanning);
+    public boolean contains(IModFile modFile) {
+        return allModFiles.contains(modFile);
     }
 
     public List<IModFileInfo> getPlugins() {
@@ -107,6 +95,14 @@ public class LoadingModList {
 
     public List<ModFileInfo> getModFiles() {
         return modFiles;
+    }
+
+    /**
+     * @return All {@linkplain #getModFiles() mod files}, {@linkplain #getPlugins() plugins} and
+     *         {@linkplain #getGameLibraries() game libraries}.
+     */
+    public Set<IModFile> getAllModFiles() {
+        return allModFiles;
     }
 
     public ModFileInfo getModFileById(String modid) {
@@ -134,5 +130,32 @@ public class LoadingModList {
 
     public List<ModLoadingIssue> getModLoadingIssues() {
         return modLoadingIssues;
+    }
+
+    Map<String, IModFile> getPackageIndex() {
+        var fileByPackage = this.fileByPackage;
+        if (fileByPackage == null) {
+            synchronized (this) {
+                if (this.fileByPackage == null) {
+                    this.fileByPackage = buildPackageIndex();
+                }
+                fileByPackage = this.fileByPackage;
+            }
+        }
+        return fileByPackage;
+    }
+
+    private Map<String, IModFile> buildPackageIndex() {
+        long start = System.nanoTime();
+        Map<String, IModFile> result = new HashMap<>();
+        for (var modFile : this.allModFiles) {
+            for (var packageName : ((ModFile) modFile).getSecureJar().moduleDataProvider().descriptor().packages()) {
+                result.put(packageName, modFile);
+            }
+        }
+        result = Map.copyOf(result);
+        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        LOG.debug("Built package index ({} entries) in {}ms", result.size(), elapsed);
+        return result;
     }
 }

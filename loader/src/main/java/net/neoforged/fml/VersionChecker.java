@@ -113,7 +113,7 @@ public class VersionChecker {
 
                 final StringBuilder sb = new StringBuilder();
                 sb.append("Java-http-client/").append(System.getProperty("java.version")).append(' ');
-                sb.append("FancyModLoader/").append(FMLLoader.versionInfo().fmlVersion()).append(' ');
+                sb.append("FancyModLoader/").append(FMLVersion.getVersion()).append(' ');
                 sb.append(mod.getModId()).append('/').append(mod.getVersion());
                 final String userAgent = sb.toString();
 
@@ -169,7 +169,7 @@ public class VersionChecker {
                     Map<String, String> promos = (Map<String, String>) json.get("promos");
                     display_url = (String) json.get("homepage");
 
-                    var mcVersion = FMLLoader.versionInfo().mcVersion();
+                    var mcVersion = FMLLoader.getCurrent().getVersionInfo().mcVersion();
                     String rec = promos.get(mcVersion + "-recommended");
                     String lat = promos.get(mcVersion + "-latest");
                     ComparableVersion current = new ComparableVersion(mod.getVersion().toString());

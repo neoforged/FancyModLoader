@@ -79,7 +79,7 @@ subprojects { subProject ->
         header = rootProject.file('LICENSE-header.txt')
         skipExistingHeaders true
 
-        include 'net/neoforged/'
+        include 'net/neoforged/**/*.java'
     }
 
     artifacts {

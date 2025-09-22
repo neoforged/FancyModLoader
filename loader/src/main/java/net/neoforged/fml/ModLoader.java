@@ -26,14 +26,12 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.event.lifecycle.FMLConstructModEvent;
 import net.neoforged.fml.event.lifecycle.ParallelDispatchEvent;
 import net.neoforged.fml.i18n.FMLTranslations;
-import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
@@ -65,26 +63,8 @@ public final class ModLoader {
     private static final List<ModLoadingIssue> loadingIssues = new ArrayList<>();
     private static ModList modList;
 
-    static {
-        CrashReportCallables.registerCrashCallable("ModLauncher", FMLLoader::getLauncherInfo);
-        CrashReportCallables.registerCrashCallable("ModLauncher launch target", FMLLoader::launcherHandlerName);
-        CrashReportCallables.registerCrashCallable("ModLauncher services", ModLoader::computeModLauncherServiceList);
-        CrashReportCallables.registerCrashCallable("FML Language Providers", ModLoader::computeLanguageList);
-        CrashReportCallables.registerCrashCallable("Class Transformation Statistics", ClassTransformStatistics::computeCrashReportEntry);
-    }
-
-    private static String computeLanguageList() {
-        return "\n" + FMLLoader.getLanguageLoadingProvider().applyForEach(lp -> lp.name() + "@" + lp.getClass().getPackage().getImplementationVersion()).collect(Collectors.joining("\n\t\t", "\t\t", ""));
-    }
-
-    private static String computeModLauncherServiceList() {
-        final List<Map<String, String>> mods = FMLLoader.modLauncherModList();
-        return "\n" + mods.stream().map(mod -> mod.getOrDefault("file", "nofile") +
-                " " + mod.getOrDefault("name", "missing") +
-                " " + mod.getOrDefault("type", "NOTYPE") +
-                " " + mod.getOrDefault("description", "")).collect(Collectors.joining("\n\t\t", "\t\t", ""));
-    }
-
+    // TODO: Where did crash report callables go? Add
+    //  CrashReportCallables.registerCrashCallable("Class Transformation Statistics", ClassTransformStatistics::computeCrashReportEntry);
     /**
      * Run on the primary starting thread by ClientModLoader and ServerModLoader
      *
@@ -93,11 +73,11 @@ public final class ModLoader {
      * @param periodicTask     Optional periodic task to perform on the main thread while other activities run
      */
     public static void gatherAndInitializeMods(final Executor syncExecutor, final Executor parallelExecutor, final Runnable periodicTask) {
-        var loadingModList = FMLLoader.getLoadingModList();
+        var loadingModList = FMLLoader.getCurrent().getLoadingModList();
         loadingIssues.addAll(loadingModList.getModLoadingIssues());
 
         ForgeFeature.registerFeature("javaVersion", ForgeFeature.VersionFeatureTest.forVersionString(IModInfo.DependencySide.BOTH, System.getProperty("java.version")));
-        FMLLoader.backgroundScanHandler.waitForScanToComplete(periodicTask);
+        FMLLoader.getCurrent().backgroundScanHandler.waitForScanToComplete(periodicTask);
         final ModList modList = ModList.of(loadingModList.getModFiles().stream().map(ModFileInfo::getFile).toList(),
                 loadingModList.getMods());
 
@@ -112,7 +92,7 @@ public final class ModLoader {
         List<? extends ForgeFeature.Bound> failedBounds = loadingModList.getMods().stream()
                 .map(ModInfo::getForgeFeatures)
                 .flatMap(Collection::stream)
-                .filter(bound -> !ForgeFeature.testFeature(FMLEnvironment.dist, bound))
+                .filter(bound -> !ForgeFeature.testFeature(FMLLoader.getCurrent().getDist(), bound))
                 .toList();
 
         if (!failedBounds.isEmpty()) {
@@ -203,7 +183,7 @@ public final class ModLoader {
             var futureList = modList.getSortedMods().stream()
                     .map(modContainer -> {
                         // Collect futures for all dependencies first
-                        var depFutures = LoadingModList.get().getDependencies(modContainer.getModInfo()).stream()
+                        var depFutures = FMLLoader.getCurrent().getLoadingModList().getDependencies(modContainer.getModInfo()).stream()
                                 .map(modInfo -> {
                                     var future = modFutures.get(modInfo);
                                     if (future == null) {
@@ -321,7 +301,7 @@ public final class ModLoader {
 
     private static ModContainer buildModContainerFromTOML(final IModInfo modInfo, final ModFileScanData scanData) {
         try {
-            return modInfo.getLoader().loadMod(modInfo, scanData, FMLLoader.getGameLayer());
+            return modInfo.getLoader().loadMod(modInfo, scanData, FMLLoader.getCurrent().getGameLayer());
         } catch (ModLoadingException mle) {
             // exceptions are caught and added to the error list for later handling
             loadingIssues.addAll(mle.getIssues());
@@ -416,5 +396,13 @@ public final class ModLoader {
     @ApiStatus.Internal
     public static void addLoadingIssue(ModLoadingIssue issue) {
         loadingIssues.add(issue);
+    }
+
+    @VisibleForTesting
+    @ApiStatus.Internal
+    public static void clear() {
+        LOGGER.info("Clearing ModLoader");
+        loadingIssues.clear();
+        modList = null;
     }
 }

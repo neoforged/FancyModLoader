@@ -8,11 +8,21 @@ package net.neoforged.fml.loading.moddiscovery.locators;
 import com.mojang.logging.LogUtils;
 import java.util.Collection;
 import java.util.HashSet;
+import cpw.mods.jarhandling.JarContents;
+import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.jar.Attributes;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
+import net.neoforged.fml.ModLoadingException;
+import net.neoforged.fml.ModLoadingIssue;
 import org.jetbrains.annotations.ApiStatus;
 import org.slf4j.Logger;
 import org.slf4j.Marker;
@@ -24,12 +34,32 @@ import org.slf4j.MarkerFactory;
  */
 @ApiStatus.Internal
 public class NeoForgeDevDistCleaner implements ClassProcessor {
+    private static final Attributes.Name NAME_DISTS = new Attributes.Name("Minecraft-Dists");
+    private static final Attributes.Name NAME_DIST = new Attributes.Name("Minecraft-Dist");
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Marker DISTXFORM = MarkerFactory.getMarker("DISTXFORM");
 
-    private Dist dist;
+    private final Dist dist;
+    private final Set<String> maskedClasses;
 
-    private final Set<String> maskedClasses = new HashSet<>();
+    public NeoForgeDevDistCleaner(JarContents minecraftModFile, Dist requestedDist) {
+        this.dist = requestedDist;
+        this.maskedClasses = getMaskedFiles(minecraftModFile, requestedDist)
+                .map(path -> {
+                    // Classes are kept, but set to be filtered out at runtime; resources are removed entirely.
+                    if (path.endsWith(".class")) {
+                        return path.substring(0, path.length() - ".class".length()).replace('/', '.');
+                    } else {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    public static boolean supportsDistCleaning(JarContents minecraftModFile) {
+        return minecraftModFile.getManifest().getMainAttributes().containsKey(NAME_DISTS);
+    }
 
     public static final ProcessorName NAME = new ProcessorName("neoforge", "neoforge_dev_dist_cleaner");
 
@@ -72,11 +102,34 @@ public class NeoForgeDevDistCleaner implements ClassProcessor {
         throw (X) throwable;
     }
 
-    public synchronized void maskClasses(Collection<String> classes) {
-        maskedClasses.addAll(classes);
-    }
+    /**
+     * Loads file masking information from the jar's manifest, masking resource files that should not be present and
+     * telling {@link NeoForgeDevDistCleaner} to clean class files that should be masked.
+     */
+    public static Stream<String> getMaskedFiles(JarContents minecraftJar, Dist currentDist) {
+        var manifest = minecraftJar.getManifest();
+        String dists = manifest.getMainAttributes().getValue(NAME_DISTS);
+        if (dists == null) {
+            // Jar has no masking attributes; in dev, this is necessary
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.neodev_missing_dists_attribute", NAME_DISTS));
+        }
+        var dist = switch (currentDist) {
+            case CLIENT -> "client";
+            case DEDICATED_SERVER -> "server";
+        };
+        if (Arrays.stream(dists.split("\\s+")).allMatch(s -> s.equals(dist))) {
+            return Stream.empty();
+        }
+        if (Arrays.stream(dists.split("\\s+")).noneMatch(s -> s.equals(dist))) {
+            // Jar has no marker for the current dist; this is wacky and should not occur
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.neodev_missing_appropriate_dist", dist, NAME_DISTS));
+        }
 
-    public void setDistribution(Dist dist) {
-        this.dist = Objects.requireNonNull(dist);
+        return manifest.getEntries().entrySet().stream()
+                .filter(entry -> {
+                    var fileDist = entry.getValue().getValue(NAME_DIST);
+                    return fileDist != null && !fileDist.equals(dist);
+                })
+                .map(Map.Entry::getKey);
     }
 }

@@ -39,6 +39,7 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.ArgsClassGenerator;
 import org.spongepowered.asm.mixin.transformer.Config;
 import org.spongepowered.asm.service.MixinService;
 
+// TODO: Figure out what to do with changes from startup-overhaul!
 public class FMLMixinClassProcessor implements ClassProcessor {
     public static final ProcessorName NAME = new ProcessorName("neoforge", "mixin");
 

@@ -8,15 +8,16 @@ package net.neoforged.fml.loading;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import cpw.mods.modlauncher.api.CoremodTransformationContext;
+import cpw.mods.modlauncher.TransformerHolder;
 import cpw.mods.modlauncher.api.ITransformer;
+import cpw.mods.modlauncher.api.ITransformerVotingContext;
 import cpw.mods.modlauncher.api.TargetType;
+import cpw.mods.modlauncher.api.TransformerVoteResult;
 import java.util.Set;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.neoforgespi.coremod.ICoreMod;
 import net.neoforged.neoforgespi.locating.IModFile;
-import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -29,13 +30,14 @@ public class CoreModTest extends LauncherTest {
     // A transformer that just adds a @Deprecated annotation, which is easy to assert for
     public static final ITransformer<ClassNode> TEST_TRANSFORMER = new ITransformer<>() {
         @Override
-        public void transform(ClassNode classNode, CoremodTransformationContext context) {
+        public ClassNode transform(ClassNode classNode, ITransformerVotingContext context) {
             classNode.visitAnnotation("Ljava/lang/Deprecated;", true);
+            return classNode;
         }
 
         @Override
-        public ProcessorName name() {
-            return new ProcessorName("testmod", "testtransformer");
+        public TransformerVoteResult castVote(ITransformerVotingContext context) {
+            return TransformerVoteResult.YES;
         }
 
         @Override
@@ -44,7 +46,7 @@ public class CoreModTest extends LauncherTest {
         }
 
         @Override
-        public TargetType getTargetType() {
+        public TargetType<ClassNode> getTargetType() {
             return TargetType.CLASS;
         }
     };
@@ -114,8 +116,10 @@ public class CoreModTest extends LauncherTest {
                 })
                 .build();
 
-        var processors = launchAndLoad("neoforgeclient").processors();
-        assertThat(processors).anyMatch(p -> p.name().equals(TEST_TRANSFORMER.name()));
+        var transformers = launchAndLoad("neoforgeclient").transformers();
+        assertThat(transformers)
+                .extracting(t -> t instanceof TransformerHolder<?> transformerHolder ? transformerHolder.getTransformer() : t)
+                .containsOnly(TEST_TRANSFORMER);
 
         var testClass = Class.forName("testmod.TestClass", true, gameClassLoader);
         assertThat(testClass).hasAnnotation(Deprecated.class); // This is added by the transformer

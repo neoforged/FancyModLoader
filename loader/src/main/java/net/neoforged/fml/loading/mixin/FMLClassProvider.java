@@ -5,7 +5,6 @@
 
 package net.neoforged.fml.loading.mixin;
 
-import cpw.mods.modlauncher.Launcher;
 import java.net.URL;
 import org.spongepowered.asm.service.IClassProvider;
 
@@ -33,6 +32,6 @@ class FMLClassProvider implements IClassProvider {
 
     @Override
     public Class<?> findAgentClass(String name, boolean initialize) throws ClassNotFoundException {
-        return Class.forName(name, initialize, Launcher.class.getClassLoader());
+        return Class.forName(name, initialize, getClass().getClassLoader());
     }
 }

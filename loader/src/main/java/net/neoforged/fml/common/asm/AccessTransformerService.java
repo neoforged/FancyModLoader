@@ -12,7 +12,7 @@ import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 
 public class AccessTransformerService implements ClassProcessor {
-    public final AccessTransformerEngine engine = AccessTransformerEngine.newEngine();
+    private final AccessTransformerEngine engine = AccessTransformerEngine.newEngine();
 
     public static final ProcessorName NAME = new ProcessorName("neoforge", "access_transformer");
 

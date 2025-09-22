@@ -6,14 +6,15 @@
 package net.neoforged.fml.loading;
 
 import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.modlauncher.api.ITransformer;
 import java.util.List;
 import java.util.Map;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
-import net.neoforged.neoforgespi.transformation.ClassProcessor;
 
 public record LaunchResult(Map<String, SecureJar> pluginLayerModules,
         Map<String, SecureJar> gameLayerModules,
         List<ModLoadingIssue> issues,
         Map<String, ModFileInfo> loadedMods,
-        List<ClassProcessor> processors) {}
+        List<ITransformer<?>> transformers,
+        ClassLoader launchClassLoader) {}

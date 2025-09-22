@@ -77,6 +77,7 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
     private final Map<String, ModuleInfo> moduleInfoCache;
     private final Map<String, ModuleInfo> packageLookup;
     private final Map<String, ClassLoader> parentLoaders;
+    private final Configuration configuration;
     private ClassLoader fallbackClassLoader;
     private volatile boolean closed = false;
 
@@ -100,6 +101,7 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
     @VisibleForTesting
     public ModuleClassLoader(String name, Configuration configuration, List<ModuleLayer> parentLayers, @Nullable ClassLoader parentLoader) {
         super(name, parentLoader);
+        this.configuration = configuration;
         this.fallbackClassLoader = Objects.requireNonNullElse(parentLoader, ClassLoader.getPlatformClassLoader());
         this.moduleInfoCache = HashMap.newHashMap(configuration.modules().size());
 
@@ -257,10 +259,6 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
             }
             return c;
         }
-    }
-
-    private Package definePackage(String[] args) {
-        return definePackage(args[0], args[1], args[2], args[3], args[4], args[5], args[6], null);
     }
 
     @Override
@@ -486,6 +484,10 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
             return null;
         }
         return className.substring(0, className.lastIndexOf('.'));
+    }
+
+    public Configuration getConfiguration() {
+        return configuration;
     }
 
     /**

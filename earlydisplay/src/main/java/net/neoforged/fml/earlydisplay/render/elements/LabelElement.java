@@ -7,6 +7,7 @@ package net.neoforged.fml.earlydisplay.render.elements;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import net.neoforged.fml.earlydisplay.render.MaterializedTheme;
 import net.neoforged.fml.earlydisplay.render.RenderContext;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
@@ -16,15 +17,19 @@ import net.neoforged.fml.earlydisplay.util.Placeholders;
 import net.neoforged.fml.earlydisplay.util.Size;
 
 public class LabelElement extends RenderElement {
-    private final String text;
+    private final String originalText;
+    private final Supplier<Map<String, String>> placeholderSupplier;
 
-    public LabelElement(ThemeLabelElement element, MaterializedTheme theme, Map<String, String> placeholders) {
+    public LabelElement(ThemeLabelElement element, MaterializedTheme theme, Supplier<Map<String, String>> placeholderSupplier) {
         super(element, theme);
-        this.text = Placeholders.resolve(element.text(), placeholders);
+        this.originalText = element.text();
+        this.placeholderSupplier = placeholderSupplier;
     }
 
     @Override
     public void render(RenderContext context) {
+        var text = Placeholders.resolve(originalText, placeholderSupplier.get());
+
         var texts = List.of(
                 new SimpleFont.DisplayText(text, -1));
 

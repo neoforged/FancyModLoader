@@ -12,10 +12,8 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.testlib.IdentifiableContent;
-import net.neoforged.fml.testlib.SimulatedInstallation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -49,7 +47,7 @@ public class InvalidModFileTests extends LauncherTest {
         expectedError = expectedError.replace("mods/mod.jar", mainModule.getFirst().toString().replace('\\', '/'));
 
         // Tell FML that the classes and resources directory belong together
-        SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
+        installation.getLaunchModFolders().put("mod", mainModule);
 
         var e = assertThrows(ModLoadingException.class, () -> launchAndLoadWithAdditionalClasspath("neoforgeclientdev", classpath));
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(expectedError);

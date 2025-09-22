@@ -36,6 +36,17 @@ public interface JarContents extends Closeable {
     @FunctionalInterface
     interface PathFilter {
         boolean test(String relativePath);
+
+        @Nullable
+        static PathFilter and(@Nullable PathFilter a, @Nullable PathFilter b) {
+            if (a == null) {
+                return b;
+            } else if (b == null) {
+                return a;
+            } else {
+                return relativePath -> a.test(relativePath) && b.test(relativePath);
+            }
+        }
     }
 
     record FilteredPath(Path path, @Nullable CompositeJarContents.PathFilter filter) {

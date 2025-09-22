@@ -8,13 +8,13 @@ package net.neoforged.fml.loading;
 import static net.neoforged.fml.loading.LogMarkers.CORE;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.modlauncher.api.IEnvironment;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import org.jetbrains.annotations.ApiStatus;
 import org.slf4j.Logger;
 
 public enum FMLPaths {
@@ -47,12 +47,7 @@ public enum FMLPaths {
         return Paths.get(path[0], Arrays.copyOfRange(path, 1, path.length));
     }
 
-    public static void setup(IEnvironment env) {
-        final Path rootPath = env.getProperty(IEnvironment.Keys.GAMEDIR.get()).orElseThrow(() -> new RuntimeException("No game path found"));
-
-        loadAbsolutePaths(rootPath);
-    }
-
+    @ApiStatus.Internal
     public static void loadAbsolutePaths(Path rootPath) {
         for (FMLPaths path : FMLPaths.values()) {
             path.absolutePath = rootPath.resolve(path.relativePath).toAbsolutePath().normalize();

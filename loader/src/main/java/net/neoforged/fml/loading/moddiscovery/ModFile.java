@@ -10,7 +10,6 @@ import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.SecureJar;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +23,6 @@ import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.stream.Stream;
 import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.modscan.Scanner;
 import net.neoforged.neoforgespi.language.IModFileInfo;
@@ -47,17 +45,16 @@ public class ModFile implements IModFile {
 
     private final String id;
     private final String jarVersion;
-    private final ModFileInfoParser parser;
     private ModFileDiscoveryAttributes discoveryAttributes;
     private Map<String, Object> fileProperties;
     private List<IModLanguageLoader> loaders;
     private final SecureJar jar;
     private final Type modFileType;
-    private IModFileInfo modFileInfo;
+    private final IModFileInfo modFileInfo;
+    private final List<ModFileParser.MixinConfig> mixinConfigs;
+    private final List<String> accessTransformers;
     @Nullable
     private CompletableFuture<ModFileScanData> futureScanResult;
-    private List<ModFileParser.MixinConfig> mixinConfigs;
-    private List<String> accessTransformers;
 
     public static final Attributes.Name TYPE = new Attributes.Name("FMLModType");
 
@@ -67,16 +64,40 @@ public class ModFile implements IModFile {
 
     public ModFile(SecureJar jar, ModFileInfoParser parser, Type type, ModFileDiscoveryAttributes discoveryAttributes) {
         this.jar = Objects.requireNonNull(jar, "jar");
-        this.parser = Objects.requireNonNull(parser, "parser");
         this.discoveryAttributes = Objects.requireNonNull(discoveryAttributes, "discoveryAttributes");
 
         modFileType = Objects.requireNonNull(type, "type");
         jarVersion = Optional.ofNullable(getContents().getManifest().getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION)).orElse("0.0NONE");
-        this.modFileInfo = ModFileParser.readModList(this, this.parser);
+        this.modFileInfo = ModFileParser.readModList(this, Objects.requireNonNull(parser, "parser"));
         if (modFileInfo != null && !modFileInfo.getMods().isEmpty()) {
             this.id = modFileInfo.getMods().getFirst().getModId();
         } else {
             this.id = jar.name();
+        }
+
+        if (this.modFileInfo != null) {
+            LOGGER.debug(LogMarkers.LOADING, "Loading mod file {} with languages {}", this.getFilePath(), this.modFileInfo.requiredLanguageLoaders());
+            this.mixinConfigs = ModFileParser.getMixinConfigs(this.modFileInfo);
+            this.mixinConfigs.forEach(mc -> LOGGER.debug(LogMarkers.LOADING, "Found mixin config {}", mc));
+            this.accessTransformers = ModFileParser.getAccessTransformers(this.modFileInfo)
+                    .map(list -> list.stream().filter(path -> {
+                        if (!getContents().containsFile(path)) {
+                            LOGGER.error(LogMarkers.LOADING, "Access transformer file {} provided by mod {} does not exist!", path, id);
+                            return false;
+                        }
+                        return true;
+                    }))
+                    .orElseGet(() -> {
+                        if (getContents().containsFile(DEFAULT_ACCESS_TRANSFORMER)) {
+                            return Stream.of(DEFAULT_ACCESS_TRANSFORMER);
+                        } else {
+                            return Stream.empty();
+                        }
+                    })
+                    .toList();
+        } else {
+            this.mixinConfigs = List.of();
+            this.accessTransformers = List.of();
         }
     }
 
@@ -122,31 +143,6 @@ public class ModFile implements IModFile {
         return accessTransformers;
     }
 
-    public boolean identifyMods() {
-        this.modFileInfo = ModFileParser.readModList(this, this.parser);
-        if (this.modFileInfo == null) return this.getType() != Type.MOD;
-        LOGGER.debug(LogMarkers.LOADING, "Loading mod file {} with languages {}", this.getFilePath(), this.modFileInfo.requiredLanguageLoaders());
-        this.mixinConfigs = ModFileParser.getMixinConfigs(this.modFileInfo);
-        this.mixinConfigs.forEach(mc -> LOGGER.debug(LogMarkers.LOADING, "Found mixin config {}", mc));
-        this.accessTransformers = ModFileParser.getAccessTransformers(this.modFileInfo)
-                .map(list -> list.stream().filter(path -> {
-                    if (!getContents().containsFile(path)) {
-                        LOGGER.error(LogMarkers.LOADING, "Access transformer file {} provided by mod {} does not exist!", path, id);
-                        return false;
-                    }
-                    return true;
-                }))
-                .orElseGet(() -> {
-                    if (getContents().containsFile(DEFAULT_ACCESS_TRANSFORMER)) {
-                        return Stream.of(DEFAULT_ACCESS_TRANSFORMER);
-                    } else {
-                        return Stream.empty();
-                    }
-                })
-                .toList();
-        return true;
-    }
-
     public List<ModFileParser.MixinConfig> getMixinConfigs() {
         return mixinConfigs;
     }
@@ -188,27 +184,10 @@ public class ModFile implements IModFile {
     @Override
     public String toString() {
         if (discoveryAttributes.parent() != null) {
-            return discoveryAttributes.parent() + " > " + jar.getPrimaryPath().getFileName().toString();
+            return discoveryAttributes.parent() + " > " + jar;
         } else {
-            return relativizePath(this.jar.getPrimaryPath());
+            return this.jar.toString();
         }
-    }
-
-    private static String relativizePath(Path path) {
-        var gameDir = FMLPaths.GAMEDIR.get();
-
-        String resultPath;
-
-        if (gameDir != null && path.startsWith(gameDir)) {
-            resultPath = gameDir.relativize(path).toString();
-        } else if (Files.isDirectory(path)) {
-            resultPath = path.toAbsolutePath().toString();
-        } else {
-            resultPath = path.getFileName().toString();
-        }
-
-        // Unify separators to ensure it is easier to test
-        return resultPath.replace('\\', '/');
     }
 
     @Override
