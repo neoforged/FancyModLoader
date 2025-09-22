@@ -28,7 +28,6 @@ dependencyResolutionManagement {
 
 rootProject.name = 'FancyModLoader'
 
-include 'bootstraplauncher'
 include 'loader'
 include 'earlydisplay'
 include 'junit'

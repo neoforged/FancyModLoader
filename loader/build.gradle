@@ -44,7 +44,6 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-core:${log4j_version}")
     annotationProcessor("org.apache.logging.log4j:log4j-core:${log4j_version}")
 
-    testRuntimeOnly project(":bootstraplauncher")
     testRuntimeOnly("org.apache.logging.log4j:log4j-core:$log4j_version")
     testImplementation(project(":testlib"))
 
