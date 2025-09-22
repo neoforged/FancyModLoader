@@ -18,14 +18,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.modlauncher.Environment;
 import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformationServiceDecorator;
 import cpw.mods.modlauncher.TransformingClassLoader;
-import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ITransformer;
-import cpw.mods.modlauncher.api.TypesafeMap;
 import java.io.IOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
@@ -56,10 +53,8 @@ class TransformingClassLoaderTests {
         TransformationServiceDecorator sd = new TransformationServiceDecorator(mockTransformerService);
         sd.gatherTransformers(transformStore);
 
-        Environment environment = new Environment(null);
-        new TypesafeMap(IEnvironment.class);
         Configuration configuration = createTestJarsConfiguration();
-        TransformingClassLoader tcl = new TransformingClassLoader(transformStore, lph, environment, configuration, List.of(ModuleLayer.boot()));
+        TransformingClassLoader tcl = new TransformingClassLoader(transformStore, lph, configuration, List.of(ModuleLayer.boot()));
         ModuleLayer.boot().defineModules(configuration, s -> tcl);
 
         final Class<?> aClass = Class.forName(TARGET_CLASS, true, tcl);

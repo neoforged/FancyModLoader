@@ -15,7 +15,6 @@
 package cpw.mods.modlauncher;
 
 import cpw.mods.cl.ModuleClassLoader;
-import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ITransformerActivity;
 import java.lang.module.Configuration;
 import java.util.List;
@@ -31,16 +30,14 @@ public class TransformingClassLoader extends ModuleClassLoader {
     private final ClassTransformer classTransformer;
 
     @Deprecated(forRemoval = true)
-    public TransformingClassLoader(TransformStore transformStore, LaunchPluginHandler pluginHandler, final Environment environment, final Configuration configuration, List<ModuleLayer> parentLayers) {
-        this(transformStore, pluginHandler, environment, configuration, parentLayers, null);
+    public TransformingClassLoader(TransformStore transformStore, LaunchPluginHandler pluginHandler, final Configuration configuration, List<ModuleLayer> parentLayers) {
+        this(transformStore, pluginHandler, configuration, parentLayers, null);
     }
 
     @Deprecated(forRemoval = true)
-    public TransformingClassLoader(TransformStore transformStore, LaunchPluginHandler pluginHandler, final Environment environment, final Configuration configuration, List<ModuleLayer> parentLayers, ClassLoader parentClassLoader) {
+    public TransformingClassLoader(TransformStore transformStore, LaunchPluginHandler pluginHandler, final Configuration configuration, List<ModuleLayer> parentLayers, ClassLoader parentClassLoader) {
         super("TRANSFORMER", configuration, parentLayers, parentClassLoader);
-        TransformerAuditTrail tat = new TransformerAuditTrail();
-        environment.computePropertyIfAbsent(IEnvironment.Keys.AUDITTRAIL.get(), v -> tat);
-        this.classTransformer = new ClassTransformer(transformStore, pluginHandler, this, tat);
+        this.classTransformer = new ClassTransformer(transformStore, pluginHandler, this);
     }
 
     @VisibleForTesting

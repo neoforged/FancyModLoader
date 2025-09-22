@@ -17,7 +17,7 @@ import cpw.mods.jarhandling.impl.JarFileContents;
 import cpw.mods.modlauncher.ClassTransformer;
 import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.TransformingClassLoader;
-import cpw.mods.modlauncher.api.NamedPath;
+import cpw.mods.modlauncher.api.ITransformerAuditTrail;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -127,6 +127,10 @@ public final class FMLLoader implements AutoCloseable {
     @Nullable
     @VisibleForTesting
     volatile IBindingsProvider bindings;
+
+    public ITransformerAuditTrail getClassTransformerAuditLog() {
+        return getClassTransformer().getAuditLog();
+    }
 
     @VisibleForTesting
     record DiscoveryResult(
@@ -346,9 +350,6 @@ public final class FMLLoader implements AutoCloseable {
             // Mixin stubbornly loads Mixin Configs via its ModLauncher environment using the TCL.
             // Adding containers beforehand will try to load Mixin configs using the app classloader and fail.
             mixinFacade.finishInitialization(loader.loadingModList, transformingLoader);
-
-            // This will initialize Mixins, for example
-            launchPluginHandler.announceLaunch(transformingLoader, new NamedPath[0]);
 
             ImmediateWindowHandler.updateProgress("Launching minecraft");
             ImmediateWindowHandler.renderTick();

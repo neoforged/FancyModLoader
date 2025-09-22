@@ -12,14 +12,11 @@ import cpw.mods.modlauncher.ClassTransformer;
 import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformTargetLabel;
-import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
-import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
 import cpw.mods.modlauncher.api.TargetType;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.mixin.MixinFacade;
@@ -139,12 +136,6 @@ final class ClassTransformerFactory {
         public String name() {
             return owner;
         }
-
-        @Override
-        public void initialize(IEnvironment environment) {}
-
-        @Override
-        public void onLoad(IEnvironment env, Set<String> otherServices) throws IncompatibleEnvironmentException {}
 
         @Override
         public List<? extends ITransformer<?>> transformers() {
