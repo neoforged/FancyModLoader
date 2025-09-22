@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.neoforgespi.Environment;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforgespi.locating.ForgeFeature;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
@@ -80,7 +80,7 @@ public interface IModInfo {
         }
 
         public boolean isCorrectSide() {
-            return this == BOTH || Environment.get().getDist().equals(this.dist[0]);
+            return this == BOTH || FMLLoader.getCurrent().getDist().equals(this.dist[0]);
         }
     }
 

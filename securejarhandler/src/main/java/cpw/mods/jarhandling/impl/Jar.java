@@ -25,7 +25,11 @@ public class Jar implements SecureJar {
     }
 
     public ModuleDescriptor computeDescriptor() {
-        return metadata.descriptor();
+        try {
+            return metadata.descriptor();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to compute the module descriptor for " + contents, e);
+        }
     }
 
     @Override

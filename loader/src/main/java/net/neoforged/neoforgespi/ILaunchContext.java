@@ -5,11 +5,11 @@
 
 package net.neoforged.neoforgespi;
 
-import cpw.mods.modlauncher.api.IEnvironment;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.Stream;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.VersionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,18 +19,14 @@ import org.slf4j.LoggerFactory;
 public interface ILaunchContext {
     Logger LOGGER = LoggerFactory.getLogger(ILaunchContext.class);
 
+    Dist getRequiredDistribution();
+
     /**
-     * The Modlauncher environment.
+     * The game directory.
      */
-    IEnvironment environment();
+    Path gameDirectory();
 
     <T> Stream<ServiceLoader.Provider<T>> loadServices(Class<T> serviceClass);
-
-    List<String> modLists();
-
-    List<String> mods();
-
-    List<String> mavenRoots();
 
     /**
      * Checks if a given path was already found by a previous locator, or may be already loaded.
@@ -41,4 +37,6 @@ public interface ILaunchContext {
      * Marks a path as being located and returns true if it was not previously located.
      */
     boolean addLocated(Path path);
+
+    VersionInfo getVersions();
 }

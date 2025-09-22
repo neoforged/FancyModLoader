@@ -12,7 +12,11 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
 public class AccessTransformerService implements ILaunchPluginService {
-    public final AccessTransformerEngine engine = AccessTransformerEngine.newEngine();
+    private final AccessTransformerEngine engine;
+
+    public AccessTransformerService(AccessTransformerEngine engine) {
+        this.engine = engine;
+    }
 
     @Override
     public String name() {

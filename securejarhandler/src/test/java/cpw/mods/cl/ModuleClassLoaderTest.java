@@ -17,10 +17,10 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleReader;
-import java.net.JarURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.net.URLConnection;
 import java.net.spi.URLStreamHandlerProvider;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,7 +58,7 @@ class ModuleClassLoaderTest {
     @BeforeAll
     static void createTestJars() throws IOException {
         // Provides the interface and an implementation provided using META-INF/services/
-        firstLayerJar = new ModFileBuilder(tempDir.resolve("layer1.jar"))
+        firstLayerJar = ModFileBuilder.toJar(tempDir.resolve("layer1.jar"))
                 .addClass("layer1.DummyService", """
                         public interface DummyService {
                         }
@@ -78,7 +78,7 @@ class ModuleClassLoaderTest {
                 .addTextFile("layer1resources/dummy.txt", "from layer1")
                 .build();
         // Provides the interface and an implementation using META-INF/services/
-        secondLayerJar = new ModFileBuilder(tempDir.resolve("layer2.jar"))
+        secondLayerJar = ModFileBuilder.toJar(tempDir.resolve("layer2.jar"))
                 .addCompileClasspath(firstLayerJar)
                 .addTextFile("META-INF/dummy.txt", "from layer2")
                 .addClass("layer2.DummyServiceImpl", """
@@ -88,7 +88,7 @@ class ModuleClassLoaderTest {
                 .addService("layer1.DummyService", "layer2.DummyServiceImpl")
                 .build();
         // META-INF/services based provider jar on the same layer as the consumer
-        thirdLayerProviderAJar = new ModFileBuilder(tempDir.resolve("layer3_provider_a.jar"))
+        thirdLayerProviderAJar = ModFileBuilder.toJar(tempDir.resolve("layer3_provider_a.jar"))
                 .addCompileClasspath(firstLayerJar)
                 .addClass("layer3a.DummyServiceImpl", """
                         public class DummyServiceImpl implements layer1.DummyService {
@@ -110,7 +110,7 @@ class ModuleClassLoaderTest {
                 .build();
         // Module based provider jar on the same layer as the consumer
         // Consumer jar
-        thirdLayerProviderBJar = new ModFileBuilder(tempDir.resolve("layer3_provider_b.jar"))
+        thirdLayerProviderBJar = ModFileBuilder.toJar(tempDir.resolve("layer3_provider_b.jar"))
                 .addModulePath(firstLayerJar)
                 .addClass("layer3b.DummyServiceImpl", """
                         public class DummyServiceImpl implements layer1.DummyService {
@@ -137,7 +137,7 @@ class ModuleClassLoaderTest {
                 .addTextFile("layer3bresources/dummy.txt", "from layer3b")
                 .addTextFile("layer3bresourcesopen/dummy.txt", "from layer3b")
                 .build();
-        thirdLayerConsumerJar = new ModFileBuilder(tempDir.resolve("layer3.jar"))
+        thirdLayerConsumerJar = ModFileBuilder.toJar(tempDir.resolve("layer3.jar"))
                 .addCompileClasspath(firstLayerJar)
                 .withManifest(Map.of("Automatic-Module-Name", "layer3"))
                 .addClass("layer3.ServiceLoaderProxy", """
@@ -177,6 +177,9 @@ class ModuleClassLoaderTest {
                 // This is a packaged file that should show up in the module packages
                 .addTextFile("layer3resources/dummy.txt", "from layer3")
                 .build();
+
+        // Avoids being unable to delete the temp directory because of cached JarFiles held by JarURLConnection
+        URLConnection.setDefaultUseCaches("jar", false);
     }
 
     enum ConformanceScenario {
@@ -285,8 +288,6 @@ class ModuleClassLoaderTest {
             closeLayer(layer1);
             closeLayer(layer2);
             closeLayer(layer3);
-
-            clearJarUrlHandlerCache();
         }
 
         private void closeLayer(ModuleLayer layer) throws Exception {
@@ -706,7 +707,7 @@ class ModuleClassLoaderTest {
 
             @Test
             public void testPackageInfoAvailability() throws Exception {
-                var testJar = new ModFileBuilder(tempDir.resolve("packagetest.jar"))
+                var testJar = ModFileBuilder.toJar(tempDir.resolve("packagetest.jar"))
                         .addClass("testpkg.package-info", """
                                 @TestAnnotation
                                 package testpkg;
@@ -781,7 +782,7 @@ class ModuleClassLoaderTest {
         public void testClassPathServiceDoesNotLeak() throws Exception {
             // Create a provider that would be accessible from the normal classpath
             var parentJar = tempDir.resolve("cpprovider");
-            new ModFileBuilder(parentJar)
+            ModFileBuilder.toJar(parentJar)
                     .addClass("DummyURLStreamHandlerProvider", """
                             import java.net.URLStreamHandler;
                             import java.net.spi.URLStreamHandlerProvider;
@@ -809,7 +810,7 @@ class ModuleClassLoaderTest {
                 // Now build a consumer jar in an isolated layer and try to load the same service
                 // It should NOT be able to load the DummyURLStreamHandlerProvider as that is only
                 // on the classpath, and ModuleClassLoader should not delegate to the classpath
-                var consumerJar = new ModFileBuilder(tempDir.resolve("consumer.jar"))
+                var consumerJar = ModFileBuilder.toJar(tempDir.resolve("consumer.jar"))
                         .addClass("consumer.ServiceLoaderProxy", """
                                 import java.util.List;
                                 import java.util.ServiceLoader;
@@ -838,16 +839,6 @@ class ModuleClassLoaderTest {
             } finally {
                 Thread.currentThread().setContextClassLoader(previousCl);
             }
-        }
-    }
-
-    private static void clearJarUrlHandlerCache() throws Exception {
-        // Annoyingly, any use of a Jar file via jar: URIs tends to create stale cache entries
-        // in sun.net.www.protocol.jar.JarFileFactory.fileCache
-        // However, we can get such a cached connection and close it explicitly, which then cleans it up from the cache
-        for (var jarPath : List.of(firstLayerJar, secondLayerJar, thirdLayerProviderAJar, thirdLayerProviderBJar, thirdLayerConsumerJar)) {
-            URL url = new URL("jar:" + jarPath.toUri() + "!/");
-            ((JarURLConnection) url.openConnection()).getJarFile().close();
         }
     }
 }

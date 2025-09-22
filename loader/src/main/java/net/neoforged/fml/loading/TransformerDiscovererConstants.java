@@ -7,7 +7,6 @@ package net.neoforged.fml.loading;
 
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.modlauncher.api.IModuleLayerManager.Layer;
-import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.serviceapi.ITransformerDiscoveryService;
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -39,7 +38,6 @@ public final class TransformerDiscovererConstants {
      * {@link Layer#SERVICE} module layer.
      */
     public static final Set<String> SERVICES = Set.of(
-            ITransformationService.class.getName(),
             IModFileCandidateLocator.class.getName(),
             IModFileReader.class.getName(),
             IDependencyLocator.class.getName(),

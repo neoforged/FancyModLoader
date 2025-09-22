@@ -6,7 +6,10 @@
 package net.neoforged.fml.loading.mixin;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -15,6 +18,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import net.neoforged.fml.loading.FMLLoader;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.spongepowered.asm.launch.platform.container.ContainerHandleVirtual;
 import org.spongepowered.asm.launch.platform.container.IContainerHandle;
 import org.spongepowered.asm.logging.ILogger;
@@ -59,6 +63,10 @@ public class FMLMixinService implements IMixinService {
     @Nullable
     private IMixinTransformer mixinTransformer;
 
+    private final ContainerHandleVirtual primaryContainer = new ContainerHandleVirtual("fml");
+
+    private final List<IContainerHandle> mixinContainers = new ArrayList<>();
+
     @Override
     public void prepare() {}
 
@@ -83,13 +91,13 @@ public class FMLMixinService implements IMixinService {
 
     @Override
     public String getSideName() {
-        return switch (FMLLoader.getDist()) {
+        return switch (FMLLoader.getCurrent().getDist()) {
             case CLIENT -> Constants.SIDE_CLIENT;
             case DEDICATED_SERVER -> Constants.SIDE_SERVER;
         };
     }
 
-    public void setBytecodeProvider(IClassBytecodeProvider bytecodeProvider) {
+    public void setBytecodeProvider(@Nullable IClassBytecodeProvider bytecodeProvider) {
         this.bytecodeProvider = bytecodeProvider;
     }
 
@@ -173,8 +181,6 @@ public class FMLMixinService implements IMixinService {
         return List.of("org.spongepowered.asm.launch.platform.MixinPlatformAgentDefault");
     }
 
-    private final IContainerHandle primaryContainer = new ContainerHandleVirtual("fml");
-
     @Override
     public IContainerHandle getPrimaryContainer() {
         return primaryContainer;
@@ -182,22 +188,36 @@ public class FMLMixinService implements IMixinService {
 
     @Override
     public Collection<IContainerHandle> getMixinContainers() {
-        return List.of();
+        return mixinContainers;
     }
 
     @Override
     public InputStream getResourceAsStream(String name) {
+        // Mixin doesn't close this stream, so we use something that doesn't hold OS resources.
         var content = mixinConfigContents.get(name);
-        if (content != null) {
-            // Mixin doesn't close this stream, so we use something that doesn't hold
-            // OS resources.
-            return new ByteArrayInputStream(content);
+        if (content == null) {
+            try (var stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(name)) {
+                if (stream != null) {
+                    content = stream.readAllBytes();
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
 
-        return Thread.currentThread().getContextClassLoader().getResourceAsStream(name);
+        return content != null ? new ByteArrayInputStream(content) : null;
     }
 
     public void addMixinConfigContent(String config, byte[] resource) {
         mixinConfigContents.put(config, resource);
+    }
+
+    public void addMixinContainer(IContainerHandle handle) {
+        this.mixinContainers.add(handle);
+    }
+
+    @VisibleForTesting
+    public void clearMixinContainers() {
+        mixinContainers.clear();
     }
 }

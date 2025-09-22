@@ -37,11 +37,12 @@ import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.fml.loading.toposort.CyclePresentException;
 import net.neoforged.fml.loading.toposort.TopologicalSort;
 import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.slf4j.Logger;
 
-public class ModSorter {
+class ModSorter {
     private static final Logger LOGGER = LogUtils.getLogger();
     private final UniqueModListBuilder uniqueModListBuilder;
     private List<ModFile> modFiles;
@@ -52,6 +53,22 @@ public class ModSorter {
 
     private ModSorter(final List<ModFile> modFiles) {
         this.uniqueModListBuilder = new UniqueModListBuilder(modFiles);
+    }
+
+    public static LoadingModList sort(List<ModFile> modFiles, List<ModLoadingIssue> issues) {
+        var gameContent = new ArrayList<ModFile>(modFiles.size());
+        var gameLibraryContent = new ArrayList<ModFile>(modFiles.size());
+        var pluginContent = new ArrayList<ModFile>(modFiles.size());
+        for (var modFile : modFiles) {
+            if (modFile.getType() == IModFile.Type.LIBRARY) {
+                pluginContent.add(modFile);
+            } else if (modFile.getType() == IModFile.Type.GAMELIBRARY) {
+                gameLibraryContent.add(modFile);
+            } else {
+                gameContent.add(modFile);
+            }
+        }
+        return sort(pluginContent, gameLibraryContent, gameContent, issues);
     }
 
     public static LoadingModList sort(List<ModFile> plugins, List<ModFile> gameLibraries, List<ModFile> mods, final List<ModLoadingIssue> issues) {
@@ -359,7 +376,9 @@ public class ModSorter {
     }
 
     private boolean modVersionNotContained(IModInfo.ModVersion mv, Map<String, ArtifactVersion> modVersions) {
-        return !(VersionSupportMatrix.testVersionSupportMatrix(mv.getVersionRange(), mv.getModId(), "mod", (modId, range) -> {
+        var versionSupportMatrix = FMLLoader.getCurrent().getVersionSupportMatrix();
+
+        return !(versionSupportMatrix.testVersionSupportMatrix(mv.getVersionRange(), mv.getModId(), "mod", (modId, range) -> {
             return modVersions.containsKey(modId) &&
                     (range.containsVersion(modVersions.get(modId)) || modVersions.get(modId).toString().equals("0.0NONE"));
         }));

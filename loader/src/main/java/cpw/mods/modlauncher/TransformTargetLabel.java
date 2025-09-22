@@ -48,7 +48,7 @@ public final class TransformTargetLabel {
         this(className, fieldName, "", FIELD);
     }
 
-    TransformTargetLabel(String className, String methodName, String methodDesc) {
+    public TransformTargetLabel(String className, String methodName, String methodDesc) {
         this(className, methodName, methodDesc, METHOD);
     }
 

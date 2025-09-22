@@ -59,7 +59,7 @@ public class ClassTransformer {
     private final Marker CLASSDUMP = MarkerManager.getMarker("CLASSDUMP");
     private final TransformStore transformers;
     private final LaunchPluginHandler pluginHandler;
-    private final TransformingClassLoader transformingClassLoader;
+    private TransformingClassLoader transformingClassLoader;
     private final TransformerAuditTrail auditTrail;
 
     public ClassTransformer(TransformStore transformStore, LaunchPluginHandler pluginHandler, final TransformingClassLoader transformingClassLoader) {
@@ -225,5 +225,14 @@ public class ClassTransformer {
 
     TransformingClassLoader getTransformingClassLoader() {
         return transformingClassLoader;
+    }
+
+    @Deprecated(forRemoval = true)
+    void setTransformingClassLoader(TransformingClassLoader transformingClassLoader) {
+        this.transformingClassLoader = transformingClassLoader;
+    }
+
+    public List<ITransformer<?>> getTransformers() {
+        return List.copyOf(transformers.getTransformers());
     }
 }

@@ -31,6 +31,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import net.neoforged.fml.earlydisplay.render.elements.ImageElement;
 import net.neoforged.fml.earlydisplay.render.elements.LabelElement;
 import net.neoforged.fml.earlydisplay.render.elements.MojangLogoElement;
@@ -59,8 +60,6 @@ public class LoadingScreenRenderer implements AutoCloseable {
 
     private final long glfwWindow;
     private final MaterializedTheme theme;
-    private final String mcVersion;
-    private final String neoForgeVersion;
 
     private static final long MINFRAMETIME = TimeUnit.MILLISECONDS.toNanos(10); // This is the FPS cap on the window - note animation is capped at 20FPS via the tickTimer
 
@@ -78,6 +77,9 @@ public class LoadingScreenRenderer implements AutoCloseable {
 
     private final SimpleBufferBuilder buffer = new SimpleBufferBuilder("shared", 8192);
 
+    private final Supplier<String> minecraftVersion;
+    private final Supplier<String> neoForgeVersion;
+
     /**
      * Render initialization methods called by the Render Thread.
      * It compiles the fragment and vertex shaders for rendering text with STB, and sets up basic render framework.
@@ -88,10 +90,10 @@ public class LoadingScreenRenderer implements AutoCloseable {
             long glfwWindow,
             Theme theme,
             @Nullable Path externalThemeDirectory,
-            String mcVersion,
-            String neoForgeVersion) {
+            Supplier<String> minecraftVersion,
+            Supplier<String> neoForgeVersion) {
         this.glfwWindow = glfwWindow;
-        this.mcVersion = mcVersion;
+        this.minecraftVersion = minecraftVersion;
         this.neoForgeVersion = neoForgeVersion;
 
         // This thread owns the GL render context now. We should make a note of that.
@@ -159,13 +161,29 @@ public class LoadingScreenRenderer implements AutoCloseable {
             case ThemeLabelElement labelElement -> new LabelElement(
                     labelElement,
                     theme,
-                    Map.of(
-                            "version", mcVersion + "-" + neoForgeVersion.split("-")[0]));
+                    () -> Map.of(
+                            "version", getVersionString()));
 
             default -> throw new IllegalStateException("Unexpected theme element " + element + " of type " + element.getClass());
         };
         renderElement.setId(id);
         return renderElement;
+    }
+
+    private String getVersionString() {
+        var result = new StringBuilder();
+        var minecraftVersion = this.minecraftVersion.get();
+        if (minecraftVersion != null) {
+            result.append(minecraftVersion);
+        }
+        var neoForgeVersion = this.neoForgeVersion.get();
+        if (neoForgeVersion != null) {
+            if (!result.isEmpty()) {
+                result.append("-");
+            }
+            result.append(neoForgeVersion.split("-")[0]);
+        }
+        return result.toString();
     }
 
     public void stopAutomaticRendering() throws TimeoutException, InterruptedException {
