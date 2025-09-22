@@ -10,15 +10,13 @@ import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.jarhandling.JarContents;
 import cpw.mods.jarhandling.JarResource;
 import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.jarhandling.VirtualJar;
 import cpw.mods.jarhandling.impl.CompositeJarContents;
 import cpw.mods.jarhandling.impl.EmptyJarContents;
 import cpw.mods.jarhandling.impl.FolderJarContents;
 import cpw.mods.jarhandling.impl.JarFileContents;
 import cpw.mods.modlauncher.ClassTransformer;
-import cpw.mods.modlauncher.LaunchPluginHandler;
 import cpw.mods.modlauncher.TransformingClassLoader;
-import cpw.mods.modlauncher.api.NamedPath;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -71,7 +69,6 @@ import net.neoforged.fml.loading.moddiscovery.locators.ModsFolderLocator;
 import net.neoforged.fml.loading.moddiscovery.locators.NeoForgeDevDistCleaner;
 import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
-import net.neoforged.fml.startup.FatalStartupException;
 import net.neoforged.fml.startup.InstrumentationHelper;
 import net.neoforged.fml.startup.StartupArgs;
 import net.neoforged.fml.util.ClasspathResourceUtils;
@@ -82,6 +79,8 @@ import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -307,10 +306,6 @@ public final class FMLLoader implements AutoCloseable {
             var mixinFacade = new MixinFacade();
             loader.ownedResources.add(mixinFacade);
 
-            var launchPlugins = createLaunchPlugins(startupArgs, launchContext, discoveryResult, mixinFacade);
-
-            var launchPluginHandler = new LaunchPluginHandler(launchPlugins.values().stream());
-
             // Load Plugins
             loader.loadPlugins(loader.loadingModList.getPlugins());
 
@@ -329,12 +324,12 @@ public final class FMLLoader implements AutoCloseable {
             for (var modFile : discoveryResult.gameContent) {
                 gameContent.add(modFile.getSecureJar());
             }
-            // Add generated code container for Mixin
-            // TODO: This needs a new API for plugins to contribute synthetic modules, *OR* it should go into the mod-file discovery!
-            gameContent.add(mixinFacade.createGeneratedCodeContainer());
-            launchPluginHandler.offerScanResultsToPlugins(gameContent);
 
-            loader.classTransformer = ClassTransformerFactory.create(launchContext, launchPluginHandler);
+            var classProcessors = locateClassProcessors(startupArgs, launchContext, discoveryResult, mixinFacade);
+            loader.classTransformer = ClassTransformerFactory.create(launchContext, classProcessors);
+            gameContent.add(new VirtualJar(
+                    ClassProcessor.GENERATED_PACKAGE_MODULE,
+                    loader.classTransformer.generatedPackages().toArray(String[]::new)));
             var transformingLoader = loader.buildTransformingLoader(loader.classTransformer, gameContent);
 
             // From here on out, try loading through the TCL
@@ -346,9 +341,6 @@ public final class FMLLoader implements AutoCloseable {
             // Mixin stubbornly loads Mixin Configs via its ModLauncher environment using the TCL.
             // Adding containers beforehand will try to load Mixin configs using the app classloader and fail.
             mixinFacade.finishInitialization(loader.loadingModList, transformingLoader);
-
-            // This will initialize Mixins, for example
-            launchPluginHandler.announceLaunch(transformingLoader, new NamedPath[0]);
 
             ImmediateWindowHandler.updateProgress("Launching minecraft");
             ImmediateWindowHandler.renderTick();
@@ -364,14 +356,14 @@ public final class FMLLoader implements AutoCloseable {
         }
     }
 
-    private static Map<String, ILaunchPluginService> createLaunchPlugins(StartupArgs startupArgs,
+    private static List<ClassProcessor> locateClassProcessors(StartupArgs startupArgs,
             LaunchContextAdapter launchContext,
             DiscoveryResult discoveryResult,
             MixinFacade mixinFacade) {
         // Add our own launch plugins explicitly.
-        var builtInPlugins = new ArrayList<ILaunchPluginService>();
-        builtInPlugins.add(createAccessTransformerService(discoveryResult));
-        builtInPlugins.add(new RuntimeEnumExtender());
+        var builtInProcessors = new ArrayList<ClassProcessor>();
+        builtInProcessors.add(createAccessTransformerService(discoveryResult));
+        builtInProcessors.add(new RuntimeEnumExtender());
 
         if (startupArgs.cleanDist()) {
             var minecraftModFile = discoveryResult.gameContent().stream()
@@ -380,33 +372,23 @@ public final class FMLLoader implements AutoCloseable {
                     .map(ModFile::getContents)
                     .orElse(null);
             if (minecraftModFile != null && NeoForgeDevDistCleaner.supportsDistCleaning(minecraftModFile)) {
-                builtInPlugins.add(new NeoForgeDevDistCleaner(minecraftModFile, startupArgs.dist()));
+                builtInProcessors.add(new NeoForgeDevDistCleaner(minecraftModFile, startupArgs.dist()));
             }
         }
 
-        builtInPlugins.add(mixinFacade.getLaunchPlugin());
+        builtInProcessors.add(mixinFacade.getClassProcessor());
 
-        // Discover third party launch plugins
-        var result = new HashMap<String, ILaunchPluginService>();
-        for (var launchPlugin : ServiceLoaderUtil.loadServices(
-                launchContext,
-                ILaunchPluginService.class,
-                builtInPlugins,
-                FMLLoader::isValidLaunchPlugin)) {
-            LOGGER.debug("Adding launch plugin {}", launchPlugin.name());
-            var previous = result.put(launchPlugin.name(), launchPlugin);
-            if (previous != null) {
-                var source1 = ServiceLoaderUtil.identifySourcePath(launchContext, launchPlugin);
-                var source2 = ServiceLoaderUtil.identifySourcePath(launchContext, previous);
-
-                throw new FatalStartupException("Multiple launch plugin services of the same name '"
-                        + previous.name() + "' are present: " + source1 + " and " + source2);
-            }
+        // Discover third party transformation services
+        var classProcessorProviders = ServiceLoaderUtil.loadServices(launchContext, ClassProcessorProvider.class);
+        var classProcessors = new ArrayList<>(ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class, builtInProcessors));
+        for (var provider : classProcessorProviders) {
+            classProcessors.addAll(provider.makeTransformers(launchContext));
         }
-        return result;
+
+        return classProcessors;
     }
 
-    private static ILaunchPluginService createAccessTransformerService(DiscoveryResult discoveryResult) {
+    private static ClassProcessor createAccessTransformerService(DiscoveryResult discoveryResult) {
         var engine = AccessTransformerEngine.newEngine();
         for (var modFile : discoveryResult.gameContent()) {
             for (var atPath : modFile.getAccessTransformers()) {
@@ -442,6 +424,7 @@ public final class FMLLoader implements AutoCloseable {
 
         var moduleNames = getModuleNameList(cf, content);
         LOGGER.info("Building game content classloader:\n{}", moduleNames);
+        // TODO: alternative to null environment?
         var loader = new TransformingClassLoader(classTransformer, cf, parentLayers, currentClassLoader);
 
         var layer = ModuleLayer.defineModules(
@@ -601,16 +584,6 @@ public final class FMLLoader implements AutoCloseable {
         ownedResources.add(loader);
         currentClassLoader = loader;
         Thread.currentThread().setContextClassLoader(loader);
-    }
-
-    private static <T extends ILaunchPluginService> boolean isValidLaunchPlugin(Class<T> serviceClass) {
-        // Blacklist any plugins we add ourselves
-        if (serviceClass == AccessTransformerService.class) {
-            return false;
-        }
-
-        // Blacklist all Mixin services, since we implement all of them ourselves
-        return !MixinFacade.isMixinServiceClass(serviceClass);
     }
 
     private DiscoveryResult runDiscovery() {

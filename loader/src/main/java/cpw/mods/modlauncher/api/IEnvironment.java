@@ -20,8 +20,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import net.neoforged.neoforgespi.transformation.ClassProcessor;
-import net.neoforged.neoforgespi.transformation.ProcessorName;
 
 /**
  * System environment. Global properties relevant to the current environment and lookups to find global artifacts
@@ -46,14 +44,6 @@ public interface IEnvironment {
      * @return The value of the key
      */
     <T> T computePropertyIfAbsent(TypesafeMap.Key<T> key, final Function<? super TypesafeMap.Key<T>, ? extends T> valueFunction);
-
-    /**
-     * Find the named {@link ClassProcessor}
-     *
-     * @param name name to lookup
-     * @return the launch plugin
-     */
-    Optional<ClassProcessor> findClassProcessor(ProcessorName name);
 
     /**
      * Find the named {@link ILaunchHandlerService}

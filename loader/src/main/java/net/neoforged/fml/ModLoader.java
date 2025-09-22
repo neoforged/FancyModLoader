@@ -8,7 +8,6 @@ package net.neoforged.fml;
 import static net.neoforged.fml.Logging.CORE;
 import static net.neoforged.fml.Logging.LOADING;
 
-import cpw.mods.modlauncher.ClassTransformStatistics;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;

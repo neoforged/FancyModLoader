@@ -20,12 +20,11 @@ import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.TypesafeMap;
 import java.util.Optional;
 import java.util.function.Function;
-import net.neoforged.neoforgespi.transformation.ClassProcessor;
-import net.neoforged.neoforgespi.transformation.ProcessorName;
 
 /**
  * Environment implementation class
  */
+@Deprecated(forRemoval = true)
 public final class Environment implements IEnvironment {
     private final TypesafeMap environment;
     private final Launcher launcher;
@@ -41,18 +40,13 @@ public final class Environment implements IEnvironment {
     }
 
     @Override
-    public Optional<ClassProcessor> findClassProcessor(final ProcessorName name) {
-        return launcher.findClassProcessor(name);
-    }
-
-    @Override
     public Optional<ILaunchHandlerService> findLaunchHandler(final String name) {
-        return launcher.findLaunchHandler(name);
+        return Optional.empty();
     }
 
     @Override
     public Optional<IModuleLayerManager> findModuleLayerManager() {
-        return launcher.findLayerManager();
+        return Optional.empty();
     }
 
     @Override

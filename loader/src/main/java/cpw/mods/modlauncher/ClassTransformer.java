@@ -16,12 +16,13 @@ package cpw.mods.modlauncher;
 
 import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 
-import cpw.mods.modlauncher.api.IEnvironment;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
@@ -46,21 +47,18 @@ public class ClassTransformer {
     private static final Logger LOGGER = LogManager.getLogger();
     private final Marker CLASSDUMP = MarkerManager.getMarker("CLASSDUMP");
     private final TransformStore transformers;
-    private final TransformingClassLoader transformingClassLoader;
     private final TransformerAuditTrail auditTrail;
 
-    public ClassTransformer(final TransformStore transformStore, final TransformingClassLoader transformingClassLoader, IEnvironment environment) {
-        this(transformStore, transformingClassLoader, new TransformerAuditTrail(), environment);
-    }
-
-    public ClassTransformer(final TransformStore transformStore, final TransformingClassLoader transformingClassLoader, final TransformerAuditTrail auditTrail, IEnvironment environment) {
+    public ClassTransformer(final TransformStore transformStore, final TransformerAuditTrail auditTrail) {
         this.transformers = transformStore;
-        this.transformingClassLoader = transformingClassLoader;
-        this.transformers.initializeBytecodeProvider(name -> className -> transformingClassLoader.buildTransformedClassNodeFor(className, name), environment);
         this.auditTrail = auditTrail;
     }
 
-    public byte[] transform(byte[] inputClass, String className, final ProcessorName upToTransformer) {
+    public void initializeBytecodeProvider(Function<ProcessorName, ClassProcessor.BytecodeProvider> function) {
+        this.transformers.initializeBytecodeProvider(function);
+    }
+
+    public byte[] transform(byte[] inputClass, String className, final ProcessorName upToTransformer, ClassHierarchyRecomputationContext locator) {
         final String internalName = className.replace('.', '/');
         final Type classDesc = Type.getObjectType(internalName);
 
@@ -129,7 +127,7 @@ public class ClassTransformer {
             return inputClass; // No changes were made, return the original class
         }
 
-        final ClassWriter cw = TransformerClassWriter.createClassWriter(flags, this, clazz);
+        final ClassWriter cw = TransformerClassWriter.createClassWriter(flags, clazz, locator);
         clazz.accept(cw);
         // if upToTransformer is null, we are doing this for classloading purposes
         if (LOGGER.isEnabled(Level.TRACE) && upToTransformer == null && LOGGER.isEnabled(Level.TRACE, CLASSDUMP)) {
@@ -170,7 +168,7 @@ public class ClassTransformer {
         }
     }
 
-    TransformingClassLoader getTransformingClassLoader() {
-        return transformingClassLoader;
+    public Set<String> generatedPackages() {
+        return transformers.generatedPackages();
     }
 }

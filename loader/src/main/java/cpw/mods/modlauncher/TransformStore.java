@@ -16,7 +16,6 @@ package cpw.mods.modlauncher;
 
 import com.google.common.graph.GraphBuilder;
 import com.mojang.logging.LogUtils;
-import cpw.mods.modlauncher.api.IEnvironment;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -28,10 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import net.neoforged.fml.loading.toposort.TopologicalSort;
-import net.neoforged.fml.util.ServiceLoaderUtil;
-import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
-import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -52,29 +48,8 @@ public class TransformStore {
     }
 
     @VisibleForTesting
-    public TransformStore(ILaunchContext launchContext, List<ClassProcessorProvider> transformerProviders, List<ClassProcessor> existingTransformers) {
-        this.sortedTransformers = sortTransformers(launchContext, transformerProviders, existingTransformers);
-    }
-
-    @VisibleForTesting
-    public TransformStore(ILaunchContext launchContext) {
-        this.sortedTransformers = sortTransformers(
-                launchContext,
-                ServiceLoaderUtil.loadServices(launchContext, ClassProcessorProvider.class),
-                ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class));
-    }
-
-    @VisibleForTesting
     public List<ClassProcessor> getSortedTransformers() {
         return sortedTransformers;
-    }
-
-    private List<ClassProcessor> sortTransformers(ILaunchContext launchContext, List<ClassProcessorProvider> transformerProviders, List<ClassProcessor> existingTransformers) {
-        var allTransformers = new ArrayList<>(existingTransformers);
-        for (ClassProcessorProvider provider : transformerProviders) {
-            allTransformers.addAll(provider.makeTransformers(launchContext));
-        }
-        return sortTransformers(allTransformers);
     }
 
     @SuppressWarnings("UnstableApiUsage")
@@ -143,9 +118,9 @@ public class TransformStore {
         return TopologicalSort.topologicalSort(graph, Comparator.comparing(ClassProcessor::name));
     }
 
-    public void initializeBytecodeProvider(Function<ProcessorName, ClassProcessor.BytecodeProvider> function, IEnvironment environment) {
+    public void initializeBytecodeProvider(Function<ProcessorName, ClassProcessor.BytecodeProvider> function) {
         for (var transformer : sortedTransformers) {
-            transformer.initializeBytecodeProvider(function.apply(transformer.name()), environment);
+            transformer.initializeBytecodeProvider(new ClassProcessor.InitializationContext(function.apply(transformer.name()), this::findClassProcessor));
         }
     }
 

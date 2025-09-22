@@ -5,7 +5,7 @@
 
 package net.neoforged.neoforgespi.transformation;
 
-import cpw.mods.modlauncher.api.IEnvironment;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.jetbrains.annotations.ApiStatus;
@@ -97,6 +97,21 @@ public interface ClassProcessor {
     record SelectionContext(Type type, boolean empty) {
         @ApiStatus.Internal
         public SelectionContext {}
+    }
+
+    interface ClassProcessorLocator {
+        Optional<ClassProcessor> find(ProcessorName name);
+    }
+
+    /**
+     * Context available when initializing a processor with a bytecode provider
+     * 
+     * @param bytecodeProvider allows querying class bytes' states before this processor
+     * @param locator          allows locating other class processors
+     */
+    record InitializationContext(BytecodeProvider bytecodeProvider, ClassProcessorLocator locator) {
+        @ApiStatus.Internal
+        public InitializationContext {}
     }
 
     /**
@@ -196,10 +211,9 @@ public interface ClassProcessor {
      * Capture a provider which can be used to view the state of any class, including those not transformed, after all
      * transformations before this one.
      *
-     * @param bytecodeProvider allows querying class bytes
-     * @param environment      the current launch environment
+     * @param context the context for initialization
      */
-    default void initializeBytecodeProvider(BytecodeProvider bytecodeProvider, IEnvironment environment) {}
+    default void initializeBytecodeProvider(InitializationContext context) {}
 
     interface BytecodeProvider {
         byte[] acquireTransformedClassBefore(final String className) throws ClassNotFoundException;

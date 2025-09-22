@@ -17,11 +17,11 @@ import org.spongepowered.asm.service.IClassBytecodeProvider;
 import org.spongepowered.asm.transformers.MixinClassReader;
 
 class FMLClassBytecodeProvider implements IClassBytecodeProvider {
-    private final ClassProcessor.BytecodeProvider transformerLoader;
+    private final ClassProcessor.BytecodeProvider bytecodeProvider;
     private final FMLMixinClassProcessor classProcessor;
 
-    FMLClassBytecodeProvider(ClassProcessor.BytecodeProvider transformerLoader, FMLMixinClassProcessor classProcessor) {
-        this.transformerLoader = transformerLoader;
+    FMLClassBytecodeProvider(ClassProcessor.BytecodeProvider bytecodeProvider, FMLMixinClassProcessor classProcessor) {
+        this.bytecodeProvider = bytecodeProvider;
         this.classProcessor = classProcessor;
     }
 
@@ -47,7 +47,7 @@ class FMLClassBytecodeProvider implements IClassBytecodeProvider {
         byte[] classBytes;
 
         try {
-            classBytes = transformerLoader.acquireTransformedClassBefore(canonicalName);
+            classBytes = bytecodeProvider.acquireTransformedClassBefore(canonicalName);
         } catch (ClassNotFoundException ex) {
             URL url = Thread.currentThread().getContextClassLoader().getResource(internalName + ".class");
             if (url == null) {

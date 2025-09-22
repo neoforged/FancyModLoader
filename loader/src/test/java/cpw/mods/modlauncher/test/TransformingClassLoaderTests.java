@@ -46,7 +46,7 @@ class TransformingClassLoaderTests {
         Environment environment = new Environment(null);
         new TypesafeMap(IEnvironment.class);
         Configuration configuration = createTestJarsConfiguration();
-        TransformingClassLoader tcl = new TransformingClassLoader(transformStore, environment, configuration, List.of(ModuleLayer.boot()));
+        TransformingClassLoader tcl = new TransformingClassLoader(transformStore, configuration, List.of(ModuleLayer.boot()));
         ModuleLayer.boot().defineModules(configuration, s -> tcl);
 
         final Class<?> aClass = Class.forName(TARGET_CLASS, true, tcl);

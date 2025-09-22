@@ -5,8 +5,6 @@
 
 package net.neoforged.fml.loading.mixin;
 
-import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.jarhandling.VirtualJar;
 import cpw.mods.modlauncher.TransformingClassLoader;
 import java.io.IOException;
 import java.lang.module.ModuleDescriptor;
@@ -31,7 +29,6 @@ import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.FabricUtil;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.Mixins;
-import org.spongepowered.asm.mixin.injection.invoke.arg.ArgsClassGenerator;
 import org.spongepowered.asm.mixin.transformer.Config;
 import org.spongepowered.asm.service.MixinService;
 
@@ -41,7 +38,7 @@ import org.spongepowered.asm.service.MixinService;
 public final class MixinFacade implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(MixinFacade.class);
 
-    private final FMLMixinLaunchPlugin launchPlugin;
+    private final FMLMixinClassProcessor classProcessor;
     private final FMLMixinService service;
 
     public MixinFacade() {
@@ -55,11 +52,11 @@ public final class MixinFacade implements AutoCloseable {
         MixinBootstrap.init();
 
         service = (FMLMixinService) MixinService.getService();
-        this.launchPlugin = new FMLMixinLaunchPlugin(service);
+        this.classProcessor = new FMLMixinClassProcessor(service);
     }
 
-    public FMLMixinLaunchPlugin getLaunchPlugin() {
-        return launchPlugin;
+    public FMLMixinClassProcessor getClassProcessor() {
+        return classProcessor;
     }
 
     public void finishInitialization(LoadingModList loadingModList, TransformingClassLoader classLoader) {
@@ -72,7 +69,6 @@ public final class MixinFacade implements AutoCloseable {
         gotoPhase(MixinEnvironment.Phase.INIT);
         gotoPhase(MixinEnvironment.Phase.DEFAULT);
 
-        service.setBytecodeProvider(new FMLClassBytecodeProvider(classLoader, this.launchPlugin));
         MixinBootstrap.init();
         MixinBootstrap.getPlatform().inject();
     }
@@ -238,16 +234,6 @@ public final class MixinFacade implements AutoCloseable {
         return behaviorVersion.getMajorVersion() * (1000 * 1000) +
                 behaviorVersion.getMinorVersion() * 1000 +
                 behaviorVersion.getIncrementalVersion();
-    }
-
-    public SecureJar createGeneratedCodeContainer() {
-        return new VirtualJar("mixin_synthetic", ArgsClassGenerator.SYNTHETIC_PACKAGE);
-    }
-
-    public static boolean isMixinServiceClass(Class<?> serviceClass) {
-        // Blacklist all Mixin services, since we implement all of them ourselves
-        var packageName = serviceClass.getPackageName();
-        return packageName.equals("org.spongepowered.asm.launch") || packageName.startsWith("org.spongepowered.asm.launch.");
     }
 
     @Override

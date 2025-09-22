@@ -15,9 +15,9 @@
 package cpw.mods.modlauncher;
 
 import cpw.mods.cl.ModuleClassLoader;
-import cpw.mods.modlauncher.api.IEnvironment;
 import java.lang.module.Configuration;
 import java.util.List;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -32,25 +32,34 @@ public class TransformingClassLoader extends ModuleClassLoader {
     private final ClassTransformer classTransformer;
 
     @VisibleForTesting
-    public TransformingClassLoader(TransformStore transformStore, final IEnvironment environment, final Configuration configuration, List<ModuleLayer> parentLayers) {
-        this(transformStore, environment, configuration, parentLayers, null);
-    }
-
-    @VisibleForTesting
-    public TransformingClassLoader(TransformStore transformStore, final IEnvironment environment, final Configuration configuration, List<ModuleLayer> parentLayers, ClassLoader parentClassLoader) {
+    public TransformingClassLoader(ClassTransformer classTransformer, final Configuration configuration, List<ModuleLayer> parentLayers, ClassLoader parentClassLoader) {
         super("TRANSFORMER", configuration, parentLayers, parentClassLoader);
-        TransformerAuditTrail tat = new TransformerAuditTrail();
-        environment.computePropertyIfAbsent(IEnvironment.Keys.AUDITTRAIL.get(), v -> tat);
-        this.classTransformer = new ClassTransformer(transformStore, this, tat, environment);
+        this.classTransformer = classTransformer;
+        classTransformer.initializeBytecodeProvider(name -> className -> this.buildTransformedClassNodeFor(className, name));
     }
 
     @Override
     protected byte[] maybeTransformClassBytes(final byte[] bytes, final String name, final @Nullable String upToTransformer) {
         var upToTransformerName = upToTransformer == null ? null : ProcessorName.parse(upToTransformer);
-        return classTransformer.transform(bytes, name, upToTransformerName);
+        return classTransformer.transform(bytes, name, upToTransformerName, new ClassHierarchyRecomputationContext() {
+            @Override
+            public @Nullable Class<?> findLoadedClass(String name) {
+                return TransformingClassLoader.this.getLoadedClass(name);
+            }
+
+            @Override
+            public byte[] upToFrames(String className) throws ClassNotFoundException {
+                return TransformingClassLoader.this.buildTransformedClassNodeFor(className, ClassProcessor.COMPUTING_FRAMES);
+            }
+
+            @Override
+            public Class<?> locateSuperClass(String className) throws ClassNotFoundException {
+                return Class.forName(className, false, TransformingClassLoader.this.getParent());
+            }
+        });
     }
 
-    public Class<?> getLoadedClass(String name) {
+    private Class<?> getLoadedClass(String name) {
         return findLoadedClass(name);
     }
 
