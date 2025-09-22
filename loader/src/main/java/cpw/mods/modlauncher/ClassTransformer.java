@@ -18,6 +18,7 @@ import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.ITransformerActivity;
+import cpw.mods.modlauncher.api.ITransformerAuditTrail;
 import cpw.mods.modlauncher.api.TargetType;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
@@ -234,5 +235,9 @@ public class ClassTransformer {
 
     public List<ITransformer<?>> getTransformers() {
         return List.copyOf(transformers.getTransformers());
+    }
+
+    public ITransformerAuditTrail getAuditLog() {
+        return auditTrail;
     }
 }

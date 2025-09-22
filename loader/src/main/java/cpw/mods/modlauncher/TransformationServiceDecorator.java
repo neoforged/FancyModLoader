@@ -16,11 +16,8 @@ package cpw.mods.modlauncher;
 
 import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
 
-import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
-import cpw.mods.modlauncher.api.IncompatibleEnvironmentException;
 import cpw.mods.modlauncher.api.TargetType;
 import java.util.Collection;
 import java.util.List;
@@ -38,33 +35,10 @@ import org.jetbrains.annotations.VisibleForTesting;
 public class TransformationServiceDecorator {
     private static final Logger LOGGER = LogManager.getLogger();
     private final ITransformationService service;
-    private boolean isValid;
 
     @VisibleForTesting
     public TransformationServiceDecorator(ITransformationService service) {
         this.service = service;
-    }
-
-    void onLoad(IEnvironment env, Set<String> otherServices) {
-        try {
-            LOGGER.debug(MODLAUNCHER, "Loading service {}", this.service::name);
-            this.service.onLoad(env, otherServices);
-            this.isValid = true;
-            LOGGER.debug(MODLAUNCHER, "Loaded service {}", this.service::name);
-        } catch (IncompatibleEnvironmentException e) {
-            LOGGER.error(MODLAUNCHER, "Service failed to load {}", this.service.name(), e);
-            this.isValid = false;
-        }
-    }
-
-    boolean isValid() {
-        return isValid;
-    }
-
-    void onInitialize(IEnvironment environment) {
-        LOGGER.debug(MODLAUNCHER, "Initializing transformation service {}", this.service::name);
-        this.service.initialize(environment);
-        LOGGER.debug(MODLAUNCHER, "Initialized transformation service {}", this.service::name);
     }
 
     public void gatherTransformers(TransformStore transformStore) {
@@ -94,16 +68,5 @@ public class TransformationServiceDecorator {
 
     ITransformationService getService() {
         return service;
-    }
-
-    List<ITransformationService.Resource> runScan(final Environment environment) {
-        LOGGER.debug(MODLAUNCHER, "Beginning scan trigger - transformation service {}", this.service::name);
-        final List<ITransformationService.Resource> scanResults = this.service.beginScanning(environment);
-        LOGGER.debug(MODLAUNCHER, "End scan trigger - transformation service {}", this.service::name);
-        return scanResults;
-    }
-
-    public List<ITransformationService.Resource> onCompleteScan(IModuleLayerManager moduleLayerManager) {
-        return this.service.completeScan(moduleLayerManager);
     }
 }

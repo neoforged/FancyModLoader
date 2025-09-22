@@ -162,10 +162,6 @@ public class ElementShader implements AutoCloseable {
         }
     }
 
-    public enum RenderType {
-        FONT, TEXTURE, BAR;
-    }
-
     public int program() {
         return program;
     }
