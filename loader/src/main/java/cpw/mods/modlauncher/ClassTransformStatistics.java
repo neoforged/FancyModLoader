@@ -88,7 +88,7 @@ public class ClassTransformStatistics {
     @ApiStatus.Internal
     public static String computeCrashReportEntry(TransformStore transformStore) {
         var transforms = transformStore.getSortedTransformers();
-        record Entry(double ratio, ProcessorName name) {}
+        record Entry(double ratio, String name) {}
         var entries = new ArrayList<Entry>();
         for (var transform : transforms) {
             var name = transform.name();
@@ -100,7 +100,7 @@ public class ClassTransformStatistics {
             } else {
                 ratio = 100d * ((double) actual) / potential;
             }
-            entries.add(new Entry(ratio, name));
+            entries.add(new Entry(ratio, transformStore.isMarker(transform) ? name + " (marker)" : name.toString()));
         }
         return entries.stream()
                 .map(e -> String.format("%05.2f%%: %s", e.ratio, e.name))

@@ -10,7 +10,9 @@ import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
+import org.jetbrains.annotations.ApiStatus;
 
+@ApiStatus.Internal
 public class AccessTransformerService implements ClassProcessor {
     private final AccessTransformerEngine engine;
 

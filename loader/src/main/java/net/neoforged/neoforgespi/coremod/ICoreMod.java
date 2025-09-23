@@ -15,7 +15,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
 import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
@@ -47,28 +46,6 @@ public interface ICoreMod extends ClassProcessorProvider {
                 WithLogger.LOGGER.debug(CORE, "Adding {} transformer from core-mod {} in {}", transformer.targets(), this, sourceFile);
                 collector.add(makeTransformer(transformer));
             }
-            collector.add(new ClassProcessor() {
-                // For ordering purposes only; allows making transformers that run before/after all "default" coremods
-                @Override
-                public ProcessorName name() {
-                    return ITransformer.COREMODS_GROUP;
-                }
-
-                @Override
-                public boolean handlesClass(SelectionContext context) {
-                    return false;
-                }
-
-                @Override
-                public Set<ProcessorName> runsAfter() {
-                    return Set.of(COMPUTING_FRAMES, FMLMixinClassProcessor.NAME);
-                }
-
-                @Override
-                public ComputeFlags processClass(TransformationContext context) {
-                    return ComputeFlags.NO_REWRITE;
-                }
-            });
         } catch (Exception e) {
             // Throwing here would cause the game to immediately crash without a proper error screen,
             // since this method is called by ModLauncher directly.

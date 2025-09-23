@@ -3,9 +3,11 @@ package cpw.mods.modlauncher;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
@@ -16,12 +18,17 @@ import org.jetbrains.annotations.ApiStatus;
 public class TransformStoreBuilder {
     private final ILaunchContext context;
     private final List<ClassProcessor> processors = new ArrayList<>();
+    private final Set<ProcessorName> markers = new HashSet<>();
 
     private final Map<ProcessorName, TransformStore.BytecodeProviderImpl> bytecodeProviders = new HashMap<>();
     private final ClassProcessorLocatorImpl locator = new ClassProcessorLocatorImpl();
 
     public TransformStoreBuilder(ILaunchContext context) {
         this.context = context;
+    }
+
+    public void markMarker(ProcessorName name) {
+        markers.add(name);
     }
 
     public void addProcessors(Collection<ClassProcessor> toAdd) {
@@ -53,7 +60,7 @@ public class TransformStoreBuilder {
             var context = contextFor(processor.name());
             processor.initialize(context);
         }
-        var store = new TransformStore(this.processors, this.bytecodeProviders);
+        var store = new TransformStore(this.processors, this.bytecodeProviders, this.markers);
         this.locator.delegate = store::findClassProcessor;
         return store;
     }

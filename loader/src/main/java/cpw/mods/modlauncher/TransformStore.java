@@ -42,16 +42,22 @@ public class TransformStore {
     private final Map<ProcessorName, ClassProcessor> transformers = new HashMap<>();
     private final List<ClassProcessor> sortedTransformers;
     private final Set<String> generatedPackages = new HashSet<>();
+    private final Set<ProcessorName> markerProcessors = new HashSet<>();
 
     @VisibleForTesting
     public TransformStore(List<ClassProcessor> processors) {
-        this(processors, Map.of());
+        this(processors, Map.of(), Set.of());
     }
 
-    TransformStore(List<ClassProcessor> processors, Map<ProcessorName, BytecodeProviderImpl> bytecodeProviders) {
+    TransformStore(List<ClassProcessor> processors, Map<ProcessorName, BytecodeProviderImpl> bytecodeProviders, Set<ProcessorName> markers) {
         this.sortedTransformers = sortTransformers(processors);
         this.bytecodeProviders.putAll(bytecodeProviders);
         CrashReportCallables.registerCrashCallable("Class Processors", () -> ClassTransformStatistics.computeCrashReportEntry(this));
+        this.markerProcessors.addAll(markers);
+    }
+
+    public boolean isMarker(ClassProcessor processor) {
+        return markerProcessors.contains(processor.name());
     }
 
     @VisibleForTesting
