@@ -5,6 +5,7 @@
 
 package net.neoforged.neoforgespi.transformation;
 
+import cpw.mods.modlauncher.api.CoreModTransformationContext;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -119,7 +120,7 @@ public interface ClassProcessor {
     /**
      * Context available when processing a class
      */
-    final class TransformationContext {
+    final class TransformationContext implements CoreModTransformationContext {
         private final Type type;
         private final ClassNode node;
         private final boolean empty;

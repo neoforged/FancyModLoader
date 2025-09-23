@@ -14,8 +14,8 @@ import cpw.mods.modlauncher.api.ITransformer;
 import java.util.Set;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
-import net.neoforged.neoforgespi.coremod.ICoreMod;
 import net.neoforged.neoforgespi.locating.IModFile;
+import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.tree.ClassNode;
@@ -52,7 +52,7 @@ public class CoreModTest extends LauncherTest {
                 .withTestmodModsToml()
                 .withJarInJar(JAR_IDENTIFIER, coreMod -> {
                     coreMod.withModTypeManifest(IModFile.Type.LIBRARY.name())
-                            .addService(ICoreMod.class.getName(), "testmod.coremods.TestCoreMod")
+                            .addService(ClassProcessorProvider.class.getName(), "testmod.coremods.TestCoreMod")
                             .addClass("testmod.coremods.TestCoreMod", """
                                     import cpw.mods.modlauncher.api.ITransformer;
                                     public class TestCoreMod implements net.neoforged.neoforgespi.coremod.ICoreMod {
@@ -73,7 +73,7 @@ public class CoreModTest extends LauncherTest {
 
         installation.buildModJar("coremod.jar")
                 .withModTypeManifest(IModFile.Type.LIBRARY.name())
-                .addService(ICoreMod.class.getName(), "testmod.coremods.TestCoreMod")
+                .addService(ClassProcessorProvider.class.getName(), "testmod.coremods.TestCoreMod")
                 .addClass("testmod.coremods.TestCoreMod", """
                         import cpw.mods.modlauncher.api.ITransformer;
                         public class TestCoreMod implements net.neoforged.neoforgespi.coremod.ICoreMod {
@@ -98,7 +98,7 @@ public class CoreModTest extends LauncherTest {
                         """)
                 .withJarInJar(JAR_IDENTIFIER, coreMod -> {
                     coreMod.withModTypeManifest(IModFile.Type.LIBRARY.name())
-                            .addService(ICoreMod.class.getName(), "testmod.coremods.TestCoreMod")
+                            .addService(ClassProcessorProvider.class.getName(), "testmod.coremods.TestCoreMod")
                             .addClass("testmod.coremods.TestCoreMod", """
                                     import cpw.mods.modlauncher.api.ITransformer;
                                     import java.util.List;
