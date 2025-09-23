@@ -14,7 +14,7 @@
 
 package cpw.mods.modlauncher.api;
 
-public interface CoremodTransformationContext {
+public interface CoreModTransformationContext {
     /**
      * {@return The binary class name being transformed, as {@link Class#getName()}}
      */

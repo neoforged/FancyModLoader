@@ -26,29 +26,56 @@ import org.objectweb.asm.tree.MethodNode;
  * A transformer is injected into the modding ClassLoader. It can manipulate any item
  * it is designated to target.
  */
-public interface ITransformer<T> {
+public sealed interface ITransformer {
     ProcessorName COREMODS_GROUP = new ProcessorName("neoforge", "coremods_default");
 
-    /**
-     * Transform the input to the ITransformer's desire. The context from the last vote is
-     * provided as well.
-     *
-     * @param input   The ASM input node, which can be mutated directly
-     * @param context The voting context
-     */
-    void transform(T input, CoremodTransformationContext context);
+    non-sealed interface ClassTransformer extends ITransformer {
+        /**
+         * Transform the input with context.
+         *
+         * @param input   The ASM input node, which can be mutated directly
+         * @param context The voting context
+         */
+        void transform(ClassNode input, CoreModTransformationContext context);
+
+        @Override
+        Set<Target.ClassTarget> targets();
+    }
+
+    non-sealed interface MethodTransformer extends ITransformer {
+        /**
+         * Transform the input with context.
+         *
+         * @param input   The ASM input node, which can be mutated directly
+         * @param context The voting context
+         */
+        void transform(MethodNode input, CoreModTransformationContext context);
+
+        @Override
+        Set<Target.MethodTarget> targets();
+    }
+
+    non-sealed interface FieldTransformer extends ITransformer {
+        /**
+         * Transform the input with context.
+         *
+         * @param input   The ASM input node, which can be mutated directly
+         * @param context The voting context
+         */
+        void transform(FieldNode input, CoreModTransformationContext context);
+
+        @Override
+        Set<Target.FieldTarget> targets();
+    }
 
     /**
      * Return a set of {@link Target} identifying which elements this transformer wishes to try
-     * and apply to. The {@link Target#getTargetType()} must match the T variable for the transformer
-     * as documented in {@link TargetType}, other combinations will be rejected.
+     * and apply to.
      *
      * @return The set of targets this transformer wishes to apply to
      */
 
-    Set<Target<T>> targets();
-
-    TargetType getTargetType();
+    Set<? extends Target> targets();
 
     /**
      * {@return a unique name for this transformer. Defaults to a name derived from the source class and module names}
@@ -74,50 +101,36 @@ public interface ITransformer<T> {
     }
 
     /**
-     * Simple data holder indicating where the {@link ITransformer} can target.
-     * 
-     * @param className         The binary name of the class being targetted, as {@link Class#getName()}
-     * @param elementName       The name of the element being targetted. This is the field name for a field,
-     *                          the method name for a method. Empty string for other types
-     * @param elementDescriptor The method's descriptor. Empty string for other types
-     * @param targetType        The {@link TargetType} for this target - it should match the ITransformer
-     *                          type variable T
+     * Indicates where the {@link ITransformer} can target.
      */
-    record Target<T>(String className, String elementName, String elementDescriptor, TargetType targetType) {
+    interface Target {
         /**
-         * Convenience method returning a {@link Target} for a class
-         *
-         * @param className The binary name of the class, as {@link Class#getName()}
-         * @return A target for the named class
+         * {@return the binary name of the class being targeted, as {@link Class#getName()}}
          */
-
-        public static Target<ClassNode> targetClass(String className) {
-            return new Target<>(className, "", "", TargetType.CLASS);
-        }
+        String className();
 
         /**
-         * Convenience method return a {@link Target} for a method
-         *
-         * @param className        The binary name of the class containing the method, as {@link Class#getName()}
-         * @param methodName       The name of the method
-         * @param methodDescriptor The method's descriptor string
-         * @return A target for the named method
+         * Target a class.
+         * 
+         * @param className the binary name of the class, as {@link Class#getName()}
          */
-
-        public static Target<MethodNode> targetMethod(String className, String methodName, String methodDescriptor) {
-            return new Target<>(className, methodName, methodDescriptor, TargetType.METHOD);
-        }
+        record ClassTarget(String className) implements Target {}
 
         /**
-         * Convenience method returning a {@link Target} for a field
-         *
-         * @param className The binary name of the class containing the field, as {@link Class#getName()}
-         * @param fieldName The name of the field
-         * @return A target for the named field
+         * Target a method.
+         * 
+         * @param className        the binary name of the class containing the method, as {@link Class#getName()}
+         * @param methodName       the name of the method
+         * @param methodDescriptor the method's descriptor string
          */
+        record MethodTarget(String className, String methodName, String methodDescriptor) implements Target {}
 
-        public static Target<FieldNode> targetField(String className, String fieldName) {
-            return new Target<>(className, fieldName, "", TargetType.FIELD);
-        }
+        /**
+         * Target a field.
+         * 
+         * @param className the binary name of the class containing the field, as {@link Class#getName()}
+         * @param fieldName the name of the field
+         */
+        record FieldTarget(String className, String fieldName) implements Target {}
     }
 }

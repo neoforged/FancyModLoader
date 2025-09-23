@@ -9,7 +9,7 @@ import static net.neoforged.fml.loading.LogMarkers.CORE;
 import static net.neoforged.fml.loading.LogMarkers.LOADING;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.modlauncher.CoremodTransformationContextImpl;
+import cpw.mods.modlauncher.CoreModTransformationContextImpl;
 import cpw.mods.modlauncher.api.ITransformer;
 import java.util.HashSet;
 import java.util.List;
@@ -79,8 +79,8 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
     }
 
     @VisibleForTesting
-    public static <T> ClassProcessor makeTransformer(ITransformer<T> transformer) {
-        Map<String, List<ITransformer.Target<T>>> targetsByClassName = transformer.targets().stream()
+    public static ClassProcessor makeTransformer(ITransformer transformer) {
+        Map<String, List<ITransformer.Target>> targetsByClassName = transformer.targets().stream()
                 .collect(Collectors.groupingBy(ITransformer.Target::className));
         Set<ProcessorName> before = new HashSet<>(transformer.runsBefore());
         Set<ProcessorName> after = new HashSet<>(transformer.runsAfter());
@@ -108,7 +108,6 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
                 return after;
             }
 
-            @SuppressWarnings("unchecked")
             @Override
             public ComputeFlags processClass(TransformationContext processContext) {
                 var targets = targetsByClassName.get(processContext.type().getClassName());
@@ -116,34 +115,36 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
                     return ComputeFlags.NO_REWRITE;
                 }
                 boolean transformed = false;
-                switch (transformer.getTargetType()) {
-                    case CLASS -> {
-                        var context = new CoremodTransformationContextImpl(processContext, processContext.node());
-                        transformer.transform((T) processContext.node(), context);
+                switch (transformer) {
+                    case ITransformer.ClassTransformer classTransformer -> {
+                        var context = new CoreModTransformationContextImpl(processContext, processContext.node());
+                        classTransformer.transform(processContext.node(), context);
                         transformed = true;
                     }
-                    case METHOD -> {
+                    case ITransformer.MethodTransformer methodTransformer -> {
                         var methodNameDescs = new HashSet<String>();
                         for (var target : targets) {
-                            methodNameDescs.add(target.elementName() + target.elementDescriptor());
+                            var methodTarget = (ITransformer.Target.MethodTarget) target;
+                            methodNameDescs.add(methodTarget.methodName() + methodTarget.methodDescriptor());
                         }
                         for (var method : processContext.node().methods) {
                             if (methodNameDescs.contains(method.name + method.desc)) {
-                                var context = new CoremodTransformationContextImpl(processContext, method);
-                                transformer.transform((T) method, context);
+                                var context = new CoreModTransformationContextImpl(processContext, method);
+                                methodTransformer.transform(method, context);
                                 transformed = true;
                             }
                         }
                     }
-                    case FIELD -> {
+                    case ITransformer.FieldTransformer fieldTransformer -> {
                         var fieldNames = new HashSet<String>();
                         for (var target : targets) {
-                            fieldNames.add(target.elementName());
+                            var fieldTarget = (ITransformer.Target.FieldTarget) target;
+                            fieldNames.add(fieldTarget.fieldName());
                         }
                         for (var field : processContext.node().fields) {
                             if (fieldNames.contains(field.name)) {
-                                var context = new CoremodTransformationContextImpl(processContext, field);
-                                transformer.transform((T) field, context);
+                                var context = new CoreModTransformationContextImpl(processContext, field);
+                                fieldTransformer.transform(field, context);
                                 transformed = true;
                             }
                         }

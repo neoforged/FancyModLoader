@@ -14,7 +14,7 @@
 
 package cpw.mods.modlauncher;
 
-import cpw.mods.modlauncher.api.CoremodTransformationContext;
+import cpw.mods.modlauncher.api.CoreModTransformationContext;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -28,12 +28,12 @@ import org.objectweb.asm.tree.MethodNode;
  * The internal vote context structure.
  */
 @ApiStatus.Internal
-public class CoremodTransformationContextImpl implements CoremodTransformationContext {
+public class CoreModTransformationContextImpl implements CoreModTransformationContext {
     private static final Object[] EMPTY = new Object[0];
     private final ClassProcessor.TransformationContext context;
     private final Object node;
 
-    public CoremodTransformationContextImpl(ClassProcessor.TransformationContext context, Object node) {
+    public CoreModTransformationContextImpl(ClassProcessor.TransformationContext context, Object node) {
         this.context = context;
         this.node = node;
     }
