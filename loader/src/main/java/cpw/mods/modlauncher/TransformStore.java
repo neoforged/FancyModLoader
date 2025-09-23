@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+
+import net.neoforged.fml.CrashReportCallables;
 import net.neoforged.fml.loading.toposort.TopologicalSort;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
@@ -44,12 +46,13 @@ public class TransformStore {
 
     @VisibleForTesting
     public TransformStore(List<ClassProcessor> processors) {
-        this.sortedTransformers = sortTransformers(processors);
+        this(processors, Map.of());
     }
 
     TransformStore(List<ClassProcessor> processors, Map<ProcessorName, BytecodeProviderImpl> bytecodeProviders) {
         this.sortedTransformers = sortTransformers(processors);
         this.bytecodeProviders.putAll(bytecodeProviders);
+        CrashReportCallables.registerCrashCallable("Class Processors", () -> ClassTransformStatistics.computeCrashReportEntry(this));
     }
 
     @VisibleForTesting

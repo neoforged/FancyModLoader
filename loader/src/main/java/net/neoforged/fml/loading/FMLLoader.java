@@ -430,7 +430,6 @@ public final class FMLLoader implements AutoCloseable {
 
         var moduleNames = getModuleNameList(cf, content);
         LOGGER.info("Building game content classloader:\n{}", moduleNames);
-        // TODO: alternative to null environment?
         var loader = new TransformingClassLoader(classTransformer, cf, parentLayers, currentClassLoader);
 
         var layer = ModuleLayer.defineModules(

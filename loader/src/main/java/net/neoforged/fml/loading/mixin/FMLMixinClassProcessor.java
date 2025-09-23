@@ -5,23 +5,18 @@
 
 package net.neoforged.fml.loading.mixin;
 
-import com.mojang.logging.LogUtils;
 import java.util.Set;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
-import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.injection.invoke.arg.ArgsClassGenerator;
 import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 import org.spongepowered.asm.service.ISyntheticClassRegistry;
 
-// TODO: Figure out what to do with changes from startup-overhaul!
 public class FMLMixinClassProcessor implements ClassProcessor {
     public static final ProcessorName NAME = new ProcessorName("neoforge", "mixin");
-
-    private static final Logger LOGGER = LogUtils.getLogger();
 
     private final FMLAuditTrail auditTrail;
     private final FMLClassTracker classTracker;

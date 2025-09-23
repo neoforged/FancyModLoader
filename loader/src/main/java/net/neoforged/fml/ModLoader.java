@@ -62,8 +62,6 @@ public final class ModLoader {
     private static final List<ModLoadingIssue> loadingIssues = new ArrayList<>();
     private static ModList modList;
 
-    // TODO: Where did crash report callables go? Add
-    //  CrashReportCallables.registerCrashCallable("Class Transformation Statistics", ClassTransformStatistics::computeCrashReportEntry);
     /**
      * Run on the primary starting thread by ClientModLoader and ServerModLoader
      *
