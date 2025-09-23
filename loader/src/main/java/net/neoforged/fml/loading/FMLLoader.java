@@ -231,10 +231,6 @@ public final class FMLLoader implements AutoCloseable {
         return programArgs;
     }
 
-    ClassTransformer getClassTransformer() {
-        return classTransformer;
-    }
-
     @ApiStatus.Internal
     public IBindingsProvider getBindings() {
         if (bindings == null) {
