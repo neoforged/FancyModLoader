@@ -15,8 +15,8 @@
 package cpw.mods.modlauncher.api;
 
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Set;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -78,11 +78,11 @@ public sealed interface ITransformer {
     Set<? extends Target> targets();
 
     /**
-     * {@return a unique name for this transformer. Defaults to a name derived from the source class and module names}
+     * {@return a unique name for this transformer. Defaults to a name derived from the source class and mod file names}
      */
     default ProcessorName name() {
         return new ProcessorName(
-                Objects.requireNonNull(getClass().getModule().getName(), "coremod must be in named module or have explicit name"),
+                getOwnerName(getClass()),
                 getClass().getName().replace('$', '.').toLowerCase(Locale.ROOT));
     }
 
@@ -132,5 +132,17 @@ public sealed interface ITransformer {
          * @param fieldName the name of the field
          */
         record FieldTarget(String className, String fieldName) implements Target {}
+    }
+
+    private static String getOwnerName(Class<? extends ITransformer> clazz) {
+        var module = clazz.getModule();
+        if (module.isNamed()) {
+            return module.getName();
+        }
+        var modFile = FMLLoader.getCurrent().getModFileByClass(clazz);
+        if (modFile != null) {
+            return modFile.getId();
+        }
+        throw new IllegalStateException("Cannot determine owner name for " + clazz + ", it is not in a named module and not loaded from a mod file");
     }
 }
