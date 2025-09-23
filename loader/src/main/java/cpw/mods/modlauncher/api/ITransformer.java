@@ -25,6 +25,10 @@ import org.objectweb.asm.tree.MethodNode;
 /**
  * A transformer is injected into the modding ClassLoader. It can manipulate any item
  * it is designated to target.
+ * <p>
+ * {@link ITransformer}s must be named. FML will attempt to generate a name given the owner of the transformer
+ * and its class name, but if more than one is provided that uses the same implementing class, it must override
+ * {@link #name()}.
  */
 public sealed interface ITransformer {
     ProcessorName COREMODS_GROUP = new ProcessorName("neoforge", "coremods_default");
