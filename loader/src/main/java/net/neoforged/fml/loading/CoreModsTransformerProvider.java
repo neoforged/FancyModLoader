@@ -11,8 +11,6 @@ import static net.neoforged.fml.loading.LogMarkers.LOADING;
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.CoremodTransformationContextImpl;
 import cpw.mods.modlauncher.api.ITransformer;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,10 +34,8 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     @Override
-    public Collection<ClassProcessor> makeTransformers(ILaunchContext launchContext) {
+    public void makeProcessors(ClassProcessorCollector collector, ILaunchContext launchContext) {
         LOGGER.debug(LOADING, "Loading coremod transformers");
-
-        var result = new ArrayList<ClassProcessor>();
 
         // Find all Java core mods
         for (var coreMod : ServiceLoaderUtil.loadServices(launchContext, ICoreMod.class)) {
@@ -49,9 +45,9 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
             try {
                 for (var transformer : coreMod.getTransformers()) {
                     LOGGER.debug(CORE, "Adding {} transformer from core-mod {} in {}", transformer.targets(), coreMod, sourceFile);
-                    result.add(makeTransformer(transformer));
+                    collector.add(makeTransformer(transformer));
                 }
-                result.add(new ClassProcessor() {
+                collector.add(new ClassProcessor() {
                     // For ordering purposes only; allows making transformers that run before/after all "default" coremods
                     @Override
                     public ProcessorName name() {
@@ -80,8 +76,6 @@ public class CoreModsTransformerProvider implements ClassProcessorProvider {
                         ModLoadingIssue.error("fml.modloadingissue.coremod_error", coreMod.getClass().getName(), sourceFile).withCause(e));
             }
         }
-
-        return result;
     }
 
     @VisibleForTesting

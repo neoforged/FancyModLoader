@@ -35,7 +35,7 @@ public class TransformingClassLoader extends ModuleClassLoader {
     public TransformingClassLoader(ClassTransformer classTransformer, final Configuration configuration, List<ModuleLayer> parentLayers, ClassLoader parentClassLoader) {
         super("TRANSFORMER", configuration, parentLayers, parentClassLoader);
         this.classTransformer = classTransformer;
-        classTransformer.initializeBytecodeProvider(name -> className -> this.buildTransformedClassNodeFor(className, name));
+        classTransformer.linkBytecodeProviders(name -> className -> this.buildTransformedClassNodeFor(className, name));
     }
 
     @Override

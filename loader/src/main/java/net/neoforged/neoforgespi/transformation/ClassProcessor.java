@@ -104,7 +104,9 @@ public interface ClassProcessor {
     }
 
     /**
-     * Context available when initializing a processor with a bytecode provider
+     * Context available when initializing or constructing a processor. The {@param bytecodeProvider} and the
+     * {@param locator} are not live during initialization, but will work as expected as soon as any other part of the
+     * {@link ClassProcessor} API is invoked except for {@link #name()} or {@link #generatesPackages()}.
      * 
      * @param bytecodeProvider allows querying class bytes' states before this processor
      * @param locator          allows locating other class processors
@@ -190,11 +192,10 @@ public interface ClassProcessor {
     default void afterProcessing(AfterProcessingContext context) {}
 
     /**
-     * Capture a provider which can be used to view the state of any class, including those not transformed, after all
-     * transformations before this one.
+     * Capture context available to the provider generally, including a lookup for other processors and a tool to obtain
+     * the bytecode of any class before this processor.
      *
      * @param context the context for initialization
      */
-    // TODO: It would be nice to pass this context at construction (from a classprocessor), though that may be a bit difficult with the timing of everything
-    default void initializeBytecodeProvider(InitializationContext context) {}
+    default void initialize(InitializationContext context) {}
 }

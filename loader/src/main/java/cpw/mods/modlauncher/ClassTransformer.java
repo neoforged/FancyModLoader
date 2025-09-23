@@ -54,8 +54,8 @@ public class ClassTransformer {
         this.auditTrail = auditTrail;
     }
 
-    public void initializeBytecodeProvider(Function<ProcessorName, ClassProcessor.BytecodeProvider> function) {
-        this.transformers.initializeBytecodeProvider(function);
+    public void linkBytecodeProviders(Function<ProcessorName, ClassProcessor.BytecodeProvider> function) {
+        this.transformers.linkBytecodeProviders(function);
     }
 
     private ClassProcessor.ComputeFlags combineFlags(ClassProcessor.ComputeFlags a, ClassProcessor.ComputeFlags b) {

@@ -17,6 +17,7 @@ import cpw.mods.jarhandling.impl.FolderJarContents;
 import cpw.mods.jarhandling.impl.JarFileContents;
 import cpw.mods.modlauncher.ClassTransformer;
 import cpw.mods.modlauncher.TransformStore;
+import cpw.mods.modlauncher.TransformStoreBuilder;
 import cpw.mods.modlauncher.TransformerAuditTrail;
 import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.ITransformerAuditTrail;
@@ -333,8 +334,7 @@ public final class FMLLoader implements AutoCloseable {
                 gameContent.add(modFile.getSecureJar());
             }
 
-            var classProcessors = locateClassProcessors(startupArgs, launchContext, discoveryResult, mixinFacade);
-            var transformStore = new TransformStore(classProcessors);
+            var transformStore = createTransformStore(startupArgs, launchContext, discoveryResult, mixinFacade);
             loader.classTransformer = new ClassTransformer(transformStore, loader.classTransformerAuditLog);
             gameContent.add(new VirtualJar(
                     ClassProcessor.GENERATED_PACKAGE_MODULE,
@@ -365,7 +365,7 @@ public final class FMLLoader implements AutoCloseable {
         }
     }
 
-    private static List<ClassProcessor> locateClassProcessors(StartupArgs startupArgs,
+    private static TransformStore createTransformStore(StartupArgs startupArgs,
             LaunchContextAdapter launchContext,
             DiscoveryResult discoveryResult,
             MixinFacade mixinFacade) {
@@ -387,14 +387,11 @@ public final class FMLLoader implements AutoCloseable {
 
         builtInProcessors.add(mixinFacade.getClassProcessor());
 
-        // Discover third party transformation services
-        var classProcessorProviders = ServiceLoaderUtil.loadServices(launchContext, ClassProcessorProvider.class);
-        var classProcessors = new ArrayList<>(ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class, builtInProcessors));
-        for (var provider : classProcessorProviders) {
-            classProcessors.addAll(provider.makeTransformers(launchContext));
-        }
+        var builder = new TransformStoreBuilder(launchContext);
+        builder.addProcessors(ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class, builtInProcessors));
+        builder.addProcessorProviders(ServiceLoaderUtil.loadServices(launchContext, ClassProcessorProvider.class));
 
-        return classProcessors;
+        return builder.build();
     }
 
     private static ClassProcessor createAccessTransformerService(DiscoveryResult discoveryResult) {

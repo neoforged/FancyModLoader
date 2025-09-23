@@ -47,6 +47,11 @@ public class TransformStore {
         this.sortedTransformers = sortTransformers(processors);
     }
 
+    TransformStore(List<ClassProcessor> processors, Map<ProcessorName, BytecodeProviderImpl> bytecodeProviders) {
+        this.sortedTransformers = sortTransformers(processors);
+        this.bytecodeProviders.putAll(bytecodeProviders);
+    }
+
     @VisibleForTesting
     public List<ClassProcessor> getSortedTransformers() {
         return sortedTransformers;
@@ -126,9 +131,27 @@ public class TransformStore {
         return name;
     }
 
-    public void initializeBytecodeProvider(Function<ProcessorName, ClassProcessor.BytecodeProvider> function) {
+    private final Map<ProcessorName, BytecodeProviderImpl> bytecodeProviders = new HashMap<>();
+
+    static final class BytecodeProviderImpl implements ClassProcessor.BytecodeProvider {
+        private ClassProcessor.BytecodeProvider provider;
+
+        @Override
+        public byte[] acquireTransformedClassBefore(String className) throws ClassNotFoundException {
+            if (provider == null) {
+                throw new IllegalStateException("Bytecode provider not yet available");
+            }
+            return provider.acquireTransformedClassBefore(className);
+        }
+    }
+
+    public void linkBytecodeProviders(Function<ProcessorName, ClassProcessor.BytecodeProvider> function) {
         for (var transformer : sortedTransformers) {
-            transformer.initializeBytecodeProvider(new ClassProcessor.InitializationContext(function.apply(transformer.name()), this::findClassProcessor));
+            var provider = function.apply(transformer.name());
+            var impl = bytecodeProviders.get(transformer.name());
+            if (provider != null && impl != null) {
+                impl.provider = provider;
+            }
         }
     }
 
@@ -164,7 +187,7 @@ public class TransformStore {
         return Collections.unmodifiableSet(generatedPackages);
     }
 
-    public Optional<ClassProcessor> findClassProcessor(ProcessorName name) {
+    Optional<ClassProcessor> findClassProcessor(ProcessorName name) {
         return Optional.ofNullable(transformers.get(name));
     }
 }
