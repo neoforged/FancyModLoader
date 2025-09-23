@@ -20,6 +20,7 @@ import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformStoreBuilder;
 import cpw.mods.modlauncher.TransformerAuditTrail;
 import cpw.mods.modlauncher.TransformingClassLoader;
+import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.ITransformerAuditTrail;
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -390,6 +391,10 @@ public final class FMLLoader implements AutoCloseable {
         builtInProcessors.add(mixinFacade.getClassProcessor());
 
         var builder = new TransformStoreBuilder(launchContext);
+        
+        builder.markMarker(ITransformer.COREMODS_GROUP);
+        builder.markMarker(ClassProcessor.COMPUTING_FRAMES);
+        
         builder.addProcessors(ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class, builtInProcessors));
         builder.addProcessorProviders(ServiceLoaderUtil.loadServices(launchContext, ClassProcessorProvider.class));
 
