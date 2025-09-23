@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-
 import net.neoforged.fml.CrashReportCallables;
 import net.neoforged.fml.loading.toposort.TopologicalSort;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;

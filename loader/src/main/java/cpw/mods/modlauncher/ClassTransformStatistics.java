@@ -1,12 +1,9 @@
 package cpw.mods.modlauncher;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
-import net.neoforged.fml.CrashReportCallables;
 import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
@@ -17,7 +14,7 @@ import org.jetbrains.annotations.ApiStatus;
 @ApiStatus.Internal
 public class ClassTransformStatistics {
     private static final Logger LOGGER = LogManager.getLogger();
-    
+
     private static final Map<ProcessorName, Integer> TRANSFORMS_BY_PROCESSOR = new ConcurrentHashMap<>();
     private static final Map<ProcessorName, Integer> POTENTIAL_BY_PROCESSOR = new ConcurrentHashMap<>();
     private static int LOADED_CLASS_COUNT = 0;
@@ -90,7 +87,7 @@ public class ClassTransformStatistics {
 
     @ApiStatus.Internal
     public static String computeCrashReportEntry(TransformStore transformStore) {
-        var transforms =transformStore.getSortedTransformers();
+        var transforms = transformStore.getSortedTransformers();
         record Entry(double ratio, ProcessorName name) {}
         var entries = new ArrayList<Entry>();
         for (var transform : transforms) {
@@ -106,7 +103,7 @@ public class ClassTransformStatistics {
             entries.add(new Entry(ratio, name));
         }
         return entries.stream()
-                .map(e -> String.format("%.2f%%: %s", e.ratio, e.name))
+                .map(e -> String.format("%05.2f%%: %s", e.ratio, e.name))
                 .collect(Collectors.joining("\n\t\t", "\n\t\t", ""));
     }
 }
