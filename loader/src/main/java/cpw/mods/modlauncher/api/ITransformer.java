@@ -152,11 +152,11 @@ public sealed interface ITransformer {
                 validateUnqualified(fieldName);
             }
         }
-        
+
         private static void validateClassName(String name) {
             ClassDesc.of(name);
         }
-        
+
         private static void validateUnqualified(String name) {
             ".;[/<>".chars().forEach(c -> {
                 if (name.indexOf(c) != -1) {
@@ -164,7 +164,7 @@ public sealed interface ITransformer {
                 }
             });
         }
-        
+
         private static void validateMethod(String name, String descriptor) {
             if (name.equals("<init>") || (name.equals("<clinit>") && descriptor.equals("()V"))) {
                 return;

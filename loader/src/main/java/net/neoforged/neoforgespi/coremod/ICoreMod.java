@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.util.ServiceLoaderUtil;
-import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
@@ -33,13 +32,13 @@ public interface ICoreMod extends ClassProcessorProvider {
     Iterable<? extends ITransformer> getTransformers();
 
     @Override
-    default void makeProcessors(ClassProcessorCollector collector, ILaunchContext launchContext) {
+    default void makeProcessors(ClassProcessorCollector collector) {
         final class WithLogger {
             private static final Logger LOGGER = LoggerFactory.getLogger(ICoreMod.class);
         }
 
         // Try to identify the mod-file this is from
-        var sourceFile = ServiceLoaderUtil.identifySourcePath(launchContext, this);
+        var sourceFile = ServiceLoaderUtil.identifySourcePath(this);
 
         try {
             for (var transformer : this.getTransformers()) {

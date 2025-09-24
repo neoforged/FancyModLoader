@@ -6,16 +6,13 @@
 package net.neoforged.neoforgespi.transformation;
 
 import java.util.function.Function;
-import net.neoforged.neoforgespi.ILaunchContext;
 
 public interface ClassProcessorProvider {
     interface ClassProcessorCollector {
-        void create(ProcessorName name, Function<ClassProcessor.InitializationContext, ClassProcessor> factory);
+        void add(ClassProcessorMetadata metadata, Function<ClassProcessor.InitializationContext, ClassProcessorBehavior> factory);
 
-        default void add(ClassProcessor processor) {
-            create(processor.name(), ctx -> processor);
-        }
+        void add(ClassProcessor processor);
     }
 
-    void makeProcessors(ClassProcessorCollector collector, ILaunchContext launchContext);
+    void makeProcessors(ClassProcessorCollector collector);
 }

@@ -386,7 +386,7 @@ public final class FMLLoader implements AutoCloseable {
 
         builtInProcessors.add(mixinFacade.getClassProcessor());
 
-        var builder = new TransformStoreBuilder(launchContext);
+        var builder = new TransformStoreBuilder();
 
         builder.markMarker(ITransformer.COREMODS_GROUP);
         builder.markMarker(ClassProcessor.COMPUTING_FRAMES);

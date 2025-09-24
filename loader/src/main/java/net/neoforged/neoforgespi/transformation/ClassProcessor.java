@@ -7,7 +7,6 @@ package net.neoforged.neoforgespi.transformation;
 
 import cpw.mods.modlauncher.api.CoreModTransformationContext;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.jetbrains.annotations.ApiStatus;
@@ -22,7 +21,7 @@ import org.objectweb.asm.tree.ClassNode;
  * Processors are named and should have sensible namespaces; ordering is accomplished by specifying names that processors
  * should run before or after if present.
  */
-public interface ClassProcessor {
+public interface ClassProcessor extends ClassProcessorBehavior, ClassProcessorMetadata {
     enum ComputeFlags {
         /**
          * This plugin did not change the class and therefor requires no rewrite of the class.
@@ -55,35 +54,7 @@ public interface ClassProcessor {
      */
     ProcessorName COMPUTING_FRAMES = new ProcessorName("neoforge", "computing_frames");
 
-    /**
-     * {@return a unique identifier for this processor}
-     */
-    ProcessorName name();
-
-    /**
-     * {@return processors that this processor must run before}
-     */
-    default Set<ProcessorName> runsBefore() {
-        return Set.of();
-    }
-
-    /**
-     * {@return processors that this processor must run after} This should include
-     * {@link ClassProcessor#COMPUTING_FRAMES} if the processor returns a result requiring frame re-computation.
-     */
-    default Set<ProcessorName> runsAfter() {
-        return Set.of(COMPUTING_FRAMES);
-    }
-
     String GENERATED_PACKAGE_MODULE = "net.neoforged.fml.generated";
-
-    /**
-     * {@return packages that this processor generates classes for, that do not already exist on the game layer}
-     * Generated packages in the game layer will be in the module {@value #GENERATED_PACKAGE_MODULE}.
-     */
-    default Set<String> generatesPackages() {
-        return Set.of();
-    }
 
     /**
      * Context available when determining whether a processor wants to handle a class
@@ -105,9 +76,8 @@ public interface ClassProcessor {
     }
 
     /**
-     * Context available when initializing or constructing a processor. The {@param bytecodeProvider} and the
-     * {@param locator} are not live during initialization, but will work as expected as soon as any other part of the
-     * {@link ClassProcessor} API is invoked except for {@link #name()} or {@link #generatesPackages()}.
+     * Context available when initializing or constructing a processor. Guaranteed to be "live" by the time any method
+     * from {@link ClassProcessorBehavior} is invoked.
      * 
      * @param bytecodeProvider allows querying class bytes' states before this processor
      * @param locator          allows locating other class processors
@@ -168,33 +138,8 @@ public interface ClassProcessor {
     }
 
     /**
-     * {@return whether the processor wants to recieve the class}
-     * 
-     * @param context the context of the class to consider
-     */
-    boolean handlesClass(SelectionContext context);
-
-    /**
-     * Each class that the processor has opted to recieve is passed to this method for processing.
-     *
-     * @param context the context of the class to process
-     * @return the {@link ComputeFlags} indicating how the class should be rewritten.
-     */
-    ComputeFlags processClass(TransformationContext context);
-
-    /**
-     * Where a class may be processed multiple times by the same processor (for example, if in addition to being loaded
-     * a later processor requests the state of the given class using a {@link BytecodeProvider}), an after-processing
-     * callback is guaranteed to run at most once per class, just before class load. A transformer will only see this
-     * context for classes it has processed.
-     * 
-     * @param context the context of the class that was processed
-     */
-    default void afterProcessing(AfterProcessingContext context) {}
-
-    /**
      * Capture context available to the provider generally, including a lookup for other processors and a tool to obtain
-     * the bytecode of any class before this processor.
+     * the bytecode of any class before this processor. Invoked once per processor.
      *
      * @param context the context for initialization
      */
