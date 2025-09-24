@@ -14,6 +14,8 @@
 
 package cpw.mods.modlauncher.api;
 
+import java.lang.constant.ClassDesc;
+import java.lang.constant.MethodTypeDesc;
 import java.util.Locale;
 import java.util.Set;
 import net.neoforged.fml.loading.FMLLoader;
@@ -118,7 +120,11 @@ public sealed interface ITransformer {
          * 
          * @param className the binary name of the class, as {@link Class#getName()}
          */
-        record ClassTarget(String className) implements Target {}
+        record ClassTarget(String className) implements Target {
+            public ClassTarget {
+                validateClassName(className);
+            }
+        }
 
         /**
          * Target a method.
@@ -127,7 +133,12 @@ public sealed interface ITransformer {
          * @param methodName       the name of the method
          * @param methodDescriptor the method's descriptor string
          */
-        record MethodTarget(String className, String methodName, String methodDescriptor) implements Target {}
+        record MethodTarget(String className, String methodName, String methodDescriptor) implements Target {
+            public MethodTarget {
+                validateClassName(className);
+                validateMethod(methodName, methodDescriptor);
+            }
+        }
 
         /**
          * Target a field.
@@ -135,7 +146,32 @@ public sealed interface ITransformer {
          * @param className the binary name of the class containing the field, as {@link Class#getName()}
          * @param fieldName the name of the field
          */
-        record FieldTarget(String className, String fieldName) implements Target {}
+        record FieldTarget(String className, String fieldName) implements Target {
+            public FieldTarget {
+                validateClassName(className);
+                validateUnqualified(fieldName);
+            }
+        }
+        
+        private static void validateClassName(String name) {
+            ClassDesc.of(name);
+        }
+        
+        private static void validateUnqualified(String name) {
+            ".;[/<>".chars().forEach(c -> {
+                if (name.indexOf(c) != -1) {
+                    throw new IllegalArgumentException("Invalid unqualified name " + name);
+                }
+            });
+        }
+        
+        private static void validateMethod(String name, String descriptor) {
+            if (name.equals("<init>") || (name.equals("<clinit>") && descriptor.equals("()V"))) {
+                return;
+            }
+            validateUnqualified(name);
+            MethodTypeDesc.ofDescriptor(descriptor);
+        }
     }
 
     private static String getOwnerName(Class<? extends ITransformer> clazz) {

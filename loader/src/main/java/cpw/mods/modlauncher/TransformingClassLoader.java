@@ -53,7 +53,7 @@ public class TransformingClassLoader extends ModuleClassLoader {
             }
 
             @Override
-            public Class<?> locateSuperClass(String className) throws ClassNotFoundException {
+            public Class<?> locateParentClass(String className) throws ClassNotFoundException {
                 return Class.forName(className, false, TransformingClassLoader.this.getParent());
             }
         });

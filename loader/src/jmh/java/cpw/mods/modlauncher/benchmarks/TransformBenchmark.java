@@ -72,7 +72,7 @@ public class TransformBenchmark {
             }
 
             @Override
-            public Class<?> locateSuperClass(String className) throws ClassNotFoundException {
+            public Class<?> locateParentClass(String className) throws ClassNotFoundException {
                 throw new ClassNotFoundException();
             }
         };

@@ -8,5 +8,5 @@ public interface ClassHierarchyRecomputationContext {
 
     byte[] upToFrames(String className) throws ClassNotFoundException;
 
-    Class<?> locateSuperClass(String className) throws ClassNotFoundException;
+    Class<?> locateParentClass(String className) throws ClassNotFoundException;
 }
