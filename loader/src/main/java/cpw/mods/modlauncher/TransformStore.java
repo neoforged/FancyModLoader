@@ -46,12 +46,11 @@ public class TransformStore {
 
     @VisibleForTesting
     public TransformStore(List<ClassProcessor> processors) {
-        this(processors, Map.of(), Set.of());
+        this(processors, Set.of());
     }
 
-    TransformStore(List<ClassProcessor> processors, Map<ProcessorName, BytecodeProviderImpl> bytecodeProviders, Set<ProcessorName> markers) {
+    TransformStore(List<ClassProcessor> processors, Set<ProcessorName> markers) {
         this.sortedTransformers = sortTransformers(processors);
-        this.bytecodeProviders.putAll(bytecodeProviders);
         CrashReportCallables.registerCrashCallable("Class Processors", () -> ClassTransformStatistics.computeCrashReportEntry(this));
         this.markerProcessors.addAll(markers);
     }
@@ -139,27 +138,12 @@ public class TransformStore {
         return name;
     }
 
-    private final Map<ProcessorName, BytecodeProviderImpl> bytecodeProviders = new HashMap<>();
-
-    static final class BytecodeProviderImpl implements ClassProcessor.BytecodeProvider {
-        private ClassProcessor.BytecodeProvider provider;
-
-        @Override
-        public byte[] acquireTransformedClassBefore(String className) throws ClassNotFoundException {
-            if (provider == null) {
-                throw new IllegalStateException("Bytecode provider not yet available");
-            }
-            return provider.acquireTransformedClassBefore(className);
-        }
-    }
-
     public void linkBytecodeProviders(Function<ProcessorName, ClassProcessor.BytecodeProvider> function) {
         for (var transformer : sortedTransformers) {
             var provider = function.apply(transformer.name());
-            var impl = bytecodeProviders.get(transformer.name());
-            if (provider != null && impl != null) {
-                impl.provider = provider;
-            }
+            ClassProcessor.ClassProcessorLocator locator = this::findClassProcessor;
+            var context = new ClassProcessor.InitializationContext(provider, locator);
+            transformer.initialize(context);
         }
     }
 

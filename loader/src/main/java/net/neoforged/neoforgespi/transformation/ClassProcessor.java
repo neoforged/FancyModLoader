@@ -76,8 +76,7 @@ public interface ClassProcessor extends ClassProcessorBehavior, ClassProcessorMe
     }
 
     /**
-     * Context available when initializing or constructing a processor. Guaranteed to be "live" by the time any method
-     * from {@link ClassProcessorBehavior} is invoked.
+     * Context available when initializing or constructing a processor.
      * 
      * @param bytecodeProvider allows querying class bytes' states before this processor
      * @param locator          allows locating other class processors
@@ -139,7 +138,8 @@ public interface ClassProcessor extends ClassProcessorBehavior, ClassProcessorMe
 
     /**
      * Capture context available to the provider generally, including a lookup for other processors and a tool to obtain
-     * the bytecode of any class before this processor. Invoked once per processor.
+     * the bytecode of any class before this processor. Invoked once per processor, before any methods from
+     * {@link ClassProcessorBehavior}.
      *
      * @param context the context for initialization
      */
