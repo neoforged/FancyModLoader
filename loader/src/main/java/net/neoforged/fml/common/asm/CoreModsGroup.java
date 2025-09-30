@@ -5,8 +5,8 @@
 
 package net.neoforged.fml.common.asm;
 
-import cpw.mods.modlauncher.api.ITransformer;
 import java.util.Set;
+import net.neoforged.fml.coremod.CoreModTransformer;
 import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
@@ -17,7 +17,7 @@ public class CoreModsGroup implements ClassProcessor {
     // For ordering purposes only; allows making transformers that run before/after all "default" coremods
     @Override
     public ProcessorName name() {
-        return ITransformer.COREMODS_GROUP;
+        return CoreModTransformer.COREMODS_GROUP;
     }
 
     @Override

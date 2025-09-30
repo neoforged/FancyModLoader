@@ -5,10 +5,10 @@
 
 package net.neoforged.neoforgespi.transformation;
 
-import cpw.mods.modlauncher.api.CoreModTransformationContext;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import net.neoforged.fml.coremod.CoreModTransformationContext;
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
