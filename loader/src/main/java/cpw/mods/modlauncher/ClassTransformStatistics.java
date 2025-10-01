@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,13 +28,13 @@ public class ClassTransformStatistics {
     }
 
     static void incrementAskedForTransform(ClassProcessor processor) {
-        if (!processor.name().equals(ClassProcessor.COMPUTING_FRAMES)) {
+        if (!processor.name().equals(ClassProcessorBehavior.COMPUTING_FRAMES)) {
             POTENTIAL_BY_PROCESSOR.compute(processor.name(), (k, v) -> v == null ? 1 : v + 1);
         }
     }
 
     static void incrementTransforms(ClassProcessor processor) {
-        if (!processor.name().equals(ClassProcessor.COMPUTING_FRAMES)) {
+        if (!processor.name().equals(ClassProcessorBehavior.COMPUTING_FRAMES)) {
             TRANSFORMS_BY_PROCESSOR.compute(processor.name(), (k, v) -> v == null ? 1 : v + 1);
         }
     }

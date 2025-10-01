@@ -1,8 +1,12 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fml.coremod;
 
 import java.util.Set;
 import java.util.stream.Collectors;
-import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
 
 final class CoreModClassProcessor implements ClassProcessorBehavior {
@@ -11,18 +15,18 @@ final class CoreModClassProcessor implements ClassProcessorBehavior {
 
     CoreModClassProcessor(CoreModClassTransformer transformer) {
         this.transformer = transformer;
-        this.targets = transformer.targets().stream().map(t -> t.className()).collect(Collectors.toSet());
+        this.targets = transformer.targets().stream().map(CoreModClassTransformer.Target::className).collect(Collectors.toSet());
     }
 
     @Override
-    public boolean handlesClass(ClassProcessor.SelectionContext context) {
+    public boolean handlesClass(SelectionContext context) {
         return targets.contains(context.type().getClassName());
     }
 
     @Override
-    public ClassProcessor.ComputeFlags processClass(ClassProcessor.TransformationContext context) {
+    public ComputeFlags processClass(TransformationContext context) {
         transformer.transform(context.node(), context);
-        return ClassProcessor.ComputeFlags.COMPUTE_FRAMES;
+        return ComputeFlags.COMPUTE_FRAMES;
     }
 
     @Override

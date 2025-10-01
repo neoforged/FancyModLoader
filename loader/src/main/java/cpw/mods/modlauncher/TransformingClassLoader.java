@@ -17,7 +17,7 @@ package cpw.mods.modlauncher;
 import cpw.mods.cl.ModuleClassLoader;
 import java.lang.module.Configuration;
 import java.util.List;
-import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -49,7 +49,7 @@ public class TransformingClassLoader extends ModuleClassLoader {
 
             @Override
             public byte[] upToFrames(String className) throws ClassNotFoundException {
-                return TransformingClassLoader.this.buildTransformedClassNodeFor(className, ClassProcessor.COMPUTING_FRAMES);
+                return TransformingClassLoader.this.buildTransformedClassNodeFor(className, ClassProcessorBehavior.COMPUTING_FRAMES);
             }
 
             @Override

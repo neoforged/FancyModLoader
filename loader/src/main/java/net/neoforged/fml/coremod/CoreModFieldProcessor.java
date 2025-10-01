@@ -1,9 +1,13 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fml.coremod;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
 
 final class CoreModFieldProcessor implements ClassProcessorBehavior {
@@ -13,21 +17,21 @@ final class CoreModFieldProcessor implements ClassProcessorBehavior {
     CoreModFieldProcessor(CoreModFieldTransformer transformer) {
         this.transformer = transformer;
         this.targetsByClass = transformer.targets().stream().collect(
-                Collectors.groupingBy(t -> t.className(), Collectors.mapping(
-                        t -> t.fieldName(),
+                Collectors.groupingBy(CoreModFieldTransformer.Target::className, Collectors.mapping(
+                        CoreModFieldTransformer.Target::fieldName,
                         Collectors.toSet())));
     }
 
     @Override
-    public boolean handlesClass(ClassProcessor.SelectionContext context) {
+    public boolean handlesClass(SelectionContext context) {
         return targetsByClass.containsKey(context.type().getClassName());
     }
 
     @Override
-    public ClassProcessor.ComputeFlags processClass(ClassProcessor.TransformationContext context) {
+    public ComputeFlags processClass(TransformationContext context) {
         var targetFields = this.targetsByClass.get(context.type().getClassName());
         if (targetFields == null) {
-            return ClassProcessor.ComputeFlags.NO_REWRITE;
+            return ComputeFlags.NO_REWRITE;
         }
 
         boolean transformed = false;
@@ -38,7 +42,7 @@ final class CoreModFieldProcessor implements ClassProcessorBehavior {
             }
         }
 
-        return transformed ? ClassProcessor.ComputeFlags.COMPUTE_FRAMES : ClassProcessor.ComputeFlags.NO_REWRITE;
+        return transformed ? ComputeFlags.COMPUTE_FRAMES : ComputeFlags.NO_REWRITE;
     }
 
     @Override

@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -94,9 +95,9 @@ public class ClassTransformer {
 
         boolean allowsComputeFrames = false;
 
-        var flags = ClassProcessor.ComputeFlags.NO_REWRITE;
+        var flags = ClassProcessorBehavior.ComputeFlags.NO_REWRITE;
         for (var transformer : transformersToUse) {
-            if (ClassProcessor.COMPUTING_FRAMES.equals(transformer.name())) {
+            if (ClassProcessorBehavior.COMPUTING_FRAMES.equals(transformer.name())) {
                 allowsComputeFrames = true;
             }
             var trail = auditTrail.forClassProcessor(classDesc.getClassName(), transformer);
@@ -107,15 +108,15 @@ public class ClassTransformer {
                     trail,
                     digest);
             var newFlags = transformer.processClass(context);
-            if (newFlags != ClassProcessor.ComputeFlags.NO_REWRITE) {
+            if (newFlags != ClassProcessorBehavior.ComputeFlags.NO_REWRITE) {
                 trail.rewrites();
                 isEmpty = false;
             }
             flags = combineFlags(flags, newFlags);
             if (!allowsComputeFrames) {
-                if (flags.ordinal() >= ClassProcessor.ComputeFlags.COMPUTE_FRAMES.ordinal()) {
-                    LOGGER.error(MODLAUNCHER, "Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer {}", transformer.name(), ClassProcessor.COMPUTING_FRAMES);
-                    throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer " + ClassProcessor.COMPUTING_FRAMES);
+                if (flags.ordinal() >= ClassProcessorBehavior.ComputeFlags.COMPUTE_FRAMES.ordinal()) {
+                    LOGGER.error(MODLAUNCHER, "Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer {}", transformer.name(), ClassProcessorBehavior.COMPUTING_FRAMES);
+                    throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer " + ClassProcessorBehavior.COMPUTING_FRAMES);
                 }
             }
         }
@@ -127,7 +128,7 @@ public class ClassTransformer {
             }
         }
 
-        if (flags == ClassProcessor.ComputeFlags.NO_REWRITE) {
+        if (flags == ClassProcessorBehavior.ComputeFlags.NO_REWRITE) {
             return inputClass; // No changes were made, return the original class
         }
 

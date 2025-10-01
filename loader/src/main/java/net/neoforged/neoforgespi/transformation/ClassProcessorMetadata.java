@@ -8,6 +8,8 @@ package net.neoforged.neoforgespi.transformation;
 import java.util.Set;
 
 public interface ClassProcessorMetadata {
+    String GENERATED_PACKAGE_MODULE = "net.neoforged.fml.generated";
+
     /**
      * {@return a unique identifier for this processor}
      */
@@ -22,15 +24,15 @@ public interface ClassProcessorMetadata {
 
     /**
      * {@return processors that this processor must run after} This should include
-     * {@link ClassProcessor#COMPUTING_FRAMES} if the processor returns a result requiring frame re-computation.
+     * {@link ClassProcessorBehavior#COMPUTING_FRAMES} if the processor returns a result requiring frame re-computation.
      */
     default Set<ProcessorName> runsAfter() {
-        return Set.of(ClassProcessor.COMPUTING_FRAMES);
+        return Set.of(ClassProcessorBehavior.COMPUTING_FRAMES);
     }
 
     /**
      * {@return packages that this processor generates classes for, that do not already exist on the game layer}
-     * Generated packages in the game layer will be in the module {@value ClassProcessor#GENERATED_PACKAGE_MODULE}.
+     * Generated packages in the game layer will be in the module {@value ClassProcessorMetadata#GENERATED_PACKAGE_MODULE}.
      */
     default Set<String> generatesPackages() {
         return Set.of();
