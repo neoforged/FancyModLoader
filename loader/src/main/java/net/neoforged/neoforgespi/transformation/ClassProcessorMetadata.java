@@ -37,4 +37,19 @@ public interface ClassProcessorMetadata {
     default Set<String> generatesPackages() {
         return Set.of();
     }
+
+    /**
+     * {@return a hint for how this processor should be ordered relative to other processors} Note that this is a
+     * comparatively weak hint; {@link #runsBefore()} and {@link #runsAfter()} take precedence, and processors don't
+     * have "phases" of any sort.
+     */
+    default OrderingHint orderingHint() {
+        return OrderingHint.DEFAULT;
+    }
+
+    enum OrderingHint {
+        EARLY,
+        DEFAULT,
+        LATE
+    }
 }

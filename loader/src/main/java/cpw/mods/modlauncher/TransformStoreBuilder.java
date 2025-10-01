@@ -1,21 +1,32 @@
 package cpw.mods.modlauncher;
 
+import com.google.common.graph.GraphBuilder;
+import com.mojang.logging.LogUtils;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import net.neoforged.fml.loading.toposort.TopologicalSort;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
+import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
 import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
+import org.slf4j.Logger;
 
 @ApiStatus.Internal
 public class TransformStoreBuilder {
-    private final List<ClassProcessor> processors = new ArrayList<>();
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    public record AnnotatedBehaviorFactory(ClassProcessorMetadata metadata, Function<ClassProcessor.InitializationContext, ClassProcessorBehavior> behavior) {}
+
+    private final List<AnnotatedBehaviorFactory> processors = new ArrayList<>();
     private final Set<ProcessorName> markers = new HashSet<>();
 
     public void markMarker(ProcessorName name) {
@@ -23,7 +34,7 @@ public class TransformStoreBuilder {
     }
 
     public void addProcessors(Collection<ClassProcessor> toAdd) {
-        this.processors.addAll(toAdd);
+        toAdd.forEach(p -> processors.add(unwrap(p)));
     }
 
     public void addProcessorProviders(Collection<ClassProcessorProvider> providers) {
@@ -31,78 +42,104 @@ public class TransformStoreBuilder {
             provider.makeProcessors(new ClassProcessorProvider.ClassProcessorCollector() {
                 @Override
                 public void add(ClassProcessorMetadata metadata, Function<ClassProcessor.InitializationContext, ClassProcessorBehavior> factory) {
-                    TransformStoreBuilder.this.processors.add(new ClassProcessor() {
-                        @Override
-                        public Set<ProcessorName> runsBefore() {
-                            return metadata.runsBefore();
-                        }
-
-                        @Override
-                        public Set<ProcessorName> runsAfter() {
-                            return metadata.runsAfter();
-                        }
-
-                        @Override
-                        public ProcessorName name() {
-                            return metadata.name();
-                        }
-
-                        @Override
-                        public Set<String> generatesPackages() {
-                            return metadata.generatesPackages();
-                        }
-
-                        private ClassProcessorBehavior behaviour;
-                        private InitializationContext initContext;
-
-                        @Override
-                        public boolean handlesClass(SelectionContext context) {
-                            initializeBehavior();
-                            return behaviour.handlesClass(context);
-                        }
-
-                        @Override
-                        public ComputeFlags processClass(TransformationContext context) {
-                            initializeBehavior();
-                            return behaviour.processClass(context);
-                        }
-
-                        @Override
-                        public void afterProcessing(AfterProcessingContext context) {
-                            initializeBehavior();
-                            behaviour.afterProcessing(context);
-                        }
-
-                        @Override
-                        public void initialize(InitializationContext context) {
-                            this.initContext = context;
-                        }
-
-                        private synchronized void initializeBehavior() {
-                            if (behaviour == null && initContext != null) {
-                                var behaviour = factory.apply(this.initContext);
-                                if (behaviour == null) {
-                                    throw new IllegalStateException("Processor factory attempted to register null processor for name " + metadata);
-                                }
-                                this.behaviour = behaviour;
-                                this.initContext = null;
-                            }
-                        }
-                    });
+                    TransformStoreBuilder.this.processors.add(new AnnotatedBehaviorFactory(metadata, factory));
                 }
 
                 @Override
                 public void add(ClassProcessor processor) {
-                    if (processor == null) {
-                        throw new IllegalStateException("Processor collector attempted to register null processor");
-                    }
-                    TransformStoreBuilder.this.processors.add(processor);
+                    TransformStoreBuilder.this.processors.add(unwrap(processor));
                 }
             });
         }
     }
 
-    public TransformStore build() {
-        return new TransformStore(this.processors, this.markers);
+    private static AnnotatedBehaviorFactory unwrap(ClassProcessor processor) {
+        return new AnnotatedBehaviorFactory(processor, context -> {
+            processor.initialize(context);
+            return processor;
+        });
+    }
+
+    @SuppressWarnings("UnstableApiUsage")
+    private static List<AnnotatedBehaviorFactory> sortProcessors(List<AnnotatedBehaviorFactory> allProcessors) {
+        final var transformers = new HashMap<ProcessorName, AnnotatedBehaviorFactory>();
+        final var graph = GraphBuilder.directed().<AnnotatedBehaviorFactory>build();
+
+        var specialComputeFramesNode = new AnnotatedBehaviorFactory(new ClassProcessorMetadata() {
+            @Override
+            public ProcessorName name() {
+                return ClassProcessorIds.COMPUTING_FRAMES;
+            }
+
+            @Override
+            public Set<ProcessorName> runsAfter() {
+                return Set.of();
+            }
+
+            @Override
+            public OrderingHint orderingHint() {
+                return OrderingHint.EARLY;
+            }
+        }, context -> new ClassProcessorBehavior() {
+            @Override
+            public boolean handlesClass(SelectionContext context) {
+                return false;
+            }
+
+            @Override
+            public ComputeFlags processClass(TransformationContext context) {
+                return ComputeFlags.NO_REWRITE;
+            }
+        });
+
+        graph.addNode(specialComputeFramesNode);
+        transformers.put(specialComputeFramesNode.metadata.name(), specialComputeFramesNode);
+        for (var transformer : allProcessors) {
+            if (transformers.containsKey(transformer.metadata.name())) {
+                LOGGER.error(
+                        "Duplicate transformers with name {}, of types {} and {}",
+                        transformer.metadata.name(),
+                        transformers.get(transformer.metadata.name()).getClass().getName(),
+                        transformer.getClass().getName());
+                throw new IllegalStateException("Duplicate transformers with name: " + transformer.metadata.name());
+            }
+            graph.addNode(transformer);
+            transformers.put(transformer.metadata.name(), transformer);
+        }
+        for (var self : transformers.values()) {
+            // If the targeted transformer is not present, then the ordering does not matter;
+            // this allows for e.g. ordering with transformers that may or may not be present.
+            for (var targetName : self.metadata.runsBefore()) {
+                var target = transformers.get(targetName);
+                if (target == self) {
+                    continue;
+                }
+                if (target != null) {
+                    graph.putEdge(self, target);
+                }
+            }
+            for (var targetName : self.metadata.runsAfter()) {
+                var target = transformers.get(targetName);
+                if (target == self) {
+                    continue;
+                }
+                if (target != null) {
+                    graph.putEdge(target, self);
+                }
+            }
+        }
+        return TopologicalSort.topologicalSort(graph, Comparator.<AnnotatedBehaviorFactory, ClassProcessorMetadata.OrderingHint>comparing(t -> t.metadata.orderingHint()).thenComparing(TransformStoreBuilder::getNameSafe));
+    }
+
+    private static ProcessorName getNameSafe(AnnotatedBehaviorFactory classProcessor) {
+        var name = classProcessor.metadata.name();
+        if (name == null) {
+            throw new IllegalStateException("Class processor " + classProcessor.metadata + " returns a null name");
+        }
+        return name;
+    }
+
+    public TransformStoreFactory bake() {
+        return new TransformStoreFactory(sortProcessors(this.processors), this.markers);
     }
 }

@@ -15,9 +15,8 @@ import cpw.mods.jarhandling.impl.CompositeJarContents;
 import cpw.mods.jarhandling.impl.EmptyJarContents;
 import cpw.mods.jarhandling.impl.FolderJarContents;
 import cpw.mods.jarhandling.impl.JarFileContents;
-import cpw.mods.modlauncher.ClassTransformer;
-import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformStoreBuilder;
+import cpw.mods.modlauncher.TransformStoreFactory;
 import cpw.mods.modlauncher.TransformerAuditTrail;
 import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.ITransformerAuditTrail;
@@ -130,7 +129,6 @@ public final class FMLLoader implements AutoCloseable {
     @VisibleForTesting
     DiscoveryResult discoveryResult;
     private final TransformerAuditTrail classTransformerAuditLog = new TransformerAuditTrail();
-    private ClassTransformer classTransformer;
     @Nullable
     @VisibleForTesting
     volatile IBindingsProvider bindings;
@@ -333,12 +331,11 @@ public final class FMLLoader implements AutoCloseable {
                 gameContent.add(modFile.getSecureJar());
             }
 
-            var transformStore = createTransformStore(startupArgs, launchContext, discoveryResult, mixinFacade);
-            loader.classTransformer = new ClassTransformer(transformStore, loader.classTransformerAuditLog);
+            var transformStoreFactory = createTransformStore(startupArgs, launchContext, discoveryResult, mixinFacade);
             gameContent.add(new VirtualJar(
                     ClassProcessorMetadata.GENERATED_PACKAGE_MODULE,
-                    loader.classTransformer.generatedPackages().toArray(String[]::new)));
-            var transformingLoader = loader.buildTransformingLoader(loader.classTransformer, gameContent);
+                    transformStoreFactory.getGeneratedPackages().toArray(String[]::new)));
+            var transformingLoader = loader.buildTransformingLoader(transformStoreFactory, loader.classTransformerAuditLog, gameContent);
 
             // From here on out, try loading through the TCL
             if (classLoadingGuardian != null) {
@@ -364,7 +361,7 @@ public final class FMLLoader implements AutoCloseable {
         }
     }
 
-    private static TransformStore createTransformStore(StartupArgs startupArgs,
+    private static TransformStoreFactory createTransformStore(StartupArgs startupArgs,
             LaunchContextAdapter launchContext,
             DiscoveryResult discoveryResult,
             MixinFacade mixinFacade) {
@@ -395,7 +392,7 @@ public final class FMLLoader implements AutoCloseable {
         builder.addProcessors(ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class, builtInProcessors));
         builder.addProcessorProviders(ServiceLoaderUtil.loadServices(launchContext, ClassProcessorProvider.class));
 
-        return builder.build();
+        return builder.bake();
     }
 
     private static ClassProcessor createAccessTransformerService(DiscoveryResult discoveryResult) {
@@ -418,7 +415,8 @@ public final class FMLLoader implements AutoCloseable {
         return new AccessTransformerService(engine);
     }
 
-    private TransformingClassLoader buildTransformingLoader(ClassTransformer classTransformer,
+    private TransformingClassLoader buildTransformingLoader(TransformStoreFactory transformStoreFactory,
+            TransformerAuditTrail auditTrail,
             List<SecureJar> content) {
         maskContentAlreadyOnClasspath(content);
 
@@ -434,7 +432,7 @@ public final class FMLLoader implements AutoCloseable {
 
         var moduleNames = getModuleNameList(cf, content);
         LOGGER.info("Building game content classloader:\n{}", moduleNames);
-        var loader = new TransformingClassLoader(classTransformer, cf, parentLayers, currentClassLoader);
+        var loader = new TransformingClassLoader(transformStoreFactory, auditTrail, cf, parentLayers, currentClassLoader);
 
         var layer = ModuleLayer.defineModules(
                 cf,

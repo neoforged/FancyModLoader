@@ -5,7 +5,6 @@
 
 package net.neoforged.neoforgespi.transformation;
 
-import java.util.Optional;
 import org.jetbrains.annotations.ApiStatus;
 
 /**
@@ -17,15 +16,6 @@ import org.jetbrains.annotations.ApiStatus;
  * should run before or after if present.
  */
 public interface ClassProcessor extends ClassProcessorBehavior, ClassProcessorMetadata {
-    interface ClassProcessorLocator {
-        /**
-         * {@return a processor with the given name, if it exists}
-         * 
-         * @param name the processor to find
-         */
-        Optional<ClassProcessor> find(ProcessorName name);
-    }
-
     interface BytecodeProvider {
         /**
          * Locates the bytecode for a given class. This bytecode is provided in the form that the processor would see,
@@ -42,9 +32,8 @@ public interface ClassProcessor extends ClassProcessorBehavior, ClassProcessorMe
      * Context available when initializing or constructing a processor.
      * 
      * @param bytecodeProvider allows querying class bytes' states before this processor
-     * @param locator          allows locating other class processors
      */
-    record InitializationContext(BytecodeProvider bytecodeProvider, ClassProcessorLocator locator) {
+    record InitializationContext(BytecodeProvider bytecodeProvider) {
         @ApiStatus.Internal
         public InitializationContext {}
     }

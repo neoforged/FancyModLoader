@@ -14,154 +14,65 @@
 
 package cpw.mods.modlauncher;
 
-import com.google.common.graph.GraphBuilder;
-import com.mojang.logging.LogUtils;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import net.neoforged.fml.CrashReportCallables;
-import net.neoforged.fml.loading.toposort.TopologicalSort;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
+import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.objectweb.asm.Type;
-import org.slf4j.Logger;
 
 @ApiStatus.Internal
 public class TransformStore {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    public record AnnotatedBehavior(ClassProcessorMetadata metadata, ClassProcessorBehavior behavior) {}
 
-    private final Map<ProcessorName, ClassProcessor> transformers = new HashMap<>();
-    private final List<ClassProcessor> sortedTransformers;
-    private final Set<String> generatedPackages = new HashSet<>();
+    private final List<AnnotatedBehavior> sortedProcessors = new ArrayList<>();
     private final Set<ProcessorName> markerProcessors = new HashSet<>();
 
     @VisibleForTesting
-    public TransformStore(List<ClassProcessor> processors) {
-        this(processors, Set.of());
+    public TransformStore(List<ClassProcessor> sortedProcessors) {
+        this(Set.of());
+        sortedProcessors.forEach(p -> this.sortedProcessors.add(new AnnotatedBehavior(p, p)));
     }
 
-    TransformStore(List<ClassProcessor> processors, Set<ProcessorName> markers) {
-        this.sortedTransformers = sortTransformers(processors);
+    TransformStore(Set<ProcessorName> markers) {
         CrashReportCallables.registerCrashCallable("Class Processors", () -> ClassTransformStatistics.computeCrashReportEntry(this));
         this.markerProcessors.addAll(markers);
     }
 
-    public boolean isMarker(ClassProcessor processor) {
+    void addProcessor(AnnotatedBehavior processor) {
+        this.sortedProcessors.add(processor);
+    }
+
+    public boolean isMarker(ClassProcessorMetadata processor) {
         return markerProcessors.contains(processor.name());
     }
 
-    @VisibleForTesting
-    public List<ClassProcessor> getSortedTransformers() {
-        return sortedTransformers;
+    List<AnnotatedBehavior> getSortedProcessors() {
+        return sortedProcessors;
     }
 
-    @SuppressWarnings("UnstableApiUsage")
-    private List<ClassProcessor> sortTransformers(List<ClassProcessor> allTransformers) {
-        final var graph = GraphBuilder.directed().<ClassProcessor>build();
-        var specialComputeFramesNode = new ClassProcessor() {
-            // This "special" transformer never handles a class but is always triggered
-            @Override
-            public ProcessorName name() {
-                return ClassProcessorIds.COMPUTING_FRAMES;
-            }
-
-            @Override
-            public boolean handlesClass(SelectionContext context) {
-                return false;
-            }
-
-            @Override
-            public Set<ProcessorName> runsAfter() {
-                return Set.of();
-            }
-
-            @Override
-            public ComputeFlags processClass(TransformationContext context) {
-                return ComputeFlags.COMPUTE_FRAMES;
-            }
-        };
-
-        graph.addNode(specialComputeFramesNode);
-        transformers.put(specialComputeFramesNode.name(), specialComputeFramesNode);
-        for (var transformer : allTransformers) {
-            if (transformers.containsKey(transformer.name())) {
-                LOGGER.error(
-                        "Duplicate transformers with name {}, of types {} and {}",
-                        transformer.name(),
-                        transformers.get(transformer.name()).getClass().getName(),
-                        transformer.getClass().getName());
-                throw new IllegalStateException("Duplicate transformers with name: " + transformer.name());
-            }
-            graph.addNode(transformer);
-            transformers.put(transformer.name(), transformer);
-        }
-        for (var self : transformers.values()) {
-            this.generatedPackages.addAll(self.generatesPackages());
-            // If the targeted transformer is not present, then the ordering does not matter;
-            // this allows for e.g. ordering with transformers that may or may not be present.
-            for (var targetName : self.runsBefore()) {
-                var target = transformers.get(targetName);
-                if (target == self) {
-                    continue;
-                }
-                if (target != null) {
-                    graph.putEdge(self, target);
-                }
-            }
-            for (var targetName : self.runsAfter()) {
-                var target = transformers.get(targetName);
-                if (target == self) {
-                    continue;
-                }
-                if (target != null) {
-                    graph.putEdge(target, self);
-                }
-            }
-        }
-        return TopologicalSort.topologicalSort(graph, Comparator.comparing(TransformStore::getNameSafe));
-    }
-
-    private static ProcessorName getNameSafe(ClassProcessor classProcessor) {
-        var name = classProcessor.name();
-        if (name == null) {
-            throw new IllegalStateException("Class processor " + classProcessor.getClass().getName() + " returns a null name");
-        }
-        return name;
-    }
-
-    public void linkBytecodeProviders(Function<ProcessorName, ClassProcessor.BytecodeProvider> function) {
-        for (var transformer : sortedTransformers) {
-            var provider = function.apply(transformer.name());
-            var context = new ClassProcessor.InitializationContext(provider, this::findClassProcessor);
-            transformer.initialize(context);
-        }
-    }
-
-    public List<ClassProcessor> transformersFor(Type classDesc, boolean isEmpty, ProcessorName upToTransformer) {
-        var out = new ArrayList<ClassProcessor>();
+    public List<AnnotatedBehavior> transformersFor(Type classDesc, boolean isEmpty, ProcessorName upToTransformer) {
+        var out = new ArrayList<AnnotatedBehavior>();
         boolean includesComputingFrames = false;
-        for (var transformer : sortedTransformers) {
-            if (upToTransformer != null && upToTransformer.equals(transformer.name())) {
+        for (var transformer : sortedProcessors) {
+            if (upToTransformer != null && upToTransformer.equals(transformer.metadata.name())) {
                 break;
-            } else if (ClassProcessorIds.COMPUTING_FRAMES.equals(transformer.name())) {
+            } else if (ClassProcessorIds.COMPUTING_FRAMES.equals(transformer.metadata.name())) {
                 includesComputingFrames = true;
                 out.add(transformer);
             } else {
-                ClassTransformStatistics.incrementAskedForTransform(transformer);
+                ClassTransformStatistics.incrementAskedForTransform(transformer.metadata);
 
                 var context = new ClassProcessor.SelectionContext(classDesc, isEmpty);
-                if (transformer.handlesClass(context)) {
-                    ClassTransformStatistics.incrementTransforms(transformer);
+                if (transformer.behavior.handlesClass(context)) {
+                    ClassTransformStatistics.incrementTransforms(transformer.metadata);
                     out.add(transformer);
                 }
             }
@@ -173,13 +84,5 @@ public class TransformStore {
             return List.of();
         }
         return out;
-    }
-
-    public Set<String> generatedPackages() {
-        return Collections.unmodifiableSet(generatedPackages);
-    }
-
-    private Optional<ClassProcessor> findClassProcessor(ProcessorName name) {
-        return Optional.ofNullable(transformers.get(name));
     }
 }

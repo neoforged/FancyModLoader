@@ -18,8 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import cpw.mods.cl.JarModuleFinder;
 import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.modlauncher.ClassTransformer;
-import cpw.mods.modlauncher.TransformStore;
+import cpw.mods.modlauncher.TransformStoreBuilder;
 import cpw.mods.modlauncher.TransformerAuditTrail;
 import cpw.mods.modlauncher.TransformingClassLoader;
 import java.io.IOException;
@@ -40,11 +39,11 @@ class TransformingClassLoaderTests {
     void testClassLoader() throws Exception {
         MockClassProcessor mockClassProcessor = new MockClassProcessor(TARGET_CLASS);
 
-        TransformStore transformStore = new TransformStore(List.of(mockClassProcessor));
-        var classTransformer = new ClassTransformer(transformStore, new TransformerAuditTrail());
+        var transformStoreBuilder = new TransformStoreBuilder();
+        transformStoreBuilder.addProcessors(List.of(mockClassProcessor));
 
         Configuration configuration = createTestJarsConfiguration();
-        TransformingClassLoader tcl = new TransformingClassLoader(classTransformer, configuration, List.of(ModuleLayer.boot()), null);
+        TransformingClassLoader tcl = new TransformingClassLoader(transformStoreBuilder.bake(), new TransformerAuditTrail(), configuration, List.of(ModuleLayer.boot()), null);
         ModuleLayer.boot().defineModules(configuration, s -> tcl);
 
         final Class<?> aClass = Class.forName(TARGET_CLASS, true, tcl);

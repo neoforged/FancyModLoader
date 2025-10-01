@@ -5,8 +5,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
+import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,13 +26,13 @@ public class ClassTransformStatistics {
         MIXIN_PARSED_CLASS_COUNT.incrementAndGet();
     }
 
-    static void incrementAskedForTransform(ClassProcessor processor) {
+    static void incrementAskedForTransform(ClassProcessorMetadata processor) {
         if (!processor.name().equals(ClassProcessorIds.COMPUTING_FRAMES)) {
             POTENTIAL_BY_PROCESSOR.compute(processor.name(), (k, v) -> v == null ? 1 : v + 1);
         }
     }
 
-    static void incrementTransforms(ClassProcessor processor) {
+    static void incrementTransforms(ClassProcessorMetadata processor) {
         if (!processor.name().equals(ClassProcessorIds.COMPUTING_FRAMES)) {
             TRANSFORMS_BY_PROCESSOR.compute(processor.name(), (k, v) -> v == null ? 1 : v + 1);
         }
@@ -87,11 +87,11 @@ public class ClassTransformStatistics {
 
     @ApiStatus.Internal
     public static synchronized String computeCrashReportEntry(TransformStore transformStore) {
-        var transforms = transformStore.getSortedTransformers();
+        var transforms = transformStore.getSortedProcessors();
         record Entry(double ratio, String name) {}
         var entries = new ArrayList<Entry>();
         for (var transform : transforms) {
-            var name = transform.name();
+            var name = transform.metadata().name();
             var actual = TRANSFORMS_BY_PROCESSOR.get(name);
             var potential = POTENTIAL_BY_PROCESSOR.get(name);
             double ratio;
@@ -100,7 +100,7 @@ public class ClassTransformStatistics {
             } else {
                 ratio = 100d * ((double) actual) / potential;
             }
-            entries.add(new Entry(ratio, transformStore.isMarker(transform) ? name + " (marker)" : name.toString()));
+            entries.add(new Entry(ratio, transformStore.isMarker(transform.metadata()) ? name + " (marker)" : name.toString()));
         }
         return entries.stream()
                 .map(e -> String.format("%05.2f%%: %s", e.ratio, e.name))

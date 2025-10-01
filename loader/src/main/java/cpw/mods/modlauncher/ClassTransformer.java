@@ -19,8 +19,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
@@ -54,13 +52,6 @@ public class ClassTransformer {
         this.auditTrail = auditTrail;
     }
 
-    /**
-     * Link {@link ClassProcessor}s to bytecode providers. May only be executed once.
-     */
-    public void linkBytecodeProviders(Function<ProcessorName, ClassProcessor.BytecodeProvider> function) {
-        this.transformers.linkBytecodeProviders(function);
-    }
-
     public byte[] transform(byte[] inputClass, String className, final ProcessorName upToTransformer, ClassHierarchyRecomputationContext locator) {
         final String internalName = className.replace('.', '/');
         final Type classDesc = Type.getObjectType(internalName);
@@ -92,17 +83,17 @@ public class ClassTransformer {
 
         var flags = ClassProcessorBehavior.ComputeFlags.NO_REWRITE;
         for (var transformer : transformersToUse) {
-            if (ClassProcessorIds.COMPUTING_FRAMES.equals(transformer.name())) {
+            if (ClassProcessorIds.COMPUTING_FRAMES.equals(transformer.metadata().name())) {
                 allowsComputeFrames = true;
             }
-            var trail = auditTrail.forClassProcessor(classDesc.getClassName(), transformer);
+            var trail = auditTrail.forClassProcessor(classDesc.getClassName(), transformer.metadata());
             var context = new ClassProcessor.TransformationContext(
                     classDesc,
                     clazz,
                     isEmpty,
                     trail,
                     digest);
-            var newFlags = transformer.processClass(context);
+            var newFlags = transformer.behavior().processClass(context);
             if (newFlags != ClassProcessorBehavior.ComputeFlags.NO_REWRITE) {
                 trail.rewrites();
                 isEmpty = false;
@@ -110,8 +101,8 @@ public class ClassTransformer {
             flags = flags.max(newFlags);
             if (!allowsComputeFrames) {
                 if (flags.ordinal() >= ClassProcessorBehavior.ComputeFlags.COMPUTE_FRAMES.ordinal()) {
-                    LOGGER.error("Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer {}", transformer.name(), ClassProcessorIds.COMPUTING_FRAMES);
-                    throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer " + ClassProcessorIds.COMPUTING_FRAMES);
+                    LOGGER.error("Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer {}", transformer.metadata().name(), ClassProcessorIds.COMPUTING_FRAMES);
+                    throw new IllegalStateException("Transformer " + transformer.metadata().name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer " + ClassProcessorIds.COMPUTING_FRAMES);
                 }
             }
         }
@@ -119,7 +110,7 @@ public class ClassTransformer {
             // run post-result callbacks
             var context = new ClassProcessor.AfterProcessingContext(classDesc);
             for (var transformer : transformersToUse) {
-                transformer.afterProcessing(context);
+                transformer.behavior().afterProcessing(context);
             }
         }
 
@@ -177,9 +168,5 @@ public class ClassTransformer {
 
         //Only use the TransformerClassWriter when needed as it's slower, and only COMPUTE_FRAMES calls getCommonSuperClass
         return flags.ordinal() >= ClassProcessorBehavior.ComputeFlags.COMPUTE_FRAMES.ordinal() ? new TransformerClassWriter(writerFlag, clazzAccessor, locator) : new ClassWriter(writerFlag);
-    }
-
-    public Set<String> generatedPackages() {
-        return transformers.generatedPackages();
     }
 }

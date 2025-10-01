@@ -79,6 +79,11 @@ public class RuntimeEnumExtender implements ClassProcessor {
     }
 
     @Override
+    public OrderingHint orderingHint() {
+        return OrderingHint.EARLY;
+    }
+
+    @Override
     public ComputeFlags processClass(final TransformationContext context) {
         final var classNode = context.node();
         final var classType = context.type();
