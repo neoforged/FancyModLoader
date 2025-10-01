@@ -54,6 +54,9 @@ public class ClassTransformer {
         this.auditTrail = auditTrail;
     }
 
+    /**
+     * Link {@link ClassProcessor}s to bytecode providers. May only be executed once.
+     */
     public void linkBytecodeProviders(Function<ProcessorName, ClassProcessor.BytecodeProvider> function) {
         this.transformers.linkBytecodeProviders(function);
     }
