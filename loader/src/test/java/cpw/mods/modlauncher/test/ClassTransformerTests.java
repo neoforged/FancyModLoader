@@ -24,6 +24,7 @@ import cpw.mods.modlauncher.TransformerAuditTrail;
 import java.util.ArrayList;
 import java.util.List;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -39,8 +40,13 @@ class ClassTransformerTests {
         var handlesClassCalls = new ArrayList<String>();
         var processor = new ClassProcessor() {
             @Override
-            public ProcessorName name() {
-                return ProcessorName.parse("test:test");
+            public ClassProcessorMetadata metadata() {
+                return new ClassProcessorMetadata() {
+                    @Override
+                    public ProcessorName name() {
+                        return ProcessorName.parse("test:test");
+                    }
+                };
             }
 
             @Override

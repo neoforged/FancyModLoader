@@ -9,25 +9,33 @@ import java.util.Set;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
+import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
 
 @ApiStatus.Internal
 public class AccessTransformerService implements ClassProcessor {
     private final AccessTransformerEngine engine;
+    private final ClassProcessorMetadata metadata;
 
     public AccessTransformerService(AccessTransformerEngine engine) {
         this.engine = engine;
+        this.metadata = new ClassProcessorMetadata() {
+            @Override
+            public ProcessorName name() {
+                return ClassProcessorIds.ACCESS_TRANSFORMERS;
+            }
+
+            @Override
+            public Set<ProcessorName> runsBefore() {
+                return Set.of(ClassProcessorIds.MIXIN);
+            }
+        };
     }
 
     @Override
-    public ProcessorName name() {
-        return ClassProcessorIds.ACCESS_TRANSFORMERS;
-    }
-
-    @Override
-    public Set<ProcessorName> runsBefore() {
-        return Set.of(ClassProcessorIds.MIXIN);
+    public ClassProcessorMetadata metadata() {
+        return metadata;
     }
 
     @Override

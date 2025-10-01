@@ -6,7 +6,7 @@
 package net.neoforged.fml.coremod;
 
 import java.util.Set;
-import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import org.objectweb.asm.tree.MethodNode;
 
 non-sealed public interface CoreModMethodTransformer extends CoreModTransformer {
@@ -34,7 +34,7 @@ non-sealed public interface CoreModMethodTransformer extends CoreModTransformer 
         }
     }
 
-    default ClassProcessorBehavior toClassProcessorBehavior() {
+    default ClassProcessor toProcessor() {
         return new CoreModMethodProcessor(this);
     }
 }

@@ -19,6 +19,7 @@ import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
+import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
 import org.slf4j.Logger;
@@ -38,6 +39,7 @@ public class NeoForgeDevDistCleaner implements ClassProcessor {
 
     private final Dist dist;
     private final Set<String> maskedClasses;
+    private final ClassProcessorMetadata metadata;
 
     public NeoForgeDevDistCleaner(JarContents minecraftModFile, Dist requestedDist) {
         this.dist = requestedDist;
@@ -52,6 +54,23 @@ public class NeoForgeDevDistCleaner implements ClassProcessor {
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+        this.metadata = new ClassProcessorMetadata() {
+            @Override
+            public ProcessorName name() {
+                return ClassProcessorIds.DIST_CLEANER;
+            }
+
+            @Override
+            public Set<ProcessorName> runsBefore() {
+                // Might as well run as early as we sensibly can, so that we can catch issues before other transformers run their checks
+                return Set.of(ClassProcessorIds.COMPUTING_FRAMES);
+            }
+
+            @Override
+            public Set<ProcessorName> runsAfter() {
+                return Set.of();
+            }
+        };
     }
 
     public static boolean supportsDistCleaning(JarContents minecraftModFile) {
@@ -59,19 +78,8 @@ public class NeoForgeDevDistCleaner implements ClassProcessor {
     }
 
     @Override
-    public ProcessorName name() {
-        return ClassProcessorIds.DIST_CLEANER;
-    }
-
-    @Override
-    public Set<ProcessorName> runsBefore() {
-        // Might as well run as early as we sensibly can, so that we can catch issues before other transformers run their checks
-        return Set.of(ClassProcessorIds.COMPUTING_FRAMES);
-    }
-
-    @Override
-    public Set<ProcessorName> runsAfter() {
-        return Set.of();
+    public ClassProcessorMetadata metadata() {
+        return metadata;
     }
 
     @Override

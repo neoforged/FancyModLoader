@@ -21,6 +21,7 @@ import cpw.mods.modlauncher.TransformerAuditTrail;
 import java.io.InputStream;
 import java.util.List;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
@@ -41,8 +42,13 @@ public class TransformBenchmark {
         final TransformStore transformStore = new TransformStore(List.of(
                 new ClassProcessor() {
                     @Override
-                    public ProcessorName name() {
-                        return new ProcessorName("benchmark", "dummy1");
+                    public ClassProcessorMetadata metadata() {
+                        return new ClassProcessorMetadata() {
+                            @Override
+                            public ProcessorName name() {
+                                return new ProcessorName("benchmark", "dummy1");
+                            }
+                        };
                     }
 
                     @Override

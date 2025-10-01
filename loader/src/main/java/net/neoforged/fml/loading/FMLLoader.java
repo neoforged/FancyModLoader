@@ -16,7 +16,6 @@ import cpw.mods.jarhandling.impl.EmptyJarContents;
 import cpw.mods.jarhandling.impl.FolderJarContents;
 import cpw.mods.jarhandling.impl.JarFileContents;
 import cpw.mods.modlauncher.TransformStoreBuilder;
-import cpw.mods.modlauncher.TransformStoreFactory;
 import cpw.mods.modlauncher.TransformerAuditTrail;
 import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.ITransformerAuditTrail;
@@ -361,7 +360,7 @@ public final class FMLLoader implements AutoCloseable {
         }
     }
 
-    private static TransformStoreFactory createTransformStore(StartupArgs startupArgs,
+    private static TransformStoreBuilder createTransformStore(StartupArgs startupArgs,
             LaunchContextAdapter launchContext,
             DiscoveryResult discoveryResult,
             MixinFacade mixinFacade) {
@@ -392,7 +391,7 @@ public final class FMLLoader implements AutoCloseable {
         builder.addProcessors(ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class, builtInProcessors));
         builder.addProcessorProviders(ServiceLoaderUtil.loadServices(launchContext, ClassProcessorProvider.class));
 
-        return builder.bake();
+        return builder;
     }
 
     private static ClassProcessor createAccessTransformerService(DiscoveryResult discoveryResult) {
@@ -415,7 +414,7 @@ public final class FMLLoader implements AutoCloseable {
         return new AccessTransformerService(engine);
     }
 
-    private TransformingClassLoader buildTransformingLoader(TransformStoreFactory transformStoreFactory,
+    private TransformingClassLoader buildTransformingLoader(TransformStoreBuilder transformStoreBuilder,
             TransformerAuditTrail auditTrail,
             List<SecureJar> content) {
         maskContentAlreadyOnClasspath(content);
@@ -432,7 +431,7 @@ public final class FMLLoader implements AutoCloseable {
 
         var moduleNames = getModuleNameList(cf, content);
         LOGGER.info("Building game content classloader:\n{}", moduleNames);
-        var loader = new TransformingClassLoader(transformStoreFactory, auditTrail, cf, parentLayers, currentClassLoader);
+        var loader = new TransformingClassLoader(transformStoreBuilder, auditTrail, cf, parentLayers, currentClassLoader);
 
         var layer = ModuleLayer.defineModules(
                 cf,

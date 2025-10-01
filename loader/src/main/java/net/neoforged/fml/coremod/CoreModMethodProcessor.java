@@ -8,13 +8,13 @@ package net.neoforged.fml.coremod;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
 
-final class CoreModMethodProcessor implements ClassProcessorBehavior {
+final class CoreModMethodProcessor extends CoreModBaseProcessor {
     private final CoreModMethodTransformer transformer;
     private final Map<String, Set<String>> targetsByClass;
 
     CoreModMethodProcessor(CoreModMethodTransformer transformer) {
+        super(transformer);
         this.transformer = transformer;
         this.targetsByClass = transformer.targets().stream().collect(
                 Collectors.groupingBy(CoreModMethodTransformer.Target::className, Collectors.mapping(

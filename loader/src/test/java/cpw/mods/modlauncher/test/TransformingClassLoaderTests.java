@@ -43,7 +43,7 @@ class TransformingClassLoaderTests {
         transformStoreBuilder.addProcessors(List.of(mockClassProcessor));
 
         Configuration configuration = createTestJarsConfiguration();
-        TransformingClassLoader tcl = new TransformingClassLoader(transformStoreBuilder.bake(), new TransformerAuditTrail(), configuration, List.of(ModuleLayer.boot()), null);
+        TransformingClassLoader tcl = new TransformingClassLoader(transformStoreBuilder, new TransformerAuditTrail(), configuration, List.of(ModuleLayer.boot()), null);
         ModuleLayer.boot().defineModules(configuration, s -> tcl);
 
         final Class<?> aClass = Class.forName(TARGET_CLASS, true, tcl);

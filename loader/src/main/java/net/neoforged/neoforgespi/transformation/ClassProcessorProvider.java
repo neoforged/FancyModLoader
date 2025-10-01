@@ -5,11 +5,9 @@
 
 package net.neoforged.neoforgespi.transformation;
 
-import java.util.function.Function;
-
 public interface ClassProcessorProvider {
     interface ClassProcessorCollector {
-        void add(ClassProcessorMetadata metadata, Function<ClassProcessor.InitializationContext, ClassProcessorBehavior> factory);
+        void add(ClassProcessorMetadata metadata, ClassProcessorFactory factory);
 
         void add(ClassProcessor processor);
     }

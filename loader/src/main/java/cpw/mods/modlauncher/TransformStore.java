@@ -15,12 +15,10 @@
 package cpw.mods.modlauncher;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import net.neoforged.fml.CrashReportCallables;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
-import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
@@ -30,49 +28,43 @@ import org.objectweb.asm.Type;
 
 @ApiStatus.Internal
 public class TransformStore {
-    public record AnnotatedBehavior(ClassProcessorMetadata metadata, ClassProcessorBehavior behavior) {}
+    private final List<ClassProcessor> sortedProcessors;
+    private final Set<ProcessorName> markerProcessors;
 
-    private final List<AnnotatedBehavior> sortedProcessors = new ArrayList<>();
-    private final Set<ProcessorName> markerProcessors = new HashSet<>();
+    TransformStore(List<ClassProcessor> sortedProcessors, Set<ProcessorName> markers) {
+        CrashReportCallables.registerCrashCallable("Class Processors", () -> ClassTransformStatistics.computeCrashReportEntry(this));
+        this.sortedProcessors = List.copyOf(sortedProcessors);
+        this.markerProcessors = Set.copyOf(markers);
+    }
 
     @VisibleForTesting
     public TransformStore(List<ClassProcessor> sortedProcessors) {
-        this(Set.of());
-        sortedProcessors.forEach(p -> this.sortedProcessors.add(new AnnotatedBehavior(p, p)));
-    }
-
-    TransformStore(Set<ProcessorName> markers) {
-        CrashReportCallables.registerCrashCallable("Class Processors", () -> ClassTransformStatistics.computeCrashReportEntry(this));
-        this.markerProcessors.addAll(markers);
-    }
-
-    void addProcessor(AnnotatedBehavior processor) {
-        this.sortedProcessors.add(processor);
+        this(sortedProcessors, Set.of());
     }
 
     public boolean isMarker(ClassProcessorMetadata processor) {
         return markerProcessors.contains(processor.name());
     }
 
-    List<AnnotatedBehavior> getSortedProcessors() {
+    List<ClassProcessor> getSortedProcessors() {
         return sortedProcessors;
     }
 
-    public List<AnnotatedBehavior> transformersFor(Type classDesc, boolean isEmpty, ProcessorName upToTransformer) {
-        var out = new ArrayList<AnnotatedBehavior>();
+    public List<ClassProcessor> transformersFor(Type classDesc, boolean isEmpty, ProcessorName upToTransformer) {
+        var out = new ArrayList<ClassProcessor>();
         boolean includesComputingFrames = false;
         for (var transformer : sortedProcessors) {
-            if (upToTransformer != null && upToTransformer.equals(transformer.metadata.name())) {
+            if (upToTransformer != null && upToTransformer.equals(transformer.metadata().name())) {
                 break;
-            } else if (ClassProcessorIds.COMPUTING_FRAMES.equals(transformer.metadata.name())) {
+            } else if (ClassProcessorIds.COMPUTING_FRAMES.equals(transformer.metadata().name())) {
                 includesComputingFrames = true;
                 out.add(transformer);
             } else {
-                ClassTransformStatistics.incrementAskedForTransform(transformer.metadata);
+                ClassTransformStatistics.incrementAskedForTransform(transformer.metadata());
 
                 var context = new ClassProcessor.SelectionContext(classDesc, isEmpty);
-                if (transformer.behavior.handlesClass(context)) {
-                    ClassTransformStatistics.incrementTransforms(transformer.metadata);
+                if (transformer.handlesClass(context)) {
+                    ClassTransformStatistics.incrementTransforms(transformer.metadata());
                     out.add(transformer);
                 }
             }

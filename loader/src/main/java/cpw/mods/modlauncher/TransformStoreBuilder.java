@@ -11,8 +11,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import net.neoforged.fml.loading.toposort.TopologicalSort;
+import net.neoforged.neoforgespi.transformation.BytecodeProvider;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
-import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
+import net.neoforged.neoforgespi.transformation.ClassProcessorFactory;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
 import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
@@ -24,9 +25,13 @@ import org.slf4j.Logger;
 public class TransformStoreBuilder {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public record AnnotatedBehaviorFactory(ClassProcessorMetadata metadata, Function<ClassProcessor.InitializationContext, ClassProcessorBehavior> behavior) {}
+    private record AnnotatedFactory(ClassProcessorMetadata metadata, ClassProcessorFactory factory) {
+        public AnnotatedFactory(ClassProcessor processor) {
+            this(processor.metadata(), (metadataIgnored, providerIgnored) -> processor);
+        }
+    }
 
-    private final List<AnnotatedBehaviorFactory> processors = new ArrayList<>();
+    private final List<AnnotatedFactory> processors = new ArrayList<>();
     private final Set<ProcessorName> markers = new HashSet<>();
 
     public void markMarker(ProcessorName name) {
@@ -34,63 +39,33 @@ public class TransformStoreBuilder {
     }
 
     public void addProcessors(Collection<ClassProcessor> toAdd) {
-        toAdd.forEach(p -> processors.add(unwrap(p)));
+        for (ClassProcessor classProcessor : toAdd) {
+            processors.add(new AnnotatedFactory(classProcessor));
+        }
     }
 
     public void addProcessorProviders(Collection<ClassProcessorProvider> providers) {
         for (var provider : providers) {
             provider.makeProcessors(new ClassProcessorProvider.ClassProcessorCollector() {
                 @Override
-                public void add(ClassProcessorMetadata metadata, Function<ClassProcessor.InitializationContext, ClassProcessorBehavior> factory) {
-                    TransformStoreBuilder.this.processors.add(new AnnotatedBehaviorFactory(metadata, factory));
+                public void add(ClassProcessorMetadata metadata, ClassProcessorFactory factory) {
+                    TransformStoreBuilder.this.processors.add(new AnnotatedFactory(metadata, factory));
                 }
 
                 @Override
                 public void add(ClassProcessor processor) {
-                    TransformStoreBuilder.this.processors.add(unwrap(processor));
+                    TransformStoreBuilder.this.processors.add(new AnnotatedFactory(processor));
                 }
             });
         }
     }
 
-    private static AnnotatedBehaviorFactory unwrap(ClassProcessor processor) {
-        return new AnnotatedBehaviorFactory(processor, context -> {
-            processor.initialize(context);
-            return processor;
-        });
-    }
-
     @SuppressWarnings("UnstableApiUsage")
-    private static List<AnnotatedBehaviorFactory> sortProcessors(List<AnnotatedBehaviorFactory> allProcessors) {
-        final var transformers = new HashMap<ProcessorName, AnnotatedBehaviorFactory>();
-        final var graph = GraphBuilder.directed().<AnnotatedBehaviorFactory>build();
+    private static List<AnnotatedFactory> sortProcessors(List<AnnotatedFactory> allProcessors) {
+        final var transformers = new HashMap<ProcessorName, AnnotatedFactory>();
+        final var graph = GraphBuilder.directed().<AnnotatedFactory>build();
 
-        var specialComputeFramesNode = new AnnotatedBehaviorFactory(new ClassProcessorMetadata() {
-            @Override
-            public ProcessorName name() {
-                return ClassProcessorIds.COMPUTING_FRAMES;
-            }
-
-            @Override
-            public Set<ProcessorName> runsAfter() {
-                return Set.of();
-            }
-
-            @Override
-            public OrderingHint orderingHint() {
-                return OrderingHint.EARLY;
-            }
-        }, context -> new ClassProcessorBehavior() {
-            @Override
-            public boolean handlesClass(SelectionContext context) {
-                return false;
-            }
-
-            @Override
-            public ComputeFlags processClass(TransformationContext context) {
-                return ComputeFlags.NO_REWRITE;
-            }
-        });
+        var specialComputeFramesNode = createSpecialComputeFramesNode();
 
         graph.addNode(specialComputeFramesNode);
         transformers.put(specialComputeFramesNode.metadata.name(), specialComputeFramesNode);
@@ -128,18 +103,73 @@ public class TransformStoreBuilder {
                 }
             }
         }
-        return TopologicalSort.topologicalSort(graph, Comparator.<AnnotatedBehaviorFactory, ClassProcessorMetadata.OrderingHint>comparing(t -> t.metadata.orderingHint()).thenComparing(TransformStoreBuilder::getNameSafe));
+        return TopologicalSort.topologicalSort(graph, Comparator.<AnnotatedFactory, ClassProcessorMetadata.OrderingHint>comparing(t -> t.metadata.orderingHint()).thenComparing(TransformStoreBuilder::getNameSafe));
     }
 
-    private static ProcessorName getNameSafe(AnnotatedBehaviorFactory classProcessor) {
+    private static AnnotatedFactory createSpecialComputeFramesNode() {
+        return new AnnotatedFactory(new ClassProcessorMetadata() {
+            @Override
+            public ProcessorName name() {
+                return ClassProcessorIds.COMPUTING_FRAMES;
+            }
+
+            @Override
+            public Set<ProcessorName> runsAfter() {
+                return Set.of();
+            }
+
+            @Override
+            public OrderingHint orderingHint() {
+                return OrderingHint.EARLY;
+            }
+        }, (metadata, provider) -> new ClassProcessor() {
+            @Override
+            public ClassProcessorMetadata metadata() {
+                return metadata;
+            }
+
+            @Override
+            public boolean handlesClass(SelectionContext context) {
+                return false;
+            }
+
+            @Override
+            public ComputeFlags processClass(TransformationContext context) {
+                return ComputeFlags.NO_REWRITE;
+            }
+        });
+    }
+
+    private static ProcessorName getNameSafe(AnnotatedFactory classProcessor) {
         var name = classProcessor.metadata.name();
         if (name == null) {
-            throw new IllegalStateException("Class processor " + classProcessor.metadata + " returns a null name");
+            throw new IllegalStateException("Class processor " + classProcessor + " has a null name");
         }
         return name;
     }
 
-    public TransformStoreFactory bake() {
-        return new TransformStoreFactory(sortProcessors(this.processors), this.markers);
+    public Set<String> getGeneratedPackages() {
+        var out = new HashSet<String>();
+        for (var factory : processors) {
+            out.addAll(factory.metadata().generatesPackages());
+        }
+        return out;
+    }
+
+    public TransformStore build(Function<ProcessorName, BytecodeProvider> bytecodeProviders) {
+        var sortedFactories = sortProcessors(processors);
+
+        // We construct the processors and add them sequentially, to avoid needing lazy-initialization of some sort;
+        // this way the TransformStore works in the meantime, which is necessary so that the bytecode provider provided
+        // to the processors is "live" already when the processors are constructed/initialized. There's no way around
+        // this, other than making the transform store a list of memoized behavior suppliers instead.
+        var sortedProcessors = sortedFactories.stream()
+                .map(factory -> {
+                    var bytecodeProvider = bytecodeProviders.apply(factory.metadata().name());
+                    return factory.factory.create(factory.metadata, bytecodeProvider);
+                })
+                .toList();
+
+        return new TransformStore(sortedProcessors, markers);
     }
 }

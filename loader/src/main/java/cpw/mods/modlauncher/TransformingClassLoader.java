@@ -32,13 +32,10 @@ public class TransformingClassLoader extends ModuleClassLoader {
     private final ClassTransformer classTransformer;
 
     @VisibleForTesting
-    public TransformingClassLoader(TransformStoreFactory factory, TransformerAuditTrail auditTrail, final Configuration configuration, List<ModuleLayer> parentLayers, ClassLoader parentClassLoader) {
+    public TransformingClassLoader(TransformStoreBuilder transformerStore, TransformerAuditTrail auditTrail, final Configuration configuration, List<ModuleLayer> parentLayers, ClassLoader parentClassLoader) {
         super("TRANSFORMER", configuration, parentLayers, parentClassLoader);
-        var transformStore = new TransformStore(factory.getMarkerProcessors());
-        this.classTransformer = new ClassTransformer(
-                transformStore,
-                auditTrail);
-        factory.build(transformStore, name -> className -> this.buildTransformedClassNodeFor(className, name));
+        var transformStore = transformerStore.build(name -> className -> this.buildTransformedClassNodeFor(className, name));
+        this.classTransformer = new ClassTransformer(transformStore, auditTrail);
     }
 
     @Override

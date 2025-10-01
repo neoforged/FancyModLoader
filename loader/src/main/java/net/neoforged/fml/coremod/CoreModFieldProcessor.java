@@ -8,13 +8,14 @@ package net.neoforged.fml.coremod;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
 
-final class CoreModFieldProcessor implements ClassProcessorBehavior {
+final class CoreModFieldProcessor extends CoreModBaseProcessor {
     private final CoreModFieldTransformer transformer;
     private final Map<String, Set<String>> targetsByClass;
 
     CoreModFieldProcessor(CoreModFieldTransformer transformer) {
+        super(transformer);
         this.transformer = transformer;
         this.targetsByClass = transformer.targets().stream().collect(
                 Collectors.groupingBy(CoreModFieldTransformer.Target::className, Collectors.mapping(
@@ -23,12 +24,12 @@ final class CoreModFieldProcessor implements ClassProcessorBehavior {
     }
 
     @Override
-    public boolean handlesClass(SelectionContext context) {
+    public boolean handlesClass(ClassProcessor.SelectionContext context) {
         return targetsByClass.containsKey(context.type().getClassName());
     }
 
     @Override
-    public ComputeFlags processClass(TransformationContext context) {
+    public ClassProcessor.ComputeFlags processClass(TransformationContext context) {
         var targetFields = this.targetsByClass.get(context.type().getClassName());
         if (targetFields == null) {
             return ComputeFlags.NO_REWRITE;

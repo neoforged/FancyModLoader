@@ -14,7 +14,7 @@ public final class ClassProcessorIds {
     /**
      * A dummy processor used to order processors relative to frame computation; anything that requires frame
      * re-computation should run after this, and anything providing information that should be available for frame
-     * computation should run before this. Thus, any processor that returns {@link ClassProcessorBehavior.ComputeFlags#COMPUTE_FRAMES}
+     * computation should run before this. Thus, any processor that returns {@link ClassProcessor.ComputeFlags#COMPUTE_FRAMES}
      * <em>must</em> run after this processor.
      */
     public static final ProcessorName COMPUTING_FRAMES = new ProcessorName("neoforge", "computing_frames");

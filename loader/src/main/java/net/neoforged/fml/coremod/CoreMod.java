@@ -36,9 +36,7 @@ public interface CoreMod extends ClassProcessorProvider {
         try {
             for (var transformer : getTransformers()) {
                 WithLogger.LOGGER.debug(CORE, "Adding transformer {} from core-mod {} in {}", transformer.name(), this, sourceFile);
-                var metadata = CoreModTransformerMetadata.of(transformer);
-                var behavior = transformer.toClassProcessorBehavior();
-                collector.add(metadata, ignored -> behavior);
+                collector.add(transformer.toProcessor());
             }
         } catch (Exception e) {
             // Throwing here would cause the game to immediately crash without a proper error screen,

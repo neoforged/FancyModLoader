@@ -15,6 +15,7 @@
 package cpw.mods.modlauncher.test;
 
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.FieldNode;
@@ -24,14 +25,21 @@ import org.objectweb.asm.tree.FieldNode;
  */
 public class MockClassProcessor implements ClassProcessor {
     private final String name;
+    private final ClassProcessorMetadata metadata;
 
     public MockClassProcessor(String name) {
         this.name = name;
+        this.metadata = new ClassProcessorMetadata() {
+            @Override
+            public ProcessorName name() {
+                return new ProcessorName("test", "test");
+            }
+        };
     }
 
     @Override
-    public ProcessorName name() {
-        return new ProcessorName("test", "test");
+    public ClassProcessorMetadata metadata() {
+        return metadata;
     }
 
     @Override

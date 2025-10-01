@@ -21,7 +21,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.function.Supplier;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
-import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.apache.logging.log4j.Level;
@@ -81,7 +80,7 @@ public class ClassTransformer {
 
         boolean allowsComputeFrames = false;
 
-        var flags = ClassProcessorBehavior.ComputeFlags.NO_REWRITE;
+        var flags = ClassProcessor.ComputeFlags.NO_REWRITE;
         for (var transformer : transformersToUse) {
             if (ClassProcessorIds.COMPUTING_FRAMES.equals(transformer.metadata().name())) {
                 allowsComputeFrames = true;
@@ -94,14 +93,14 @@ public class ClassTransformer {
                     isEmpty,
                     trail,
                     digest);
-            var newFlags = transformer.behavior().processClass(context);
-            if (newFlags != ClassProcessorBehavior.ComputeFlags.NO_REWRITE) {
+            var newFlags = transformer.processClass(context);
+            if (newFlags != ClassProcessor.ComputeFlags.NO_REWRITE) {
                 trail.rewrites();
                 isEmpty = false;
             }
             flags = flags.max(newFlags);
             if (!allowsComputeFrames) {
-                if (flags.ordinal() >= ClassProcessorBehavior.ComputeFlags.COMPUTE_FRAMES.ordinal()) {
+                if (flags.ordinal() >= ClassProcessor.ComputeFlags.COMPUTE_FRAMES.ordinal()) {
                     LOGGER.error("Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer {}", transformer.metadata().name(), ClassProcessorIds.COMPUTING_FRAMES);
                     throw new IllegalStateException("Transformer " + transformer.metadata().name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer " + ClassProcessorIds.COMPUTING_FRAMES);
                 }
@@ -111,11 +110,11 @@ public class ClassTransformer {
             // run post-result callbacks
             var context = new ClassProcessor.AfterProcessingContext(classDesc);
             for (var transformer : transformersToUse) {
-                transformer.behavior().afterProcessing(context);
+                transformer.afterProcessing(context);
             }
         }
 
-        if (flags == ClassProcessorBehavior.ComputeFlags.NO_REWRITE) {
+        if (flags == ClassProcessor.ComputeFlags.NO_REWRITE) {
             return inputClass; // No changes were made, return the original class
         }
 
@@ -168,6 +167,6 @@ public class ClassTransformer {
         };
 
         //Only use the TransformerClassWriter when needed as it's slower, and only COMPUTE_FRAMES calls getCommonSuperClass
-        return flags.ordinal() >= ClassProcessorBehavior.ComputeFlags.COMPUTE_FRAMES.ordinal() ? new TransformerClassWriter(writerFlag, clazzAccessor, locator) : new ClassWriter(writerFlag);
+        return flags.ordinal() >= ClassProcessor.ComputeFlags.COMPUTE_FRAMES.ordinal() ? new TransformerClassWriter(writerFlag, clazzAccessor, locator) : new ClassWriter(writerFlag);
     }
 }

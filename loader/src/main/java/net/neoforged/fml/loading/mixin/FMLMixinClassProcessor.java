@@ -6,8 +6,10 @@
 package net.neoforged.fml.loading.mixin;
 
 import java.util.Set;
+import net.neoforged.neoforgespi.transformation.BytecodeProvider;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
+import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -17,6 +19,7 @@ import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 import org.spongepowered.asm.service.ISyntheticClassRegistry;
 
 public class FMLMixinClassProcessor implements ClassProcessor {
+    private final ClassProcessorMetadata metadata;
     private final FMLAuditTrail auditTrail;
     private final FMLClassTracker classTracker;
     private final IMixinTransformer transformer;
@@ -29,11 +32,26 @@ public class FMLMixinClassProcessor implements ClassProcessor {
         this.transformer = service.getMixinTransformer();
         this.registry = transformer.getExtensions().getSyntheticClassRegistry();
         this.service = service;
+        this.metadata = new ClassProcessorMetadata() {
+            @Override
+            public ProcessorName name() {
+                return ClassProcessorIds.MIXIN;
+            }
+
+            @Override
+            public Set<String> generatesPackages() {
+                return Set.of(ArgsClassGenerator.SYNTHETIC_PACKAGE);
+            }
+        };
+    }
+
+    public void setBytecodeProvider(BytecodeProvider bytecodeProvider) {
+        this.service.setBytecodeProvider(new FMLClassBytecodeProvider(bytecodeProvider, this));
     }
 
     @Override
-    public void initialize(InitializationContext context) {
-        this.service.setBytecodeProvider(new FMLClassBytecodeProvider(context.bytecodeProvider(), this));
+    public ClassProcessorMetadata metadata() {
+        return metadata;
     }
 
     @Override
@@ -94,15 +112,5 @@ public class FMLMixinClassProcessor implements ClassProcessor {
         // transform would run). Hence, why we are running in a post-result callback, which is guaranteed to be called
         // once, right before class load.
         this.classTracker.addLoadedClass(context.type().getClassName());
-    }
-
-    @Override
-    public ProcessorName name() {
-        return ClassProcessorIds.MIXIN;
-    }
-
-    @Override
-    public Set<String> generatesPackages() {
-        return Set.of(ArgsClassGenerator.SYNTHETIC_PACKAGE);
     }
 }

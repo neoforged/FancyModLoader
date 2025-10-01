@@ -17,7 +17,7 @@ package net.neoforged.fml.coremod;
 import java.util.Locale;
 import java.util.Set;
 import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 
@@ -52,7 +52,7 @@ public sealed interface CoreModTransformer permits CoreModClassTransformer, Core
         return Set.of(ClassProcessorIds.COREMODS_GROUP);
     }
 
-    ClassProcessorBehavior toClassProcessorBehavior();
+    ClassProcessor toProcessor();
 
     private static String getOwnerName(Class<? extends CoreModTransformer> clazz) {
         var module = clazz.getModule();
