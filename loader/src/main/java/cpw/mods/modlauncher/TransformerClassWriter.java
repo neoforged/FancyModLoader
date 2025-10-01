@@ -19,8 +19,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import net.neoforged.neoforgespi.transformation.ClassProcessor;
-import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.ClassReader;
@@ -38,18 +36,7 @@ class TransformerClassWriter extends ClassWriter {
     private boolean computedThis = false;
     private final ClassHierarchyRecomputationContext recomputationContext;
 
-    public static ClassWriter createClassWriter(ClassProcessor.ComputeFlags flags, final ClassNode clazzAccessor, ClassHierarchyRecomputationContext locator) {
-        final int writerFlag = switch (flags) {
-            case COMPUTE_MAXS -> ClassWriter.COMPUTE_MAXS;
-            case COMPUTE_FRAMES -> ClassWriter.COMPUTE_FRAMES;
-            default -> 0;
-        };
-
-        //Only use the TransformerClassWriter when needed as it's slower, and only COMPUTE_FRAMES calls getCommonSuperClass
-        return flags.ordinal() >= ClassProcessorBehavior.ComputeFlags.COMPUTE_FRAMES.ordinal() ? new TransformerClassWriter(writerFlag, clazzAccessor, locator) : new ClassWriter(writerFlag);
-    }
-
-    private TransformerClassWriter(final int writerFlags, final ClassNode clazzAccessor, final ClassHierarchyRecomputationContext recomputationContext) {
+    public TransformerClassWriter(final int writerFlags, final ClassNode clazzAccessor, final ClassHierarchyRecomputationContext recomputationContext) {
         super(writerFlags);
         this.clazzAccessor = clazzAccessor;
         this.recomputationContext = recomputationContext;

@@ -14,8 +14,6 @@
 
 package cpw.mods.modlauncher;
 
-import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,7 +39,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
 /**
- * Transforms classes using the supplied launcher services
+ * Transforms classes using a {@link TransformStore} of the available {@link ClassProcessor}s.
  */
 @ApiStatus.Internal
 public class ClassTransformer {
@@ -58,13 +56,6 @@ public class ClassTransformer {
 
     public void linkBytecodeProviders(Function<ProcessorName, ClassProcessor.BytecodeProvider> function) {
         this.transformers.linkBytecodeProviders(function);
-    }
-
-    private ClassProcessor.ComputeFlags combineFlags(ClassProcessor.ComputeFlags a, ClassProcessor.ComputeFlags b) {
-        if (a.ordinal() > b.ordinal()) {
-            return a;
-        }
-        return b;
     }
 
     public byte[] transform(byte[] inputClass, String className, final ProcessorName upToTransformer, ClassHierarchyRecomputationContext locator) {
@@ -113,10 +104,10 @@ public class ClassTransformer {
                 trail.rewrites();
                 isEmpty = false;
             }
-            flags = combineFlags(flags, newFlags);
+            flags = flags.max(newFlags);
             if (!allowsComputeFrames) {
                 if (flags.ordinal() >= ClassProcessorBehavior.ComputeFlags.COMPUTE_FRAMES.ordinal()) {
-                    LOGGER.error(MODLAUNCHER, "Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer {}", transformer.name(), ClassProcessorIds.COMPUTING_FRAMES);
+                    LOGGER.error("Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer {}", transformer.name(), ClassProcessorIds.COMPUTING_FRAMES);
                     throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer " + ClassProcessorIds.COMPUTING_FRAMES);
                 }
             }
@@ -133,7 +124,7 @@ public class ClassTransformer {
             return inputClass; // No changes were made, return the original class
         }
 
-        final ClassWriter cw = TransformerClassWriter.createClassWriter(flags, clazz, locator);
+        final ClassWriter cw = createClassWriter(flags, clazz, locator);
         clazz.accept(cw);
         // if upToTransformer is null, we are doing this for classloading purposes
         if (LOGGER.isEnabled(Level.TRACE) && upToTransformer == null && LOGGER.isEnabled(Level.TRACE, CLASSDUMP)) {
@@ -151,7 +142,7 @@ public class ClassTransformer {
                     try {
                         tempDir = Files.createTempDirectory("classDump");
                     } catch (IOException e) {
-                        LOGGER.error(MODLAUNCHER, "Failed to create temporary directory");
+                        LOGGER.error("Failed to create temporary directory");
                         return;
                     }
                 }
@@ -160,9 +151,9 @@ public class ClassTransformer {
         try {
             final Path tempFile = tempDir.resolve(className + ".class");
             Files.write(tempFile, clazz);
-            LOGGER.info(MODLAUNCHER, "Wrote {} byte class file {} to {}", clazz.length, className, tempFile);
+            LOGGER.info("Wrote {} byte class file {} to {}", clazz.length, className, tempFile);
         } catch (IOException e) {
-            LOGGER.error(MODLAUNCHER, "Failed to write class file {}", className, e);
+            LOGGER.error("Failed to write class file {}", className, e);
         }
     }
 
@@ -172,6 +163,17 @@ public class ClassTransformer {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("HUH");
         }
+    }
+
+    private static ClassWriter createClassWriter(ClassProcessor.ComputeFlags flags, final ClassNode clazzAccessor, ClassHierarchyRecomputationContext locator) {
+        final int writerFlag = switch (flags) {
+            case COMPUTE_MAXS -> ClassWriter.COMPUTE_MAXS;
+            case COMPUTE_FRAMES -> ClassWriter.COMPUTE_FRAMES;
+            default -> 0;
+        };
+
+        //Only use the TransformerClassWriter when needed as it's slower, and only COMPUTE_FRAMES calls getCommonSuperClass
+        return flags.ordinal() >= ClassProcessorBehavior.ComputeFlags.COMPUTE_FRAMES.ordinal() ? new TransformerClassWriter(writerFlag, clazzAccessor, locator) : new ClassWriter(writerFlag);
     }
 
     public Set<String> generatedPackages() {

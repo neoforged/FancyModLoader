@@ -142,8 +142,7 @@ public class TransformStore {
     public void linkBytecodeProviders(Function<ProcessorName, ClassProcessor.BytecodeProvider> function) {
         for (var transformer : sortedTransformers) {
             var provider = function.apply(transformer.name());
-            ClassProcessor.ClassProcessorLocator locator = this::findClassProcessor;
-            var context = new ClassProcessor.InitializationContext(provider, locator);
+            var context = new ClassProcessor.InitializationContext(provider, this::findClassProcessor);
             transformer.initialize(context);
         }
     }
@@ -180,7 +179,7 @@ public class TransformStore {
         return Collections.unmodifiableSet(generatedPackages);
     }
 
-    Optional<ClassProcessor> findClassProcessor(ProcessorName name) {
+    private Optional<ClassProcessor> findClassProcessor(ProcessorName name) {
         return Optional.ofNullable(transformers.get(name));
     }
 }

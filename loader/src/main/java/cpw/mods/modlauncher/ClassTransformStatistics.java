@@ -3,6 +3,7 @@ package cpw.mods.modlauncher;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
@@ -17,13 +18,12 @@ public class ClassTransformStatistics {
 
     private static final Map<ProcessorName, Integer> TRANSFORMS_BY_PROCESSOR = new ConcurrentHashMap<>();
     private static final Map<ProcessorName, Integer> POTENTIAL_BY_PROCESSOR = new ConcurrentHashMap<>();
-    private static int LOADED_CLASS_COUNT = 0;
-    private static int TRANSFORMED_CLASS_COUNT = 0;
-    private static int MIXIN_PARSED_CLASS_COUNT = 0;
+    private static final AtomicInteger LOADED_CLASS_COUNT = new AtomicInteger(0);
+    private static final AtomicInteger TRANSFORMED_CLASS_COUNT = new AtomicInteger(0);
+    private static final AtomicInteger MIXIN_PARSED_CLASS_COUNT = new AtomicInteger(0);
 
-    @ApiStatus.Internal
     public static void incrementMixinParsedClasses() {
-        MIXIN_PARSED_CLASS_COUNT++;
+        MIXIN_PARSED_CLASS_COUNT.incrementAndGet();
     }
 
     static void incrementAskedForTransform(ClassProcessor processor) {
@@ -39,28 +39,28 @@ public class ClassTransformStatistics {
     }
 
     static void incrementLoadedClasses() {
-        LOADED_CLASS_COUNT++;
+        LOADED_CLASS_COUNT.incrementAndGet();
     }
 
     static void incrementTransformedClasses() {
-        TRANSFORMED_CLASS_COUNT++;
+        TRANSFORMED_CLASS_COUNT.incrementAndGet();
     }
 
     @ApiStatus.Internal
-    public static String getTransformationSummary() {
-        var loaded = LOADED_CLASS_COUNT;
-        var transformed = TRANSFORMED_CLASS_COUNT;
+    public static synchronized String getTransformationSummary() {
+        var loaded = LOADED_CLASS_COUNT.get();
+        var transformed = TRANSFORMED_CLASS_COUNT.get();
         double ratio = loaded == 0 ? 0d : ((double) transformed) / loaded * 100;
         return String.format("%s/%s (%.2f%%)", transformed, loaded, ratio);
     }
 
     @ApiStatus.Internal
     public static String getMixinParsedClassesSummary() {
-        return String.valueOf(MIXIN_PARSED_CLASS_COUNT);
+        return String.valueOf(MIXIN_PARSED_CLASS_COUNT.get());
     }
 
     @ApiStatus.Internal
-    public static void logTransformationSummary() {
+    public static synchronized void logTransformationSummary() {
         LOGGER.debug("Transformed/total loaded classes: {} and {} parsed for mixin", getTransformationSummary(), getMixinParsedClassesSummary());
     }
 
@@ -86,7 +86,7 @@ public class ClassTransformStatistics {
     }
 
     @ApiStatus.Internal
-    public static String computeCrashReportEntry(TransformStore transformStore) {
+    public static synchronized String computeCrashReportEntry(TransformStore transformStore) {
         var transforms = transformStore.getSortedTransformers();
         record Entry(double ratio, String name) {}
         var entries = new ArrayList<Entry>();

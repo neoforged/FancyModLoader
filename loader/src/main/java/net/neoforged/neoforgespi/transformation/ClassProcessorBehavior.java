@@ -59,7 +59,16 @@ public interface ClassProcessorBehavior {
          * This is the slowest, but also the safest method if you don't know what level is required.
          * This implies {@link #COMPUTE_MAXS}, so maxs will also be recomputed.
          */
-        COMPUTE_FRAMES
+        COMPUTE_FRAMES;
+
+        /**
+         * {@return which of the two flags is a superset of the other}
+         * 
+         * @param other the other flag to compare against
+         */
+        public ComputeFlags max(ComputeFlags other) {
+            return this.ordinal() > other.ordinal() ? this : other;
+        }
     }
 
     /**
