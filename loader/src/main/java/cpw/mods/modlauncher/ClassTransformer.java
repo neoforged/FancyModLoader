@@ -85,6 +85,7 @@ public class ClassTransformer {
         for (var transformer : transformersToUse) {
             if (ClassProcessorIds.COMPUTING_FRAMES.equals(transformer.metadata().name())) {
                 allowsComputeFrames = true;
+                continue;
             }
             var trail = auditTrail.forClassProcessor(classDesc.getClassName(), transformer.metadata());
             var context = new ClassProcessor.TransformationContext(

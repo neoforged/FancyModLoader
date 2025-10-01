@@ -115,6 +115,6 @@ public class CoreModTest extends LauncherTest {
         var testClass = Class.forName("testmod.TestClass", true, result.launchClassLoader());
         assertThat(testClass).hasAnnotation(Deprecated.class); // This is added by the transformer
 
-        assertEquals("neoforge:computing_frames,fml:test", loader.getClassTransformerAuditLog().getAuditString("testmod.TestClass"));
+        assertEquals("fml:test", loader.getClassTransformerAuditLog().getAuditString("testmod.TestClass"));
     }
 }
