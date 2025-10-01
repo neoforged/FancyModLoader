@@ -20,7 +20,6 @@ import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformStoreBuilder;
 import cpw.mods.modlauncher.TransformerAuditTrail;
 import cpw.mods.modlauncher.TransformingClassLoader;
-import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.ITransformerAuditTrail;
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -63,6 +62,7 @@ import net.neoforged.fml.classloading.ResourceMaskingClassLoader;
 import net.neoforged.fml.common.asm.AccessTransformerService;
 import net.neoforged.fml.common.asm.CoreModsGroup;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
+import net.neoforged.fml.coremod.CoreModTransformer;
 import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.fml.loading.mixin.MixinFacade;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
@@ -388,7 +388,7 @@ public final class FMLLoader implements AutoCloseable {
 
         var builder = new TransformStoreBuilder();
 
-        builder.markMarker(ITransformer.COREMODS_GROUP);
+        builder.markMarker(CoreModTransformer.COREMODS_GROUP);
         builder.markMarker(ClassProcessor.COMPUTING_FRAMES);
 
         builder.addProcessors(ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class, builtInProcessors));

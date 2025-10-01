@@ -9,10 +9,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import cpw.mods.modlauncher.api.CoreModTransformationContext;
-import cpw.mods.modlauncher.api.ITransformer;
 import java.util.Set;
 import net.neoforged.fml.ModLoadingException;
+import net.neoforged.fml.coremod.CoreModClassTransformer;
+import net.neoforged.fml.coremod.CoreModTransformationContext;
+import net.neoforged.fml.coremod.CoreModTransformer;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
@@ -27,7 +28,7 @@ public class CoreModTest extends LauncherTest {
     private static final ContainedJarIdentifier JAR_IDENTIFIER = new ContainedJarIdentifier("testmod", "coremod");
 
     // A transformer that just adds a @Deprecated annotation, which is easy to assert for
-    public static final ITransformer TEST_TRANSFORMER = new ITransformer.ClassTransformer() {
+    public static final CoreModTransformer TEST_TRANSFORMER = new CoreModClassTransformer() {
         @Override
         public ProcessorName name() {
             return new ProcessorName("fml", "test");
@@ -39,8 +40,8 @@ public class CoreModTest extends LauncherTest {
         }
 
         @Override
-        public Set<Target.ClassTarget> targets() {
-            return Set.of(new Target.ClassTarget("testmod.TestClass"));
+        public Set<Target> targets() {
+            return Set.of(new Target("testmod.TestClass"));
         }
     };
 
@@ -54,9 +55,9 @@ public class CoreModTest extends LauncherTest {
                     coreMod.withModTypeManifest(IModFile.Type.LIBRARY.name())
                             .addService(ClassProcessorProvider.class.getName(), "testmod.coremods.TestCoreMod")
                             .addClass("testmod.coremods.TestCoreMod", """
-                                    import cpw.mods.modlauncher.api.ITransformer;
-                                    public class TestCoreMod implements net.neoforged.neoforgespi.coremod.ICoreMod {
-                                    @Override public Iterable<? extends ITransformer> getTransformers() {
+                                    import net.neoforged.fml.coremod.CoreModTransformer;
+                                    public class TestCoreMod implements net.neoforged.fml.coremod.CoreMod {
+                                    @Override public Iterable<? extends CoreModTransformer> getTransformers() {
                                         return null;
                                     }}""");
                 })
@@ -75,9 +76,9 @@ public class CoreModTest extends LauncherTest {
                 .withModTypeManifest(IModFile.Type.LIBRARY.name())
                 .addService(ClassProcessorProvider.class.getName(), "testmod.coremods.TestCoreMod")
                 .addClass("testmod.coremods.TestCoreMod", """
-                        import cpw.mods.modlauncher.api.ITransformer;
-                        public class TestCoreMod implements net.neoforged.neoforgespi.coremod.ICoreMod {
-                        @Override public Iterable<? extends ITransformer> getTransformers() {
+                        import net.neoforged.fml.coremod.CoreModTransformer;
+                        public class TestCoreMod implements net.neoforged.fml.coremod.CoreMod {
+                        @Override public Iterable<? extends CoreModTransformer> getTransformers() {
                             return null;
                         }}""")
                 .build();
@@ -100,10 +101,10 @@ public class CoreModTest extends LauncherTest {
                     coreMod.withModTypeManifest(IModFile.Type.LIBRARY.name())
                             .addService(ClassProcessorProvider.class.getName(), "testmod.coremods.TestCoreMod")
                             .addClass("testmod.coremods.TestCoreMod", """
-                                    import cpw.mods.modlauncher.api.ITransformer;
+                                    import net.neoforged.fml.coremod.CoreModTransformer;
                                     import java.util.List;
-                                    public class TestCoreMod implements net.neoforged.neoforgespi.coremod.ICoreMod {
-                                    @Override public Iterable<? extends ITransformer> getTransformers() {
+                                    public class TestCoreMod implements net.neoforged.fml.coremod.CoreMod {
+                                    @Override public Iterable<? extends CoreModTransformer> getTransformers() {
                                         return List.of(net.neoforged.fml.loading.CoreModTest.TEST_TRANSFORMER);
                                     }}""");
                 })

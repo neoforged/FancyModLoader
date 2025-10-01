@@ -12,7 +12,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package cpw.mods.modlauncher.api;
+package net.neoforged.fml.coremod;
 
 import org.objectweb.asm.Type;
 
