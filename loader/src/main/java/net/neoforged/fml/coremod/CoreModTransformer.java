@@ -18,6 +18,7 @@ import java.util.Locale;
 import java.util.Set;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
+import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 
 /**
@@ -28,8 +29,6 @@ import net.neoforged.neoforgespi.transformation.ProcessorName;
  * {@link #name()}.
  */
 public sealed interface CoreModTransformer permits CoreModClassTransformer, CoreModMethodTransformer, CoreModFieldTransformer {
-    ProcessorName COREMODS_GROUP = new ProcessorName("neoforge", "coremods_default");
-
     /**
      * {@return a unique name for this transformer. Defaults to a name derived from the source class and mod file names}
      */
@@ -47,10 +46,10 @@ public sealed interface CoreModTransformer permits CoreModClassTransformer, Core
     }
 
     /**
-     * {@return processors or transformers that this transformer must run after} Defaults to running after {@link CoreModTransformer#COREMODS_GROUP}, which runs after mixins.
+     * {@return processors or transformers that this transformer must run after} Defaults to running after {@link ClassProcessorIds#COREMODS_GROUP}, which runs after mixins.
      */
     default Set<ProcessorName> runsAfter() {
-        return Set.of(CoreModTransformer.COREMODS_GROUP);
+        return Set.of(ClassProcessorIds.COREMODS_GROUP);
     }
 
     ClassProcessorBehavior toClassProcessorBehavior();

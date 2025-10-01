@@ -18,11 +18,24 @@ import org.jetbrains.annotations.ApiStatus;
  */
 public interface ClassProcessor extends ClassProcessorBehavior, ClassProcessorMetadata {
     interface ClassProcessorLocator {
+        /**
+         * {@return a processor with the given name, if it exists}
+         * 
+         * @param name the processor to find
+         */
         Optional<ClassProcessor> find(ProcessorName name);
     }
 
     interface BytecodeProvider {
-        byte[] acquireTransformedClassBefore(final String className) throws ClassNotFoundException;
+        /**
+         * Locates the bytecode for a given class. This bytecode is provided in the form that the processor would see,
+         * were it transforming that class; any transformers ordered before will have been executed on it already.
+         * 
+         * @param className the class to locate, in dot-separated form
+         * @return the bytecode
+         * @throws ClassNotFoundException if the class cannot be found
+         */
+        byte[] acquireClass(final String className) throws ClassNotFoundException;
     }
 
     /**

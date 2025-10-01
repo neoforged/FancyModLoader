@@ -18,7 +18,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
-import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
+import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
 import org.slf4j.Logger;
@@ -58,17 +58,15 @@ public class NeoForgeDevDistCleaner implements ClassProcessor {
         return minecraftModFile.getManifest().getMainAttributes().containsKey(NAME_DISTS);
     }
 
-    public static final ProcessorName NAME = new ProcessorName("neoforge", "neoforge_dev_dist_cleaner");
-
     @Override
     public ProcessorName name() {
-        return NAME;
+        return ClassProcessorIds.DIST_CLEANER;
     }
 
     @Override
     public Set<ProcessorName> runsBefore() {
         // Might as well run as early as we sensibly can, so that we can catch issues before other transformers run their checks
-        return Set.of(ClassProcessorBehavior.COMPUTING_FRAMES);
+        return Set.of(ClassProcessorIds.COMPUTING_FRAMES);
     }
 
     @Override

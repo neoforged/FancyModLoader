@@ -4,9 +4,8 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
-import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
+import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,13 +27,13 @@ public class ClassTransformStatistics {
     }
 
     static void incrementAskedForTransform(ClassProcessor processor) {
-        if (!processor.name().equals(ClassProcessorBehavior.COMPUTING_FRAMES)) {
+        if (!processor.name().equals(ClassProcessorIds.COMPUTING_FRAMES)) {
             POTENTIAL_BY_PROCESSOR.compute(processor.name(), (k, v) -> v == null ? 1 : v + 1);
         }
     }
 
     static void incrementTransforms(ClassProcessor processor) {
-        if (!processor.name().equals(ClassProcessorBehavior.COMPUTING_FRAMES)) {
+        if (!processor.name().equals(ClassProcessorIds.COMPUTING_FRAMES)) {
             TRANSFORMS_BY_PROCESSOR.compute(processor.name(), (k, v) -> v == null ? 1 : v + 1);
         }
     }
@@ -75,7 +74,7 @@ public class ClassTransformStatistics {
             var potential = POTENTIAL_BY_PROCESSOR.get(name);
             var ratio = ((double) actual) / potential;
             if (ratio > 0.25) {
-                if (name.equals(FMLMixinClassProcessor.NAME)) {
+                if (name.equals(ClassProcessorIds.MIXIN)) {
                     // We special-case mixin in order to provide a more useful message, as the root issue here could be
                     // a bad coprocessor. 
                     LOGGER.error("Class processor {} transformed {}% of loaded class which is suspiciously high; this could be due to a mixin coprocessor attempting mass-ASM", name, String.format("%.2f", ratio * 100));

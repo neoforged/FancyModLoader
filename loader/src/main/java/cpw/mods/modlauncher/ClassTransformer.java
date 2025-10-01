@@ -26,6 +26,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
+import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -44,7 +45,7 @@ import org.objectweb.asm.tree.ClassNode;
  */
 @ApiStatus.Internal
 public class ClassTransformer {
-    private static final byte[] EMPTY = new byte[0];
+    private static final byte[] EMPTY = getSha256().digest(new byte[0]);
     private static final Logger LOGGER = LogManager.getLogger();
     private final Marker CLASSDUMP = MarkerManager.getMarker("CLASSDUMP");
     private final TransformStore transformers;
@@ -90,14 +91,14 @@ public class ClassTransformer {
             clazz.name = classDesc.getInternalName();
             clazz.version = Opcodes.V1_8;
             clazz.superName = Type.getInternalName(Object.class);
-            digest = () -> getSha256().digest(EMPTY);
+            digest = () -> EMPTY;
         }
 
         boolean allowsComputeFrames = false;
 
         var flags = ClassProcessorBehavior.ComputeFlags.NO_REWRITE;
         for (var transformer : transformersToUse) {
-            if (ClassProcessorBehavior.COMPUTING_FRAMES.equals(transformer.name())) {
+            if (ClassProcessorIds.COMPUTING_FRAMES.equals(transformer.name())) {
                 allowsComputeFrames = true;
             }
             var trail = auditTrail.forClassProcessor(classDesc.getClassName(), transformer);
@@ -115,8 +116,8 @@ public class ClassTransformer {
             flags = combineFlags(flags, newFlags);
             if (!allowsComputeFrames) {
                 if (flags.ordinal() >= ClassProcessorBehavior.ComputeFlags.COMPUTE_FRAMES.ordinal()) {
-                    LOGGER.error(MODLAUNCHER, "Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer {}", transformer.name(), ClassProcessorBehavior.COMPUTING_FRAMES);
-                    throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer " + ClassProcessorBehavior.COMPUTING_FRAMES);
+                    LOGGER.error(MODLAUNCHER, "Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer {}", transformer.name(), ClassProcessorIds.COMPUTING_FRAMES);
+                    throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer " + ClassProcessorIds.COMPUTING_FRAMES);
                 }
             }
         }
@@ -165,7 +166,7 @@ public class ClassTransformer {
         }
     }
 
-    private MessageDigest getSha256() {
+    private static MessageDigest getSha256() {
         try {
             return MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {

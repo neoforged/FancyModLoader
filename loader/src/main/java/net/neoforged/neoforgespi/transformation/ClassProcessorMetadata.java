@@ -24,10 +24,10 @@ public interface ClassProcessorMetadata {
 
     /**
      * {@return processors that this processor must run after} This should include
-     * {@link ClassProcessorBehavior#COMPUTING_FRAMES} if the processor returns a result requiring frame re-computation.
+     * {@link ClassProcessorIds#COMPUTING_FRAMES} if the processor returns a result requiring frame re-computation.
      */
     default Set<ProcessorName> runsAfter() {
-        return Set.of(ClassProcessorBehavior.COMPUTING_FRAMES);
+        return Set.of(ClassProcessorIds.COMPUTING_FRAMES);
     }
 
     /**

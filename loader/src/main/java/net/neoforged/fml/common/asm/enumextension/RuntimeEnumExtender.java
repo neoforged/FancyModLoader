@@ -20,9 +20,9 @@ import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.asm.ListGeneratorAdapter;
-import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.Opcodes;
@@ -63,11 +63,9 @@ public class RuntimeEnumExtender implements ClassProcessor {
     private static final int EXT_INFO_FLAGS = Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL;
     private static Map<String, List<EnumPrototype>> prototypes = Map.of();
 
-    public static final ProcessorName NAME = new ProcessorName("neoforge", "runtime_enum_extender");
-
     @Override
     public ProcessorName name() {
-        return NAME;
+        return ClassProcessorIds.RUNTIME_ENUM_EXTENDER;
     }
 
     @Override
@@ -77,7 +75,7 @@ public class RuntimeEnumExtender implements ClassProcessor {
 
     @Override
     public Set<ProcessorName> runsBefore() {
-        return Set.of(FMLMixinClassProcessor.NAME);
+        return Set.of(ClassProcessorIds.MIXIN);
     }
 
     @Override

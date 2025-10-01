@@ -62,7 +62,6 @@ import net.neoforged.fml.classloading.ResourceMaskingClassLoader;
 import net.neoforged.fml.common.asm.AccessTransformerService;
 import net.neoforged.fml.common.asm.CoreModsGroup;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
-import net.neoforged.fml.coremod.CoreModTransformer;
 import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.fml.loading.mixin.MixinFacade;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
@@ -86,7 +85,7 @@ import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
-import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
+import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
 import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import org.jetbrains.annotations.ApiStatus;
@@ -390,8 +389,8 @@ public final class FMLLoader implements AutoCloseable {
 
         var builder = new TransformStoreBuilder();
 
-        builder.markMarker(CoreModTransformer.COREMODS_GROUP);
-        builder.markMarker(ClassProcessorBehavior.COMPUTING_FRAMES);
+        builder.markMarker(ClassProcessorIds.COREMODS_GROUP);
+        builder.markMarker(ClassProcessorIds.COMPUTING_FRAMES);
 
         builder.addProcessors(ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class, builtInProcessors));
         builder.addProcessorProviders(ServiceLoaderUtil.loadServices(launchContext, ClassProcessorProvider.class));

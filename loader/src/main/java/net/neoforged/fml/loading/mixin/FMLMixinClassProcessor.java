@@ -7,6 +7,7 @@ package net.neoforged.fml.loading.mixin;
 
 import java.util.Set;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -16,8 +17,6 @@ import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 import org.spongepowered.asm.service.ISyntheticClassRegistry;
 
 public class FMLMixinClassProcessor implements ClassProcessor {
-    public static final ProcessorName NAME = new ProcessorName("neoforge", "mixin");
-
     private final FMLAuditTrail auditTrail;
     private final FMLClassTracker classTracker;
     private final IMixinTransformer transformer;
@@ -99,7 +98,7 @@ public class FMLMixinClassProcessor implements ClassProcessor {
 
     @Override
     public ProcessorName name() {
-        return NAME;
+        return ClassProcessorIds.MIXIN;
     }
 
     @Override

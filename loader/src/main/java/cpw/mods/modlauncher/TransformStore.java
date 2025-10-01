@@ -29,7 +29,7 @@ import java.util.function.Function;
 import net.neoforged.fml.CrashReportCallables;
 import net.neoforged.fml.loading.toposort.TopologicalSort;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
-import net.neoforged.neoforgespi.transformation.ClassProcessorBehavior;
+import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -72,7 +72,7 @@ public class TransformStore {
             // This "special" transformer never handles a class but is always triggered
             @Override
             public ProcessorName name() {
-                return ClassProcessorBehavior.COMPUTING_FRAMES;
+                return ClassProcessorIds.COMPUTING_FRAMES;
             }
 
             @Override
@@ -154,7 +154,7 @@ public class TransformStore {
         for (var transformer : sortedTransformers) {
             if (upToTransformer != null && upToTransformer.equals(transformer.name())) {
                 break;
-            } else if (ClassProcessorBehavior.COMPUTING_FRAMES.equals(transformer.name())) {
+            } else if (ClassProcessorIds.COMPUTING_FRAMES.equals(transformer.name())) {
                 includesComputingFrames = true;
                 out.add(transformer);
             } else {

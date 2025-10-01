@@ -7,7 +7,7 @@ package net.neoforged.fml.coremod;
 
 import java.util.HashSet;
 import java.util.Set;
-import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 
@@ -16,7 +16,7 @@ record CoreModTransformerMetadata(ProcessorName name, Set<ProcessorName> runsBef
     static CoreModTransformerMetadata of(CoreModTransformer transformer) {
         var after = new HashSet<>(transformer.runsAfter());
         // coremod transformers always imply COMPUTE_FRAMES and thus must always run after it.
-        after.add(ClassProcessor.COMPUTING_FRAMES);
+        after.add(ClassProcessorIds.COMPUTING_FRAMES);
         return new CoreModTransformerMetadata(
                 transformer.name(),
                 Set.copyOf(transformer.runsBefore()),

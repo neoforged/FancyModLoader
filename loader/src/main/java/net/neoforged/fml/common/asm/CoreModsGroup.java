@@ -6,9 +6,8 @@
 package net.neoforged.fml.common.asm;
 
 import java.util.Set;
-import net.neoforged.fml.coremod.CoreModTransformer;
-import net.neoforged.fml.loading.mixin.FMLMixinClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -17,7 +16,7 @@ public class CoreModsGroup implements ClassProcessor {
     // For ordering purposes only; allows making transformers that run before/after all "default" coremods
     @Override
     public ProcessorName name() {
-        return CoreModTransformer.COREMODS_GROUP;
+        return ClassProcessorIds.COREMODS_GROUP;
     }
 
     @Override
@@ -27,7 +26,7 @@ public class CoreModsGroup implements ClassProcessor {
 
     @Override
     public Set<ProcessorName> runsAfter() {
-        return Set.of(COMPUTING_FRAMES, FMLMixinClassProcessor.NAME);
+        return Set.of(ClassProcessorIds.COMPUTING_FRAMES, ClassProcessorIds.MIXIN);
     }
 
     @Override

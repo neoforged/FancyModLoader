@@ -14,14 +14,6 @@ import org.objectweb.asm.tree.ClassNode;
 
 public interface ClassProcessorBehavior {
     /**
-     * A dummy processor used to order processors relative to frame computation; anything that requires frame
-     * re-computation should run after this, and anything providing information that should be available for frame
-     * computation should run before this. Thus, any processor that returns {@link ComputeFlags#COMPUTE_FRAMES}
-     * <em>must</em> run after this processor.
-     */
-    ProcessorName COMPUTING_FRAMES = new ProcessorName("neoforge", "computing_frames");
-
-    /**
      * {@return whether the processor wants to recieve the class}
      *
      * @param context the context of the class to consider
@@ -100,22 +92,41 @@ public interface ClassProcessorBehavior {
             this.initialSha256 = initialSha256;
         }
 
+        /**
+         * {@return} the type of the class being transformed
+         */
         public Type type() {
             return type;
         }
 
+        /**
+         * {@return the class being transformed} Modifications will be reflected in the output bytecode (and the loaded class).
+         */
         public ClassNode node() {
             return node;
         }
 
+        /**
+         * {@return whether the class was empty when provided to this transformer} Note that a class might not exist on
+         * disk but still return {@code false} here, if an earlier transformer provided it.
+         */
         public boolean empty() {
             return empty;
         }
 
+        /**
+         * Add audit activity for this transformation.
+         * 
+         * @param activity what was done to the class
+         * @param context  any additional information to include
+         */
         public void audit(String activity, String... context) {
             auditTrail.accept(activity, context);
         }
 
+        /**
+         * {@return the SHA-256 hash of the original class bytecode}
+         */
         public byte[] initialSha256() {
             return initialSha256.get();
         }
