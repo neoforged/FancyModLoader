@@ -55,11 +55,12 @@ public class CoreModTest extends LauncherTest {
                     coreMod.withModTypeManifest(IModFile.Type.LIBRARY.name())
                             .addService(ClassProcessorProvider.class.getName(), "testmod.coremods.TestCoreMod")
                             .addClass("testmod.coremods.TestCoreMod", """
-                                    import net.neoforged.fml.coremod.CoreModTransformer;
-                                    public class TestCoreMod implements net.neoforged.fml.coremod.CoreMod {
-                                    @Override public Iterable<? extends CoreModTransformer> getTransformers() {
-                                        return null;
-                                    }}""");
+                                    public class TestCoreMod implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
+                                        @Override
+                                        public void makeProcessors(Context context, Collector collector) {
+                                            throw new RuntimeException();
+                                        }
+                                    }""");
                 })
                 .build();
 
@@ -76,11 +77,12 @@ public class CoreModTest extends LauncherTest {
                 .withModTypeManifest(IModFile.Type.LIBRARY.name())
                 .addService(ClassProcessorProvider.class.getName(), "testmod.coremods.TestCoreMod")
                 .addClass("testmod.coremods.TestCoreMod", """
-                        import net.neoforged.fml.coremod.CoreModTransformer;
-                        public class TestCoreMod implements net.neoforged.fml.coremod.CoreMod {
-                        @Override public Iterable<? extends CoreModTransformer> getTransformers() {
-                            return null;
-                        }}""")
+                        public class TestCoreMod implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
+                            @Override
+                            public void makeProcessors(Context context, Collector collector) {
+                                throw new RuntimeException();
+                            }
+                        }""")
                 .build();
 
         var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
@@ -101,12 +103,12 @@ public class CoreModTest extends LauncherTest {
                     coreMod.withModTypeManifest(IModFile.Type.LIBRARY.name())
                             .addService(ClassProcessorProvider.class.getName(), "testmod.coremods.TestCoreMod")
                             .addClass("testmod.coremods.TestCoreMod", """
-                                    import net.neoforged.fml.coremod.CoreModTransformer;
-                                    import java.util.List;
-                                    public class TestCoreMod implements net.neoforged.fml.coremod.CoreMod {
-                                    @Override public Iterable<? extends CoreModTransformer> getTransformers() {
-                                        return List.of(net.neoforged.fml.loading.CoreModTest.TEST_TRANSFORMER);
-                                    }}""");
+                                    public class TestCoreMod implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
+                                        @Override
+                                        public void makeProcessors(Context context, Collector collector) {
+                                            collector.add(net.neoforged.fml.loading.CoreModTest.TEST_TRANSFORMER);
+                                        }
+                                    }""");
                 })
                 .build();
 

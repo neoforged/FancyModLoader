@@ -15,11 +15,10 @@
 package cpw.mods.modlauncher.benchmarks;
 
 import cpw.mods.modlauncher.ClassHierarchyRecomputationContext;
+import cpw.mods.modlauncher.ClassProcessorSet;
 import cpw.mods.modlauncher.ClassTransformer;
-import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformerAuditTrail;
 import java.io.InputStream;
-import java.util.List;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -38,7 +37,7 @@ public class TransformBenchmark {
 
     @Setup
     public void setup() throws Exception {
-        final TransformStore transformStore = new TransformStore(List.of(
+        var classProcessorSet = ClassProcessorSet.of(
                 new ClassProcessor() {
                     @Override
                     public ProcessorName name() {
@@ -54,9 +53,9 @@ public class TransformBenchmark {
                     public ComputeFlags processClass(TransformationContext context) {
                         return ComputeFlags.COMPUTE_FRAMES;
                     }
-                }));
+                });
         auditTrail = new TransformerAuditTrail();
-        classTransformer = new ClassTransformer(transformStore, auditTrail);
+        classTransformer = new ClassTransformer(classProcessorSet, auditTrail);
         try (InputStream is = getClass().getClassLoader().getResourceAsStream("cpw/mods/modlauncher/testjar/TestClass.class")) {
             classBytes = is.readAllBytes();
         }

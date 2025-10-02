@@ -20,13 +20,13 @@ public class CoreModsGroup implements ClassProcessor {
     }
 
     @Override
-    public boolean handlesClass(SelectionContext context) {
-        return false;
+    public Set<ProcessorName> runsAfter() {
+        return Set.of(ClassProcessorIds.COMPUTING_FRAMES, ClassProcessorIds.MIXIN);
     }
 
     @Override
-    public Set<ProcessorName> runsAfter() {
-        return Set.of(ClassProcessorIds.COMPUTING_FRAMES, ClassProcessorIds.MIXIN);
+    public boolean handlesClass(SelectionContext context) {
+        return false;
     }
 
     @Override

@@ -1,20 +1,28 @@
 package cpw.mods.modlauncher;
 
-import net.neoforged.neoforgespi.transformation.ClassProcessor;
-import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Provided the {@link ClassTransformer#transform(byte[], String, ProcessorName, ClassHierarchyRecomputationContext)}
- * when transforming a class; allows for recomputing the class hierarchy if needed (see logic in {@link TransformerClassWriter}.
+ * Provides information required to compute class hierarchies when writing out a transformed classes bytecode, while
+ * recomputing stack frames.
  * <p>
- * All class names used here are in the standard Java form (dot-separated), as in the rest of the {@link ClassProcessor} system
+ * Every class name passed to methods of this interface use dot-separated form.
  */
 public interface ClassHierarchyRecomputationContext {
+    /**
+     * {@return the class identified by className, if it's already loaded and visible from the current classloader or null , if it's not}
+     */
     @Nullable
-    Class<?> findLoadedClass(String name);
+    Class<?> findLoadedClass(String className);
 
+    /**
+     * Gets the class bytecode of any reachable class. If the class is subject to transformation,
+     * any class processors that require frame recomputation will already be applied.
+     */
     byte[] upToFrames(String className) throws ClassNotFoundException;
 
+    /**
+     * Loads and returns a class by name, if it's not subject to transformation.
+     */
     Class<?> locateParentClass(String className) throws ClassNotFoundException;
 }

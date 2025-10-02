@@ -69,11 +69,6 @@ public class RuntimeEnumExtender implements ClassProcessor {
     }
 
     @Override
-    public boolean handlesClass(SelectionContext context) {
-        return !context.empty() && prototypes.containsKey(context.type().getInternalName());
-    }
-
-    @Override
     public Set<ProcessorName> runsBefore() {
         return Set.of(ClassProcessorIds.MIXIN);
     }
@@ -81,6 +76,11 @@ public class RuntimeEnumExtender implements ClassProcessor {
     @Override
     public OrderingHint orderingHint() {
         return OrderingHint.EARLY;
+    }
+
+    @Override
+    public boolean handlesClass(SelectionContext context) {
+        return !context.empty() && prototypes.containsKey(context.type().getInternalName());
     }
 
     @Override

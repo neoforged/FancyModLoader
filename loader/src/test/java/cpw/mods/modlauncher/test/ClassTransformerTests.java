@@ -18,11 +18,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import cpw.mods.modlauncher.ClassHierarchyRecomputationContext;
+import cpw.mods.modlauncher.ClassProcessorSet;
 import cpw.mods.modlauncher.ClassTransformer;
-import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformerAuditTrail;
 import java.util.ArrayList;
-import java.util.List;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.junit.jupiter.api.Assertions;
@@ -56,8 +55,7 @@ class ClassTransformerTests {
         };
 
         var auditTrail = new TransformerAuditTrail();
-        var store = new TransformStore(List.of(processor));
-        var classTransformer = new ClassTransformer(store, auditTrail);
+        var classTransformer = new ClassTransformer(ClassProcessorSet.of(processor), auditTrail);
         assertThat(classTransformer.transform(new byte[0], "test.TestClass", null, mock(ClassHierarchyRecomputationContext.class)))
                 .isEmpty();
         assertThat(handlesClassCalls).containsExactly(

@@ -9,7 +9,7 @@ import com.google.common.io.Resources;
 import cpw.mods.modlauncher.ClassTransformStatistics;
 import java.io.IOException;
 import java.net.URL;
-import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.BytecodeProvider;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -17,10 +17,10 @@ import org.spongepowered.asm.service.IClassBytecodeProvider;
 import org.spongepowered.asm.transformers.MixinClassReader;
 
 class FMLClassBytecodeProvider implements IClassBytecodeProvider {
-    private final ClassProcessor.BytecodeProvider bytecodeProvider;
+    private final BytecodeProvider bytecodeProvider;
     private final FMLMixinClassProcessor classProcessor;
 
-    FMLClassBytecodeProvider(ClassProcessor.BytecodeProvider bytecodeProvider, FMLMixinClassProcessor classProcessor) {
+    FMLClassBytecodeProvider(BytecodeProvider bytecodeProvider, FMLMixinClassProcessor classProcessor) {
         this.bytecodeProvider = bytecodeProvider;
         this.classProcessor = classProcessor;
     }
@@ -47,7 +47,7 @@ class FMLClassBytecodeProvider implements IClassBytecodeProvider {
         byte[] classBytes;
 
         try {
-            classBytes = bytecodeProvider.acquireClass(canonicalName);
+            classBytes = bytecodeProvider.acquireByteCode(canonicalName);
         } catch (ClassNotFoundException ex) {
             URL url = Thread.currentThread().getContextClassLoader().getResource(internalName + ".class");
             if (url == null) {
