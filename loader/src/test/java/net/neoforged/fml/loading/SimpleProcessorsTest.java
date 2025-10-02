@@ -46,16 +46,16 @@ public class SimpleProcessorsTest extends LauncherTest {
     };
 
     @Test
-    public void testBrokenJijJavaCoremod() throws Exception {
+    public void testBrokenJijSimpleProcessor() throws Exception {
         installation.setupProductionClient();
 
         installation.buildModJar("testmod.jar")
                 .withTestmodModsToml()
                 .withJarInJar(JAR_IDENTIFIER, coreMod -> {
                     coreMod.withModTypeManifest(IModFile.Type.LIBRARY.name())
-                            .addService(ClassProcessorProvider.class.getName(), "testmod.simpleprocessors.TestSmpleProcessors")
-                            .addClass("testmod.simpleprocessors.TestSmpleProcessors", """
-                                    public class TestSmpleProcessors implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
+                            .addService(ClassProcessorProvider.class.getName(), "testmod.simpleprocessors.TestSimpleProcessors")
+                            .addClass("testmod.simpleprocessors.TestSimpleProcessors", """
+                                    public class TestSimpleProcessors implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
                                         @Override
                                         public void makeProcessors(Context context, Collector collector) {
                                             throw new RuntimeException();
@@ -66,18 +66,18 @@ public class SimpleProcessorsTest extends LauncherTest {
 
         var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                "ERROR: An error occurred while loading core-mod testmod.simpleprocessors.TestSmpleProcessors from mods/testmod.jar > coremod-1.0.jar");
+                "ERROR: An error occurred while loading core-mod testmod.simpleprocessors.TestSimpleProcessors from mods/testmod.jar > simpleprocessors-1.0.jar");
     }
 
     @Test
     public void testBrokenSimpleProcessor() throws Exception {
         installation.setupProductionClient();
 
-        installation.buildModJar("coremod.jar")
+        installation.buildModJar("simpleprocessors.jar")
                 .withModTypeManifest(IModFile.Type.LIBRARY.name())
-                .addService(ClassProcessorProvider.class.getName(), "testmod.simpleprocessors.TestSmpleProcessors")
-                .addClass("testmod.simpleprocessors.TestSmpleProcessors", """
-                        public class TestSmpleProcessors implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
+                .addService(ClassProcessorProvider.class.getName(), "testmod.simpleprocessors.TestSimpleProcessors")
+                .addClass("testmod.simpleprocessors.TestSimpleProcessors", """
+                        public class TestSimpleProcessors implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
                             @Override
                             public void makeProcessors(Context context, Collector collector) {
                                 throw new RuntimeException();
@@ -87,7 +87,7 @@ public class SimpleProcessorsTest extends LauncherTest {
 
         var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                "ERROR: An error occurred while loading core-mod testmod.simpleprocessors.TestSmpleProcessors from mods/coremod.jar");
+                "ERROR: An error occurred while loading core-mod testmod.simpleprocessors.TestSimpleProcessors from mods/simpleprocessors.jar");
     }
 
     @Test
@@ -101,12 +101,12 @@ public class SimpleProcessorsTest extends LauncherTest {
                         """)
                 .withJarInJar(JAR_IDENTIFIER, coreMod -> {
                     coreMod.withModTypeManifest(IModFile.Type.LIBRARY.name())
-                            .addService(ClassProcessorProvider.class.getName(), "testmod.simpleprocessors.TestSmpleProcessors")
-                            .addClass("testmod.simpleprocessors.TestSmpleProcessors", """
-                                    public class TestSmpleProcessors implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
+                            .addService(ClassProcessorProvider.class.getName(), "testmod.simpleprocessors.TestSimpleProcessors")
+                            .addClass("testmod.simpleprocessors.TestSimpleProcessors", """
+                                    public class TestSimpleProcessors implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
                                         @Override
                                         public void makeProcessors(Context context, Collector collector) {
-                                            collector.add(SimpleProcessorsTest.TEST_TRANSFORMER);
+                                            collector.add(net.neoforged.fml.loading.SimpleProcessorsTest.TEST_TRANSFORMER);
                                         }
                                     }""");
                 })
