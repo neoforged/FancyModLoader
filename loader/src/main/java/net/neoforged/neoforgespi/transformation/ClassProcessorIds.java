@@ -17,9 +17,9 @@ public final class ClassProcessorIds {
      */
     public static final ProcessorName COMPUTING_FRAMES = new ProcessorName("neoforge", "computing_frames");
     /**
-     * A dummy processor acting as a default group for processors provided by an {@link CoreMod}.
+     * A dummy processor acting as a default group for processors provided by {@link SimpleClassProcessor}, {@link SimpleMethodProcessor}, and {@link SimpleFieldProcessor}.
      */
-    public static final ProcessorName COREMODS_GROUP = new ProcessorName("neoforge", "coremods_default");
+    public static final ProcessorName SIMPLE_PROCESSORS_GROUP = new ProcessorName("neoforge", "simple_processors_default");
     public static final ProcessorName RUNTIME_ENUM_EXTENDER = new ProcessorName("neoforge", "runtime_enum_extender");
     public static final ProcessorName ACCESS_TRANSFORMERS = new ProcessorName("neoforge", "access_transformer");
     public static final ProcessorName MIXIN = new ProcessorName("neoforge", "mixin");

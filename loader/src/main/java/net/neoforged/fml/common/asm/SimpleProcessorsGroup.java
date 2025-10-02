@@ -12,11 +12,11 @@ import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
 
 @ApiStatus.Internal
-public class CoreModsGroup implements ClassProcessor {
+public class SimpleProcessorsGroup implements ClassProcessor {
     // For ordering purposes only; allows making transformers that run before/after all "default" coremods
     @Override
     public ProcessorName name() {
-        return ClassProcessorIds.COREMODS_GROUP;
+        return ClassProcessorIds.SIMPLE_PROCESSORS_GROUP;
     }
 
     @Override

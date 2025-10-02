@@ -20,6 +20,6 @@ abstract sealed class BaseSimpleProcessor implements ClassProcessor permits Simp
 
     @Override
     public Set<ProcessorName> runsAfter() {
-        return Set.of(ClassProcessorIds.COREMODS_GROUP, ClassProcessorIds.COMPUTING_FRAMES);
+        return Set.of(ClassProcessorIds.SIMPLE_PROCESSORS_GROUP, ClassProcessorIds.COMPUTING_FRAMES);
     }
 }

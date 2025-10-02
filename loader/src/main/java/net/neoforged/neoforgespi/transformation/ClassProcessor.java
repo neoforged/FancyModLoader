@@ -15,12 +15,13 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
 /**
- * Class processors, like coremods, provide an API for transforming classes as they are loaded. They are more flexible
- * than coremods, but take more care to use correctly and efficiently. The main pieces of a processor are
- * {@link #handlesClass(SelectionContext)} and {@link #processClass(TransformationContext)} (or {@link #processClass(TransformationContext)}),
- * which allow processors to say whether they want to process a given class and allow them to transform the class.
- * Processors are named and should have sensible namespaces; ordering is accomplished by specifying names that processors
- * should run before or after if present.
+ * Class processors provide an API for transforming classes as they are loaded. They take care to use correctly and
+ * efficiently. The main pieces of a processor are {@link #handlesClass(SelectionContext)} and
+ * {@link #processClass(TransformationContext)}, which allow processors to say whether they want to process a given
+ * class and allow them to transform the class. Processors are named and should have sensible namespaces; ordering is
+ * accomplished by specifying names that processors should run before or after if present.
+ * <p>
+ * For a simpler API, see {@link SimpleClassProcessor}, {@link SimpleMethodProcessor}, and {@link SimpleFieldProcessor}.
  */
 public interface ClassProcessor {
     String GENERATED_PACKAGE_MODULE = "net.neoforged.fml.generated";

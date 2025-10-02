@@ -22,10 +22,10 @@ import org.junit.jupiter.api.Test;
 import org.objectweb.asm.tree.ClassNode;
 
 /**
- * Tests that Java Core Mods are correctly discovered.
+ * Tests that simple class processors (the replacement to Java Core Mods) are correctly discovered.
  */
-public class CoreModTest extends LauncherTest {
-    private static final ContainedJarIdentifier JAR_IDENTIFIER = new ContainedJarIdentifier("testmod", "coremod");
+public class SimpleProcessorsTest extends LauncherTest {
+    private static final ContainedJarIdentifier JAR_IDENTIFIER = new ContainedJarIdentifier("testmod", "simpleprocessors");
 
     // A transformer that just adds a @Deprecated annotation, which is easy to assert for
     public static final ClassProcessor TEST_TRANSFORMER = new SimpleClassProcessor() {
@@ -53,9 +53,9 @@ public class CoreModTest extends LauncherTest {
                 .withTestmodModsToml()
                 .withJarInJar(JAR_IDENTIFIER, coreMod -> {
                     coreMod.withModTypeManifest(IModFile.Type.LIBRARY.name())
-                            .addService(ClassProcessorProvider.class.getName(), "testmod.coremods.TestCoreMod")
-                            .addClass("testmod.coremods.TestCoreMod", """
-                                    public class TestCoreMod implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
+                            .addService(ClassProcessorProvider.class.getName(), "testmod.simpleprocessors.TestSmpleProcessors")
+                            .addClass("testmod.simpleprocessors.TestSmpleProcessors", """
+                                    public class TestSmpleProcessors implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
                                         @Override
                                         public void makeProcessors(Context context, Collector collector) {
                                             throw new RuntimeException();
@@ -66,18 +66,18 @@ public class CoreModTest extends LauncherTest {
 
         var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                "ERROR: An error occurred while loading core-mod testmod.coremods.TestCoreMod from mods/testmod.jar > coremod-1.0.jar");
+                "ERROR: An error occurred while loading core-mod testmod.simpleprocessors.TestSmpleProcessors from mods/testmod.jar > coremod-1.0.jar");
     }
 
     @Test
-    public void testBrokenJavaCoreMod() throws Exception {
+    public void testBrokenSimpleProcessor() throws Exception {
         installation.setupProductionClient();
 
         installation.buildModJar("coremod.jar")
                 .withModTypeManifest(IModFile.Type.LIBRARY.name())
-                .addService(ClassProcessorProvider.class.getName(), "testmod.coremods.TestCoreMod")
-                .addClass("testmod.coremods.TestCoreMod", """
-                        public class TestCoreMod implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
+                .addService(ClassProcessorProvider.class.getName(), "testmod.simpleprocessors.TestSmpleProcessors")
+                .addClass("testmod.simpleprocessors.TestSmpleProcessors", """
+                        public class TestSmpleProcessors implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
                             @Override
                             public void makeProcessors(Context context, Collector collector) {
                                 throw new RuntimeException();
@@ -87,11 +87,11 @@ public class CoreModTest extends LauncherTest {
 
         var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                "ERROR: An error occurred while loading core-mod testmod.coremods.TestCoreMod from mods/coremod.jar");
+                "ERROR: An error occurred while loading core-mod testmod.simpleprocessors.TestSmpleProcessors from mods/coremod.jar");
     }
 
     @Test
-    public void testJavaCoreMod() throws Exception {
+    public void testSimpleProcessor() throws Exception {
         installation.setupProductionClient();
 
         installation.buildModJar("testmod.jar")
@@ -101,12 +101,12 @@ public class CoreModTest extends LauncherTest {
                         """)
                 .withJarInJar(JAR_IDENTIFIER, coreMod -> {
                     coreMod.withModTypeManifest(IModFile.Type.LIBRARY.name())
-                            .addService(ClassProcessorProvider.class.getName(), "testmod.coremods.TestCoreMod")
-                            .addClass("testmod.coremods.TestCoreMod", """
-                                    public class TestCoreMod implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
+                            .addService(ClassProcessorProvider.class.getName(), "testmod.simpleprocessors.TestSmpleProcessors")
+                            .addClass("testmod.simpleprocessors.TestSmpleProcessors", """
+                                    public class TestSmpleProcessors implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
                                         @Override
                                         public void makeProcessors(Context context, Collector collector) {
-                                            collector.add(net.neoforged.fml.loading.CoreModTest.TEST_TRANSFORMER);
+                                            collector.add(SimpleProcessorsTest.TEST_TRANSFORMER);
                                         }
                                     }""");
                 })

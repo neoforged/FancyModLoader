@@ -58,7 +58,7 @@ import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.classloading.ResourceMaskingClassLoader;
 import net.neoforged.fml.common.asm.AccessTransformerService;
-import net.neoforged.fml.common.asm.CoreModsGroup;
+import net.neoforged.fml.common.asm.SimpleProcessorsGroup;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
 import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.fml.loading.mixin.MixinFacade;
@@ -367,7 +367,7 @@ public final class FMLLoader implements AutoCloseable {
         var builtInProcessors = new ArrayList<ClassProcessor>();
         builtInProcessors.add(createAccessTransformerService(discoveryResult));
         builtInProcessors.add(new RuntimeEnumExtender());
-        builtInProcessors.add(new CoreModsGroup());
+        builtInProcessors.add(new SimpleProcessorsGroup());
 
         if (startupArgs.cleanDist()) {
             var minecraftModFile = discoveryResult.gameContent().stream()
@@ -383,7 +383,7 @@ public final class FMLLoader implements AutoCloseable {
         builtInProcessors.add(mixinFacade.getClassProcessor());
 
         return ClassProcessorSet.builder()
-                .markMarker(ClassProcessorIds.COREMODS_GROUP)
+                .markMarker(ClassProcessorIds.SIMPLE_PROCESSORS_GROUP)
                 .markMarker(ClassProcessorIds.COMPUTING_FRAMES)
                 .addProcessors(ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class, builtInProcessors))
                 .addProcessorProviders(ServiceLoaderUtil.loadServices(launchContext, ClassProcessorProvider.class))
