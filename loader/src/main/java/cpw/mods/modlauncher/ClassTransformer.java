@@ -36,18 +36,18 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
 /**
- * Transforms classes using a {@link TransformStore} of the available {@link ClassProcessor}s.
+ * Transforms classes using a {@link ClassProcessorSet} of the available {@link ClassProcessor}s.
  */
 @ApiStatus.Internal
 public class ClassTransformer {
     private static final byte[] EMPTY = getSha256().digest(new byte[0]);
     private static final Logger LOGGER = LogManager.getLogger();
     private final Marker CLASSDUMP = MarkerManager.getMarker("CLASSDUMP");
-    private final TransformStore transformers;
+    private final ClassProcessorSet processors;
     private final TransformerAuditTrail auditTrail;
 
-    public ClassTransformer(TransformStore transformStore, TransformerAuditTrail auditTrail) {
-        this.transformers = transformStore;
+    public ClassTransformer(ClassProcessorSet processors, TransformerAuditTrail auditTrail) {
+        this.processors = processors;
         this.auditTrail = auditTrail;
     }
 
@@ -57,7 +57,7 @@ public class ClassTransformer {
 
         ClassTransformStatistics.incrementLoadedClasses();
 
-        var transformersToUse = this.transformers.transformersFor(classDesc, inputClass.length == 0, upToTransformer);
+        var transformersToUse = this.processors.transformersFor(classDesc, inputClass.length == 0, upToTransformer);
         if (transformersToUse.isEmpty()) {
             return inputClass;
         }
@@ -82,11 +82,11 @@ public class ClassTransformer {
 
         var flags = ClassProcessor.ComputeFlags.NO_REWRITE;
         for (var transformer : transformersToUse) {
-            if (ClassProcessorIds.COMPUTING_FRAMES.equals(transformer.metadata().name())) {
+            if (ClassProcessorIds.COMPUTING_FRAMES.equals(transformer.name())) {
                 allowsComputeFrames = true;
                 continue;
             }
-            var trail = auditTrail.forClassProcessor(classDesc.getClassName(), transformer.metadata());
+            var trail = auditTrail.forClassProcessor(classDesc.getClassName(), transformer);
             var context = new ClassProcessor.TransformationContext(
                     classDesc,
                     clazz,
@@ -101,8 +101,8 @@ public class ClassTransformer {
             flags = flags.max(newFlags);
             if (!allowsComputeFrames) {
                 if (flags.ordinal() >= ClassProcessor.ComputeFlags.COMPUTE_FRAMES.ordinal()) {
-                    LOGGER.error("Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer {}", transformer.metadata().name(), ClassProcessorIds.COMPUTING_FRAMES);
-                    throw new IllegalStateException("Transformer " + transformer.metadata().name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer " + ClassProcessorIds.COMPUTING_FRAMES);
+                    LOGGER.error("Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer {}", transformer.name(), ClassProcessorIds.COMPUTING_FRAMES);
+                    throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer " + ClassProcessorIds.COMPUTING_FRAMES);
                 }
             }
         }

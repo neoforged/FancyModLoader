@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -63,7 +63,7 @@ public class TransformerAuditTrail implements ITransformerAuditTrail {
         }
     }
 
-    TransformerActivity forClassProcessor(String clazz, ClassProcessorMetadata classProcessor) {
+    TransformerActivity forClassProcessor(String clazz, ClassProcessor classProcessor) {
         var activities = getTransformerActivities(clazz);
         var activity = new TransformerActivity(classProcessor.name());
         activities.add(activity);

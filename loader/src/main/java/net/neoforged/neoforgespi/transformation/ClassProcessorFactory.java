@@ -7,5 +7,5 @@ package net.neoforged.neoforgespi.transformation;
 
 @FunctionalInterface
 public interface ClassProcessorFactory {
-    ClassProcessor create(ClassProcessorMetadata metadata, BytecodeProvider provider);
+    ClassProcessor create(ClassProcessor metadata, BytecodeProvider provider);
 }

@@ -23,7 +23,6 @@ import net.neoforged.fml.common.asm.ListGeneratorAdapter;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
-import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.Opcodes;
@@ -63,30 +62,20 @@ public class RuntimeEnumExtender implements ClassProcessor {
     private static final int ARRAY_FLAGS = Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC;
     private static final int EXT_INFO_FLAGS = Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL;
     private static Map<String, List<EnumPrototype>> prototypes = Map.of();
-    private final ClassProcessorMetadata metadata;
 
-    public RuntimeEnumExtender() {
-        this.metadata = new ClassProcessorMetadata() {
-            @Override
-            public ProcessorName name() {
-                return ClassProcessorIds.RUNTIME_ENUM_EXTENDER;
-            }
-
-            @Override
-            public Set<ProcessorName> runsBefore() {
-                return Set.of(ClassProcessorIds.MIXIN);
-            }
-
-            @Override
-            public OrderingHint orderingHint() {
-                return OrderingHint.EARLY;
-            }
-        };
+    @Override
+    public ProcessorName name() {
+        return ClassProcessorIds.RUNTIME_ENUM_EXTENDER;
     }
 
     @Override
-    public ClassProcessorMetadata metadata() {
-        return metadata;
+    public Set<ProcessorName> runsBefore() {
+        return Set.of(ClassProcessorIds.MIXIN);
+    }
+
+    @Override
+    public OrderingHint orderingHint() {
+        return OrderingHint.EARLY;
     }
 
     @Override

@@ -5,6 +5,7 @@
 
 package net.neoforged.neoforgespi.transformation;
 
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import net.neoforged.fml.coremod.CoreModTransformationContext;
@@ -21,10 +22,50 @@ import org.objectweb.asm.tree.ClassNode;
  * should run before or after if present.
  */
 public interface ClassProcessor {
+    String GENERATED_PACKAGE_MODULE = "net.neoforged.fml.generated";
+
     /**
-     * {@return the metadata associated with this class processor}.
+     * {@return a unique identifier for this processor}
      */
-    ClassProcessorMetadata metadata();
+    ProcessorName name();
+
+    /**
+     * {@return processors that this processor must run before}
+     */
+    default Set<ProcessorName> runsBefore() {
+        return Set.of();
+    }
+
+    /**
+     * {@return processors that this processor must run after} This should include
+     * {@link ClassProcessorIds#COMPUTING_FRAMES} if the processor returns a result requiring frame re-computation.
+     */
+    default Set<ProcessorName> runsAfter() {
+        return Set.of(ClassProcessorIds.COMPUTING_FRAMES);
+    }
+
+    /**
+     * {@return packages that this processor generates classes for, that do not already exist on the game layer}
+     * Generated packages in the game layer will be in the module {@value ClassProcessor#GENERATED_PACKAGE_MODULE}.
+     */
+    default Set<String> generatesPackages() {
+        return Set.of();
+    }
+
+    /**
+     * {@return a hint for how this processor should be ordered relative to other processors} Note that this is a
+     * comparatively weak hint; {@link #runsBefore()} and {@link #runsAfter()} take precedence, and processors don't
+     * have "phases" of any sort.
+     */
+    default OrderingHint orderingHint() {
+        return OrderingHint.DEFAULT;
+    }
+
+    enum OrderingHint {
+        EARLY,
+        DEFAULT,
+        LATE
+    }
 
     /**
      * {@return whether the processor wants to recieve the class}
@@ -50,6 +91,14 @@ public interface ClassProcessor {
      * @param context the context of the class that was processed
      */
     default void afterProcessing(AfterProcessingContext context) {}
+
+    /**
+     * Called once after a set of class processors has been linked together
+     * with a bytecode source. FML will not call transformation methods
+     * on this class processor, until it has been linked.
+     * <p>FML only links providers once during startup.
+     */
+    default void link(ClassProcessorLinkContext context) {}
 
     enum ComputeFlags {
         /**

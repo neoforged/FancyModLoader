@@ -14,29 +14,18 @@
 
 package net.neoforged.fml.coremod;
 
-import java.util.Locale;
 import java.util.Set;
-import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 
 /**
- * A bytecode transformer that is provided by a {@linkplain CoreMod core mod}.
- * <p>
- * {@link CoreModTransformer}s must be named. FML will attempt to generate a name given the owner of the transformer
- * and its class name, but if more than one is provided that uses the same implementing class, it must override
- * {@link #name()}.
+ * A targeted bytecode transformer that can be provided by a {@link net.neoforged.neoforgespi.transformation.ClassProcessorProvider}.
  */
 public sealed interface CoreModTransformer permits CoreModClassTransformer, CoreModMethodTransformer, CoreModFieldTransformer {
     /**
-     * {@return a unique name for this transformer. Defaults to a name derived from the source class and mod file names}
+     * {@return a unique name for this transformer}
      */
-    default ProcessorName name() {
-        return new ProcessorName(
-                getOwnerName(getClass()),
-                getClass().getName().replace('$', '.').toLowerCase(Locale.ROOT));
-    }
+    ProcessorName name();
 
     /**
      * {@return processors or transformers that this transformer must run before}
@@ -50,19 +39,5 @@ public sealed interface CoreModTransformer permits CoreModClassTransformer, Core
      */
     default Set<ProcessorName> runsAfter() {
         return Set.of(ClassProcessorIds.COREMODS_GROUP);
-    }
-
-    ClassProcessor toProcessor();
-
-    private static String getOwnerName(Class<? extends CoreModTransformer> clazz) {
-        var module = clazz.getModule();
-        if (module.isNamed()) {
-            return module.getName();
-        }
-        var modFile = FMLLoader.getCurrent().getModFileByClass(clazz);
-        if (modFile != null) {
-            return modFile.getId();
-        }
-        throw new IllegalStateException("Cannot determine owner name for " + clazz + ", it is not in a named module and not loaded from a mod file");
     }
 }

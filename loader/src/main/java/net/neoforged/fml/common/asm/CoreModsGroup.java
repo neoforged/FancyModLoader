@@ -8,32 +8,20 @@ package net.neoforged.fml.common.asm;
 import java.util.Set;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
-import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
 
 @ApiStatus.Internal
 public class CoreModsGroup implements ClassProcessor {
-    private final ClassProcessorMetadata metadata;
-
-    public CoreModsGroup() {
-        this.metadata = new ClassProcessorMetadata() {
-            // For ordering purposes only; allows making transformers that run before/after all "default" coremods
-            @Override
-            public ProcessorName name() {
-                return ClassProcessorIds.COREMODS_GROUP;
-            }
-
-            @Override
-            public Set<ProcessorName> runsAfter() {
-                return Set.of(ClassProcessorIds.COMPUTING_FRAMES, ClassProcessorIds.MIXIN);
-            }
-        };
+    // For ordering purposes only; allows making transformers that run before/after all "default" coremods
+    @Override
+    public ProcessorName name() {
+        return ClassProcessorIds.COREMODS_GROUP;
     }
 
     @Override
-    public ClassProcessorMetadata metadata() {
-        return metadata;
+    public Set<ProcessorName> runsAfter() {
+        return Set.of(ClassProcessorIds.COMPUTING_FRAMES, ClassProcessorIds.MIXIN);
     }
 
     @Override

@@ -15,13 +15,11 @@
 package cpw.mods.modlauncher.benchmarks;
 
 import cpw.mods.modlauncher.ClassHierarchyRecomputationContext;
+import cpw.mods.modlauncher.ClassProcessorSet;
 import cpw.mods.modlauncher.ClassTransformer;
-import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformerAuditTrail;
 import java.io.InputStream;
-import java.util.List;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
-import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
@@ -39,16 +37,11 @@ public class TransformBenchmark {
 
     @Setup
     public void setup() throws Exception {
-        final TransformStore transformStore = new TransformStore(List.of(
+        var classProcessorSet = ClassProcessorSet.of(
                 new ClassProcessor() {
                     @Override
-                    public ClassProcessorMetadata metadata() {
-                        return new ClassProcessorMetadata() {
-                            @Override
-                            public ProcessorName name() {
-                                return new ProcessorName("benchmark", "dummy1");
-                            }
-                        };
+                    public ProcessorName name() {
+                        return new ProcessorName("benchmark", "dummy1");
                     }
 
                     @Override
@@ -60,9 +53,9 @@ public class TransformBenchmark {
                     public ComputeFlags processClass(TransformationContext context) {
                         return ComputeFlags.COMPUTE_FRAMES;
                     }
-                }));
+                });
         auditTrail = new TransformerAuditTrail();
-        classTransformer = new ClassTransformer(transformStore, auditTrail);
+        classTransformer = new ClassTransformer(classProcessorSet, auditTrail);
         try (InputStream is = getClass().getClassLoader().getResourceAsStream("cpw/mods/modlauncher/testjar/TestClass.class")) {
             classBytes = is.readAllBytes();
         }

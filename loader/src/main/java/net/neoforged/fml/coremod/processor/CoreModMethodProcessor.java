@@ -3,17 +3,18 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.coremod;
+package net.neoforged.fml.coremod.processor;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import net.neoforged.fml.coremod.CoreModMethodTransformer;
 
-final class CoreModMethodProcessor extends CoreModBaseProcessor {
+public final class CoreModMethodProcessor extends CoreModBaseProcessor {
     private final CoreModMethodTransformer transformer;
     private final Map<String, Set<String>> targetsByClass;
 
-    CoreModMethodProcessor(CoreModMethodTransformer transformer) {
+    public CoreModMethodProcessor(CoreModMethodTransformer transformer) {
         super(transformer);
         this.transformer = transformer;
         this.targetsByClass = transformer.targets().stream().collect(

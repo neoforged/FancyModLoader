@@ -15,7 +15,7 @@ import cpw.mods.jarhandling.impl.CompositeJarContents;
 import cpw.mods.jarhandling.impl.EmptyJarContents;
 import cpw.mods.jarhandling.impl.FolderJarContents;
 import cpw.mods.jarhandling.impl.JarFileContents;
-import cpw.mods.modlauncher.TransformStoreBuilder;
+import cpw.mods.modlauncher.ClassProcessorSet;
 import cpw.mods.modlauncher.TransformerAuditTrail;
 import cpw.mods.modlauncher.TransformingClassLoader;
 import cpw.mods.modlauncher.api.ITransformerAuditTrail;
@@ -84,7 +84,6 @@ import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
-import net.neoforged.neoforgespi.transformation.ClassProcessorMetadata;
 import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
@@ -168,7 +167,7 @@ public final class FMLLoader implements AutoCloseable {
 
     /**
      * Tries to get the mod file that a given class belongs to.
-     * 
+     *
      * @return Null, if the class doesn't belong to a mod file.
      */
     @Nullable
@@ -330,11 +329,11 @@ public final class FMLLoader implements AutoCloseable {
                 gameContent.add(modFile.getSecureJar());
             }
 
-            var transformStoreFactory = createTransformStore(startupArgs, launchContext, discoveryResult, mixinFacade);
+            var classProcessorSet = createClassProcessorSet(startupArgs, launchContext, discoveryResult, mixinFacade);
             gameContent.add(new VirtualJar(
-                    ClassProcessorMetadata.GENERATED_PACKAGE_MODULE,
-                    transformStoreFactory.getGeneratedPackages().toArray(String[]::new)));
-            var transformingLoader = loader.buildTransformingLoader(transformStoreFactory, loader.classTransformerAuditLog, gameContent);
+                    ClassProcessor.GENERATED_PACKAGE_MODULE,
+                    classProcessorSet.getGeneratedPackages().toArray(String[]::new)));
+            var transformingLoader = loader.buildTransformingLoader(classProcessorSet, loader.classTransformerAuditLog, gameContent);
 
             // From here on out, try loading through the TCL
             if (classLoadingGuardian != null) {
@@ -360,7 +359,7 @@ public final class FMLLoader implements AutoCloseable {
         }
     }
 
-    private static TransformStoreBuilder createTransformStore(StartupArgs startupArgs,
+    private static ClassProcessorSet createClassProcessorSet(StartupArgs startupArgs,
             LaunchContextAdapter launchContext,
             DiscoveryResult discoveryResult,
             MixinFacade mixinFacade) {
@@ -383,15 +382,12 @@ public final class FMLLoader implements AutoCloseable {
 
         builtInProcessors.add(mixinFacade.getClassProcessor());
 
-        var builder = new TransformStoreBuilder();
-
-        builder.markMarker(ClassProcessorIds.COREMODS_GROUP);
-        builder.markMarker(ClassProcessorIds.COMPUTING_FRAMES);
-
-        builder.addProcessors(ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class, builtInProcessors));
-        builder.addProcessorProviders(ServiceLoaderUtil.loadServices(launchContext, ClassProcessorProvider.class));
-
-        return builder;
+        return ClassProcessorSet.builder()
+                .markMarker(ClassProcessorIds.COREMODS_GROUP)
+                .markMarker(ClassProcessorIds.COMPUTING_FRAMES)
+                .addProcessors(ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class, builtInProcessors))
+                .addProcessorProviders(ServiceLoaderUtil.loadServices(launchContext, ClassProcessorProvider.class))
+                .build();
     }
 
     private static ClassProcessor createAccessTransformerService(DiscoveryResult discoveryResult) {
@@ -414,7 +410,7 @@ public final class FMLLoader implements AutoCloseable {
         return new AccessTransformerService(engine);
     }
 
-    private TransformingClassLoader buildTransformingLoader(TransformStoreBuilder transformStoreBuilder,
+    private TransformingClassLoader buildTransformingLoader(ClassProcessorSet classProcessorSet,
             TransformerAuditTrail auditTrail,
             List<SecureJar> content) {
         maskContentAlreadyOnClasspath(content);
@@ -431,7 +427,7 @@ public final class FMLLoader implements AutoCloseable {
 
         var moduleNames = getModuleNameList(cf, content);
         LOGGER.info("Building game content classloader:\n{}", moduleNames);
-        var loader = new TransformingClassLoader(transformStoreBuilder, auditTrail, cf, parentLayers, currentClassLoader);
+        var loader = new TransformingClassLoader(classProcessorSet, auditTrail, cf, parentLayers, currentClassLoader);
 
         var layer = ModuleLayer.defineModules(
                 cf,

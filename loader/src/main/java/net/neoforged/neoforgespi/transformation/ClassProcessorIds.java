@@ -5,8 +5,6 @@
 
 package net.neoforged.neoforgespi.transformation;
 
-import net.neoforged.fml.coremod.CoreMod;
-
 /**
  * Standard names for built-in processors.
  */

@@ -6,7 +6,6 @@
 package net.neoforged.fml.coremod;
 
 import java.util.Set;
-import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import org.objectweb.asm.tree.ClassNode;
 
 non-sealed public interface CoreModClassTransformer extends CoreModTransformer {
@@ -29,9 +28,5 @@ non-sealed public interface CoreModClassTransformer extends CoreModTransformer {
         public Target {
             NameValidation.validateClassName(className);
         }
-    }
-
-    default ClassProcessor toProcessor() {
-        return new CoreModClassProcessor(this);
     }
 }
