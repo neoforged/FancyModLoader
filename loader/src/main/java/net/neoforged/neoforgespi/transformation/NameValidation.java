@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.coremod;
+package net.neoforged.neoforgespi.transformation;
 
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;

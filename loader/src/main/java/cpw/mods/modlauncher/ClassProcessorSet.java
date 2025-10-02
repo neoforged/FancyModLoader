@@ -1,6 +1,7 @@
 package cpw.mods.modlauncher;
 
 import com.google.common.graph.GraphBuilder;
+import com.google.common.graph.Graphs;
 import com.mojang.logging.LogUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,7 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.SequencedMap;
 import java.util.Set;
 import java.util.function.Function;
 import net.neoforged.fml.CrashReportCallables;
@@ -22,7 +23,6 @@ import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.transformation.BytecodeProvider;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
-import net.neoforged.neoforgespi.transformation.ClassProcessorLinkContext;
 import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
@@ -38,12 +38,14 @@ public final class ClassProcessorSet {
     private final List<ClassProcessor> sortedProcessors;
     private final Set<ProcessorName> markerProcessors;
     private final Set<String> generatedPackages;
-    private final Map<ProcessorName, ClassProcessor> processors;
+    private final SequencedMap<ProcessorName, ClassProcessor> processors;
+    private final Set<ProcessorName> allowedToRecomputeFrames;
     private boolean linked;
 
     private ClassProcessorSet(List<ClassProcessor> sortedProcessors,
             Set<ProcessorName> markers,
-            Set<String> generatedPackages) {
+            Set<String> generatedPackages,
+            Set<ProcessorName> allowedToRecomputeFrames) {
         CrashReportCallables.registerCrashCallable("Class Processors", () -> ClassTransformStatistics.computeCrashReportEntry(this));
         this.sortedProcessors = List.copyOf(sortedProcessors);
         this.markerProcessors = Set.copyOf(markers);
@@ -52,13 +54,18 @@ public final class ClassProcessorSet {
         for (var processor : sortedProcessors) {
             processors.put(processor.name(), processor);
         }
-        this.processors = Collections.unmodifiableMap(processors);
+        this.allowedToRecomputeFrames = Set.copyOf(allowedToRecomputeFrames);
+        this.processors = Collections.unmodifiableSequencedMap(processors);
     }
 
     public static ClassProcessorSet of(ClassProcessor... processors) {
         return ClassProcessorSet.builder()
                 .addProcessors(Arrays.asList(processors))
                 .build();
+    }
+
+    boolean canRecomputeFrames(ProcessorName name) {
+        return allowedToRecomputeFrames.contains(name);
     }
 
     public boolean isMarker(ClassProcessor processor) {
@@ -108,17 +115,7 @@ public final class ClassProcessorSet {
         linked = true;
 
         for (var processor : sortedProcessors) {
-            var context = new ClassProcessorLinkContext() {
-                @Override
-                public Map<ProcessorName, ClassProcessor> processors() {
-                    return processors;
-                }
-
-                @Override
-                public BytecodeProvider bytecodeProvider() {
-                    return bytecodeProviderLookup.apply(processor.name());
-                }
-            };
+            var context = new ClassProcessor.LinkContext(processors, bytecodeProviderLookup.apply(processor.name()));
             processor.link(context);
         }
     }
@@ -168,7 +165,7 @@ public final class ClassProcessorSet {
         }
 
         @SuppressWarnings("UnstableApiUsage")
-        private static List<ClassProcessor> sortProcessors(List<ClassProcessor> allProcessors) {
+        private static List<ClassProcessor> sortProcessors(List<ClassProcessor> allProcessors, Set<ProcessorName> allowedToRecomputeFrames) {
             final var transformers = new HashMap<ProcessorName, ClassProcessor>();
             final var graph = GraphBuilder.directed().<ClassProcessor>build();
 
@@ -210,7 +207,11 @@ public final class ClassProcessorSet {
                     }
                 }
             }
-            return TopologicalSort.topologicalSort(graph, Comparator.comparing(ClassProcessor::orderingHint).thenComparing(ClassProcessor::name));
+            var sorted = TopologicalSort.topologicalSort(graph, Comparator.comparing(ClassProcessor::orderingHint).thenComparing(ClassProcessor::name));
+            for (var node : Graphs.reachableNodes(graph, specialComputeFramesNode)) {
+                allowedToRecomputeFrames.add(node.name());
+            }
+            return sorted;
         }
 
         private static ClassProcessor createSpecialComputeFramesNode() {
@@ -243,17 +244,14 @@ public final class ClassProcessorSet {
         }
 
         public ClassProcessorSet build() {
-            // We construct the processors and add them sequentially, to avoid needing lazy-initialization of some sort;
-            // this way the TransformStore works in the meantime, which is necessary so that the bytecode provider provided
-            // to the processors is "live" already when the processors are constructed/initialized. There's no way around
-            // this, other than making the transform store a list of memoized behavior suppliers instead.
-            var sortedProcessors = sortProcessors(processors);
+            var allowedToRecomputeFrames = new HashSet<ProcessorName>();
+            var sortedProcessors = sortProcessors(processors, allowedToRecomputeFrames);
 
             var packageNames = new HashSet<String>();
             for (var factory : processors) {
                 packageNames.addAll(factory.generatesPackages());
             }
-            return new ClassProcessorSet(sortedProcessors, markers, (Set<String>) packageNames);
+            return new ClassProcessorSet(sortedProcessors, markers, packageNames, allowedToRecomputeFrames);
         }
     }
 }

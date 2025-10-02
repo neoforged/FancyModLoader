@@ -5,11 +5,12 @@
 
 package net.neoforged.neoforgespi.transformation;
 
+import java.util.SequencedMap;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-import net.neoforged.fml.coremod.CoreModTransformationContext;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Unmodifiable;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -98,7 +99,7 @@ public interface ClassProcessor {
      * on this class processor, until it has been linked.
      * <p>FML only links providers once during startup.
      */
-    default void link(ClassProcessorLinkContext context) {}
+    default void link(LinkContext context) {}
 
     enum ComputeFlags {
         /**
@@ -147,7 +148,7 @@ public interface ClassProcessor {
     /**
      * Context available when processing a class
      */
-    final class TransformationContext implements CoreModTransformationContext {
+    final class TransformationContext implements SimpleTransformationContext {
         private final Type type;
         private final ClassNode node;
         private final boolean empty;
@@ -211,5 +212,19 @@ public interface ClassProcessor {
     record AfterProcessingContext(Type type) {
         @ApiStatus.Internal
         public AfterProcessingContext {}
+    }
+
+    /**
+     * The context provided to {@linkplain ClassProcessor class processors}
+     * when they are linked with a bytecode source.
+     * 
+     * @param processors       an immutable map of the processors that are being linked. The maps iteration order is the order in which the processors will be applied
+     * @param bytecodeProvider a provider to access class bytecode for other classes than the class that is being transformed
+     */
+    record LinkContext(
+            @Unmodifiable SequencedMap<ProcessorName, ClassProcessor> processors,
+            BytecodeProvider bytecodeProvider) {
+        @ApiStatus.Internal
+        public LinkContext {}
     }
 }

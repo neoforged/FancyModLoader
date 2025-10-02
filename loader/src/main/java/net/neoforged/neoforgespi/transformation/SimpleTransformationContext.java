@@ -12,11 +12,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package net.neoforged.fml.coremod;
+package net.neoforged.neoforgespi.transformation;
 
 import org.objectweb.asm.Type;
 
-public interface CoreModTransformationContext {
+public interface SimpleTransformationContext {
     /**
      * {@return The class being transformed}
      */

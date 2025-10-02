@@ -6,13 +6,6 @@
 package net.neoforged.neoforgespi.transformation;
 
 import java.util.ServiceLoader;
-import net.neoforged.fml.coremod.CoreModClassTransformer;
-import net.neoforged.fml.coremod.CoreModFieldTransformer;
-import net.neoforged.fml.coremod.CoreModMethodTransformer;
-import net.neoforged.fml.coremod.CoreModTransformer;
-import net.neoforged.fml.coremod.processor.CoreModClassProcessor;
-import net.neoforged.fml.coremod.processor.CoreModFieldProcessor;
-import net.neoforged.fml.coremod.processor.CoreModMethodProcessor;
 import org.jetbrains.annotations.ApiStatus;
 
 /**
@@ -25,15 +18,6 @@ public interface ClassProcessorProvider {
     @ApiStatus.NonExtendable
     interface Collector {
         void add(ClassProcessor processor);
-
-        default void add(CoreModTransformer transformer) {
-            ClassProcessor processor = switch (transformer) {
-                case CoreModClassTransformer classTransformer -> new CoreModClassProcessor(classTransformer);
-                case CoreModFieldTransformer fieldTransformer -> new CoreModFieldProcessor(fieldTransformer);
-                case CoreModMethodTransformer methodTransformer -> new CoreModMethodProcessor(methodTransformer);
-            };
-            add(processor);
-        }
     }
 
     /**

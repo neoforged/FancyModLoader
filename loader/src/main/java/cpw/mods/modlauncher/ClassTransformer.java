@@ -99,8 +99,12 @@ public class ClassTransformer {
                 isEmpty = false;
             }
             flags = flags.max(newFlags);
-            if (!allowsComputeFrames) {
-                if (flags.ordinal() >= ClassProcessor.ComputeFlags.COMPUTE_FRAMES.ordinal()) {
+            if (flags.ordinal() >= ClassProcessor.ComputeFlags.COMPUTE_FRAMES.ordinal()) {
+                if (!processors.canRecomputeFrames(transformer.name())) {
+                    LOGGER.error("Transformer {} requested COMPUTE_FRAMES but does not depend, directly or indirectly, on running after {}", transformer.name(), ClassProcessorIds.COMPUTING_FRAMES);
+                    throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but does not depend, directly or indirectly, on running after " + ClassProcessorIds.COMPUTING_FRAMES);
+                }
+                if (!allowsComputeFrames) {
                     LOGGER.error("Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer {}", transformer.name(), ClassProcessorIds.COMPUTING_FRAMES);
                     throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer " + ClassProcessorIds.COMPUTING_FRAMES);
                 }

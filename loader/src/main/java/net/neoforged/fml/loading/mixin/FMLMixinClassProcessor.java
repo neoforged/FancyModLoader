@@ -6,7 +6,6 @@
 package net.neoforged.fml.loading.mixin;
 
 import java.util.Set;
-import net.neoforged.neoforgespi.transformation.BytecodeProvider;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
@@ -32,8 +31,9 @@ public class FMLMixinClassProcessor implements ClassProcessor {
         this.service = service;
     }
 
-    public void setBytecodeProvider(BytecodeProvider bytecodeProvider) {
-        this.service.setBytecodeProvider(new FMLClassBytecodeProvider(bytecodeProvider, this));
+    @Override
+    public void link(LinkContext context) {
+        this.service.setBytecodeProvider(new FMLClassBytecodeProvider(context.bytecodeProvider(), this));
     }
 
     @Override

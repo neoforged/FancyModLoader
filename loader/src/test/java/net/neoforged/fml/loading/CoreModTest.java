@@ -11,13 +11,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Set;
 import net.neoforged.fml.ModLoadingException;
-import net.neoforged.fml.coremod.CoreModClassTransformer;
-import net.neoforged.fml.coremod.CoreModTransformationContext;
-import net.neoforged.fml.coremod.CoreModTransformer;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.neoforgespi.locating.IModFile;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
+import net.neoforged.neoforgespi.transformation.SimpleClassProcessor;
+import net.neoforged.neoforgespi.transformation.SimpleTransformationContext;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -28,14 +28,14 @@ public class CoreModTest extends LauncherTest {
     private static final ContainedJarIdentifier JAR_IDENTIFIER = new ContainedJarIdentifier("testmod", "coremod");
 
     // A transformer that just adds a @Deprecated annotation, which is easy to assert for
-    public static final CoreModTransformer TEST_TRANSFORMER = new CoreModClassTransformer() {
+    public static final ClassProcessor TEST_TRANSFORMER = new SimpleClassProcessor() {
         @Override
         public ProcessorName name() {
             return new ProcessorName("fml", "test");
         }
 
         @Override
-        public void transform(ClassNode classNode, CoreModTransformationContext context) {
+        public void transform(ClassNode classNode, SimpleTransformationContext context) {
             classNode.visitAnnotation("Ljava/lang/Deprecated;", true);
         }
 
