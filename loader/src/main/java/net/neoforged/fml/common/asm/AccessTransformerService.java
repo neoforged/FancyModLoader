@@ -5,13 +5,15 @@
 
 package net.neoforged.fml.common.asm;
 
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-import java.util.EnumSet;
+import java.util.Set;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
+import org.jetbrains.annotations.ApiStatus;
 
-public class AccessTransformerService implements ILaunchPluginService {
+@ApiStatus.Internal
+public class AccessTransformerService implements ClassProcessor {
     private final AccessTransformerEngine engine;
 
     public AccessTransformerService(AccessTransformerEngine engine) {
@@ -19,20 +21,22 @@ public class AccessTransformerService implements ILaunchPluginService {
     }
 
     @Override
-    public String name() {
-        return "accesstransformer";
+    public ProcessorName name() {
+        return ClassProcessorIds.ACCESS_TRANSFORMERS;
     }
 
     @Override
-    public int processClassWithFlags(final Phase phase, final ClassNode classNode, final Type classType, final String reason) {
-        return engine.transform(classNode, classType) ? ComputeFlags.SIMPLE_REWRITE : ComputeFlags.NO_REWRITE;
+    public Set<ProcessorName> runsBefore() {
+        return Set.of(ClassProcessorIds.MIXIN);
     }
 
-    private static final EnumSet<Phase> YAY = EnumSet.of(Phase.BEFORE);
-    private static final EnumSet<Phase> NAY = EnumSet.noneOf(Phase.class);
+    @Override
+    public ComputeFlags processClass(final TransformationContext context) {
+        return engine.transform(context.node(), context.type()) ? ComputeFlags.SIMPLE_REWRITE : ComputeFlags.NO_REWRITE;
+    }
 
     @Override
-    public EnumSet<Phase> handlesClass(final Type classType, final boolean isEmpty) {
-        return !isEmpty && engine.getTargets().contains(classType) ? YAY : NAY;
+    public boolean handlesClass(final SelectionContext context) {
+        return !context.empty() && engine.getTargets().contains(context.type());
     }
 }

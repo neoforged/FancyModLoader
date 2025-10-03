@@ -230,7 +230,7 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
         return defineClass(name, bytes, 0, bytes.length, moduleInfo.protectionDomain);
     }
 
-    protected byte[] maybeTransformClassBytes(byte[] bytes, String name, String context) {
+    protected byte[] maybeTransformClassBytes(byte[] bytes, String name, @Nullable String context) {
         return bytes;
     }
 

@@ -81,9 +81,9 @@ public final class ServiceLoaderUtil {
                 }
 
                 if (additionalServices.contains(service)) {
-                    LOGGER.debug(LogMarkers.CORE, "\t{}[built-in] {}", priorityPrefix, identifyService(context, service));
+                    LOGGER.debug(LogMarkers.CORE, "\t{}[built-in] {}", priorityPrefix, identifyService(service));
                 } else {
-                    LOGGER.debug(LogMarkers.CORE, "\t{}{}", priorityPrefix, identifyService(context, service));
+                    LOGGER.debug(LogMarkers.CORE, "\t{}{}", priorityPrefix, identifyService(service));
                 }
             }
         }
@@ -91,8 +91,8 @@ public final class ServiceLoaderUtil {
         return services;
     }
 
-    private static String identifyService(ILaunchContext context, Object o) {
-        var sourcePath = identifySourcePath(context, o);
+    private static String identifyService(Object o) {
+        var sourcePath = identifySourcePath(o);
         return o.getClass().getName() + " from " + sourcePath;
     }
 
@@ -100,7 +100,7 @@ public final class ServiceLoaderUtil {
      * Given any object, this method tries to build a human-readable chain of paths that identify where the
      * code implementing the given object is coming from.
      */
-    public static String identifySourcePath(ILaunchContext context, Object object) {
+    public static String identifySourcePath(Object object) {
         var codeLocation = object.getClass().getProtectionDomain().getCodeSource().getLocation();
         Path fsLocation;
         try {

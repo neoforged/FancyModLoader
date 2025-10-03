@@ -306,7 +306,6 @@ public abstract class LauncherTest {
                 loadedMods.stream().collect(Collectors.toMap(
                         o -> o.getMods().getFirst().getModId(),
                         o -> o)),
-                loader.getClassTransformer().getTransformers(),
                 launchClassLoader);
     }
 

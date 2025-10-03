@@ -6,9 +6,7 @@
 package net.neoforged.fml.common.asm.enumextension;
 
 import cpw.mods.jarhandling.JarResource;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -23,6 +21,9 @@ import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.asm.ListGeneratorAdapter;
 import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -43,9 +44,7 @@ import org.objectweb.asm.tree.TypeInsnNode;
  * Transforms enums implementing {@link IExtensibleEnum} to add additional entries loaded from files provided by mods
  */
 @ApiStatus.Internal
-public class RuntimeEnumExtender implements ILaunchPluginService {
-    private static final EnumSet<Phase> YAY = EnumSet.of(Phase.BEFORE);
-    private static final EnumSet<Phase> NAY = EnumSet.noneOf(Phase.class);
+public class RuntimeEnumExtender implements ClassProcessor {
     private static final Type MARKER_IFACE = Type.getType(IExtensibleEnum.class);
     private static final Type INDEXED_ANNOTATION = Type.getType(IndexedEnum.class);
     private static final Type NAMED_ANNOTATION = Type.getType(NamedEnum.class);
@@ -65,24 +64,36 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     private static Map<String, List<EnumPrototype>> prototypes = Map.of();
 
     @Override
-    public String name() {
-        return "runtime_enum_extender";
+    public ProcessorName name() {
+        return ClassProcessorIds.RUNTIME_ENUM_EXTENDER;
     }
 
     @Override
-    public EnumSet<Phase> handlesClass(Type classType, boolean isEmpty) {
-        return isEmpty || !prototypes.containsKey(classType.getInternalName()) ? NAY : YAY;
+    public Set<ProcessorName> runsBefore() {
+        return Set.of(ClassProcessorIds.MIXIN);
     }
 
     @Override
-    public boolean processClass(final Phase phase, final ClassNode classNode, final Type classType) {
+    public OrderingHint orderingHint() {
+        return OrderingHint.EARLY;
+    }
+
+    @Override
+    public boolean handlesClass(SelectionContext context) {
+        return !context.empty() && prototypes.containsKey(context.type().getInternalName());
+    }
+
+    @Override
+    public ComputeFlags processClass(final TransformationContext context) {
+        final var classNode = context.node();
+        final var classType = context.type();
         if ((classNode.access & Opcodes.ACC_ENUM) == 0 || !classNode.interfaces.contains(MARKER_IFACE.getInternalName())) {
             throw new IllegalStateException("Tried to extend non-enum class or non-extensible enum: " + classType);
         }
 
         List<EnumPrototype> protos = prototypes.getOrDefault(classType.getInternalName(), List.of());
         if (protos.isEmpty()) {
-            return false;
+            return ComputeFlags.NO_REWRITE;
         }
 
         MethodNode clinit = findMethod(classNode, mth -> mth.name.equals("<clinit>"));
@@ -140,7 +151,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
             clinit.instructions.insertBefore(putStaticInsn, appendValuesGenerator.insnList);
         }
 
-        return true;
+        return ComputeFlags.COMPUTE_FRAMES;
     }
 
     /**

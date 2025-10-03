@@ -14,85 +14,70 @@
 
 package cpw.mods.modlauncher;
 
-import cpw.mods.modlauncher.api.ITransformationService;
-import cpw.mods.modlauncher.api.ITransformer;
-import cpw.mods.modlauncher.api.ITransformerActivity;
 import cpw.mods.modlauncher.api.ITransformerAuditTrail;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
 
+@ApiStatus.Internal
 public class TransformerAuditTrail implements ITransformerAuditTrail {
-    private Map<String, List<ITransformerActivity>> audit = new ConcurrentHashMap<>();
-
-    @Override
-    public List<ITransformerActivity> getActivityFor(final String className) {
-        return Collections.unmodifiableList(getTransformerActivities(className));
-    }
+    private final Map<String, List<TransformerActivity>> audit = new ConcurrentHashMap<>();
 
     @VisibleForTesting
     public void clear() {
         audit.clear();
     }
 
-    private static class TransformerActivity implements ITransformerActivity {
-        private final Type type;
-        private final String[] context;
+    static final class TransformerActivity implements BiConsumer<String, String[]> {
+        private final ProcessorName processorName;
+        private final List<String> activities = new ArrayList<>();
+        private boolean include = false;
 
-        private TransformerActivity(Type type, String... context) {
-            this.type = type;
-            this.context = context;
+        private TransformerActivity(ProcessorName processorName) {
+            this.processorName = processorName;
+        }
+
+        private boolean shouldInclude() {
+            return include || !activities.isEmpty();
+        }
+
+        void rewrites() {
+            include = true;
+        }
+
+        private String getActivityString() {
+            return processorName + (activities.isEmpty() ? "" : "[" + String.join(",", activities) + "]");
         }
 
         @Override
-        public String[] getContext() {
-            return context;
-        }
-
-        @Override
-        public Type getType() {
-            return type;
-        }
-
-        public String getActivityString() {
-            return this.type.getLabel() + ":" + String.join(":", this.context);
+        public void accept(String activity, String... context) {
+            activities.add(activity + (context.length == 0 ? "" : ":" + String.join(":", context)));
         }
     }
 
-    public void addReason(String clazz, String reason) {
-        getTransformerActivities(clazz).add(new TransformerActivity(ITransformerActivity.Type.REASON, reason));
+    TransformerActivity forClassProcessor(String clazz, ClassProcessor classProcessor) {
+        var activities = getTransformerActivities(clazz);
+        var activity = new TransformerActivity(classProcessor.name());
+        activities.add(activity);
+        return activity;
     }
 
-    public void addPluginCustomAuditTrail(String clazz, ILaunchPluginService plugin, String... data) {
-        getTransformerActivities(clazz).add(new TransformerActivity(ITransformerActivity.Type.PLUGIN, concat(plugin.name(), data)));
-    }
-
-    public void addPluginAuditTrail(String clazz, ILaunchPluginService plugin, ILaunchPluginService.Phase phase) {
-        getTransformerActivities(clazz).add(new TransformerActivity(ITransformerActivity.Type.PLUGIN, plugin.name(), phase.name().substring(0, 1)));
-    }
-
-    public void addTransformerAuditTrail(String clazz, ITransformationService transformService, ITransformer<?> transformer) {
-        getTransformerActivities(clazz).add(new TransformerActivity(ITransformerActivity.Type.TRANSFORMER, concat(transformService.name(), transformer.labels())));
-    }
-
-    private String[] concat(String first, String[] rest) {
-        final String[] res = new String[rest.length + 1];
-        res[0] = first;
-        System.arraycopy(rest, 0, res, 1, rest.length);
-        return res;
-    }
-
-    private List<ITransformerActivity> getTransformerActivities(final String clazz) {
+    private List<TransformerActivity> getTransformerActivities(final String clazz) {
         return audit.computeIfAbsent(clazz, k -> new ArrayList<>());
     }
 
     @Override
     public String getAuditString(final String clazz) {
-        return audit.getOrDefault(clazz, Collections.emptyList()).stream().map(ITransformerActivity::getActivityString).collect(Collectors.joining(","));
+        return audit.getOrDefault(clazz, Collections.emptyList()).stream()
+                .filter(TransformerActivity::shouldInclude)
+                .map(TransformerActivity::getActivityString).collect(Collectors.joining(","));
     }
 }

@@ -14,28 +14,15 @@
 
 package cpw.mods.modlauncher;
 
-import static cpw.mods.modlauncher.LogMarkers.MODLAUNCHER;
-
-import cpw.mods.modlauncher.api.ITransformer;
-import cpw.mods.modlauncher.api.ITransformerActivity;
-import cpw.mods.modlauncher.api.ITransformerAuditTrail;
-import cpw.mods.modlauncher.api.TargetType;
-import cpw.mods.modlauncher.api.TransformerVoteResult;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import net.neoforged.fml.ModLoader;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,118 +34,104 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.MethodNode;
 
 /**
- * Transforms classes using the supplied launcher services
+ * Transforms classes using a {@link ClassProcessorSet} of the available {@link ClassProcessor}s.
  */
 @ApiStatus.Internal
 public class ClassTransformer {
-    private static final byte[] EMPTY = new byte[0];
+    private static final byte[] EMPTY = getSha256().digest(new byte[0]);
     private static final Logger LOGGER = LogManager.getLogger();
     private final Marker CLASSDUMP = MarkerManager.getMarker("CLASSDUMP");
-    private final TransformStore transformers;
-    private final LaunchPluginHandler pluginHandler;
-    private TransformingClassLoader transformingClassLoader;
+    private final ClassProcessorSet processors;
     private final TransformerAuditTrail auditTrail;
 
-    public ClassTransformer(TransformStore transformStore, LaunchPluginHandler pluginHandler, final TransformingClassLoader transformingClassLoader) {
-        this(transformStore, pluginHandler, transformingClassLoader, new TransformerAuditTrail());
+    public ClassTransformer(ClassProcessorSet processors, TransformerAuditTrail auditTrail) {
+        this.processors = processors;
+        this.auditTrail = auditTrail;
     }
 
-    public ClassTransformer(final TransformStore transformStore, final LaunchPluginHandler pluginHandler, final TransformingClassLoader transformingClassLoader, final TransformerAuditTrail tat) {
-        this.transformers = transformStore;
-        this.pluginHandler = pluginHandler;
-        this.transformingClassLoader = transformingClassLoader;
-        this.auditTrail = tat;
-    }
-
-    public byte[] transform(byte[] inputClass, String className, final String reason) {
+    public byte[] transform(byte[] inputClass, String className, final ProcessorName upToTransformer, ClassHierarchyRecomputationContext locator) {
         final String internalName = className.replace('.', '/');
         final Type classDesc = Type.getObjectType(internalName);
 
-        final EnumMap<ILaunchPluginService.Phase, List<ILaunchPluginService>> launchPluginTransformerSet = pluginHandler.computeLaunchPluginTransformerSet(classDesc, inputClass.length == 0, reason, this.auditTrail);
+        ClassTransformStatistics.incrementLoadedClasses();
 
-        ModLoader.incrementLoadedClasses();
-
-        final boolean needsTransforming = transformers.needsTransforming(internalName);
-        if (!needsTransforming && launchPluginTransformerSet.isEmpty()) {
+        var transformersToUse = this.processors.transformersFor(classDesc, inputClass.length == 0, upToTransformer);
+        if (transformersToUse.isEmpty()) {
             return inputClass;
         }
 
-        ModLoader.incrementTransformedClasses();
+        ClassTransformStatistics.incrementTransformedClasses();
 
-        ClassNode clazz = new ClassNode(Opcodes.ASM9);
         Supplier<byte[]> digest;
-        boolean empty;
+        ClassNode clazz = new ClassNode(Opcodes.ASM9);
+        boolean isEmpty = inputClass.length == 0;
         if (inputClass.length > 0) {
             final ClassReader classReader = new ClassReader(inputClass);
             classReader.accept(clazz, ClassReader.EXPAND_FRAMES);
             digest = () -> getSha256().digest(inputClass);
-            empty = false;
         } else {
             clazz.name = classDesc.getInternalName();
-            clazz.version = 52;
-            clazz.superName = "java/lang/Object";
-            digest = () -> getSha256().digest(EMPTY);
-            empty = true;
-        }
-        auditTrail.addReason(classDesc.getClassName(), reason);
-
-        final int preFlags = pluginHandler.offerClassNodeToPlugins(ILaunchPluginService.Phase.BEFORE, launchPluginTransformerSet.getOrDefault(ILaunchPluginService.Phase.BEFORE, Collections.emptyList()), clazz, classDesc, auditTrail, reason);
-        if (preFlags == ILaunchPluginService.ComputeFlags.NO_REWRITE && !needsTransforming && launchPluginTransformerSet.getOrDefault(ILaunchPluginService.Phase.AFTER, Collections.emptyList()).isEmpty()) {
-            // Shortcut if there's no further work to do
-            return inputClass;
+            clazz.version = Opcodes.V1_8;
+            clazz.superName = Type.getInternalName(Object.class);
+            digest = () -> EMPTY;
         }
 
-        if (needsTransforming) {
-            VotingContext context = new VotingContext(className, empty, digest, auditTrail.getActivityFor(className), reason);
+        boolean allowsComputeFrames = false;
 
-            List<ITransformer<ClassNode>> preClassTransformers = new ArrayList<>(transformers.getTransformersFor(className, TargetType.PRE_CLASS));
-            clazz = this.performVote(preClassTransformers, clazz, context);
-
-            List<FieldNode> fieldList = new ArrayList<>(clazz.fields.size());
-            // it's probably possible to inject "dummy" fields into this list for spawning new fields without class transform
-            for (FieldNode field : clazz.fields) {
-                List<ITransformer<FieldNode>> fieldTransformers = new ArrayList<>(transformers.getTransformersFor(className, field));
-                fieldList.add(this.performVote(fieldTransformers, field, context));
+        var flags = ClassProcessor.ComputeFlags.NO_REWRITE;
+        for (var transformer : transformersToUse) {
+            if (ClassProcessorIds.COMPUTING_FRAMES.equals(transformer.name())) {
+                allowsComputeFrames = true;
+                continue;
             }
-
-            // it's probably possible to inject "dummy" methods into this list for spawning new methods without class transform
-            List<MethodNode> methodList = new ArrayList<>(clazz.methods.size());
-            for (MethodNode method : clazz.methods) {
-                List<ITransformer<MethodNode>> methodTransformers = new ArrayList<>(transformers.getTransformersFor(className, method));
-                methodList.add(this.performVote(methodTransformers, method, context));
+            var trail = auditTrail.forClassProcessor(classDesc.getClassName(), transformer);
+            var context = new ClassProcessor.TransformationContext(
+                    classDesc,
+                    clazz,
+                    isEmpty,
+                    trail,
+                    digest);
+            var newFlags = transformer.processClass(context);
+            if (newFlags != ClassProcessor.ComputeFlags.NO_REWRITE) {
+                trail.rewrites();
+                isEmpty = false;
             }
-
-            clazz.fields = fieldList;
-            clazz.methods = methodList;
-            List<ITransformer<ClassNode>> classTransformers = new ArrayList<>(transformers.getTransformersFor(className, TargetType.CLASS));
-            clazz = this.performVote(classTransformers, clazz, context);
+            flags = flags.max(newFlags);
+            if (flags.ordinal() >= ClassProcessor.ComputeFlags.COMPUTE_FRAMES.ordinal()) {
+                if (!processors.canRecomputeFrames(transformer.name())) {
+                    LOGGER.error("Transformer {} requested COMPUTE_FRAMES but does not depend, directly or indirectly, on running after {}", transformer.name(), ClassProcessorIds.COMPUTING_FRAMES);
+                    throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but does not depend, directly or indirectly, on running after " + ClassProcessorIds.COMPUTING_FRAMES);
+                }
+                if (!allowsComputeFrames) {
+                    LOGGER.error("Transformer {} requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer {}", transformer.name(), ClassProcessorIds.COMPUTING_FRAMES);
+                    throw new IllegalStateException("Transformer " + transformer.name() + " requested COMPUTE_FRAMES but is not allowed to do so as it runs before transformer " + ClassProcessorIds.COMPUTING_FRAMES);
+                }
+            }
+        }
+        if (upToTransformer == null) {
+            // run post-result callbacks
+            var context = new ClassProcessor.AfterProcessingContext(classDesc);
+            for (var transformer : transformersToUse) {
+                transformer.afterProcessing(context);
+            }
         }
 
-        final int postFlags = pluginHandler.offerClassNodeToPlugins(ILaunchPluginService.Phase.AFTER, launchPluginTransformerSet.getOrDefault(ILaunchPluginService.Phase.AFTER, Collections.emptyList()), clazz, classDesc, auditTrail, reason);
-        if (preFlags == ILaunchPluginService.ComputeFlags.NO_REWRITE && postFlags == ILaunchPluginService.ComputeFlags.NO_REWRITE && !needsTransforming) {
-            return inputClass;
+        if (flags == ClassProcessor.ComputeFlags.NO_REWRITE) {
+            return inputClass; // No changes were made, return the original class
         }
 
-        //Transformers always get compute_frames
-        int mergedFlags = needsTransforming ? ILaunchPluginService.ComputeFlags.COMPUTE_FRAMES : (postFlags | preFlags);
-
-        //Don't compute frames when loading for frame computation to avoid cycles. The byte data will only be used for computing frames anyway
-        if (reason.equals(ITransformerActivity.COMPUTING_FRAMES_REASON))
-            mergedFlags &= ~ILaunchPluginService.ComputeFlags.COMPUTE_FRAMES;
-
-        final ClassWriter cw = TransformerClassWriter.createClassWriter(mergedFlags, this, clazz);
+        final ClassWriter cw = createClassWriter(flags, clazz, locator);
         clazz.accept(cw);
-        if (LOGGER.isEnabled(Level.TRACE) && ITransformerActivity.CLASSLOADING_REASON.equals(reason) && LOGGER.isEnabled(Level.TRACE, CLASSDUMP)) {
+        // if upToTransformer is null, we are doing this for classloading purposes
+        if (LOGGER.isEnabled(Level.TRACE) && upToTransformer == null && LOGGER.isEnabled(Level.TRACE, CLASSDUMP)) {
             dumpClass(cw.toByteArray(), className);
         }
         return cw.toByteArray();
     }
 
-    private static Path tempDir;
+    private static volatile Path tempDir;
 
     private void dumpClass(final byte[] clazz, String className) {
         if (tempDir == null) {
@@ -167,7 +140,7 @@ public class ClassTransformer {
                     try {
                         tempDir = Files.createTempDirectory("classDump");
                     } catch (IOException e) {
-                        LOGGER.error(MODLAUNCHER, "Failed to create temporary directory");
+                        LOGGER.error("Failed to create temporary directory");
                         return;
                     }
                 }
@@ -176,47 +149,13 @@ public class ClassTransformer {
         try {
             final Path tempFile = tempDir.resolve(className + ".class");
             Files.write(tempFile, clazz);
-            LOGGER.info(MODLAUNCHER, "Wrote {} byte class file {} to {}", clazz.length, className, tempFile);
+            LOGGER.info("Wrote {} byte class file {} to {}", clazz.length, className, tempFile);
         } catch (IOException e) {
-            LOGGER.error(MODLAUNCHER, "Failed to write class file {}", className, e);
+            LOGGER.error("Failed to write class file {}", className, e);
         }
     }
 
-    private <T> T performVote(List<ITransformer<T>> transformers, T node, VotingContext context) {
-        context.setNode(node);
-        do {
-            final Stream<TransformerVote<T>> voteResultStream = transformers.stream().map(t -> gatherVote(t, context));
-            final Map<TransformerVoteResult, List<TransformerVote<T>>> results = voteResultStream.collect(Collectors.groupingBy(TransformerVote::getResult));
-            // Someone rejected the current state. We're done here, and cannot proceed.
-            if (results.containsKey(TransformerVoteResult.REJECT)) {
-                throw new VoteRejectedException(results.get(TransformerVoteResult.REJECT), node.getClass());
-            }
-            // Remove all the "NO" voters - they don't wish to participate in further voting rounds
-            if (results.containsKey(TransformerVoteResult.NO)) {
-                transformers.removeAll(results.get(TransformerVoteResult.NO).stream().map(TransformerVote::getTransformer).collect(Collectors.toList()));
-            }
-            // If there's at least one YES voter, let's apply the first one we find, remove them, and continue.
-            if (results.containsKey(TransformerVoteResult.YES)) {
-                final ITransformer<T> transformer = results.get(TransformerVoteResult.YES).get(0).getTransformer();
-                node = transformer.transform(node, context);
-                auditTrail.addTransformerAuditTrail(context.getClassName(), ((TransformerHolder<?>) transformer).owner(), transformer);
-                transformers.remove(transformer);
-                continue;
-            }
-            // If we get here and find a DEFER, it means everyone just voted to DEFER. That's an untenable state and we cannot proceed.
-            if (results.containsKey(TransformerVoteResult.DEFER)) {
-                throw new VoteDeadlockException(results.get(TransformerVoteResult.DEFER), node.getClass());
-            }
-        } while (!transformers.isEmpty());
-        return node;
-    }
-
-    private <T> TransformerVote<T> gatherVote(ITransformer<T> transformer, VotingContext context) {
-        TransformerVoteResult vr = transformer.castVote(context);
-        return new TransformerVote<>(vr, transformer);
-    }
-
-    private MessageDigest getSha256() {
+    private static MessageDigest getSha256() {
         try {
             return MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {
@@ -224,20 +163,14 @@ public class ClassTransformer {
         }
     }
 
-    TransformingClassLoader getTransformingClassLoader() {
-        return transformingClassLoader;
-    }
+    private static ClassWriter createClassWriter(ClassProcessor.ComputeFlags flags, final ClassNode clazzAccessor, ClassHierarchyRecomputationContext locator) {
+        final int writerFlag = switch (flags) {
+            case COMPUTE_MAXS -> ClassWriter.COMPUTE_MAXS;
+            case COMPUTE_FRAMES -> ClassWriter.COMPUTE_FRAMES;
+            default -> 0;
+        };
 
-    @Deprecated(forRemoval = true)
-    void setTransformingClassLoader(TransformingClassLoader transformingClassLoader) {
-        this.transformingClassLoader = transformingClassLoader;
-    }
-
-    public List<ITransformer<?>> getTransformers() {
-        return List.copyOf(transformers.getTransformers());
-    }
-
-    public ITransformerAuditTrail getAuditLog() {
-        return auditTrail;
+        //Only use the TransformerClassWriter when needed as it's slower, and only COMPUTE_FRAMES calls getCommonSuperClass
+        return flags.ordinal() >= ClassProcessor.ComputeFlags.COMPUTE_FRAMES.ordinal() ? new TransformerClassWriter(writerFlag, clazzAccessor, locator) : new ClassWriter(writerFlag);
     }
 }

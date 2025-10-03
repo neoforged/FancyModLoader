@@ -14,16 +14,13 @@
 
 package cpw.mods.modlauncher.benchmarks;
 
+import cpw.mods.modlauncher.ClassHierarchyRecomputationContext;
+import cpw.mods.modlauncher.ClassProcessorSet;
 import cpw.mods.modlauncher.ClassTransformer;
-import cpw.mods.modlauncher.LaunchPluginHandler;
-import cpw.mods.modlauncher.TransformStore;
 import cpw.mods.modlauncher.TransformerAuditTrail;
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import java.io.InputStream;
-import java.util.EnumSet;
-import java.util.stream.Stream;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Scope;
@@ -35,43 +32,54 @@ import org.openjdk.jmh.annotations.TearDown;
 public class TransformBenchmark {
     public volatile ClassTransformer classTransformer;
     public volatile TransformerAuditTrail auditTrail;
+    private volatile ClassHierarchyRecomputationContext classHierarchyContext;
     byte[] classBytes;
 
     @Setup
     public void setup() throws Exception {
-        final TransformStore transformStore = new TransformStore();
-        final LaunchPluginHandler lph = new LaunchPluginHandler(Stream.of(
-                new ILaunchPluginService() {
+        var classProcessorSet = ClassProcessorSet.of(
+                new ClassProcessor() {
                     @Override
-                    public String name() {
-                        return "dummy1";
+                    public ProcessorName name() {
+                        return new ProcessorName("benchmark", "dummy1");
                     }
 
                     @Override
-                    public boolean processClass(final Phase phase, final ClassNode classNode, final Type classType) {
+                    public boolean handlesClass(SelectionContext context) {
                         return true;
                     }
 
                     @Override
-                    public <T> T getExtension() {
-                        return null;
+                    public ComputeFlags processClass(TransformationContext context) {
+                        return ComputeFlags.COMPUTE_FRAMES;
                     }
-
-                    @Override
-                    public EnumSet<Phase> handlesClass(final Type classType, final boolean isEmpty) {
-                        return EnumSet.of(Phase.BEFORE, Phase.AFTER);
-                    }
-                }));
+                });
         auditTrail = new TransformerAuditTrail();
-        classTransformer = new ClassTransformer(transformStore, lph, null, auditTrail);
+        classTransformer = new ClassTransformer(classProcessorSet, auditTrail);
         try (InputStream is = getClass().getClassLoader().getResourceAsStream("cpw/mods/modlauncher/testjar/TestClass.class")) {
             classBytes = is.readAllBytes();
         }
+        classHierarchyContext = new ClassHierarchyRecomputationContext() {
+            @Override
+            public Class<?> findLoadedClass(String name) {
+                return null;
+            }
+
+            @Override
+            public byte[] upToFrames(String className) throws ClassNotFoundException {
+                throw new ClassNotFoundException();
+            }
+
+            @Override
+            public Class<?> locateParentClass(String className) throws ClassNotFoundException {
+                throw new ClassNotFoundException();
+            }
+        };
     }
 
     @Benchmark
     public int transformNoop() {
-        byte[] result = classTransformer.transform(new byte[0], "test.MyClass", "jmh");
+        byte[] result = classTransformer.transform(new byte[0], "test.MyClass", null, classHierarchyContext);
         return result.length + 1;
     }
 
@@ -82,7 +90,7 @@ public class TransformBenchmark {
 
     @Benchmark
     public int transformDummyClass() {
-        byte[] result = classTransformer.transform(classBytes, "cpw.mods.modlauncher.testjar.TestClass", "jmh");
+        byte[] result = classTransformer.transform(classBytes, "cpw.mods.modlauncher.testjar.TestClass", null, classHierarchyContext);
         return result.length + 1;
     }
 }

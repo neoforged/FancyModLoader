@@ -6,10 +6,10 @@
 package net.neoforged.fml.loading.mixin;
 
 import com.google.common.io.Resources;
-import cpw.mods.modlauncher.TransformingClassLoader;
+import cpw.mods.modlauncher.ClassTransformStatistics;
 import java.io.IOException;
 import java.net.URL;
-import net.neoforged.fml.ModLoader;
+import net.neoforged.neoforgespi.transformation.BytecodeProvider;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -17,12 +17,12 @@ import org.spongepowered.asm.service.IClassBytecodeProvider;
 import org.spongepowered.asm.transformers.MixinClassReader;
 
 class FMLClassBytecodeProvider implements IClassBytecodeProvider {
-    private final TransformingClassLoader classLoader;
-    private final FMLMixinLaunchPlugin launchPlugin;
+    private final BytecodeProvider bytecodeProvider;
+    private final FMLMixinClassProcessor classProcessor;
 
-    FMLClassBytecodeProvider(TransformingClassLoader classLoader, FMLMixinLaunchPlugin launchPlugin) {
-        this.classLoader = classLoader;
-        this.launchPlugin = launchPlugin;
+    FMLClassBytecodeProvider(BytecodeProvider bytecodeProvider, FMLMixinClassProcessor classProcessor) {
+        this.bytecodeProvider = bytecodeProvider;
+        this.classProcessor = classProcessor;
     }
 
     @Override
@@ -47,8 +47,7 @@ class FMLClassBytecodeProvider implements IClassBytecodeProvider {
         byte[] classBytes;
 
         try {
-            // Passing FMLMixinLaunchPlugin.NAME here prevents that plugin from recursively being applied
-            classBytes = classLoader.buildTransformedClassNodeFor(canonicalName, FMLMixinLaunchPlugin.NAME);
+            classBytes = bytecodeProvider.getByteCode(canonicalName);
         } catch (ClassNotFoundException ex) {
             URL url = Thread.currentThread().getContextClassLoader().getResource(internalName + ".class");
             if (url == null) {
@@ -66,15 +65,15 @@ class FMLClassBytecodeProvider implements IClassBytecodeProvider {
             ClassReader classReader = new MixinClassReader(classBytes, canonicalName);
             classReader.accept(classNode, readerFlags);
 
-            ModLoader.incrementMixinParsedClasses();
+            ClassTransformStatistics.incrementMixinParsedClasses();
 
             return classNode;
         }
 
         Type classType = Type.getObjectType(internalName);
-        if (launchPlugin.generatesClass(classType)) {
+        if (classProcessor.generatesClass(classType)) {
             ClassNode classNode = new ClassNode();
-            if (launchPlugin.generateClass(classType, classNode)) {
+            if (classProcessor.generateClass(classType, classNode)) {
                 return classNode;
             }
         }
