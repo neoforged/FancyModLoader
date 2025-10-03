@@ -21,7 +21,6 @@ import java.util.Set;
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.testlib.ModFileBuilder;
 import net.neoforged.fml.testlib.ModuleInfoWriter;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -44,22 +43,22 @@ public class JarMetadataTest {
                     .version("1.0").build();
             var metadata = getJarMetadata(originalDescriptor);
 
-            Assertions.assertEquals("test_module", metadata.name());
-            Assertions.assertEquals("1.0", metadata.version());
+            assertEquals("test_module", metadata.name());
+            assertEquals("1.0", metadata.version());
             var descriptor = metadata.descriptor();
-            Assertions.assertEquals(originalDescriptor.name(), descriptor.name());
-            Assertions.assertEquals(originalDescriptor.rawVersion(), descriptor.rawVersion());
-            Assertions.assertEquals(originalDescriptor.packages(), descriptor.packages());
-            Assertions.assertEquals(originalDescriptor.provides(), descriptor.provides());
+            assertEquals(originalDescriptor.name(), descriptor.name());
+            assertEquals(originalDescriptor.rawVersion(), descriptor.rawVersion());
+            assertEquals(originalDescriptor.packages(), descriptor.packages());
+            assertEquals(originalDescriptor.provides(), descriptor.provides());
 
-            Assertions.assertEquals(Set.of(ModuleDescriptor.Modifier.AUTOMATIC), descriptor.modifiers(), "Should be converted to an automatic module so it can have non-modular deps.");
-            Assertions.assertEquals(Set.of(), descriptor.opens(), "Automatic modules have no explicit set of opens");
-            Assertions.assertEquals(
+            assertEquals(Set.of(ModuleDescriptor.Modifier.AUTOMATIC), descriptor.modifiers(), "Should be converted to an automatic module so it can have non-modular deps.");
+            assertEquals(Set.of(), descriptor.opens(), "Automatic modules have no explicit set of opens");
+            assertEquals(
                     ModuleDescriptor.newAutomaticModule("xxx").build().requires(),
                     descriptor.requires(),
                     "Automatic modules have no explicit set of requires besides the default");
-            Assertions.assertEquals(Set.of(), descriptor.exports(), "Automatic modules have no explicit set of exports");
-            Assertions.assertEquals(Set.of(), descriptor.uses(), "Automatic modules don't have to declare their service uses");
+            assertEquals(Set.of(), descriptor.exports(), "Automatic modules have no explicit set of exports");
+            assertEquals(Set.of(), descriptor.uses(), "Automatic modules don't have to declare their service uses");
         }
 
         @Test
@@ -79,11 +78,11 @@ public class JarMetadataTest {
                     .addBinaryFile("module-info.class", ModuleInfoWriter.toByteArrayWithoutPackages(descriptor)));
 
             // It should find the package, even if it wasn't declared
-            Assertions.assertEquals(Set.of("somepackage", "exported_package", "resources.alsocount"), metadata.descriptor().packages());
+            assertEquals(Set.of("somepackage", "exported_package", "resources.alsocount"), metadata.descriptor().packages());
 
             // Compare against the packages found by the JDK for the same Jar
             var jdkModuleDescriptor = getJdkModuleDescriptor(testJar);
-            Assertions.assertEquals(jdkModuleDescriptor.packages(), metadata.descriptor().packages());
+            assertEquals(jdkModuleDescriptor.packages(), metadata.descriptor().packages());
         }
 
         @Test
@@ -93,7 +92,7 @@ public class JarMetadataTest {
                     .withModuleInfo(ModuleDescriptor.newModule("test_module").version("1.0").packages(Set.of("superpackage")).build()));
 
             // The physically present "somepackage" is ignored, only the package list from the module descriptor is returned
-            Assertions.assertEquals(Set.of("superpackage"), metadata.descriptor().packages());
+            assertEquals(Set.of("superpackage"), metadata.descriptor().packages());
         }
 
         @Test
@@ -103,8 +102,8 @@ public class JarMetadataTest {
                     .withManifest(Map.of("Multi-Release", "true"))
                     .addBinaryFile("META-INF/versions/9/module-info.class", moduleInfo));
 
-            Assertions.assertEquals("test_module", metadata.name());
-            Assertions.assertEquals("1.0", metadata.version());
+            assertEquals("test_module", metadata.name());
+            assertEquals("1.0", metadata.version());
         }
 
         // A broken module-info.class shouldn't be ignored
@@ -120,28 +119,28 @@ public class JarMetadataTest {
         void testMavenJar() throws IOException {
             var path = "startofthepathchain/new-protected-class-1.16.5/1.1_mapped_official_1.17.1/new-protected-class-1.16.5-1.1_mapped_official_1.17.1-api.jar";
             var meta = getJarMetadata(path, builder -> {});
-            Assertions.assertEquals("_new._protected._class._1._16._5", meta.name());
-            Assertions.assertEquals("1.1_mapped_official_1.17.1", meta.version());
+            assertEquals("_new._protected._class._1._16._5", meta.name());
+            assertEquals("1.1_mapped_official_1.17.1", meta.version());
         }
 
         @Test
         void testNumberStart() throws IOException {
             var path = "mods/1life-1.5.jar";
             var meta = getJarMetadata(path, builder -> {});
-            Assertions.assertEquals("_1life", meta.name());
-            Assertions.assertEquals("1.5", meta.version());
+            assertEquals("_1life", meta.name());
+            assertEquals("1.5", meta.version());
         }
 
         @Test
         void testUnrecognizableVersion() throws IOException {
             var path = "mods/noversion.jar";
             var meta = getJarMetadata(path, builder -> {});
-            Assertions.assertEquals("noversion", meta.name());
+            assertEquals("noversion", meta.name());
             assertNull(meta.version());
 
             var descriptor = meta.descriptor();
-            Assertions.assertEquals("noversion", descriptor.name());
-            Assertions.assertEquals(Optional.empty(), descriptor.rawVersion());
+            assertEquals("noversion", descriptor.name());
+            assertEquals(Optional.empty(), descriptor.rawVersion());
         }
     }
 
@@ -153,7 +152,7 @@ public class JarMetadataTest {
                 builder.withManifest(Map.of(
                         "Automatic-Module-Name", "helloworld"));
             });
-            Assertions.assertEquals("helloworld", meta.name());
+            assertEquals("helloworld", meta.name());
             assertNull(meta.version());
         }
 
@@ -167,11 +166,11 @@ public class JarMetadataTest {
                     .addService("package.Class", "somepackage.SomeClass"));
 
             var descriptor = metadata.descriptor();
-            Assertions.assertEquals(Set.of("somepackage"), descriptor.packages());
+            assertEquals(Set.of("somepackage"), descriptor.packages());
 
             // Compare against the services found by the JDK for the same Jar
             var jdkModuleDescriptor = getJdkModuleDescriptor(testJar);
-            Assertions.assertEquals(jdkModuleDescriptor.provides(), descriptor.provides());
+            assertEquals(jdkModuleDescriptor.provides(), descriptor.provides());
         }
 
         @Test
@@ -189,11 +188,11 @@ public class JarMetadataTest {
             // It should find the package, even if it wasn't declared
             // But unlike normal named modules, automatic modules do *not* declare their resource packages
             // which makes them work like pre-modular Java (resources findable via the ClassLoader).
-            Assertions.assertEquals(Set.of("somepackage", "exported_package"), metadata.descriptor().packages());
+            assertEquals(Set.of("somepackage", "exported_package"), metadata.descriptor().packages());
 
             // Compare against the packages found by the JDK for the same Jar
             var jdkModuleDescriptor = getJdkModuleDescriptor(testJar);
-            Assertions.assertEquals(jdkModuleDescriptor.packages(), metadata.descriptor().packages());
+            assertEquals(jdkModuleDescriptor.packages(), metadata.descriptor().packages());
         }
     }
 

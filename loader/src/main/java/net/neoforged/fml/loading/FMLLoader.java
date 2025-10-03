@@ -48,6 +48,7 @@ import net.neoforged.fml.classloading.ResourceMaskingClassLoader;
 import net.neoforged.fml.classloading.SecureJar;
 import net.neoforged.fml.classloading.VirtualJar;
 import net.neoforged.fml.classloading.transformation.ClassProcessorAuditLog;
+import net.neoforged.fml.classloading.transformation.ClassProcessorAuditSource;
 import net.neoforged.fml.classloading.transformation.ClassProcessorSet;
 import net.neoforged.fml.classloading.transformation.TransformingClassLoader;
 import net.neoforged.fml.common.asm.AccessTransformerService;
@@ -82,7 +83,6 @@ import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
-import net.neoforged.neoforgespi.transformation.ClassProcessorAuditSource;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import org.jetbrains.annotations.ApiStatus;
@@ -131,6 +131,7 @@ public final class FMLLoader implements AutoCloseable {
     @VisibleForTesting
     volatile IBindingsProvider bindings;
 
+    @ApiStatus.Internal
     public ClassProcessorAuditSource getClassTransformerAuditLog() {
         return classTransformerAuditLog;
     }

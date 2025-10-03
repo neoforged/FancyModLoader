@@ -12,7 +12,9 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package net.neoforged.neoforgespi.transformation;
+package net.neoforged.fml.classloading.transformation;
+
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
 
 /**
  * A source for getting audit information related to the activity of

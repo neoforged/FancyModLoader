@@ -14,8 +14,8 @@
 
 package net.neoforged.fml.logging;
 
+import net.neoforged.fml.classloading.transformation.ClassProcessorAuditSource;
 import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.neoforgespi.transformation.ClassProcessorAuditSource;
 import org.apache.logging.log4j.core.pattern.TextRenderer;
 import org.jetbrains.annotations.Nullable;
 
