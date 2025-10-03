@@ -12,7 +12,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package cpw.mods.modlauncher.log;
+package net.neoforged.fml.logging;
 
 import java.util.Collections;
 import joptsimple.internal.Strings;

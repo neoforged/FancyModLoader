@@ -12,7 +12,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package cpw.mods.modlauncher;
+package net.neoforged.fml.classloading.transformation;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -44,9 +44,9 @@ public class ClassTransformer {
     private static final Logger LOGGER = LogManager.getLogger();
     private final Marker CLASSDUMP = MarkerManager.getMarker("CLASSDUMP");
     private final ClassProcessorSet processors;
-    private final TransformerAuditTrail auditTrail;
+    private final ClassProcessorAuditLog auditTrail;
 
-    public ClassTransformer(ClassProcessorSet processors, TransformerAuditTrail auditTrail) {
+    public ClassTransformer(ClassProcessorSet processors, ClassProcessorAuditLog auditTrail) {
         this.processors = processors;
         this.auditTrail = auditTrail;
     }

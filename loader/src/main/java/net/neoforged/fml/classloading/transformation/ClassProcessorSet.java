@@ -1,4 +1,9 @@
-package cpw.mods.modlauncher;
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
+package net.neoforged.fml.classloading.transformation;
 
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.Graphs;

@@ -14,11 +14,11 @@
 
 package cpw.mods.modlauncher.benchmarks;
 
-import cpw.mods.modlauncher.ClassHierarchyRecomputationContext;
-import cpw.mods.modlauncher.ClassProcessorSet;
-import cpw.mods.modlauncher.ClassTransformer;
-import cpw.mods.modlauncher.TransformerAuditTrail;
 import java.io.InputStream;
+import net.neoforged.fml.classloading.transformation.ClassHierarchyRecomputationContext;
+import net.neoforged.fml.classloading.transformation.ClassProcessorAuditLog;
+import net.neoforged.fml.classloading.transformation.ClassProcessorSet;
+import net.neoforged.fml.classloading.transformation.ClassTransformer;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -31,7 +31,7 @@ import org.openjdk.jmh.annotations.TearDown;
 @State(Scope.Benchmark)
 public class TransformBenchmark {
     public volatile ClassTransformer classTransformer;
-    public volatile TransformerAuditTrail auditTrail;
+    public volatile ClassProcessorAuditLog auditTrail;
     private volatile ClassHierarchyRecomputationContext classHierarchyContext;
     byte[] classBytes;
 
@@ -54,7 +54,7 @@ public class TransformBenchmark {
                         return ComputeFlags.COMPUTE_FRAMES;
                     }
                 });
-        auditTrail = new TransformerAuditTrail();
+        auditTrail = new ClassProcessorAuditLog();
         classTransformer = new ClassTransformer(classProcessorSet, auditTrail);
         try (InputStream is = getClass().getClassLoader().getResourceAsStream("cpw/mods/modlauncher/testjar/TestClass.class")) {
             classBytes = is.readAllBytes();

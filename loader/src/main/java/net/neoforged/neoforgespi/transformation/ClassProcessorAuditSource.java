@@ -12,12 +12,16 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package cpw.mods.modlauncher.api;
+package net.neoforged.neoforgespi.transformation;
 
-public interface ITransformerAuditTrail {
+/**
+ * A source for getting audit information related to the activity of
+ * {@linkplain ClassProcessor class processors}.
+ */
+public interface ClassProcessorAuditSource {
     /**
      * Retrieve a formatted string summarizing actions for the supplied class
-     * 
+     *
      * @param clazz The class
      * @return A formatted string
      */

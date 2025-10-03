@@ -12,9 +12,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package cpw.mods.modlauncher;
+package net.neoforged.fml.classloading.transformation;
 
-import cpw.mods.modlauncher.api.ITransformerAuditTrail;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -23,12 +22,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorAuditSource;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
 
 @ApiStatus.Internal
-public class TransformerAuditTrail implements ITransformerAuditTrail {
+public class ClassProcessorAuditLog implements ClassProcessorAuditSource {
     private final Map<String, List<TransformerActivity>> audit = new ConcurrentHashMap<>();
 
     @VisibleForTesting

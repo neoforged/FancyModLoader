@@ -58,7 +58,7 @@
         <!-- make sure mojang's logging is set to 'info' so that their LOGGER.isDebugEnabled() behavior isn't active -->
         <Logger level="${sys:forge.logging.mojang.level:-info}" name="com.mojang"/>
         <Logger level="${sys:forge.logging.mojang.level:-info}" name="net.minecraft"/>
-        <Logger level="${sys:forge.logging.classtransformer.level:-info}" name="cpw.mods.modlauncher.ClassTransformer"/>
+        <Logger level="${sys:forge.logging.classtransformer.level:-info}" name="net.neoforged.fml.classloading.transformation.ClassTransformer"/>
 
         <!-- Netty reflects into JDK internals, and it's causing useless DEBUG-level error stacktraces. We just ignore them -->
         <Logger name="io.netty.util.internal.PlatformDependent0">

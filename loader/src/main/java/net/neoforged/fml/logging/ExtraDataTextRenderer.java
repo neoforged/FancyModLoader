@@ -12,17 +12,17 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package cpw.mods.modlauncher.log;
+package net.neoforged.fml.logging;
 
-import cpw.mods.modlauncher.api.ITransformerAuditTrail;
 import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.neoforgespi.transformation.ClassProcessorAuditSource;
 import org.apache.logging.log4j.core.pattern.TextRenderer;
 import org.jetbrains.annotations.Nullable;
 
 public class ExtraDataTextRenderer implements TextRenderer {
     private final TextRenderer wrapped;
     @Nullable
-    private final ITransformerAuditTrail auditLog;
+    private final ClassProcessorAuditSource auditLog;
     private final ThreadLocal<TransformerContext> currentClass = new ThreadLocal<>();
 
     ExtraDataTextRenderer(final TextRenderer wrapped) {

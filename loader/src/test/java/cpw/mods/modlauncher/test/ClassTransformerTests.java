@@ -17,11 +17,11 @@ package cpw.mods.modlauncher.test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import cpw.mods.modlauncher.ClassHierarchyRecomputationContext;
-import cpw.mods.modlauncher.ClassProcessorSet;
-import cpw.mods.modlauncher.ClassTransformer;
-import cpw.mods.modlauncher.TransformerAuditTrail;
 import java.util.ArrayList;
+import net.neoforged.fml.classloading.transformation.ClassHierarchyRecomputationContext;
+import net.neoforged.fml.classloading.transformation.ClassProcessorAuditLog;
+import net.neoforged.fml.classloading.transformation.ClassProcessorSet;
+import net.neoforged.fml.classloading.transformation.ClassTransformer;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.junit.jupiter.api.Assertions;
@@ -54,7 +54,7 @@ class ClassTransformerTests {
             }
         };
 
-        var auditTrail = new TransformerAuditTrail();
+        var auditTrail = new ClassProcessorAuditLog();
         var classTransformer = new ClassTransformer(ClassProcessorSet.of(processor), auditTrail);
         assertThat(classTransformer.transform(new byte[0], "test.TestClass", null, mock(ClassHierarchyRecomputationContext.class)))
                 .isEmpty();

@@ -12,7 +12,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package cpw.mods.modlauncher;
+package net.neoforged.fml.classloading.transformation;
 
 import java.util.Arrays;
 import java.util.HashSet;

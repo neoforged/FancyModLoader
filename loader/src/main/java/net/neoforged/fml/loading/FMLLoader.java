@@ -15,10 +15,6 @@ import cpw.mods.jarhandling.impl.CompositeJarContents;
 import cpw.mods.jarhandling.impl.EmptyJarContents;
 import cpw.mods.jarhandling.impl.FolderJarContents;
 import cpw.mods.jarhandling.impl.JarFileContents;
-import cpw.mods.modlauncher.ClassProcessorSet;
-import cpw.mods.modlauncher.TransformerAuditTrail;
-import cpw.mods.modlauncher.TransformingClassLoader;
-import cpw.mods.modlauncher.api.ITransformerAuditTrail;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -57,6 +53,9 @@ import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.classloading.ResourceMaskingClassLoader;
+import net.neoforged.fml.classloading.transformation.ClassProcessorAuditLog;
+import net.neoforged.fml.classloading.transformation.ClassProcessorSet;
+import net.neoforged.fml.classloading.transformation.TransformingClassLoader;
 import net.neoforged.fml.common.asm.AccessTransformerService;
 import net.neoforged.fml.common.asm.SimpleProcessorsGroup;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
@@ -83,6 +82,7 @@ import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorAuditSource;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ClassProcessorProvider;
 import org.jetbrains.annotations.ApiStatus;
@@ -126,12 +126,12 @@ public final class FMLLoader implements AutoCloseable {
     private ModuleLayer gameLayer;
     @VisibleForTesting
     DiscoveryResult discoveryResult;
-    private final TransformerAuditTrail classTransformerAuditLog = new TransformerAuditTrail();
+    private final ClassProcessorAuditLog classTransformerAuditLog = new ClassProcessorAuditLog();
     @Nullable
     @VisibleForTesting
     volatile IBindingsProvider bindings;
 
-    public ITransformerAuditTrail getClassTransformerAuditLog() {
+    public ClassProcessorAuditSource getClassTransformerAuditLog() {
         return classTransformerAuditLog;
     }
 
@@ -411,7 +411,7 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     private TransformingClassLoader buildTransformingLoader(ClassProcessorSet classProcessorSet,
-            TransformerAuditTrail auditTrail,
+            ClassProcessorAuditLog auditTrail,
             List<SecureJar> content) {
         maskContentAlreadyOnClasspath(content);
 

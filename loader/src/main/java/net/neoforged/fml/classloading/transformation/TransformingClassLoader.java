@@ -12,19 +12,21 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package cpw.mods.modlauncher;
+package net.neoforged.fml.classloading.transformation;
 
 import cpw.mods.cl.ModuleClassLoader;
 import java.lang.module.Configuration;
 import java.util.List;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * Module transforming class loader
  */
+@ApiStatus.Internal
 public class TransformingClassLoader extends ModuleClassLoader {
     static {
         ClassLoader.registerAsParallelCapable();
@@ -32,7 +34,7 @@ public class TransformingClassLoader extends ModuleClassLoader {
     private final ClassTransformer classTransformer;
 
     @VisibleForTesting
-    public TransformingClassLoader(ClassProcessorSet classProcessorSet, TransformerAuditTrail auditTrail, final Configuration configuration, List<ModuleLayer> parentLayers, ClassLoader parentClassLoader) {
+    public TransformingClassLoader(ClassProcessorSet classProcessorSet, ClassProcessorAuditLog auditTrail, final Configuration configuration, List<ModuleLayer> parentLayers, ClassLoader parentClassLoader) {
         super("TRANSFORMER", configuration, parentLayers, parentClassLoader);
         this.classTransformer = new ClassTransformer(classProcessorSet, auditTrail);
         // The state of this class has to be set up fully before the processors are linked
