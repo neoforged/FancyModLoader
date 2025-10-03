@@ -8,9 +8,7 @@ package net.neoforged.neoforgespi.transformation;
 import java.util.Set;
 
 /**
- * Base class for simple {@linkplain ClassProcessor class processors}, that target
- * specific bytecode constructs (specific classes, methods or fields).
- * <p>See the subclasses for class, method and field processor templates.
+ * Base class for simple {@linkplain ClassProcessor class processors}.
  */
 abstract sealed class BaseSimpleProcessor implements ClassProcessor permits SimpleClassProcessor, SimpleFieldProcessor, SimpleMethodProcessor {
     /**

@@ -17,7 +17,8 @@ package net.neoforged.neoforgespi.transformation;
 import org.objectweb.asm.Type;
 
 /**
- * Contextual information for transformations implemented in {@linkplain BaseSimpleProcessor simple class processors}.
+ * Contextual information for transformations implemented by {@link SimpleClassProcessor},
+ * {@link SimpleMethodProcessor} or {@link SimpleFieldProcessor}.
  */
 public interface SimpleTransformationContext {
     /**
