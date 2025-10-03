@@ -6,7 +6,6 @@
 package net.neoforged.fml.loading.moddiscovery.locators;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.jarhandling.JarContents;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -28,6 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.util.PathPrettyPrinting;

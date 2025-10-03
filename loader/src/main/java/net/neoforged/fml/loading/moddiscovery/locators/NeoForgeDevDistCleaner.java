@@ -6,7 +6,6 @@
 package net.neoforged.fml.loading.moddiscovery.locators;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.jarhandling.JarContents;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -17,6 +16,7 @@ import java.util.stream.Stream;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ProcessorName;

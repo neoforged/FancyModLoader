@@ -6,9 +6,9 @@
 package net.neoforged.fml.loading.mixin;
 
 import com.google.common.io.Resources;
-import cpw.mods.modlauncher.ClassTransformStatistics;
 import java.io.IOException;
 import java.net.URL;
+import net.neoforged.fml.classloading.transformation.ClassTransformStatistics;
 import net.neoforged.neoforgespi.transformation.BytecodeProvider;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;

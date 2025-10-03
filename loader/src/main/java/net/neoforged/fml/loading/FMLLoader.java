@@ -6,19 +6,6 @@
 package net.neoforged.fml.loading;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.cl.JarModuleFinder;
-import cpw.mods.jarhandling.JarContents;
-import cpw.mods.jarhandling.JarResource;
-import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.jarhandling.VirtualJar;
-import cpw.mods.jarhandling.impl.CompositeJarContents;
-import cpw.mods.jarhandling.impl.EmptyJarContents;
-import cpw.mods.jarhandling.impl.FolderJarContents;
-import cpw.mods.jarhandling.impl.JarFileContents;
-import cpw.mods.modlauncher.ClassProcessorSet;
-import cpw.mods.modlauncher.TransformerAuditTrail;
-import cpw.mods.modlauncher.TransformingClassLoader;
-import cpw.mods.modlauncher.api.ITransformerAuditTrail;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -56,11 +43,24 @@ import net.neoforged.fml.IBindingsProvider;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.classloading.JarModuleFinder;
 import net.neoforged.fml.classloading.ResourceMaskingClassLoader;
+import net.neoforged.fml.classloading.SecureJar;
+import net.neoforged.fml.classloading.VirtualJar;
+import net.neoforged.fml.classloading.transformation.ClassProcessorAuditLog;
+import net.neoforged.fml.classloading.transformation.ClassProcessorAuditSource;
+import net.neoforged.fml.classloading.transformation.ClassProcessorSet;
+import net.neoforged.fml.classloading.transformation.TransformingClassLoader;
 import net.neoforged.fml.common.asm.AccessTransformerService;
 import net.neoforged.fml.common.asm.SimpleProcessorsGroup;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
 import net.neoforged.fml.i18n.FMLTranslations;
+import net.neoforged.fml.jarcontents.CompositeJarContents;
+import net.neoforged.fml.jarcontents.EmptyJarContents;
+import net.neoforged.fml.jarcontents.FolderJarContents;
+import net.neoforged.fml.jarcontents.JarContents;
+import net.neoforged.fml.jarcontents.JarFileContents;
+import net.neoforged.fml.jarcontents.JarResource;
 import net.neoforged.fml.loading.mixin.MixinFacade;
 import net.neoforged.fml.loading.moddiscovery.ModDiscoverer;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
@@ -126,12 +126,13 @@ public final class FMLLoader implements AutoCloseable {
     private ModuleLayer gameLayer;
     @VisibleForTesting
     DiscoveryResult discoveryResult;
-    private final TransformerAuditTrail classTransformerAuditLog = new TransformerAuditTrail();
+    private final ClassProcessorAuditLog classTransformerAuditLog = new ClassProcessorAuditLog();
     @Nullable
     @VisibleForTesting
     volatile IBindingsProvider bindings;
 
-    public ITransformerAuditTrail getClassTransformerAuditLog() {
+    @ApiStatus.Internal
+    public ClassProcessorAuditSource getClassTransformerAuditLog() {
         return classTransformerAuditLog;
     }
 
@@ -411,7 +412,7 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     private TransformingClassLoader buildTransformingLoader(ClassProcessorSet classProcessorSet,
-            TransformerAuditTrail auditTrail,
+            ClassProcessorAuditLog auditTrail,
             List<SecureJar> content) {
         maskContentAlreadyOnClasspath(content);
 

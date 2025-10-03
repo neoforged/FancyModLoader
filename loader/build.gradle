@@ -32,7 +32,6 @@ dependencies {
     api("net.neoforged:bus:${eventbus_version}")
 
     implementation("net.sf.jopt-simple:jopt-simple:${jopt_simple_version}")
-    implementation project(":securejarhandler")
     implementation("net.neoforged:accesstransformers:${accesstransformers_version}")
     implementation("net.fabricmc:sponge-mixin:${mixin_version}")
     implementation("net.minecrell:terminalconsoleappender:${terminalconsoleappender_version}")

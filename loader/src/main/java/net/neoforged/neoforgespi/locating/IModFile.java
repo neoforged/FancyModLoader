@@ -5,12 +5,12 @@
 
 package net.neoforged.neoforgespi.locating;
 
-import cpw.mods.jarhandling.JarContents;
-import cpw.mods.jarhandling.SecureJar;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import net.neoforged.fml.classloading.SecureJar;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;

@@ -5,7 +5,6 @@
 
 package net.neoforged.fml.loading.moddiscovery.locators;
 
-import cpw.mods.jarhandling.JarContents;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -16,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;

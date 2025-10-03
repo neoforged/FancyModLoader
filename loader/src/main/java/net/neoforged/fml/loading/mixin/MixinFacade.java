@@ -5,7 +5,6 @@
 
 package net.neoforged.fml.loading.mixin;
 
-import cpw.mods.modlauncher.TransformingClassLoader;
 import java.io.IOException;
 import java.lang.module.ModuleDescriptor;
 import java.util.HashMap;
@@ -14,6 +13,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.classloading.transformation.TransformingClassLoader;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.moddiscovery.ModFile;

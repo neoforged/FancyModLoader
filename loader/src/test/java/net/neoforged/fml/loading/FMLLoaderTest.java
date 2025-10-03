@@ -901,7 +901,7 @@ class FMLLoaderTest extends LauncherTest {
                                 }
 
                                 @Override
-                                public net.neoforged.neoforgespi.locating.IModFile read(cpw.mods.jarhandling.JarContents jar, net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes attributes) {
+                                public net.neoforged.neoforgespi.locating.IModFile read(net.neoforged.fml.jarcontents.JarContents jar, net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes attributes) {
                                     return null;
                                 }
                             }

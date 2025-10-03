@@ -16,17 +16,17 @@ package cpw.mods.modlauncher.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import cpw.mods.cl.JarModuleFinder;
-import cpw.mods.jarhandling.SecureJar;
-import cpw.mods.modlauncher.ClassProcessorSet;
-import cpw.mods.modlauncher.TransformerAuditTrail;
-import cpw.mods.modlauncher.TransformingClassLoader;
 import java.io.IOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
+import net.neoforged.fml.classloading.JarModuleFinder;
+import net.neoforged.fml.classloading.SecureJar;
+import net.neoforged.fml.classloading.transformation.ClassProcessorAuditLog;
+import net.neoforged.fml.classloading.transformation.ClassProcessorSet;
+import net.neoforged.fml.classloading.transformation.TransformingClassLoader;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -44,7 +44,7 @@ class TransformingClassLoaderTests {
                 .build();
 
         Configuration configuration = createTestJarsConfiguration();
-        TransformingClassLoader tcl = new TransformingClassLoader(processorSet, new TransformerAuditTrail(), configuration, List.of(ModuleLayer.boot()), null);
+        TransformingClassLoader tcl = new TransformingClassLoader(processorSet, new ClassProcessorAuditLog(), configuration, List.of(ModuleLayer.boot()), null);
         ModuleLayer.boot().defineModules(configuration, s -> tcl);
 
         final Class<?> aClass = Class.forName(TARGET_CLASS, true, tcl);
