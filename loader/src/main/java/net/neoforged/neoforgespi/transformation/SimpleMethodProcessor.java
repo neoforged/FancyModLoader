@@ -11,19 +11,27 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.objectweb.asm.tree.MethodNode;
 
+/**
+ * Base class for simple {@link ClassProcessor} implementations that want to apply
+ * bytecode transformations to specific methods.
+ */
 public abstract non-sealed class SimpleMethodProcessor extends BaseSimpleProcessor {
+    private final AtomicReference<Map<String, Set<String>>> targetsByClass = new AtomicReference<>();
+
     /**
-     * Transform the input with context.
+     * Applies transformations to a {@linkplain #targets() targeted method}.
      *
-     * @param input   The ASM input node, which can be mutated directly
-     * @param context The voting context
+     * @param input The ASM input node, which can be mutated directly
      */
     public abstract void transform(MethodNode input, SimpleTransformationContext context);
 
+    /**
+     * {@return the methods targeted by this processor}
+     */
     public abstract Set<Target> targets();
 
     /**
-     * Target a method.
+     * Identifies a targeted method and the class it resides in.
      *
      * @param className        the binary name of the class containing the method, as {@link Class#getName()}
      * @param methodName       the name of the method
@@ -35,8 +43,6 @@ public abstract non-sealed class SimpleMethodProcessor extends BaseSimpleProcess
             NameValidation.validateMethod(methodName, methodDescriptor);
         }
     }
-
-    private final AtomicReference<Map<String, Set<String>>> targetsByClass = new AtomicReference<>();
 
     private Map<String, Set<String>> targetsByClass() {
         return this.targetsByClass.updateAndGet(

@@ -16,16 +16,25 @@ package net.neoforged.neoforgespi.transformation;
 
 import org.objectweb.asm.Type;
 
+/**
+ * Contextual information for transformations implemented in {@linkplain BaseSimpleProcessor simple class processors}.
+ */
 public interface SimpleTransformationContext {
     /**
-     * {@return The class being transformed}
+     * {@return the class being transformed}
      */
     Type type();
 
     /**
-     * @return If the class already existed
+     * {@return true if the class does not exist and the given node is currently empty}
+     *
+     * <p>This is only relevant for processors targeting classes, since method and field processors
+     * will never be invoked for classes that don't exist.
      */
     boolean empty();
 
+    /**
+     * {@return SHA-256 hash of the original untransformed class bytecode}
+     */
     byte[] initialSha256();
 }

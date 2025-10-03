@@ -6,7 +6,7 @@
 package net.neoforged.neoforgespi.transformation;
 
 /**
- * Standard names for built-in processors.
+ * The names of built-in class processors.
  */
 public final class ClassProcessorIds {
     /**

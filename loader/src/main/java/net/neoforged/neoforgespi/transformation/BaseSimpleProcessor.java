@@ -7,12 +7,23 @@ package net.neoforged.neoforgespi.transformation;
 
 import java.util.Set;
 
+/**
+ * Base class for simple {@linkplain ClassProcessor class processors}, that target
+ * specific bytecode constructs (specific classes, methods or fields).
+ * <p>See the subclasses for class, method and field processor templates.
+ */
 abstract sealed class BaseSimpleProcessor implements ClassProcessor permits SimpleClassProcessor, SimpleFieldProcessor, SimpleMethodProcessor {
+    /**
+     * Linking is an advanced operation and not supported by simple processors.
+     */
     @Override
     public final void link(LinkContext context) {
         ClassProcessor.super.link(context);
     }
 
+    /**
+     * After processing callbacks are an advanced operation not supported by simple processors.
+     */
     @Override
     public final void afterProcessing(AfterProcessingContext context) {
         ClassProcessor.super.afterProcessing(context);

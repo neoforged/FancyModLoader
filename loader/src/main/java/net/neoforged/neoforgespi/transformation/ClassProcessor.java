@@ -22,6 +22,8 @@ import org.objectweb.asm.tree.ClassNode;
  * accomplished by specifying names that processors should run before or after if present.
  * <p>
  * For a simpler API, see {@link SimpleClassProcessor}, {@link SimpleMethodProcessor}, and {@link SimpleFieldProcessor}.
+ * <p>Class processors can be provided using the Java {@link java.util.ServiceLoader} mechanism. If you
+ * require more control, you can also implement a {@link ClassProcessorProvider}.
  */
 public interface ClassProcessor {
     String GENERATED_PACKAGE_MODULE = "net.neoforged.fml.generated";

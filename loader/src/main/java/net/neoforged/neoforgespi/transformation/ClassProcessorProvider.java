@@ -23,8 +23,15 @@ public interface ClassProcessorProvider {
     /**
      * Context about the currently launching game that is passed when processors are collected.
      */
-    @ApiStatus.NonExtendable
-    interface Context {}
+    record Context() {
+        @ApiStatus.Internal
+        public Context {}
+    }
 
-    void makeProcessors(Context context, Collector collector);
+    /**
+     * Called by the loader when it collects all class processors to apply
+     * to the game. Providers must add any processors they want to
+     * activate for the currently launching game to {@code collector}.
+     */
+    void createProcessors(Context context, Collector collector);
 }

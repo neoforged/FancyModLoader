@@ -57,7 +57,7 @@ public class SimpleProcessorsTest extends LauncherTest {
                             .addClass("testmod.simpleprocessors.TestSimpleProcessors", """
                                     public class TestSimpleProcessors implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
                                         @Override
-                                        public void makeProcessors(Context context, Collector collector) {
+                                        public void createProcessors(Context context, Collector collector) {
                                             throw new RuntimeException();
                                         }
                                     }""");
@@ -79,7 +79,7 @@ public class SimpleProcessorsTest extends LauncherTest {
                 .addClass("testmod.simpleprocessors.TestSimpleProcessors", """
                         public class TestSimpleProcessors implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
                             @Override
-                            public void makeProcessors(Context context, Collector collector) {
+                            public void createProcessors(Context context, Collector collector) {
                                 throw new RuntimeException();
                             }
                         }""")
@@ -105,7 +105,7 @@ public class SimpleProcessorsTest extends LauncherTest {
                             .addClass("testmod.simpleprocessors.TestSimpleProcessors", """
                                     public class TestSimpleProcessors implements net.neoforged.neoforgespi.transformation.ClassProcessorProvider {
                                         @Override
-                                        public void makeProcessors(Context context, Collector collector) {
+                                        public void createProcessors(Context context, Collector collector) {
                                             collector.add(net.neoforged.fml.loading.SimpleProcessorsTest.TEST_TRANSFORMER);
                                         }
                                     }""");

@@ -1,5 +1,6 @@
 package cpw.mods.modlauncher;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -8,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Every class name passed to methods of this interface use dot-separated form.
  */
+@ApiStatus.Internal
 public interface ClassHierarchyRecomputationContext {
     /**
      * {@return the class identified by className, if it's already loaded and visible from the current classloader or null , if it's not}

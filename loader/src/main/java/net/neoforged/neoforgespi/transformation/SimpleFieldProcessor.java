@@ -12,18 +12,22 @@ import java.util.stream.Collectors;
 import org.objectweb.asm.tree.FieldNode;
 
 public abstract non-sealed class SimpleFieldProcessor extends BaseSimpleProcessor {
+    private final AtomicReference<Map<String, Set<String>>> targetsByClass = new AtomicReference<>();
+
     /**
-     * Transform the input with context.
+     * Applies transformations to a {@linkplain #targets() targeted field}.
      *
-     * @param input   The ASM input node, which can be mutated directly
-     * @param context The voting context
+     * @param input The ASM input node, which can be mutated directly
      */
     public abstract void transform(FieldNode input, SimpleTransformationContext context);
 
+    /**
+     * {@return the fields targeted by this processor}
+     */
     public abstract Set<Target> targets();
 
     /**
-     * Target a field.
+     * Identifies a targeted field and the class it resides in.
      *
      * @param className the binary name of the class containing the field, as {@link Class#getName()}
      * @param fieldName the name of the field
@@ -34,8 +38,6 @@ public abstract non-sealed class SimpleFieldProcessor extends BaseSimpleProcesso
             NameValidation.validateUnqualified(fieldName);
         }
     }
-
-    private final AtomicReference<Map<String, Set<String>>> targetsByClass = new AtomicReference<>();
 
     private Map<String, Set<String>> targetsByClass() {
         return this.targetsByClass.updateAndGet(

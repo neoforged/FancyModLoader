@@ -148,10 +148,10 @@ public final class ClassProcessorSet {
         }
 
         public Builder addProcessorProviders(Collection<ClassProcessorProvider> providers) {
-            var context = new ClassProcessorProvider.Context() {};
+            var context = new ClassProcessorProvider.Context();
             for (var provider : providers) {
                 try {
-                    provider.makeProcessors(context, Builder.this.processors::add);
+                    provider.createProcessors(context, Builder.this.processors::add);
                 } catch (Exception e) {
                     // Throwing here would cause the game to immediately crash without a proper error screen,
                     // since this method is called by ModLauncher directly. We also need to be able to attribute errors to

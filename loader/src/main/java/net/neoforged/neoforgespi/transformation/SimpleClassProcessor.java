@@ -11,18 +11,22 @@ import java.util.stream.Collectors;
 import org.objectweb.asm.tree.ClassNode;
 
 public abstract non-sealed class SimpleClassProcessor extends BaseSimpleProcessor {
+    private final AtomicReference<Set<String>> targets = new AtomicReference<>();
+
     /**
-     * Transform the input with context.
+     * Applies transformations to a {@linkplain #targets() targeted class}.
      *
-     * @param input   The ASM input node, which can be mutated directly
-     * @param context The voting context
+     * @param input The ASM input node, which can be mutated directly
      */
     public abstract void transform(ClassNode input, SimpleTransformationContext context);
 
+    /**
+     * {@return the classes targeted by this processor}
+     */
     public abstract Set<Target> targets();
 
     /**
-     * Target a class.
+     * Identifies a targeted class.
      *
      * @param className the binary name of the class, as {@link Class#getName()}
      */
@@ -31,8 +35,6 @@ public abstract non-sealed class SimpleClassProcessor extends BaseSimpleProcesso
             NameValidation.validateClassName(className);
         }
     }
-
-    private final AtomicReference<Set<String>> targets = new AtomicReference<>();
 
     @Override
     public final boolean handlesClass(SelectionContext context) {

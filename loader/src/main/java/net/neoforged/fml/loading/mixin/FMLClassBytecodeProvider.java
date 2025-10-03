@@ -47,7 +47,7 @@ class FMLClassBytecodeProvider implements IClassBytecodeProvider {
         byte[] classBytes;
 
         try {
-            classBytes = bytecodeProvider.acquireByteCode(canonicalName);
+            classBytes = bytecodeProvider.getByteCode(canonicalName);
         } catch (ClassNotFoundException ex) {
             URL url = Thread.currentThread().getContextClassLoader().getResource(internalName + ".class");
             if (url == null) {
