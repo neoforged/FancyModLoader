@@ -14,9 +14,9 @@
 
 package net.neoforged.fml.classloading.transformation;
 
-import cpw.mods.cl.ModuleClassLoader;
 import java.lang.module.Configuration;
 import java.util.List;
+import net.neoforged.fml.classloading.ModuleClassLoader;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;

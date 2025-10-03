@@ -14,7 +14,7 @@
 
 package net.neoforged.fml.logging;
 
-import cpw.mods.cl.ModuleClassLoader;
+import net.neoforged.fml.classloading.ModuleClassLoader;
 import org.apache.logging.log4j.core.selector.ClassLoaderContextSelector;
 
 /**

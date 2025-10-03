@@ -5,7 +5,6 @@
 
 package net.neoforged.fml.loading.moddiscovery.locators;
 
-import cpw.mods.jarhandling.JarContents;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,6 +17,7 @@ import java.util.jar.Manifest;
 import java.util.stream.Stream;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.neoforgespi.ILaunchContext;

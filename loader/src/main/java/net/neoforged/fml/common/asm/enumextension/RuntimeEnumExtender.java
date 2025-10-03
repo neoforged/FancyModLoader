@@ -5,7 +5,6 @@
 
 package net.neoforged.fml.common.asm.enumextension;
 
-import cpw.mods.jarhandling.JarResource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,6 +19,7 @@ import java.util.stream.Collectors;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.asm.ListGeneratorAdapter;
+import net.neoforged.fml.jarcontents.JarResource;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;

@@ -7,8 +7,6 @@ package net.neoforged.fml.loading.moddiscovery.locators;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import cpw.mods.jarhandling.JarContents;
-import cpw.mods.jarhandling.SecureJar;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -22,6 +20,8 @@ import java.util.stream.Collectors;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.classloading.SecureJar;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.LibraryFinder;
 import net.neoforged.fml.loading.MavenCoordinate;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;

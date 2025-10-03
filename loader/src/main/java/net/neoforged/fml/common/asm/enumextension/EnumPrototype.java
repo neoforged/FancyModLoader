@@ -9,7 +9,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import cpw.mods.jarhandling.JarResource;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +16,7 @@ import java.util.Locale;
 import javax.lang.model.SourceVersion;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.jarcontents.JarResource;
 import net.neoforged.neoforgespi.language.IModInfo;
 import org.objectweb.asm.Type;
 

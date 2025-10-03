@@ -5,10 +5,10 @@
 
 package net.neoforged.neoforgespi.locating;
 
-import cpw.mods.jarhandling.JarContents;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.neoforgespi.IIssueReporting;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;

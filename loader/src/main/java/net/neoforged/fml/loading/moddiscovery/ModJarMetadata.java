@@ -5,12 +5,12 @@
 
 package net.neoforged.fml.loading.moddiscovery;
 
-import cpw.mods.jarhandling.JarContents;
-import cpw.mods.jarhandling.JarMetadata;
-import cpw.mods.jarhandling.LazyJarMetadata;
-import cpw.mods.jarhandling.impl.ModuleDescriptorFactory;
 import java.lang.module.ModuleDescriptor;
 import java.util.Objects;
+import net.neoforged.fml.classloading.JarMetadata;
+import net.neoforged.fml.classloading.LazyJarMetadata;
+import net.neoforged.fml.classloading.ModuleDescriptorFactory;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.neoforgespi.locating.IModFile;
 
 public final class ModJarMetadata extends LazyJarMetadata implements JarMetadata {

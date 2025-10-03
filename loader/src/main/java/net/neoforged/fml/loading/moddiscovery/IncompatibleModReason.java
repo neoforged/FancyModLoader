@@ -5,10 +5,10 @@
 
 package net.neoforged.fml.loading.moddiscovery;
 
-import cpw.mods.jarhandling.JarContents;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Predicate;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.StringUtils;
 
 /**

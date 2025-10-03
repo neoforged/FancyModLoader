@@ -16,14 +16,14 @@ package cpw.mods.modlauncher.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import cpw.mods.cl.JarModuleFinder;
-import cpw.mods.jarhandling.SecureJar;
 import java.io.IOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
+import net.neoforged.fml.classloading.JarModuleFinder;
+import net.neoforged.fml.classloading.SecureJar;
 import net.neoforged.fml.classloading.transformation.ClassProcessorAuditLog;
 import net.neoforged.fml.classloading.transformation.ClassProcessorSet;
 import net.neoforged.fml.classloading.transformation.TransformingClassLoader;

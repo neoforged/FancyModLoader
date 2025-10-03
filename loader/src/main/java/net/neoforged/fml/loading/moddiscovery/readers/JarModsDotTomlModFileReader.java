@@ -6,8 +6,6 @@
 package net.neoforged.fml.loading.moddiscovery.readers;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.jarhandling.JarContents;
-import cpw.mods.jarhandling.SecureJar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +14,8 @@ import java.util.function.Function;
 import java.util.jar.Manifest;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.classloading.SecureJar;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileParser;

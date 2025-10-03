@@ -5,8 +5,8 @@
 
 package net.neoforged.fml.loading.moddiscovery.readers;
 
-import cpw.mods.jarhandling.JarContents;
-import cpw.mods.jarhandling.SecureJar;
+import net.neoforged.fml.classloading.SecureJar;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileReader;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;

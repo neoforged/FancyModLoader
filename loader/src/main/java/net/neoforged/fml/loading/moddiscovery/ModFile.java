@@ -7,8 +7,6 @@ package net.neoforged.fml.loading.moddiscovery;
 
 import com.google.common.collect.ImmutableMap;
 import com.mojang.logging.LogUtils;
-import cpw.mods.jarhandling.JarContents;
-import cpw.mods.jarhandling.SecureJar;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -22,6 +20,8 @@ import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.stream.Stream;
+import net.neoforged.fml.classloading.SecureJar;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.modscan.Scanner;
