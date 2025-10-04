@@ -5,7 +5,6 @@
 
 package net.neoforged.fml.loading.moddiscovery.readers;
 
-import net.neoforged.fml.classloading.SecureJar;
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileReader;
@@ -27,7 +26,7 @@ public class NestedLibraryModReader implements IModFileReader {
         // since we assume those have been included deliberately. Loose jar files in the mods directory
         // are not considered, since those are likely to have been dropped in by accident.
         if (discoveryAttributes.parent() != null) {
-            return IModFile.create(SecureJar.from(jar), JarModsDotTomlModFileReader::manifestParser, IModFile.Type.LIBRARY, discoveryAttributes);
+            return IModFile.create(jar, JarModsDotTomlModFileReader::manifestParser, IModFile.Type.LIBRARY, discoveryAttributes);
         }
 
         return null;

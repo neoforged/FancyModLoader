@@ -12,6 +12,7 @@ import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.module.Configuration;
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -43,10 +44,9 @@ import net.neoforged.fml.IBindingsProvider;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.classloading.JarModuleFinder;
+import net.neoforged.fml.classloading.JarContentsModuleFinder;
 import net.neoforged.fml.classloading.ResourceMaskingClassLoader;
-import net.neoforged.fml.classloading.SecureJar;
-import net.neoforged.fml.classloading.VirtualJar;
+import net.neoforged.fml.classloading.JarContentsModule;
 import net.neoforged.fml.classloading.transformation.ClassProcessorAuditLog;
 import net.neoforged.fml.classloading.transformation.ClassProcessorAuditSource;
 import net.neoforged.fml.classloading.transformation.ClassProcessorSet;
@@ -141,7 +141,24 @@ public final class FMLLoader implements AutoCloseable {
             List<ModFile> pluginContent,
             List<ModFile> gameContent,
             List<ModFile> gameLibraryContent,
-            List<ModLoadingIssue> discoveryIssues) {}
+            List<ModLoadingIssue> discoveryIssues) {
+        public List<ModFile> allContent() {
+            var content = new ArrayList<ModFile>(
+                    pluginContent.size() + gameContent.size() + gameLibraryContent.size());
+            content.addAll(pluginContent);
+            content.addAll(gameContent);
+            content.addAll(gameLibraryContent);
+            return content;
+        }
+
+        public List<ModFile> allGameContent() {
+            var content = new ArrayList<ModFile>(
+                    gameContent.size() + gameLibraryContent.size());
+            content.addAll(gameContent);
+            content.addAll(gameLibraryContent);
+            return content;
+        }
+    }
 
     private FMLLoader(ClassLoader currentClassLoader, String[] programArgs, Dist dist, boolean production, Path gameDir) {
         this.currentClassLoader = currentClassLoader;
@@ -296,16 +313,19 @@ public final class FMLLoader implements AutoCloseable {
             } else {
                 discoveryResult = runOffThread(loader::runDiscovery);
             }
-            ClassLoadingGuardian classLoadingGuardian = null;
-            if (instrumentation != null) {
-                classLoadingGuardian = new ClassLoadingGuardian(instrumentation, discoveryResult.gameContent);
-                loader.ownedResources.add(classLoadingGuardian);
-            }
-
             for (var issue : discoveryResult.discoveryIssues()) {
                 LOGGER.atLevel(issue.severity() == ModLoadingIssue.Severity.ERROR ? Level.ERROR : Level.WARN)
                         .setCause(issue.cause())
                         .log("{}", FMLTranslations.translateIssueEnglish(issue));
+            }
+
+            // Build all module descriptors in parallel
+            discoveryResult.allContent().stream().parallel().forEach(ModFile::getModuleDescriptor);
+
+            ClassLoadingGuardian classLoadingGuardian = null;
+            if (instrumentation != null) {
+                classLoadingGuardian = new ClassLoadingGuardian(instrumentation, discoveryResult.allGameContent());
+                loader.ownedResources.add(classLoadingGuardian);
             }
 
             var mixinFacade = new MixinFacade();
@@ -321,19 +341,22 @@ public final class FMLLoader implements AutoCloseable {
             }
 
             // BUILD GAME LAYER
-            // NOTE: This is where Mixin contributes its synthetic SecureJar to ensure it's generated classes are handled by the TCL
-            var gameContent = new ArrayList<SecureJar>();
-            for (var modFile : discoveryResult.gameLibraryContent) {
-                gameContent.add(modFile.getSecureJar());
-            }
-            for (var modFile : discoveryResult.gameContent) {
-                gameContent.add(modFile.getSecureJar());
+            var gameContent = new ArrayList<JarContentsModule>();
+            for (var modFile : discoveryResult.allGameContent()) {
+                gameContent.add(new JarContentsModule(
+                        modFile.getContents(),
+                        modFile.getModuleDescriptor()));
             }
 
             var classProcessorSet = createClassProcessorSet(startupArgs, launchContext, discoveryResult, mixinFacade);
-            gameContent.add(new VirtualJar(
-                    ClassProcessor.GENERATED_PACKAGE_MODULE,
-                    classProcessorSet.getGeneratedPackages().toArray(String[]::new)));
+            if (!classProcessorSet.getGeneratedPackages().isEmpty()) {
+                var descriptor = ModuleDescriptor.newAutomaticModule(ClassProcessor.GENERATED_PACKAGE_MODULE)
+                        .packages(classProcessorSet.getGeneratedPackages())
+                        .build();
+                gameContent.add(new JarContentsModule(
+                        JarContents.empty(Path.of("VirtualJar/" + descriptor.name())),
+                        descriptor));
+            }
             var transformingLoader = loader.buildTransformingLoader(classProcessorSet, loader.classTransformerAuditLog, gameContent);
 
             // From here on out, try loading through the TCL
@@ -413,7 +436,7 @@ public final class FMLLoader implements AutoCloseable {
 
     private TransformingClassLoader buildTransformingLoader(ClassProcessorSet classProcessorSet,
             ClassProcessorAuditLog auditTrail,
-            List<SecureJar> content) {
+            List<JarContentsModule> content) {
         maskContentAlreadyOnClasspath(content);
 
         long start = System.currentTimeMillis();
@@ -421,10 +444,10 @@ public final class FMLLoader implements AutoCloseable {
         var parentLayers = List.of(ModuleLayer.boot());
 
         var cf = Configuration.resolveAndBind(
-                JarModuleFinder.of(content.toArray(SecureJar[]::new)),
+                new JarContentsModuleFinder(content),
                 parentLayers.stream().map(ModuleLayer::configuration).toList(),
                 ModuleFinder.of(),
-                content.stream().map(SecureJar::name).toList());
+                content.stream().map(JarContentsModule::moduleName).toList());
 
         var moduleNames = getModuleNameList(cf, content);
         LOGGER.info("Building game content classloader:\n{}", moduleNames);
@@ -456,7 +479,7 @@ public final class FMLLoader implements AutoCloseable {
      * for setting up a classloader that prevents getResource/getResources from reporting Jar resources
      * for both the jar on the App classpath and on the transforming classloader.
      */
-    private void maskContentAlreadyOnClasspath(List<SecureJar> content) {
+    private void maskContentAlreadyOnClasspath(List<JarContentsModule> content) {
         var classpathItems = ClasspathResourceUtils.getAllClasspathItems(currentClassLoader);
 
         // Collect all paths that make up the game content, which are already on the classpath
@@ -501,8 +524,8 @@ public final class FMLLoader implements AutoCloseable {
         return result;
     }
 
-    private static String getModuleNameList(Configuration cf, List<SecureJar> content) {
-        var jarsById = content.stream().collect(Collectors.toMap(SecureJar::name, Function.identity()));
+    private static String getModuleNameList(Configuration cf, List<JarContentsModule> content) {
+        var jarsById = content.stream().collect(Collectors.toMap(JarContentsModule::moduleName, Function.identity()));
 
         return cf.modules().stream()
                 .map(module -> {

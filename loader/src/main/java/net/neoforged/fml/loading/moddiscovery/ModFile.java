@@ -8,6 +8,7 @@ package net.neoforged.fml.loading.moddiscovery;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.logging.LogUtils;
 import java.io.IOException;
+import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +21,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.stream.Stream;
-import net.neoforged.fml.classloading.SecureJar;
+import net.neoforged.fml.classloading.JarMetadata;
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LogMarkers;
@@ -48,7 +49,8 @@ public class ModFile implements IModFile {
     private ModFileDiscoveryAttributes discoveryAttributes;
     private Map<String, Object> fileProperties;
     private List<IModLanguageLoader> loaders;
-    private final SecureJar jar;
+    private final JarContents contents;
+    private JarMetadata moduleDescriptorSupplier;
     private final Type modFileType;
     private final IModFileInfo modFileInfo;
     private final List<ModFileParser.MixinConfig> mixinConfigs;
@@ -58,21 +60,26 @@ public class ModFile implements IModFile {
 
     public static final Attributes.Name TYPE = new Attributes.Name("FMLModType");
 
-    public ModFile(SecureJar jar, ModFileInfoParser parser, ModFileDiscoveryAttributes attributes) {
-        this(jar, parser, parseType(jar), attributes);
+    public ModFile(JarContents contents, ModFileInfoParser parser, ModFileDiscoveryAttributes attributes) {
+        this(contents, null, parser, parseType(contents), attributes);
     }
 
-    public ModFile(SecureJar jar, ModFileInfoParser parser, Type type, ModFileDiscoveryAttributes discoveryAttributes) {
-        this.jar = Objects.requireNonNull(jar, "jar");
+    public ModFile(JarContents contents, @Nullable JarMetadata metadata, final ModFileInfoParser parser, ModFileDiscoveryAttributes attributes) {
+        this(contents, metadata, parser, parseType(contents), attributes);
+    }
+
+    public ModFile(JarContents contents, @Nullable JarMetadata metadata, ModFileInfoParser parser, Type type, ModFileDiscoveryAttributes discoveryAttributes) {
+        this.contents = Objects.requireNonNull(contents, "jar");
         this.discoveryAttributes = Objects.requireNonNull(discoveryAttributes, "discoveryAttributes");
 
         modFileType = Objects.requireNonNull(type, "type");
         jarVersion = Optional.ofNullable(getContents().getManifest().getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION)).orElse("0.0NONE");
         this.modFileInfo = ModFileParser.readModList(this, Objects.requireNonNull(parser, "parser"));
+        moduleDescriptorSupplier = metadata != null ? metadata : JarMetadata.from(contents);
         if (modFileInfo != null && !modFileInfo.getMods().isEmpty()) {
             this.id = modFileInfo.getMods().getFirst().getModId();
         } else {
-            this.id = jar.name();
+            this.id = moduleDescriptorSupplier.name();
         }
 
         if (this.modFileInfo != null) {
@@ -108,7 +115,7 @@ public class ModFile implements IModFile {
 
     @Override
     public JarContents getContents() {
-        return getSecureJar().contents();
+        return contents;
     }
 
     @Override
@@ -127,11 +134,7 @@ public class ModFile implements IModFile {
 
     @Override
     public Path getFilePath() {
-        return jar.getPrimaryPath();
-    }
-
-    public SecureJar getSecureJar() {
-        return this.jar;
+        return getContents().getPrimaryPath();
     }
 
     @Override
@@ -184,9 +187,9 @@ public class ModFile implements IModFile {
     @Override
     public String toString() {
         if (discoveryAttributes.parent() != null) {
-            return discoveryAttributes.parent() + " > " + jar;
+            return discoveryAttributes.parent() + " > " + contents;
         } else {
-            return this.jar.toString();
+            return contents.toString();
         }
     }
 
@@ -213,16 +216,24 @@ public class ModFile implements IModFile {
         return new DefaultArtifactVersion(this.jarVersion);
     }
 
-    private static Type parseType(SecureJar jar) {
-        Optional<String> value = Optional.ofNullable(jar.contents().getManifest().getMainAttributes().getValue(TYPE));
-        return value.map(Type::valueOf).orElse(Type.MOD);
+    private static Type parseType(JarContents contents) {
+        var value = contents.getManifest().getMainAttributes().getValue(TYPE);
+        return value != null ? Type.valueOf(value) : Type.MOD;
     }
 
     public void close() {
         try {
-            jar.close();
+            contents.close();
         } catch (IOException e) {
             LOGGER.error("Failed to close mod file {}", this, e);
         }
+    }
+
+    /**
+     * Computing the module descriptor for the first time can be
+     * expensive, so this should be called once in parallel for all content.
+     */
+    public ModuleDescriptor getModuleDescriptor() {
+        return moduleDescriptorSupplier.descriptor();
     }
 }

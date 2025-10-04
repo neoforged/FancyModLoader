@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.classloading.SecureJar;
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.LibraryFinder;
 import net.neoforged.fml.loading.MavenCoordinate;
@@ -83,8 +82,7 @@ public class GameLocator implements IModFileCandidateLocator {
         } else {
             var minecraftVersion = detectMinecraftVersion(mcJarContents);
             var mcJarMetadata = new ModJarMetadata(mcJarContents);
-            var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);
-            minecraftModFile = IModFile.create(mcSecureJar, new MinecraftModInfo(minecraftVersion)::buildMinecraftModInfo);
+            minecraftModFile = IModFile.create(mcJarContents, mcJarMetadata, new MinecraftModInfo(minecraftVersion)::buildMinecraftModInfo);
             mcJarMetadata.setModFile(minecraftModFile);
             if (!pipeline.addModFile(minecraftModFile)) {
                 throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.corrupted_minecraft_jar"));
@@ -316,8 +314,7 @@ public class GameLocator implements IModFileCandidateLocator {
                 var mcJarContents = JarContents.ofPaths(content);
 
                 var mcJarMetadata = new ModJarMetadata(mcJarContents);
-                var mcSecureJar = SecureJar.from(mcJarContents, mcJarMetadata);
-                var mcjar = IModFile.create(mcSecureJar, new MinecraftModInfo(minecraftVersion)::buildMinecraftModInfo);
+                var mcjar = IModFile.create(mcJarContents, mcJarMetadata, new MinecraftModInfo(minecraftVersion)::buildMinecraftModInfo);
                 mcJarMetadata.setModFile(mcjar);
 
                 pipeline.addModFile(mcjar);

@@ -137,7 +137,7 @@ final class ClassLoadingGuardian implements AutoCloseable {
     private static Set<String> getPackages(List<ModFile> gameContent) {
         var protectedPackages = new HashSet<String>(1000);
         for (var modFile : gameContent) {
-            for (var pkgName : modFile.getSecureJar().moduleDataProvider().descriptor().packages()) {
+            for (var pkgName : modFile.getModuleDescriptor().packages()) {
                 protectedPackages.add(pkgName.replace('.', '/'));
             }
         }

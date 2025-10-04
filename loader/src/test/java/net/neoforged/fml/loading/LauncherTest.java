@@ -35,10 +35,10 @@ import net.neoforged.fml.IBindingsProvider;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.classloading.SecureJar;
 import net.neoforged.fml.classloading.transformation.TransformingClassLoader;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.i18n.FMLTranslations;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.jarcontents.JarResource;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.startup.StartupArgs;
@@ -284,7 +284,7 @@ public abstract class LauncherTest {
 
         gameClassLoader = (TransformingClassLoader) launchClassLoader;
 
-        Map<String, SecureJar> gameLayerModules = new HashMap<>();
+        Map<String, JarContents> gameLayerModules = new HashMap<>();
         for (var module : gameClassLoader.getConfiguration().modules()) {
             String moduleName = module.name();
             // Find matching mod file
@@ -293,14 +293,12 @@ public abstract class LauncherTest {
                     discoveryResult.gameLibraryContent().stream())
                     .filter(mf -> mf.getId().equals(moduleName))
                     .findFirst()
-                    .ifPresent(mf -> gameLayerModules.put(mf.getId(), mf.getSecureJar()));
+                    .ifPresent(mf -> gameLayerModules.put(mf.getId(), mf.getContents()));
         }
 
         return new LaunchResult(
                 discoveryResult.pluginContent().stream().collect(
-                        Collectors.toMap(
-                                ModFile::getId,
-                                ModFile::getSecureJar)),
+                        Collectors.toMap(ModFile::getId, ModFile::getContents)),
                 gameLayerModules,
                 loadingModList.getModLoadingIssues(),
                 loadedMods.stream().collect(Collectors.toMap(
@@ -436,11 +434,11 @@ public abstract class LauncherTest {
         var modFileInfo = launchResult.loadedMods().get(modId);
         assertNotNull(modFileInfo, "mod " + modId + " is missing");
 
-        assertSecureJarContent(modFileInfo.getFile().getSecureJar(), content);
+        assertSecureJarContent(modFileInfo.getFile().getContents(), content);
     }
 
-    public void assertSecureJarContent(SecureJar jar, Collection<IdentifiableContent> content) throws IOException {
-        var paths = listFilesRecursively(jar);
+    public void assertSecureJarContent(JarContents contents, Collection<IdentifiableContent> content) throws IOException {
+        var paths = listFilesRecursively(contents);
 
         assertThat(paths.keySet()).containsOnly(content.stream().map(IdentifiableContent::relativePath).toArray(String[]::new));
 
@@ -475,9 +473,9 @@ public abstract class LauncherTest {
         return true;
     }
 
-    private static Map<String, JarResource> listFilesRecursively(SecureJar jar) {
+    private static Map<String, JarResource> listFilesRecursively(JarContents contents) {
         Map<String, JarResource> paths = new HashMap<>();
-        jar.contents().visitContent((relativePath, resource) -> {
+        contents.visitContent((relativePath, resource) -> {
             paths.put(relativePath, resource.retain());
         });
         return paths;

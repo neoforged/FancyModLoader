@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import net.neoforged.fml.classloading.SecureJar;
+import net.neoforged.fml.classloading.JarMetadata;
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.neoforgespi.language.IModFileInfo;
@@ -31,37 +31,62 @@ public interface IModFile {
     /**
      * Builds a new mod file instance depending on the current runtime.
      *
-     * @param jar    The secure jar to load the mod file from.
-     * @param parser The parser which is responsible for parsing the metadata of the file itself.
+     * @param contents The secure jar to load the mod file from.
+     * @param parser   The parser which is responsible for parsing the metadata of the file itself.
      * @return The mod file.
      */
-    static IModFile create(SecureJar jar, ModFileInfoParser parser) throws InvalidModFileException {
-        return new ModFile(jar, parser, ModFileDiscoveryAttributes.DEFAULT);
+    static IModFile create(JarContents contents, ModFileInfoParser parser) throws InvalidModFileException {
+        return new ModFile(contents, parser, ModFileDiscoveryAttributes.DEFAULT);
     }
 
     /**
      * Builds a new mod file instance depending on the current runtime.
      *
-     * @param jar        The secure jar to load the mod file from.
+     * @param contents The secure jar to load the mod file from.
+     * @param parser   The parser which is responsible for parsing the metadata of the file itself.
+     * @return The mod file.
+     */
+    static IModFile create(JarContents contents, JarMetadata metadata, ModFileInfoParser parser) throws InvalidModFileException {
+        return new ModFile(contents, metadata, parser, ModFileDiscoveryAttributes.DEFAULT);
+    }
+
+    /**
+     * Builds a new mod file instance depending on the current runtime.
+     *
+     * @param contents   The secure jar to load the mod file from.
      * @param parser     The parser which is responsible for parsing the metadata of the file itself.
      * @param attributes Additional attributes of the modfile.
      * @return The mod file.
      */
-    static IModFile create(SecureJar jar, ModFileInfoParser parser, ModFileDiscoveryAttributes attributes) throws InvalidModFileException {
-        return new ModFile(jar, parser, attributes);
+    static IModFile create(JarContents contents, ModFileInfoParser parser, ModFileDiscoveryAttributes attributes) throws InvalidModFileException {
+        return new ModFile(contents, parser, attributes);
     }
 
     /**
      * Builds a new mod file instance depending on the current runtime.
      *
-     * @param jar        The secure jar to load the mod file from.
+     * @param contents   The secure jar to load the mod file from.
+     * @param metadata   Information about the jar contents.
      * @param parser     The parser which is responsible for parsing the metadata of the file itself.
      * @param type       the type of the mod
      * @param attributes Additional attributes of the modfile.
      * @return The mod file.
      */
-    static IModFile create(SecureJar jar, ModFileInfoParser parser, IModFile.Type type, ModFileDiscoveryAttributes attributes) throws InvalidModFileException {
-        return new ModFile(jar, parser, type, attributes);
+    static IModFile create(JarContents contents, JarMetadata metadata, ModFileInfoParser parser, IModFile.Type type, ModFileDiscoveryAttributes attributes) throws InvalidModFileException {
+        return new ModFile(contents, metadata, parser, type, attributes);
+    }
+
+    /**
+     * Builds a new mod file instance depending on the current runtime.
+     *
+     * @param contents   The secure jar to load the mod file from.
+     * @param parser     The parser which is responsible for parsing the metadata of the file itself.
+     * @param type       the type of the mod
+     * @param attributes Additional attributes of the modfile.
+     * @return The mod file.
+     */
+    static IModFile create(JarContents contents, ModFileInfoParser parser, IModFile.Type type, ModFileDiscoveryAttributes attributes) throws InvalidModFileException {
+        return new ModFile(contents, null, parser, type, attributes);
     }
 
     /**
@@ -108,8 +133,6 @@ public interface IModFile {
      * <p>
      * If this method returns any entries then {@link #getType()} has to return {@link Type#MOD},
      * else this mod file will not be loaded in the proper module layer in 1.17 and above.
-     * <p>
-     * As such returning entries from this method is mutually exclusive with {@link #getLoaders()}.
      *
      * @return The mods in this mod file.
      */
