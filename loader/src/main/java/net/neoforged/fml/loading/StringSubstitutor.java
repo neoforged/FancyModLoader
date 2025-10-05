@@ -11,7 +11,7 @@ import org.apache.commons.lang3.text.StrSubstitutor;
 
 @SuppressWarnings("deprecation")
 public class StringSubstitutor {
-    public static String replace(final String in, final ModFile file) {
+    public static String replace(String in, ModFile file) {
         return new StrSubstitutor(getStringLookup(file)).replace(in);
     }
 
@@ -19,9 +19,9 @@ public class StringSubstitutor {
         return new StrLookup<>() {
             @Override
             public String lookup(String key) {
-                final String[] parts = key.split("\\.");
+                String[] parts = key.split("\\.");
                 if (parts.length == 1) return key;
-                final String pfx = parts[0];
+                String pfx = parts[0];
                 if ("file".equals(pfx) && file != null) {
                     return String.valueOf(file.getSubstitutionMap().get().get(parts[1]));
                 }

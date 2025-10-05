@@ -16,7 +16,7 @@ public class ModFieldVisitor extends FieldVisitor {
     private final LinkedList<ModAnnotation> annotations;
     private final String fieldName;
 
-    public ModFieldVisitor(String name, final LinkedList<ModAnnotation> annotations) {
+    public ModFieldVisitor(String name, LinkedList<ModAnnotation> annotations) {
         super(Opcodes.ASM9);
         this.fieldName = name;
         this.annotations = annotations;

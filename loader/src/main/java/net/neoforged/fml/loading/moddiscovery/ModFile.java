@@ -58,7 +58,7 @@ public class ModFile implements IModFile {
 
     public static final Attributes.Name TYPE = new Attributes.Name("FMLModType");
 
-    public ModFile(SecureJar jar, final ModFileInfoParser parser, ModFileDiscoveryAttributes attributes) {
+    public ModFile(SecureJar jar, ModFileInfoParser parser, ModFileDiscoveryAttributes attributes) {
         this(jar, parser, parseType(jar), attributes);
     }
 
@@ -213,8 +213,8 @@ public class ModFile implements IModFile {
         return new DefaultArtifactVersion(this.jarVersion);
     }
 
-    private static Type parseType(final SecureJar jar) {
-        final Optional<String> value = Optional.ofNullable(jar.contents().getManifest().getMainAttributes().getValue(TYPE));
+    private static Type parseType(SecureJar jar) {
+        Optional<String> value = Optional.ofNullable(jar.contents().getManifest().getMainAttributes().getValue(TYPE));
         return value.map(Type::valueOf).orElse(Type.MOD);
     }
 

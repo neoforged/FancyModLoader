@@ -57,7 +57,7 @@ public class StronglyConnectedComponentDetector<T> {
             t++;
         }
 
-        final int n = nodes.size();
+        int n = nodes.size();
         dfn = new int[n];
         low = new int[n];
         stack = new int[n];
@@ -93,7 +93,7 @@ public class StronglyConnectedComponentDetector<T> {
         if (dfn[now] == low[now]) {
             Set<T> component = new HashSet<>();
             while (top >= 0) {
-                final int t = stack[top];
+                int t = stack[top];
                 component.add(elements[t]);
                 onStack.clear(t);
                 top--;

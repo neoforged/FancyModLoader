@@ -90,8 +90,8 @@ public class ModDiscoverer {
         //First processing run of the mod list. Any duplicates will cause resolution failure and dependency loading will be skipped.
         Map<IModFile.Type, List<ModFile>> modFilesMap = Collections.emptyMap();
         try {
-            final UniqueModListBuilder modsUniqueListBuilder = new UniqueModListBuilder(loadedFiles);
-            final UniqueModListBuilder.UniqueModListData uniqueModsData = modsUniqueListBuilder.buildUniqueList();
+            UniqueModListBuilder modsUniqueListBuilder = new UniqueModListBuilder(loadedFiles);
+            UniqueModListBuilder.UniqueModListData uniqueModsData = modsUniqueListBuilder.buildUniqueList();
             uniqueModsData.discardedFiles().forEach(ModFile::close);
 
             //Grab the temporary results.
@@ -122,8 +122,8 @@ public class ModDiscoverer {
 
             //Second processing run of the mod list. Any duplicates will cause resolution failure and only the mods list will be loaded.
             try {
-                final UniqueModListBuilder modsAndDependenciesUniqueListBuilder = new UniqueModListBuilder(loadedFiles);
-                final UniqueModListBuilder.UniqueModListData uniqueModsAndDependenciesData = modsAndDependenciesUniqueListBuilder.buildUniqueList();
+                UniqueModListBuilder modsAndDependenciesUniqueListBuilder = new UniqueModListBuilder(loadedFiles);
+                UniqueModListBuilder.UniqueModListData uniqueModsAndDependenciesData = modsAndDependenciesUniqueListBuilder.buildUniqueList();
                 uniqueModsAndDependenciesData.discardedFiles().forEach(ModFile::close);
 
                 //We now only need the mod files map, not the list.

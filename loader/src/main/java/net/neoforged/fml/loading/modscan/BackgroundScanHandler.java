@@ -45,7 +45,7 @@ public class BackgroundScanHandler {
         int poolSize = Math.max(1, maxThreads - 1);
         AtomicInteger threadCount = new AtomicInteger();
         modContentScanner = Executors.newFixedThreadPool(poolSize, r -> {
-            final Thread thread = Executors.defaultThreadFactory().newThread(r);
+            Thread thread = Executors.defaultThreadFactory().newThread(r);
             thread.setDaemon(true);
             thread.setName("background-scan-handler-" + threadCount.getAndIncrement());
             return thread;
@@ -56,7 +56,7 @@ public class BackgroundScanHandler {
         status = ScanStatus.NOT_STARTED;
     }
 
-    public void submitForScanning(final ModFile file) {
+    public void submitForScanning(ModFile file) {
         if (modContentScanner.isShutdown()) {
             status = ScanStatus.ERRORED;
             throw new IllegalStateException("Scanner has shutdown");
@@ -69,7 +69,7 @@ public class BackgroundScanHandler {
                 .whenComplete((ignored, t) -> this.addCompletedFile(file, t));
     }
 
-    private synchronized void addCompletedFile(final ModFile file, final Throwable throwable) {
+    private synchronized void addCompletedFile(ModFile file, Throwable throwable) {
         if (throwable != null) {
             status = ScanStatus.ERRORED;
             LOGGER.error(LogMarkers.SCAN, "An error occurred scanning file {}", file, throwable);
@@ -86,7 +86,7 @@ public class BackgroundScanHandler {
         return loadingModList;
     }
 
-    public void waitForScanToComplete(final Runnable ticker) {
+    public void waitForScanToComplete(Runnable ticker) {
         boolean timeoutActive = System.getProperty("fml.disableScanTimeout") == null;
         Instant deadline = Instant.now().plus(Duration.ofMinutes(10));
         modContentScanner.shutdown();

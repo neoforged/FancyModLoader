@@ -12,7 +12,7 @@ import net.neoforged.fml.event.IModBusEvent;
 public class ModConfigEvent extends Event implements IModBusEvent {
     private final ModConfig config;
 
-    ModConfigEvent(final ModConfig config) {
+    ModConfigEvent(ModConfig config) {
         this.config = config;
     }
 
@@ -25,7 +25,7 @@ public class ModConfigEvent extends Event implements IModBusEvent {
      * Any Config objects associated with this will be valid and can be queried directly.
      */
     public static class Loading extends ModConfigEvent {
-        public Loading(final ModConfig config) {
+        public Loading(ModConfig config) {
             super(config);
         }
     }
@@ -37,7 +37,7 @@ public class ModConfigEvent extends Event implements IModBusEvent {
      * any resultant changes.
      */
     public static class Reloading extends ModConfigEvent {
-        public Reloading(final ModConfig config) {
+        public Reloading(ModConfig config) {
             super(config);
         }
     }
@@ -47,7 +47,7 @@ public class ModConfigEvent extends Event implements IModBusEvent {
      * The config file will be saved after this event has fired.
      */
     public static class Unloading extends ModConfigEvent {
-        public Unloading(final ModConfig config) {
+        public Unloading(ModConfig config) {
             super(config);
         }
     }

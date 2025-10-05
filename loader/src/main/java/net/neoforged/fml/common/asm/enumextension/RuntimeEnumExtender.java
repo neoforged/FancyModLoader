@@ -84,9 +84,9 @@ public class RuntimeEnumExtender implements ClassProcessor {
     }
 
     @Override
-    public ComputeFlags processClass(final TransformationContext context) {
-        final var classNode = context.node();
-        final var classType = context.type();
+    public ComputeFlags processClass(TransformationContext context) {
+        var classNode = context.node();
+        var classType = context.type();
         if ((classNode.access & Opcodes.ACC_ENUM) == 0 || !classNode.interfaces.contains(MARKER_IFACE.getInternalName())) {
             throw new IllegalStateException("Tried to extend non-enum class or non-extensible enum: " + classType);
         }

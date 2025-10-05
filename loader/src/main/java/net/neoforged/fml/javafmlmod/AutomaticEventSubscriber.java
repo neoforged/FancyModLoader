@@ -38,15 +38,15 @@ public class AutomaticEventSubscriber {
     private static final Type AUTO_SUBSCRIBER = Type.getType(EventBusSubscriber.class);
     private static final Type MOD_TYPE = Type.getType(Mod.class);
 
-    public static void inject(final ModContainer mod, final ModFileScanData scanData, final Module layer) {
+    public static void inject(ModContainer mod, ModFileScanData scanData, Module layer) {
         if (scanData == null) return;
         LOGGER.debug(LOADING, "Attempting to inject @EventBusSubscriber classes into the eventbus for {}", mod.getModId());
         List<ModFileScanData.AnnotationData> ebsTargets = scanData.getAnnotations().stream().filter(annotationData -> AUTO_SUBSCRIBER.equals(annotationData.annotationType())).collect(Collectors.toList());
         Map<String, String> modids = scanData.getAnnotations().stream().filter(annotationData -> MOD_TYPE.equals(annotationData.annotationType())).collect(Collectors.toMap(a -> a.clazz().getClassName(), a -> (String) a.annotationData().get("value")));
 
         ebsTargets.forEach(ad -> {
-            final EnumSet<Dist> sides = getSides(ad.annotationData().get("value"));
-            final String modId = (String) ad.annotationData().getOrDefault("modid", modids.getOrDefault(ad.clazz().getClassName(), mod.getModId()));
+            EnumSet<Dist> sides = getSides(ad.annotationData().get("value"));
+            String modId = (String) ad.annotationData().getOrDefault("modid", modids.getOrDefault(ad.clazz().getClassName(), mod.getModId()));
             if (Objects.equals(mod.getModId(), modId) && sides.contains(FMLLoader.getCurrent().getDist())) {
                 LOGGER.debug(LOADING, "Scanning class {} for @SubscribeEvent-annotated methods", ad.clazz().getClassName());
 

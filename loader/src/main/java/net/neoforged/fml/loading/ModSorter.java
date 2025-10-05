@@ -51,7 +51,7 @@ class ModSorter {
     private Map<String, IModInfo> modIdNameLookup;
     private List<ModFile> systemMods;
 
-    private ModSorter(final List<ModFile> modFiles) {
+    private ModSorter(List<ModFile> modFiles) {
         this.uniqueModListBuilder = new UniqueModListBuilder(modFiles);
     }
 
@@ -71,8 +71,8 @@ class ModSorter {
         return sort(pluginContent, gameLibraryContent, gameContent, issues);
     }
 
-    public static LoadingModList sort(List<ModFile> plugins, List<ModFile> gameLibraries, List<ModFile> mods, final List<ModLoadingIssue> issues) {
-        final ModSorter ms = new ModSorter(mods);
+    public static LoadingModList sort(List<ModFile> plugins, List<ModFile> gameLibraries, List<ModFile> mods, List<ModLoadingIssue> issues) {
+        ModSorter ms = new ModSorter(mods);
         try {
             ms.buildUniqueList();
         } catch (ModLoadingException e) {
@@ -81,9 +81,9 @@ class ModSorter {
         }
 
         // try and validate dependencies
-        final DependencyResolutionResult resolutionResult = ms.verifyDependencyVersions();
+        DependencyResolutionResult resolutionResult = ms.verifyDependencyVersions();
 
-        final LoadingModList list;
+        LoadingModList list;
 
         // if we miss a dependency or detect an incompatibility, we abort now
         if (!resolutionResult.versionResolution.isEmpty() || !resolutionResult.incompatibilities.isEmpty()) {
@@ -134,7 +134,7 @@ class ModSorter {
     @SuppressWarnings("UnstableApiUsage")
     private void sort(List<ModLoadingIssue> issues) {
         // lambdas are identity based, so sorting them is impossible unless you hold reference to them
-        final MutableGraph<ModInfo> graph = GraphBuilder.directed().build();
+        MutableGraph<ModInfo> graph = GraphBuilder.directed().build();
         AtomicInteger counter = new AtomicInteger();
         Map<ModInfo, Integer> infos = modFiles.stream()
                 .flatMap(mf -> mf.getModInfos().stream())
@@ -167,7 +167,7 @@ class ModSorter {
             }
         });
 
-        final List<ModInfo> sorted;
+        List<ModInfo> sorted;
         try {
             sorted = TopologicalSort.topologicalSort(graph, Comparator.comparing(infos::get));
         } catch (CyclePresentException e) {
@@ -194,8 +194,8 @@ class ModSorter {
 
     @SuppressWarnings("UnstableApiUsage")
     private void addDependency(MutableGraph<ModInfo> topoGraph, IModInfo.ModVersion dep) {
-        final ModInfo self = (ModInfo) dep.getOwner();
-        final IModInfo targetModInfo = modIdNameLookup.get(dep.getModId());
+        ModInfo self = (ModInfo) dep.getOwner();
+        IModInfo targetModInfo = modIdNameLookup.get(dep.getModId());
         // soft dep that doesn't exist. Just return. No edge required.
         if (!(targetModInfo instanceof ModInfo target)) return;
         if (self == target)
@@ -207,7 +207,7 @@ class ModSorter {
     }
 
     private void buildUniqueList() {
-        final UniqueModListBuilder.UniqueModListData uniqueModListData = uniqueModListBuilder.buildUniqueList();
+        UniqueModListBuilder.UniqueModListData uniqueModListData = uniqueModListBuilder.buildUniqueList();
         uniqueModListData.discardedFiles().forEach(ModFile::close);
 
         this.modFiles = uniqueModListData.modFiles();
@@ -219,9 +219,9 @@ class ModSorter {
                 .collect(Collectors.toMap(IModInfo::getModId, mi -> mi));
     }
 
-    private void detectSystemMods(final Map<String, List<ModFile>> modFilesByFirstId) {
+    private void detectSystemMods(Map<String, List<ModFile>> modFilesByFirstId) {
         // Capture system mods (ex. MC, Forge) here, so we can keep them for later
-        final Set<String> systemMods = new HashSet<>();
+        Set<String> systemMods = new HashSet<>();
         // The minecraft and neoforge mods are always system mods
         systemMods.add("minecraft");
         systemMods.add("neoforge");
@@ -273,12 +273,12 @@ class ModSorter {
     }
 
     private DependencyResolutionResult verifyDependencyVersions() {
-        final var modVersions = modFiles.stream()
+        var modVersions = modFiles.stream()
                 .map(ModFile::getModInfos)
                 .<IModInfo>mapMulti(Iterable::forEach)
                 .collect(toMap(IModInfo::getModId, IModInfo::getVersion));
 
-        final var modVersionDependencies = modFiles.stream()
+        var modVersionDependencies = modFiles.stream()
                 .map(ModFile::getModInfos)
                 .<IModInfo>mapMulti(Iterable::forEach)
                 .collect(groupingBy(Function.identity(), flatMapping(e -> {
@@ -295,23 +295,23 @@ class ModSorter {
                     return e.getDependencies().stream();
                 }, toList())));
 
-        final var modRequirements = modVersionDependencies.values().stream().<IModInfo.ModVersion>mapMulti(Iterable::forEach)
+        var modRequirements = modVersionDependencies.values().stream().<IModInfo.ModVersion>mapMulti(Iterable::forEach)
                 .filter(mv -> mv.getSide().isCorrectSide())
                 .collect(toSet());
 
-        final long mandatoryRequired = modRequirements.stream().filter(ver -> ver.getType() == IModInfo.DependencyType.REQUIRED).count();
+        long mandatoryRequired = modRequirements.stream().filter(ver -> ver.getType() == IModInfo.DependencyType.REQUIRED).count();
         LOGGER.debug(LogMarkers.LOADING, "Found {} mod requirements ({} mandatory, {} optional)", modRequirements.size(), mandatoryRequired, modRequirements.size() - mandatoryRequired);
-        final var missingVersions = modRequirements.stream()
+        var missingVersions = modRequirements.stream()
                 .filter(mv -> (mv.getType() == IModInfo.DependencyType.REQUIRED || (modVersions.containsKey(mv.getModId()) && mv.getType() == IModInfo.DependencyType.OPTIONAL)) && this.modVersionNotContained(mv, modVersions))
                 .collect(toSet());
-        final long mandatoryMissing = missingVersions.stream().filter(mv -> mv.getType() == IModInfo.DependencyType.REQUIRED).count();
+        long mandatoryMissing = missingVersions.stream().filter(mv -> mv.getType() == IModInfo.DependencyType.REQUIRED).count();
         LOGGER.debug(LogMarkers.LOADING, "Found {} mod requirements missing ({} mandatory, {} optional)", missingVersions.size(), mandatoryMissing, missingVersions.size() - mandatoryMissing);
 
-        final var incompatibleVersions = modRequirements.stream().filter(ver -> ver.getType() == IModInfo.DependencyType.INCOMPATIBLE)
+        var incompatibleVersions = modRequirements.stream().filter(ver -> ver.getType() == IModInfo.DependencyType.INCOMPATIBLE)
                 .filter(ver -> modVersions.containsKey(ver.getModId()) && !this.modVersionNotContained(ver, modVersions))
                 .collect(toSet());
 
-        final var discouragedVersions = modRequirements.stream().filter(ver -> ver.getType() == IModInfo.DependencyType.DISCOURAGED)
+        var discouragedVersions = modRequirements.stream().filter(ver -> ver.getType() == IModInfo.DependencyType.DISCOURAGED)
                 .filter(ver -> modVersions.containsKey(ver.getModId()) && !this.modVersionNotContained(ver, modVersions))
                 .collect(toSet());
 

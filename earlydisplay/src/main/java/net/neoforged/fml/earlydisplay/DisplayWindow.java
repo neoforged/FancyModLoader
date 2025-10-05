@@ -140,7 +140,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     @Override
     public void initialize(ProgramArgs arguments) {
-        final OptionParser parser = new OptionParser();
+        OptionParser parser = new OptionParser();
         var widthopt = parser.accepts("width")
                 .withRequiredArg().ofType(Integer.class)
                 .defaultsTo(FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_WIDTH));
@@ -530,7 +530,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     @Override
-    public void crash(final String message) {
+    public void crash(String message) {
         crashElegantly(message);
     }
 

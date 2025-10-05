@@ -30,11 +30,11 @@ public class LanguageProviderLoader {
     private final List<IModLanguageLoader> languageProviders;
     private final Map<String, ModLanguageWrapper> languageProviderMap = new HashMap<>();
 
-    public void forEach(final Consumer<IModLanguageLoader> consumer) {
+    public void forEach(Consumer<IModLanguageLoader> consumer) {
         languageProviders.forEach(consumer);
     }
 
-    public <T> Stream<T> applyForEach(final Function<IModLanguageLoader, T> function) {
+    public <T> Stream<T> applyForEach(Function<IModLanguageLoader, T> function) {
         return languageProviders.stream().map(function);
     }
 

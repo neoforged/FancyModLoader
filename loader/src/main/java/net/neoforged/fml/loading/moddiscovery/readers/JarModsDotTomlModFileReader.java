@@ -70,7 +70,7 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
         }
     }
 
-    public static IModFileInfo manifestParser(final IModFile mod) {
+    public static IModFileInfo manifestParser(IModFile mod) {
         Function<String, Optional<String>> cfg = name -> Optional.ofNullable(mod.getContents().getManifest().getMainAttributes().getValue(name));
         var license = cfg.apply("LICENSE").orElse("");
         var dummy = new IConfigurable() {
@@ -96,12 +96,12 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
     private record DefaultModFileInfo(IModFile mod, String license,
             IConfigurable configurable) implements IModFileInfo, IConfigurable {
         @Override
-        public <T> Optional<T> getConfigElement(final String... strings) {
+        public <T> Optional<T> getConfigElement(String... strings) {
             return Optional.empty();
         }
 
         @Override
-        public List<? extends IConfigurable> getConfigList(final String... strings) {
+        public List<? extends IConfigurable> getConfigList(String... strings) {
             return null;
         }
 

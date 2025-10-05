@@ -51,9 +51,9 @@ public class ClassTransformer {
         this.auditTrail = auditTrail;
     }
 
-    public byte[] transform(byte[] inputClass, String className, final ProcessorName upToTransformer, ClassHierarchyRecomputationContext locator) {
-        final String internalName = className.replace('.', '/');
-        final Type classDesc = Type.getObjectType(internalName);
+    public byte[] transform(byte[] inputClass, String className, ProcessorName upToTransformer, ClassHierarchyRecomputationContext locator) {
+        String internalName = className.replace('.', '/');
+        Type classDesc = Type.getObjectType(internalName);
 
         ClassTransformStatistics.incrementLoadedClasses();
 
@@ -68,7 +68,7 @@ public class ClassTransformer {
         ClassNode clazz = new ClassNode(Opcodes.ASM9);
         boolean isEmpty = inputClass.length == 0;
         if (inputClass.length > 0) {
-            final ClassReader classReader = new ClassReader(inputClass);
+            ClassReader classReader = new ClassReader(inputClass);
             classReader.accept(clazz, ClassReader.EXPAND_FRAMES);
             digest = () -> getSha256().digest(inputClass);
         } else {
@@ -122,7 +122,7 @@ public class ClassTransformer {
             return inputClass; // No changes were made, return the original class
         }
 
-        final ClassWriter cw = createClassWriter(flags, clazz, locator);
+        ClassWriter cw = createClassWriter(flags, clazz, locator);
         clazz.accept(cw);
         // if upToTransformer is null, we are doing this for classloading purposes
         if (LOGGER.isEnabled(Level.TRACE) && upToTransformer == null && LOGGER.isEnabled(Level.TRACE, CLASSDUMP)) {
@@ -133,7 +133,7 @@ public class ClassTransformer {
 
     private static volatile Path tempDir;
 
-    private void dumpClass(final byte[] clazz, String className) {
+    private void dumpClass(byte[] clazz, String className) {
         if (tempDir == null) {
             synchronized (ClassTransformer.class) {
                 if (tempDir == null) {
@@ -147,7 +147,7 @@ public class ClassTransformer {
             }
         }
         try {
-            final Path tempFile = tempDir.resolve(className + ".class");
+            Path tempFile = tempDir.resolve(className + ".class");
             Files.write(tempFile, clazz);
             LOGGER.info("Wrote {} byte class file {} to {}", clazz.length, className, tempFile);
         } catch (IOException e) {
@@ -163,8 +163,8 @@ public class ClassTransformer {
         }
     }
 
-    private static ClassWriter createClassWriter(ClassProcessor.ComputeFlags flags, final ClassNode clazzAccessor, ClassHierarchyRecomputationContext locator) {
-        final int writerFlag = switch (flags) {
+    private static ClassWriter createClassWriter(ClassProcessor.ComputeFlags flags, ClassNode clazzAccessor, ClassHierarchyRecomputationContext locator) {
+        int writerFlag = switch (flags) {
             case COMPUTE_MAXS -> ClassWriter.COMPUTE_MAXS;
             case COMPUTE_FRAMES -> ClassWriter.COMPUTE_FRAMES;
             default -> 0;

@@ -25,24 +25,24 @@ public class ExtraDataTextRenderer implements TextRenderer {
     private final ClassProcessorAuditSource auditLog;
     private final ThreadLocal<TransformerContext> currentClass = new ThreadLocal<>();
 
-    ExtraDataTextRenderer(final TextRenderer wrapped) {
+    ExtraDataTextRenderer(TextRenderer wrapped) {
         this.wrapped = wrapped;
         var loader = FMLLoader.getCurrentOrNull();
         this.auditLog = loader != null ? loader.getClassTransformerAuditLog() : null;
     }
 
     @Override
-    public void render(final String input, final StringBuilder output, final String styleName) {
+    public void render(String input, StringBuilder output, String styleName) {
         if ("StackTraceElement.ClassName".equals(styleName)) {
             currentClass.set(new TransformerContext());
             currentClass.get().setClassName(input);
         } else if ("StackTraceElement.MethodName".equals(styleName)) {
-            final TransformerContext transformerContext = currentClass.get();
+            TransformerContext transformerContext = currentClass.get();
             if (transformerContext != null) {
                 transformerContext.setMethodName(input);
             }
         } else if ("Suffix".equals(styleName)) {
-            final TransformerContext classContext = currentClass.get();
+            TransformerContext classContext = currentClass.get();
             currentClass.remove();
             if (classContext != null) {
                 var auditLine = auditLog != null ? auditLog.getAuditString(classContext.getClassName()) : null;
@@ -54,7 +54,7 @@ public class ExtraDataTextRenderer implements TextRenderer {
     }
 
     @Override
-    public void render(final StringBuilder input, final StringBuilder output) {
+    public void render(StringBuilder input, StringBuilder output) {
         wrapped.render(input, output);
     }
 
@@ -62,7 +62,7 @@ public class ExtraDataTextRenderer implements TextRenderer {
         private String className;
         private String methodName;
 
-        public void setClassName(final String className) {
+        public void setClassName(String className) {
             this.className = className;
         }
 
@@ -70,7 +70,7 @@ public class ExtraDataTextRenderer implements TextRenderer {
             return className;
         }
 
-        public void setMethodName(final String methodName) {
+        public void setMethodName(String methodName) {
             this.methodName = methodName;
         }
 

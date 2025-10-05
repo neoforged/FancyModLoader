@@ -26,7 +26,7 @@ public interface SecureJar {
      * Creates a jar from a list of paths.
      * See {@link JarContents} for more configuration options.
      */
-    static SecureJar from(final Path... paths) throws IOException {
+    static SecureJar from(Path... paths) throws IOException {
         return from(JarContents.ofPaths(List.of(paths)));
     }
 
@@ -93,7 +93,7 @@ public interface SecureJar {
         /**
          * @see ModuleReader#open(String)
          */
-        Optional<InputStream> open(final String name);
+        Optional<InputStream> open(String name);
 
         /**
          * {@return the manifest of the jar}

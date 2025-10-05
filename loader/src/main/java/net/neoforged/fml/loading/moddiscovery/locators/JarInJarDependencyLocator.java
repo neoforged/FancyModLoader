@@ -170,7 +170,7 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
     }
 
     private ModLoadingException exception(Collection<JarSelector.ResolutionFailureInformation<IModFile>> failedDependencies) {
-        final List<ModLoadingIssue> errors = failedDependencies.stream()
+        List<ModLoadingIssue> errors = failedDependencies.stream()
                 .filter(entry -> !entry.sources().isEmpty()) //Should never be the case, but just to be sure
                 .map(this::buildExceptionData)
                 .toList();
@@ -178,7 +178,7 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
         return new ModLoadingException(errors);
     }
 
-    private ModLoadingIssue buildExceptionData(final JarSelector.ResolutionFailureInformation<IModFile> entry) {
+    private ModLoadingIssue buildExceptionData(JarSelector.ResolutionFailureInformation<IModFile> entry) {
         var artifact = entry.identifier().group() + ":" + entry.identifier().artifact();
         var requestedBy = entry.sources()
                 .stream()
@@ -188,11 +188,11 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
         return ModLoadingIssue.error(getErrorTranslationKey(entry), artifact, requestedBy);
     }
 
-    private String getErrorTranslationKey(final JarSelector.ResolutionFailureInformation<IModFile> entry) {
+    private String getErrorTranslationKey(JarSelector.ResolutionFailureInformation<IModFile> entry) {
         return entry.failureReason() == JarSelector.FailureReason.VERSION_RESOLUTION_FAILED ? "fml.modloadingissue.dependencyloading.conflictingdependencies" : "fml.modloadingissue.dependencyloading.mismatchedcontaineddependencies";
     }
 
-    private Stream<ModWithVersionRange> getModWithVersionRangeStream(final JarSelector.SourceWithRequestedVersionRange<IModFile> file) {
+    private Stream<ModWithVersionRange> getModWithVersionRangeStream(JarSelector.SourceWithRequestedVersionRange<IModFile> file) {
         return file.sources()
                 .stream()
                 .map(IModFile::getModFileInfo)
@@ -200,11 +200,11 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
                 .map(modInfo -> new ModWithVersionRange(modInfo, file.requestedVersionRange(), file.includedVersion()));
     }
 
-    private String formatError(final ModWithVersionRange modWithVersionRange) {
+    private String formatError(ModWithVersionRange modWithVersionRange) {
         return "\u00a7e" + modWithVersionRange.modInfo().getModId() + "\u00a7r - \u00a74" + modWithVersionRange.versionRange().toString() + "\u00a74 - \u00a72" + modWithVersionRange.artifactVersion().toString() + "\u00a72";
     }
 
-    private String identifyMod(final IModFile modFile) {
+    private String identifyMod(IModFile modFile) {
         if (modFile.getModFileInfo() == null) {
             return modFile.getFileName();
         }
@@ -219,13 +219,13 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
 
     private record ModWithVersionRange(IModInfo modInfo, VersionRange versionRange, ArtifactVersion artifactVersion) {}
 
-    private Optional<InputStream> loadResourceFromModFile(final IModFile modFile, final String relativePath) {
+    private Optional<InputStream> loadResourceFromModFile(IModFile modFile, String relativePath) {
         try {
             return Optional.ofNullable(modFile.getContents().openFile(relativePath));
-        } catch (final NoSuchFileException e) {
+        } catch (NoSuchFileException e) {
             LOGGER.trace("Failed to load resource {} from {}, it does not contain dependency information.", relativePath, modFile.getFileName());
             return Optional.empty();
-        } catch (final Exception e) {
+        } catch (Exception e) {
             LOGGER.error("Failed to load resource {} from mod {}, cause {}", relativePath, modFile.getFileName(), e);
             return Optional.empty();
         }

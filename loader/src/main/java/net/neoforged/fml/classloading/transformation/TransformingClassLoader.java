@@ -34,7 +34,7 @@ public class TransformingClassLoader extends ModuleClassLoader {
     private final ClassTransformer classTransformer;
 
     @VisibleForTesting
-    public TransformingClassLoader(ClassProcessorSet classProcessorSet, ClassProcessorAuditLog auditTrail, final Configuration configuration, List<ModuleLayer> parentLayers, ClassLoader parentClassLoader) {
+    public TransformingClassLoader(ClassProcessorSet classProcessorSet, ClassProcessorAuditLog auditTrail, Configuration configuration, List<ModuleLayer> parentLayers, ClassLoader parentClassLoader) {
         super("TRANSFORMER", configuration, parentLayers, parentClassLoader);
         this.classTransformer = new ClassTransformer(classProcessorSet, auditTrail);
         // The state of this class has to be set up fully before the processors are linked
@@ -42,7 +42,7 @@ public class TransformingClassLoader extends ModuleClassLoader {
     }
 
     @Override
-    protected byte[] maybeTransformClassBytes(final byte[] bytes, final String name, final @Nullable String upToTransformer) {
+    protected byte[] maybeTransformClassBytes(byte[] bytes, String name, @Nullable String upToTransformer) {
         var upToTransformerName = upToTransformer == null ? null : ProcessorName.parse(upToTransformer);
         return classTransformer.transform(bytes, name, upToTransformerName, new ClassHierarchyRecomputationContext() {
             @Override
@@ -66,7 +66,7 @@ public class TransformingClassLoader extends ModuleClassLoader {
         return findLoadedClass(name);
     }
 
-    byte[] buildTransformedClassNodeFor(final String className, final ProcessorName upToTransformer) throws ClassNotFoundException {
+    byte[] buildTransformedClassNodeFor(String className, ProcessorName upToTransformer) throws ClassNotFoundException {
         return super.getMaybeTransformedClassBytes(className, upToTransformer.toString());
     }
 }

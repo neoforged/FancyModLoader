@@ -39,7 +39,7 @@ public class ModFileInfo implements IModFileInfo, IConfigurable {
     private final List<String> usesServices;
 
     @ApiStatus.Internal
-    public ModFileInfo(final ModFile modFile, final IConfigurable config, Consumer<IModFileInfo> configFileConsumer) {
+    public ModFileInfo(ModFile modFile, IConfigurable config, Consumer<IModFileInfo> configFileConsumer) {
         this.modFile = modFile;
         this.config = config;
         configFileConsumer.accept(this);
@@ -70,7 +70,7 @@ public class ModFileInfo implements IModFileInfo, IConfigurable {
         this.issueURL = config.<String>getConfigElement("issueTrackerURL")
                 .map(StringUtils::toURL)
                 .orElse(null);
-        final List<? extends IConfigurable> modConfigs = config.getConfigList("mods");
+        List<? extends IConfigurable> modConfigs = config.getConfigList("mods");
         if (modConfigs.isEmpty()) {
             throw new InvalidModFileException("Missing mods list", this);
         }
@@ -85,7 +85,7 @@ public class ModFileInfo implements IModFileInfo, IConfigurable {
         }
     }
 
-    public ModFileInfo(final ModFile file, final IConfigurable config, Consumer<IModFileInfo> configFileConsumer, final List<LanguageSpec> languageSpecs) {
+    public ModFileInfo(ModFile file, IConfigurable config, Consumer<IModFileInfo> configFileConsumer, List<LanguageSpec> languageSpecs) {
         this(file, config, configFileConsumer);
         this.languageSpecs.addAll(languageSpecs);
     }
@@ -120,12 +120,12 @@ public class ModFileInfo implements IModFileInfo, IConfigurable {
     }
 
     @Override
-    public <T> Optional<T> getConfigElement(final String... key) {
+    public <T> Optional<T> getConfigElement(String... key) {
         return this.config.getConfigElement(key);
     }
 
     @Override
-    public List<? extends IConfigurable> getConfigList(final String... key) {
+    public List<? extends IConfigurable> getConfigList(String... key) {
         return this.config.getConfigList(key);
     }
 
