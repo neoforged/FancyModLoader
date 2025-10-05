@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link JarMetadata} implementation for a modular jar.
  * Reads the module descriptor from the jar.
  */
-public class ModuleJarMetadata extends LazyJarMetadata {
+public class ModuleJarMetadata implements JarMetadata {
     private final byte[] originalDescriptorBytes;
     private final ModuleDescriptor originalDescriptor;
     private final JarContents jar;
@@ -33,7 +33,7 @@ public class ModuleJarMetadata extends LazyJarMetadata {
     }
 
     @Override
-    protected ModuleDescriptor computeDescriptor() {
+    public ModuleDescriptor descriptor() {
         var fullDescriptor = ModuleDescriptor.read(ByteBuffer.wrap(originalDescriptorBytes), () -> ModuleDescriptorFactory.scanModulePackages(jar));
 
         // We do inherit the name and version, as well as the package list.

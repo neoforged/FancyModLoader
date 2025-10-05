@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * {@link JarMetadata} implementation for a non-modular jar, turning it into an automatic module.
  */
-public class SimpleJarMetadata extends LazyJarMetadata implements JarMetadata {
+public class SimpleJarMetadata implements JarMetadata {
     private final String name;
     private final String version;
     private final JarContents jar;
@@ -34,7 +34,7 @@ public class SimpleJarMetadata extends LazyJarMetadata implements JarMetadata {
     }
 
     @Override
-    public ModuleDescriptor computeDescriptor() {
+    public ModuleDescriptor descriptor() {
         var bld = ModuleDescriptor.newAutomaticModule(name());
         if (version() != null) {
             bld.version(version());

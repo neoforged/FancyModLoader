@@ -8,12 +8,11 @@ package net.neoforged.fml.loading.moddiscovery;
 import java.lang.module.ModuleDescriptor;
 import java.util.Objects;
 import net.neoforged.fml.classloading.JarMetadata;
-import net.neoforged.fml.classloading.LazyJarMetadata;
 import net.neoforged.fml.classloading.ModuleDescriptorFactory;
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.neoforgespi.locating.IModFile;
 
-public final class ModJarMetadata extends LazyJarMetadata implements JarMetadata {
+public final class ModJarMetadata implements JarMetadata {
     private final JarContents jar;
     private IModFile modFile;
 
@@ -36,7 +35,7 @@ public final class ModJarMetadata extends LazyJarMetadata implements JarMetadata
     }
 
     @Override
-    public ModuleDescriptor computeDescriptor() {
+    public ModuleDescriptor descriptor() {
         var bld = ModuleDescriptor.newAutomaticModule(name())
                 .version(version());
 
