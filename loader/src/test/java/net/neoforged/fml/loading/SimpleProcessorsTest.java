@@ -71,7 +71,7 @@ public class SimpleProcessorsTest extends LauncherTest {
 
         var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                "ERROR: An error occurred while loading core-mod testmod.simpleprocessors.TestSimpleProcessors from mods/testmod.jar > simpleprocessors-1.0.jar");
+                "ERROR: An error occurred while loading class processor testmod.simpleprocessors.TestSimpleProcessors from mods/testmod.jar > simpleprocessors-1.0.jar");
     }
 
     @Test
@@ -92,7 +92,7 @@ public class SimpleProcessorsTest extends LauncherTest {
 
         var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                "ERROR: An error occurred while loading core-mod testmod.simpleprocessors.TestSimpleProcessors from mods/simpleprocessors.jar");
+                "ERROR: An error occurred while loading class processor testmod.simpleprocessors.TestSimpleProcessors from mods/simpleprocessors.jar");
     }
 
     @Test
@@ -163,6 +163,6 @@ public class SimpleProcessorsTest extends LauncherTest {
         var issues = getTranslatedIssues(e.getIssues());
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst()).matches(
-                "ERROR: Mod file .* is trying to provide a ClassProcessor service. Mods and game libraries cannot provide such services, only libraries can.");
+                "ERROR: Mod file .* is trying to provide a class processor. Mods and game libraries cannot provide such services, only libraries can.");
     }
 }

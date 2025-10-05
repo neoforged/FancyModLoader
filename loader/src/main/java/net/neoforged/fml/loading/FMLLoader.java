@@ -143,6 +143,15 @@ public final class FMLLoader implements AutoCloseable {
             List<ModFile> gameContent,
             List<ModFile> gameLibraryContent,
             List<ModLoadingIssue> discoveryIssues) {
+        public List<ModFile> allContent() {
+            var content = new ArrayList<ModFile>(
+                    pluginContent.size() + gameContent.size() + gameLibraryContent.size());
+            content.addAll(pluginContent);
+            content.addAll(gameContent);
+            content.addAll(gameLibraryContent);
+            return content;
+        }
+
         public List<ModFile> allGameContent() {
             var content = new ArrayList<ModFile>(
                     gameContent.size() + gameLibraryContent.size());
@@ -305,16 +314,18 @@ public final class FMLLoader implements AutoCloseable {
             } else {
                 discoveryResult = runOffThread(loader::runDiscovery);
             }
-            ClassLoadingGuardian classLoadingGuardian = null;
-            if (instrumentation != null) {
-                classLoadingGuardian = new ClassLoadingGuardian(instrumentation, discoveryResult.gameContent);
-                loader.ownedResources.add(classLoadingGuardian);
-            }
-
             for (var issue : discoveryResult.discoveryIssues()) {
                 LOGGER.atLevel(issue.severity() == ModLoadingIssue.Severity.ERROR ? Level.ERROR : Level.WARN)
                         .setCause(issue.cause())
                         .log("{}", FMLTranslations.translateIssueEnglish(issue));
+            }
+
+            buildModuleDescriptors(discoveryResult.allContent());
+
+            ClassLoadingGuardian classLoadingGuardian = null;
+            if (instrumentation != null) {
+                classLoadingGuardian = new ClassLoadingGuardian(instrumentation, discoveryResult.allGameContent());
+                loader.ownedResources.add(classLoadingGuardian);
             }
 
             var mixinFacade = new MixinFacade();
@@ -364,6 +375,14 @@ public final class FMLLoader implements AutoCloseable {
             }
             throw e;
         }
+    }
+
+    // Build all module descriptors in parallel, since this can involve scanning for packages/services
+    private static void buildModuleDescriptors(List<ModFile> allContent) {
+        var start = System.nanoTime();
+        allContent.stream().parallel().forEach(mf -> mf.getSecureJar().moduleDataProvider().descriptor());
+        var elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        LOGGER.debug("Built module descriptors for {} mod files in {}ms", allContent.size(), elapsed);
     }
 
     private static ClassProcessorSet createClassProcessorSet(StartupArgs startupArgs,
