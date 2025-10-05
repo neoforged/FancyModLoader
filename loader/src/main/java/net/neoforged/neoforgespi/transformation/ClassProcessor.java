@@ -112,7 +112,7 @@ public interface ClassProcessor {
         NO_REWRITE,
         /**
          * The plugin did change the class and requires a rewrite, but does not require any additional computation
-         * as frames and maxs in the class did not change of have been corrected by the plugin.
+         * as frames and maxs in the class did not change or have been corrected by the plugin.
          */
         SIMPLE_REWRITE,
         /**

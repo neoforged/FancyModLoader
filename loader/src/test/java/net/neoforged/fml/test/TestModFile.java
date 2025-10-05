@@ -17,7 +17,6 @@ import net.neoforged.fml.classloading.JarMetadata;
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
-import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.NightConfigWrapper;
 import net.neoforged.fml.testlib.RuntimeCompiler;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;

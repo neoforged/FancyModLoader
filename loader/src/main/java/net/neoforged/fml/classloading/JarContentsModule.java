@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fml.classloading;
 
 import java.lang.module.ModuleDescriptor;
@@ -10,7 +15,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 public record JarContentsModule(JarContents contents, ModuleDescriptor moduleDescriptor) {
     @VisibleForTesting
     public JarContentsModule(JarContents contents) {
-        this(contents, JarMetadata.from(contents).descriptor());
+        this(contents, JarMetadata.from(contents).descriptor().get());
     }
 
     public String moduleName() {

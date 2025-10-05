@@ -23,7 +23,6 @@ import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.LibraryFinder;
 import net.neoforged.fml.loading.MavenCoordinate;
-import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.fml.util.PathPrettyPrinting;

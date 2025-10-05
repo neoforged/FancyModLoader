@@ -18,7 +18,6 @@ import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileParser;
-import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.neoforgespi.language.IConfigurable;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;

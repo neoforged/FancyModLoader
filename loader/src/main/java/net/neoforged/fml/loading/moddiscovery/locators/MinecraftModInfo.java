@@ -20,9 +20,7 @@ final class MinecraftModInfo {
         this.minecraftVersion = minecraftVersion;
     }
 
-    public IModFileInfo buildMinecraftModInfo(IModFile iModFile) {
-        ModFile modFile = (ModFile) iModFile;
-
+    public IModFileInfo buildMinecraftModInfo() {
         // We haven't changed this in years, and I can't be asked right now to special case this one file in the path.
         var conf = Config.inMemory();
         conf.set("modLoader", "minecraft");

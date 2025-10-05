@@ -27,19 +27,19 @@ final class JarContentsModuleReader implements ModuleReader {
     }
 
     @Override
-    public Optional<URI> find(String name) throws IOException {
+    public Optional<URI> find(String name) {
         return contents.findFile(name);
     }
 
     @Override
-    public Stream<String> list() throws IOException {
+    public Stream<String> list() {
         var content = new LinkedHashSet<String>();
         contents.visitContent((relativePath, resource) -> content.add(relativePath));
         return content.stream();
     }
 
     @Override
-    public void close() throws IOException {}
+    public void close() {}
 
     @Override
     public String toString() {
