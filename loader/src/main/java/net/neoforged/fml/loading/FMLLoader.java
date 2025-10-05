@@ -42,6 +42,7 @@ import net.neoforged.fml.FMLVersion;
 import net.neoforged.fml.IBindingsProvider;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoader;
+import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.classloading.JarModuleFinder;
 import net.neoforged.fml.classloading.ResourceMaskingClassLoader;
@@ -141,7 +142,15 @@ public final class FMLLoader implements AutoCloseable {
             List<ModFile> pluginContent,
             List<ModFile> gameContent,
             List<ModFile> gameLibraryContent,
-            List<ModLoadingIssue> discoveryIssues) {}
+            List<ModLoadingIssue> discoveryIssues) {
+        public List<ModFile> allGameContent() {
+            var content = new ArrayList<ModFile>(
+                    gameContent.size() + gameLibraryContent.size());
+            content.addAll(gameContent);
+            content.addAll(gameLibraryContent);
+            return content;
+        }
+    }
 
     private FMLLoader(ClassLoader currentClassLoader, String[] programArgs, Dist dist, boolean production, Path gameDir) {
         this.currentClassLoader = currentClassLoader;
@@ -323,10 +332,7 @@ public final class FMLLoader implements AutoCloseable {
             // BUILD GAME LAYER
             // NOTE: This is where Mixin contributes its synthetic SecureJar to ensure it's generated classes are handled by the TCL
             var gameContent = new ArrayList<SecureJar>();
-            for (var modFile : discoveryResult.gameLibraryContent) {
-                gameContent.add(modFile.getSecureJar());
-            }
-            for (var modFile : discoveryResult.gameContent) {
+            for (var modFile : discoveryResult.allGameContent()) {
                 gameContent.add(modFile.getSecureJar());
             }
 
@@ -364,6 +370,21 @@ public final class FMLLoader implements AutoCloseable {
             LaunchContextAdapter launchContext,
             DiscoveryResult discoveryResult,
             MixinFacade mixinFacade) {
+        // Validate that the modder didn't try to provide transformation services from game content
+        var issues = new ArrayList<ModLoadingIssue>();
+        for (var modFile : discoveryResult.allGameContent()) {
+            var descriptor = modFile.getSecureJar().moduleDataProvider().descriptor();
+            for (var provides : descriptor.provides()) {
+                if (provides.service().equals(ClassProcessorProvider.class.getName())
+                        || provides.service().equals(ClassProcessor.class.getName())) {
+                    issues.add(ModLoadingIssue.error("fml.modloadingissue.classprocessor_in_game_content").withAffectedModFile(modFile));
+                }
+            }
+        }
+        if (!issues.isEmpty()) {
+            throw new ModLoadingException(issues);
+        }
+
         // Add our own launch plugins explicitly.
         var builtInProcessors = new ArrayList<ClassProcessor>();
         builtInProcessors.add(createAccessTransformerService(discoveryResult));
