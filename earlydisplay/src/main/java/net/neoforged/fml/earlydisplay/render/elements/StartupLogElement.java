@@ -31,8 +31,8 @@ public class StartupLogElement extends RenderElement {
         List<StartupNotificationManager.AgeMessage> messages = StartupNotificationManager.getMessages();
         List<SimpleFont.DisplayText> texts = new ArrayList<>();
         for (int i = messages.size() - 1; i >= 0; i--) {
-            final StartupNotificationManager.AgeMessage pair = messages.get(i);
-            final float fade = clamp((4000.0f - (float) pair.age() - (i - 4) * 1000.0f) / 5000.0f, 0.0f, 1.0f);
+            StartupNotificationManager.AgeMessage pair = messages.get(i);
+            float fade = clamp((4000.0f - (float) pair.age() - (i - 4) * 1000.0f) / 5000.0f, 0.0f, 1.0f);
             if (fade < 0.01f) {
                 continue;
             }

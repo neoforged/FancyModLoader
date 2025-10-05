@@ -71,7 +71,7 @@ public interface IModInfo {
 
         private final Dist[] dist;
 
-        DependencySide(final Dist... dist) {
+        DependencySide(Dist... dist) {
             this.dist = dist;
         }
 

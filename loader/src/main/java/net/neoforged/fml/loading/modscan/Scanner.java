@@ -17,7 +17,7 @@ public class Scanner {
     private static final Logger LOGGER = LogUtils.getLogger();
     private final ModFile fileToScan;
 
-    public Scanner(final ModFile fileToScan) {
+    public Scanner(ModFile fileToScan) {
         this.fileToScan = fileToScan;
     }
 

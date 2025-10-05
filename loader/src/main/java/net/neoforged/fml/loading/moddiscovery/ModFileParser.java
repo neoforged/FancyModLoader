@@ -28,11 +28,11 @@ import org.slf4j.Logger;
 public class ModFileParser {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public static IModFileInfo readModList(final ModFile modFile, final ModFileInfoParser parser) {
+    public static IModFileInfo readModList(ModFile modFile, ModFileInfoParser parser) {
         return parser.build(modFile);
     }
 
-    public static IModFileInfo modsTomlParser(final IModFile imodFile) {
+    public static IModFileInfo modsTomlParser(IModFile imodFile) {
         ModFile modFile = (ModFile) imodFile;
         LOGGER.debug(LogMarkers.LOADING, "Considering mod file candidate {}", modFile.getFilePath());
         var modsjson = modFile.getContents().get(JarModsDotTomlModFileReader.MODS_TOML);
@@ -47,7 +47,7 @@ public class ModFileParser {
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read " + modsjson + " from " + imodFile, e);
         }
-        final NightConfigWrapper configWrapper = new NightConfigWrapper(config);
+        NightConfigWrapper configWrapper = new NightConfigWrapper(config);
         return new ModFileInfo(modFile, configWrapper, configWrapper::setFile);
     }
 
@@ -85,8 +85,8 @@ public class ModFileParser {
 
     protected static Optional<List<String>> getAccessTransformers(IModFileInfo modFileInfo) {
         try {
-            final var config = modFileInfo.getConfig();
-            final var atEntries = config.getConfigList("accessTransformers");
+            var config = modFileInfo.getConfig();
+            var atEntries = config.getConfigList("accessTransformers");
             if (atEntries.isEmpty()) {
                 return Optional.empty();
             }

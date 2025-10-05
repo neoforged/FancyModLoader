@@ -45,10 +45,10 @@ public final class ClasspathResourceUtils {
         return findFileSystemRootsOfFileOnClasspath(classLoader, relativePath);
     }
 
-    public static Path findJarPathFor(final String resourceName, final String jarName, final URL resource) {
+    public static Path findJarPathFor(String resourceName, String jarName, URL resource) {
         try {
             Path path;
-            final URI uri = resource.toURI();
+            URI uri = resource.toURI();
             if (uri.getScheme().equals("jar") && uri.getRawSchemeSpecificPart().contains("!/")) {
                 int lastExcl = uri.getRawSchemeSpecificPart().lastIndexOf("!/");
                 path = Paths.get(new URI(uri.getRawSchemeSpecificPart().substring(0, lastExcl)));

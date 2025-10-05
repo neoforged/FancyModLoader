@@ -15,7 +15,7 @@ public final class MavenVersionAdapter {
 
     private MavenVersionAdapter() {}
 
-    public static VersionRange createFromVersionSpec(final String spec) {
+    public static VersionRange createFromVersionSpec(String spec) {
         try {
             return VersionRange.createFromVersionSpec(spec);
         } catch (InvalidVersionSpecificationException e) {

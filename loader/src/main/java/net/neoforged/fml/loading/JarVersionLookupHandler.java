@@ -11,7 +11,7 @@ import java.util.Optional;
  * Finds Version data from a package, with possible default values
  */
 public class JarVersionLookupHandler {
-    public static Optional<String> getVersion(final Class<?> clazz) {
+    public static Optional<String> getVersion(Class<?> clazz) {
         if (clazz.getModule() != null && clazz.getModule().getName() != null) {
             // Named modules can be versioned directly via their jar file.
             if (clazz.getModule().getDescriptor() != null) {

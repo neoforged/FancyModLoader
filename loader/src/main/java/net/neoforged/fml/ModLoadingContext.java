@@ -16,7 +16,7 @@ public class ModLoadingContext {
 
     private ModContainer activeContainer;
 
-    public void setActiveContainer(final ModContainer container) {
+    public void setActiveContainer(ModContainer container) {
         this.activeContainer = container;
     }
 

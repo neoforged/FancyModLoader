@@ -17,5 +17,5 @@ public interface BytecodeProvider {
      * @return the bytecode
      * @throws ClassNotFoundException if the class cannot be found
      */
-    byte[] getByteCode(final String className) throws ClassNotFoundException;
+    byte[] getByteCode(String className) throws ClassNotFoundException;
 }

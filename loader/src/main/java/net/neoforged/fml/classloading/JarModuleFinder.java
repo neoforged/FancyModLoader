@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 public class JarModuleFinder implements ModuleFinder {
     private final Map<String, ModuleReference> moduleReferenceMap;
 
-    JarModuleFinder(final SecureJar... jars) {
+    JarModuleFinder(SecureJar... jars) {
         this.moduleReferenceMap = Arrays.stream(jars)
                 // Computing the module descriptor can be slow so do it in parallel!
                 // Jars are not thread safe internally, but they are independent, so this is safe.
@@ -31,7 +31,7 @@ public class JarModuleFinder implements ModuleFinder {
     }
 
     @Override
-    public Optional<ModuleReference> find(final String name) {
+    public Optional<ModuleReference> find(String name) {
         return Optional.ofNullable(moduleReferenceMap.get(name));
     }
 
@@ -47,7 +47,7 @@ public class JarModuleFinder implements ModuleFinder {
     static class JarModuleReference extends ModuleReference {
         private final SecureJar.ModuleDataProvider jar;
 
-        JarModuleReference(final SecureJar.ModuleDataProvider jar) {
+        JarModuleReference(SecureJar.ModuleDataProvider jar) {
             super(jar.descriptor(), jar.uri());
             this.jar = jar;
         }
@@ -65,17 +65,17 @@ public class JarModuleFinder implements ModuleFinder {
     static class JarModuleReader implements ModuleReader {
         private final SecureJar.ModuleDataProvider jar;
 
-        public JarModuleReader(final SecureJar.ModuleDataProvider jar) {
+        public JarModuleReader(SecureJar.ModuleDataProvider jar) {
             this.jar = jar;
         }
 
         @Override
-        public Optional<URI> find(final String name) throws IOException {
+        public Optional<URI> find(String name) throws IOException {
             return jar.findFile(name);
         }
 
         @Override
-        public Optional<InputStream> open(final String name) throws IOException {
+        public Optional<InputStream> open(String name) throws IOException {
             return jar.open(name);
         }
 

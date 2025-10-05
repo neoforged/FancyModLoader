@@ -55,7 +55,7 @@ public final class ProgramArgs {
         return ret;
     }
 
-    public void addRaw(final String arg) {
+    public void addRaw(String arg) {
         entries.add(() -> new String[] { arg });
     }
 

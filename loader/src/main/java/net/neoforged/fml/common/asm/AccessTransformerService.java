@@ -31,12 +31,12 @@ public class AccessTransformerService implements ClassProcessor {
     }
 
     @Override
-    public ComputeFlags processClass(final TransformationContext context) {
+    public ComputeFlags processClass(TransformationContext context) {
         return engine.transform(context.node(), context.type()) ? ComputeFlags.SIMPLE_REWRITE : ComputeFlags.NO_REWRITE;
     }
 
     @Override
-    public boolean handlesClass(final SelectionContext context) {
+    public boolean handlesClass(SelectionContext context) {
         return !context.empty() && engine.getTargets().contains(context.type());
     }
 }

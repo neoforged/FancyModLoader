@@ -95,10 +95,10 @@ public class SimpleFont implements AutoCloseable {
 
     public record Glyph(char c, int charwidth, int[] pos, float[] uv) {
         Pos loadQuad(Pos pos, int colour, SimpleBufferBuilder bb) {
-            final var x0 = pos.x() + pos()[0];
-            final var y0 = pos.y() + pos()[1];
-            final var x1 = pos.x() + pos()[2];
-            final var y1 = pos.y() + pos()[3];
+            var x0 = pos.x() + pos()[0];
+            var y0 = pos.y() + pos()[1];
+            var x1 = pos.x() + pos()[2];
+            var y1 = pos.y() + pos()[3];
             bb.pos(x0, y0).tex(uv()[0], uv()[1]).colour(colour).endVertex();
             bb.pos(x1, y0).tex(uv()[2], uv()[1]).colour(colour).endVertex();
             bb.pos(x0, y1).tex(uv()[0], uv()[3]).colour(colour).endVertex();
@@ -206,7 +206,7 @@ public class SimpleFont implements AutoCloseable {
     public int stringWidth(String text) {
         int len = 0;
         for (int i = 0; i < text.length(); i++) {
-            final int c = text.codePointAt(i);
+            int c = text.codePointAt(i);
             len += switch (c) {
                 case '\n', '\t' -> 0;
                 case ' ' -> getSpaceGlyph().charwidth();

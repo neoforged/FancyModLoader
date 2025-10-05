@@ -52,7 +52,7 @@ public class ModAnnotationVisitor extends AnnotationVisitor {
     @Override
     public AnnotationVisitor visitAnnotation(String name, String desc) {
         ModAnnotation ma = annotations.getFirst();
-        final ModAnnotation childAnnotation = ma.addChildAnnotation(name, desc);
+        ModAnnotation childAnnotation = ma.addChildAnnotation(name, desc);
         annotations.addFirst(childAnnotation);
         return new ModAnnotationVisitor(annotations, childAnnotation, true);
     }

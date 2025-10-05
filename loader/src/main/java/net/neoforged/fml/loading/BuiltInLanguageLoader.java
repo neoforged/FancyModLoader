@@ -15,7 +15,7 @@ import net.neoforged.neoforgespi.language.IModLanguageLoader;
 public abstract class BuiltInLanguageLoader implements IModLanguageLoader {
     @Override
     public String version() {
-        final Path lpPath;
+        Path lpPath;
         try {
             lpPath = Paths.get(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
         } catch (URISyntaxException e) {

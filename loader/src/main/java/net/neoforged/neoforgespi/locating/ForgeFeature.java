@@ -31,28 +31,28 @@ public class ForgeFeature {
 
     private static final Map<String, IFeatureTest<?>> features = new HashMap<>();
 
-    public static <T> void registerFeature(final String featureName, final IFeatureTest<T> featureTest) {
+    public static <T> void registerFeature(String featureName, IFeatureTest<T> featureTest) {
         features.put(featureName, featureTest);
     }
 
     private static final MissingFeatureTest MISSING = new MissingFeatureTest();
 
-    public static boolean testFeature(final Dist side, final Bound bound) {
+    public static boolean testFeature(Dist side, Bound bound) {
         return features.getOrDefault(bound.featureName(), MISSING).testSideWithString(side, bound.featureBound());
     }
 
-    public static Object featureValue(final Bound bound) {
+    public static Object featureValue(Bound bound) {
         return features.getOrDefault(bound.featureName(), MISSING).featureValue();
     }
 
     public sealed interface IFeatureTest<F> extends Predicate<F> {
         IModInfo.DependencySide applicableSides();
 
-        F convertFromString(final String value);
+        F convertFromString(String value);
 
         String featureValue();
 
-        default boolean testSideWithString(final Dist side, final String value) {
+        default boolean testSideWithString(Dist side, String value) {
             return !applicableSides().isContained(side) || test(convertFromString(value));
         }
     }
@@ -83,7 +83,7 @@ public class ForgeFeature {
          * @param version the string
          * @return the feature test for the supplied string
          */
-        public static VersionFeatureTest forVersionString(final IModInfo.DependencySide side, final String version) {
+        public static VersionFeatureTest forVersionString(IModInfo.DependencySide side, String version) {
             return new VersionFeatureTest(side, new DefaultArtifactVersion(version));
         }
 
@@ -93,12 +93,12 @@ public class ForgeFeature {
         }
 
         @Override
-        public boolean test(final VersionRange versionRange) {
+        public boolean test(VersionRange versionRange) {
             return versionRange.containsVersion(version);
         }
 
         @Override
-        public VersionRange convertFromString(final String value) {
+        public VersionRange convertFromString(String value) {
             try {
                 return VersionRange.createFromVersionSpec(value);
             } catch (InvalidVersionSpecificationException e) {
@@ -109,7 +109,7 @@ public class ForgeFeature {
 
     public record BooleanFeatureTest(IModInfo.DependencySide applicableSides, boolean value) implements IFeatureTest<Boolean> {
         @Override
-        public boolean test(final Boolean aBoolean) {
+        public boolean test(Boolean aBoolean) {
             return aBoolean.equals(value);
         }
 
@@ -119,7 +119,7 @@ public class ForgeFeature {
         }
 
         @Override
-        public Boolean convertFromString(final String value) {
+        public Boolean convertFromString(String value) {
             return Boolean.parseBoolean(value);
         }
     }
@@ -136,12 +136,12 @@ public class ForgeFeature {
         }
 
         @Override
-        public boolean test(final Object o) {
+        public boolean test(Object o) {
             return false;
         }
 
         @Override
-        public Object convertFromString(final String value) {
+        public Object convertFromString(String value) {
             return null;
         }
     }

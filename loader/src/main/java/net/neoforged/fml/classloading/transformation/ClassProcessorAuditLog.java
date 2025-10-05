@@ -69,12 +69,12 @@ public class ClassProcessorAuditLog implements ClassProcessorAuditSource {
         return activity;
     }
 
-    private List<TransformerActivity> getTransformerActivities(final String clazz) {
+    private List<TransformerActivity> getTransformerActivities(String clazz) {
         return audit.computeIfAbsent(clazz, k -> new ArrayList<>());
     }
 
     @Override
-    public String getAuditString(final String clazz) {
+    public String getAuditString(String clazz) {
         return audit.getOrDefault(clazz, Collections.emptyList()).stream()
                 .filter(TransformerActivity::shouldInclude)
                 .map(TransformerActivity::getActivityString).collect(Collectors.joining(","));

@@ -43,9 +43,9 @@ public class ImmediateWindowHandler {
             provider = null;
             LOGGER.info("ImmediateWindowProvider not loading because splash screen is disabled");
         } else {
-            final var providername = FMLConfig.getConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER);
+            var providername = FMLConfig.getConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER);
             LOGGER.info("Loading ImmediateWindowProvider {}", providername);
-            final var maybeProvider = ServiceLoader.load(ImmediateWindowProvider.class)
+            var maybeProvider = ServiceLoader.load(ImmediateWindowProvider.class)
                     .stream()
                     .map(ServiceLoader.Provider::get)
                     .filter(p -> Objects.equals(p.name(), providername))
@@ -86,13 +86,13 @@ public class ImmediateWindowHandler {
         }
     }
 
-    public static void updateProgress(final String message) {
+    public static void updateProgress(String message) {
         if (provider != null) {
             provider.updateProgress(message);
         }
     }
 
-    public static void crash(final String message) {
+    public static void crash(String message) {
         if (provider != null) {
             provider.crash(message);
         }

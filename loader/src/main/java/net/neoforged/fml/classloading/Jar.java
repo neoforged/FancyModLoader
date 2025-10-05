@@ -49,7 +49,7 @@ public class Jar implements SecureJar {
         return contents;
     }
 
-    public Optional<URI> findFile(final String name) {
+    public Optional<URI> findFile(String name) {
         return contents.findFile(name);
     }
 
@@ -85,12 +85,12 @@ public class Jar implements SecureJar {
         }
 
         @Override
-        public Optional<URI> findFile(final String name) {
+        public Optional<URI> findFile(String name) {
             return jar.findFile(name);
         }
 
         @Override
-        public Optional<InputStream> open(final String name) {
+        public Optional<InputStream> open(String name) {
             try {
                 return Optional.ofNullable(jar.contents.openFile(name));
             } catch (IOException e) {

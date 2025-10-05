@@ -36,14 +36,14 @@ class TransformerClassWriter extends ClassWriter {
     private boolean computedThis = false;
     private final ClassHierarchyRecomputationContext recomputationContext;
 
-    public TransformerClassWriter(final int writerFlags, final ClassNode clazzAccessor, final ClassHierarchyRecomputationContext recomputationContext) {
+    public TransformerClassWriter(int writerFlags, ClassNode clazzAccessor, ClassHierarchyRecomputationContext recomputationContext) {
         super(writerFlags);
         this.clazzAccessor = clazzAccessor;
         this.recomputationContext = recomputationContext;
     }
 
     @Override
-    protected String getCommonSuperClass(final String type1, final String type2) {
+    protected String getCommonSuperClass(String type1, String type2) {
         if (!computedThis) {
             computeHierarchy(clazzAccessor);
             computedThis = true;
@@ -67,22 +67,22 @@ class TransformerClassWriter extends ClassWriter {
         return type;
     }
 
-    private Set<String> getSupers(final String typeName) {
+    private Set<String> getSupers(String typeName) {
         computeHierarchy(typeName);
         return CLASS_HIERARCHIES.get(typeName);
     }
 
-    private boolean isIntf(final String typeName) {
+    private boolean isIntf(String typeName) {
         //We don't need computeHierarchy as it has been called already from a different method every time this method is called
         return IS_INTERFACE.get(typeName);
     }
 
-    private String getSuper(final String typeName) {
+    private String getSuper(String typeName) {
         computeHierarchy(typeName);
         return CLASS_PARENTS.get(typeName);
     }
 
-    private void computeHierarchy(final ClassNode clazzNode) {
+    private void computeHierarchy(ClassNode clazzNode) {
         if (!CLASS_HIERARCHIES.containsKey(clazzNode.name)) {
             clazzNode.accept(new SuperCollectingVisitor());
         }
@@ -91,7 +91,7 @@ class TransformerClassWriter extends ClassWriter {
     /**
      * Computes the hierarchy for a specific class if it has not been computed yet
      */
-    private void computeHierarchy(final String className) {
+    private void computeHierarchy(String className) {
         if (CLASS_HIERARCHIES.containsKey(className)) return; //already computed
         Class<?> clz = recomputationContext.findLoadedClass(className.replace('/', '.'));
         if (clz != null) {
@@ -105,7 +105,7 @@ class TransformerClassWriter extends ClassWriter {
      * Computes the hierarchy for a specific class using the already loaded class object
      * Must be kept in sync with the file counterpart {@link SuperCollectingVisitor#visit(int, int, String, String, String, String[])}
      */
-    private void computeHierarchyFromClass(final String name, final Class<?> clazz) {
+    private void computeHierarchyFromClass(String name, Class<?> clazz) {
         Class<?> superClass = clazz.getSuperclass();
         Set<String> hierarchies = new HashSet<>();
         if (superClass != null) {
@@ -132,7 +132,7 @@ class TransformerClassWriter extends ClassWriter {
     /**
      * Computes the hierarchy for a specific class by loading the class from disk and running it through modlauncher.
      */
-    private void computeHierarchyFromFile(final String className) {
+    private void computeHierarchyFromFile(String className) {
         try {
             byte[] classData = recomputationContext.upToFrames(className.replace('/', '.'));
             ClassReader classReader = new ClassReader(classData);
@@ -157,7 +157,7 @@ class TransformerClassWriter extends ClassWriter {
         }
 
         @Override
-        public void visit(final int version, final int access, final String name, final String signature, final String superName, final String[] interfaces) {
+        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
             Set<String> hierarchies = new HashSet<>();
             if (superName != null) {
                 CLASS_PARENTS.put(name, superName);

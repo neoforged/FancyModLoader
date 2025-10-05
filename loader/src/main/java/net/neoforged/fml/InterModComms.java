@@ -37,7 +37,7 @@ public class InterModComms {
      * @param thing  the thing associated with the method name
      * @return true if the message was enqueued for sending (the target modid is loaded)
      */
-    public static boolean sendTo(final String modId, final String method, final Supplier<?> thing) {
+    public static boolean sendTo(String modId, String method, Supplier<?> thing) {
         if (!ModList.get().isLoaded(modId)) return false;
         containerQueues.computeIfAbsent(modId, k -> new ConcurrentLinkedQueue<>()).add(new IMCMessage(ModLoadingContext.get().getActiveContainer().getModId(), modId, method, thing));
         return true;
@@ -52,7 +52,7 @@ public class InterModComms {
      * @param thing       the thing associated with the method name
      * @return true if the message was enqueued for sending (the target modid is loaded)
      */
-    public static boolean sendTo(final String senderModId, final String modId, final String method, final Supplier<?> thing) {
+    public static boolean sendTo(String senderModId, String modId, String method, Supplier<?> thing) {
         if (!ModList.get().isLoaded(modId)) return false;
         containerQueues.computeIfAbsent(modId, k -> new ConcurrentLinkedQueue<>()).add(new IMCMessage(senderModId, modId, method, thing));
         return true;
@@ -65,7 +65,7 @@ public class InterModComms {
      * @param methodMatcher a predicate for the method you are interested in
      * @return All messages passing the supplied method predicate
      */
-    public static Stream<IMCMessage> getMessages(final String modId, final Predicate<String> methodMatcher) {
+    public static Stream<IMCMessage> getMessages(String modId, Predicate<String> methodMatcher) {
         ConcurrentLinkedQueue<IMCMessage> queue = containerQueues.get(modId);
         if (queue == null) return Stream.empty();
         return StreamSupport.stream(new QueueFilteringSpliterator(queue, methodMatcher), false);
@@ -77,7 +77,7 @@ public class InterModComms {
      * @param modId the modid you are querying for
      * @return All messages
      */
-    public static Stream<IMCMessage> getMessages(final String modId) {
+    public static Stream<IMCMessage> getMessages(String modId) {
         return getMessages(modId, s -> Boolean.TRUE);
     }
 
@@ -86,7 +86,7 @@ public class InterModComms {
         private final Predicate<String> methodFilter;
         private final Iterator<IMCMessage> iterator;
 
-        public QueueFilteringSpliterator(final ConcurrentLinkedQueue<IMCMessage> queue, final Predicate<String> methodFilter) {
+        public QueueFilteringSpliterator(ConcurrentLinkedQueue<IMCMessage> queue, Predicate<String> methodFilter) {
             this.queue = queue;
             this.iterator = queue.iterator();
             this.methodFilter = methodFilter;
@@ -103,7 +103,7 @@ public class InterModComms {
         }
 
         @Override
-        public boolean tryAdvance(final Consumer<? super IMCMessage> action) {
+        public boolean tryAdvance(Consumer<? super IMCMessage> action) {
             IMCMessage next;
             do {
                 if (!iterator.hasNext()) {

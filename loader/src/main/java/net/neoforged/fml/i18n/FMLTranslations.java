@@ -65,17 +65,17 @@ public class FMLTranslations {
         CUSTOM_FACTORIES.put("optional", new CustomFormat<>(Optional.class, FMLTranslations::formatOptional));
     }
 
-    public static String getPattern(final String patternName, final Supplier<String> fallback) {
-        final var translated = I18nManager.currentLocale.get(patternName);
+    public static String getPattern(String patternName, Supplier<String> fallback) {
+        var translated = I18nManager.currentLocale.get(patternName);
         return translated == null ? fallback.get() : translated;
     }
 
-    public static String parseMessage(final String i18nMessage, Object... args) {
+    public static String parseMessage(String i18nMessage, Object... args) {
         return parseMessageWithFallback(i18nMessage, () -> i18nMessage, args);
     }
 
-    public static String parseMessageWithFallback(final String i18nMessage, final Supplier<String> fallback, Object... args) {
-        final String pattern = getPattern(i18nMessage, fallback);
+    public static String parseMessageWithFallback(String i18nMessage, Supplier<String> fallback, Object... args) {
+        String pattern = getPattern(i18nMessage, fallback);
         try {
             return parseFormat(pattern, args);
         } catch (IllegalArgumentException e) {
@@ -84,7 +84,7 @@ public class FMLTranslations {
         }
     }
 
-    public static String parseEnglishMessage(final String i18n, Object... args) {
+    public static String parseEnglishMessage(String i18n, Object... args) {
         var translated = I18nManager.DEFAULT_TRANSLATIONS.getOrDefault(i18n, i18n);
         try {
             return parseFormat(translated, args);
@@ -94,18 +94,18 @@ public class FMLTranslations {
         }
     }
 
-    public static String parseFormat(String format, final Object... args) {
-        final AtomicInteger i = new AtomicInteger();
+    public static String parseFormat(String format, Object... args) {
+        AtomicInteger i = new AtomicInteger();
         // Converts Mojang translation format (%s) to the one used by Apache Commons ({0})
         format = FORMAT_PATTERN.matcher(format).replaceAll(matchResult -> {
             if (matchResult.group(0).equals("%%")) {
                 return "%";
             }
-            final String groupIdx = matchResult.group(1);
-            final int index = groupIdx != null ? Integer.parseInt(groupIdx) - 1 : i.getAndIncrement();
+            String groupIdx = matchResult.group(1);
+            int index = groupIdx != null ? Integer.parseInt(groupIdx) - 1 : i.getAndIncrement();
             return "{" + index + "}";
         });
-        final ExtendedMessageFormat extendedMessageFormat = new ExtendedMessageFormat(format, CUSTOM_FACTORIES);
+        ExtendedMessageFormat extendedMessageFormat = new ExtendedMessageFormat(format, CUSTOM_FACTORIES);
         return extendedMessageFormat.format(args);
     }
 
@@ -173,7 +173,7 @@ public class FMLTranslations {
         return PATTERN_CONTROL_CODE.matcher(text).replaceAll("");
     }
 
-    private static void formatException(final StringBuffer stringBuffer, final Throwable t, final String args) {
+    private static void formatException(StringBuffer stringBuffer, Throwable t, String args) {
         if (Objects.equals(args, "msg")) {
             stringBuffer.append(t.getClass().getName()).append(": ").append(t.getMessage());
         } else if (Objects.equals(args, "cls")) {
@@ -181,7 +181,7 @@ public class FMLTranslations {
         }
     }
 
-    private static void formatModInfo(final StringBuffer stringBuffer, final IModInfo info, final String args) {
+    private static void formatModInfo(StringBuffer stringBuffer, IModInfo info, String args) {
         if (Objects.equals(args, "id")) {
             stringBuffer.append(info.getModId());
         } else if (Objects.equals(args, "name")) {
@@ -191,11 +191,11 @@ public class FMLTranslations {
         }
     }
 
-    private static void formatVersionRange(final StringBuffer stringBuffer, final VersionRange range) {
+    private static void formatVersionRange(StringBuffer stringBuffer, VersionRange range) {
         stringBuffer.append(MavenVersionTranslator.versionRangeToString(range));
     }
 
-    private static void formatFeatureBoundValue(final StringBuffer stringBuffer, final ForgeFeature.Bound bound) {
+    private static void formatFeatureBoundValue(StringBuffer stringBuffer, ForgeFeature.Bound bound) {
         stringBuffer.append(bound.featureName());
         if (bound.bound() instanceof Boolean b) {
             stringBuffer.append("=").append(b);

@@ -171,8 +171,8 @@ public final class ClassProcessorSet {
 
         @SuppressWarnings("UnstableApiUsage")
         private static List<ClassProcessor> sortProcessors(List<ClassProcessor> allProcessors, Set<ProcessorName> allowedToRecomputeFrames) {
-            final var transformers = new HashMap<ProcessorName, ClassProcessor>();
-            final var graph = GraphBuilder.directed().<ClassProcessor>build();
+            var transformers = new HashMap<ProcessorName, ClassProcessor>();
+            var graph = GraphBuilder.directed().<ClassProcessor>build();
 
             var specialComputeFramesNode = createSpecialComputeFramesNode();
 

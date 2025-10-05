@@ -22,7 +22,7 @@ public class NightConfigWrapper implements IConfigurable {
     private final UnmodifiableConfig config;
     private IModFileInfo file;
 
-    public NightConfigWrapper(final UnmodifiableConfig config) {
+    public NightConfigWrapper(UnmodifiableConfig config) {
         if (config instanceof ConcurrentConfig) {
             throw new IllegalArgumentException("Cannot create a NightConfigWrapper with a ConcurrentConfig!");
         }
@@ -36,7 +36,7 @@ public class NightConfigWrapper implements IConfigurable {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> Optional<T> getConfigElement(final String... key) {
+    public <T> Optional<T> getConfigElement(String... key) {
         var path = asList(key);
         return this.config.getOptional(path).map(value -> {
             if (value instanceof UnmodifiableConfig) {
@@ -49,12 +49,12 @@ public class NightConfigWrapper implements IConfigurable {
     }
 
     @Override
-    public List<? extends IConfigurable> getConfigList(final String... key) {
-        final List<String> path = asList(key);
+    public List<? extends IConfigurable> getConfigList(String... key) {
+        List<String> path = asList(key);
         if (this.config.contains(path) && !(this.config.get(path) instanceof Collection)) {
             throw new InvalidModFileException("The configuration path " + path + " is invalid. Expecting a collection!", file);
         }
-        final Collection<UnmodifiableConfig> nestedConfigs = this.config.getOrElse(path, ArrayList::new);
+        Collection<UnmodifiableConfig> nestedConfigs = this.config.getOrElse(path, ArrayList::new);
         return nestedConfigs.stream()
                 .map(NightConfigWrapper::new)
                 .map(cw -> cw.setFile(file))

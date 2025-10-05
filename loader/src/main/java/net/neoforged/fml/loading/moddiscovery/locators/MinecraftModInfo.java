@@ -21,21 +21,21 @@ final class MinecraftModInfo {
     }
 
     public IModFileInfo buildMinecraftModInfo(IModFile iModFile) {
-        final ModFile modFile = (ModFile) iModFile;
+        ModFile modFile = (ModFile) iModFile;
 
         // We haven't changed this in years, and I can't be asked right now to special case this one file in the path.
-        final var conf = Config.inMemory();
+        var conf = Config.inMemory();
         conf.set("modLoader", "minecraft");
         conf.set("loaderVersion", "1");
         conf.set("license", "Mojang Studios, All Rights Reserved");
-        final var mods = Config.inMemory();
+        var mods = Config.inMemory();
         mods.set("modId", "minecraft");
         mods.set("version", minecraftVersion);
         mods.set("displayName", "Minecraft");
         mods.set("description", "Minecraft");
         conf.set("mods", List.of(mods));
 
-        final NightConfigWrapper configWrapper = new NightConfigWrapper(conf);
+        NightConfigWrapper configWrapper = new NightConfigWrapper(conf);
         return new ModFileInfo(modFile, configWrapper, configWrapper::setFile, List.of());
     }
 }
