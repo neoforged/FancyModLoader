@@ -389,20 +389,7 @@ public final class FMLLoader implements AutoCloseable {
             LaunchContextAdapter launchContext,
             DiscoveryResult discoveryResult,
             MixinFacade mixinFacade) {
-        // Validate that the modder didn't try to provide transformation services from game content
-        var issues = new ArrayList<ModLoadingIssue>();
-        for (var modFile : discoveryResult.allGameContent()) {
-            var descriptor = modFile.getSecureJar().moduleDataProvider().descriptor();
-            for (var provides : descriptor.provides()) {
-                if (provides.service().equals(ClassProcessorProvider.class.getName())
-                        || provides.service().equals(ClassProcessor.class.getName())) {
-                    issues.add(ModLoadingIssue.error("fml.modloadingissue.classprocessor_in_game_content").withAffectedModFile(modFile));
-                }
-            }
-        }
-        if (!issues.isEmpty()) {
-            throw new ModLoadingException(issues);
-        }
+        checkGameContentForClassProcessors(discoveryResult.allGameContent());
 
         // Add our own launch plugins explicitly.
         var builtInProcessors = new ArrayList<ClassProcessor>();
@@ -429,6 +416,23 @@ public final class FMLLoader implements AutoCloseable {
                 .addProcessors(ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class, builtInProcessors))
                 .addProcessorProviders(ServiceLoaderUtil.loadServices(launchContext, ClassProcessorProvider.class))
                 .build();
+    }
+
+    // Validates, that the modder didn't try to provide transformation services from game content and gives a nice error message if they did
+    private static void checkGameContentForClassProcessors(List<ModFile> allGameContent) {
+        var issues = new ArrayList<ModLoadingIssue>();
+        for (var modFile : allGameContent) {
+            var descriptor = modFile.getSecureJar().moduleDataProvider().descriptor();
+            for (var provides : descriptor.provides()) {
+                if (provides.service().equals(ClassProcessorProvider.class.getName())
+                        || provides.service().equals(ClassProcessor.class.getName())) {
+                    issues.add(ModLoadingIssue.error("fml.modloadingissue.classprocessor_in_game_content").withAffectedModFile(modFile));
+                }
+            }
+        }
+        if (!issues.isEmpty()) {
+            throw new ModLoadingException(issues);
+        }
     }
 
     private static ClassProcessor createAccessTransformerService(DiscoveryResult discoveryResult) {
