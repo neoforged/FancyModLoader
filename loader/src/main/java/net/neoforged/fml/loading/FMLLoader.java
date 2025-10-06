@@ -185,8 +185,9 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     /**
-     * Adds a callback that will be called when this loader is about to close, but all mod files are still open,
-     * so class-loading will still succeed.
+     * Adds a callback that will be called once, when this loader is about to close.
+     * <p>Mod files and class-loaders will not be closed yet when the callback is called, allowing for
+     * class-loading to occur normally.
      */
     public void addCloseCallback(AutoCloseable callback) {
         closeCallbacks.add(callback);
