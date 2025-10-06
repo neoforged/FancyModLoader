@@ -13,12 +13,18 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.jar.JarFile;
+import net.neoforged.fml.classloading.JarMetadata;
+import net.neoforged.fml.jarcontents.JarContents;
+import net.neoforged.fml.loading.moddiscovery.ModFile;
+import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.startup.FatalStartupException;
 import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
 import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
 import net.neoforged.neoforgespi.locating.IDependencyLocator;
+import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.IModFileReader;
 import org.apache.logging.log4j.LogManager;
@@ -39,7 +45,7 @@ final class EarlyServiceDiscovery {
     /**
      * Find and load early services from the mods directory.
      */
-    public static List<Path> findEarlyServices(Path directory) {
+    public static List<ModFile> findEarlyServiceJars(Path directory) {
         if (!Files.exists(directory)) {
             // Skip if the mods dir doesn't exist yet.
             return List.of();
@@ -62,33 +68,49 @@ final class EarlyServiceDiscovery {
             throw new FatalStartupException("Failed to find early startup services: " + e);
         }
 
-        var earlyServices = candidates.parallelStream()
-                .filter(EarlyServiceDiscovery::shouldLoadInServiceLayer)
+        var earlyServiceJars = candidates.parallelStream()
+                .map(EarlyServiceDiscovery::getEarlyServiceModFile)
+                .filter(Objects::nonNull)
                 .toList();
 
         LOGGER.info(
                 "Found {} early service jars (out of {}) in {}ms",
-                earlyServices.size(),
+                earlyServiceJars.size(),
                 candidates.size(),
                 System.currentTimeMillis() - start);
 
-        return earlyServices;
+        return earlyServiceJars;
     }
 
-    private static boolean shouldLoadInServiceLayer(Path path) {
+    private static ModFile getEarlyServiceModFile(Path path) {
         // We do not need to verify the Jar since we just test for existence of the service file and do not
         // actually load any code here.
         try (var jarFile = new JarFile(path.toFile(), false, JarFile.OPEN_READ)) {
             for (var service : SERVICES) {
                 if (jarFile.getEntry("META-INF/services/" + service) != null) {
                     LOGGER.debug("{} contains early service {}", path, service);
-                    return true;
+                    // Calling this while the JarFile is still open will allow the JVM to internally reuse it
+                    return createEarlyServiceModFile(path);
                 }
             }
         } catch (IOException e) {
             LOGGER.error("Failed to read Jar file {} in mods directory: {}", path, e);
         }
 
-        return false;
+        return null;
+    }
+
+    private static ModFile createEarlyServiceModFile(Path path) throws IOException {
+        JarContents contents = JarContents.ofPath(path);
+        try {
+            return (ModFile) IModFile.create(contents, JarMetadata.from(contents), JarModsDotTomlModFileReader::manifestParser);
+        } catch (Exception e) {
+            try {
+                contents.close();
+            } catch (IOException ex) {
+                e.addSuppressed(ex);
+            }
+            throw e;
+        }
     }
 }
