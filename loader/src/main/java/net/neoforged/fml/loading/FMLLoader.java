@@ -226,7 +226,7 @@ public final class FMLLoader implements AutoCloseable {
             try {
                 ownedResource.close();
             } catch (Exception e) {
-                LOGGER.error("Failed to close resource {}", ownedResource, e);
+                LOGGER.error("Failed to close resource {} owned by FMLLoader", ownedResource, e);
             }
         }
         ownedResources.clear();
