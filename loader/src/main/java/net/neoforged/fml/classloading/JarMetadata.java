@@ -1,19 +1,27 @@
 /*
- * See LICENSE-securejarhandler for licensing details.
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 
 package net.neoforged.fml.classloading;
 
+import java.lang.module.ModuleDescriptor;
 import net.neoforged.fml.jarcontents.JarContents;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.lang.module.ModuleDescriptor;
-import java.nio.ByteBuffer;
-import java.util.function.Supplier;
+/**
+ * Describes the modular properties of a Jar file, with direct access to the module name and version,
+ * as well as the ability to create a module descriptor for a given {@link JarContents}, which may
+ * involve scanning the Jar file for packages.
+ */
+public interface JarMetadata {
+    String name();
 
-public record JarMetadata(String moduleName, @Nullable String version, Supplier<ModuleDescriptor> descriptor) {
+    @Nullable
+    String version();
+
+    ModuleDescriptor descriptor(JarContents contents);
+
     /**
      * Builds the jar metadata for a jar following the normal rules for Java jars.
      *
@@ -24,47 +32,9 @@ public record JarMetadata(String moduleName, @Nullable String version, Supplier<
     static JarMetadata from(JarContents jar) {
         var moduleInfoResource = jar.get("module-info.class");
         if (moduleInfoResource != null) {
-            byte[] originalDescriptorBytes;
-            try {
-                originalDescriptorBytes = moduleInfoResource.readAllBytes();
-            } catch (IOException e) {
-                throw new UncheckedIOException("Failed to read module-info.class from " + jar, e);
-            }
-            var originalDescriptor = ModuleDescriptor.read(ByteBuffer.wrap(originalDescriptorBytes));
-            var name = originalDescriptor.name();
-            var version = originalDescriptor.rawVersion().orElse(null);
-            return new JarMetadata(name, version, () -> {
-                var fullDescriptor = ModuleDescriptor.read(ByteBuffer.wrap(originalDescriptorBytes), () -> ModuleDescriptorFactory.scanModulePackages(jar));
-
-                // We do inherit the name and version, as well as the package list.
-                var builder = ModuleDescriptor.newAutomaticModule(fullDescriptor.name());
-                fullDescriptor.rawVersion().ifPresent(builder::version);
-                builder.packages(fullDescriptor.packages());
-                fullDescriptor.provides().forEach(builder::provides);
-
-                return builder.build();
-            });
+            return new ModuleJarMetadata(moduleInfoResource);
         } else {
-            var nav = ModuleDescriptorFactory.computeNameAndVersion(jar.getPrimaryPath());
-            String name = nav.name();
-            String version = nav.version();
-
-            String automaticModuleName = jar.getManifest().getMainAttributes().getValue("Automatic-Module-Name");
-            if (automaticModuleName != null) {
-                name = automaticModuleName;
-            }
-
-            var effectiveName = name;
-            return new JarMetadata(name, version, () -> {
-                var bld = ModuleDescriptor.newAutomaticModule(effectiveName);
-                if (version != null) {
-                    bld.version(version);
-                }
-
-                ModuleDescriptorFactory.scanAutomaticModule(jar, bld);
-                return bld.build();
-            });
+            return AutomaticModuleJarMetadata.from(jar);
         }
     }
-
 }

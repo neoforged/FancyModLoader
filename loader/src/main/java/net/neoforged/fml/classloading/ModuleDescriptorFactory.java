@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.jarcontents.JarResource;
 import org.jetbrains.annotations.ApiStatus;

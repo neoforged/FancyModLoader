@@ -50,7 +50,9 @@ public class ModFile implements IModFile {
     private Map<String, Object> fileProperties;
     private List<IModLanguageLoader> loaders;
     private final JarContents contents;
-    private JarMetadata moduleDescriptorSupplier;
+    private final JarMetadata jarMetadata;
+    @Nullable
+    private volatile ModuleDescriptor moduleDescriptor;
     private final Type modFileType;
     private final IModFileInfo modFileInfo;
     private final List<ModFileParser.MixinConfig> mixinConfigs;
@@ -75,11 +77,11 @@ public class ModFile implements IModFile {
         modFileType = Objects.requireNonNull(type, "type");
         jarVersion = Optional.ofNullable(getContents().getManifest().getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION)).orElse("0.0NONE");
         this.modFileInfo = ModFileParser.readModList(this, Objects.requireNonNull(parser, "parser"));
-        moduleDescriptorSupplier = metadata != null ? metadata : JarMetadata.from(contents);
+        jarMetadata = metadata != null ? metadata : JarMetadata.from(contents);
         if (modFileInfo != null && !modFileInfo.getMods().isEmpty()) {
             this.id = modFileInfo.getMods().getFirst().getModId();
         } else {
-            this.id = moduleDescriptorSupplier.name();
+            this.id = jarMetadata.name();
         }
 
         if (this.modFileInfo != null) {
@@ -234,6 +236,15 @@ public class ModFile implements IModFile {
      * expensive, so this should be called once in parallel for all content.
      */
     public ModuleDescriptor getModuleDescriptor() {
-        return moduleDescriptorSupplier.descriptor();
+        var result = moduleDescriptor;
+        if (result == null) {
+            synchronized (this) {
+                result = moduleDescriptor;
+                if (result == null) {
+                    moduleDescriptor = result = jarMetadata.descriptor(contents);
+                }
+            }
+        }
+        return result;
     }
 }

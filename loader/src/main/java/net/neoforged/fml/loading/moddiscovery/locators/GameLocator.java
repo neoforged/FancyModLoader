@@ -23,6 +23,7 @@ import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.LibraryFinder;
 import net.neoforged.fml.loading.MavenCoordinate;
+import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.fml.util.PathPrettyPrinting;
@@ -80,7 +81,7 @@ public class GameLocator implements IModFileCandidateLocator {
             }
         } else {
             var minecraftVersion = detectMinecraftVersion(mcJarContents);
-            var mcJarMetadata = new ModJarMetadata(mcJarContents);
+            var mcJarMetadata = new ModJarMetadata();
             minecraftModFile = IModFile.create(mcJarContents, mcJarMetadata, new MinecraftModInfo(minecraftVersion)::buildMinecraftModInfo);
             mcJarMetadata.setModFile(minecraftModFile);
             if (!pipeline.addModFile(minecraftModFile)) {
@@ -312,7 +313,7 @@ public class GameLocator implements IModFileCandidateLocator {
             try {
                 var mcJarContents = JarContents.ofPaths(content);
 
-                var mcJarMetadata = new ModJarMetadata(mcJarContents);
+                var mcJarMetadata = new ModJarMetadata();
                 var mcjar = IModFile.create(mcJarContents, mcJarMetadata, new MinecraftModInfo(minecraftVersion)::buildMinecraftModInfo);
                 mcJarMetadata.setModFile(mcjar);
 

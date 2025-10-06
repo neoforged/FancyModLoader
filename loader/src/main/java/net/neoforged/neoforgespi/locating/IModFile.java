@@ -5,13 +5,11 @@
 
 package net.neoforged.neoforgespi.locating;
 
-import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import net.neoforged.fml.classloading.JarMetadata;
-import net.neoforged.fml.classloading.ModuleDescriptorFactory;
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.neoforgespi.language.IModFileInfo;
@@ -38,17 +36,6 @@ public interface IModFile {
      * @return The mod file.
      */
     static IModFile create(JarContents contents, ModFileInfoParser parser) throws InvalidModFileException {
-//        modFile.getId();
-//        modFile.getModFileInfo().versionString();
-//
-//        var bld = ModuleDescriptor.newAutomaticModule(name())
-//                .version(version());
-//
-//        ModuleDescriptorFactory.scanAutomaticModule(jar, bld, "assets", "data");
-//
-//        modFile.getModFileInfo().usesServices().forEach(bld::uses);
-//        return bld.build();
-
         return new ModFile(contents, parser, ModFileDiscoveryAttributes.DEFAULT);
     }
 

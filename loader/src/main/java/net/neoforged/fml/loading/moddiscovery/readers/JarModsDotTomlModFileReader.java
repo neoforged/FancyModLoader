@@ -18,6 +18,7 @@ import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileParser;
+import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.neoforgespi.language.IConfigurable;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
@@ -40,7 +41,7 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
         IModFile mod;
         if (contents.containsFile(MODS_TOML)) {
             LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MODS_TOML, type, contents.getPrimaryPath());
-            var mjm = new ModJarMetadata(contents);
+            var mjm = new ModJarMetadata();
             mod = new ModFile(contents, mjm, ModFileParser::modsTomlParser, discoveryAttributes);
             mjm.setModFile(mod);
         } else if (type != null) {
