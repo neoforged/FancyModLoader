@@ -157,7 +157,6 @@ public abstract class LauncherTest {
         actualClasspath.addAll(additionalClassPath);
 
         var previousCl = Thread.currentThread().getContextClassLoader();
-        URLClassLoader cl = null;
         if (!actualClasspath.isEmpty()) {
             var urls = actualClasspath.stream().map(path -> {
                 try {
@@ -166,8 +165,9 @@ public abstract class LauncherTest {
                     throw new RuntimeException(e);
                 }
             }).toArray(URL[]::new);
-            cl = new URLClassLoader(urls, getClass().getClassLoader());
+            var cl = new URLClassLoader(urls, getClass().getClassLoader());
             Thread.currentThread().setContextClassLoader(cl);
+            ownedResources.add(cl);
         }
 
         try {
@@ -183,9 +183,6 @@ public abstract class LauncherTest {
             loadMods();
             return result;
         } finally {
-            if (cl != null) {
-                cl.close();
-            }
             Thread.currentThread().setContextClassLoader(previousCl);
         }
     }

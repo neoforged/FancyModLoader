@@ -7,8 +7,10 @@ package net.neoforged.fml.loading;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.electronwill.nightconfig.core.Config;
 import java.nio.file.Files;
@@ -31,6 +33,7 @@ import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.ContainedVersion;
+import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileReader;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
@@ -41,7 +44,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.lwjgl.system.FunctionProvider;
 
-class FMLLoaderTest extends LauncherTest {
+public class FMLLoaderTest extends LauncherTest {
     private static final ContainedVersion JIJ_V1 = new ContainedVersion(VersionRange.createFromVersion("1.0"), new DefaultArtifactVersion("1.0"));
 
     @Nested
@@ -911,5 +914,44 @@ class FMLLoaderTest extends LauncherTest {
             var e = assertThrows(IllegalArgumentException.class, () -> launchClient());
             assertThat(e).hasMessageStartingWith("Classes were loaded on the wrong class-loader:\n net.minecraft.DetectedVersion from java.net.URLClassLoader");
         }
+    }
+
+    public static boolean closeCallbackCalled = false;
+
+    @Test
+    void testCloseCallback() throws Exception {
+        installation.setupUserdevProjectNew();
+        installation.buildInstallationAppropriateModProject("test", "test.jar", builder -> builder
+                .withModTypeManifest("LIBRARY")
+                .addClass("test.NotLoadedYet", """
+                            public class NotLoadedYet {
+                                public static boolean dummy;
+                            }
+                        """)
+                .addClass("test.Bootstrapper", """
+                        public class Bootstrapper implements net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper {
+                            @Override
+                            public String name() {
+                                return "dummy";
+                            }
+
+                            @Override
+                            public void bootstrap(String[] arguments) {
+                                net.neoforged.fml.loading.FMLLoader.getCurrent().addCloseCallback(() -> {
+                                    NotLoadedYet.dummy = true; // This will fail if the CL is already closed
+                                    net.neoforged.fml.loading.FMLLoaderTest.closeCallbackCalled = true;
+                                });
+                            }
+                        }
+                        """)
+                .addService(GraphicsBootstrapper.class, "test.Bootstrapper"));
+
+        launchClient();
+
+        assertFalse(closeCallbackCalled);
+
+        loader.close();
+
+        assertTrue(closeCallbackCalled);
     }
 }

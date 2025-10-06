@@ -110,6 +110,10 @@ public final class FMLLoader implements AutoCloseable {
      * will be closed alongside the loader.
      */
     private final List<AutoCloseable> ownedResources = new ArrayList<>();
+    /**
+     * Additional callbacks that will be called when this loader is about to close.
+     */
+    private final List<Runnable> closeCallbacks = new ArrayList<>();
     private final ProgramArgs programArgs;
 
     private LanguageProviderLoader languageProviderLoader;
@@ -180,9 +184,27 @@ public final class FMLLoader implements AutoCloseable {
         return loadingModList.getPackageIndex().get(packageName);
     }
 
+    /**
+     * Adds a callback that will be called when this loader is about to close, but all mod files are still open,
+     * so class-loading will still succeed.
+     */
+    public void addCloseCallback(Runnable callback) {
+        closeCallbacks.add(callback);
+    }
+
     @Override
     public void close() {
         LOGGER.info("Closing FML Loader {}", Integer.toHexString(System.identityHashCode(this)));
+
+        for (var closeCallback : closeCallbacks) {
+            try {
+                closeCallback.run();
+            } catch (Exception e) {
+                LOGGER.error("Failed to run mod-supplied close callback {}", closeCallback, e);
+            }
+        }
+        closeCallbacks.clear();
+
         if (loadingModList != null) {
             for (var modFile : loadingModList.getModFiles()) {
                 modFile.getFile().close();
