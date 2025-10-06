@@ -223,14 +223,6 @@ public class ModFile implements IModFile {
         return value != null ? Type.valueOf(value) : Type.MOD;
     }
 
-    public void close() {
-        try {
-            contents.close();
-        } catch (IOException e) {
-            LOGGER.error("Failed to close mod file {}", this, e);
-        }
-    }
-
     /**
      * Computing the module descriptor for the first time can be
      * expensive, so this should be called once in parallel for all content.
@@ -246,5 +238,13 @@ public class ModFile implements IModFile {
             }
         }
         return result;
+    }
+
+    public void close() {
+        try {
+            contents.close();
+        } catch (IOException e) {
+            LOGGER.error("Failed to close mod file {}", this, e);
+        }
     }
 }
