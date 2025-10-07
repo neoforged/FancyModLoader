@@ -6,7 +6,14 @@
 package net.neoforged.fml.startup;
 
 import java.awt.GraphicsEnvironment;
+import java.awt.Image;
+import java.awt.image.BaseMultiResolutionImage;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
@@ -98,7 +105,24 @@ public final class FatalErrorReporting {
         String html = "<html><body width='400'><strong>Fatal Startup Error</strong>"
                 + "<p><pre>";
         html += escapeHtmlContent(message);
-        JOptionPane.showMessageDialog(null, html, "Fatal Error", JOptionPane.ERROR_MESSAGE);
+
+        var icon = new ImageIcon(createMultiResImage());
+        JOptionPane.showMessageDialog(null, html, "Fatal Error", JOptionPane.ERROR_MESSAGE, icon);
+    }
+
+    private static BaseMultiResolutionImage createMultiResImage() {
+        var images = new ArrayList<Image>();
+        readImage("crash-32x32.png", images);
+        readImage("crash-64x64.png", images);
+        readImage("crash-128x128.png", images);
+        return new BaseMultiResolutionImage(images.toArray(Image[]::new));
+    }
+
+    private static void readImage(String filename, List<Image> images) {
+        try {
+            var image = ImageIO.read(FatalErrorReporting.class.getResource(filename));
+            images.add(image);
+        } catch (IOException ignored) {}
     }
 
     /**
