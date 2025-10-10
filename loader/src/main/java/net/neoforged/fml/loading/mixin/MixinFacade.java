@@ -86,7 +86,7 @@ public final class MixinFacade implements AutoCloseable {
     // Increment to break compatibility; during a BC window, this should be set to the latest version. This is _not_ set
     // to COMPATIBILITY_LATEST, so that if mixin is bumped past a BC it does not break mods.
     @VisibleForTesting
-    public static final int DEFAULT_BEHAVIOUR_VERSION = FabricUtil.COMPATIBILITY_0_14_0;
+    public static final int DEFAULT_BEHAVIOUR_VERSION = FabricUtil.COMPATIBILITY_0_16_5;
     @VisibleForTesting
     public static final ArtifactVersion HIGHEST_MIXIN_VERSION;
     @VisibleForTesting
