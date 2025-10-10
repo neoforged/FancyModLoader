@@ -233,7 +233,7 @@ public class ModFile implements IModFile {
             synchronized (this) {
                 result = moduleDescriptor;
                 if (result == null) {
-                    moduleDescriptor = result = jarMetadata.descriptor(contents);
+                    moduleDescriptor = result = jarMetadata.createDescriptor(contents);
                 }
             }
         }

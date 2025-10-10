@@ -15,7 +15,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 public record JarContentsModule(JarContents contents, ModuleDescriptor moduleDescriptor) {
     @VisibleForTesting
     public JarContentsModule(JarContents contents) {
-        this(contents, JarMetadata.from(contents).descriptor(contents));
+        this(contents, JarMetadata.from(contents).createDescriptor(contents));
     }
 
     public String moduleName() {

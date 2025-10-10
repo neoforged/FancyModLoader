@@ -20,7 +20,7 @@ public interface JarMetadata {
     @Nullable
     String version();
 
-    ModuleDescriptor descriptor(JarContents contents);
+    ModuleDescriptor createDescriptor(JarContents contents);
 
     /**
      * Builds the jar metadata for a jar following the normal rules for Java jars.

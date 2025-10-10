@@ -31,7 +31,7 @@ public class ModuleJarMetadata implements JarMetadata {
     }
 
     @Override
-    public ModuleDescriptor descriptor(JarContents contents) {
+    public ModuleDescriptor createDescriptor(JarContents contents) {
         var fullDescriptor = ModuleDescriptor.read(ByteBuffer.wrap(originalDescriptorBytes), () -> ModuleDescriptorFactory.scanModulePackages(contents));
 
         // We do inherit the name and version, as well as the package list.

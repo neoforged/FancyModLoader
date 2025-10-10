@@ -46,7 +46,7 @@ public class AutomaticModuleJarMetadata implements JarMetadata {
     }
 
     @Override
-    public ModuleDescriptor descriptor(JarContents contents) {
+    public ModuleDescriptor createDescriptor(JarContents contents) {
         var bld = ModuleDescriptor.newAutomaticModule(name());
         if (version() != null) {
             bld.version(version());

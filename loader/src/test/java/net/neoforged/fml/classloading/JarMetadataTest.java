@@ -222,7 +222,7 @@ public class JarMetadataTest {
             return new ResolvedJarMetadata(
                     metadata.name(),
                     metadata.version(),
-                    metadata.descriptor(jc));
+                    metadata.createDescriptor(jc));
         }
     }
 
