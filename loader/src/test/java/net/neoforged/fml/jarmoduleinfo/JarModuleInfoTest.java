@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.classloading;
+package net.neoforged.fml.jarmoduleinfo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public class JarMetadataTest {
+public class JarModuleInfoTest {
     @TempDir
     Path tempDir;
 
@@ -218,7 +218,7 @@ public class JarMetadataTest {
         builder.build();
 
         try (var jc = JarContents.ofPath(testJar)) {
-            var metadata = JarMetadata.from(jc);
+            var metadata = JarModuleInfo.from(jc);
             return new ResolvedJarMetadata(
                     metadata.name(),
                     metadata.version(),

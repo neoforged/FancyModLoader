@@ -7,6 +7,7 @@ package net.neoforged.fml.classloading;
 
 import java.lang.module.ModuleDescriptor;
 import net.neoforged.fml.jarcontents.JarContents;
+import net.neoforged.fml.jarmoduleinfo.JarModuleInfo;
 import org.jetbrains.annotations.VisibleForTesting;
 
 /**
@@ -15,7 +16,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 public record JarContentsModule(JarContents contents, ModuleDescriptor moduleDescriptor) {
     @VisibleForTesting
     public JarContentsModule(JarContents contents) {
-        this(contents, JarMetadata.from(contents).createDescriptor(contents));
+        this(contents, JarModuleInfo.from(contents).createDescriptor(contents));
     }
 
     public String moduleName() {

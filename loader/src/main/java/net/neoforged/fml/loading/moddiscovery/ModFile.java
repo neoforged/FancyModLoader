@@ -21,8 +21,8 @@ import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.stream.Stream;
-import net.neoforged.fml.classloading.JarMetadata;
 import net.neoforged.fml.jarcontents.JarContents;
+import net.neoforged.fml.jarmoduleinfo.JarModuleInfo;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.modscan.Scanner;
@@ -50,7 +50,7 @@ public class ModFile implements IModFile {
     private Map<String, Object> fileProperties;
     private List<IModLanguageLoader> loaders;
     private final JarContents contents;
-    private final JarMetadata jarMetadata;
+    private final JarModuleInfo jarModuleInfo;
     @Nullable
     private volatile ModuleDescriptor moduleDescriptor;
     private final Type modFileType;
@@ -66,22 +66,22 @@ public class ModFile implements IModFile {
         this(contents, null, parser, parseType(contents), attributes);
     }
 
-    public ModFile(JarContents contents, @Nullable JarMetadata metadata, final ModFileInfoParser parser, ModFileDiscoveryAttributes attributes) {
+    public ModFile(JarContents contents, @Nullable JarModuleInfo metadata, final ModFileInfoParser parser, ModFileDiscoveryAttributes attributes) {
         this(contents, metadata, parser, parseType(contents), attributes);
     }
 
-    public ModFile(JarContents contents, @Nullable JarMetadata metadata, ModFileInfoParser parser, Type type, ModFileDiscoveryAttributes discoveryAttributes) {
+    public ModFile(JarContents contents, @Nullable JarModuleInfo metadata, ModFileInfoParser parser, Type type, ModFileDiscoveryAttributes discoveryAttributes) {
         this.contents = Objects.requireNonNull(contents, "jar");
         this.discoveryAttributes = Objects.requireNonNull(discoveryAttributes, "discoveryAttributes");
 
         modFileType = Objects.requireNonNull(type, "type");
         jarVersion = Optional.ofNullable(getContents().getManifest().getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION)).orElse("0.0NONE");
         this.modFileInfo = ModFileParser.readModList(this, Objects.requireNonNull(parser, "parser"));
-        jarMetadata = metadata != null ? metadata : JarMetadata.from(contents);
+        jarModuleInfo = metadata != null ? metadata : JarModuleInfo.from(contents);
         if (modFileInfo != null && !modFileInfo.getMods().isEmpty()) {
             this.id = modFileInfo.getMods().getFirst().getModId();
         } else {
-            this.id = jarMetadata.name();
+            this.id = jarModuleInfo.name();
         }
 
         if (this.modFileInfo != null) {
@@ -233,7 +233,7 @@ public class ModFile implements IModFile {
             synchronized (this) {
                 result = moduleDescriptor;
                 if (result == null) {
-                    moduleDescriptor = result = jarMetadata.createDescriptor(contents);
+                    moduleDescriptor = result = jarModuleInfo.createDescriptor(contents);
                 }
             }
         }

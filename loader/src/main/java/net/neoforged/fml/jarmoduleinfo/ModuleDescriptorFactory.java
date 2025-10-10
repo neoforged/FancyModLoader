@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.classloading;
+package net.neoforged.fml.jarmoduleinfo;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -21,15 +21,13 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.jarcontents.JarResource;
-import org.jetbrains.annotations.ApiStatus;
 
 /**
  * Utilities for creating {@link java.lang.module.ModuleDescriptor} from {@link JarContents}.
  * <p>
  * Most of this code also lives in the JDK in the internal ModulePath class.
  */
-@ApiStatus.Internal
-public final class ModuleDescriptorFactory {
+final class ModuleDescriptorFactory {
     private ModuleDescriptorFactory() {}
 
     // ALL from jdk.internal.module.ModulePath.java
@@ -137,16 +135,7 @@ public final class ModuleDescriptorFactory {
     }
 
     /**
-     * Scans an automatic module for the following and applies them to the given module builder.
-     *
-     * <ul>
-     * <li>Packages containing class files.</li>
-     * <li>Java {@link java.util.ServiceLoader} providers found in {@code META-INF/services/}</li>
-     * </ul>
-     *
-     * @param excludedRootDirectories Allows for additional root directories to be completely ignored for scanning
-     *                                packages. Useful if it is known beforehand that certain subdirectories
-     *                                are unlikely to contain classes.
+     * @see JarModuleInfo#scanAutomaticModule
      */
     public static void scanAutomaticModule(
             JarContents jar,
@@ -228,9 +217,7 @@ public final class ModuleDescriptorFactory {
     }
 
     /**
-     * Scans a given Jar for all packages that contain files for use with {@link ModuleDescriptor#read}.
-     * <p>Unlike {@link #scanAutomaticModule}, this also finds packages that contain only resource files, which is
-     * consistent with the behavior of {@link java.lang.module.ModuleFinder} for modular Jar files.
+     * @see JarModuleInfo#scanModulePackages
      */
     public static Set<String> scanModulePackages(JarContents jar) {
         Set<String> packageNames = new HashSet<>();

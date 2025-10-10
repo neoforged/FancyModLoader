@@ -3,25 +3,25 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.classloading;
+package net.neoforged.fml.jarmoduleinfo;
 
 import java.lang.module.ModuleDescriptor;
 import net.neoforged.fml.jarcontents.JarContents;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * {@link JarMetadata} implementation for a non-modular jar, turning it into an automatic module.
+ * {@link JarModuleInfo} implementation for a non-modular jar, turning it into an automatic module.
  */
-public class AutomaticModuleJarMetadata implements JarMetadata {
+class AuomaticModuleJarModuleInfo implements JarModuleInfo {
     private final String name;
     private final String version;
 
-    private AutomaticModuleJarMetadata(String name, String version) {
+    private AuomaticModuleJarModuleInfo(String name, String version) {
         this.name = name;
         this.version = version;
     }
 
-    public static AutomaticModuleJarMetadata from(JarContents contents) {
+    public static AuomaticModuleJarModuleInfo from(JarContents contents) {
         var nav = ModuleDescriptorFactory.computeNameAndVersion(contents.getPrimaryPath());
         String name = nav.name();
         String version = nav.version();
@@ -31,7 +31,7 @@ public class AutomaticModuleJarMetadata implements JarMetadata {
             name = automaticModuleName;
         }
 
-        return new AutomaticModuleJarMetadata(name, version);
+        return new AuomaticModuleJarModuleInfo(name, version);
     }
 
     @Override

@@ -24,11 +24,11 @@ import java.util.List;
 import java.util.Set;
 import net.neoforged.fml.classloading.JarContentsModule;
 import net.neoforged.fml.classloading.JarContentsModuleFinder;
-import net.neoforged.fml.classloading.JarMetadata;
 import net.neoforged.fml.classloading.transformation.ClassProcessorAuditLog;
 import net.neoforged.fml.classloading.transformation.ClassProcessorSet;
 import net.neoforged.fml.classloading.transformation.TransformingClassLoader;
 import net.neoforged.fml.jarcontents.JarContents;
+import net.neoforged.fml.jarmoduleinfo.JarModuleInfo;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -62,7 +62,7 @@ class TransformingClassLoaderTests {
         JarContents contents = JarContents.ofPath(path);
         JarContentsModule testJars = new JarContentsModule(
                 contents,
-                JarMetadata.from(contents).createDescriptor(contents));
+                JarModuleInfo.from(contents).createDescriptor(contents));
         var finder = new JarContentsModuleFinder(List.of(testJars));
         return ModuleLayer.boot().configuration().resolveAndBind(finder, ModuleFinder.ofSystem(), Set.of("cpw.mods.modlauncher.testjars"));
     }

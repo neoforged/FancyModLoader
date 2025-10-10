@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.classloading;
+package net.neoforged.fml.jarmoduleinfo;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -14,14 +14,14 @@ import net.neoforged.fml.jarcontents.JarResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * {@link JarMetadata} implementation for a modular jar.
+ * {@link JarModuleInfo} implementation for a modular jar.
  * Reads the module descriptor from the jar.
  */
-public class ModuleJarMetadata implements JarMetadata {
+class ModuleJarModuleInfo implements JarModuleInfo {
     private final byte[] originalDescriptorBytes;
     private final ModuleDescriptor originalDescriptor;
 
-    public ModuleJarMetadata(JarResource moduleInfo) {
+    public ModuleJarModuleInfo(JarResource moduleInfo) {
         try {
             this.originalDescriptorBytes = moduleInfo.readAllBytes();
         } catch (IOException e) {

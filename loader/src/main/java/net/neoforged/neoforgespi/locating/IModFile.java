@@ -9,8 +9,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import net.neoforged.fml.classloading.JarMetadata;
 import net.neoforged.fml.jarcontents.JarContents;
+import net.neoforged.fml.jarmoduleinfo.JarModuleInfo;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
@@ -46,7 +46,7 @@ public interface IModFile {
      * @param parser   The parser which is responsible for parsing the metadata of the file itself.
      * @return The mod file.
      */
-    static IModFile create(JarContents contents, JarMetadata metadata, ModFileInfoParser parser) throws InvalidModFileException {
+    static IModFile create(JarContents contents, JarModuleInfo metadata, ModFileInfoParser parser) throws InvalidModFileException {
         return new ModFile(contents, metadata, parser, ModFileDiscoveryAttributes.DEFAULT);
     }
 
@@ -72,7 +72,7 @@ public interface IModFile {
      * @param attributes Additional attributes of the modfile.
      * @return The mod file.
      */
-    static IModFile create(JarContents contents, JarMetadata metadata, ModFileInfoParser parser, IModFile.Type type, ModFileDiscoveryAttributes attributes) throws InvalidModFileException {
+    static IModFile create(JarContents contents, JarModuleInfo metadata, ModFileInfoParser parser, IModFile.Type type, ModFileDiscoveryAttributes attributes) throws InvalidModFileException {
         return new ModFile(contents, metadata, parser, type, attributes);
     }
 

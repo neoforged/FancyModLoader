@@ -13,8 +13,8 @@ import com.google.errorprone.annotations.CheckReturnValue;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
-import net.neoforged.fml.classloading.JarMetadata;
 import net.neoforged.fml.jarcontents.JarContents;
+import net.neoforged.fml.jarmoduleinfo.JarModuleInfo;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
@@ -30,7 +30,7 @@ public class TestModFile extends ModFile implements AutoCloseable {
     private final FileSystem fileSystem;
     private final RuntimeCompiler compiler;
 
-    private TestModFile(JarContents contents, JarMetadata metadata, FileSystem fileSystem, ModFileInfoParser parser) {
+    private TestModFile(JarContents contents, JarModuleInfo metadata, FileSystem fileSystem, ModFileInfoParser parser) {
         super(contents, metadata, parser, new ModFileDiscoveryAttributes(null, null, null, null));
         this.fileSystem = fileSystem;
         this.compiler = RuntimeCompiler.createFolder(fileSystem.getPath("/"));

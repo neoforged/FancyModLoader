@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.classloading;
+package net.neoforged.fml.jarmoduleinfo;
 
 import java.util.Set;
 
