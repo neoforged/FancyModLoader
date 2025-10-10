@@ -42,6 +42,7 @@ import net.neoforged.fml.FMLVersion;
 import net.neoforged.fml.IBindingsProvider;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoader;
+import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.classloading.JarModuleFinder;
 import net.neoforged.fml.classloading.ResourceMaskingClassLoader;
@@ -145,7 +146,24 @@ public final class FMLLoader implements AutoCloseable {
             List<ModFile> pluginContent,
             List<ModFile> gameContent,
             List<ModFile> gameLibraryContent,
-            List<ModLoadingIssue> discoveryIssues) {}
+            List<ModLoadingIssue> discoveryIssues) {
+        public List<ModFile> allContent() {
+            var content = new ArrayList<ModFile>(
+                    pluginContent.size() + gameContent.size() + gameLibraryContent.size());
+            content.addAll(pluginContent);
+            content.addAll(gameContent);
+            content.addAll(gameLibraryContent);
+            return content;
+        }
+
+        public List<ModFile> allGameContent() {
+            var content = new ArrayList<ModFile>(
+                    gameContent.size() + gameLibraryContent.size());
+            content.addAll(gameContent);
+            content.addAll(gameLibraryContent);
+            return content;
+        }
+    }
 
     private FMLLoader(ClassLoader currentClassLoader, String[] programArgs, Dist dist, boolean production, Path gameDir) {
         this.currentClassLoader = currentClassLoader;
@@ -319,16 +337,18 @@ public final class FMLLoader implements AutoCloseable {
             } else {
                 discoveryResult = runOffThread(loader::runDiscovery);
             }
-            ClassLoadingGuardian classLoadingGuardian = null;
-            if (instrumentation != null) {
-                classLoadingGuardian = new ClassLoadingGuardian(instrumentation, discoveryResult.gameContent);
-                loader.ownedResources.add(classLoadingGuardian);
-            }
-
             for (var issue : discoveryResult.discoveryIssues()) {
                 LOGGER.atLevel(issue.severity() == ModLoadingIssue.Severity.ERROR ? Level.ERROR : Level.WARN)
                         .setCause(issue.cause())
                         .log("{}", FMLTranslations.translateIssueEnglish(issue));
+            }
+
+            buildModuleDescriptors(discoveryResult.allContent());
+
+            ClassLoadingGuardian classLoadingGuardian = null;
+            if (instrumentation != null) {
+                classLoadingGuardian = new ClassLoadingGuardian(instrumentation, discoveryResult.allGameContent());
+                loader.ownedResources.add(classLoadingGuardian);
             }
 
             var mixinFacade = new MixinFacade();
@@ -346,10 +366,7 @@ public final class FMLLoader implements AutoCloseable {
             // BUILD GAME LAYER
             // NOTE: This is where Mixin contributes its synthetic SecureJar to ensure it's generated classes are handled by the TCL
             var gameContent = new ArrayList<SecureJar>();
-            for (var modFile : discoveryResult.gameLibraryContent) {
-                gameContent.add(modFile.getSecureJar());
-            }
-            for (var modFile : discoveryResult.gameContent) {
+            for (var modFile : discoveryResult.allGameContent()) {
                 gameContent.add(modFile.getSecureJar());
             }
 
@@ -383,10 +400,20 @@ public final class FMLLoader implements AutoCloseable {
         }
     }
 
+    // Build all module descriptors in parallel, since this can involve scanning for packages/services
+    private static void buildModuleDescriptors(List<ModFile> allContent) {
+        var start = System.nanoTime();
+        allContent.stream().parallel().forEach(mf -> mf.getSecureJar().moduleDataProvider().descriptor());
+        var elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        LOGGER.debug("Built module descriptors for {} mod files in {}ms", allContent.size(), elapsed);
+    }
+
     private static ClassProcessorSet createClassProcessorSet(StartupArgs startupArgs,
             LaunchContextAdapter launchContext,
             DiscoveryResult discoveryResult,
             MixinFacade mixinFacade) {
+        checkGameContentForClassProcessors(discoveryResult.allGameContent());
+
         // Add our own launch plugins explicitly.
         var builtInProcessors = new ArrayList<ClassProcessor>();
         builtInProcessors.add(createAccessTransformerService(discoveryResult));
@@ -412,6 +439,23 @@ public final class FMLLoader implements AutoCloseable {
                 .addProcessors(ServiceLoaderUtil.loadServices(launchContext, ClassProcessor.class, builtInProcessors))
                 .addProcessorProviders(ServiceLoaderUtil.loadServices(launchContext, ClassProcessorProvider.class))
                 .build();
+    }
+
+    // Validates, that the modder didn't try to provide transformation services from game content and gives a nice error message if they did
+    private static void checkGameContentForClassProcessors(List<ModFile> allGameContent) {
+        var issues = new ArrayList<ModLoadingIssue>();
+        for (var modFile : allGameContent) {
+            var descriptor = modFile.getSecureJar().moduleDataProvider().descriptor();
+            for (var provides : descriptor.provides()) {
+                if (provides.service().equals(ClassProcessorProvider.class.getName())
+                        || provides.service().equals(ClassProcessor.class.getName())) {
+                    issues.add(ModLoadingIssue.error("fml.modloadingissue.classprocessor_in_game_content").withAffectedModFile(modFile));
+                }
+            }
+        }
+        if (!issues.isEmpty()) {
+            throw new ModLoadingException(issues);
+        }
     }
 
     private static ClassProcessor createAccessTransformerService(DiscoveryResult discoveryResult) {

@@ -232,6 +232,6 @@ public class JarMetadataTest {
 
     @FunctionalInterface
     interface ModFileCustomizer {
-        void customize(ModFileBuilder builder) throws IOException;
+        void customize(ModFileBuilder<?> builder) throws IOException;
     }
 }

@@ -163,7 +163,7 @@ public final class ClassProcessorSet {
                     // the actual mod causing them.
                     var sourceFile = ServiceLoaderUtil.identifySourcePath(provider);
                     ModLoader.addLoadingIssue(
-                            ModLoadingIssue.error("fml.modloadingissue.coremod_error", provider.getClass().getName(), sourceFile).withCause(e));
+                            ModLoadingIssue.error("fml.modloadingissue.classprocessor_error", provider.getClass().getName(), sourceFile).withCause(e));
                 }
             }
             return this;
