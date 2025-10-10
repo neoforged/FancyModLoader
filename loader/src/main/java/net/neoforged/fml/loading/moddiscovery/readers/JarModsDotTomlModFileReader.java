@@ -14,7 +14,6 @@ import java.util.function.Function;
 import java.util.jar.Manifest;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.classloading.SecureJar;
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
@@ -42,12 +41,12 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
         IModFile mod;
         if (contents.containsFile(MODS_TOML)) {
             LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MODS_TOML, type, contents.getPrimaryPath());
-            var mjm = new ModJarMetadata(contents);
-            mod = new ModFile(SecureJar.from(contents, mjm), ModFileParser::modsTomlParser, discoveryAttributes);
+            var mjm = new ModJarMetadata();
+            mod = new ModFile(contents, mjm, ModFileParser::modsTomlParser, discoveryAttributes);
             mjm.setModFile(mod);
         } else if (type != null) {
             LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MANIFEST, type, contents.getPrimaryPath());
-            mod = new ModFile(SecureJar.from(contents), JarModsDotTomlModFileReader::manifestParser, type, discoveryAttributes);
+            mod = new ModFile(contents, null, JarModsDotTomlModFileReader::manifestParser, type, discoveryAttributes);
         } else {
             return null;
         }

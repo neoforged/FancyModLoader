@@ -24,7 +24,7 @@ public class Scanner {
     public ModFileScanData scan() {
         ModFileScanData result = new ModFileScanData();
         result.addModFileInfo(fileToScan.getModFileInfo());
-        fileToScan.getSecureJar().contents().visitContent((relativePath, resource) -> {
+        fileToScan.getContents().visitContent((relativePath, resource) -> {
             if (relativePath.endsWith(".class")) {
                 try (var in = resource.open()) {
                     ModClassVisitor mcv = new ModClassVisitor();

@@ -149,7 +149,7 @@ public class LoadingModList {
         long start = System.nanoTime();
         Map<String, IModFile> result = new HashMap<>();
         for (var modFile : this.allModFiles) {
-            for (var packageName : ((ModFile) modFile).getSecureJar().moduleDataProvider().descriptor().packages()) {
+            for (var packageName : ((ModFile) modFile).getModuleDescriptor().packages()) {
                 result.put(packageName, modFile);
             }
         }

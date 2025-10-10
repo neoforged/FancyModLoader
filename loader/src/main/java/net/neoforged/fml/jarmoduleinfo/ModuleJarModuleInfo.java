@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.classloading;
+package net.neoforged.fml.jarmoduleinfo;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -14,16 +14,14 @@ import net.neoforged.fml.jarcontents.JarResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * {@link JarMetadata} implementation for a modular jar.
+ * {@link JarModuleInfo} implementation for a modular jar.
  * Reads the module descriptor from the jar.
  */
-public class ModuleJarMetadata extends LazyJarMetadata {
+class ModuleJarModuleInfo implements JarModuleInfo {
     private final byte[] originalDescriptorBytes;
     private final ModuleDescriptor originalDescriptor;
-    private final JarContents jar;
 
-    public ModuleJarMetadata(JarResource moduleInfo, JarContents jar) {
-        this.jar = jar;
+    public ModuleJarModuleInfo(JarResource moduleInfo) {
         try {
             this.originalDescriptorBytes = moduleInfo.readAllBytes();
         } catch (IOException e) {
@@ -33,8 +31,8 @@ public class ModuleJarMetadata extends LazyJarMetadata {
     }
 
     @Override
-    protected ModuleDescriptor computeDescriptor() {
-        var fullDescriptor = ModuleDescriptor.read(ByteBuffer.wrap(originalDescriptorBytes), () -> ModuleDescriptorFactory.scanModulePackages(jar));
+    public ModuleDescriptor createDescriptor(JarContents contents) {
+        var fullDescriptor = ModuleDescriptor.read(ByteBuffer.wrap(originalDescriptorBytes), () -> ModuleDescriptorFactory.scanModulePackages(contents));
 
         // We do inherit the name and version, as well as the package list.
         var builder = ModuleDescriptor.newAutomaticModule(fullDescriptor.name());

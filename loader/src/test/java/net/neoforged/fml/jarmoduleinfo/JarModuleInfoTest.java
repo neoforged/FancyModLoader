@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.classloading;
+package net.neoforged.fml.jarmoduleinfo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public class JarMetadataTest {
+public class JarModuleInfoTest {
     @TempDir
     Path tempDir;
 
@@ -197,16 +197,16 @@ public class JarMetadataTest {
     }
 
     // Compute JarMetadata for a Jar that only contains a module-info.class with the given descriptor.
-    private JarMetadata getJarMetadata(ModuleDescriptor descriptor) throws IOException {
+    private ResolvedJarMetadata getJarMetadata(ModuleDescriptor descriptor) throws IOException {
         return getJarMetadata("test.jar", b -> b.withModuleInfo(descriptor));
     }
 
-    private JarMetadata getJarMetadata(String path, ModFileCustomizer consumer) throws IOException {
+    private ResolvedJarMetadata getJarMetadata(String path, ModFileCustomizer consumer) throws IOException {
         var testJar = tempDir.resolve(path);
         return getJarMetadata(testJar, consumer);
     }
 
-    private JarMetadata getJarMetadata(Path testJar, ModFileCustomizer consumer) throws IOException {
+    private ResolvedJarMetadata getJarMetadata(Path testJar, ModFileCustomizer consumer) throws IOException {
         Files.createDirectories(testJar.getParent());
 
         var builder = ModFileBuilder.toJar(testJar);
@@ -218,9 +218,11 @@ public class JarMetadataTest {
         builder.build();
 
         try (var jc = JarContents.ofPath(testJar)) {
-            var metadata = JarMetadata.from(jc);
-            metadata.descriptor(); // This causes the packages to be scanned so we can close the underlying fs
-            return metadata;
+            var metadata = JarModuleInfo.from(jc);
+            return new ResolvedJarMetadata(
+                    metadata.name(),
+                    metadata.version(),
+                    metadata.createDescriptor(jc));
         }
     }
 
@@ -234,4 +236,6 @@ public class JarMetadataTest {
     interface ModFileCustomizer {
         void customize(ModFileBuilder builder) throws IOException;
     }
+
+    record ResolvedJarMetadata(String name, String version, ModuleDescriptor descriptor) {}
 }

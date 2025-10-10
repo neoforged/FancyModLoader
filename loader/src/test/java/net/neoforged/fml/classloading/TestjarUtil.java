@@ -14,9 +14,10 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
+import net.neoforged.fml.jarcontents.JarContents;
 
 class TestjarUtil {
-    public record BuiltLayer(ModuleClassLoader cl, ModuleLayer layer, List<SecureJar> jars) implements AutoCloseable {
+    public record BuiltLayer(ModuleClassLoader cl, ModuleLayer layer, List<JarContentsModule> jars) implements AutoCloseable {
         public AutoCloseable makeLoaderCurrent() {
             // Replace context classloader during the callback
             var previousCl = Thread.currentThread().getContextClassLoader();
@@ -28,8 +29,8 @@ class TestjarUtil {
 
         @Override
         public void close() throws IOException {
-            for (SecureJar jar : jars) {
-                jar.close();
+            for (JarContentsModule jar : jars) {
+                jar.contents().close();
             }
         }
     }
@@ -53,14 +54,14 @@ class TestjarUtil {
     public static BuiltLayer buildLayer(List<Path> paths, List<ModuleLayer> parentLayers, ClassLoader parentLoader) {
         var jars = paths.stream().map(p -> {
             try {
-                return SecureJar.from(p);
+                return new JarContentsModule(JarContents.ofPath(p));
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         }).toList();
 
-        var roots = jars.stream().map(SecureJar::name).toList();
-        var jf = JarModuleFinder.of(jars.toArray(SecureJar[]::new));
+        var roots = jars.stream().map(JarContentsModule::moduleName).toList();
+        var jf = new JarContentsModuleFinder(jars);
         var conf = Configuration.resolveAndBind(
                 jf,
                 parentLayers.stream().map(ModuleLayer::configuration).toList(),

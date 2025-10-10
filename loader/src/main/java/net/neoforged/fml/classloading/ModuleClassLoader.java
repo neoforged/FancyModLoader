@@ -11,6 +11,7 @@ import java.lang.invoke.MethodType;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleReader;
+import java.lang.module.ModuleReference;
 import java.lang.module.ResolvedModule;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -34,7 +35,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * This classloader implements child-first classloading for any module that is defined
@@ -102,7 +102,6 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
      * system class-loader outside our control (by the Gradle test runner). We must not reload these classes
      * inside the module layers again, otherwise tests throw incompatible exceptions or may not be found at all.
      */
-    @VisibleForTesting
     public ModuleClassLoader(String name, Configuration configuration, List<ModuleLayer> parentLayers, @Nullable ClassLoader parentLoader) {
         super(name, parentLoader);
         this.configuration = configuration;
@@ -112,13 +111,9 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
         // Index all modules locally defined to this classloader
         int packageCount = 0;
         for (var m : configuration.modules()) {
-            if (m.reference() instanceof JarModuleFinder.JarModuleReference jarRef) {
-                String moduleName = m.reference().descriptor().name();
-                var moduleInfo = new ModuleInfo(this, moduleName, jarRef);
-                moduleInfoCache.put(moduleName, moduleInfo);
-            } else {
-                throw new IllegalArgumentException("Unsupported module reference type: " + m.reference().getClass());
-            }
+            String moduleName = m.reference().descriptor().name();
+            var moduleInfo = new ModuleInfo(this, moduleName, m.reference());
+            moduleInfoCache.put(moduleName, moduleInfo);
         }
 
         // Index all packages for locally defined modules
@@ -500,13 +495,13 @@ public class ModuleClassLoader extends ClassLoader implements AutoCloseable {
      */
     private static final class ModuleInfo implements AutoCloseable {
         private final String name;
-        private final JarModuleFinder.JarModuleReference moduleReference;
+        private final ModuleReference moduleReference;
         private final ReentrantLock lock = new ReentrantLock();
         private final ProtectionDomain protectionDomain;
         private volatile ModuleReader cachedReader;
         private volatile boolean closed = false;
 
-        ModuleInfo(ClassLoader classLoader, String name, JarModuleFinder.JarModuleReference moduleReference) {
+        ModuleInfo(ClassLoader classLoader, String name, ModuleReference moduleReference) {
             this.name = name;
             this.moduleReference = moduleReference;
 

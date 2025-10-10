@@ -13,8 +13,8 @@ import com.google.errorprone.annotations.CheckReturnValue;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
-import net.neoforged.fml.classloading.SecureJar;
 import net.neoforged.fml.jarcontents.JarContents;
+import net.neoforged.fml.jarmoduleinfo.JarModuleInfo;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
@@ -30,17 +30,16 @@ public class TestModFile extends ModFile implements AutoCloseable {
     private final FileSystem fileSystem;
     private final RuntimeCompiler compiler;
 
-    private TestModFile(SecureJar jar, FileSystem fileSystem, ModFileInfoParser parser) {
-        super(jar, parser, new ModFileDiscoveryAttributes(null, null, null, null));
+    private TestModFile(JarContents contents, JarModuleInfo metadata, FileSystem fileSystem, ModFileInfoParser parser) {
+        super(contents, metadata, parser, new ModFileDiscoveryAttributes(null, null, null, null));
         this.fileSystem = fileSystem;
         this.compiler = RuntimeCompiler.createFolder(fileSystem.getPath("/"));
     }
 
     private static TestModFile buildFile(FileSystem fileSystem, ModFileInfoParser parser) throws IOException {
         var jc = JarContents.ofPath(fileSystem.getPath("/"));
-        var metadata = new ModJarMetadata(jc);
-        var sj = SecureJar.from(jc, metadata);
-        var mod = new TestModFile(sj, fileSystem, parser);
+        var metadata = new ModJarMetadata();
+        var mod = new TestModFile(jc, metadata, fileSystem, parser);
         metadata.setModFile(mod);
         return mod;
     }
