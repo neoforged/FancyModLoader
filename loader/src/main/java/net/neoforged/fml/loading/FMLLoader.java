@@ -223,6 +223,11 @@ public final class FMLLoader implements AutoCloseable {
         }
         closeCallbacks.clear();
 
+        for (var modFile : earlyServicesJars) {
+            modFile.close();
+        }
+        earlyServicesJars.clear();
+
         if (loadingModList != null) {
             for (var modFile : loadingModList.getModFiles()) {
                 modFile.getFile().close();

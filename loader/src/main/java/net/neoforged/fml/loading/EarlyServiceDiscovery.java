@@ -6,18 +6,20 @@
 package net.neoforged.fml.loading;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.jar.JarFile;
-import net.neoforged.fml.classloading.JarMetadata;
 import net.neoforged.fml.jarcontents.JarContents;
+import net.neoforged.fml.jarmoduleinfo.JarModuleInfo;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.startup.FatalStartupException;
@@ -33,12 +35,12 @@ import org.apache.logging.log4j.Logger;
 final class EarlyServiceDiscovery {
     private static final Logger LOGGER = LogManager.getLogger(EarlyServiceDiscovery.class);
 
-    private static final Set<String> SERVICES = Set.of(
-            IModFileCandidateLocator.class.getName(),
-            IModFileReader.class.getName(),
-            IDependencyLocator.class.getName(),
-            GraphicsBootstrapper.class.getName(),
-            ImmediateWindowProvider.class.getName());
+    private static final Set<Class<?>> SERVICES = Set.of(
+            IModFileCandidateLocator.class,
+            IModFileReader.class,
+            IDependencyLocator.class,
+            GraphicsBootstrapper.class,
+            ImmediateWindowProvider.class);
 
     private EarlyServiceDiscovery() {}
 
@@ -53,7 +55,7 @@ final class EarlyServiceDiscovery {
 
         long start = System.currentTimeMillis();
 
-        var candidates = new ArrayList<Path>();
+        var candidates = new HashSet<Path>();
         try {
             Files.walkFileTree(directory, Set.of(), 1, new SimpleFileVisitor<>() {
                 @Override
@@ -67,6 +69,8 @@ final class EarlyServiceDiscovery {
         } catch (IOException e) {
             throw new FatalStartupException("Failed to find early startup services: " + e);
         }
+
+        findClasspathServices(candidates);
 
         var earlyServiceJars = candidates.parallelStream()
                 .map(EarlyServiceDiscovery::getEarlyServiceModFile)
@@ -82,13 +86,27 @@ final class EarlyServiceDiscovery {
         return earlyServiceJars;
     }
 
+    private static void findClasspathServices(Set<Path> candidates) {
+        // Look for classpath services as well
+        for (var service : SERVICES) {
+            var providers = ServiceLoader.load(service).stream().map(ServiceLoader.Provider::type).toList();
+            for (var provider : providers) {
+                var codeLocation = provider.getProtectionDomain().getCodeSource().getLocation();
+                try {
+                    candidates.add(Path.of(codeLocation.toURI()));
+                } catch (URISyntaxException ignored) {}
+            }
+        }
+    }
+
     private static ModFile getEarlyServiceModFile(Path path) {
         // We do not need to verify the Jar since we just test for existence of the service file and do not
         // actually load any code here.
         try (var jarFile = new JarFile(path.toFile(), false, JarFile.OPEN_READ)) {
             for (var service : SERVICES) {
-                if (jarFile.getEntry("META-INF/services/" + service) != null) {
-                    LOGGER.debug("{} contains early service {}", path, service);
+                String serviceClass = service.getName();
+                if (jarFile.getEntry("META-INF/services/" + serviceClass) != null) {
+                    LOGGER.debug("{} contains early service {}", path, serviceClass);
                     // Calling this while the JarFile is still open will allow the JVM to internally reuse it
                     return createEarlyServiceModFile(path);
                 }
@@ -101,9 +119,9 @@ final class EarlyServiceDiscovery {
     }
 
     private static ModFile createEarlyServiceModFile(Path path) throws IOException {
-        JarContents contents = JarContents.ofPath(path);
+        var contents = JarContents.ofPath(path);
         try {
-            return (ModFile) IModFile.create(contents, JarMetadata.from(contents), JarModsDotTomlModFileReader::manifestParser);
+            return (ModFile) IModFile.create(contents, JarModuleInfo.from(contents), JarModsDotTomlModFileReader::manifestParser);
         } catch (Exception e) {
             try {
                 contents.close();

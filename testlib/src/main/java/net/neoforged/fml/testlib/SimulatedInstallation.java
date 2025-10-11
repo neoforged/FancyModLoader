@@ -639,7 +639,11 @@ public class SimulatedInstallation implements AutoCloseable {
             var buildJar = type == Type.USERDEV_JAR || type == Type.USERDEV_LEGACY_JAR;
 
             if (buildJar) {
-                var builder = buildModJar(jarFilename);
+                // Create a jar in the build/libs directory, simulating a gradle built jar-file
+                var buildDir = getProjectRoot().resolve("build/libs");
+                Files.createDirectories(buildDir);
+                var path = buildDir.resolve(jarFilename);
+                var builder = ModFileBuilder.toJar(path);
                 customizer.customize(builder);
                 launchClasspath.add(builder.build());
             } else {
