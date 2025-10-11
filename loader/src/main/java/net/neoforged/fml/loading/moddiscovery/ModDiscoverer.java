@@ -109,13 +109,16 @@ public class ModDiscoverer {
         // We can continue loading if prime mods loaded successfully.
         if (successfullyLoadedMods) {
             LOGGER.debug(LogMarkers.SCAN, "Successfully Loaded {} mods. Attempting to load dependencies...", loadedFiles.size());
+
+            List<IModFile> dependencySources = new ArrayList<>(loadedFiles);
+            dependencySources.addAll(additionalDependencySources);
+            dependencySources = List.copyOf(dependencySources);
+
             for (var locator : dependencyLocators) {
                 try {
                     LOGGER.debug(LogMarkers.SCAN, "Trying locator {}", locator);
                     var pipeline = new DiscoveryPipeline(ModFileDiscoveryAttributes.DEFAULT.withDependencyLocator(locator), loadedFiles, discoveryIssues);
-                    var dependencySources = new ArrayList<>(loadedFiles);
-                    dependencySources.addAll(additionalDependencySources);
-                    locator.scanMods(List.copyOf(dependencySources), pipeline);
+                    locator.scanMods(dependencySources, pipeline);
                 } catch (ModLoadingException exception) {
                     LOGGER.error(LogMarkers.SCAN, "Failed to load dependencies with locator {}", locator, exception);
                     discoveryIssues.addAll(exception.getIssues());
