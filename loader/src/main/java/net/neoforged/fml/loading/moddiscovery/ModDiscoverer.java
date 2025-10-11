@@ -62,7 +62,7 @@ public class ModDiscoverer {
             List<ModFile> modFiles,
             List<ModLoadingIssue> discoveryIssues) {}
 
-    public Result discoverMods() {
+    public Result discoverMods(List<ModFile> additionalDependencySources) {
         LOGGER.debug(LogMarkers.SCAN, "Scanning for mods and other resources to load. We know {} ways to find mods", modFileLocators.size());
         List<ModFile> loadedFiles = new ArrayList<>();
         List<ModLoadingIssue> discoveryIssues = new ArrayList<>();
@@ -106,14 +106,16 @@ public class ModDiscoverer {
             loadedFiles.forEach(ModFile::close);
         }
 
-        //We can continue loading if prime mods loaded successfully.
+        // We can continue loading if prime mods loaded successfully.
         if (successfullyLoadedMods) {
             LOGGER.debug(LogMarkers.SCAN, "Successfully Loaded {} mods. Attempting to load dependencies...", loadedFiles.size());
             for (var locator : dependencyLocators) {
                 try {
                     LOGGER.debug(LogMarkers.SCAN, "Trying locator {}", locator);
                     var pipeline = new DiscoveryPipeline(ModFileDiscoveryAttributes.DEFAULT.withDependencyLocator(locator), loadedFiles, discoveryIssues);
-                    locator.scanMods(List.copyOf(loadedFiles), pipeline);
+                    var dependencySources = new ArrayList<>(loadedFiles);
+                    dependencySources.addAll(additionalDependencySources);
+                    locator.scanMods(List.copyOf(dependencySources), pipeline);
                 } catch (ModLoadingException exception) {
                     LOGGER.error(LogMarkers.SCAN, "Failed to load dependencies with locator {}", locator, exception);
                     discoveryIssues.addAll(exception.getIssues());
