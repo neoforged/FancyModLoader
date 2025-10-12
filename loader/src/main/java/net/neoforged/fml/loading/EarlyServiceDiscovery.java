@@ -89,8 +89,8 @@ final class EarlyServiceDiscovery {
     private static void findClasspathServices(Set<Path> candidates) {
         // Look for classpath services as well
         for (var service : SERVICES) {
-            var providers = ServiceLoader.load(service).stream().map(ServiceLoader.Provider::type).toList();
-            for (var provider : providers) {
+            for (var it = ServiceLoader.load(service).stream().iterator(); it.hasNext();) {
+                var provider = it.next().type();
                 var codeLocation = provider.getProtectionDomain().getCodeSource().getLocation();
                 try {
                     candidates.add(Path.of(codeLocation.toURI()));
