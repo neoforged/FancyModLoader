@@ -9,7 +9,6 @@ import com.mojang.logging.LogUtils;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleDescriptor;
@@ -128,6 +127,7 @@ public final class FMLLoader implements AutoCloseable {
     private final boolean production;
     @Nullable
     private ModuleLayer gameLayer;
+    private List<ModFile> earlyServicesJars = new ArrayList<>();
     @VisibleForTesting
     DiscoveryResult discoveryResult;
     private final ClassProcessorAuditLog classTransformerAuditLog = new ClassProcessorAuditLog();
@@ -222,6 +222,11 @@ public final class FMLLoader implements AutoCloseable {
             }
         }
         closeCallbacks.clear();
+
+        for (var modFile : earlyServicesJars) {
+            modFile.close();
+        }
+        earlyServicesJars.clear();
 
         if (loadingModList != null) {
             for (var modFile : loadingModList.getModFiles()) {
@@ -574,25 +579,9 @@ public final class FMLLoader implements AutoCloseable {
 
     private void loadEarlyServices() {
         // Search for early services
-        var earlyServices = EarlyServiceDiscovery.findEarlyServices(FMLPaths.MODSDIR.get());
-        if (!earlyServices.isEmpty()) {
-            // TODO: Early services should participate in JIJ discovery
-            // TODO: Don't like this flow, the discovery should return the JarContents directly to reuse the JarFile
-            var earlyServiceJars = earlyServices.stream().map(path -> {
-                try {
-                    return JarContents.ofPath(path);
-                } catch (IOException e) {
-                    throw new UncheckedIOException("Failed to open early service jar " + path, e);
-                }
-            }).toList();
-            appendLoader("FML Early Services", earlyServiceJars);
-            for (var earlyServiceJar : earlyServiceJars) {
-                try {
-                    earlyServiceJar.close();
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            }
+        this.earlyServicesJars.addAll(EarlyServiceDiscovery.findEarlyServiceJars(FMLPaths.MODSDIR.get()));
+        if (!earlyServicesJars.isEmpty()) {
+            appendLoader("FML Early Services", earlyServicesJars.stream().map(IModFile::getContents).toList());
         }
     }
 
@@ -646,7 +635,7 @@ public final class FMLLoader implements AutoCloseable {
         additionalLocators.add(new ModsFolderLocator());
 
         var modDiscoverer = new ModDiscoverer(new LaunchContextAdapter(), additionalLocators);
-        var discoveryResult = modDiscoverer.discoverMods();
+        var discoveryResult = modDiscoverer.discoverMods(earlyServicesJars);
         var modFiles = new ArrayList<>(discoveryResult.modFiles());
         var issues = new ArrayList<>(discoveryResult.discoveryIssues());
 

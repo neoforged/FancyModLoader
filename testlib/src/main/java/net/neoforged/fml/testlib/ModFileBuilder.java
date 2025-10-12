@@ -162,11 +162,11 @@ public abstract class ModFileBuilder<T extends ModFileBuilder<T>> {
         void customize(ModFileBuilder<?> builder) throws IOException;
     }
 
-    public T withJarInJar(ContainedJarIdentifier identifier, ModJarCustomizer childModCustomizer) throws Exception {
+    public T withJarInJar(ContainedJarIdentifier identifier, ModJarCustomizer childModCustomizer) throws IOException {
         return withJarInJar(identifier, JIJ_V1, childModCustomizer);
     }
 
-    public T withJarInJar(ContainedJarIdentifier identifier, ContainedVersion version, ModJarCustomizer childModCustomizer) throws Exception {
+    public T withJarInJar(ContainedJarIdentifier identifier, ContainedVersion version, ModJarCustomizer childModCustomizer) throws IOException {
         var filename = identifier.artifact() + "-" + version.artifactVersion().toString() + ".jar";
         var relativePath = "META-INF/jarjar/" + filename;
 
