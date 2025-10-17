@@ -459,6 +459,23 @@ public final class FMLLoader implements AutoCloseable {
                 }
             }
         }
+
+        for (var libraryFile : discoveryResult.gameLibraryContent()) {
+            for (var atPath : libraryFile.getAccessTransformers()) {
+                LOGGER.debug(LogMarkers.SCAN, "Adding Access Transformer {} in {}", atPath, libraryFile);
+                try (var in = libraryFile.getContents().openFile(atPath)) {
+                    if (in == null) {
+                        LOGGER.error(LogMarkers.LOADING, "Access transformer file {} provided by {} does not exist!", atPath, libraryFile);
+                    } else {
+                        engine.loadAT(new InputStreamReader(new BufferedInputStream(in)), atPath);
+                    }
+                } catch (IOException e) {
+                    // TODO: Convert to translated issue?
+                    throw new RuntimeException("Failed to load AT at " + atPath + " from " + libraryFile, e);
+                }
+            }
+        }
+
         return new AccessTransformerService(engine);
     }
 
