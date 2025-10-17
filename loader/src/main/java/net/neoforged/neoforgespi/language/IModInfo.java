@@ -62,6 +62,8 @@ public interface IModInfo {
 
     IConfigurable getConfig();
 
+    String visualizedInfo();
+
     enum Ordering {
         BEFORE, AFTER, NONE
     }
