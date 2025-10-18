@@ -35,7 +35,7 @@ final class RunUtils {
             var jvmArg = jvmArgs.get(i);
             // Remove the classpath argument
             if ("-cp".equals(jvmArg) || "-classpath".equals(jvmArg)) {
-                if (i + 1 < jvmArgs.size() && jvmArgs.get(i + 1).equals("${classpath}")) {
+                if (i + 1 < jvmArgs.size()) {
                     jvmArgs.remove(i + 1);
                 }
                 jvmArgs.remove(i--);

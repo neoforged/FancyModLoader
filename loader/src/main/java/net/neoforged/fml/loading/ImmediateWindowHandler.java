@@ -8,8 +8,9 @@ package net.neoforged.fml.loading;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
-import java.util.ServiceLoader;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.util.ServiceLoaderUtil;
+import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
 import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
 import org.apache.logging.log4j.LogManager;
@@ -24,10 +25,8 @@ public class ImmediateWindowHandler {
     @Nullable
     static ImmediateWindowProvider provider;
 
-    public static void load(boolean headless, ProgramArgs arguments) {
-        ServiceLoader.load(GraphicsBootstrapper.class)
-                .stream()
-                .map(ServiceLoader.Provider::get)
+    public static void load(ILaunchContext context, boolean headless, ProgramArgs arguments) {
+        ServiceLoaderUtil.loadEarlyServices(context, GraphicsBootstrapper.class, List.of())
                 .forEach(bootstrap -> {
                     LOGGER.info("Running graphics bootstrap plugin {}", bootstrap.name());
                     bootstrap.bootstrap(arguments.getArguments()); // TODO: Should take ProgramArgs so it can *remove* args
@@ -45,9 +44,8 @@ public class ImmediateWindowHandler {
         } else {
             var providername = FMLConfig.getConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER);
             LOGGER.info("Loading ImmediateWindowProvider {}", providername);
-            var maybeProvider = ServiceLoader.load(ImmediateWindowProvider.class)
+            var maybeProvider = ServiceLoaderUtil.loadEarlyServices(context, ImmediateWindowProvider.class, List.of())
                     .stream()
-                    .map(ServiceLoader.Provider::get)
                     .filter(p -> Objects.equals(p.name(), providername))
                     .findFirst();
             provider = maybeProvider.orElse(null);

@@ -173,7 +173,7 @@ public abstract class LauncherTest {
         try {
             LaunchResult result;
             try {
-                result = launch(launchDist, cleanDist, additionalClassPath);
+                result = launch(launchDist, cleanDist, actualClasspath);
             } catch (RuntimeException e) {
                 throw e;
             } catch (Exception e) {

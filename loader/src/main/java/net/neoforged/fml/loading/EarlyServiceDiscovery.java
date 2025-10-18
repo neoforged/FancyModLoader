@@ -6,7 +6,6 @@
 package net.neoforged.fml.loading;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,7 +14,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.jar.JarFile;
 import net.neoforged.fml.jarcontents.JarContents;
@@ -23,6 +21,7 @@ import net.neoforged.fml.jarmoduleinfo.JarModuleInfo;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.startup.FatalStartupException;
+import net.neoforged.fml.startup.StartupArgs;
 import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
 import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
 import net.neoforged.neoforgespi.locating.IDependencyLocator;
@@ -47,7 +46,7 @@ final class EarlyServiceDiscovery {
     /**
      * Find and load early services from the mods directory.
      */
-    public static List<ModFile> findEarlyServiceJars(Path directory) {
+    public static List<ModFile> findEarlyServiceJars(StartupArgs startupArgs, Path directory) {
         if (!Files.exists(directory)) {
             // Skip if the mods dir doesn't exist yet.
             return List.of();
@@ -70,7 +69,7 @@ final class EarlyServiceDiscovery {
             throw new FatalStartupException("Failed to find early startup services: " + e);
         }
 
-        findClasspathServices(candidates);
+        findClasspathServices(startupArgs, candidates);
 
         var earlyServiceJars = candidates.parallelStream()
                 .map(EarlyServiceDiscovery::getEarlyServiceModFile)
@@ -86,15 +85,12 @@ final class EarlyServiceDiscovery {
         return earlyServiceJars;
     }
 
-    private static void findClasspathServices(Set<Path> candidates) {
-        // Look for classpath services as well
-        for (var service : SERVICES) {
-            for (var it = ServiceLoader.load(service).stream().iterator(); it.hasNext();) {
-                var provider = it.next().type();
-                var codeLocation = provider.getProtectionDomain().getCodeSource().getLocation();
-                try {
-                    candidates.add(Path.of(codeLocation.toURI()));
-                } catch (URISyntaxException ignored) {}
+    private static void findClasspathServices(StartupArgs startupArgs, Set<Path> candidates) {
+        // Look for classpath services as well, but only in jar files, since we don't
+        // have grouping information for resource+classes folders at this point.
+        for (var file : startupArgs.unclaimedClassPathEntries()) {
+            if (file.isFile()) {
+                candidates.add(file.toPath());
             }
         }
     }
