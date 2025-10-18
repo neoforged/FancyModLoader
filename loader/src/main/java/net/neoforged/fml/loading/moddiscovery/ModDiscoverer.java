@@ -53,9 +53,9 @@ public class ModDiscoverer {
             Collection<IModFileCandidateLocator> additionalModFileLocators) {
         this.launchContext = launchContext;
 
-        modFileLocators = ServiceLoaderUtil.loadServices(launchContext, IModFileCandidateLocator.class, additionalModFileLocators);
-        modFileReaders = ServiceLoaderUtil.loadServices(launchContext, IModFileReader.class);
-        dependencyLocators = ServiceLoaderUtil.loadServices(launchContext, IDependencyLocator.class);
+        modFileLocators = ServiceLoaderUtil.loadEarlyServices(launchContext, IModFileCandidateLocator.class, additionalModFileLocators);
+        modFileReaders = ServiceLoaderUtil.loadEarlyServices(launchContext, IModFileReader.class, List.of());
+        dependencyLocators = ServiceLoaderUtil.loadEarlyServices(launchContext, IDependencyLocator.class, List.of());
     }
 
     public record Result(

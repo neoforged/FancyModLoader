@@ -36,6 +36,24 @@ public class EarlyServicesTest extends LauncherTest {
         assertEquals(Boolean.TRUE, WAS_CALLED.get());
     }
 
+    // Tests that an early service jar that also declares a mod will not be picked up twice.
+    @ParameterizedTest
+    @ClientInstallationTypesSource
+    void testGraphicsBootstrapperWithMod(SimulatedInstallation.Type type) throws Exception {
+        installation.setup(type);
+
+        installation.buildInstallationAppropriateModProject("bootwithmod", "bootwithmod.jar", builder -> {
+            addEarlyService(builder);
+            builder.withTestmodModsToml();
+        });
+
+        headless = false;
+        var launchResult = launchInstalledDist();
+
+        assertEquals(Boolean.TRUE, WAS_CALLED.get());
+        assertThat(launchResult.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
+    }
+
     // This test checks that a GraphicsBootstrapper service will be picked up in our various scenarios (jar / classpath),
     // and its packaged JIJ mod will also be loaded.
     @ParameterizedTest

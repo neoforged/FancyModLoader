@@ -127,7 +127,7 @@ public final class FMLLoader implements AutoCloseable {
     private final boolean production;
     @Nullable
     private ModuleLayer gameLayer;
-    private List<ModFile> earlyServicesJars = new ArrayList<>();
+    private final List<ModFile> earlyServicesJars = new ArrayList<>();
     @VisibleForTesting
     DiscoveryResult discoveryResult;
     private final ClassProcessorAuditLog classTransformerAuditLog = new ClassProcessorAuditLog();
@@ -324,9 +324,9 @@ public final class FMLLoader implements AutoCloseable {
                 launchContext.addLocated(claimedFile.toPath());
             }
 
-            loader.loadEarlyServices();
+            loader.loadEarlyServices(startupArgs);
 
-            ImmediateWindowHandler.load(startupArgs.headless(), loader.programArgs);
+            ImmediateWindowHandler.load(launchContext, startupArgs.headless(), loader.programArgs);
             // Report known versions no
             if (loader.versionInfo.neoForgeVersion() != null) {
                 ImmediateWindowHandler.setNeoForgeVersion(loader.versionInfo.neoForgeVersion());
@@ -577,9 +577,9 @@ public final class FMLLoader implements AutoCloseable {
         return classLoader.getResource("net/minecraft/DetectedVersion.class") == null;
     }
 
-    private void loadEarlyServices() {
+    private void loadEarlyServices(StartupArgs startupArgs) {
         // Search for early services
-        this.earlyServicesJars.addAll(EarlyServiceDiscovery.findEarlyServiceJars(FMLPaths.MODSDIR.get()));
+        this.earlyServicesJars.addAll(EarlyServiceDiscovery.findEarlyServiceJars(startupArgs, FMLPaths.MODSDIR.get()));
         if (!earlyServicesJars.isEmpty()) {
             appendLoader("FML Early Services", earlyServicesJars.stream().map(IModFile::getContents).toList());
         }
