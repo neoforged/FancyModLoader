@@ -26,7 +26,7 @@
   "fml.modloadingissue.dependencyloading.conflictingdependencies": "Einige Mods benötigen nicht vereinbare Versionen von: §6{0}§r. Benötigt von: §e{1}§r.",
   "fml.modloadingissue.dependencyloading.mismatchedcontaineddependencies": "Einige Mods haben sich auf einen akzeptablen Versionsbereich von: §6{0}§r geeinigt, aber es wurde keine jar-Datei bereitgestellt, die zum Bereich passt. Angefordert von: §e{1}§r.",
   "fml.modloadingissue.coremod_error": "Ein Fehler ist beim Laden von Core-Mod {0} von {1} aufgetreten",
-  "fml.modloadingissue.corrupted_installation": "Your NeoForge installation is corrupted. Please try to reinstall NeoForge.",
+  "fml.modloadingissue.corrupted_installation": "Deine NeoForge-Installation ist beschädigt. Bitte versuche Neoforge neu zu installieren.",
   "fml.modloadingissue.missing_minecraft_jar": "The patched Minecraft jar is missing. Please try to reinstall NeoForge.",
   "fml.modloadingissue.corrupted_minecraft_jar": "The patched Minecraft jar is corrupted. Please try to reinstall NeoForge.",
   "fml.modloadingissue.missing_neoforge_jar": "The NeoForge jar is missing. Please try to reinstall NeoForge.",
