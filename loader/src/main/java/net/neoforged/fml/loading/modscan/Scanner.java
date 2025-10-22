@@ -7,9 +7,6 @@ package net.neoforged.fml.loading.modscan;
 
 import com.mojang.logging.LogUtils;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.neoforgespi.language.ModFileScanData;
@@ -20,25 +17,25 @@ public class Scanner {
     private static final Logger LOGGER = LogUtils.getLogger();
     private final ModFile fileToScan;
 
-    public Scanner(final ModFile fileToScan) {
+    public Scanner(ModFile fileToScan) {
         this.fileToScan = fileToScan;
     }
 
     public ModFileScanData scan() {
         ModFileScanData result = new ModFileScanData();
         result.addModFileInfo(fileToScan.getModFileInfo());
-        fileToScan.scanFile(p -> fileVisitor(p, result));
+        fileToScan.getContents().visitContent((relativePath, resource) -> {
+            if (relativePath.endsWith(".class")) {
+                try (var in = resource.open()) {
+                    ModClassVisitor mcv = new ModClassVisitor();
+                    ClassReader cr = new ClassReader(in);
+                    cr.accept(mcv, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG);
+                    mcv.buildData(result.getClasses(), result.getAnnotations());
+                } catch (IOException | IllegalArgumentException e) {
+                    LOGGER.error(LogMarkers.SCAN, "Exception scanning {} path {}", fileToScan, relativePath, e);
+                }
+            }
+        });
         return result;
-    }
-
-    private void fileVisitor(final Path path, final ModFileScanData result) {
-        try (InputStream in = Files.newInputStream(path)) {
-            ModClassVisitor mcv = new ModClassVisitor();
-            ClassReader cr = new ClassReader(in);
-            cr.accept(mcv, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG);
-            mcv.buildData(result.getClasses(), result.getAnnotations());
-        } catch (IOException | IllegalArgumentException e) {
-            LOGGER.error(LogMarkers.SCAN, "Exception scanning {} path {}", fileToScan, path, e);
-        }
     }
 }

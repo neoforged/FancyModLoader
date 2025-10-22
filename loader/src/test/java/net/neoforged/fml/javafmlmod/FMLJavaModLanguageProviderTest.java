@@ -9,12 +9,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.neoforged.bus.api.Event;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LauncherTest;
-import net.neoforged.fml.loading.SimulatedInstallation;
-import net.neoforged.fml.test.RuntimeCompiler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -38,17 +38,14 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
     public void testDanglingEntryPoints() throws Exception {
         installation.setupProductionClient();
 
-        var testJar = installation.writeModJar("test.jar", SimulatedInstallation.createModsToml("testmod", "1.0"));
-        try (var compiler = RuntimeCompiler.create(testJar)) {
-            compiler.builder()
-                    .addClass("testmod.DanglingEntryPoint", """
-                            package testmod;
-                            @net.neoforged.fml.common.Mod("notthismod")
-                            class DanglingEntryPoint {
-                            }
-                            """)
-                    .compile();
-        }
+        installation.buildModJar("test.jar")
+                .withTestmodModsToml()
+                .addClass("testmod.DanglingEntryPoint", """
+                        @net.neoforged.fml.common.Mod("notthismod")
+                        class DanglingEntryPoint {
+                        }
+                        """)
+                .build();
 
         var e = Assertions.assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
         assertThat(getTranslatedIssues(e.getIssues()))
@@ -60,19 +57,16 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
     void testModConstructionWithoutPublicConstructor() throws Exception {
         installation.setupProductionClient();
 
-        var testJar = installation.writeModJar("test.jar", SimulatedInstallation.createModsToml("testmod", "1.0"));
-        try (var compiler = RuntimeCompiler.create(testJar)) {
-            compiler.builder()
-                    .addClass("testmod.EntryPoint", """
-                            package testmod;
-                            @net.neoforged.fml.common.Mod("testmod")
-                            class EntryPoint {
-                                EntryPoint() {
-                                }
+        installation.buildModJar("test.jar")
+                .withTestmodModsToml()
+                .addClass("testmod.EntryPoint", """
+                        @net.neoforged.fml.common.Mod("testmod")
+                        class EntryPoint {
+                            EntryPoint() {
                             }
-                            """)
-                    .compile();
-        }
+                        }
+                        """)
+                .build();
 
         var e = Assertions.assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
         assertThat(getTranslatedIssues(e.getIssues()))
@@ -84,20 +78,18 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
     void testModConstructionAndEventDispatch() throws Exception {
         installation.setupProductionClient();
 
-        var testJar = installation.writeModJar("test.jar", SimulatedInstallation.createModsToml("testmod", "1.0"));
-        try (var compiler = RuntimeCompiler.create(testJar)) {
-            compiler.builder()
-                    .addClass("testmod.EntryPoint", """
-                            import java.util.ArrayList;
-                            @net.neoforged.fml.common.Mod("testmod")
-                            public class EntryPoint {
-                                public EntryPoint(net.neoforged.bus.api.IEventBus modEventBus) {
-                                    modEventBus.addListener(net.neoforged.fml.event.lifecycle.FMLClientSetupEvent.class, e -> net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.EVENTS.add(e));
-                                }
+        installation.buildModJar("test.jar")
+                .withTestmodModsToml()
+                .addClass("testmod.EntryPoint", """
+                        import java.util.ArrayList;
+                        @net.neoforged.fml.common.Mod("testmod")
+                        public class EntryPoint {
+                            public EntryPoint(net.neoforged.bus.api.IEventBus modEventBus) {
+                                modEventBus.addListener(net.neoforged.fml.event.lifecycle.FMLClientSetupEvent.class, e -> net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.EVENTS.add(e));
                             }
-                            """)
-                    .compile();
-        }
+                        }
+                        """)
+                .build();
 
         launchAndLoad("neoforgeclient");
 
@@ -110,27 +102,25 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
     void testMultipleEntrypoints() throws Exception {
         installation.setupProductionClient();
 
-        var testJar = installation.writeModJar("test.jar", SimulatedInstallation.createModsToml("testmod", "1.0"));
-        try (var compiler = RuntimeCompiler.create(testJar)) {
-            compiler.builder()
-                    .addClass("testmod.EntryPoint", """
-                            @net.neoforged.fml.common.Mod("testmod")
-                            public class EntryPoint {
-                                public EntryPoint() {
-                                    net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.MESSAGES.add("common");
-                                }
+        var testJar = installation.buildModJar("test.jar")
+                .withTestmodModsToml()
+                .addClass("testmod.EntryPoint", """
+                        @net.neoforged.fml.common.Mod("testmod")
+                        public class EntryPoint {
+                            public EntryPoint() {
+                                net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.MESSAGES.add("common");
                             }
-                            """)
-                    .addClass("testmod.ClientEntryPoint", """
-                            @net.neoforged.fml.common.Mod(value = "testmod", dist = net.neoforged.api.distmarker.Dist.CLIENT)
-                            public class ClientEntryPoint {
-                                public ClientEntryPoint() {
-                                    net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.MESSAGES.add("client");
-                                }
+                        }
+                        """)
+                .addClass("testmod.ClientEntryPoint", """
+                        @net.neoforged.fml.common.Mod(value = "testmod", dist = net.neoforged.api.distmarker.Dist.CLIENT)
+                        public class ClientEntryPoint {
+                            public ClientEntryPoint() {
+                                net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.MESSAGES.add("client");
                             }
-                            """)
-                    .compile();
-        }
+                        }
+                        """)
+                .build();
 
         launchAndLoad("neoforgeclient");
 
@@ -164,5 +154,45 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
         });
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly("ERROR: testmod (testmod) encountered an error while dispatching the net.neoforged.fml.event.lifecycle.FMLClientSetupEvent event"
                 + "\njava.lang.RuntimeException: null");
+    }
+
+    @Test
+    void testEventBusSubscriber() throws Exception {
+        installation.setupProductionClient();
+        installation.buildModJar("test.jar")
+                .withModsToml(builder -> builder.unlicensedJavaMod().addMod("testmod", "1.0"))
+                .addClass("testmod.Subscriber", """
+                        import net.neoforged.bus.api.SubscribeEvent;
+                        import net.neoforged.fml.common.EventBusSubscriber;
+                        import net.neoforged.fml.event.lifecycle.FMLConstructModEvent;
+
+                        import net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest;
+
+                        @EventBusSubscriber
+                        public class Subscriber {
+                            @SubscribeEvent
+                            static void onConstruct(FMLConstructModEvent event) {
+                                FMLJavaModLanguageProviderTest.MESSAGES.add("mod event bus event was fired!");
+                            }
+
+                            @SubscribeEvent
+                            static void onTestEvent(FMLJavaModLanguageProviderTest.TestEvent event) {
+                                event.message = "game event bus event was fired!";
+                            }
+                        }
+                        """)
+                .build();
+
+        launchAndLoad("neoforgeclient");
+
+        assertThat(MESSAGES).containsExactly("mod event bus event was fired!");
+
+        final var event = new TestEvent();
+        FMLLoader.getCurrent().getBindings().getGameBus().post(event);
+        assertThat(event.message).isEqualTo("game event bus event was fired!");
+    }
+
+    public static final class TestEvent extends Event {
+        public String message;
     }
 }

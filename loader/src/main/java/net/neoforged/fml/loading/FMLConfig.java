@@ -43,9 +43,8 @@ public class FMLConfig {
         EARLY_WINDOW_PROVIDER("earlyWindowProvider", "fmlearlywindow", "Early window provider"),
         EARLY_WINDOW_WIDTH("earlyWindowWidth", 854, "Early window width"),
         EARLY_WINDOW_HEIGHT("earlyWindowHeight", 480, "Early window height"),
-        EARLY_WINDOW_FBSCALE("earlyWindowFBScale", 1, "Early window framebuffer scale"),
         EARLY_WINDOW_MAXIMIZED("earlyWindowMaximized", Boolean.FALSE, "Early window starts maximized"),
-        EARLY_WINDOW_SQUIR("earlyWindowSquir", Boolean.FALSE, "Squir?");
+        EARLY_LOADING_SCREEN_THEME("earlyLoadingScreenTheme", "", "Force a given theme-id to be used for the early loading screen");
 
         private final String entry;
         private final Object defaultValue;
@@ -53,11 +52,11 @@ public class FMLConfig {
         private final Class<?> valueType;
         private final Function<Object, Object> entryFunction;
 
-        ConfigValue(final String entry, final Object defaultValue, final String comment) {
+        ConfigValue(String entry, Object defaultValue, String comment) {
             this(entry, defaultValue, comment, Function.identity());
         }
 
-        ConfigValue(final String entry, final Object defaultValue, final String comment, Function<Object, Object> entryFunction) {
+        ConfigValue(String entry, Object defaultValue, String comment, Function<Object, Object> entryFunction) {
             this.entry = entry;
             this.defaultValue = defaultValue;
             this.comment = comment;
@@ -80,12 +79,12 @@ public class FMLConfig {
             return (T) this.entryFunction.apply(config != null ? config.get(this.entry) : this.defaultValue);
         }
 
-        private <T> void setConfigValue(CommentedConfig configData, final T value) {
+        private <T> void setConfigValue(CommentedConfig configData, T value) {
             configData.set(this.entry, value);
         }
     }
 
-    private static Object maxThreads(final Object value) {
+    private static Object maxThreads(Object value) {
         int val = (Integer) value;
         if (val <= 0) return Runtime.getRuntime().availableProcessors();
         else return val;
@@ -150,7 +149,7 @@ public class FMLConfig {
     }
 
     public static void load() {
-        final Path configFile = FMLPaths.FMLCONFIG.get();
+        Path configFile = FMLPaths.FMLCONFIG.get();
         INSTANCE.loadFrom(configFile);
         if (LOGGER.isTraceEnabled(LogMarkers.CORE)) {
             LOGGER.trace(LogMarkers.CORE, "Loaded FML config from {}", FMLPaths.FMLCONFIG.get());

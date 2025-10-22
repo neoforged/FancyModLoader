@@ -1,19 +1,30 @@
 /*
- * Copyright (c) Forge Development LLC and contributors
+ * Copyright (c) NeoForged and contributors
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
 package net.neoforged.fml.loading;
 
-import cpw.mods.modlauncher.api.IEnvironment;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.neoforgespi.Environment;
 
-public class FMLEnvironment {
-    public static final Dist dist = FMLLoader.getDist();
-    public static final boolean production = FMLLoader.isProduction() || System.getProperties().containsKey("production");
+/**
+ * This is a convenience class for quickly accessing various aspects of the {@linkplain FMLLoader#getCurrent()} current loader}.
+ * <p>If no {@link FMLLoader} is currently active, all methods in this class will throw.
+ */
+public final class FMLEnvironment {
+    private FMLEnvironment() {}
 
-    static void setupInteropEnvironment(IEnvironment environment) {
-        environment.computePropertyIfAbsent(Environment.Keys.DIST.get(), v -> dist);
+    /**
+     * @see FMLLoader#getDist()
+     */
+    public static Dist getDist() {
+        return FMLLoader.getCurrent().getDist();
+    }
+
+    /**
+     * @see FMLLoader#isProduction()
+     */
+    public static boolean isProduction() {
+        return FMLLoader.getCurrent().isProduction();
     }
 }

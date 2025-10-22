@@ -10,14 +10,13 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.io.Reader;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import javax.lang.model.SourceVersion;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.jarcontents.JarResource;
 import net.neoforged.neoforgespi.language.IModInfo;
 import org.objectweb.asm.Type;
 
@@ -31,8 +30,8 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
         return comp != 0 ? comp : fieldName.compareTo(other.fieldName);
     }
 
-    static List<EnumPrototype> load(IModInfo mod, Path path) {
-        try (Reader reader = Files.newBufferedReader(path)) {
+    static List<EnumPrototype> load(IModInfo mod, JarResource resource) {
+        try (Reader reader = resource.bufferedReader()) {
             JsonObject json = GSON.fromJson(reader, JsonObject.class);
 
             JsonArray entries = json.getAsJsonArray("entries");
@@ -106,7 +105,7 @@ record EnumPrototype(String owningMod, String enumName, String fieldName, String
             }
             return prototypes;
         } catch (Throwable e) {
-            ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloadingissue.enumextender.loading_error", path)
+            ModLoader.addLoadingIssue(ModLoadingIssue.error("fml.modloadingissue.enumextender.loading_error", resource)
                     .withAffectedMod(mod)
                     .withCause(e));
             return List.of();

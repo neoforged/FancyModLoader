@@ -14,7 +14,7 @@ import net.neoforged.fml.LogicalSide;
 public final class SidedThreadGroup extends ThreadGroup implements ThreadFactory {
     private final LogicalSide side;
 
-    SidedThreadGroup(final LogicalSide side) {
+    SidedThreadGroup(LogicalSide side) {
         super(side.name());
         this.side = side;
     }
@@ -29,7 +29,7 @@ public final class SidedThreadGroup extends ThreadGroup implements ThreadFactory
     }
 
     @Override
-    public Thread newThread(final Runnable runnable) {
+    public Thread newThread(Runnable runnable) {
         return new Thread(this, runnable);
     }
 }

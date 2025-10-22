@@ -6,7 +6,7 @@
 package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.jarhandling.JarContents;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,12 +15,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.zip.ZipException;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.i18n.FMLTranslations;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.UniqueModListBuilder;
@@ -56,7 +58,11 @@ public class ModDiscoverer {
         dependencyLocators = ServiceLoaderUtil.loadServices(launchContext, IDependencyLocator.class);
     }
 
-    public ModValidator discoverMods() {
+    public record Result(
+            List<ModFile> modFiles,
+            List<ModLoadingIssue> discoveryIssues) {}
+
+    public Result discoverMods(List<ModFile> additionalDependencySources) {
         LOGGER.debug(LogMarkers.SCAN, "Scanning for mods and other resources to load. We know {} ways to find mods", modFileLocators.size());
         List<ModFile> loadedFiles = new ArrayList<>();
         List<ModLoadingIssue> discoveryIssues = new ArrayList<>();
@@ -74,7 +80,7 @@ public class ModDiscoverer {
             } catch (ModLoadingException e) {
                 discoveryIssues.addAll(e.getIssues());
             } catch (Exception e) {
-                discoveryIssues.add(ModLoadingIssue.error("fml.modloadingissue.technical_error", locator.toString() + "failed").withCause(e));
+                discoveryIssues.add(ModLoadingIssue.error("fml.modloadingissue.technical_error", locator.toString() + " failed").withCause(e));
             }
 
             LOGGER.debug(LogMarkers.SCAN, "Locator {} found {} mods, {} warnings, {} errors and skipped {} candidates", locator,
@@ -84,8 +90,9 @@ public class ModDiscoverer {
         //First processing run of the mod list. Any duplicates will cause resolution failure and dependency loading will be skipped.
         Map<IModFile.Type, List<ModFile>> modFilesMap = Collections.emptyMap();
         try {
-            final UniqueModListBuilder modsUniqueListBuilder = new UniqueModListBuilder(loadedFiles);
-            final UniqueModListBuilder.UniqueModListData uniqueModsData = modsUniqueListBuilder.buildUniqueList();
+            UniqueModListBuilder modsUniqueListBuilder = new UniqueModListBuilder(loadedFiles);
+            UniqueModListBuilder.UniqueModListData uniqueModsData = modsUniqueListBuilder.buildUniqueList();
+            uniqueModsData.discardedFiles().forEach(ModFile::close);
 
             //Grab the temporary results.
             //This allows loading to continue to a base state, in case dependency loading fails.
@@ -96,16 +103,22 @@ public class ModDiscoverer {
             LOGGER.error(LogMarkers.SCAN, "Failed to build unique mod list after mod discovery.", exception);
             discoveryIssues.addAll(exception.getIssues());
             successfullyLoadedMods = false;
+            loadedFiles.forEach(ModFile::close);
         }
 
-        //We can continue loading if prime mods loaded successfully.
+        // We can continue loading if prime mods loaded successfully.
         if (successfullyLoadedMods) {
             LOGGER.debug(LogMarkers.SCAN, "Successfully Loaded {} mods. Attempting to load dependencies...", loadedFiles.size());
+
+            List<IModFile> dependencySources = new ArrayList<>(loadedFiles);
+            dependencySources.addAll(additionalDependencySources);
+            dependencySources = List.copyOf(dependencySources);
+
             for (var locator : dependencyLocators) {
                 try {
                     LOGGER.debug(LogMarkers.SCAN, "Trying locator {}", locator);
                     var pipeline = new DiscoveryPipeline(ModFileDiscoveryAttributes.DEFAULT.withDependencyLocator(locator), loadedFiles, discoveryIssues);
-                    locator.scanMods(List.copyOf(loadedFiles), pipeline);
+                    locator.scanMods(dependencySources, pipeline);
                 } catch (ModLoadingException exception) {
                     LOGGER.error(LogMarkers.SCAN, "Failed to load dependencies with locator {}", locator, exception);
                     discoveryIssues.addAll(exception.getIssues());
@@ -114,8 +127,9 @@ public class ModDiscoverer {
 
             //Second processing run of the mod list. Any duplicates will cause resolution failure and only the mods list will be loaded.
             try {
-                final UniqueModListBuilder modsAndDependenciesUniqueListBuilder = new UniqueModListBuilder(loadedFiles);
-                final UniqueModListBuilder.UniqueModListData uniqueModsAndDependenciesData = modsAndDependenciesUniqueListBuilder.buildUniqueList();
+                UniqueModListBuilder modsAndDependenciesUniqueListBuilder = new UniqueModListBuilder(loadedFiles);
+                UniqueModListBuilder.UniqueModListData uniqueModsAndDependenciesData = modsAndDependenciesUniqueListBuilder.buildUniqueList();
+                uniqueModsAndDependenciesData.discardedFiles().forEach(ModFile::close);
 
                 //We now only need the mod files map, not the list.
                 modFilesMap = uniqueModsAndDependenciesData.modFiles().stream()
@@ -132,11 +146,9 @@ public class ModDiscoverer {
 
         LOGGER.info("\n     Mod List:\n\t\tName Version (Mod Id)\n\n{}", logReport(modFilesMap.values()));
 
-        //Validate the loading. With a deduplicated list, we can now successfully process the artifacts and load
-        //transformer plugins.
-        var validator = new ModValidator(modFilesMap, discoveryIssues);
-        validator.stage1Validation();
-        return validator;
+        var modFiles = new ArrayList<ModFile>();
+        modFilesMap.values().forEach(modFiles::addAll);
+        return new Result(modFiles, discoveryIssues);
     }
 
     private String logReport(Collection<List<ModFile>> modFiles) {
@@ -187,7 +199,7 @@ public class ModDiscoverer {
 
             JarContents jarContents;
             try {
-                jarContents = JarContents.of(groupedPaths);
+                jarContents = JarContents.ofPaths(groupedPaths);
             } catch (Exception e) {
                 if (causeChainContains(e, ZipException.class)) {
                     addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile.invalidzip").withAffectedPath(primaryPath).withCause(e));
@@ -225,6 +237,12 @@ public class ModDiscoverer {
                         if (addModFile(provided)) {
                             return Optional.of(provided);
                         }
+                        // The reader might have returned something other than a ModFile (that is one reason for addModFile rejecting it)
+                        if (provided instanceof ModFile modFile) {
+                            modFile.close();
+                        } else {
+                            closeJarContents(jarContents);
+                        }
                         return Optional.empty();
                     }
                 } catch (ModLoadingException e) {
@@ -232,6 +250,8 @@ public class ModDiscoverer {
                     // We'll stash them here in case no other reader successfully reads the file.
                     incompatibilityIssues.addAll(e.getIssues());
                 } catch (Exception e) {
+                    closeJarContents(jarContents); // Ensure the jar contents are closed
+
                     // When a reader just outright crashes while reading the file, we do error intentionally.
                     addIssue(ModLoadingIssue.error("fml.modloadingissue.brokenfile").withAffectedPath(jarContents.getPrimaryPath()).withCause(e));
                     return Optional.empty();
@@ -261,11 +281,15 @@ public class ModDiscoverer {
                 }
             }
 
+            // No reader successfully parsed the contents, ensure they're properly closed now
+            closeJarContents(jarContents);
+
             return Optional.empty();
         }
 
         @Override
         public boolean addModFile(IModFile mf) {
+            Objects.requireNonNull(mf, "mf");
             if (!(mf instanceof ModFile modFile)) {
                 String detail = "Unexpected IModFile subclass: " + mf.getClass();
                 addIssue(ModLoadingIssue.error("fml.modloadingissue.technical_error", detail).withAffectedModFile(mf));
@@ -289,6 +313,14 @@ public class ModDiscoverer {
                 case WARNING -> warningCount++;
                 case ERROR -> errorCount++;
             }
+        }
+    }
+
+    private static void closeJarContents(JarContents jarContents) {
+        try {
+            jarContents.close();
+        } catch (IOException e) {
+            LOGGER.error("Failed to close jar contents {}", jarContents, e);
         }
     }
 

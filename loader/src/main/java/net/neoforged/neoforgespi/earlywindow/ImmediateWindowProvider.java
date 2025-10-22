@@ -5,7 +5,11 @@
 
 package net.neoforged.neoforgespi.earlywindow;
 
+import java.nio.file.Path;
+import java.util.List;
+import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.EarlyLoadingScreenController;
+import net.neoforged.fml.loading.ProgramArgs;
 
 /**
  * This is for allowing the plugging in of alternative early display implementations.
@@ -29,24 +33,21 @@ public interface ImmediateWindowProvider extends EarlyLoadingScreenController {
     /**
      * This is called very early on to initialize ourselves. Use this to initialize the window and other GL core resources.
      *
-     * One thing we want to ensure is that we try and create the highest GL_PROFILE we can accomplish.
-     * GLFW_CONTEXT_VERSION_MAJOR,GLFW_CONTEXT_VERSION_MINOR should be as high as possible on the created window,
-     * and it should have all the typical profile settings.
-     *
-     * @param arguments The arguments provided to the Java process. This is the entire command line, so you can process
-     *                  stuff from it.
-     * @return A runnable that will be periodically ticked by FML during startup ON THE MAIN THREAD. This is usually
-     *         a good place to put glfwPollEvents() tests.
+     * @param args The current program arguments. You can mutate this.
      */
-    Runnable initialize(String[] arguments);
+    void initialize(ProgramArgs args);
 
     /**
-     * This is called during the module loading process to allow us to find objects inside the GAME layer, such as a
-     * later loading screen.
-     * 
-     * @param layer This is the GAME layer from ModLauncher
+     * Sets the Minecraft version, once it has been determined. This may be some time after {@link #initialize}
+     * was called, or never, if Minecraft can't be found.
      */
-    void updateModuleReads(ModuleLayer layer);
+    void setMinecraftVersion(String version);
+
+    /**
+     * Sets the NeoForge version, once it has been determined. This may be some time after {@link #initialize}
+     * was called, or never, if NeoForge can't be found.
+     */
+    void setNeoForgeVersion(String version);
 
     /**
      * This is called during some very early startup routines to show a crash dialog
@@ -55,4 +56,15 @@ public interface ImmediateWindowProvider extends EarlyLoadingScreenController {
      * @param message The message to display
      */
     void crash(String message);
+
+    /**
+     * This is called when a fatal loading error occurs to show a MC-independent loading error screen and
+     * then terminate the game.
+     *
+     * @param issues          The loading issues that occurred
+     * @param modsFolder      The path to the mods folder
+     * @param logFile         The path to the latest.log file
+     * @param crashReportFile The path to the crash report of the fatal error
+     */
+    void displayFatalErrorAndExit(List<ModLoadingIssue> issues, Path modsFolder, Path logFile, Path crashReportFile);
 }

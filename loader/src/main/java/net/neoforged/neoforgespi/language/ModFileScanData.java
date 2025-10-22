@@ -29,7 +29,7 @@ public class ModFileScanData {
     }
 
     public Stream<AnnotationData> getAnnotatedBy(Class<? extends Annotation> type, ElementType elementType) {
-        final var anType = Type.getType(type);
+        var anType = Type.getType(type);
         return getAnnotations().stream()
                 .filter(ad -> ad.targetType == elementType && ad.annotationType.equals(anType));
     }

@@ -9,17 +9,18 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import net.neoforged.fml.FMLVersion;
 import net.neoforged.neoforgespi.language.IModLanguageLoader;
 
 public abstract class BuiltInLanguageLoader implements IModLanguageLoader {
     @Override
     public String version() {
-        final Path lpPath;
+        Path lpPath;
         try {
             lpPath = Paths.get(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
         } catch (URISyntaxException e) {
             throw new RuntimeException("Huh?", e);
         }
-        return JarVersionLookupHandler.getVersion(this.getClass()).orElse(Files.isDirectory(lpPath) ? FMLLoader.versionInfo().fmlVersion() : null);
+        return JarVersionLookupHandler.getVersion(this.getClass()).orElse(Files.isDirectory(lpPath) ? FMLVersion.getVersion() : null);
     }
 }

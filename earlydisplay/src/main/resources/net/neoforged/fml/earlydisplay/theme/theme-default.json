@@ -1,0 +1,151 @@
+{
+  "version": 1,
+  "windowIcon": "neoforged_icon.png",
+  "fonts": {
+    "default": "Monocraft.ttf"
+  },
+  "shaders": {
+    "gui": {
+      "vertexShader": "gui.vert",
+      "fragmentShader": "gui.frag"
+    },
+    "font": {
+      "vertexShader": "gui.vert",
+      "fragmentShader": "gui_font.frag"
+    },
+    "color": {
+      "vertexShader": "gui.vert",
+      "fragmentShader": "gui_color.frag"
+    }
+  },
+  "colorScheme": {
+    "screenBackground": "#ef323d",
+    "text": "#ffffff",
+    "memoryLowColor": "#007f00",
+    "memoryHighColor": "#ff7f00"
+  },
+  "sprites": {
+    "progressBarBackground": {
+      "resource": "progress_bar_bg.png",
+      "scaling": {
+        "type": "nine_slice",
+        "width": 40,
+        "height": 20,
+        "left": 2,
+        "top": 2,
+        "right": 2,
+        "bottom": 2,
+        "stretchHorizontalFill": true,
+        "stretchVerticalFill": true,
+        "linearScaling": false
+      }
+    },
+    "progressBarForeground": {
+      "resource": "progress_bar_fg.png",
+      "scaling": {
+        "type": "nine_slice",
+        "width": 40,
+        "height": 20,
+        "left": 4,
+        "top": 4,
+        "right": 4,
+        "bottom": 4,
+        "stretchHorizontalFill": true,
+        "stretchVerticalFill": true,
+        "linearScaling": false
+      }
+    },
+    "progressBarIndeterminate": {
+      "resource": "progress_bar_fg.png",
+      "scaling": {
+        "type": "nine_slice",
+        "width": 40,
+        "height": 20,
+        "left": 4,
+        "top": 4,
+        "right": 4,
+        "bottom": 4,
+        "stretchHorizontalFill": true,
+        "stretchVerticalFill": true,
+        "linearScaling": false
+      }
+    },
+    "progressBarIndeterminateBounces": false
+  },
+  "loadingScreen": {
+    "performance": {
+      "visible": true,
+      "maintainAspectRatio": true,
+      "left": 220.0,
+      "top": 10.0,
+      "right": 220.0,
+      "centerHorizontally": false,
+      "centerVertically": false,
+      "font": "default"
+    },
+    "progressBars": {
+      "labelGap": 4,
+      "barGap": 5,
+      "visible": true,
+      "maintainAspectRatio": false,
+      "left": 220.0,
+      "top": 250.0,
+      "right": 220.0,
+      "centerHorizontally": false,
+      "centerVertically": false,
+      "font": "default"
+    },
+    "startupLog": {
+      "visible": true,
+      "maintainAspectRatio": true,
+      "left": 10.0,
+      "bottom": 10.0,
+      "centerHorizontally": false,
+      "centerVertically": false,
+      "font": "default"
+    },
+    "mojangLogo": {
+      "visible": true,
+      "maintainAspectRatio": true,
+      "top": 96.0,
+      "centerHorizontally": true,
+      "centerVertically": false,
+      "font": "default"
+    },
+    "decoration": {
+      "version": {
+        "type": "label",
+        "text": "${version}",
+        "visible": true,
+        "maintainAspectRatio": true,
+        "right": 10.0,
+        "bottom": 10.0,
+        "centerHorizontally": false,
+        "centerVertically": false,
+        "font": "default"
+      },
+      "fox": {
+        "type": "image",
+        "texture": {
+          "resource": "fox_running.png",
+          "scaling": {
+            "type": "stretch",
+            "width": 151,
+            "height": 128,
+            "linearScaling": false
+          },
+          "animation": {
+            "frameCount": 28
+          }
+        },
+        "visible": true,
+        "maintainAspectRatio": true,
+        "right": 10.0,
+        "bottom": "1.0rem",
+        "centerHorizontally": false,
+        "centerVertically": false,
+        "font": "default"
+      }
+    }
+  }
+}

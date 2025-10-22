@@ -23,11 +23,6 @@ public abstract class ModLifecycleEvent extends Event implements IModBusEvent {
         this.container = container;
     }
 
-    public final String description() {
-        String cn = getClass().getName();
-        return cn.substring(cn.lastIndexOf('.') + 1);
-    }
-
     public Stream<InterModComms.IMCMessage> getIMCStream() {
         return InterModComms.getMessages(this.container.getModId());
     }
@@ -36,12 +31,7 @@ public abstract class ModLifecycleEvent extends Event implements IModBusEvent {
         return InterModComms.getMessages(this.container.getModId(), methodFilter);
     }
 
-    ModContainer getContainer() {
+    public ModContainer getContainer() {
         return this.container;
-    }
-
-    @Override
-    public String toString() {
-        return description();
     }
 }

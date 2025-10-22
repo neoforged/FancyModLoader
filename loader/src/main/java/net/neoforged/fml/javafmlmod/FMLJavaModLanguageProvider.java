@@ -30,9 +30,9 @@ public class FMLJavaModLanguageProvider extends BuiltInLanguageLoader {
 
     @Override
     public ModContainer loadMod(IModInfo info, ModFileScanData modFileScanResults, ModuleLayer layer) {
-        final var modClasses = modFileScanResults.getAnnotatedBy(Mod.class, ElementType.TYPE)
+        var modClasses = modFileScanResults.getAnnotatedBy(Mod.class, ElementType.TYPE)
                 .filter(data -> data.annotationData().get("value").equals(info.getModId()))
-                .filter(ad -> AutomaticEventSubscriber.getSides(ad.annotationData().get("dist")).contains(FMLLoader.getDist()))
+                .filter(ad -> AutomaticEventSubscriber.getSides(ad.annotationData().get("dist")).contains(FMLLoader.getCurrent().getDist()))
                 .sorted(Comparator.comparingInt(ad -> -AutomaticEventSubscriber.getSides(ad.annotationData().get("dist")).size()))
                 .map(ad -> ad.clazz().getClassName())
                 .toList();
@@ -41,7 +41,7 @@ public class FMLJavaModLanguageProvider extends BuiltInLanguageLoader {
 
     @Override
     public void validate(IModFile file, Collection<ModContainer> loadedContainers, IIssueReporting reporter) {
-        final Set<String> modIds = new HashSet<>();
+        Set<String> modIds = new HashSet<>();
         for (IModInfo modInfo : file.getModInfos()) {
             if (modInfo.getLoader() == this) {
                 modIds.add(modInfo.getModId());

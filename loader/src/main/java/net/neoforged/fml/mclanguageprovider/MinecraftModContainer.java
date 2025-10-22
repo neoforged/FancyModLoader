@@ -11,7 +11,7 @@ import net.neoforged.neoforgespi.language.IModInfo;
 import org.jetbrains.annotations.Nullable;
 
 public class MinecraftModContainer extends ModContainer {
-    public MinecraftModContainer(final IModInfo info) {
+    public MinecraftModContainer(IModInfo info) {
         super(info);
     }
 

@@ -6,19 +6,8 @@
 package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.modlauncher.api.LambdaExceptionUtils;
 import java.net.URL;
-import java.security.CodeSigner;
-import java.security.InvalidKeyException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SignatureException;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -26,8 +15,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import javax.security.auth.x500.X500Principal;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.StringUtils;
 import net.neoforged.neoforgespi.language.IConfigurable;
@@ -52,7 +39,7 @@ public class ModFileInfo implements IModFileInfo, IConfigurable {
     private final List<String> usesServices;
 
     @ApiStatus.Internal
-    public ModFileInfo(final ModFile modFile, final IConfigurable config, Consumer<IModFileInfo> configFileConsumer) {
+    public ModFileInfo(ModFile modFile, IConfigurable config, Consumer<IModFileInfo> configFileConsumer) {
         this.modFile = modFile;
         this.config = config;
         configFileConsumer.accept(this);
@@ -83,7 +70,7 @@ public class ModFileInfo implements IModFileInfo, IConfigurable {
         this.issueURL = config.<String>getConfigElement("issueTrackerURL")
                 .map(StringUtils::toURL)
                 .orElse(null);
-        final List<? extends IConfigurable> modConfigs = config.getConfigList("mods");
+        List<? extends IConfigurable> modConfigs = config.getConfigList("mods");
         if (modConfigs.isEmpty()) {
             throw new InvalidModFileException("Missing mods list", this);
         }
@@ -98,7 +85,7 @@ public class ModFileInfo implements IModFileInfo, IConfigurable {
         }
     }
 
-    public ModFileInfo(final ModFile file, final IConfigurable config, Consumer<IModFileInfo> configFileConsumer, final List<LanguageSpec> languageSpecs) {
+    public ModFileInfo(ModFile file, IConfigurable config, Consumer<IModFileInfo> configFileConsumer, List<LanguageSpec> languageSpecs) {
         this(file, config, configFileConsumer);
         this.languageSpecs.addAll(languageSpecs);
     }
@@ -133,12 +120,12 @@ public class ModFileInfo implements IModFileInfo, IConfigurable {
     }
 
     @Override
-    public <T> Optional<T> getConfigElement(final String... key) {
+    public <T> Optional<T> getConfigElement(String... key) {
         return this.config.getConfigElement(key);
     }
 
     @Override
-    public List<? extends IConfigurable> getConfigList(final String... key) {
+    public List<? extends IConfigurable> getConfigList(String... key) {
         return this.config.getConfigList(key);
     }
 
@@ -157,44 +144,7 @@ public class ModFileInfo implements IModFileInfo, IConfigurable {
     }
 
     public Optional<String> getCodeSigningFingerprint() {
-        var signers = this.modFile.getSecureJar().getManifestSigners();
-        return (signers == null ? Stream.<CodeSigner>of() : Arrays.stream(signers))
-                .flatMap(csa -> csa.getSignerCertPath().getCertificates().stream())
-                .findFirst()
-                .map(LambdaExceptionUtils.rethrowFunction(Certificate::getEncoded))
-                .map(bytes -> LambdaExceptionUtils.uncheck(() -> MessageDigest.getInstance("SHA-256")).digest(bytes))
-                .map(StringUtils::binToHex)
-                .map(str -> String.join(":", str.split("(?<=\\G.{2})")));
-    }
-
-    public Optional<String> getTrustData() {
-        return Arrays.stream(this.modFile.getSecureJar().getManifestSigners())
-                .flatMap(csa -> csa.getSignerCertPath().getCertificates().stream())
-                .findFirst()
-                .map(X509Certificate.class::cast)
-                .map(c -> {
-                    StringBuffer sb = new StringBuffer();
-                    sb.append(c.getSubjectX500Principal().getName(X500Principal.RFC2253).split(",")[0]);
-                    boolean selfSigned = false;
-                    try {
-                        c.verify(c.getPublicKey());
-                        selfSigned = true;
-                    } catch (CertificateException | NoSuchAlgorithmException | InvalidKeyException | SignatureException | NoSuchProviderException e) {
-                        // not self signed
-                    }
-                    if (selfSigned) {
-                        sb.append(" self-signed");
-                    } else {
-                        sb.append(" signed by ").append(c.getIssuerX500Principal().getName(X500Principal.RFC2253).split(",")[0]);
-                    }
-                    ;
-                    return sb.toString();
-                });
-    }
-
-    @Override
-    public String moduleName() {
-        return getMods().get(0).getModId();
+        return this.modFile.getContents().getChecksum();
     }
 
     @Override
@@ -209,6 +159,6 @@ public class ModFileInfo implements IModFileInfo, IConfigurable {
 
     @Override
     public String toString() {
-        return moduleName();
+        return modFile.getId();
     }
 }

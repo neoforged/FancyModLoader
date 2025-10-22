@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.function.Consumer;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.loading.LauncherTest;
-import net.neoforged.fml.loading.ModsTomlBuilder;
+import net.neoforged.fml.testlib.ModsTomlBuilder;
 import org.junit.jupiter.api.Test;
 
 class RuntimeEnumExtenderTest extends LauncherTest {
@@ -266,7 +266,6 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                         }
                         """)
                 .addClass("enumtestmod.EnumWithId", """
-                        package enumtestmod;
                         @net.neoforged.fml.common.asm.enumextension.IndexedEnum
                         @net.neoforged.fml.common.asm.enumextension.NamedEnum(1)
                         public enum EnumWithId implements net.neoforged.fml.common.asm.enumextension.IExtensibleEnum {

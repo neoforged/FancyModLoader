@@ -6,15 +6,15 @@
 package net.neoforged.fml.loading.moddiscovery.readers;
 
 import com.mojang.logging.LogUtils;
-import cpw.mods.jarhandling.JarContents;
-import cpw.mods.jarhandling.SecureJar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.jar.Manifest;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileParser;
@@ -39,14 +39,14 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
     public static IModFile createModFile(JarContents contents, ModFileDiscoveryAttributes discoveryAttributes) {
         var type = getModType(contents);
         IModFile mod;
-        if (contents.findFile(MODS_TOML).isPresent()) {
+        if (contents.containsFile(MODS_TOML)) {
             LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MODS_TOML, type, contents.getPrimaryPath());
-            var mjm = new ModJarMetadata(contents);
-            mod = new ModFile(SecureJar.from(contents, mjm), ModFileParser::modsTomlParser, discoveryAttributes);
+            var mjm = new ModJarMetadata();
+            mod = new ModFile(contents, mjm, ModFileParser::modsTomlParser, discoveryAttributes);
             mjm.setModFile(mod);
         } else if (type != null) {
             LOGGER.debug(LogMarkers.SCAN, "Found {} mod of type {}: {}", MANIFEST, type, contents.getPrimaryPath());
-            mod = new ModFile(SecureJar.from(contents), JarModsDotTomlModFileReader::manifestParser, type, discoveryAttributes);
+            mod = new ModFile(contents, null, JarModsDotTomlModFileReader::manifestParser, type, discoveryAttributes);
         } else {
             return null;
         }
@@ -56,7 +56,11 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
 
     @Nullable
     private static IModFile.Type getModType(JarContents jar) {
-        var typeString = jar.getManifest().getMainAttributes().getValue(ModFile.TYPE);
+        Manifest jarManifest = jar.getManifest();
+        if (jarManifest == null) {
+            return null;
+        }
+        var typeString = jarManifest.getMainAttributes().getValue(ModFile.TYPE);
         try {
             return typeString != null ? IModFile.Type.valueOf(typeString) : null;
         } catch (IllegalArgumentException e) {
@@ -65,8 +69,8 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
         }
     }
 
-    public static IModFileInfo manifestParser(final IModFile mod) {
-        Function<String, Optional<String>> cfg = name -> Optional.ofNullable(mod.getSecureJar().moduleDataProvider().getManifest().getMainAttributes().getValue(name));
+    public static IModFileInfo manifestParser(IModFile mod) {
+        Function<String, Optional<String>> cfg = name -> Optional.ofNullable(mod.getContents().getManifest().getMainAttributes().getValue(name));
         var license = cfg.apply("LICENSE").orElse("");
         var dummy = new IConfigurable() {
             @Override
@@ -91,12 +95,12 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
     private record DefaultModFileInfo(IModFile mod, String license,
             IConfigurable configurable) implements IModFileInfo, IConfigurable {
         @Override
-        public <T> Optional<T> getConfigElement(final String... strings) {
+        public <T> Optional<T> getConfigElement(String... strings) {
             return Optional.empty();
         }
 
         @Override
-        public List<? extends IConfigurable> getConfigList(final String... strings) {
+        public List<? extends IConfigurable> getConfigList(String... strings) {
             return null;
         }
 
@@ -138,11 +142,6 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
         @Override
         public IConfigurable getConfig() {
             return configurable;
-        }
-
-        @Override
-        public String moduleName() {
-            return mod.getSecureJar().name();
         }
 
         // These Should never be called as it's only called from ModJarMetadata.version and we bypass that

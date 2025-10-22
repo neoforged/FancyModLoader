@@ -12,7 +12,7 @@ import net.neoforged.fml.event.IModBusEvent;
 public class ModConfigEvent extends Event implements IModBusEvent {
     private final ModConfig config;
 
-    ModConfigEvent(final ModConfig config) {
+    ModConfigEvent(ModConfig config) {
         this.config = config;
     }
 
@@ -25,7 +25,7 @@ public class ModConfigEvent extends Event implements IModBusEvent {
      * Any Config objects associated with this will be valid and can be queried directly.
      */
     public static class Loading extends ModConfigEvent {
-        public Loading(final ModConfig config) {
+        public Loading(ModConfig config) {
             super(config);
         }
     }
@@ -37,19 +37,17 @@ public class ModConfigEvent extends Event implements IModBusEvent {
      * any resultant changes.
      */
     public static class Reloading extends ModConfigEvent {
-        public Reloading(final ModConfig config) {
+        public Reloading(ModConfig config) {
             super(config);
         }
     }
 
     /**
-     * Fired when a config is unloaded. This only happens when the server closes, which is
-     * probably only really relevant on the client, to reset internal mod state when the
-     * server goes away, though it will fire on the dedicated server as well.
+     * Fired when a config is unloaded - that is, when a server (integrated or dedicated) shuts down or when a player disconnects from a remote server.
      * The config file will be saved after this event has fired.
      */
     public static class Unloading extends ModConfigEvent {
-        public Unloading(final ModConfig config) {
+        public Unloading(ModConfig config) {
             super(config);
         }
     }

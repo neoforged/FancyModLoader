@@ -5,12 +5,11 @@
 
 package net.neoforged.fml.loading;
 
-import cpw.mods.modlauncher.Launcher;
-import cpw.mods.modlauncher.api.IModuleLayerManager.Layer;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.ServiceLoader;
+import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
 import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
 import org.apache.logging.log4j.LogManager;
@@ -25,60 +24,83 @@ public class ImmediateWindowHandler {
     @Nullable
     static ImmediateWindowProvider provider;
 
-    public static void load(final String launchTarget, final String[] arguments) {
-        final var layer = Launcher.INSTANCE.findLayerManager()
-                .flatMap(manager -> manager.getLayer(Layer.SERVICE))
-                .orElseThrow(() -> new IllegalStateException("Couldn't find SERVICE layer"));
-        ServiceLoader.load(layer, GraphicsBootstrapper.class)
+    public static void load(boolean headless, ProgramArgs arguments) {
+        ServiceLoader.load(GraphicsBootstrapper.class)
                 .stream()
                 .map(ServiceLoader.Provider::get)
                 .forEach(bootstrap -> {
-                    LOGGER.debug("Invoking bootstrap method {}", bootstrap.name());
-                    bootstrap.bootstrap(arguments);
+                    LOGGER.info("Running graphics bootstrap plugin {}", bootstrap.name());
+                    bootstrap.bootstrap(arguments.getArguments()); // TODO: Should take ProgramArgs so it can *remove* args
                 });
-        if (!List.of("neoforgeclient", "neoforgeclientdev").contains(launchTarget)) {
+
+        if (headless) {
             provider = null;
-            LOGGER.info("ImmediateWindowProvider not loading because launch target is {}", launchTarget);
-        } else if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)) {
+            LOGGER.info("Not loading early display in headless mode.");
+            return;
+        }
+
+        if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)) {
             provider = null;
             LOGGER.info("ImmediateWindowProvider not loading because splash screen is disabled");
         } else {
-            final var providername = FMLConfig.getConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER);
+            var providername = FMLConfig.getConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER);
             LOGGER.info("Loading ImmediateWindowProvider {}", providername);
-            final var maybeProvider = ServiceLoader.load(layer, ImmediateWindowProvider.class)
+            var maybeProvider = ServiceLoader.load(ImmediateWindowProvider.class)
                     .stream()
                     .map(ServiceLoader.Provider::get)
                     .filter(p -> Objects.equals(p.name(), providername))
                     .findFirst();
-            provider = maybeProvider.or(() -> {
+            provider = maybeProvider.orElse(null);
+            if (provider == null) {
                 LOGGER.info("Failed to find ImmediateWindowProvider {}, disabling", providername);
-                return Optional.empty();
-            }).orElse(null);
+            } else {
+                try {
+                    provider.initialize(arguments);
+                } catch (Exception e) {
+                    LOGGER.error("Failed to initialize ImmediateWindowProvider '{}'", providername, e);
+                    provider = null;
+                }
+            }
         }
         // Only update config if the provider isn't the dummy provider
         if (provider != null) {
             FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER, provider.name());
-            FMLLoader.progressWindowTick = provider.initialize(arguments);
-        } else {
-            FMLLoader.progressWindowTick = () -> {};
         }
     }
 
-    public static void acceptGameLayer(final ModuleLayer layer) {
+    public static void setNeoForgeVersion(String version) {
         if (provider != null) {
-            provider.updateModuleReads(layer);
+            provider.setNeoForgeVersion(version);
         }
     }
 
-    public static void updateProgress(final String message) {
+    public static void setMinecraftVersion(String version) {
+        if (provider != null) {
+            provider.setMinecraftVersion(version);
+        }
+    }
+
+    public static void renderTick() {
+        if (provider != null) {
+            provider.periodicTick();
+        }
+    }
+
+    public static void updateProgress(String message) {
         if (provider != null) {
             provider.updateProgress(message);
         }
     }
 
-    public static void crash(final String message) {
+    public static void crash(String message) {
         if (provider != null) {
             provider.crash(message);
+        }
+    }
+
+    public static void displayFatalErrorAndExit(List<ModLoadingIssue> issues, Path modsFolder, Path logFile, Path crashReportFile) {
+        if (provider != null) {
+            provider.displayFatalErrorAndExit(issues, modsFolder, logFile, crashReportFile);
         }
     }
 }

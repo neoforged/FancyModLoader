@@ -12,15 +12,15 @@ import org.apache.maven.artifact.versioning.Restriction;
 import org.apache.maven.artifact.versioning.VersionRange;
 
 public class MavenVersionTranslator {
-    public static String artifactVersionToString(final ArtifactVersion artifactVersion) {
+    public static String artifactVersionToString(ArtifactVersion artifactVersion) {
         return artifactVersion.toString();
     }
 
-    public static String versionRangeToString(final VersionRange range) {
+    public static String versionRangeToString(VersionRange range) {
         return range.getRestrictions().stream().map(MavenVersionTranslator::restrictionToString).collect(Collectors.joining(", "));
     }
 
-    public static String restrictionToString(final Restriction restriction) {
+    public static String restrictionToString(Restriction restriction) {
         if (restriction.getLowerBound() == null && restriction.getUpperBound() == null) {
             return FMLTranslations.parseMessage("fml.messages.version.restriction.any");
         } else if (restriction.getLowerBound() != null && restriction.getUpperBound() != null) {

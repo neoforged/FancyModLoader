@@ -7,8 +7,10 @@ package net.neoforged.fml.loading;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.electronwill.nightconfig.core.Config;
 import java.nio.file.Files;
@@ -16,26 +18,41 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.zip.ZipOutputStream;
+import net.neoforged.fml.FMLVersion;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModWorkManager;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.javafmlmod.FMLJavaModLanguageProvider;
+import net.neoforged.fml.testlib.IdentifiableContent;
+import net.neoforged.fml.testlib.SimulatedInstallation;
+import net.neoforged.fml.testlib.args.ClientInstallationTypesSource;
+import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.ContainedVersion;
+import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
+import net.neoforged.neoforgespi.locating.IModFile;
+import net.neoforged.neoforgespi.locating.IModFileReader;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.lwjgl.system.FunctionProvider;
 
-class FMLLoaderTest extends LauncherTest {
+public class FMLLoaderTest extends LauncherTest {
     private static final ContainedVersion JIJ_V1 = new ContainedVersion(VersionRange.createFromVersion("1.0"), new DefaultArtifactVersion("1.0"));
 
     @Nested
     class WithoutMods {
+        /**
+         * Tests the new approach where minecraft and neoforge jar are on-disk in the way they
+         * should be loaded.
+         */
         @Test
         void testProductionClientDiscovery() throws Exception {
             installation.setupProductionClient();
@@ -45,8 +62,21 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
-            installation.assertNeoForgeJar(result);
+            assertMinecraftClientJar(result, true);
+            assertNeoForgeJar(result);
+        }
+
+        @Test
+        void testProductionClientDiscoveryLegacyApproach() throws Exception {
+            installation.setupProductionClientLegacy();
+
+            var result = launchAndLoad("neoforgeclient");
+            assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.pluginLayerModules()).isEmpty();
+
+            assertLegacyMinecraftClientJar(result, true);
+            assertNeoForgeJar(result);
         }
 
         @Test
@@ -59,8 +89,22 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftServerJar(result);
-            installation.assertNeoForgeJar(result);
+            assertMinecraftServerJar(result);
+            assertNeoForgeJar(result);
+        }
+
+        @Test
+        void testProductionServerDiscoveryLegacyApproach() throws Exception {
+            installation.setupProductionServerLegacy();
+
+            var result = launchAndLoad("neoforgeserver");
+            assertThat(result.issues()).isEmpty();
+            assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.pluginLayerModules()).isEmpty();
+
+            assertLegacyMinecraftServerJar(result);
+            assertNeoForgeJar(result);
         }
 
         @Test
@@ -71,8 +115,8 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
-            installation.assertNeoForgeJar(result);
+            assertLegacyMinecraftClientJar(result, false);
+            assertNeoForgeJar(result);
         }
 
         @Test
@@ -83,8 +127,22 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
-            installation.assertNeoForgeJar(result);
+            assertLegacyMinecraftClientJar(result, false);
+            assertNeoForgeJar(result);
+        }
+
+        @Test
+        void testNeoForgeDevJarClientDiscovery() throws Exception {
+            var additionalClasspath = installation.setupSplitNeoForgeDevProjectForClientLaunch();
+            var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdatadev", additionalClasspath);
+
+            assertThat(result.issues()).isEmpty();
+            assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.pluginLayerModules()).isEmpty();
+
+            assertLegacyMinecraftClientJar(result, false);
+            assertNeoForgeJar(result);
         }
 
         @Test
@@ -95,8 +153,8 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
-            installation.assertNeoForgeJar(result);
+            assertLegacyMinecraftClientJar(result, false);
+            assertNeoForgeJar(result);
         }
 
         @Test
@@ -107,8 +165,8 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
-            installation.assertNeoForgeJar(result);
+            assertLegacyMinecraftClientJar(result, false);
+            assertNeoForgeJar(result);
         }
 
         @Test
@@ -121,8 +179,22 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
-            installation.assertNeoForgeJar(result);
+            assertLegacyMinecraftClientJar(result, false);
+            assertNeoForgeJar(result);
+        }
+
+        @Test
+        void testUserDevClientSeparateJarsDiscovery() throws Exception {
+            var classpath = installation.setupUserdevProjectNew();
+
+            var result = launchAndLoadWithAdditionalClasspath("neoforgeserverdev", classpath);
+            assertThat(result.issues()).isEmpty();
+            assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.pluginLayerModules()).isEmpty();
+
+            assertMinecraftClientJar(result, false);
+            assertNeoForgeJar(result);
         }
 
         @Test
@@ -135,8 +207,8 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
-            installation.assertNeoForgeJar(result);
+            assertLegacyMinecraftClientJar(result, false);
+            assertNeoForgeJar(result);
         }
 
         @Test
@@ -149,8 +221,8 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
-            installation.assertNeoForgeJar(result);
+            assertLegacyMinecraftClientJar(result, false);
+            assertNeoForgeJar(result);
         }
 
         @Test
@@ -163,8 +235,8 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
-            installation.assertNeoForgeJar(result);
+            assertLegacyMinecraftClientJar(result, false);
+            assertNeoForgeJar(result);
         }
     }
 
@@ -182,8 +254,8 @@ class FMLLoaderTest extends LauncherTest {
             assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge", "testmod1");
             assertThat(result.pluginLayerModules()).isEmpty();
 
-            installation.assertMinecraftClientJar(result);
-            installation.assertNeoForgeJar(result);
+            assertMinecraftClientJar(result, true);
+            assertNeoForgeJar(result);
         }
 
         /**
@@ -250,6 +322,108 @@ class FMLLoaderTest extends LauncherTest {
         }
 
         /**
+         * If a game library is present in multiple versions, the latest one is used.
+         */
+        @Test
+        void testHighestGameLibraryVersionWins() throws Exception {
+            installation.setupProductionClient();
+            installation.buildModJar("testlib-1.0.jar")
+                    .addClass("testlib.TestClass", "class TestClass {}")
+                    .withManifest(Map.of(
+                            "Automatic-Module-Name", "testlib",
+                            "FMLModType", "GAMELIBRARY",
+                            "Implementation-Version", "1.0"))
+                    .build();
+            var pickedJarPath = installation.buildModJar("testlib-2.0.jar")
+                    .addClass("testlib.TestClass", "class TestClass {}")
+                    .withManifest(Map.of(
+                            "Automatic-Module-Name", "testlib",
+                            "FMLModType", "GAMELIBRARY",
+                            "Implementation-Version", "2.0"))
+                    .build();
+
+            var result = launchAndLoad("neoforgeclient");
+            assertThat(result.gameLayerModules()).containsKey("testlib");
+
+            var loadedMod = result.gameLayerModules().get("testlib");
+            assertNotNull(loadedMod);
+            assertEquals(pickedJarPath, loadedMod.getPrimaryPath());
+        }
+
+        /**
+         * If a library is present in multiple versions, the latest one is used.
+         */
+        @Test
+        void testHighestLibraryVersionWins() throws Exception {
+            installation.setupProductionClient();
+            installation.buildModJar("testlib-1.0.jar")
+                    .addClass("testlib.TestClass", "class TestClass {}")
+                    .withManifest(Map.of(
+                            "Automatic-Module-Name", "testlib",
+                            "FMLModType", "LIBRARY",
+                            "Implementation-Version", "1.0"))
+                    .build();
+            var pickedJarPath = installation.buildModJar("testlib-2.0.jar")
+                    .addClass("testlib.TestClass", "class TestClass {}")
+                    .withManifest(Map.of(
+                            "Automatic-Module-Name", "testlib",
+                            "FMLModType", "LIBRARY",
+                            "Implementation-Version", "2.0"))
+                    .build();
+
+            var result = launchAndLoad("neoforgeclient");
+
+            var loadedMod = result.pluginLayerModules().get("testlib");
+            assertNotNull(loadedMod);
+            assertEquals(pickedJarPath, loadedMod.getPrimaryPath());
+        }
+
+        @ParameterizedTest
+        @ClientInstallationTypesSource
+        void testLibraryIsLoaded(SimulatedInstallation.Type type) throws Exception {
+            installation.setup(type);
+            installation.buildInstallationAppropriateModProject("lib", "lib.jar", builder -> {
+                builder.withManifest(Map.of(
+                        "Automatic-Module-Name", "lib",
+                        "FMLModType", "LIBRARY"))
+                        .addClass("lib.TestClass", "class TestClass {}");
+            });
+            var result = launchClient();
+
+            assertThat(loader.getLoadingModList().getPlugins())
+                    .extracting(mfi -> mfi.getFile().getId())
+                    .contains("lib");
+
+            var testClass = result.launchClassLoader().loadClass("lib.TestClass");
+            var modFile = loader.getModFileByClass(testClass);
+            assertNotNull(modFile, "expected to be able to get the mod file for a class from the library");
+            assertEquals("lib", modFile.getId(), "expected the lib mod file to have the right id");
+        }
+
+        @ParameterizedTest
+        @ClientInstallationTypesSource
+        void testGameLibraryIsLoaded(SimulatedInstallation.Type type) throws Exception {
+            installation.setup(type);
+            installation.buildInstallationAppropriateModProject("gamelib", "gamelib.jar", builder -> {
+                builder.withManifest(Map.of(
+                        "Automatic-Module-Name", "gamelib",
+                        "FMLModType", "GAMELIBRARY"))
+                        .addClass("gamelib.TestClass", "class TestClass {}");
+            });
+            var result = launchClient();
+
+            assertThat(loader.getLoadingModList().getGameLibraries())
+                    .as("Should be present in LoadingModList")
+                    .extracting(IModFile::getId)
+                    .contains("gamelib");
+            assertThat(result.gameLayerModules()).containsKey("gamelib");
+            var testClass = result.launchClassLoader().loadClass("gamelib.TestClass");
+            var modFile = loader.getModFileByClass(testClass);
+            assertNotNull(modFile, "expected to be able to get the mod file for a class from the library");
+            assertEquals("gamelib", modFile.getId(), "expected the gamelib mod file to have the right id");
+        }
+
+        /**
          * Tests that a lowcode mod is automatically redirected to the javafml loader.
          */
         @Test
@@ -284,12 +458,12 @@ class FMLLoaderTest extends LauncherTest {
             additionalClasspath.addAll(mainModule);
 
             // Tell FML that the classes and resources directory belong together
-            SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
+            installation.getLaunchModFolders().put("mod", mainModule);
 
             var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdev", additionalClasspath);
             assertThat(result.pluginLayerModules()).doesNotContainKey("mod");
             assertThat(result.gameLayerModules()).containsKey("mod");
-            installation.assertModContent(result, "mod", List.of(entrypointClass, modManifest));
+            assertModContent(result, "mod", List.of(entrypointClass, modManifest));
         }
 
         /**
@@ -307,12 +481,12 @@ class FMLLoaderTest extends LauncherTest {
             // NOTE: mainModule is not added to the classpath here
 
             // Tell FML that the classes and resources directory belong together
-            SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
+            installation.getLaunchModFolders().put("mod", mainModule);
 
             var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdev", additionalClasspath);
             assertThat(result.pluginLayerModules()).doesNotContainKey("mod");
             assertThat(result.gameLayerModules()).containsKey("mod");
-            installation.assertModContent(result, "mod", List.of(entrypointClass, modManifest));
+            assertModContent(result, "mod", List.of(entrypointClass, modManifest));
         }
 
         @Test
@@ -326,13 +500,13 @@ class FMLLoaderTest extends LauncherTest {
             additionalClasspath.addAll(mainModule);
 
             // Tell FML that the classes and resources directory belong together
-            SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
+            installation.getLaunchModFolders().put("mod", mainModule);
 
             var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdev", additionalClasspath);
             assertThat(result.pluginLayerModules()).containsKey("mod");
             assertThat(result.gameLayerModules()).doesNotContainKey("mod");
             assertThat(result.loadedMods()).doesNotContainKey("mod");
-            installation.assertSecureJarContent(result.pluginLayerModules().get("mod"), List.of(entrypointClass, modManifest));
+            assertSecureJarContent(result.pluginLayerModules().get("mod"), List.of(entrypointClass, modManifest));
         }
 
         /**
@@ -350,13 +524,96 @@ class FMLLoaderTest extends LauncherTest {
 
             // Tell FML that the classes and resources directory belong together, this would also be read
             // by the Classpath ML locator
-            SimulatedInstallation.setModFoldersProperty(Map.of("mod", mainModule));
+            installation.getLaunchModFolders().put("mod", mainModule);
             locatedPaths.add(mainModule.getFirst()); // Mark the primary path as located by ML so it gets skipped by FML
 
             var result = launchAndLoadWithAdditionalClasspath("neoforgeclientdev", additionalClasspath);
             assertThat(result.pluginLayerModules()).doesNotContainKey("mod");
             assertThat(result.gameLayerModules()).doesNotContainKey("mod");
             assertThat(result.loadedMods()).doesNotContainKey("mod");
+        }
+
+        /**
+         * Tests how a GAMELIBRARY with a module-info interacts with non-modular LIBRARIES.
+         */
+        @ParameterizedTest
+        @ClientInstallationTypesSource
+        void testModularAndNonModularInteractionBetweenLayers(SimulatedInstallation.Type type) throws Exception {
+            installation.setup(type);
+
+            // The jar name differs to ensure the module-info name is used for the actual module
+            installation.buildInstallationAppropriateModProject("gamelib", "differentname.jar", builder -> {
+                builder.addModulePath(ClasspathResourceUtils.findFileSystemRootOfFileOnClasspath("org/lwjgl/Version.class"))
+                        .withModTypeManifest("GAMELIBRARY")
+                        .addClass("module-info", """
+                                module gamelib {
+                                    requires org.lwjgl;
+                                    // Test uses/provides as well
+                                    uses org.lwjgl.PointerBuffer;
+                                    provides org.lwjgl.system.FunctionProvider with gamelib.Test;
+                                }
+                                """)
+                        .addClass("gamelib.Test", """
+                                public class Test implements org.lwjgl.system.FunctionProvider {
+                                    public static java.util.ServiceLoader<?> test() {
+                                        return java.util.ServiceLoader.load(org.lwjgl.system.FunctionProvider.class);
+                                    }
+
+                                    @Override
+                                    public long getFunctionAddress(java.nio.ByteBuffer functionName) {
+                                        return 123;
+                                    }
+                                }
+                                """);
+            });
+            // Build a non-modular LIBRARY that also provides a service for FunctionProvider and check that the modular
+            // jar can see it.
+            installation.buildInstallationAppropriateModProject("nonmodular", "nonmodular.jar", builder -> {
+                builder.withManifest(Map.of("Automatic-Module-Name", "nonmodular", "FMLModType", "LIBRARY"))
+                        .addClass("nonmodular.Test", """
+                                public class Test implements org.lwjgl.system.FunctionProvider {
+                                    public static java.util.ServiceLoader<?> test() {
+                                        return java.util.ServiceLoader.load(org.lwjgl.system.FunctionProvider.class);
+                                    }
+
+                                    @Override
+                                    public long getFunctionAddress(java.nio.ByteBuffer functionName) {
+                                        return 123;
+                                    }
+                                }
+                                """)
+                        .addService(FunctionProvider.class, "nonmodular.Test");
+            });
+
+            var result = launchClient();
+
+            // Just ensure both are loaded
+            assertThat(result.gameLayerModules()).containsKey("gamelib");
+            assertThat(result.pluginLayerModules()).containsKey("nonmodular");
+
+            // The GAMELIBRARY should see both service implementations (its own, and the one from the LIBRARY)
+            withGameClassloader(() -> {
+                var testClass = result.launchClassLoader().loadClass("gamelib.Test");
+                assertThat((ServiceLoader<?>) testClass.getMethod("test").invoke(null))
+                        .extracting(fp -> fp.getClass().getName())
+                        .containsOnly("gamelib.Test", "nonmodular.Test");
+                return null;
+            });
+
+            // The LIBRARY should also see both
+            withGameClassloader(() -> {
+                var testClass = result.launchClassLoader().loadClass("nonmodular.Test");
+                assertThat((ServiceLoader<?>) testClass.getMethod("test").invoke(null))
+                        .extracting(fp -> fp.getClass().getName())
+                        .containsOnly("gamelib.Test", "nonmodular.Test");
+                return null;
+            });
+
+            // Since ServiceLoader is caller-sensitive, we also check that a third-party can see both serices.
+            var services = ServiceLoader.load(FunctionProvider.class, result.launchClassLoader());
+            assertThat(services)
+                    .extracting(fp -> fp.getClass().getName())
+                    .contains("gamelib.Test", "nonmodular.Test");
         }
     }
 
@@ -365,11 +622,12 @@ class FMLLoaderTest extends LauncherTest {
         @ParameterizedTest
         @CsvSource(textBlock = """
                 unknownloader|[1.0]|ERROR: Mod File mods/testmod.jar needs language provider unknownloader to load
-                javafml|[1.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:1.0 to load\\nWe have found 3.0.9999
-                javafml|[999.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:999.0 to load\\nWe have found 3.0.9999
+                javafml|[1.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:1.0 to load\\nWe have found $VERSION
+                javafml|[999.0]|ERROR: Mod File mods/testmod.jar needs language provider javafml:999.0 to load\\nWe have found $VERSION
                 """, delimiter = '|')
         void testIncompatibleLoaderVersions(String requestedLoader, String requestedVersionRange, String expectedError) throws Exception {
             expectedError = expectedError.replace("\\n", "\n");
+            expectedError = expectedError.replace("$VERSION", FMLVersion.getVersion());
 
             installation.setupProductionClient();
             installation.buildModJar("testmod.jar")
@@ -384,27 +642,103 @@ class FMLLoaderTest extends LauncherTest {
         }
 
         @Test
-        void testCorruptedServerInstallation() throws Exception {
-            installation.setupProductionServer();
-
-            var serverPath = installation.getLibrariesDir().resolve("net/minecraft/server/1.20.4-202401020304/server-1.20.4-202401020304-srg.jar");
-            Files.delete(serverPath);
-
-            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeserver"));
-            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                    "ERROR: Your NeoForge installation is corrupted, please try to reinstall");
-        }
-
-        @Test
-        void testCorruptedClientInstallation() throws Exception {
+        void testMissingMinecraftJarInClientInstallation() throws Exception {
             installation.setupProductionClient();
 
-            var clientPath = installation.getLibrariesDir().resolve("net/minecraft/client/1.20.4-202401020304/client-1.20.4-202401020304-srg.jar");
+            var clientPath = installation.getLibrariesDir().resolve("net/neoforged/minecraft-client-patched/20.4.9999/minecraft-client-patched-20.4.9999.jar");
             Files.delete(clientPath);
 
             var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                    "ERROR: Your NeoForge installation is corrupted, please try to reinstall");
+                    "ERROR: Your NeoForge installation is corrupted. Please try to reinstall NeoForge.");
+        }
+
+        @Test
+        void testCorruptedMinecraftJarInClientInstallation() throws Exception {
+            installation.setupProductionClient();
+
+            var clientPath = installation.getLibrariesDir().resolve("net/neoforged/minecraft-client-patched/20.4.9999/minecraft-client-patched-20.4.9999.jar");
+            // Replace the jar with an empty zip (no neoforge.mods.toml)
+            new ZipOutputStream(Files.newOutputStream(clientPath)).close();
+
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
+                    "ERROR: The patched Minecraft jar is corrupted. Please try to reinstall NeoForge.");
+        }
+
+        @Test
+        void testMissingNeoForgeJarInClientInstallation() throws Exception {
+            installation.setupProductionClient();
+
+            var neoforgePath = installation.getLibrariesDir().resolve("net/neoforged/neoforge/20.4.9999/neoforge-20.4.9999-universal.jar");
+            Files.delete(neoforgePath);
+
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
+                    "ERROR: The NeoForge jar is missing. Please try to reinstall NeoForge.");
+        }
+
+        @Test
+        void testCorruptedNeoForgeJarInClientInstallation() throws Exception {
+            installation.setupProductionClient();
+
+            var clientPath = installation.getLibrariesDir().resolve("net/neoforged/neoforge/20.4.9999/neoforge-20.4.9999-universal.jar");
+            // Replace the jar with an empty zip (no neoforge.mods.toml)
+            new ZipOutputStream(Files.newOutputStream(clientPath)).close();
+
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
+                    "ERROR: The NeoForge jar is corrupted. Please try to reinstall NeoForge.");
+        }
+
+        @Test
+        void testMissingMinecraftJarInServerInstallation() throws Exception {
+            installation.setupProductionServer();
+
+            var serverPath = installation.getLibrariesDir().resolve("net/neoforged/minecraft-server-patched/20.4.9999/minecraft-server-patched-20.4.9999.jar");
+            Files.delete(serverPath);
+
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeserver"));
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
+                    "ERROR: Your NeoForge installation is corrupted. Please try to reinstall NeoForge.");
+        }
+
+        @Test
+        void testCorruptedMinecraftJarInServerInstallation() throws Exception {
+            installation.setupProductionServer();
+
+            var serverPath = installation.getLibrariesDir().resolve("net/neoforged/minecraft-server-patched/20.4.9999/minecraft-server-patched-20.4.9999.jar");
+            // Replace the jar with an empty zip (no neoforge.mods.toml)
+            new ZipOutputStream(Files.newOutputStream(serverPath)).close();
+
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeserver"));
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
+                    "ERROR: The patched Minecraft jar is corrupted. Please try to reinstall NeoForge.");
+        }
+
+        @Test
+        void testMissingNeoForgeJarInServerInstallation() throws Exception {
+            installation.setupProductionServer();
+
+            var neoforgePath = installation.getLibrariesDir().resolve("net/neoforged/neoforge/20.4.9999/neoforge-20.4.9999-universal.jar");
+            Files.delete(neoforgePath);
+
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeserver"));
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
+                    "ERROR: The NeoForge jar is missing. Please try to reinstall NeoForge.");
+        }
+
+        @Test
+        void testCorruptedNeoForgeJarInServerInstallation() throws Exception {
+            installation.setupProductionServer();
+
+            var neoforgePath = installation.getComponentRoots().neoforgeCommonClassesRoot();
+            // Replace the jar with an empty zip (no neoforge.mods.toml)
+            new ZipOutputStream(Files.newOutputStream(neoforgePath)).close();
+
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeserver"));
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
+                    "ERROR: The NeoForge jar is corrupted. Please try to reinstall NeoForge.");
         }
 
         /**
@@ -418,7 +752,7 @@ class FMLLoaderTest extends LauncherTest {
 
             var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                    "ERROR: A technical error occurred during mod loading: Unexpected IModFile subclass: class net.neoforged.neoforgespi.locating.IModFile");
+                    "ERROR: A technical error occurred during mod loading: Unexpected IModFile subclass: class org.mockito.codegen.IModFile");
         }
 
         @Test
@@ -557,5 +891,67 @@ class FMLLoaderTest extends LauncherTest {
                     "ERROR: An uncaught parallel processing error has occurred."
                             + "\njava.lang.IllegalStateException: Exception Message");
         }
+
+        @Test
+        void testClassloadingGuardian() throws Exception {
+            installation.setupUserdevProjectNew();
+            installation.buildInstallationAppropriateModProject("test", "test.jar", builder -> builder
+                    .withModTypeManifest("LIBRARY")
+                    .addClass("test.DummyReader", """
+                            public class DummyReader implements net.neoforged.neoforgespi.locating.IModFileReader {
+                                public DummyReader() throws Exception {
+                                    Class.forName("net.minecraft.DetectedVersion");
+                                }
+
+                                @Override
+                                public net.neoforged.neoforgespi.locating.IModFile read(net.neoforged.fml.jarcontents.JarContents jar, net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes attributes) {
+                                    return null;
+                                }
+                            }
+                            """)
+                    .addService(IModFileReader.class, "test.DummyReader"));
+
+            var e = assertThrows(IllegalArgumentException.class, () -> launchClient());
+            assertThat(e).hasMessageStartingWith("Classes were loaded on the wrong class-loader:\n net.minecraft.DetectedVersion from java.net.URLClassLoader");
+        }
+    }
+
+    public static boolean closeCallbackCalled = false;
+
+    @Test
+    void testCloseCallback() throws Exception {
+        installation.setupUserdevProjectNew();
+        installation.buildInstallationAppropriateModProject("test", "test.jar", builder -> builder
+                .withModTypeManifest("LIBRARY")
+                .addClass("test.NotLoadedYet", """
+                            public class NotLoadedYet {
+                                public static boolean dummy;
+                            }
+                        """)
+                .addClass("test.Bootstrapper", """
+                        public class Bootstrapper implements net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper {
+                            @Override
+                            public String name() {
+                                return "dummy";
+                            }
+
+                            @Override
+                            public void bootstrap(String[] arguments) {
+                                net.neoforged.fml.loading.FMLLoader.getCurrent().addCloseCallback(() -> {
+                                    NotLoadedYet.dummy = true; // This will fail if the CL is already closed
+                                    net.neoforged.fml.loading.FMLLoaderTest.closeCallbackCalled = true;
+                                });
+                            }
+                        }
+                        """)
+                .addService(GraphicsBootstrapper.class, "test.Bootstrapper"));
+
+        launchClient();
+
+        assertFalse(closeCallbackCalled);
+
+        loader.close();
+
+        assertTrue(closeCallbackCalled);
     }
 }

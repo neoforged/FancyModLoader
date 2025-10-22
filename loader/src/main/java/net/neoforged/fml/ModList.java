@@ -30,10 +30,11 @@ import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.IModFile;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
- * Master list of all mods - game-side version. This is classloaded in the game scope and
- * can dispatch game level events as a result.
+ * Master list of all mods.
  */
 public class ModList {
     private static ModList INSTANCE;
@@ -45,7 +46,7 @@ public class ModList {
     private List<ModFileScanData> modFileScanData;
     private List<ModContainer> sortedContainers;
 
-    private ModList(final List<ModFile> modFiles, final List<ModInfo> sortedList) {
+    private ModList(List<ModFile> modFiles, List<ModInfo> sortedList) {
         this.modFiles = modFiles.stream().map(ModFile::getModFileInfo).toList();
         this.sortedList = sortedList.stream().map(IModInfo.class::cast).toList();
         this.fileById = this.modFiles.stream().map(IModFileInfo::getMods).flatMap(Collection::stream).map(ModInfo.class::cast).collect(Collectors.toUnmodifiableMap(ModInfo::getModId, ModInfo::getOwningFile));
@@ -86,9 +87,9 @@ public class ModList {
         if (t.stream().noneMatch(e -> e.getValue() != null)) {
             return CompletableFuture.completedFuture(null);
         } else {
-            final List<Throwable> throwables = t.stream().filter(e -> e.getValue() != null).map(Map.Entry::getValue).collect(Collectors.toList());
+            List<Throwable> throwables = t.stream().filter(e -> e.getValue() != null).map(Map.Entry::getValue).collect(Collectors.toList());
             CompletableFuture<Void> cf = new CompletableFuture<>();
-            final RuntimeException accumulator = new RuntimeException();
+            RuntimeException accumulator = new RuntimeException();
             cf.completeExceptionally(accumulator);
             throwables.forEach(exception -> {
                 if (exception instanceof CompletionException) {
@@ -115,7 +116,7 @@ public class ModList {
         return CompletableFuture.allOf(results).handle((r, th) -> null).thenApply(res -> list);
     }
 
-    void setLoadedMods(final List<ModContainer> modContainers) {
+    void setLoadedMods(List<ModContainer> modContainers) {
         this.mods = modContainers;
         this.sortedContainers = modContainers.stream().sorted(Comparator.comparingInt(c -> sortedList.indexOf(c.getModInfo()))).toList();
         this.indexedMods = modContainers.stream().collect(Collectors.toMap(ModContainer::getModId, Function.identity()));
@@ -176,5 +177,11 @@ public class ModList {
 
     public <T> Stream<T> applyForEachModContainer(Function<ModContainer, T> function) {
         return indexedMods.values().stream().map(function);
+    }
+
+    @ApiStatus.Internal
+    @VisibleForTesting
+    public static void clear() {
+        INSTANCE = null;
     }
 }

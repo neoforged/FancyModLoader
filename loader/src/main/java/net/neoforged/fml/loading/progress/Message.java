@@ -10,7 +10,7 @@ public class Message {
     private final MessageType type;
     private final long timestamp;
 
-    public Message(final String text, final MessageType type) {
+    public Message(String text, MessageType type) {
         this.text = text;
         this.type = type;
         this.timestamp = System.nanoTime();
@@ -32,7 +32,7 @@ public class Message {
         return type.colour();
     }
 
-    enum MessageType {
+    public enum MessageType {
         MC(1.0f, 1.0f, 1.0f),
         ML(0.0f, 0.0f, 0.5f),
         LOC(0.0f, 0.5f, 0.0f),
@@ -40,7 +40,7 @@ public class Message {
 
         private final float[] colour;
 
-        MessageType(final float r, final float g, final float b) {
+        MessageType(float r, float g, float b) {
             colour = new float[] { r, g, b };
         }
 

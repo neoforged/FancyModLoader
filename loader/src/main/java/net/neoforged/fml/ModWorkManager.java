@@ -38,7 +38,7 @@ public class ModWorkManager {
      */
     public static Executor parallelExecutor() {
         if (parallelThreadPool == null) {
-            final int loadingThreadCount = FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.MAX_THREADS);
+            int loadingThreadCount = FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.MAX_THREADS);
             LOGGER.debug(LOADING, "Using {} threads for parallel mod-loading", loadingThreadCount);
             parallelThreadPool = new ForkJoinPool(loadingThreadCount, ModWorkManager::newForkJoinWorkerThread, null, false);
         }

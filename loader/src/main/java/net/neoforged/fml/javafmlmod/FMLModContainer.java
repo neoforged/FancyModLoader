@@ -41,14 +41,14 @@ public class FMLModContainer extends ModContainer {
 
     public FMLModContainer(IModInfo info, List<String> entrypoints, ModFileScanData modFileScanResults, ModuleLayer gameLayer) {
         super(info);
-        LOGGER.debug(LOADING, "Creating FMLModContainer instance for {}", entrypoints);
+        LOGGER.debug(LOADING, "Creating FMLModContainer instance for {} with entrypoints {}", info.getModId(), entrypoints);
         this.scanResults = modFileScanResults;
         this.eventBus = BusBuilder.builder()
                 .setExceptionHandler(this::onEventFailed)
                 .markerType(IModBusEvent.class)
                 .allowPerPhasePost()
                 .build();
-        this.layer = gameLayer.findModule(info.getOwningFile().moduleName()).orElseThrow();
+        this.layer = gameLayer.findModule(info.getOwningFile().getFile().getId()).orElseThrow();
 
         var context = ModLoadingContext.get();
         try {
@@ -59,6 +59,9 @@ public class FMLModContainer extends ModContainer {
             for (var entrypoint : entrypoints) {
                 try {
                     var cls = Class.forName(layer, entrypoint);
+                    if (cls == null) {
+                        throw new ClassNotFoundException("Class '" + entrypoint + "' could not be found");
+                    }
                     modClasses.add(cls);
                     LOGGER.trace(LOADING, "Loaded modclass {} with {}", cls.getName(), cls.getClassLoader());
                 } catch (Throwable e) {
@@ -90,7 +93,7 @@ public class FMLModContainer extends ModContainer {
                         IEventBus.class, eventBus,
                         ModContainer.class, this,
                         FMLModContainer.class, this,
-                        Dist.class, FMLLoader.getDist());
+                        Dist.class, FMLLoader.getCurrent().getDist());
 
                 var parameterTypes = constructor.getParameterTypes();
                 Object[] constructorArgs = new Object[parameterTypes.length];

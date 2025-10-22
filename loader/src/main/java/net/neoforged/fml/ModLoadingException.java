@@ -16,7 +16,7 @@ public class ModLoadingException extends RuntimeException {
     }
 
     public ModLoadingException(List<ModLoadingIssue> issues) {
-        this.issues = issues;
+        this.issues = List.copyOf(issues);
     }
 
     public List<ModLoadingIssue> getIssues() {
