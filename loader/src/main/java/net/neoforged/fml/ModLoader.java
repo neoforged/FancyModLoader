@@ -108,7 +108,7 @@ public final class ModLoader {
                 .toList();
         if (hasErrors()) {
             for (var loadingError : getLoadingErrors()) {
-                LOGGER.fatal(CORE, "Failed to initialize mod containers: {}", loadingError, loadingError.cause());
+                LOGGER.fatal(CORE, "Failed to initialize mod containers: {}", FMLTranslations.translateIssueEnglish(loadingError), loadingError.cause());
             }
             cancelLoading(modList);
             throw new ModLoadingException(loadingIssues);
