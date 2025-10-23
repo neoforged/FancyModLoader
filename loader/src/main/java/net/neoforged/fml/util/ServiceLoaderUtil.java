@@ -6,6 +6,7 @@
 package net.neoforged.fml.util;
 
 import java.net.URISyntaxException;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
@@ -38,6 +39,25 @@ public final class ServiceLoaderUtil {
 
     public static <T> List<T> loadServices(ILaunchContext context, Class<T> serviceClass, Collection<T> additionalServices) {
         return loadServices(context, serviceClass, additionalServices, ignored -> true);
+    }
+
+    /**
+     * Same as {@link #loadServices}, but it also marks any jar file that provided such services as located to prevent it
+     * from being located again as a mod-file or library later.
+     */
+    public static <T> List<T> loadEarlyServices(ILaunchContext context, Class<T> serviceClass, Collection<T> additionalServices) {
+        var services = loadServices(context, serviceClass, additionalServices, ignored -> true);
+
+        for (var service : services) {
+            var codeSource = service.getClass().getProtectionDomain().getCodeSource();
+            if (codeSource != null && codeSource.getLocation() != null) {
+                try {
+                    context.addLocated(Path.of(codeSource.getLocation().toURI()));
+                } catch (IllegalArgumentException | FileSystemNotFoundException | URISyntaxException ignored) {}
+            }
+        }
+
+        return services;
     }
 
     /**
