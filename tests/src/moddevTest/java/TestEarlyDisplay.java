@@ -11,6 +11,7 @@ import net.neoforged.fml.earlydisplay.DisplayWindow;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.ProgramArgs;
+import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
 
@@ -42,6 +43,8 @@ public class TestEarlyDisplay {
             window.close();
             closed.set(true);
         });
+
+        StartupNotificationManager.addProgressBar("Test Bar", 20).setAbsolute(10);
 
         while (!closed.get()) {
             try {

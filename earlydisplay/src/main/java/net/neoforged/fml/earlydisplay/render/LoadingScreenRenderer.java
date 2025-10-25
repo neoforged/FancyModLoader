@@ -250,14 +250,23 @@ public class LoadingScreenRenderer implements AutoCloseable {
         // Fit the layout rectangle into the screen while maintaining aspect ratio
         var desiredAspectRatio = LAYOUT_WIDTH / (float) LAYOUT_HEIGHT;
         var actualAspectRatio = framebuffer.width() / (float) framebuffer.height();
+        int offsetX;
+        int offsetY;
+        float scale;
         if (actualAspectRatio > desiredAspectRatio) {
             // This means we are wider than the desired aspect ratio, and have to center horizontally
             var actualWidth = desiredAspectRatio * framebuffer.height();
-            GlState.viewport((int) (framebuffer.width() - actualWidth) / 2, 0, (int) actualWidth, framebuffer.height());
+            offsetX = (int) (framebuffer.width() - actualWidth) / 2;
+            offsetY = 0;
+            GlState.viewport(offsetX, 0, (int) actualWidth, framebuffer.height());
+            scale = (float) framebuffer.height() / LAYOUT_HEIGHT;
         } else {
             // This means we are taller than the desired aspect ratio, and have to center vertically
             var actualHeight = framebuffer.width() / desiredAspectRatio;
-            GlState.viewport(0, (int) (framebuffer.height() - actualHeight) / 2, framebuffer.width(), (int) actualHeight);
+            offsetX = 0;
+            offsetY = (int) (framebuffer.height() - actualHeight) / 2;
+            GlState.viewport(0, offsetY, framebuffer.width(), (int) actualHeight);
+            scale = (float) framebuffer.width() / LAYOUT_WIDTH;
         }
 
         // Clear the screen to our color
@@ -274,7 +283,7 @@ public class LoadingScreenRenderer implements AutoCloseable {
             }
         }
 
-        var context = new RenderContext(buffer, theme, LAYOUT_WIDTH, LAYOUT_HEIGHT, animationFrame);
+        var context = new RenderContext(buffer, theme, LAYOUT_WIDTH, LAYOUT_HEIGHT, offsetX, offsetY, scale, animationFrame);
 
         for (var element : this.elements) {
             element.render(context);
