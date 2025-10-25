@@ -18,6 +18,9 @@ public record RenderContext(
         MaterializedTheme theme,
         float availableWidth,
         float availableHeight,
+        int viewportOffsetX,
+        int viewportOffsetY,
+        float viewportScale,
         int animationFrame) {
     public ElementShader bindShader(String shaderId) {
         var shader = theme.getShader(shaderId);
@@ -142,7 +145,7 @@ public record RenderContext(
         blitTexture(sprites.progressBarBackground(), barBounds);
 
         GlState.scissorTest(true);
-        GlState.scissorBox(
+        scissorBox(
                 (int) barBounds.left(),
                 (int) barBounds.top(),
                 (int) (barBounds.width() * fillFactor),
@@ -163,5 +166,14 @@ public record RenderContext(
         sharedBuffer.pos(x, y + height).tex(0, 0).colour(colorBottom).endVertex();
         sharedBuffer.pos(x + width, y + height).tex(0, 0).colour(colorBottom).endVertex();
         sharedBuffer.draw();
+    }
+
+    public void scissorBox(int x, int y, int width, int height) {
+        // glScissor applies to the whole window, not just the viewport set via glViewport
+        GlState.scissorBox(
+                (int) (viewportOffsetX + x * viewportScale),
+                (int) (viewportOffsetY + y * viewportScale),
+                (int) (width * viewportScale),
+                (int) (height * viewportScale));
     }
 }

@@ -176,7 +176,7 @@ final class ErrorDisplayWindow {
         GlState.enableBlend(true);
         GlState.blendFuncSeparate(GL11C.GL_SRC_ALPHA, GL11C.GL_ONE_MINUS_SRC_ALPHA, GL11C.GL_ZERO, GL11C.GL_ONE);
 
-        RenderContext ctx = new RenderContext(bufferBuilder, theme, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0);
+        RenderContext ctx = new RenderContext(bufferBuilder, theme, DISPLAY_WIDTH, DISPLAY_HEIGHT, offsetX, offsetY, scale, 0);
         for (ElementShader shader : theme.shaders().values()) {
             shader.activate();
             if (shader.hasUniform(ElementShader.UNIFORM_SCREEN_SIZE)) {
@@ -213,7 +213,7 @@ final class ErrorDisplayWindow {
         }
 
         GlState.scissorTest(true);
-        GlState.scissorBox(offsetX, (int) (offsetY + LIST_CONTENT_Y_TOP * scale), (int) (DISPLAY_WIDTH * scale), (int) (LIST_CONTENT_HEIGHT * scale));
+        ctx.scissorBox(0, LIST_CONTENT_Y_TOP, DISPLAY_WIDTH, LIST_CONTENT_HEIGHT);
         float y = LIST_Y_TOP - scrollOffset;
         for (MessageEntry entry : entries) {
             float entryHeight = errorLineHeight * entry.lineCount();
