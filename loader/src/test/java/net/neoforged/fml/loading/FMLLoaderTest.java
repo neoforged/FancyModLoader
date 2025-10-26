@@ -12,10 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.electronwill.nightconfig.core.Config;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -781,6 +778,21 @@ public class FMLLoaderTest extends LauncherTest {
         }
 
         @Test
+        void testMissingRequiredDependency() throws Exception {
+            installation.setupProductionClient();
+            installation.buildModJar("testmod.jar")
+                    .withModsToml(builder -> {
+                        builder.unlicensedJavaMod();
+                        builder.addMod("testmod");
+                        builder.addDependency("testmod", "requiredmod", "123");
+                    })
+                    .build();
+
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly("ERROR: Mod testmod requires requiredmod any\nCurrently, requiredmod is not installed\n");
+        }
+
+        @Test
         void testDependencyOverride() throws Exception {
             installation.setupProductionClient();
             installation.writeConfig("[dependencyOverrides]", "targetmod = [\"-depmod\", \"-incompatiblemod\"]");
@@ -789,17 +801,10 @@ public class FMLLoaderTest extends LauncherTest {
             installation.buildModJar("targetmod.jar")
                     .withModsToml(builder -> {
                         builder.unlicensedJavaMod();
-                        builder.addMod("targetmod", "1.0", c -> {
-                            var sub = Config.inMemory();
-                            sub.set("modId", "depmod");
-                            sub.set("versionRange", "[2,)");
-                            sub.set("type", "required");
-
-                            var sub2 = Config.inMemory();
-                            sub2.set("modId", "incompatiblemod");
-                            sub2.set("versionRange", "[1,");
-                            sub2.set("type", "incompatible");
-                            c.set("dependencies.targetmod", new ArrayList<>(Arrays.asList(sub, sub2)));
+                        builder.addMod("targetmod", "1.0");
+                        builder.addDependency("targetmod", "depmod", "[2,)");
+                        builder.addDependency("targetmod", "incompatiblemod", "[1,)", config -> {
+                            config.set("type", "incompatible");
                         });
                     })
                     .build();

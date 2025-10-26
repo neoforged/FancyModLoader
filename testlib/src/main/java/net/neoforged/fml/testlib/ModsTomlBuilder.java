@@ -81,7 +81,29 @@ public class ModsTomlBuilder {
         modConfig.set("modId", modId);
         modConfig.set("version", version);
         customizer.accept(modConfig);
-        config.getOrElse("mods", ArrayList::new).add(modConfig);
+        List<Config> mods = config.get("mods");
+        if (mods == null) {
+            config.set("mods", mods = new ArrayList<>());
+        }
+        mods.add(modConfig);
+        return this;
+    }
+
+    public ModsTomlBuilder addDependency(String modId, String targetModId, String targetVersionRange) {
+        return addDependency(modId, targetModId, targetVersionRange, ignored -> {});
+    }
+
+    public ModsTomlBuilder addDependency(String modId, String targetModId, String targetVersionRange, Consumer<Config> customizer) {
+        var dependency = Config.inMemory();
+        dependency.set("modId", targetModId);
+        dependency.set("versionRange", targetVersionRange);
+        customizer.accept(dependency);
+
+        List<Config> dependencies = config.get(List.of("dependencies", modId));
+        if (dependencies == null) {
+            config.set(List.of("dependencies", modId), dependencies = new ArrayList<>());
+        }
+        dependencies.add(dependency);
         return this;
     }
 
