@@ -34,10 +34,6 @@ public final class ServiceLoaderUtil {
         return loadServices(serviceClass, List.of());
     }
 
-    public static <T> List<T> loadServices(Class<T> serviceClass, Predicate<Class<? extends T>> filter) {
-        return loadServices(serviceClass, List.of(), filter);
-    }
-
     public static <T> List<T> loadServices(Class<T> serviceClass, Collection<T> additionalServices) {
         return loadServices(serviceClass, additionalServices, ignored -> true);
     }
