@@ -26,6 +26,7 @@ import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.UniqueModListBuilder;
+import net.neoforged.fml.loading.game.GameDiscoveryResult;
 import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IDependencyLocator;
@@ -35,23 +36,24 @@ import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.IModFileReader;
 import net.neoforged.neoforgespi.locating.IncompatibleFileReporting;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
+@ApiStatus.Internal
 public class ModDiscoverer {
     private static final Logger LOGGER = LogUtils.getLogger();
     private final List<IModFileCandidateLocator> modFileLocators;
     private final List<IDependencyLocator> dependencyLocators;
     private final List<IModFileReader> modFileReaders;
     private final ILaunchContext launchContext;
-
-    public ModDiscoverer(ILaunchContext launchContext) {
-        this(launchContext, List.of());
-    }
+    private final GameDiscoveryResult gameDiscoveryResult;
 
     public ModDiscoverer(ILaunchContext launchContext,
+            GameDiscoveryResult gameDiscoveryResult,
             Collection<IModFileCandidateLocator> additionalModFileLocators) {
         this.launchContext = launchContext;
+        this.gameDiscoveryResult = gameDiscoveryResult;
 
         modFileLocators = ServiceLoaderUtil.loadEarlyServices(launchContext, IModFileCandidateLocator.class, additionalModFileLocators);
         modFileReaders = ServiceLoaderUtil.loadEarlyServices(launchContext, IModFileReader.class, List.of());
@@ -65,6 +67,8 @@ public class ModDiscoverer {
     public Result discoverMods(List<ModFile> additionalDependencySources) {
         LOGGER.debug(LogMarkers.SCAN, "Scanning for mods and other resources to load. We know {} ways to find mods", modFileLocators.size());
         List<ModFile> loadedFiles = new ArrayList<>();
+        loadedFiles.add(gameDiscoveryResult.minecraft());
+        loadedFiles.add(gameDiscoveryResult.neoforge());
         List<ModLoadingIssue> discoveryIssues = new ArrayList<>();
         boolean successfullyLoadedMods = true;
         ImmediateWindowHandler.updateProgress("Discovering mod files");

@@ -17,14 +17,15 @@ import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.javafmlmod.FMLJavaModLanguageProvider;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.util.ServiceLoaderUtil;
-import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.language.IModLanguageLoader;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
+@ApiStatus.Internal
 public class LanguageProviderLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
     private final List<IModLanguageLoader> languageProviders;
@@ -40,8 +41,8 @@ public class LanguageProviderLoader {
 
     private record ModLanguageWrapper(IModLanguageLoader modLanguageProvider, ArtifactVersion version) {}
 
-    LanguageProviderLoader(ILaunchContext launchContext) {
-        languageProviders = ServiceLoaderUtil.loadServices(launchContext, IModLanguageLoader.class);
+    LanguageProviderLoader() {
+        languageProviders = ServiceLoaderUtil.loadServices(IModLanguageLoader.class);
         ImmediateWindowHandler.updateProgress("Loading language providers");
         languageProviders.forEach(lp -> {
             String version = lp.version();

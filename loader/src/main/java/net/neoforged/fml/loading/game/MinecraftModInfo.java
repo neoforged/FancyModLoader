@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.loading.moddiscovery.locators;
+package net.neoforged.fml.loading.game;
 
 import com.electronwill.nightconfig.core.Config;
 import java.util.List;

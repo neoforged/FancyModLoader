@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.loading.moddiscovery.locators;
+package net.neoforged.fml.loading.game;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
 import net.neoforged.fml.ModLoadingException;
@@ -20,7 +21,6 @@ import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.util.ClasspathResourceUtils;
-import net.neoforged.neoforgespi.ILaunchContext;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,17 +89,17 @@ final class RequiredSystemFiles implements AutoCloseable {
         }
     }
 
-    public static RequiredSystemFiles find(ILaunchContext context, ClassLoader loader) {
+    public static RequiredSystemFiles find(Predicate<Path> ignorePath, ClassLoader loader) {
         var locatedRoots = new ArrayList<JarContents>();
 
         var result = new RequiredSystemFiles();
         try {
-            result.commonClasses = findAndOpen(context, loader, locatedRoots, COMMON_CLASS);
-            result.commonResources = findAndOpen(context, loader, locatedRoots, COMMON_RESOURCE_ROOT);
-            result.clientClasses = findAndOpen(context, loader, locatedRoots, CLIENT_CLASS);
-            result.clientResources = findAndOpen(context, loader, locatedRoots, CLIENT_RESOURCE_ROOT);
-            result.neoForgeCommonClasses = findAndOpen(context, loader, locatedRoots, NEOFORGE_COMMON_CLASS);
-            result.neoForgeClientClasses = findAndOpen(context, loader, locatedRoots, NEOFORGE_CLIENT_CLASS);
+            result.commonClasses = findAndOpen(ignorePath, loader, locatedRoots, COMMON_CLASS);
+            result.commonResources = findAndOpen(ignorePath, loader, locatedRoots, COMMON_RESOURCE_ROOT);
+            result.clientClasses = findAndOpen(ignorePath, loader, locatedRoots, CLIENT_CLASS);
+            result.clientResources = findAndOpen(ignorePath, loader, locatedRoots, CLIENT_RESOURCE_ROOT);
+            result.neoForgeCommonClasses = findAndOpen(ignorePath, loader, locatedRoots, NEOFORGE_COMMON_CLASS);
+            result.neoForgeClientClasses = findAndOpen(ignorePath, loader, locatedRoots, NEOFORGE_CLIENT_CLASS);
             result.neoForgeResources = findNeoForgeResources(locatedRoots, loader);
         } catch (Exception e) {
             closeAll(locatedRoots);
@@ -136,7 +136,7 @@ final class RequiredSystemFiles implements AutoCloseable {
     }
 
     @Nullable
-    private static JarContents findAndOpen(ILaunchContext context,
+    private static JarContents findAndOpen(Predicate<Path> ignorePath,
             ClassLoader loader,
             List<JarContents> alreadyOpened,
             String relativePath) {
@@ -152,7 +152,7 @@ final class RequiredSystemFiles implements AutoCloseable {
         for (var path : roots) {
             // The obfuscated client jar is on the classpath in production, and we mark it as located earlier.
             // This check prevents us trying to load our files from it.
-            if (!context.isLocated(path)) {
+            if (!ignorePath.test(path)) {
                 var jar = openOrThrow(path);
                 alreadyOpened.add(jar);
                 return jar;

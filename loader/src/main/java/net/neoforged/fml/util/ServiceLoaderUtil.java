@@ -14,10 +14,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.ServiceConfigurationError;
+import java.util.ServiceLoader;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import net.neoforged.fml.loading.LogMarkers;
-import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.LocatedPaths;
 import net.neoforged.neoforgespi.locating.IOrderedProvider;
 import org.jetbrains.annotations.ApiStatus;
 import org.slf4j.Logger;
@@ -29,30 +30,30 @@ public final class ServiceLoaderUtil {
 
     private ServiceLoaderUtil() {}
 
-    public static <T> List<T> loadServices(ILaunchContext context, Class<T> serviceClass) {
-        return loadServices(context, serviceClass, List.of());
+    public static <T> List<T> loadServices(Class<T> serviceClass) {
+        return loadServices(serviceClass, List.of());
     }
 
-    public static <T> List<T> loadServices(ILaunchContext context, Class<T> serviceClass, Predicate<Class<? extends T>> filter) {
-        return loadServices(context, serviceClass, List.of(), filter);
+    public static <T> List<T> loadServices(Class<T> serviceClass, Predicate<Class<? extends T>> filter) {
+        return loadServices(serviceClass, List.of(), filter);
     }
 
-    public static <T> List<T> loadServices(ILaunchContext context, Class<T> serviceClass, Collection<T> additionalServices) {
-        return loadServices(context, serviceClass, additionalServices, ignored -> true);
+    public static <T> List<T> loadServices(Class<T> serviceClass, Collection<T> additionalServices) {
+        return loadServices(serviceClass, additionalServices, ignored -> true);
     }
 
     /**
      * Same as {@link #loadServices}, but it also marks any jar file that provided such services as located to prevent it
      * from being located again as a mod-file or library later.
      */
-    public static <T> List<T> loadEarlyServices(ILaunchContext context, Class<T> serviceClass, Collection<T> additionalServices) {
-        var services = loadServices(context, serviceClass, additionalServices, ignored -> true);
+    public static <T> List<T> loadEarlyServices(LocatedPaths located, Class<T> serviceClass, Collection<T> additionalServices) {
+        var services = loadServices(serviceClass, additionalServices, ignored -> true);
 
         for (var service : services) {
             var codeSource = service.getClass().getProtectionDomain().getCodeSource();
             if (codeSource != null && codeSource.getLocation() != null) {
                 try {
-                    context.addLocated(Path.of(codeSource.getLocation().toURI()));
+                    located.addLocated(Path.of(codeSource.getLocation().toURI()));
                 } catch (IllegalArgumentException | FileSystemNotFoundException | URISyntaxException ignored) {}
             }
         }
@@ -63,11 +64,10 @@ public final class ServiceLoaderUtil {
     /**
      * @param serviceClass If the service class implements {@link IOrderedProvider}, the services will automatically be sorted.
      */
-    public static <T> List<T> loadServices(ILaunchContext context,
-            Class<T> serviceClass,
+    public static <T> List<T> loadServices(Class<T> serviceClass,
             Collection<T> additionalServices,
             Predicate<Class<? extends T>> filter) {
-        var serviceLoaderServices = context.loadServices(serviceClass)
+        var serviceLoaderServices = ServiceLoader.load(serviceClass).stream()
                 .filter(p -> {
                     if (!filter.test(p.type())) {
                         LOGGER.debug("Filtering out service provider {} for service class {}", p.type(), serviceClass);
