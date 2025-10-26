@@ -669,7 +669,7 @@ public final class FMLLoader implements AutoCloseable {
         backgroundScanHandler.setLoadingModList(loadingModList);
 
         Map<IModInfo, JarResource> enumExtensionsByMod = new HashMap<>();
-        for (var modFile : modFiles) {
+        for (var modFile : loadingModList.getAllModFiles()) {
             var mods = modFile.getModInfos();
 
             for (var mod : mods) {
@@ -683,7 +683,7 @@ public final class FMLLoader implements AutoCloseable {
                 });
             }
 
-            backgroundScanHandler.submitForScanning(modFile);
+            backgroundScanHandler.submitForScanning((ModFile) modFile);
         }
         RuntimeEnumExtender.loadEnumPrototypes(enumExtensionsByMod);
 
