@@ -958,9 +958,9 @@ public class FMLLoaderTest extends LauncherTest {
                             }
                         """)
                 .addClass("test.CandidateLocator", """
-                        import net.neoforged.neoforgespi.IModFileCandidateLocator;
-                        import net.neoforged.neoforgespi.IDiscoveryPipeline;
-                        import net.neoforged.neoforgespi.locating.ILaunchContext;
+                        import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
+                        import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
+                        import net.neoforged.neoforgespi.ILaunchContext;
                         public class CandidateLocator implements IModFileCandidateLocator {
                             @Override
                             public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {
