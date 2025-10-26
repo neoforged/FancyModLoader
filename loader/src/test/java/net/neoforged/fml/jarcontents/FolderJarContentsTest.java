@@ -22,6 +22,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.jar.Manifest;
+import net.neoforged.fml.util.PathPrettyPrinting;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -201,7 +202,7 @@ class FolderJarContentsTest extends AbstractJarContentsTest {
 
     @Test
     void testToString() {
-        assertEquals("folder(" + tempDir + ")", contents.toString());
+        assertEquals("folder(" + PathPrettyPrinting.prettyPrint(tempDir) + ")", contents.toString());
     }
 
     @Nested

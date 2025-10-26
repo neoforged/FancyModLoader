@@ -6,6 +6,33 @@
 package net.neoforged.fml.loading;
 
 import com.mojang.logging.LogUtils;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.lang.instrument.Instrumentation;
+import java.lang.module.Configuration;
+import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleFinder;
+import java.net.URI;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.ServiceLoader;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import net.neoforged.accesstransformer.api.AccessTransformerEngine;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.FMLVersion;
@@ -57,34 +84,6 @@ import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.lang.instrument.Instrumentation;
-import java.lang.module.Configuration;
-import java.lang.module.ModuleDescriptor;
-import java.lang.module.ModuleFinder;
-import java.net.URI;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.ServiceLoader;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
 public final class FMLLoader implements AutoCloseable {
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -106,7 +105,7 @@ public final class FMLLoader implements AutoCloseable {
     private final Dist dist;
     private LoadingModList loadingModList;
     private final Path gameDir;
-    private final Set<Path> locatedPaths = new HashSet<>();
+    private final LocatedPaths locatedPaths;
 
     private VersionSupportMatrix versionSupportMatrix;
     public BackgroundScanHandler backgroundScanHandler;
@@ -154,7 +153,13 @@ public final class FMLLoader implements AutoCloseable {
         }
     }
 
-    private FMLLoader(ClassLoaderStack classLoaderStack, GameDiscoveryResult discoveredGame, ProgramArgs programArgs, Dist dist, Path gameDir) {
+    private FMLLoader(LocatedPaths locatedPaths,
+            ClassLoaderStack classLoaderStack,
+            GameDiscoveryResult discoveredGame,
+            ProgramArgs programArgs,
+            Dist dist,
+            Path gameDir) {
+        this.locatedPaths = locatedPaths;
         this.classLoaderStack = classLoaderStack;
         this.discoveredGame = discoveredGame;
         this.programArgs = programArgs;
@@ -304,7 +309,7 @@ public final class FMLLoader implements AutoCloseable {
 
         var classLoaderStack = new ClassLoaderStack(initialLoader, locatedPaths);
 
-        loadEarlyServices(classLoaderStack, startupArgs);
+        var earlyServiceJars = loadEarlyServices(classLoaderStack, startupArgs);
 
         ImmediateWindowHandler.load(locatedPaths, startupArgs.headless(), programArgs);
 
@@ -316,8 +321,10 @@ public final class FMLLoader implements AutoCloseable {
         ImmediateWindowHandler.setNeoForgeVersion(neoForgeVersion);
         ImmediateWindowHandler.setMinecraftVersion(minecraftVersion);
 
-        var loader = new FMLLoader(classLoaderStack, discoveredGame, programArgs, dist, startupArgs.gameDirectory());
+        var loader = new FMLLoader(locatedPaths, classLoaderStack, discoveredGame, programArgs, dist, startupArgs.gameDirectory());
         try {
+            loader.earlyServicesJars.addAll(earlyServiceJars);
+
             var discoveryResult = runLongRunning(startupArgs, loader::runDiscovery);
             for (var issue : discoveryResult.discoveryIssues()) {
                 LOGGER.atLevel(issue.severity() == ModLoadingIssue.Severity.ERROR ? Level.ERROR : Level.WARN)
@@ -393,8 +400,8 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     private static ClassProcessorSet createClassProcessorSet(StartupArgs startupArgs,
-                                                             DiscoveryResult discoveryResult,
-                                                             MixinFacade mixinFacade) {
+            DiscoveryResult discoveryResult,
+            MixinFacade mixinFacade) {
         // Add our own launch plugins explicitly.
         var builtInProcessors = new ArrayList<ClassProcessor>();
         builtInProcessors.add(createAccessTransformerService(discoveryResult));
@@ -443,8 +450,8 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     private TransformingClassLoader buildTransformingLoader(ClassProcessorSet classProcessorSet,
-                                                            ClassProcessorAuditLog auditTrail,
-                                                            List<JarContentsModule> content) {
+            ClassProcessorAuditLog auditTrail,
+            List<JarContentsModule> content) {
         classLoaderStack.maskContentAlreadyOnClasspath(content);
 
         long start = System.currentTimeMillis();
@@ -491,12 +498,13 @@ public final class FMLLoader implements AutoCloseable {
                 .collect(Collectors.joining("\n"));
     }
 
-    private static void loadEarlyServices(ClassLoaderStack classLoaderStack, StartupArgs startupArgs) {
+    private static List<ModFile> loadEarlyServices(ClassLoaderStack classLoaderStack, StartupArgs startupArgs) {
         // Search for early services
         var earlyServicesJars = new ArrayList<>(EarlyServiceDiscovery.findEarlyServiceJars(startupArgs, FMLPaths.MODSDIR.get()));
         if (!earlyServicesJars.isEmpty()) {
             classLoaderStack.appendLoader("FML Early Services", earlyServicesJars.stream().map(IModFile::getContents).toList());
         }
+        return earlyServicesJars;
     }
 
     private void loadPlugins(List<IModFileInfo> plugins) {
@@ -578,8 +586,7 @@ public final class FMLLoader implements AutoCloseable {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Interrupted while waiting for future", e);
-            } catch (TimeoutException ignored) {
-            }
+            } catch (TimeoutException ignored) {}
         }
     }
 
@@ -657,12 +664,12 @@ public final class FMLLoader implements AutoCloseable {
 
         @Override
         public boolean isLocated(Path path) {
-            return locatedPaths.contains(path);
+            return locatedPaths.isLocated(path);
         }
 
         @Override
         public boolean addLocated(Path path) {
-            return locatedPaths.add(path);
+            return locatedPaths.addLocated(path);
         }
 
         @Override
