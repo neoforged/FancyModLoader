@@ -66,7 +66,7 @@ final class EarlyServiceDiscovery {
                 }
             });
         } catch (IOException e) {
-            throw new FatalStartupException("Failed to find early startup services: " + e);
+            throw new FatalStartupException("Failed to find early startup services: " + e, startupArgs, e);
         }
 
         findClasspathServices(startupArgs, candidates);

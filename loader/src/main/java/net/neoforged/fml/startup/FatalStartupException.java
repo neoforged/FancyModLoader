@@ -9,11 +9,19 @@ package net.neoforged.fml.startup;
  * THis exceptions {@link #getMessage()} will be shown to end-users directly in a fatal error popup.
  */
 public class FatalStartupException extends RuntimeException {
-    public FatalStartupException(String message) {
+    private final StartupArgs startupArgs;
+
+    public FatalStartupException(String message, StartupArgs startupArgs) {
         super(message);
+        this.startupArgs = startupArgs;
     }
 
-    public FatalStartupException(String message, Throwable cause) {
+    public FatalStartupException(String message, StartupArgs startupArgs, Throwable cause) {
         super(message, cause);
+        this.startupArgs = startupArgs;
+    }
+
+    public StartupArgs getStartupArgs() {
+        return startupArgs;
     }
 }
