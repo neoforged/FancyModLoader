@@ -10,6 +10,7 @@ import java.util.List;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.EarlyLoadingScreenController;
 import net.neoforged.fml.loading.ProgramArgs;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This is for allowing the plugging in of alternative early display implementations.
@@ -66,5 +67,5 @@ public interface ImmediateWindowProvider extends EarlyLoadingScreenController {
      * @param logFile         The path to the latest.log file
      * @param crashReportFile The path to the crash report of the fatal error
      */
-    void displayFatalErrorAndExit(List<ModLoadingIssue> issues, Path modsFolder, Path logFile, Path crashReportFile);
+    void displayFatalErrorAndExit(List<ModLoadingIssue> issues, @Nullable Path modsFolder, @Nullable Path logFile, @Nullable Path crashReportFile);
 }

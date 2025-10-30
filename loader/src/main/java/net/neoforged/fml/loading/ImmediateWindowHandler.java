@@ -96,7 +96,7 @@ public class ImmediateWindowHandler {
         }
     }
 
-    public static void displayFatalErrorAndExit(List<ModLoadingIssue> issues, Path modsFolder, Path logFile, Path crashReportFile) {
+    public static void displayFatalErrorAndExit(List<ModLoadingIssue> issues, @Nullable Path modsFolder, @Nullable Path logFile, @Nullable Path crashReportFile) {
         if (provider != null) {
             provider.displayFatalErrorAndExit(issues, modsFolder, logFile, crashReportFile);
         }
