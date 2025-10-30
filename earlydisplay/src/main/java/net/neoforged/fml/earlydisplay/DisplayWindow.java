@@ -535,7 +535,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     @Override
-    public void displayFatalErrorAndExit(List<ModLoadingIssue> issues, Path modsFolder, Path logFile, Path crashReportFile) {
+    public void displayFatalErrorAndExit(List<ModLoadingIssue> issues, @Nullable Path modsFolder, @Nullable Path logFile, @Nullable Path crashReportFile) {
         long windowId = this.takeOverGlfwWindow();
         GL.createCapabilities();
         this.close();

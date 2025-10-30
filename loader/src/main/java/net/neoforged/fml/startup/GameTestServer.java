@@ -14,13 +14,13 @@ public class GameTestServer extends Entrypoint {
     private GameTestServer() {}
 
     public static void main(String[] args) {
-        try (var loader = startup(args, true, Dist.DEDICATED_SERVER, false)) {
-            var main = createMainMethodCallable(loader, "net.minecraft.gametest.Main");
-            main.invokeExact(loader.getProgramArgs().getArguments());
+        try (var startupResult = startup(args, true, Dist.DEDICATED_SERVER, false)) {
+            var main = createMainMethodCallable(startupResult, "net.minecraft.gametest.Main");
+            main.invokeExact(startupResult.loader().getProgramArgs().getArguments());
 
             var serverThread = findThread("Server thread");
             if (serverThread == null) {
-                throw new FatalStartupException("Couldn't find Minecraft server thread. Startup likely failed.");
+                throw new FatalStartupException("Couldn't find Minecraft server thread. Startup likely failed.", startupResult.startupArgs());
             }
 
             serverThread.join();

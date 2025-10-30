@@ -24,9 +24,9 @@ public final class ErrorDisplay {
             @Nullable String assetsDir,
             @Nullable String assetIndex,
             List<ModLoadingIssue> errors,
-            Path modsFolder,
-            Path logFile,
-            Path crashReportFile) {
+            @Nullable Path modsFolder,
+            @Nullable Path logFile,
+            @Nullable Path crashReportFile) {
         // Pre-clear all callbacks that may be left-over from the previous owner of the window
         clearCallbacks(windowHandle);
 

@@ -61,6 +61,7 @@ final class ErrorDisplayWindow {
     private final SimpleBufferBuilder bufferBuilder;
     final Texture buttonTexture;
     final Texture buttonTextureHover;
+    final Texture buttonTextureInactive;
     private final List<Button> buttons;
     private final List<HeaderLine> headerTextLines;
     private final List<MessageEntry> entries;
@@ -79,9 +80,9 @@ final class ErrorDisplayWindow {
             @Nullable String assetsDir,
             @Nullable String assetIndex,
             List<ModLoadingIssue> issues,
-            Path modsFolder,
-            Path logFile,
-            Path crashReportFile) {
+            @Nullable Path modsFolder,
+            @Nullable Path logFile,
+            @Nullable Path crashReportFile) {
         this.windowHandle = windowHandle;
         this.theme = MaterializedTheme.materialize(Theme.createDefaultTheme(), null);
         SimpleFont mcFont = FontLoader.loadVanillaFont(assetsDir, assetIndex);
@@ -89,8 +90,9 @@ final class ErrorDisplayWindow {
         this.errorLineHeight = font.lineSpacing() - 5;
         this.framebuffer = new EarlyFramebuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT);
         this.bufferBuilder = new SimpleBufferBuilder("shared_error", 8192);
-        this.buttonTexture = Button.loadTexture(false);
-        this.buttonTextureHover = Button.loadTexture(true);
+        this.buttonTexture = Button.loadTexture(true, false);
+        this.buttonTextureHover = Button.loadTexture(true, true);
+        this.buttonTextureInactive = Button.loadTexture(false, false);
         boolean translate = mcFont != null;
         BiFunction<String, Object[], String> translator = translate ? FMLTranslations::parseMessage : FMLTranslations::parseEnglishMessage;
         FileOpener opener = FileOpener.get();
@@ -99,10 +101,10 @@ final class ErrorDisplayWindow {
         String btnLogText = translator.apply("fml.button.open.log", new Object[0]);
         String btnQuitText = translator.apply("fml.button.quit", new Object[0]);
         this.buttons = List.of(
-                new Button(this, LEFT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnModsText, () -> opener.open(modsFolder)),
-                new Button(this, LEFT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnReportText, () -> opener.open(crashReportFile)),
-                new Button(this, RIGHT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnLogText, () -> opener.open(logFile)),
-                new Button(this, RIGHT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnQuitText, () -> closed = true));
+                new Button(this, LEFT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnModsText, modsFolder != null, () -> opener.open(modsFolder)),
+                new Button(this, LEFT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnReportText, crashReportFile != null, () -> opener.open(crashReportFile)),
+                new Button(this, RIGHT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnLogText, logFile != null, () -> opener.open(logFile)),
+                new Button(this, RIGHT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnQuitText, true, () -> closed = true));
 
         List<ModLoadingIssue> warningEntries = issues.stream()
                 .filter(issue -> issue.severity() != ModLoadingIssue.Severity.ERROR)
@@ -282,7 +284,7 @@ final class ErrorDisplayWindow {
             buttons.forEach(Button::unfocus);
             for (Button btn : buttons) {
                 if (btn.isMouseOver(mouseX, mouseY)) {
-                    btn.onPress.run();
+                    btn.press();
                     break;
                 }
             }
@@ -318,13 +320,13 @@ final class ErrorDisplayWindow {
                     Button button = buttons.get(i);
                     if (button.isFocused()) {
                         button.unfocus();
-                        buttons.get((i + 1) % buttons.size()).focus();
+                        focusFirstActiveKeyAfter(i);
                         modified = true;
                         break;
                     }
                 }
                 if (!modified) {
-                    buttons.getFirst().focus();
+                    focusFirstActiveKeyAfter(-1);
                 }
             }
             case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> {
@@ -332,10 +334,20 @@ final class ErrorDisplayWindow {
 
                 for (Button button : buttons) {
                     if (button.isFocused()) {
-                        button.onPress.run();
+                        button.press();
                         break;
                     }
                 }
+            }
+        }
+    }
+
+    private void focusFirstActiveKeyAfter(int prevIdx) {
+        for (int i = 1; i <= buttons.size(); i++) {
+            Button newButton = buttons.get((prevIdx + i) % buttons.size());
+            if (newButton.isActive()) {
+                newButton.focus();
+                return;
             }
         }
     }
@@ -354,6 +366,7 @@ final class ErrorDisplayWindow {
         bufferBuilder.close();
         buttonTexture.close();
         buttonTextureHover.close();
+        buttonTextureInactive.close();
         SimpleBufferBuilder.destroy();
     }
 

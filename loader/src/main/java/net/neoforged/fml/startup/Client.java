@@ -14,9 +14,9 @@ public class Client extends Entrypoint {
     private Client() {}
 
     public static void main(String[] args) {
-        try (var loader = startup(args, false, Dist.CLIENT, true)) {
-            var main = createMainMethodCallable(loader, "net.minecraft.client.main.Main");
-            main.invokeExact(loader.getProgramArgs().getArguments());
+        try (var startupResult = startup(args, false, Dist.CLIENT, true)) {
+            var main = createMainMethodCallable(startupResult, "net.minecraft.client.main.Main");
+            main.invokeExact(startupResult.loader().getProgramArgs().getArguments());
         } catch (Throwable t) {
             FatalErrorReporting.reportFatalError(t);
             System.exit(1);

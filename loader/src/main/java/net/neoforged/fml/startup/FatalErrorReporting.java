@@ -10,14 +10,22 @@ import java.awt.Image;
 import java.awt.image.BaseMultiResolutionImage;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
+import net.neoforged.fml.ModLoadingException;
+import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.i18n.FMLTranslations;
+import net.neoforged.fml.loading.ImmediateWindowHandler;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
+/**
+ * Handles reporting of fatal errors for UI-based entrypoints (i.e. clients).
+ */
 public final class FatalErrorReporting {
     private FatalErrorReporting() {}
 
@@ -37,23 +45,59 @@ public final class FatalErrorReporting {
     }
 
     public static void reportFatalError(Throwable t) {
-        t = unwrapException(t);
+        Path gameDir = null;
+        if (t instanceof FatalStartupException fatalStartupException) {
+            gameDir = fatalStartupException.getStartupArgs().gameDirectory();
+        }
 
-        if (t instanceof FatalStartupException e) {
-            var errorText = new StringBuilder(e.getMessage());
-            if (e.getCause() != null) {
-                errorText.append("\n\nTechnical Details:\n");
-                appendAbbreviatedExceptionChain(unwrapException(e.getCause()), errorText);
+        var issues = new ArrayList<ModLoadingIssue>();
+        collectModLoadingIssues(t, issues);
+
+        if (issues.isEmpty()) {
+            t = unwrapException(t);
+
+            if (t instanceof FatalStartupException e) {
+                var errorText = new StringBuilder(e.getMessage());
+                if (e.getCause() != null) {
+                    errorText.append("\n\nTechnical Details:\n");
+                    appendAbbreviatedExceptionChain(unwrapException(e.getCause()), errorText);
+                }
+
+                issues.add(ModLoadingIssue.error("fml.modloadingissue.technical_error", errorText).withCause(t));
+            } else {
+                var exceptionText = new StringBuilder();
+                appendAbbreviatedExceptionChain(t, exceptionText);
+
+                issues.add(ModLoadingIssue.error("fml.modloadingissue.technical_error", exceptionText).withCause(t));
             }
+        }
 
-            reportFatalError(errorText.toString());
-        } else {
-            var exceptionText = new StringBuilder();
-            // TODO Translate
-            exceptionText.append("An uncaught technical error occurred:\n");
-            appendAbbreviatedExceptionChain(t, exceptionText);
+        // This should exit after showing the error
+        ImmediateWindowHandler.displayFatalErrorAndExit(
+                issues,
+                gameDir != null ? gameDir.resolve("mods") : null,
+                null,
+                null);
 
-            reportFatalError(exceptionText.toString());
+        // When we get here, there was no immediate window provider loaded. We crashed before that got loaded.
+        var errorReport = new StringBuilder();
+        for (var issue : issues) {
+            errorReport.append(FMLTranslations.translateIssue(issue));
+        }
+        reportFatalError(errorReport.toString());
+    }
+
+    private static void collectModLoadingIssues(Throwable t, List<ModLoadingIssue> issues) {
+        if (t instanceof ModLoadingException e) {
+            issues.addAll(e.getIssues());
+        }
+
+        for (var suppressed : t.getSuppressed()) {
+            collectModLoadingIssues(suppressed, issues);
+        }
+
+        if (t.getCause() != null) {
+            collectModLoadingIssues(t.getCause(), issues);
         }
     }
 

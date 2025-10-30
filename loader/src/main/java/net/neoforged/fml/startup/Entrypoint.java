@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 public abstract class Entrypoint {
     protected Entrypoint() {}
 
-    protected static FMLLoader startup(String[] args, boolean headless, Dist dist, boolean cleanDist) {
+    protected static StartupResult startup(String[] args, boolean headless, Dist dist, boolean cleanDist) {
         // Wait to log this until Log4j2 is initialized properly.
         long startupUptime = ManagementFactory.getRuntimeMXBean().getUptime();
 
@@ -61,12 +61,14 @@ public abstract class Entrypoint {
                 Thread.currentThread().getContextClassLoader());
 
         try {
-            return FMLLoader.create(DevAgent.getInstrumentation(), startupArgs);
+            return new StartupResult(
+                    FMLLoader.create(DevAgent.getInstrumentation(), startupArgs),
+                    startupArgs);
         } catch (Exception e) {
             var sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
             logger.error("Failed to start FML: {}", sw);
-            throw new FatalStartupException("Failed to start FML: " + e);
+            throw new FatalStartupException("Failed to start FML: " + e, startupArgs, e);
         }
     }
 
@@ -140,21 +142,22 @@ public abstract class Entrypoint {
      * The only point of this is to get a neater stacktrace in all crash reports, since this
      * will replace three levels of Java reflection with one generated lambda method.
      */
-    protected static MethodHandle createMainMethodCallable(FMLLoader loader, String mainClassName) {
+    protected static MethodHandle createMainMethodCallable(StartupResult startupResult, String mainClassName) {
         try {
-            var mainClass = Class.forName(mainClassName, true, loader.getCurrentClassLoader());
-            if (mainClass.getClassLoader() != loader.getCurrentClassLoader()) {
-                throw new FatalStartupException("Missing main class " + mainClassName + " from the game content loader (but available on " + mainClass.getClassLoader() + ").");
+            var currentClassLoader = startupResult.loader.getCurrentClassLoader();
+            var mainClass = Class.forName(mainClassName, true, currentClassLoader);
+            if (mainClass.getClassLoader() != currentClassLoader) {
+                throw new FatalStartupException("Missing main class " + mainClassName + " from the game content loader (but available on " + mainClass.getClassLoader() + ").", startupResult.startupArgs);
             }
             var lookup = MethodHandles.publicLookup();
             var methodType = MethodType.methodType(void.class, String[].class);
             return lookup.findStatic(mainClass, "main", methodType);
         } catch (ClassNotFoundException e) {
-            throw new FatalStartupException("Missing main class " + mainClassName + " on the classpath.");
+            throw new FatalStartupException("Missing main class " + mainClassName + " on the classpath.", startupResult.startupArgs);
         } catch (NoSuchMethodException e) {
-            throw new FatalStartupException(mainClassName + " is missing a static 'main' method.");
+            throw new FatalStartupException(mainClassName + " is missing a static 'main' method.", startupResult.startupArgs);
         } catch (Throwable e) {
-            throw new FatalStartupException("Failed to create entrypoint object.", e);
+            throw new FatalStartupException("Failed to create entrypoint object.", startupResult.startupArgs, e);
         }
     }
 
@@ -171,5 +174,12 @@ public abstract class Entrypoint {
             }
         }
         return serverThread;
+    }
+
+    protected record StartupResult(FMLLoader loader, StartupArgs startupArgs) implements AutoCloseable {
+        @Override
+        public void close() throws Exception {
+            loader.close();
+        }
     }
 }

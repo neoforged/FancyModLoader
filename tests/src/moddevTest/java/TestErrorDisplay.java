@@ -52,6 +52,6 @@ public class TestErrorDisplay {
         issues.add(ModLoadingIssue.warning("fml.modloadingissue.discouragedmod",
                 "dimodid", "ownermodid", "somerange",
                 "1.2.3", "fml.modloadingissue.discouragedmod.noreason"));
-        ErrorDisplay.fatal(windowId, null, null, issues, Path.of("./tests/mods"), Path.of("./logs/latest.log"), Path.of("./"));
+        ErrorDisplay.fatal(windowId, null, null, issues, Path.of("./tests/mods"), Path.of("./logs/latest.log"), null);
     }
 }

@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.Locale;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 abstract sealed class FileOpener {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -26,7 +27,9 @@ abstract sealed class FileOpener {
         }
     }
 
-    final void open(Path path) {
+    final void open(@Nullable Path path) {
+        if (path == null) return;
+
         URI uri = path.toUri();
         try {
             Runtime.getRuntime().exec(getOpenParameters(uri));
