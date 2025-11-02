@@ -788,7 +788,7 @@ public class FMLLoaderTest extends LauncherTest {
                     })
                     .build();
 
-            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
+            var e = assertThrows(ModLoadingException.class, () -> launchInstalledDist());
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly("ERROR: Mod testmod requires requiredmod any\nCurrently, requiredmod is not installed\n");
         }
 

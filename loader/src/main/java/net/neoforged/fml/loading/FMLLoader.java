@@ -42,6 +42,7 @@ import net.neoforged.fml.FMLVersion;
 import net.neoforged.fml.IBindingsProvider;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoader;
+import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.classloading.JarContentsModule;
 import net.neoforged.fml.classloading.JarContentsModuleFinder;
@@ -161,6 +162,10 @@ public final class FMLLoader implements AutoCloseable {
             content.addAll(gameContent);
             content.addAll(gameLibraryContent);
             return content;
+        }
+
+        public boolean hasErrors() {
+            return discoveryIssues.stream().anyMatch(i -> i.severity() == ModLoadingIssue.Severity.ERROR);
         }
     }
 
@@ -346,6 +351,9 @@ public final class FMLLoader implements AutoCloseable {
                         .setCause(issue.cause())
                         .log("{}", FMLTranslations.translateIssueEnglish(issue));
             }
+            if (discoveryResult.hasErrors()) {
+                throw new ModLoadingException(discoveryResult.discoveryIssues);
+            }
 
             // Build all module descriptors in parallel
             discoveryResult.allContent().stream().parallel().forEach(ModFile::getModuleDescriptor);
@@ -446,7 +454,7 @@ public final class FMLLoader implements AutoCloseable {
         var engine = AccessTransformerEngine.newEngine();
         for (var modFile : discoveryResult.gameContent()) {
             for (var atPath : modFile.getAccessTransformers()) {
-                LOGGER.debug(LogMarkers.SCAN, "Adding Access Transformer {} in {}", atPath, modFile);
+                LOGGER.debug("Adding Access Transformer {} in {}", atPath, modFile);
                 try (var in = modFile.getContents().openFile(atPath)) {
                     if (in == null) {
                         LOGGER.error(LogMarkers.LOADING, "Access transformer file {} provided by {} does not exist!", atPath, modFile);
@@ -636,8 +644,6 @@ public final class FMLLoader implements AutoCloseable {
 
         var modDiscoverer = new ModDiscoverer(new LaunchContextAdapter(), additionalLocators);
         var discoveryResult = modDiscoverer.discoverMods(earlyServicesJars);
-        var modFiles = new ArrayList<>(discoveryResult.modFiles());
-        var issues = new ArrayList<>(discoveryResult.discoveryIssues());
 
         // Now we should have a mod for "minecraft" and "neoforge" allowing us to fill in the versions
         var neoForgeVersion = versionInfo.neoForgeVersion();
@@ -663,10 +669,7 @@ public final class FMLLoader implements AutoCloseable {
         ImmediateWindowHandler.setMinecraftVersion(versionInfo.mcVersion());
         ImmediateWindowHandler.setNeoForgeVersion(versionInfo.neoForgeVersion());
 
-        loadingModList = ModSorter.sort(discoveryResult.modFiles(), issues);
-
-        backgroundScanHandler = new BackgroundScanHandler();
-        backgroundScanHandler.setLoadingModList(loadingModList);
+        loadingModList = ModSorter.sort(discoveryResult.modFiles(), discoveryResult.discoveryIssues());
 
         Map<IModInfo, JarResource> enumExtensionsByMod = new HashMap<>();
         for (var modFile : loadingModList.getAllModFiles()) {
@@ -682,16 +685,16 @@ public final class FMLLoader implements AutoCloseable {
                     enumExtensionsByMod.put(mod, resource);
                 });
             }
-
-            backgroundScanHandler.submitForScanning((ModFile) modFile);
         }
         RuntimeEnumExtender.loadEnumPrototypes(enumExtensionsByMod);
+
+        backgroundScanHandler = new BackgroundScanHandler(loadingModList.getAllModFiles());
 
         return this.discoveryResult = new DiscoveryResult(
                 loadingModList.getPlugins().stream().map(mfi -> (ModFile) mfi.getFile()).toList(),
                 loadingModList.getModFiles().stream().map(ModFileInfo::getFile).toList(),
                 loadingModList.getGameLibraries().stream().map(mf -> (ModFile) mf).toList(),
-                issues);
+                loadingModList.getModLoadingIssues());
     }
 
     private static <T> T runOffThread(Supplier<T> supplier) {
