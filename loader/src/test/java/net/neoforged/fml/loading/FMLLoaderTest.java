@@ -24,6 +24,7 @@ import net.neoforged.fml.ModWorkManager;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.javafmlmod.FMLJavaModLanguageProvider;
 import net.neoforged.fml.testlib.IdentifiableContent;
+import net.neoforged.fml.testlib.ModFileBuilder;
 import net.neoforged.fml.testlib.SimulatedInstallation;
 import net.neoforged.fml.testlib.args.ClientInstallationTypesSource;
 import net.neoforged.fml.util.ClasspathResourceUtils;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.lwjgl.system.FunctionProvider;
 
 public class FMLLoaderTest extends LauncherTest {
@@ -857,8 +859,13 @@ public class FMLLoaderTest extends LauncherTest {
                             + "\nIt requires thisFeatureDoesNotExist=\"*\" but NONE is available");
         }
 
-        @Test
-        void testExceptionInParallelEventDispatchIsCollectedAsModLoadingIssue() throws Exception {
+        @ParameterizedTest
+        @ValueSource(classes = {
+                // Test an error too, since sometimes catch Exception isn't enough
+                NoClassDefFoundError.class,
+                IllegalStateException.class
+        })
+        void testExceptionInParallelEventDispatchIsCollectedAsModLoadingIssue(Class<?> exceptionType) throws Exception {
             installation.setupProductionClient();
 
             installation.buildModJar("testmod.jar")
@@ -868,33 +875,77 @@ public class FMLLoaderTest extends LauncherTest {
                             public class Thrower {
                                 public Thrower(net.neoforged.bus.api.IEventBus modEventBus) {
                                     modEventBus.addListener(net.neoforged.fml.event.lifecycle.FMLClientSetupEvent.class, e -> {
-                                        throw new IllegalStateException("Exception Message");
+                                        throw new $EXCEPTION$("Exception Message");
                                     });
                                 }
                             }
-                            """)
+                            """.replace("$EXCEPTION$", exceptionType.getName()))
                     .build();
 
-            var launchResult = launchAndLoad("neoforgeclient");
+            var launchResult = launchInstalledDist();
             assertThat(launchResult.loadedMods()).containsKey("testmod");
 
             var e = assertThrows(ModLoadingException.class, () -> ModLoader.dispatchParallelEvent("test", ModWorkManager.syncExecutor(), ModWorkManager.parallelExecutor(), () -> {}, FMLClientSetupEvent::new));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                     "ERROR: testmod (testmod) encountered an error while dispatching the net.neoforged.fml.event.lifecycle.FMLClientSetupEvent event\n"
-                            + "java.lang.IllegalStateException: Exception Message");
+                            + exceptionType.getName() + ": Exception Message");
         }
 
-        @Test
-        void testExceptionInInitTaskIsCollectedAsModLoadingIssue() throws Exception {
+        @SuppressWarnings("unchecked")
+        public static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
+            throw (E) e;
+        }
+
+        @ParameterizedTest
+        @ValueSource(classes = {
+                // Test an error too, since sometimes catch Exception isn't enough
+                NoClassDefFoundError.class,
+                IllegalStateException.class
+        })
+        void testExceptionInInitTaskIsCollectedAsModLoadingIssue(Class<? extends Throwable> exceptionType) throws Exception {
             installation.setupProductionClient();
 
             launchAndLoad("neoforgeclient");
             var e = assertThrows(ModLoadingException.class, () -> ModLoader.runInitTask("test", ModWorkManager.syncExecutor(), () -> {}, () -> {
-                throw new IllegalStateException("Exception Message");
+                Throwable exception;
+                try {
+                    exception = exceptionType.getConstructor(String.class).newInstance("Exception Message");
+                } catch (Throwable e2) {
+                    sneakyThrow(e2);
+                    return;
+                }
+                sneakyThrow(exception);
             }));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                     "ERROR: An uncaught parallel processing error has occurred."
-                            + "\njava.lang.IllegalStateException: Exception Message");
+                            + "\n" + exceptionType.getName() + ": Exception Message");
+        }
+
+        @Test
+        void testModClassReferencesUndefinedClass() throws Exception {
+            installation.setupProductionClient();
+
+            // Build a lib to compile against, that won't be loaded later at runtime
+            var libJar = ModFileBuilder.ModJarBuilder.toJar(installation.getGameDir().resolve("lib.jar"))
+                    .addClass("lib.MissingClass", "public class MissingClass {}")
+                    .build();
+
+            installation.buildModJar("testmod.jar")
+                    .withTestmodModsToml()
+                    .addCompileClasspath(libJar)
+                    .addClass("testmod.Entrypoint", """
+                            @net.neoforged.fml.common.Mod("testmod")
+                            public class Entrypoint extends lib.MissingClass {
+                                public Entrypoint() {
+                                }
+                            }
+                            """)
+                    .build();
+
+            var e = assertThrows(ModLoadingException.class, () -> launchInstalledDist());
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
+                    "ERROR: testmod (testmod) has class loading errors\n" +
+                            "java.lang.NoClassDefFoundError: lib/MissingClass");
         }
 
         @Test

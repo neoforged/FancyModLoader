@@ -241,6 +241,12 @@ public class ModFile implements IModFile {
     }
 
     public void close() {
+        // cancel scanning to avoid zip file close errors
+        if (futureScanResult != null) {
+            futureScanResult.cancel(true);
+            futureScanResult = null;
+        }
+
         try {
             contents.close();
         } catch (IOException e) {
