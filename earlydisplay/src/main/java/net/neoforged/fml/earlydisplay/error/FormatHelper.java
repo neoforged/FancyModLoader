@@ -118,8 +118,7 @@ final class FormatHelper {
                     continue;
                 }
 
-                String subString = text.substring(0, charIdx);
-                if (widthsBeforePart[partIdx] + font.stringWidth(subString) <= maxLength) {
+                if (widthsBeforePart[partIdx] + font.stringWidth(text, 0, charIdx) <= maxLength) {
                     return new SplitPos(partIdx, charIdx, true);
                 }
             }
