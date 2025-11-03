@@ -8,9 +8,10 @@ package net.neoforged.fml.earlydisplay.error;
 import java.util.ArrayList;
 import java.util.List;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
+import org.jetbrains.annotations.Nullable;
 
 final class FormatHelper {
-    static List<List<SimpleFont.DisplayText>> formatText(String text, int defaultColor) {
+    static List<List<SimpleFont.DisplayText>> formatText(String text, SimpleFont font, int defaultColor, int maxLength) {
         List<List<SimpleFont.DisplayText>> lines = new ArrayList<>();
         List<SimpleFont.DisplayText> parts = new ArrayList<>();
         int lastIndex = 0;
@@ -35,6 +36,9 @@ final class FormatHelper {
         }
         if (!parts.isEmpty()) {
             lines.add(parts);
+        }
+        if (maxLength > -1) {
+            wrapLines(lines, font, maxLength);
         }
         return lines;
     }
@@ -65,6 +69,74 @@ final class FormatHelper {
             default -> lastColor;
         };
     }
+
+    private static void wrapLines(List<List<SimpleFont.DisplayText>> lines, SimpleFont font, int maxLength) {
+        for (int lineIdx = 0; lineIdx < lines.size(); lineIdx++) {
+            List<SimpleFont.DisplayText> parts = lines.get(lineIdx);
+            int lineWidth = 0;
+            int[] widthsBeforePart = new int[parts.size() + 1];
+            for (int partIdx = 0; partIdx < parts.size(); partIdx++) {
+                SimpleFont.DisplayText part = parts.get(partIdx);
+                widthsBeforePart[partIdx] = lineWidth;
+                lineWidth += font.stringWidth(part.string());
+                if (lineWidth < maxLength) {
+                    continue;
+                }
+
+                SplitPos pos = findSplitPos(parts, font, partIdx, widthsBeforePart, maxLength);
+                if (pos == null) {
+                    // We somehow failed to find a suitable wrapping index and have to accept the text getting cut off
+                    break;
+                }
+
+                List<SimpleFont.DisplayText> newPartsOne = new ArrayList<>();
+                List<SimpleFont.DisplayText> newPartsTwo = new ArrayList<>();
+                for (int copyPartIdx = 0; copyPartIdx < parts.size(); copyPartIdx++) {
+                    if (copyPartIdx < pos.partIdx) {
+                        newPartsOne.add(parts.get(copyPartIdx));
+                    } else if (copyPartIdx == pos.partIdx) {
+                        List<SimpleFont.DisplayText> splitParts = parts.get(copyPartIdx).splitAt(pos.charIdx, pos.onSpace);
+                        newPartsOne.add(splitParts.getFirst());
+                        newPartsTwo.add(splitParts.getLast());
+                    } else {
+                        newPartsTwo.add(parts.get(copyPartIdx));
+                    }
+                }
+                lines.set(lineIdx, newPartsOne);
+                lines.add(lineIdx + 1, newPartsTwo);
+                break;
+            }
+        }
+    }
+
+    @Nullable
+    private static SplitPos findSplitPos(List<SimpleFont.DisplayText> parts, SimpleFont font, int startPart, int[] widthsBeforePart, int maxLength) {
+        for (int partIdx = startPart; partIdx >= 0; partIdx--) {
+            String text = parts.get(partIdx).string();
+            for (int charIdx = text.length() - 1; charIdx >= 0; charIdx--) {
+                if (text.charAt(charIdx) != ' ') {
+                    continue;
+                }
+
+                String subString = text.substring(0, charIdx);
+                if (widthsBeforePart[partIdx] + font.stringWidth(subString) <= maxLength) {
+                    return new SplitPos(partIdx, charIdx, true);
+                }
+            }
+        }
+        for (int partIdx = startPart; partIdx >= 0; partIdx--) {
+            String text = parts.get(partIdx).string();
+            for (int charIdx = text.length() - 1; charIdx >= 0; charIdx--) {
+                String subString = text.substring(0, charIdx);
+                if (widthsBeforePart[partIdx] + font.stringWidth(subString) <= maxLength) {
+                    return new SplitPos(partIdx, charIdx, false);
+                }
+            }
+        }
+        return null;
+    }
+
+    private record SplitPos(int partIdx, int charIdx, boolean onSpace) {}
 
     private FormatHelper() {}
 }

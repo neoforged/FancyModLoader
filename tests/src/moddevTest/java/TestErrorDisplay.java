@@ -40,11 +40,12 @@ public class TestErrorDisplay {
 
         List<ModLoadingIssue> issues = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
+            String suffix = "\nThisIsAVeryLongLineOfTextWithNoSpacesButItShouldStillBeWordWrappedToFitTheErrorScreen";
             issues.add(new ModLoadingIssue(
                     ModLoadingIssue.Severity.ERROR,
                     "fml.modloadingissue.failedtoloadmod",
                     List.of(),
-                    new UnsupportedOperationException(),
+                    new UnsupportedOperationException("test_".repeat(i + 1) + suffix),
                     null,
                     null,
                     null));
