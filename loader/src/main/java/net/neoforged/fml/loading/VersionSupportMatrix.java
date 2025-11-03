@@ -17,8 +17,8 @@ import org.apache.maven.artifact.versioning.VersionRange;
 class VersionSupportMatrix {
     private static final HashMap<String, List<ArtifactVersion>> overrideVersions = new HashMap<>();
 
-    public VersionSupportMatrix(VersionInfo versionInfo) {
-        var mcVersion = new DefaultArtifactVersion(versionInfo.mcVersion());
+    public VersionSupportMatrix(String minecraftVersion) {
+        var mcVersion = new DefaultArtifactVersion(minecraftVersion);
         // If the MC version is 1.21.8 and any default version constraint fails,
         // we'll also pass the version check if the versions below match
         if (MavenVersionAdapter.createFromVersionSpec("[1.21.8]").containsVersion(mcVersion)) {
