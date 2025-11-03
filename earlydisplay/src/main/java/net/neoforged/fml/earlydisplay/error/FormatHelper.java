@@ -11,7 +11,7 @@ import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import org.jetbrains.annotations.Nullable;
 
 final class FormatHelper {
-    static List<List<SimpleFont.DisplayText>> formatText(String text, SimpleFont font, int defaultColor, int maxLength) {
+    static List<List<SimpleFont.DisplayText>> formatText(String text, SimpleFont font, int defaultColor, int maxWidth) {
         List<List<SimpleFont.DisplayText>> lines = new ArrayList<>();
         List<SimpleFont.DisplayText> parts = new ArrayList<>();
         int lastIndex = 0;
@@ -37,8 +37,8 @@ final class FormatHelper {
         if (!parts.isEmpty()) {
             lines.add(parts);
         }
-        if (maxLength > -1) {
-            wrapLines(lines, font, maxLength);
+        if (maxWidth > -1) {
+            wrapLines(lines, font, maxWidth);
         }
         return lines;
     }
@@ -70,7 +70,7 @@ final class FormatHelper {
         };
     }
 
-    private static void wrapLines(List<List<SimpleFont.DisplayText>> lines, SimpleFont font, int maxLength) {
+    private static void wrapLines(List<List<SimpleFont.DisplayText>> lines, SimpleFont font, int maxWidth) {
         for (int lineIdx = 0; lineIdx < lines.size(); lineIdx++) {
             List<SimpleFont.DisplayText> parts = lines.get(lineIdx);
             int lineWidth = 0;
@@ -79,11 +79,11 @@ final class FormatHelper {
                 SimpleFont.DisplayText part = parts.get(partIdx);
                 widthsBeforePart[partIdx] = lineWidth;
                 lineWidth += font.stringWidth(part.string());
-                if (lineWidth < maxLength) {
+                if (lineWidth < maxWidth) {
                     continue;
                 }
 
-                SplitPos pos = findSplitPos(parts, font, partIdx, widthsBeforePart, maxLength);
+                SplitPos pos = findSplitPos(parts, font, partIdx, widthsBeforePart, maxWidth);
                 if (pos == null) {
                     // We somehow failed to find a suitable wrapping index and have to accept the text getting cut off
                     break;
@@ -110,7 +110,7 @@ final class FormatHelper {
     }
 
     @Nullable
-    private static SplitPos findSplitPos(List<SimpleFont.DisplayText> parts, SimpleFont font, int startPart, int[] widthsBeforePart, int maxLength) {
+    private static SplitPos findSplitPos(List<SimpleFont.DisplayText> parts, SimpleFont font, int startPart, int[] widthsBeforePart, int maxWidth) {
         for (int partIdx = startPart; partIdx >= 0; partIdx--) {
             String text = parts.get(partIdx).string();
             for (int charIdx = text.length() - 1; charIdx >= 0; charIdx--) {
@@ -118,7 +118,7 @@ final class FormatHelper {
                     continue;
                 }
 
-                if (widthsBeforePart[partIdx] + font.stringWidth(text, 0, charIdx) <= maxLength) {
+                if (widthsBeforePart[partIdx] + font.stringWidth(text, 0, charIdx) <= maxWidth) {
                     return new SplitPos(partIdx, charIdx, true);
                 }
             }
@@ -126,7 +126,7 @@ final class FormatHelper {
         for (int partIdx = startPart; partIdx >= 0; partIdx--) {
             String text = parts.get(partIdx).string();
             for (int charIdx = text.length() - 1; charIdx >= 0; charIdx--) {
-                if (widthsBeforePart[partIdx] + font.stringWidth(text, 0, charIdx + 1) <= maxLength) {
+                if (widthsBeforePart[partIdx] + font.stringWidth(text, 0, charIdx + 1) <= maxWidth) {
                     return new SplitPos(partIdx, charIdx, false);
                 }
             }
