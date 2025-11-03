@@ -127,8 +127,7 @@ final class FormatHelper {
         for (int partIdx = startPart; partIdx >= 0; partIdx--) {
             String text = parts.get(partIdx).string();
             for (int charIdx = text.length() - 1; charIdx >= 0; charIdx--) {
-                String subString = text.substring(0, charIdx);
-                if (widthsBeforePart[partIdx] + font.stringWidth(subString) <= maxLength) {
+                if (widthsBeforePart[partIdx] + font.stringWidth(text, 0, charIdx + 1) <= maxLength) {
                     return new SplitPos(partIdx, charIdx, false);
                 }
             }

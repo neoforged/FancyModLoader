@@ -205,8 +205,12 @@ public class SimpleFont implements AutoCloseable {
     }
 
     public int stringWidth(String text) {
+        return stringWidth(text, 0, text.length());
+    }
+
+    public int stringWidth(String text, int start, int end) {
         int len = 0;
-        for (int i = 0; i < text.length(); i++) {
+        for (int i = start; i < end; i++) {
             int c = text.codePointAt(i);
             len += switch (c) {
                 case '\n', '\t' -> 0;

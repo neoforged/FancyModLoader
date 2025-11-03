@@ -39,13 +39,19 @@ public class TestErrorDisplay {
         window.close();
 
         List<ModLoadingIssue> issues = new ArrayList<>();
+        String suffix = "\nThisIsAVeryLongLineOfTextWithNoSpacesButItShouldStillBeWrappedToFitTheErrorScreensListWidth";
+        suffix += "\nThis is a very long line of text that will break exactly at the §cend§7 of the first line part";
+        suffix += "\nThis is a very long line of text that will break exactly at the§c start§7 of the second line part";
         for (int i = 0; i < 10; i++) {
-            String suffix = "\nThisIsAVeryLongLineOfTextWithNoSpacesButItShouldStillBeWordWrappedToFitTheErrorScreen";
+            String message = "test_".repeat(i + 1);
+            if (i == 0) {
+                message += suffix;
+            }
             issues.add(new ModLoadingIssue(
                     ModLoadingIssue.Severity.ERROR,
                     "fml.modloadingissue.failedtoloadmod",
                     List.of(),
-                    new UnsupportedOperationException("test_".repeat(i + 1) + suffix),
+                    new UnsupportedOperationException(message),
                     null,
                     null,
                     null));
