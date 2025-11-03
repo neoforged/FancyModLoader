@@ -30,6 +30,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.IntFunction;
 import net.neoforged.fml.earlydisplay.theme.ThemeResource;
@@ -204,8 +205,12 @@ public class SimpleFont implements AutoCloseable {
     }
 
     public int stringWidth(String text) {
+        return stringWidth(text, 0, text.length());
+    }
+
+    public int stringWidth(String text, int start, int end) {
         int len = 0;
-        for (int i = 0; i < text.length(); i++) {
+        for (int i = start; i < end; i++) {
             int c = text.codePointAt(i);
             len += switch (c) {
                 case '\n', '\t' -> 0;
@@ -245,6 +250,12 @@ public class SimpleFont implements AutoCloseable {
                 };
             }
             return pos;
+        }
+
+        public List<DisplayText> splitAt(int pos, boolean offsetSecond) {
+            DisplayText partOne = new DisplayText(string.substring(0, pos), colour);
+            DisplayText partTwo = new DisplayText(string.substring(pos + (offsetSecond ? 1 : 0)), colour);
+            return List.of(partOne, partTwo);
         }
     }
 

@@ -51,6 +51,7 @@ final class ErrorDisplayWindow {
     private static final int LIST_HEIGHT = LIST_Y_BOTTOM - LIST_Y_TOP;
     private static final int LIST_CONTENT_HEIGHT = LIST_CONTENT_Y_BOTTOM - LIST_CONTENT_Y_TOP;
     private static final int LIST_ENTRY_X = 30;
+    private static final int LIST_CONTENT_WIDTH = DISPLAY_WIDTH - (LIST_ENTRY_X * 2);
     private static final int SCROLL_SPEED = 10;
 
     final long windowHandle;
@@ -119,13 +120,13 @@ final class ErrorDisplayWindow {
         Function<ModLoadingIssue, String> issueTranslator = translate ? FMLTranslations::translateIssue : FMLTranslations::translateIssueEnglish;
         this.entries = new ArrayList<>(errorEntries.size() + warningEntries.size());
         if (needSeparators) {
-            this.entries.add(MessageEntry.of(errorHeaderText, 0xFFFF5555, true));
+            this.entries.add(MessageEntry.of(errorHeaderText, font, 0xFFFF5555, true));
         }
-        translateEntries(errorEntries, this.entries, issueTranslator);
+        translateEntries(errorEntries, this.entries, font, issueTranslator);
         if (needSeparators) {
-            this.entries.add(MessageEntry.of(warningHeaderText, 0xFFFFFF55, true));
+            this.entries.add(MessageEntry.of(warningHeaderText, font, 0xFFFFFF55, true));
         }
-        translateEntries(warningEntries, this.entries, issueTranslator);
+        translateEntries(warningEntries, this.entries, font, issueTranslator);
         int entryContentHeight = entries.stream().mapToInt(MessageEntry::lineCount).sum() * errorLineHeight;
         this.totalEntryHeight = entryContentHeight + entries.size() * ENTRY_PADDING;
 
@@ -142,8 +143,8 @@ final class ErrorDisplayWindow {
         this.headerTextLines = HeaderLine.of(headerText, font, headerTextColor);
     }
 
-    private static void translateEntries(List<ModLoadingIssue> issues, List<MessageEntry> entries, Function<ModLoadingIssue, String> translator) {
-        issues.stream().map(translator).map(MessageEntry::of).forEach(entries::add);
+    private static void translateEntries(List<ModLoadingIssue> issues, List<MessageEntry> entries, SimpleFont font, Function<ModLoadingIssue, String> translator) {
+        issues.stream().map(translator).map(text -> MessageEntry.of(text, font)).forEach(entries::add);
     }
 
     void render() {
@@ -373,7 +374,7 @@ final class ErrorDisplayWindow {
     private record HeaderLine(List<SimpleFont.DisplayText> parts, int width) {
         static List<HeaderLine> of(String text, SimpleFont font, int defaultColor) {
             List<HeaderLine> headerLines = new ArrayList<>();
-            for (List<SimpleFont.DisplayText> line : FormatHelper.formatText(text, defaultColor)) {
+            for (List<SimpleFont.DisplayText> line : FormatHelper.formatText(text, font, defaultColor, -1)) {
                 int width = 0;
                 for (SimpleFont.DisplayText part : line) {
                     width += font.stringWidth(part.string());
@@ -385,12 +386,12 @@ final class ErrorDisplayWindow {
     }
 
     private record MessageEntry(List<List<SimpleFont.DisplayText>> lines, int lineCount, boolean centered) {
-        static MessageEntry of(String text) {
-            return of(text, 0xFFFFFFFF, false);
+        static MessageEntry of(String text, SimpleFont font) {
+            return of(text, font, 0xFFFFFFFF, false);
         }
 
-        static MessageEntry of(String text, int defaultColor, boolean centered) {
-            List<List<SimpleFont.DisplayText>> lines = FormatHelper.formatText(text, defaultColor);
+        static MessageEntry of(String text, SimpleFont font, int defaultColor, boolean centered) {
+            List<List<SimpleFont.DisplayText>> lines = FormatHelper.formatText(text, font, defaultColor, LIST_CONTENT_WIDTH);
             return new MessageEntry(lines, lines.size(), centered);
         }
     }
