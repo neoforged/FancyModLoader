@@ -14,7 +14,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.neoforged.fml.loading.FMLConfig;
-import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.neoforgespi.locating.IModFile;
@@ -33,7 +32,6 @@ public class BackgroundScanHandler {
     private static final Logger LOGGER = LogUtils.getLogger();
     private final ExecutorService modContentScanner;
     private ScanStatus status;
-    private LoadingModList loadingModList;
 
     public BackgroundScanHandler(Collection<IModFile> modFiles) {
         int maxThreads = FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.MAX_THREADS);
