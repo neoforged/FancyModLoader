@@ -179,6 +179,9 @@ public abstract class LauncherTest {
             } catch (Exception e) {
                 throw new LaunchException(e);
             }
+            assertThat(result.issues())
+                    .as("Launch should throw if there were any loading errors.")
+                    .noneMatch(i -> i.severity() == ModLoadingIssue.Severity.ERROR);
             // loadMods is usually triggered from NeoForge
             loadMods();
             return result;
