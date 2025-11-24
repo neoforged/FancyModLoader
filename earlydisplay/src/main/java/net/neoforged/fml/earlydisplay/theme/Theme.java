@@ -88,7 +88,8 @@ public record Theme(
         var mojangLogo = new ThemeMojangLogoElement();
         mojangLogo.setCenterHorizontally(true);
         mojangLogo.setTop(StyleLength.ofPoints(96));
-
+        var background = new ThemeImageElement();
+        background.setVisible(false);
         return new Theme(
                 new ThemeResource("neoforged_icon.png"),
                 Map.of(
@@ -103,6 +104,7 @@ public record Theme(
                 ThemeColorScheme.DEFAULT,
                 sprites,
                 new ThemeLoadingScreen(
+                        background,
                         performance,
                         progressBars,
                         startupLog,

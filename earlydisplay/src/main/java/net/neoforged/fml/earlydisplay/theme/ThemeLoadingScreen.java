@@ -5,18 +5,15 @@
 
 package net.neoforged.fml.earlydisplay.theme;
 
+
+import net.neoforged.fml.earlydisplay.theme.elements.*;
+
 import java.util.Map;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeDecorativeElement;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemePerformanceElement;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeProgressBarsElement;
-import net.neoforged.fml.earlydisplay.theme.elements.ThemeStartupLogElement;
 
 /**
  * Describes the themable properties of the loading screen.
  */
-public record ThemeLoadingScreen(
-        ThemePerformanceElement performance,
-        ThemeProgressBarsElement progressBars,
-        ThemeStartupLogElement startupLog,
-        ThemeMojangLogoElement mojangLogo,
-        Map<String, ThemeDecorativeElement> decoration) {}
+public record ThemeLoadingScreen(ThemeImageElement background, ThemePerformanceElement performance,
+                                 ThemeProgressBarsElement progressBars, ThemeStartupLogElement startupLog,
+                                 ThemeMojangLogoElement mojangLogo, Map<String, ThemeDecorativeElement> decoration) {
+}
