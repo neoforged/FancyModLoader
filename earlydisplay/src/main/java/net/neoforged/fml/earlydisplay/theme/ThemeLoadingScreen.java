@@ -20,6 +20,5 @@ import java.util.Map;
  * Describes the themable properties of the loading screen.
  */
 public record ThemeLoadingScreen(ThemeImageElement background, ThemePerformanceElement performance,
-                                 ThemeProgressBarsElement progressBars, ThemeStartupLogElement startupLog,
-                                 ThemeMojangLogoElement mojangLogo, Map<String, ThemeDecorativeElement> decoration) {
-}
+        ThemeProgressBarsElement progressBars, ThemeStartupLogElement startupLog,
+        ThemeMojangLogoElement mojangLogo, Map<String, ThemeDecorativeElement> decoration) {}
