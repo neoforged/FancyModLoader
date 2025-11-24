@@ -129,7 +129,7 @@ public class LoadingScreenRenderer implements AutoCloseable {
         var elements = new ArrayList<RenderElement>();
 
         var loadingScreen = theme.theme().loadingScreen();
-        if( loadingScreen.background() != null && loadingScreen.background().visible()) {
+        if(loadingScreen.background() != null && loadingScreen.background().visible()) {
             elements.add(new ImageElement(loadingScreen.background(), theme));
         }
         if (loadingScreen.performance().visible()) {
