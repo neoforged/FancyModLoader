@@ -5,16 +5,12 @@
 
 package net.neoforged.fml.earlydisplay.theme;
 
-
-
+import java.util.Map;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemePerformanceElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeProgressBarsElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeStartupLogElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeDecorativeElement;
-
-
-import java.util.Map;
 
 /**
  * Describes the themable properties of the loading screen.
