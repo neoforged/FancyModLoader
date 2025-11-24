@@ -73,6 +73,14 @@
     "progressBarIndeterminateBounces": false
   },
   "loadingScreen": {
+    "background": {
+      "centerHorizontally": false,
+      "centerVertically": false,
+      "font": "default",
+      "maintainAspectRatio": true,
+      "type": "image",
+      "visible": false
+    },
     "performance": {
       "visible": true,
       "maintainAspectRatio": true,
