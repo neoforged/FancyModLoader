@@ -46,6 +46,8 @@ import static org.lwjgl.opengl.GL32C.glGetIntegerv;
 import static org.lwjgl.opengl.GL32C.glIsEnabled;
 import static org.lwjgl.opengl.GL32C.glUseProgram;
 import static org.lwjgl.opengl.GL32C.glViewport;
+import static org.lwjgl.opengl.GL33C.GL_SAMPLER_BINDING;
+import static org.lwjgl.opengl.GL33C.glBindSampler;
 
 /**
  * A static state manager for a subset of OpenGL states to minimize redundant state changes.
@@ -76,9 +78,12 @@ public final class GlState {
     // Program state
     private static int currentProgram;
 
-    // Texture state
-    private static int boundTexture2D;
+    // Texture state (tracking only texture unit 0)
+    private static int boundTexture2DUnit0;
     private static int activeTextureUnit;
+
+    // Sampler state (tracking only sampler unit 0)
+    private static int boundSamplerUnit0;
 
     // Vertex array state
     private static int boundVertexArray;
@@ -132,9 +137,15 @@ public final class GlState {
         // Read program state
         currentProgram = glGetInteger(GL_CURRENT_PROGRAM);
 
-        // Read texture state
-        activeTextureUnit = GL_TEXTURE0 + glGetInteger(GL_ACTIVE_TEXTURE) - GL_TEXTURE0;
-        boundTexture2D = glGetInteger(GL_TEXTURE_BINDING_2D);
+        // Read texture state for unit 0
+        int previousActiveTexture = glGetInteger(GL_ACTIVE_TEXTURE);
+        glActiveTexture(GL_TEXTURE0);
+        boundTexture2DUnit0 = glGetInteger(GL_TEXTURE_BINDING_2D);
+        glActiveTexture(previousActiveTexture);
+        activeTextureUnit = previousActiveTexture;
+
+        // Read sampler state for unit 0
+        boundSamplerUnit0 = glGetInteger(GL_SAMPLER_BINDING);
 
         // Read vertex array state
         boundVertexArray = glGetInteger(GL_VERTEX_ARRAY_BINDING);
@@ -249,14 +260,28 @@ public final class GlState {
     }
 
     /**
-     * Binds a 2D texture.
+     * Binds a 2D texture to texture unit 0.
+     * This method ensures texture unit 0 is active before binding.
      *
      * @param textureId The texture ID to bind
      */
     public static void bindTexture2D(int textureId) {
-        if (textureId != boundTexture2D) {
+        activeTexture(GL_TEXTURE0);
+        if (textureId != boundTexture2DUnit0) {
             glBindTexture(GL_TEXTURE_2D, textureId);
-            boundTexture2D = textureId;
+            boundTexture2DUnit0 = textureId;
+        }
+    }
+
+    /**
+     * Binds a sampler to sampler unit 0.
+     *
+     * @param samplerId The sampler ID to bind
+     */
+    public static void bindSampler(int samplerId) {
+        if (samplerId != boundSamplerUnit0) {
+            glBindSampler(0, samplerId);
+            boundSamplerUnit0 = samplerId;
         }
     }
 
@@ -369,7 +394,8 @@ public final class GlState {
             boolean blendEnabled,
             int blendSrcRGB, int blendDstRGB, int blendSrcAlpha, int blendDstAlpha,
             int currentProgram,
-            int boundTexture2D, int activeTextureUnit,
+            int boundTexture2DUnit0, int activeTextureUnit,
+            int boundSamplerUnit0,
             int boundVertexArray,
             int boundDrawFramebuffer, int boundReadFramebuffer,
             int boundElementArrayBuffer, int boundArrayBuffer,
@@ -387,7 +413,8 @@ public final class GlState {
                 blendEnabled,
                 blendSrcRGB, blendDstRGB, blendSrcAlpha, blendDstAlpha,
                 currentProgram,
-                boundTexture2D, activeTextureUnit,
+                boundTexture2DUnit0, activeTextureUnit,
+                boundSamplerUnit0,
                 boundVertexArray,
                 boundDrawFramebuffer, boundReadFramebuffer,
                 boundElementArrayBuffer, boundArrayBuffer,
@@ -411,7 +438,8 @@ public final class GlState {
             useProgram(0);
         }
         activeTexture(snapshot.activeTextureUnit);
-        bindTexture2D(snapshot.boundTexture2D);
+        bindTexture2D(snapshot.boundTexture2DUnit0);
+        bindSampler(snapshot.boundSamplerUnit0);
         bindVertexArray(snapshot.boundVertexArray);
         // Handle framebuffers - check if both are the same
         if (snapshot.boundDrawFramebuffer == snapshot.boundReadFramebuffer) {
