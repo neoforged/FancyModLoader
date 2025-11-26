@@ -5,8 +5,6 @@
 
 package net.neoforged.fml.earlydisplay.render;
 
-import static org.lwjgl.opengl.GL13C.GL_TEXTURE0;
-
 import com.google.common.collect.Lists;
 import java.util.List;
 import net.neoforged.fml.earlydisplay.theme.Theme;
