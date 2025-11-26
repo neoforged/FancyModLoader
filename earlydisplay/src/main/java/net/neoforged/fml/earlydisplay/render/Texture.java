@@ -18,7 +18,6 @@ import static org.lwjgl.opengl.GL11C.glGenTextures;
 import static org.lwjgl.opengl.GL11C.glTexImage2D;
 import static org.lwjgl.opengl.GL11C.glTexParameteri;
 import static org.lwjgl.opengl.GL12C.GL_CLAMP_TO_EDGE;
-import static org.lwjgl.opengl.GL13C.GL_TEXTURE0;
 
 import java.nio.file.Path;
 import net.neoforged.fml.earlydisplay.theme.AnimationMetadata;
