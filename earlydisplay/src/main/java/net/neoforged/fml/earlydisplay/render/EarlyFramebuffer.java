@@ -10,7 +10,6 @@ import static org.lwjgl.opengl.GL32C.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL32C.GL_FRAMEBUFFER;
 import static org.lwjgl.opengl.GL32C.GL_NEAREST;
 import static org.lwjgl.opengl.GL32C.GL_RGBA;
-import static org.lwjgl.opengl.GL32C.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL32C.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL32C.GL_TEXTURE_MAG_FILTER;
 import static org.lwjgl.opengl.GL32C.GL_TEXTURE_MIN_FILTER;
