@@ -23,6 +23,7 @@ public record MaterializedTheme(
         @Nullable Path externalThemeDirectory,
         Map<String, SimpleFont> fonts,
         Map<String, ElementShader> shaders,
+        GlSampler sampler,
         MaterializedThemeSprites sprites) implements AutoCloseable {
     public static MaterializedTheme materialize(Theme theme, @Nullable Path externalThemeDirectory) {
         return new MaterializedTheme(
@@ -30,6 +31,7 @@ public record MaterializedTheme(
                 externalThemeDirectory,
                 loadFonts(theme.fonts(), externalThemeDirectory),
                 loadShaders(theme.shaders(), externalThemeDirectory),
+                GlSampler.create(),
                 loadSprites(theme.sprites(), externalThemeDirectory));
     }
 

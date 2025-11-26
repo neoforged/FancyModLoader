@@ -134,7 +134,6 @@ public class SimpleFont implements AutoCloseable {
             this.lineSpacing = (int) (ascent[0] - descent[0] + lineGap[0]);
             this.descent = (int) Math.floor(descent[0]);
             this.textureId = glGenTextures();
-            GlState.activeTexture(GL_TEXTURE0);
             GlState.bindTexture2D(this.textureId);
             GlDebug.labelTexture(this.textureId, "font texture " + resource);
             try (var packedchars = STBTTPackedchar.malloc(ASCII_GLYPH_COUNT)) {

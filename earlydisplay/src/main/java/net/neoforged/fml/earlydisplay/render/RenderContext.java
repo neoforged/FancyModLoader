@@ -54,8 +54,8 @@ public record RenderContext(
             float u1,
             float v0,
             float v1) {
-        GlState.activeTexture(GL_TEXTURE0);
         GlState.bindTexture2D(texture.textureId());
+        GlState.bindSampler(theme.sampler().id());
 
         var shader = bindShader(Theme.SHADER_GUI);
         shader.setUniform1i(ElementShader.UNIFORM_SAMPLER0, 0);
@@ -88,8 +88,8 @@ public record RenderContext(
     }
 
     public void renderText(float x, float y, SimpleFont font, List<SimpleFont.DisplayText> texts) {
-        GlState.activeTexture(GL_TEXTURE0);
         GlState.bindTexture2D(font.textureId());
+        GlState.bindSampler(theme.sampler().id());
         bindShader(Theme.SHADER_FONT);
         sharedBuffer.begin(SimpleBufferBuilder.Format.POS_TEX_COLOR, SimpleBufferBuilder.Mode.QUADS);
         font.generateVerticesForTexts(x, y, sharedBuffer, texts);
