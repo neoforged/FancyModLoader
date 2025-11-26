@@ -30,7 +30,6 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.opengl.GL12C;
-import org.lwjgl.opengl.GL13C;
 
 /**
  * Loader for the GNU Unifont font definitions included in vanilla MC
@@ -154,7 +153,6 @@ final class FontLoader {
     @Nullable
     private static SimpleFont buildFont(List<ProtoGlyph> glyphs) {
         int textureId = GL11C.glGenTextures();
-        GlState.activeTexture(GL13C.GL_TEXTURE0);
         GlState.bindTexture2D(textureId);
         GlDebug.labelTexture(textureId, "unifont texture");
 

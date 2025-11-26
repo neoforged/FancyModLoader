@@ -18,7 +18,6 @@ import static org.lwjgl.opengl.GL11C.glGenTextures;
 import static org.lwjgl.opengl.GL11C.glTexImage2D;
 import static org.lwjgl.opengl.GL11C.glTexParameteri;
 import static org.lwjgl.opengl.GL12C.GL_CLAMP_TO_EDGE;
-import static org.lwjgl.opengl.GL13C.GL_TEXTURE0;
 
 import java.nio.file.Path;
 import net.neoforged.fml.earlydisplay.theme.AnimationMetadata;
@@ -54,7 +53,6 @@ public record Texture(int textureId, int physicalWidth, int physicalHeight,
             TextureScaling scaling,
             @Nullable AnimationMetadata animation) {
         var texId = glGenTextures();
-        GlState.activeTexture(GL_TEXTURE0);
         GlState.bindTexture2D(texId);
         GlDebug.labelTexture(texId, debugName);
         boolean linear = scaling.linearScaling();
@@ -63,7 +61,6 @@ public record Texture(int textureId, int physicalWidth, int physicalHeight,
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, linear ? GL_LINEAR : GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, linear ? GL_LINEAR : GL_NEAREST);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.imageData());
-        GlState.activeTexture(GL_TEXTURE0);
         return new Texture(texId, image.width(), image.height(), scaling, animation);
     }
 
