@@ -139,7 +139,7 @@ public class FMLMixinService implements IMixinService {
 
     @Override
     public IClassProvider getClassProvider() {
-        if (this.bytecodeProvider == null) {
+        if (this.classProvider == null) {
             throw new IllegalStateException("Service initialisation incomplete, launch plugin was not created");
         }
         return this.classProvider;
