@@ -286,26 +286,8 @@ public class SimulatedInstallation implements AutoCloseable {
         setup(Type.PRODUCTION_CLIENT);
     }
 
-    public void setupProductionClientLegacy() throws IOException {
-        System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
-
-        writeLibrary("net.minecraft", "client", MC_VERSION + "-" + NEOFORM_VERSION, "srg", RENAMED_CLIENT, RENAMED_SHARED);
-        writeLibrary("net.minecraft", "client", MC_VERSION + "-" + NEOFORM_VERSION, "extra", CLIENT_ASSETS, SHARED_ASSETS, MINECRAFT_VERSION_JSON);
-        writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "client", PATCHED_CLIENT);
-        writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "universal", NEOFORGE_UNIVERSAL_JAR_CONTENT);
-    }
-
     public void setupProductionServer() throws IOException {
         setup(Type.PRODUCTION_SERVER);
-    }
-
-    public void setupProductionServerLegacy() throws IOException {
-        System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
-
-        writeLibrary("net.minecraft", "server", MC_VERSION + "-" + NEOFORM_VERSION, "srg", RENAMED_SHARED);
-        writeLibrary("net.minecraft", "server", MC_VERSION + "-" + NEOFORM_VERSION, "extra", SERVER_EXTRA_JAR_CONTENT);
-        writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "server", PATCHED_SHARED);
-        writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "universal", NEOFORGE_UNIVERSAL_JAR_CONTENT);
     }
 
     // The classes directory in a NeoForge development environment will contain both the Minecraft
