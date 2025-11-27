@@ -38,7 +38,7 @@ public class TransformingClassLoader extends ModuleClassLoader {
         super("TRANSFORMER", configuration, parentLayers, parentClassLoader);
         this.classTransformer = new ClassTransformer(classProcessorSet, auditTrail);
         // The state of this class has to be set up fully before the processors are linked
-        classProcessorSet.link(processorName -> className -> buildTransformedClassNodeFor(className, processorName));
+        classProcessorSet.link(this, processorName -> className -> buildTransformedClassNodeFor(className, processorName));
     }
 
     @Override

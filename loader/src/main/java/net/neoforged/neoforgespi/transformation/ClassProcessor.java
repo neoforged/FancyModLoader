@@ -226,7 +226,8 @@ public interface ClassProcessor {
      */
     record LinkContext(
             @Unmodifiable SequencedMap<ProcessorName, ClassProcessor> processors,
-            BytecodeProvider bytecodeProvider) {
+            BytecodeProvider bytecodeProvider,
+            ClassLoader transformingLoader) {
         @ApiStatus.Internal
         public LinkContext {}
     }

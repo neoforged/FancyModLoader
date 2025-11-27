@@ -12,7 +12,11 @@ import org.spongepowered.asm.service.IClassProvider;
  * Class provider for use under ModLauncher
  */
 class FMLClassProvider implements IClassProvider {
-    FMLClassProvider() {}
+    private final ClassLoader transformingLoader;
+
+    FMLClassProvider(ClassLoader transformingLoader) {
+        this.transformingLoader = transformingLoader;
+    }
 
     @Override
     @Deprecated
@@ -22,12 +26,12 @@ class FMLClassProvider implements IClassProvider {
 
     @Override
     public Class<?> findClass(String name) throws ClassNotFoundException {
-        return Class.forName(name, true, Thread.currentThread().getContextClassLoader());
+        return transformingLoader.loadClass(name);
     }
 
     @Override
     public Class<?> findClass(String name, boolean initialize) throws ClassNotFoundException {
-        return Class.forName(name, initialize, Thread.currentThread().getContextClassLoader());
+        return Class.forName(name, initialize, transformingLoader);
     }
 
     @Override
