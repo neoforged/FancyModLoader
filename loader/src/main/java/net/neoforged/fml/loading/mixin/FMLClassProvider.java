@@ -6,17 +6,14 @@
 package net.neoforged.fml.loading.mixin;
 
 import java.net.URL;
+import net.neoforged.fml.loading.FMLLoader;
 import org.spongepowered.asm.service.IClassProvider;
 
 /**
  * Class provider for use under ModLauncher
  */
 class FMLClassProvider implements IClassProvider {
-    private final ClassLoader transformingLoader;
-
-    FMLClassProvider(ClassLoader transformingLoader) {
-        this.transformingLoader = transformingLoader;
-    }
+    FMLClassProvider() {}
 
     @Override
     @Deprecated
@@ -26,12 +23,12 @@ class FMLClassProvider implements IClassProvider {
 
     @Override
     public Class<?> findClass(String name) throws ClassNotFoundException {
-        return transformingLoader.loadClass(name);
+        return FMLLoader.getCurrent().getCurrentClassLoader().loadClass(name);
     }
 
     @Override
     public Class<?> findClass(String name, boolean initialize) throws ClassNotFoundException {
-        return Class.forName(name, initialize, transformingLoader);
+        return Class.forName(name, initialize, FMLLoader.getCurrent().getCurrentClassLoader());
     }
 
     @Override

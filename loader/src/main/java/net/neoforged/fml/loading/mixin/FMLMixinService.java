@@ -97,10 +97,6 @@ public class FMLMixinService implements IMixinService {
         };
     }
 
-    public void setClassProvider(IClassProvider classProvider) {
-        this.classProvider = classProvider;
-    }
-
     public void setBytecodeProvider(@Nullable IClassBytecodeProvider bytecodeProvider) {
         this.bytecodeProvider = bytecodeProvider;
     }
@@ -140,7 +136,7 @@ public class FMLMixinService implements IMixinService {
     @Override
     public IClassProvider getClassProvider() {
         if (this.classProvider == null) {
-            throw new IllegalStateException("Service initialisation incomplete, launch plugin was not created");
+            this.classProvider = new FMLClassProvider();
         }
         return this.classProvider;
     }
