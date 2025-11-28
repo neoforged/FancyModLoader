@@ -91,28 +91,36 @@ public class SimulatedGameAndInstallationServiceProvider {
             methodVisitor.visitEnd();
         }
         {
-            methodVisitor = classWriter.visitMethod(ACC_PUBLIC, "discoverOrInstall", "()Lnet/neoforged/neoforgespi/installation/GameDiscoveryOrInstallationService$Result;", null, null);
+            methodVisitor = classWriter.visitMethod(ACC_PUBLIC, "discoverOrInstall", "(Ljava/lang/String;Lnet/neoforged/api/distmarker/Dist;)Lnet/neoforged/neoforgespi/installation/GameDiscoveryOrInstallationService$Result;", null, null);
+            {
+                annotationVisitor0 = methodVisitor.visitAnnotation("Lorg/jetbrains/annotations/Nullable;", false);
+                annotationVisitor0.visitEnd();
+            }
+            {
+                annotationVisitor0 = methodVisitor.visitTypeAnnotation(335544320, null, "Lorg/jetbrains/annotations/Nullable;", false);
+                annotationVisitor0.visitEnd();
+            }
             methodVisitor.visitCode();
             Label label0 = new Label();
             methodVisitor.visitLabel(label0);
             methodVisitor.visitLineNumber(18, label0);
             methodVisitor.visitLdcInsn("libraryDirectory");
             methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/System", "getProperty", "(Ljava/lang/String;)Ljava/lang/String;", false);
-            methodVisitor.visitVarInsn(ASTORE, 1);
+            methodVisitor.visitVarInsn(ASTORE, 3);
             Label label1 = new Label();
             methodVisitor.visitLabel(label1);
             methodVisitor.visitLineNumber(19, label1);
-            methodVisitor.visitVarInsn(ALOAD, 1);
+            methodVisitor.visitVarInsn(ALOAD, 3);
             methodVisitor.visitInsn(ICONST_0);
             methodVisitor.visitTypeInsn(ANEWARRAY, "java/lang/String");
             methodVisitor.visitMethodInsn(INVOKESTATIC, "java/nio/file/Path", "of", "(Ljava/lang/String;[Ljava/lang/String;)Ljava/nio/file/Path;", true);
-            methodVisitor.visitVarInsn(ASTORE, 2);
+            methodVisitor.visitVarInsn(ASTORE, 4);
             Label label2 = new Label();
             methodVisitor.visitLabel(label2);
             methodVisitor.visitLineNumber(20, label2);
             methodVisitor.visitTypeInsn(NEW, "net/neoforged/neoforgespi/installation/GameDiscoveryOrInstallationService$Result");
             methodVisitor.visitInsn(DUP);
-            methodVisitor.visitVarInsn(ALOAD, 2);
+            methodVisitor.visitVarInsn(ALOAD, 4);
             methodVisitor.visitLdcInsn(relativePath);
             Label label3 = new Label();
             methodVisitor.visitLabel(label3);
@@ -125,10 +133,12 @@ public class SimulatedGameAndInstallationServiceProvider {
             methodVisitor.visitInsn(ARETURN);
             Label label5 = new Label();
             methodVisitor.visitLabel(label5);
-            methodVisitor.visitLocalVariable("this", "L%s/%s;".formatted(packagePath, className), null, label0, label5, 0);
-            methodVisitor.visitLocalVariable("librariesDirectory", "Ljava/lang/String;", null, label1, label5, 1);
-            methodVisitor.visitLocalVariable("librariesRoot", "Ljava/nio/file/Path;", null, label2, label5, 2);
-            methodVisitor.visitMaxs(4, 3);
+            methodVisitor.visitLocalVariable("this", "L%s/%s;".formatted(packagePath,className), null, label0, label5, 0);
+            methodVisitor.visitLocalVariable("neoForgeVersion", "Ljava/lang/String;", null, label0, label5, 1);
+            methodVisitor.visitLocalVariable("requiredDist", "Lnet/neoforged/api/distmarker/Dist;", null, label0, label5, 2);
+            methodVisitor.visitLocalVariable("librariesDirectory", "Ljava/lang/String;", null, label1, label5, 3);
+            methodVisitor.visitLocalVariable("librariesRoot", "Ljava/nio/file/Path;", null, label2, label5, 4);
+            methodVisitor.visitMaxs(4, 5);
             methodVisitor.visitEnd();
         }
         {

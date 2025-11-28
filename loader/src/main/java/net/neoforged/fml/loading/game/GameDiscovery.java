@@ -325,8 +325,12 @@ public final class GameDiscovery {
         if (!Files.exists(patchedMinecraftPath)) {
             if (gameDiscoveryOrInstallationService != null) {
                 LOG.info("Patched minecraft does not exist. Triggering external discovery or installation service!");
-                var result = gameDiscoveryOrInstallationService.discoverOrInstall();
-                patchedMinecraftPath = result.minecraft();
+                var result = gameDiscoveryOrInstallationService.discoverOrInstall(neoForgeVersion, requiredDist);
+                if (result != null) {
+                    patchedMinecraftPath = result.minecraft();
+                } else {
+                    LOG.info("Game discovery or installation service: {} did not return a result. Skipping.", gameDiscoveryOrInstallationService.name());
+                }
             }
         }
 

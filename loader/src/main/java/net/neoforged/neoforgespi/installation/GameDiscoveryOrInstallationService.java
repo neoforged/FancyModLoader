@@ -1,5 +1,8 @@
 package net.neoforged.neoforgespi.installation;
 
+import net.neoforged.api.distmarker.Dist;
+import org.jetbrains.annotations.Nullable;
+
 import java.nio.file.Path;
 
 /**
@@ -22,7 +25,7 @@ import java.nio.file.Path;
  * If it can not find the patched minecraft jar (because the installer did not create the file), then it will
  * check if a service of this type is found as an early loader service (if multiple are found a launch argument
  * 'fml.installer' is used to differentiate and select the requested instance). Then it will call
- * {@link GameDiscoveryOrInstallationService#discoverOrInstall()} to handle the discovery or installation.
+ * {@link GameDiscoveryOrInstallationService#discoverOrInstall(String, Dist)} to handle the discovery or installation.
  * </p>
  * <p>
  * Each implementation of this type is responsible on its own for caching its results.
@@ -41,9 +44,12 @@ public interface GameDiscoveryOrInstallationService {
     /**
      * Invoked to discover or install the game when it is not found in the libraries folder.
      *
-     * @return The {@link Result} of discovery or installation.
+     * @param neoForgeVersion The version of neoforge for which the discovery or installation should be started.
+     * @param requiredDist    The distribution which should be discovered or installed.
+     * @return The {@link Result} of discovery or installation. {@code null} if not found or installed.
      */
-    Result discoverOrInstall();
+    @Nullable
+    Result discoverOrInstall(String neoForgeVersion, Dist requiredDist);
 
     /**
      * The result of the discovery or installation.
