@@ -23,7 +23,7 @@ class FMLClassProvider implements IClassProvider {
 
     @Override
     public Class<?> findClass(String name) throws ClassNotFoundException {
-        return FMLLoader.getCurrent().getCurrentClassLoader().loadClass(name);
+        return Class.forName(name, true, FMLLoader.getCurrent().getCurrentClassLoader());
     }
 
     @Override
