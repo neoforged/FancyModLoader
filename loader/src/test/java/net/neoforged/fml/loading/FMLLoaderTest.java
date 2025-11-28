@@ -66,6 +66,19 @@ public class FMLLoaderTest extends LauncherTest {
         }
 
         @Test
+        void testProductionClientWithDynamicInstallationDiscovery() throws Exception {
+            installation.setupProductionClientWithDynamicInstallation();
+
+            var result = launchAndLoad("neoforgeclient");
+            assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.gameLayerModules()).containsOnlyKeys("minecraft", "neoforge");
+            assertThat(result.pluginLayerModules()).isEmpty();
+
+            assertMinecraftClientJar(result, true);
+            assertNeoForgeJar(result);
+        }
+
+        @Test
         void testProductionServerDiscovery() throws Exception {
             installation.setupProductionServer();
 

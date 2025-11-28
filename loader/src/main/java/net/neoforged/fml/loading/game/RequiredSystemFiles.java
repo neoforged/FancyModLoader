@@ -270,4 +270,8 @@ final class RequiredSystemFiles implements AutoCloseable {
         }
         return result;
     }
+
+    public boolean hasMinecraft() {
+        return !getMinecraftJarComponents().isEmpty();
+    }
 }

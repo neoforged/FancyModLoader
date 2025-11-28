@@ -32,6 +32,7 @@ import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReade
 import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.fml.util.PathPrettyPrinting;
 import net.neoforged.neoforgespi.LocatedPaths;
+import net.neoforged.neoforgespi.installation.GameDiscoveryOrInstallationService;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
@@ -49,7 +50,7 @@ public final class GameDiscovery {
 
     private GameDiscovery() {}
 
-    public static GameDiscoveryResult discoverGame(ProgramArgs programArgs, LocatedPaths locatedPaths, Dist requiredDist) {
+    public static GameDiscoveryResult discoverGame(ProgramArgs programArgs, LocatedPaths locatedPaths, Dist requiredDist, @Nullable GameDiscoveryOrInstallationService gameDiscoveryOrInstallationService) {
         var ourCl = Thread.currentThread().getContextClassLoader();
 
         var neoForgeVersion = getNeoForgeVersion(programArgs, ourCl);
@@ -65,7 +66,7 @@ public final class GameDiscovery {
         // We look for a class present in both Minecraft distributions on the classpath, which would be obfuscated in production (DetectedVersion)
         // If that is present, we assume we're launching in dev (NeoDev or ModDev).
         try (var systemFiles = RequiredSystemFiles.find(locatedPaths::isLocated, ourCl)) {
-            if (!systemFiles.isEmpty()) {
+            if (!systemFiles.isEmpty() && systemFiles.hasMinecraft()) {
                 // If we've only been able to find some of the required files, we need to error
                 systemFiles.checkForMissingMinecraftFiles(requiredDist == Dist.CLIENT);
 
@@ -76,7 +77,7 @@ public final class GameDiscovery {
         }
 
         // In production, it's in the libraries directory, and we're passed the version to look for on the commandline
-        return locateProductionMinecraft(neoForgeVersion, requiredDist);
+        return locateProductionMinecraft(neoForgeVersion, requiredDist, gameDiscoveryOrInstallationService);
     }
 
     private static String getNeoForgeVersion(ProgramArgs programArgs, ClassLoader ourCl) {
@@ -290,7 +291,7 @@ public final class GameDiscovery {
     /**
      * In production, the client and neoforge jars are assembled from partial jars in the libraries folder.
      */
-    private static GameDiscoveryResult locateProductionMinecraft(String neoForgeVersion, Dist requiredDist) {
+    private static GameDiscoveryResult locateProductionMinecraft(String neoForgeVersion, Dist requiredDist, @Nullable GameDiscoveryOrInstallationService gameDiscoveryOrInstallationService) {
         // 2) It's neither, but a libraries directory and desired versions are given on the commandline
         var librariesDirectory = System.getProperty(LIBRARIES_DIRECTORY_PROPERTY);
         if (librariesDirectory == null) {
@@ -320,6 +321,15 @@ public final class GameDiscovery {
         }).toRelativeRepositoryPath());
 
         var nfModFile = openModFile(neoforgeJar, "neoforge", "fml.modloadingissue.corrupted_neoforge_jar");
+
+        if (!Files.exists(patchedMinecraftPath)) {
+            if (gameDiscoveryOrInstallationService != null) {
+                LOG.info("Patched minecraft does not exist. Triggering external discovery or installation service!");
+                var result = gameDiscoveryOrInstallationService.discoverOrInstall();
+                patchedMinecraftPath = result.minecraft();
+            }
+        }
+
         ModFile minecraftModFile;
         try {
             minecraftModFile = openModFile(patchedMinecraftPath, "minecraft", "fml.modloadingissue.corrupted_minecraft_jar");
