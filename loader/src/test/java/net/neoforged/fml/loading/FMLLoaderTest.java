@@ -90,7 +90,7 @@ public class FMLLoaderTest extends LauncherTest {
                                     @Override public String name() {
                                         return "test";
                                     }
-                                    @Override public Result discoverOrInstall(String neoForgeVersion, Dist requiredDist) {
+                                    @Override public Result discoverOrInstall(String neoForgeVersion, Dist requiredDist) throws Exception {
                                         return new Result(Path.of("%s"));
                                     }
                                 }

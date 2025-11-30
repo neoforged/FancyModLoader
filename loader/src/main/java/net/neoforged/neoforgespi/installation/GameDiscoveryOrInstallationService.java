@@ -49,7 +49,7 @@ public interface GameDiscoveryOrInstallationService {
      * @return The {@link Result} of discovery or installation. {@code null} if not found or installed.
      */
     @Nullable
-    Result discoverOrInstall(String neoForgeVersion, Dist requiredDist);
+    Result discoverOrInstall(String neoForgeVersion, Dist requiredDist) throws Exception;
 
     /**
      * The result of the discovery or installation.
