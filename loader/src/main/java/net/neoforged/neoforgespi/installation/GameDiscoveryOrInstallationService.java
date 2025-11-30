@@ -5,10 +5,9 @@
 
 package net.neoforged.neoforgespi.installation;
 
+import java.nio.file.Path;
 import net.neoforged.api.distmarker.Dist;
 import org.jetbrains.annotations.Nullable;
-
-import java.nio.file.Path;
 
 /**
  * A service which can be used to discover or install the game at runtime.

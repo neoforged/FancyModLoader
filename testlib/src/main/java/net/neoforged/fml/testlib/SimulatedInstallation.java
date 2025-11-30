@@ -8,14 +8,6 @@ package net.neoforged.fml.testlib;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import com.google.gson.JsonObject;
-import net.neoforged.jarjar.metadata.ContainedJarMetadata;
-import net.neoforged.jarjar.metadata.Metadata;
-import net.neoforged.jarjar.metadata.MetadataIOHandler;
-import net.neoforged.jarjar.selection.util.Constants;
-import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Opcodes;
-
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -33,7 +25,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -43,6 +34,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import net.neoforged.jarjar.metadata.ContainedJarMetadata;
+import net.neoforged.jarjar.metadata.Metadata;
+import net.neoforged.jarjar.metadata.MetadataIOHandler;
+import net.neoforged.jarjar.selection.util.Constants;
+import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
 
 /**
  * Simulates various installation types for NeoForge
@@ -135,10 +133,10 @@ public class SimulatedInstallation implements AutoCloseable {
     public static final String NEOFORM_VERSION = "202401020304";
     public static final IdentifiableContent MINECRAFT_VERSION_JSON = new IdentifiableContent("MC_VERSION_JSON", "version.json", buildVersionJson(MC_VERSION));
 
-    public static final IdentifiableContent[] SERVER_EXTRA_JAR_CONTENT = {SHARED_ASSETS, MINECRAFT_VERSION_JSON};
-    public static final IdentifiableContent[] CLIENT_EXTRA_JAR_CONTENT = {CLIENT_ASSETS, SHARED_ASSETS, RESOURCES_MANIFEST, MINECRAFT_VERSION_JSON};
-    public static final IdentifiableContent[] NEOFORGE_UNIVERSAL_JAR_CONTENT = {NEOFORGE_ASSETS, NEOFORGE_CLIENT_CLASSES, NEOFORGE_CLASSES, NEOFORGE_MODS_TOML, NEOFORGE_MANIFEST};
-    public static final IdentifiableContent[] USERDEV_CLIENT_JAR_CONTENT = {PATCHED_CLIENT, PATCHED_SHARED};
+    public static final IdentifiableContent[] SERVER_EXTRA_JAR_CONTENT = { SHARED_ASSETS, MINECRAFT_VERSION_JSON };
+    public static final IdentifiableContent[] CLIENT_EXTRA_JAR_CONTENT = { CLIENT_ASSETS, SHARED_ASSETS, RESOURCES_MANIFEST, MINECRAFT_VERSION_JSON };
+    public static final IdentifiableContent[] NEOFORGE_UNIVERSAL_JAR_CONTENT = { NEOFORGE_ASSETS, NEOFORGE_CLIENT_CLASSES, NEOFORGE_CLASSES, NEOFORGE_MODS_TOML, NEOFORGE_MANIFEST };
+    public static final IdentifiableContent[] USERDEV_CLIENT_JAR_CONTENT = { PATCHED_CLIENT, PATCHED_SHARED };
 
     private static final String GAV_PATCHED_CLIENT = "net.neoforged:minecraft-client-patched:" + NEOFORGE_VERSION;
     public static final String GAV_DYNAMIC_PATCHED_CLIENT = "net.neoforged-dynamic-install:minecraft-client-patched:" + NEOFORGE_VERSION;
@@ -362,8 +360,7 @@ public class SimulatedInstallation implements AutoCloseable {
             Path clientClassesDir,
             Path commonClassesDir,
             Path commonResourcesDir,
-            Path clientExtraJar) {
-    }
+            Path clientExtraJar) {}
 
     // Emulate the layout of a NeoForge development environment
     // In dev, the NeoForge sources itself are joined, but the Minecraft sources are not
@@ -457,7 +454,7 @@ public class SimulatedInstallation implements AutoCloseable {
         Set<String> written = new HashSet<>();
         var newJarFile = jarFile.resolveSibling(jarFile.getFileName() + ".new");
         try (var jarIn = new JarFile(jarFile.toFile());
-             var jarOut = new ZipOutputStream(new BufferedOutputStream(Files.newOutputStream(newJarFile)))) {
+                var jarOut = new ZipOutputStream(new BufferedOutputStream(Files.newOutputStream(newJarFile)))) {
             // Ensure the manifest is written first
             if (newManifest != null) {
                 jarOut.putNextEntry(new ZipEntry(JarFile.MANIFEST_NAME));
@@ -519,7 +516,7 @@ public class SimulatedInstallation implements AutoCloseable {
     private static byte[] writeNeoForgeModsToml() {
         return """
                 license = "LICENSE"
-                
+
                 [[mods]]
                 modId="neoforge"
                 """.getBytes();
@@ -529,7 +526,7 @@ public class SimulatedInstallation implements AutoCloseable {
         return """
                 loader = "minecraft"
                 license = "See Minecraft EULA"
-                
+
                 [[mods]]
                 modId="minecraft"
                 """.getBytes();
@@ -553,7 +550,7 @@ public class SimulatedInstallation implements AutoCloseable {
                 modLoader = "javafml"
                 loaderVersion = "[3,]"
                 license = "LICENSE"
-                
+
                 [[mods]]
                 modId="%s"
                 version="%s"
@@ -566,11 +563,11 @@ public class SimulatedInstallation implements AutoCloseable {
                 modLoader = "javafml"
                 loaderVersion = "[3,]"
                 license = "LICENSE"
-                
+
                 [[mods]]
                 modId="%s"
                 version="%s"
-                
+
                 [[mods]]
                 modId="%s"
                 version="%s"
