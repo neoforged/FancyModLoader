@@ -18,7 +18,7 @@ import java.nio.file.Path;
  * </p>
  * <p>
  * The first step will be to validate the libraries folder, and then find the relevant neoforge jar
- * in their. Secondly it will then parse its neoforge.mods.toml and prepare the launch.
+ * in there. Secondly it will then parse its neoforge.mods.toml and prepare the launch.
  * </p>
  * <p>
  * When that all succeeds the game tries to find the relevant patched minecraft jar in the folder as well,
@@ -37,7 +37,7 @@ import java.nio.file.Path;
  * </p>
  * <p>
  * If the launch argument 'fml.disableInstaller' is provided then this entire subsystem is disabled and the loader
- * will not try to invoke or even discover and instantiate implementation of this type.
+ * will not try to invoke or even discover and instantiate implementations of this type.
  * </p>
  */
 public interface GameDiscoveryOrInstallationService {
