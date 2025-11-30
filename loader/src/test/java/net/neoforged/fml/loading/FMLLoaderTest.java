@@ -5,18 +5,6 @@
 
 package net.neoforged.fml.loading;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.nio.file.Files;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
-import java.util.zip.ZipOutputStream;
 import net.neoforged.fml.FMLVersion;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingException;
@@ -31,6 +19,7 @@ import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.ContainedVersion;
+import net.neoforged.neoforgespi.installation.GameDiscoveryOrInstallationService;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.IModFileReader;
@@ -42,6 +31,27 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.lwjgl.system.FunctionProvider;
+
+import java.nio.file.Files;
+import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.zip.ZipOutputStream;
+
+import static net.neoforged.fml.testlib.SimulatedInstallation.CLIENT_ASSETS;
+import static net.neoforged.fml.testlib.SimulatedInstallation.GAV_DYNAMIC_PATCHED_CLIENT;
+import static net.neoforged.fml.testlib.SimulatedInstallation.GAV_NEOFORGE_DYNAMIC_INSTALLER;
+import static net.neoforged.fml.testlib.SimulatedInstallation.MINECRAFT_MODS_TOML;
+import static net.neoforged.fml.testlib.SimulatedInstallation.MINECRAFT_VERSION_JSON;
+import static net.neoforged.fml.testlib.SimulatedInstallation.PATCHED_CLIENT;
+import static net.neoforged.fml.testlib.SimulatedInstallation.RENAMED_SHARED;
+import static net.neoforged.fml.testlib.SimulatedInstallation.SHARED_ASSETS;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FMLLoaderTest extends LauncherTest {
     private static final ContainedVersion JIJ_V1 = new ContainedVersion(VersionRange.createFromVersion("1.0"), new DefaultArtifactVersion("1.0"));
@@ -68,6 +78,26 @@ public class FMLLoaderTest extends LauncherTest {
         @Test
         void testProductionClientWithDynamicInstallationDiscovery() throws Exception {
             installation.setupProductionClientWithDynamicInstallation();
+
+            var patchedClientJar = installation.writeLibrary(GAV_DYNAMIC_PATCHED_CLIENT, PATCHED_CLIENT, RENAMED_SHARED, CLIENT_ASSETS, SHARED_ASSETS, MINECRAFT_MODS_TOML, MINECRAFT_VERSION_JSON);
+            var autoInstaller = installation.createLibraryProject(GAV_NEOFORGE_DYNAMIC_INSTALLER, builder -> {
+                builder.addClass("autoinstall.TestAutoInstaller", """
+                                import net.neoforged.api.distmarker.Dist;
+                                import net.neoforged.neoforgespi.installation.GameDiscoveryOrInstallationService;
+                                import java.nio.file.Path;
+                                
+                                public record TestAutoInstaller() implements GameDiscoveryOrInstallationService {
+                                    @Override public String name() {
+                                        return "test";
+                                    }
+                                    @Override public Result discoverOrInstall(String neoForgeVersion, Dist requiredDist) {
+                                        return new Result(Path.of("%s"));
+                                    }
+                                }
+                                """.formatted(patchedClientJar.toAbsolutePath().toString()))
+                        .addService(GameDiscoveryOrInstallationService.class, "autoinstall.TestAutoInstaller");
+            });
+            installation.getLaunchClasspath().add(autoInstaller);
 
             var result = launchAndLoad("neoforgeclient");
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
@@ -369,8 +399,8 @@ public class FMLLoaderTest extends LauncherTest {
             installation.setup(type);
             installation.buildInstallationAppropriateModProject("lib", "lib.jar", builder -> {
                 builder.withManifest(Map.of(
-                        "Automatic-Module-Name", "lib",
-                        "FMLModType", "LIBRARY"))
+                                "Automatic-Module-Name", "lib",
+                                "FMLModType", "LIBRARY"))
                         .addClass("lib.TestClass", "class TestClass {}");
             });
             var result = launchClient();
@@ -391,8 +421,8 @@ public class FMLLoaderTest extends LauncherTest {
             installation.setup(type);
             installation.buildInstallationAppropriateModProject("gamelib", "gamelib.jar", builder -> {
                 builder.withManifest(Map.of(
-                        "Automatic-Module-Name", "gamelib",
-                        "FMLModType", "GAMELIBRARY"))
+                                "Automatic-Module-Name", "gamelib",
+                                "FMLModType", "GAMELIBRARY"))
                         .addClass("gamelib.TestClass", "class TestClass {}");
             });
             var result = launchClient();
@@ -543,7 +573,7 @@ public class FMLLoaderTest extends LauncherTest {
                                     public static java.util.ServiceLoader<?> test() {
                                         return java.util.ServiceLoader.load(org.lwjgl.system.FunctionProvider.class);
                                     }
-
+                                
                                     @Override
                                     public long getFunctionAddress(java.nio.ByteBuffer functionName) {
                                         return 123;
@@ -560,7 +590,7 @@ public class FMLLoaderTest extends LauncherTest {
                                     public static java.util.ServiceLoader<?> test() {
                                         return java.util.ServiceLoader.load(org.lwjgl.system.FunctionProvider.class);
                                     }
-
+                                
                                     @Override
                                     public long getFunctionAddress(java.nio.ByteBuffer functionName) {
                                         return 123;
@@ -871,7 +901,8 @@ public class FMLLoaderTest extends LauncherTest {
             var launchResult = launchInstalledDist();
             assertThat(launchResult.loadedMods()).containsKey("testmod");
 
-            var e = assertThrows(ModLoadingException.class, () -> ModLoader.dispatchParallelEvent("test", ModWorkManager.syncExecutor(), ModWorkManager.parallelExecutor(), () -> {}, FMLClientSetupEvent::new));
+            var e = assertThrows(ModLoadingException.class, () -> ModLoader.dispatchParallelEvent("test", ModWorkManager.syncExecutor(), ModWorkManager.parallelExecutor(), () -> {
+            }, FMLClientSetupEvent::new));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                     "ERROR: testmod (testmod) encountered an error while dispatching the net.neoforged.fml.event.lifecycle.FMLClientSetupEvent event\n"
                             + exceptionType.getName() + ": Exception Message");
@@ -892,7 +923,8 @@ public class FMLLoaderTest extends LauncherTest {
             installation.setupProductionClient();
 
             launchAndLoad("neoforgeclient");
-            var e = assertThrows(ModLoadingException.class, () -> ModLoader.runInitTask("test", ModWorkManager.syncExecutor(), () -> {}, () -> {
+            var e = assertThrows(ModLoadingException.class, () -> ModLoader.runInitTask("test", ModWorkManager.syncExecutor(), () -> {
+            }, () -> {
                 Throwable exception;
                 try {
                     exception = exceptionType.getConstructor(String.class).newInstance("Exception Message");
@@ -944,7 +976,7 @@ public class FMLLoaderTest extends LauncherTest {
                                 public DummyReader() throws Exception {
                                     Class.forName("net.minecraft.DetectedVersion");
                                 }
-
+                            
                                 @Override
                                 public net.neoforged.neoforgespi.locating.IModFile read(net.neoforged.fml.jarcontents.JarContents jar, net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes attributes) {
                                     return null;
