@@ -332,9 +332,9 @@ public final class GameDiscovery {
                     } else {
                         LOG.info("Game discovery or installation service: {} did not return a result. Skipping.", gameDiscoveryOrInstallationService.name());
                     }
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     nfModFile.close();
-                    throw e;
+                    throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.discovery_service_failure").withCause(e).withSeverity(ModLoadingIssue.Severity.ERROR));
                 }
             }
         }
