@@ -6,6 +6,8 @@
 package net.neoforged.fml;
 
 import java.util.List;
+import java.util.Objects;
+
 import net.neoforged.fml.i18n.FMLTranslations;
 
 public class ModLoadingException extends RuntimeException {
@@ -56,5 +58,31 @@ public class ModLoadingException extends RuntimeException {
         translation = translation.replace("\n", "\n\t  ");
 
         result.append("\t- ").append(translation).append("\n");
+    }
+
+    @Override
+    public synchronized Throwable getCause() {
+        //First get all issues which are errored, and get their first cause.
+        for (ModLoadingIssue i : issues) {
+            if (i.severity() == ModLoadingIssue.Severity.ERROR) {
+                Throwable cause = i.cause();
+                if (cause != null) {
+                    return cause;
+                }
+            }
+        }
+
+        //If we have no errors then check the warnings.
+        for (ModLoadingIssue i : issues) {
+            if (i.severity() == ModLoadingIssue.Severity.WARNING) {
+                Throwable cause = i.cause();
+                if (cause != null) {
+                    return cause;
+                }
+            }
+        }
+
+        //No cause known.
+        return null;
     }
 }
