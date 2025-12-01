@@ -48,12 +48,11 @@ public interface GameDiscoveryOrInstallationService {
     /**
      * Invoked to discover or install the game when it is not found in the libraries folder.
      *
-     * @param neoForgeVersion The version of neoforge for which the discovery or installation should be started.
      * @param requiredDist    The distribution which should be discovered or installed.
      * @return The {@link Result} of discovery or installation. {@code null} if not found or installed.
      */
     @Nullable
-    Result discoverOrInstall(String neoForgeVersion, Dist requiredDist) throws Exception;
+    Result discoverOrInstall(Dist requiredDist) throws Exception;
 
     /**
      * The result of the discovery or installation.

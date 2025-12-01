@@ -326,7 +326,7 @@ public final class GameDiscovery {
             if (gameDiscoveryOrInstallationService != null) {
                 LOG.info("Patched minecraft does not exist. Triggering external discovery or installation service!");
                 try {
-                    var result = gameDiscoveryOrInstallationService.discoverOrInstall(neoForgeVersion, requiredDist);
+                    var result = gameDiscoveryOrInstallationService.discoverOrInstall(requiredDist);
                     if (result != null) {
                         patchedMinecraftPath = result.minecraft();
                     } else {
