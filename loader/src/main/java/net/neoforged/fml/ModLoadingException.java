@@ -6,8 +6,6 @@
 package net.neoforged.fml;
 
 import java.util.List;
-import java.util.Objects;
-
 import net.neoforged.fml.i18n.FMLTranslations;
 
 public class ModLoadingException extends RuntimeException {
