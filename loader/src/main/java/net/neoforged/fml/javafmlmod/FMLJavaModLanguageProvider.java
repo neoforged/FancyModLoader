@@ -38,7 +38,7 @@ public class FMLJavaModLanguageProvider extends BuiltInLanguageLoader {
                 .filter(data -> data.annotationData().get("value").equals(info.getModId()))
                 .filter(ad -> AutomaticEventSubscriber.getSides(ad.annotationData().get("dist")).contains(FMLLoader.getCurrent().getDist()))
                 .filter(ad -> getDepends(ad).stream().allMatch(otherMod -> FMLLoader.getCurrent().getLoadingModList().getModFileById(otherMod) != null))
-                .sorted(Comparator.<ModFileScanData.AnnotationData>comparingInt(ad -> -getDepends(ad).size())
+                .sorted(Comparator.<ModFileScanData.AnnotationData>comparingInt(ad -> getDepends(ad).size())
                         .thenComparingInt(ad -> -AutomaticEventSubscriber.getSides(ad.annotationData().get("dist")).size()))
                 .map(ad -> ad.clazz().getClassName())
                 .toList();

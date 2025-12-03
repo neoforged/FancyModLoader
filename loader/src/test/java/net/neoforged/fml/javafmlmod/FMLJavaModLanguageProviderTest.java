@@ -138,6 +138,7 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
                             }
                         }
                         """)
+
                 .build();
 
         launchAndLoad("neoforgeclient");
@@ -165,6 +166,40 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
                 .build();
 
         launchAndLoad("neoforgeclient");
+    }
+
+    @Test
+    void testDependsEntrypointOrdering() throws Exception {
+        installation.setupProductionClient();
+
+        installation.buildModJar("othermod.jar").withMod("othermod", "1.0").build();
+        installation.buildModJar("test.jar")
+                .withTestmodModsToml(builder -> {
+                    builder.addDependency("testmod", "othermod", "[1,)", config -> {
+                        config.set("type", "optional");
+                    });
+                })
+                .addClass("testmod.EntryPoint", """
+                        @net.neoforged.fml.common.Mod("testmod")
+                        public class EntryPoint {
+                            public EntryPoint() {
+                                net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.MESSAGES.add("common");
+                            }
+                        }
+                        """)
+                .addClass("testmod.DependsEntryPoint", """
+                        @net.neoforged.fml.common.Mod(value = "testmod", depends = "othermod")
+                        public class DependsEntryPoint {
+                            public DependsEntryPoint() {
+                                net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.MESSAGES.add("dependency");
+                            }
+                        }
+                        """)
+                .build();
+
+        launchAndLoad("neoforgeclient");
+
+        assertThat(MESSAGES).isEqualTo(List.of("common", "dependency"));
     }
 
     @Test
