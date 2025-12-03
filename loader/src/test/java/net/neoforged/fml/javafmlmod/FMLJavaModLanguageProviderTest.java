@@ -157,12 +157,12 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
                     });
                 })
                 .addClass("testmod.DependsEntryPoint", """
-                    @net.neoforged.fml.common.Mod(value = "testmod", depends = "othermod")
-                    public class DependsEntryPoint {
-                        public DependsEntryPoint() {
+                        @net.neoforged.fml.common.Mod(value = "testmod", depends = "othermod")
+                        public class DependsEntryPoint {
+                            public DependsEntryPoint() {
+                            }
                         }
-                    }
-                    """)
+                        """)
                 .build();
 
         launchAndLoad("neoforgeclient");
