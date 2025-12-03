@@ -12,7 +12,7 @@
   "fml.modloadingissue.errorduringevent": "{100,modinfo,name} ({100,modinfo,id}) encountered an error while dispatching the {0} event\n§7{102,exc,msg}",
   "fml.modloading.failedtoloadforge": "Failed to load NeoForge",
   "fml.modloadingissue.javafml.dangling_entrypoint": "File {2} contains mod entrypoint class §6{1}§r for mod with id §e{0}§r, which does not exist or is not in the same file.\nDid you forget to update the mod id in the entrypoint?",
-  "fml.modloadingissue.javafml.missing_dependency_specification": "File {2} contains mod entrypoint class §6{1}§r with a depends annotation for mod §e{0}§r, but that mod is not specified as a dependency in the mods.toml.",
+  "fml.modloadingissue.javafml.missing_dependency_specification": "File {2} contains mod entrypoint class §6{1}§r with a depends annotation for mod §e{0}§r, but that mod is not specified as a dependency in the mods.toml.\nYou should specify §6{0}§r as an optional dependency.",
   "fml.modloadingissue.missingdependency": "Mod §e{1}§r requires §6{0}§r §o{2,vr}§r\n§7Currently, §6{0}§r§7 is §o{3,i18n,fml.messages.artifactversion.ornotinstalled}§r\n{4,optional,§7Reason for the dependency: §r}",
   "fml.modloadingissue.missingdependency.optional": "Mod §e{1}§r only supports §3{0}§r §o{2,vr}§r\n§7Currently, §3{0}§r§7 is §o{3}",
   "fml.modloadingissue.incompatiblemod": "Mod §e{1}§r is §cincompatible§r with §3{0}§r §o{2,vr}§r\n§7Currently, §3{0}§r§7 is §o{3}§r\n§7The reason is:§r §o{4,i18ntranslate}§r",

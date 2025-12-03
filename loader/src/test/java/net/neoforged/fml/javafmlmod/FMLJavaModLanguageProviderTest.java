@@ -68,7 +68,8 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
 
         var e = Assertions.assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
         assertThat(getTranslatedIssues(e.getIssues()))
-                .containsOnly("ERROR: File mods/test.jar contains mod entrypoint class testmod.DanglingDepends with a depends annotation for mod othermod, but that mod is not specified as a dependency in the mods.toml.");
+                .containsOnly("ERROR: File mods/test.jar contains mod entrypoint class testmod.DanglingDepends with a depends annotation for mod othermod, but that mod is not specified as a dependency in the mods.toml."
+                        + "\nYou should specify othermod as an optional dependency.");
     }
 
     @Test

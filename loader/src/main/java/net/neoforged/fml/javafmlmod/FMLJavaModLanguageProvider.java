@@ -55,7 +55,9 @@ public class FMLJavaModLanguageProvider extends BuiltInLanguageLoader {
 
                 var dependencyIds = dependencyMap.computeIfAbsent(modInfo.getModId(), s -> new HashSet<>());
                 for (IModInfo.ModVersion dependency : modInfo.getDependencies()) {
-                    dependencyIds.add(dependency.getModId());
+                    // Don't consider incompatible mods as dependencies
+                    if (dependency.getType() != IModInfo.DependencyType.INCOMPATIBLE)
+                        dependencyIds.add(dependency.getModId());
                 }
             }
         }
