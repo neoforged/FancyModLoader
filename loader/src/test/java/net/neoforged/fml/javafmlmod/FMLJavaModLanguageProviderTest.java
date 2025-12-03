@@ -54,6 +54,24 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
     }
 
     @Test
+    public void testDanglingDepends() throws Exception {
+        installation.setupProductionClient();
+
+        installation.buildModJar("test.jar")
+                .withTestmodModsToml()
+                .addClass("testmod.DanglingDepends", """
+                        @net.neoforged.fml.common.Mod(value = "testmod", depends = "othermod")
+                        class DanglingDepends {
+                        }
+                        """)
+                .build();
+
+        var e = Assertions.assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
+        assertThat(getTranslatedIssues(e.getIssues()))
+                .containsOnly("ERROR: File mods/test.jar contains mod entrypoint class testmod.DanglingDepends with a depends annotation for mod othermod, but that mod is not specified as a dependency in the mods.toml.");
+    }
+
+    @Test
     void testModConstructionWithoutPublicConstructor() throws Exception {
         installation.setupProductionClient();
 
@@ -125,6 +143,28 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
         launchAndLoad("neoforgeclient");
 
         assertThat(MESSAGES).isEqualTo(List.of("common", "client"));
+    }
+
+    @Test
+    void testDependsEntrypoint() throws Exception {
+        installation.setupProductionClient();
+
+        installation.buildModJar("test.jar")
+                .withTestmodModsToml(builder -> {
+                    builder.addDependency("testmod", "othermod", "[1,)", config -> {
+                        config.set("type", "optional");
+                    });
+                })
+                .addClass("testmod.DependsEntryPoint", """
+                    @net.neoforged.fml.common.Mod(value = "testmod", depends = "othermod")
+                    public class DependsEntryPoint {
+                        public DependsEntryPoint() {
+                        }
+                    }
+                    """)
+                .build();
+
+        launchAndLoad("neoforgeclient");
     }
 
     @Test

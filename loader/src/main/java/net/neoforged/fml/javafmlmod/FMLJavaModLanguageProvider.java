@@ -7,8 +7,10 @@ package net.neoforged.fml.javafmlmod;
 
 import java.lang.annotation.ElementType;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoadingIssue;
@@ -33,7 +35,9 @@ public class FMLJavaModLanguageProvider extends BuiltInLanguageLoader {
         var modClasses = modFileScanResults.getAnnotatedBy(Mod.class, ElementType.TYPE)
                 .filter(data -> data.annotationData().get("value").equals(info.getModId()))
                 .filter(ad -> AutomaticEventSubscriber.getSides(ad.annotationData().get("dist")).contains(FMLLoader.getCurrent().getDist()))
-                .sorted(Comparator.comparingInt(ad -> -AutomaticEventSubscriber.getSides(ad.annotationData().get("dist")).size()))
+                .filter(ad -> getDepends(ad).stream().allMatch(otherMod -> FMLLoader.getCurrent().getLoadingModList().getModFileById(otherMod) != null))
+                .sorted(Comparator.<ModFileScanData.AnnotationData>comparingInt(ad -> -getDepends(ad).size())
+                        .thenComparingInt(ad -> -AutomaticEventSubscriber.getSides(ad.annotationData().get("dist")).size()))
                 .map(ad -> ad.clazz().getClassName())
                 .toList();
         return new FMLModContainer(info, modClasses, modFileScanResults, layer);
@@ -42,9 +46,14 @@ public class FMLJavaModLanguageProvider extends BuiltInLanguageLoader {
     @Override
     public void validate(IModFile file, Collection<ModContainer> loadedContainers, IIssueReporting reporter) {
         Set<String> modIds = new HashSet<>();
+        Set<String> dependencyIds = new HashSet<>();
         for (IModInfo modInfo : file.getModInfos()) {
             if (modInfo.getLoader() == this) {
                 modIds.add(modInfo.getModId());
+            }
+
+            for (IModInfo.ModVersion dependency : modInfo.getDependencies()) {
+                dependencyIds.add(dependency.getModId());
             }
         }
 
@@ -56,5 +65,23 @@ public class FMLJavaModLanguageProvider extends BuiltInLanguageLoader {
                     var issue = ModLoadingIssue.error("fml.modloadingissue.javafml.dangling_entrypoint", modId, entrypointClass, file.getFilePath()).withAffectedModFile(file);
                     reporter.addIssue(issue);
                 });
+
+        file.getScanResult().getAnnotatedBy(Mod.class, ElementType.TYPE)
+                .filter(data -> !getDepends(data).isEmpty())
+                .forEach(data -> {
+                    for (String dependency : getDepends(data)) {
+                        if (!dependencyIds.contains(dependency)) {
+                            var entrypointClass = data.clazz().getClassName();
+                            var issue = ModLoadingIssue.error("fml.modloadingissue.javafml.missing_dependency_specification", dependency, entrypointClass, file.getFilePath()).withAffectedModFile(file);
+                            reporter.addIssue(issue);
+                        }
+                    }
+                });
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> getDepends(ModFileScanData.AnnotationData data) {
+        var depends = data.annotationData().get("depends");
+        return depends != null ? (List<String>) depends : Collections.emptyList();
     }
 }
