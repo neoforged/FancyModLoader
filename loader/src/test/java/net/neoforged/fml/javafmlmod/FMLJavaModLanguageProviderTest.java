@@ -54,25 +54,6 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
     }
 
     @Test
-    public void testDanglingDepends() throws Exception {
-        installation.setupProductionClient();
-
-        installation.buildModJar("test.jar")
-                .withTestmodModsToml()
-                .addClass("testmod.DanglingDepends", """
-                        @net.neoforged.fml.common.Mod(value = "testmod", depends = "othermod")
-                        class DanglingDepends {
-                        }
-                        """)
-                .build();
-
-        var e = Assertions.assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
-        assertThat(getTranslatedIssues(e.getIssues()))
-                .containsOnly("ERROR: File mods/test.jar contains mod entrypoint class testmod.DanglingDepends with a depends annotation for mod othermod, but that mod is not specified as a dependency in the mods.toml."
-                        + "\nYou should specify othermod as an optional dependency.");
-    }
-
-    @Test
     void testModConstructionWithoutPublicConstructor() throws Exception {
         installation.setupProductionClient();
 
@@ -148,25 +129,24 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
     }
 
     @Test
-    void testDependsEntrypoint() throws Exception {
+    void testDependsEntrypointDoesntFire() throws Exception {
         installation.setupProductionClient();
 
         installation.buildModJar("test.jar")
-                .withTestmodModsToml(builder -> {
-                    builder.addDependency("testmod", "othermod", "[1,)", config -> {
-                        config.set("type", "optional");
-                    });
-                })
+                .withTestmodModsToml()
                 .addClass("testmod.DependsEntryPoint", """
                         @net.neoforged.fml.common.Mod(value = "testmod", depends = "othermod")
                         public class DependsEntryPoint {
                             public DependsEntryPoint() {
+                        		net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.MESSAGES.add("fired");
                             }
                         }
                         """)
                 .build();
 
         launchAndLoad("neoforgeclient");
+
+	    assertThat(MESSAGES).isEmpty();
     }
 
     @Test

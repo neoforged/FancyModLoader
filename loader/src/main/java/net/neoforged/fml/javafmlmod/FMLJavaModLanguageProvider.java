@@ -9,10 +9,8 @@ import java.lang.annotation.ElementType;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoadingIssue;
@@ -48,17 +46,9 @@ public class FMLJavaModLanguageProvider extends BuiltInLanguageLoader {
     @Override
     public void validate(IModFile file, Collection<ModContainer> loadedContainers, IIssueReporting reporter) {
         Set<String> modIds = new HashSet<>();
-        Map<String, Set<String>> dependencyMap = new HashMap<>();
         for (IModInfo modInfo : file.getModInfos()) {
             if (modInfo.getLoader() == this) {
                 modIds.add(modInfo.getModId());
-
-                var dependencyIds = dependencyMap.computeIfAbsent(modInfo.getModId(), s -> new HashSet<>());
-                for (IModInfo.ModVersion dependency : modInfo.getDependencies()) {
-                    // Don't consider incompatible mods as dependencies
-                    if (dependency.getType() != IModInfo.DependencyType.INCOMPATIBLE)
-                        dependencyIds.add(dependency.getModId());
-                }
             }
         }
 
@@ -69,21 +59,6 @@ public class FMLJavaModLanguageProvider extends BuiltInLanguageLoader {
                     var entrypointClass = data.clazz().getClassName();
                     var issue = ModLoadingIssue.error("fml.modloadingissue.javafml.dangling_entrypoint", modId, entrypointClass, file.getFilePath()).withAffectedModFile(file);
                     reporter.addIssue(issue);
-                });
-
-        file.getScanResult().getAnnotatedBy(Mod.class, ElementType.TYPE)
-                .filter(data -> !getDepends(data).isEmpty())
-                .forEach(data -> {
-                    var modId = (String) data.annotationData().get("value");
-                    var dependencyIds = dependencyMap.get(modId);
-
-                    for (String dependency : getDepends(data)) {
-                        if (!dependencyIds.contains(dependency)) {
-                            var entrypointClass = data.clazz().getClassName();
-                            var issue = ModLoadingIssue.error("fml.modloadingissue.javafml.missing_dependency_specification", dependency, entrypointClass, file.getFilePath()).withAffectedModFile(file);
-                            reporter.addIssue(issue);
-                        }
-                    }
                 });
     }
 
