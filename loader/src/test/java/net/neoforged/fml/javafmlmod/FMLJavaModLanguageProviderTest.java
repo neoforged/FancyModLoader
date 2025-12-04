@@ -120,7 +120,6 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
                             }
                         }
                         """)
-
                 .build();
 
         launchAndLoad("neoforgeclient");
@@ -138,7 +137,7 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
                         @net.neoforged.fml.common.Mod(value = "testmod", depends = "othermod")
                         public class DependsEntryPoint {
                             public DependsEntryPoint() {
-                        		net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.MESSAGES.add("fired");
+                                net.neoforged.fml.javafmlmod.FMLJavaModLanguageProviderTest.MESSAGES.add("fired");
                             }
                         }
                         """)
@@ -146,7 +145,7 @@ public class FMLJavaModLanguageProviderTest extends LauncherTest {
 
         launchAndLoad("neoforgeclient");
 
-	    assertThat(MESSAGES).isEmpty();
+        assertThat(MESSAGES).isEmpty();
     }
 
     @Test
