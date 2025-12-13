@@ -20,8 +20,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
@@ -124,8 +122,7 @@ public class UniqueModListBuilder {
         if (modInfoList.size() > 1) {
             modInfoList.sort(Comparator.comparing(this::getVersion).reversed());
 
-            String allModFiles = modInfoList.stream().map(mf ->
-                    String.format("\t%s from %s", this.getVersion(mf), mf.getFileName())).collect(joining("\n"));
+            String allModFiles = modInfoList.stream().map(mf -> String.format("\t%s from %s", this.getVersion(mf), mf.getFileName())).collect(joining("\n"));
             LOGGER.warn("Found {} mod files for modid {}, selecting {} as it is the most recent based on version data:\n{}",
                     modInfoList.size(), fullList.getKey(), modInfoList.get(0).getFileName(), allModFiles);
         }
