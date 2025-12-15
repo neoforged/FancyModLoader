@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.Dist;
  * <p>
  * Any class found with this annotation applied will be loaded as a mod entrypoint for the mod with the given {@linkplain #value() ID}. <br>
  * A mod loaded with the {@code javafml} language loader may have multiple entrypoints.
+ * Entrypoints with the least {@link #depends} are run first.
  * Entrypoints for all {@link #dist}s are always run before entrypoints for a single {@link #dist}.
  */
 @Retention(RetentionPolicy.RUNTIME)
@@ -34,4 +35,9 @@ public @interface Mod {
      * {@return the side to load this mod entrypoint on}
      */
     Dist[] dist() default { Dist.CLIENT, Dist.DEDICATED_SERVER };
+
+    /**
+     * A list of mod IDs which are all required to be present in order to load this mod entrypoint.
+     */
+    String[] depends() default {};
 }
