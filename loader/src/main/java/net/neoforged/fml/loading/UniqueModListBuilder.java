@@ -123,7 +123,7 @@ public class UniqueModListBuilder {
             modInfoList.sort(Comparator.comparing(this::getVersion).reversed());
 
             String allModFiles = modInfoList.stream().map(mf -> String.format("\t%s from %s", this.getVersion(mf), mf.getFileName())).collect(joining("\n"));
-            LOGGER.warn("Found {} mod files for modid {}, selecting {} as it is the most recent based on version data:\n{}",
+            LOGGER.info("Found {} mod files for modid {}, selecting {} as it is the most recent based on version data:\n{}",
                     modInfoList.size(), fullList.getKey(), modInfoList.get(0).getFileName(), allModFiles);
         }
         return modInfoList.get(0);
