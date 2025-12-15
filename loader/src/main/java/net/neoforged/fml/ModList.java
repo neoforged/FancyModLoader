@@ -176,7 +176,17 @@ public class ModList {
     }
 
     public <T> Stream<T> applyForEachModContainer(Function<ModContainer, T> function) {
-        return indexedMods.values().stream().map(function);
+        return mods.stream().map(function);
+    }
+
+    /**
+     * Get a stream of all extension points of type {@code point} for each loaded mod.
+     *
+     * @param point The type of extension point to find
+     * @return All registered extensions of type {@link T}
+     */
+    public <T extends IExtensionPoint> Stream<T> getAllExtensions(Class<T> point) {
+        return applyForEachModContainer(mod -> mod.getCustomExtension(point)).flatMap(Optional::stream);
     }
 
     @ApiStatus.Internal
