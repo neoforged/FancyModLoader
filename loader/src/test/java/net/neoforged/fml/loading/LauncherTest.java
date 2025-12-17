@@ -119,7 +119,7 @@ public abstract class LauncherTest {
      */
     LaunchResult launchInstalledDist() throws Exception {
         var supportedDist = switch (installation.getType()) {
-            case PRODUCTION_CLIENT, USERDEV_FOLDERS, USERDEV_JAR, USERDEV_LEGACY_FOLDERS, USERDEV_LEGACY_JAR -> Dist.CLIENT;
+            case PRODUCTION_CLIENT, PRODUCTION_CLIENT_INSTALLED_AT_RUNTIME, USERDEV_FOLDERS, USERDEV_JAR, USERDEV_LEGACY_FOLDERS, USERDEV_LEGACY_JAR -> Dist.CLIENT;
             case PRODUCTION_SERVER -> Dist.DEDICATED_SERVER;
         };
         return launchAndLoad(supportedDist, true, List.of());
@@ -236,7 +236,7 @@ public abstract class LauncherTest {
                         // TODO: We can pass less in certain scenarios and should (i.e. development)
                         "--fml.mcVersion", SimulatedInstallation.MC_VERSION,
                         "--fml.neoForgeVersion", SimulatedInstallation.NEOFORGE_VERSION,
-                        "--fml.neoFormVersion", SimulatedInstallation.NEOFORM_VERSION
+                        "--fml.neoFormVersion", SimulatedInstallation.NEOFORM_VERSION,
                 },
                 locatedPaths.stream().map(Path::toFile).collect(Collectors.toSet()),
                 additionalClassPath.stream().map(Path::toFile).toList(),
@@ -366,18 +366,6 @@ public abstract class LauncherTest {
         Collections.addAll(expectedContent, SimulatedInstallation.SERVER_EXTRA_JAR_CONTENT);
         expectedContent.add(SimulatedInstallation.PATCHED_SHARED);
         expectedContent.add(SimulatedInstallation.MINECRAFT_MODS_TOML);
-
-        assertModContent(launchResult, "minecraft", expectedContent);
-    }
-
-    /**
-     * Asserts a Minecraft Jar in the legacy installation mode where the Minecraft jar is assembled in-memory from different individual pieces.
-     * The only noticeable difference is that the Minecraft jar does not have a neoforge.mods.toml.
-     */
-    public void assertLegacyMinecraftServerJar(LaunchResult launchResult) throws IOException {
-        var expectedContent = new ArrayList<IdentifiableContent>();
-        Collections.addAll(expectedContent, SimulatedInstallation.SERVER_EXTRA_JAR_CONTENT);
-        expectedContent.add(SimulatedInstallation.PATCHED_SHARED);
 
         assertModContent(launchResult, "minecraft", expectedContent);
     }

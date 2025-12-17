@@ -57,4 +57,30 @@ public class ModLoadingException extends RuntimeException {
 
         result.append("\t- ").append(translation).append("\n");
     }
+
+    @Override
+    public synchronized Throwable getCause() {
+        //First get all issues which are errored, and get their first cause.
+        for (ModLoadingIssue i : issues) {
+            if (i.severity() == ModLoadingIssue.Severity.ERROR) {
+                Throwable cause = i.cause();
+                if (cause != null) {
+                    return cause;
+                }
+            }
+        }
+
+        //If we have no errors then check the warnings.
+        for (ModLoadingIssue i : issues) {
+            if (i.severity() == ModLoadingIssue.Severity.WARNING) {
+                Throwable cause = i.cause();
+                if (cause != null) {
+                    return cause;
+                }
+            }
+        }
+
+        //No cause known.
+        return null;
+    }
 }

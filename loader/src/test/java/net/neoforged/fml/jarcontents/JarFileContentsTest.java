@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.jar.Manifest;
 import java.util.zip.ZipOutputStream;
+import net.neoforged.fml.util.PathPrettyPrinting;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -254,7 +255,7 @@ class JarFileContentsTest extends AbstractJarContentsTest {
     @Test
     void testToString() throws IOException {
         JarContents jarContents = getJarContents();
-        assertEquals("jar(" + jarFilePath + ")", jarContents.toString());
+        assertEquals("jar(" + PathPrettyPrinting.prettyPrint(jarFilePath) + ")", jarContents.toString());
     }
 
     /**

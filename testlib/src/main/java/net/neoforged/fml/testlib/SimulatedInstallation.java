@@ -52,6 +52,11 @@ public class SimulatedInstallation implements AutoCloseable {
 
     public enum Type {
         PRODUCTION_CLIENT,
+        /**
+         * A special variant of the production client where the installation happens
+         * when the game loads through an early loader service.
+         */
+        PRODUCTION_CLIENT_INSTALLED_AT_RUNTIME,
         PRODUCTION_SERVER,
         /**
          * Used by NeoGradle and ModDevGradle currently.
@@ -59,7 +64,7 @@ public class SimulatedInstallation implements AutoCloseable {
          * - A jar with all Minecraft Classes, NeoForge Classes and Resources
          * - A second jar with the original non-class content of the Minecraft jar
          * The Minecraft classes and resources are merged from server+client distributions.
-         *
+         * <p>
          * The difference between FOLDERS and JAR relates to how the "installation appropriate" mod project
          * is put onto the classpath (as folders, or built as a jar file).
          */
@@ -70,7 +75,7 @@ public class SimulatedInstallation implements AutoCloseable {
          * It puts two jars on the classpath:
          * - The merged, patched Minecraft jar, including classes and resources from both distributions
          * - The unmodified NeoForge universal jar
-         *
+         * <p>
          * The difference between FOLDERS and JAR relates to how the "installation appropriate" mod project
          * is put onto the classpath (as folders, or built as a jar file).
          */
@@ -134,8 +139,10 @@ public class SimulatedInstallation implements AutoCloseable {
     public static final IdentifiableContent[] USERDEV_CLIENT_JAR_CONTENT = { PATCHED_CLIENT, PATCHED_SHARED };
 
     private static final String GAV_PATCHED_CLIENT = "net.neoforged:minecraft-client-patched:" + NEOFORGE_VERSION;
+    public static final String GAV_DYNAMIC_PATCHED_CLIENT = "net.neoforged-dynamic-install:minecraft-client-patched:" + NEOFORGE_VERSION;
     private static final String GAV_PATCHED_SERVER = "net.neoforged:minecraft-server-patched:" + NEOFORGE_VERSION;
     private static final String GAV_NEOFORGE_UNIVERSAL = "net.neoforged:neoforge:" + NEOFORGE_VERSION + ":universal";
+    public static final String GAV_NEOFORGE_DYNAMIC_INSTALLER = "net.neoforged:neoforge:" + NEOFORGE_VERSION + ":dynamic-installer";
 
     private static byte[] buildVersionJson(String mcVersion) {
         var obj = new JsonObject();
@@ -196,6 +203,28 @@ public class SimulatedInstallation implements AutoCloseable {
                 launchClasspath.add(obfuscatedClientJar);
 
                 componentRoots = InstallationComponents.productionJars(patchedClientJar, universalJar);
+            }
+            case PRODUCTION_CLIENT_INSTALLED_AT_RUNTIME -> {
+                System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
+
+                var universalJar = writeLibrary(GAV_NEOFORGE_UNIVERSAL, NEOFORGE_UNIVERSAL_JAR_CONTENT);
+
+                // For the production client, the Vanilla launcher puts the original, obfuscated client jar on the classpath
+                // Since this can influence our detection logic, let's make sure it's included for the tests.
+                Path obfuscatedClientJar = versionsDir.resolve(MC_VERSION).resolve(MC_VERSION + ".jar");
+                writeJarFile(
+                        obfuscatedClientJar,
+                        generateClass("CLIENT_MAIN", "net/minecraft/client/main/Main.class"),
+                        generateClass("CLIENT_DATA_MAIN", "net/minecraft/client/data/Main.class"),
+                        generateClass("SERVER_MAIN", "net/minecraft/server/Main.class"),
+                        generateClass("SERVER_DATA_MAIN", "net/minecraft/data/Main.class"),
+                        generateClass("GAMETEST_MAIN", "net/minecraft/gametest/Main.class"),
+                        generateClass("MINECRAFT_SERVER", "net/minecraft/server/MinecraftServer.class"),
+                        MINECRAFT_VERSION_JSON,
+                        SHARED_ASSETS,
+                        CLIENT_ASSETS);
+
+                componentRoots = InstallationComponents.productionJars(obfuscatedClientJar, universalJar);
             }
             case PRODUCTION_SERVER -> {
                 System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
@@ -286,26 +315,12 @@ public class SimulatedInstallation implements AutoCloseable {
         setup(Type.PRODUCTION_CLIENT);
     }
 
-    public void setupProductionClientLegacy() throws IOException {
-        System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
-
-        writeLibrary("net.minecraft", "client", MC_VERSION + "-" + NEOFORM_VERSION, "srg", RENAMED_CLIENT, RENAMED_SHARED);
-        writeLibrary("net.minecraft", "client", MC_VERSION + "-" + NEOFORM_VERSION, "extra", CLIENT_ASSETS, SHARED_ASSETS, MINECRAFT_VERSION_JSON);
-        writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "client", PATCHED_CLIENT);
-        writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "universal", NEOFORGE_UNIVERSAL_JAR_CONTENT);
+    public void setupProductionClientWithDynamicInstallation() throws IOException {
+        setup(Type.PRODUCTION_CLIENT_INSTALLED_AT_RUNTIME);
     }
 
     public void setupProductionServer() throws IOException {
         setup(Type.PRODUCTION_SERVER);
-    }
-
-    public void setupProductionServerLegacy() throws IOException {
-        System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
-
-        writeLibrary("net.minecraft", "server", MC_VERSION + "-" + NEOFORM_VERSION, "srg", RENAMED_SHARED);
-        writeLibrary("net.minecraft", "server", MC_VERSION + "-" + NEOFORM_VERSION, "extra", SERVER_EXTRA_JAR_CONTENT);
-        writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "server", PATCHED_SHARED);
-        writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "universal", NEOFORGE_UNIVERSAL_JAR_CONTENT);
     }
 
     // The classes directory in a NeoForge development environment will contain both the Minecraft
@@ -662,6 +677,29 @@ public class SimulatedInstallation implements AutoCloseable {
     public ModFileBuilder.ModJarBuilder buildModJar(String filename) throws IOException {
         var path = getModsFolder().resolve(filename);
         return ModFileBuilder.toJar(path);
+    }
+
+    public Path createLibraryProject(String groupArtifactVersion, ModFileBuilder.ModJarCustomizer configurator) throws IOException {
+        String[] parts = groupArtifactVersion.split(":", 4);
+        return createLibraryProject(parts[0], parts[1], parts[2], parts.length > 3 ? parts[3] : null, configurator);
+    }
+
+    public Path createLibraryProject(String group, String artifact, String version, @Nullable String classifier, ModFileBuilder.ModJarCustomizer configurator) throws IOException {
+        var folder = librariesDir.resolve(group.replace('.', '/'))
+                .resolve(artifact)
+                .resolve(version);
+        Files.createDirectories(folder);
+
+        var filename = artifact + "-" + version;
+        if (classifier != null) {
+            filename += "-" + classifier;
+        }
+        filename += ".jar";
+        var file = folder.resolve(filename);
+
+        var builder = ModFileBuilder.toJar(file);
+        configurator.customize(builder);
+        return builder.build();
     }
 
     /**

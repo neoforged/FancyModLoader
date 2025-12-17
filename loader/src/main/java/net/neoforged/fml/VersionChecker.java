@@ -169,7 +169,7 @@ public class VersionChecker {
                     Map<String, String> promos = (Map<String, String>) json.get("promos");
                     display_url = (String) json.get("homepage");
 
-                    var mcVersion = FMLLoader.getCurrent().getVersionInfo().mcVersion();
+                    var mcVersion = FMLLoader.getCurrent().getMinecraftVersion();
                     String rec = promos.get(mcVersion + "-recommended");
                     String lat = promos.get(mcVersion + "-latest");
                     ComparableVersion current = new ComparableVersion(mod.getVersion().toString());
