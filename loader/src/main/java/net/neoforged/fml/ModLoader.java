@@ -304,7 +304,7 @@ public final class ModLoader {
 
     public static <T extends Event & IModBusEvent> void runEventGenerator(Function<ModContainer, T> generator) {
         if (hasErrors()) {
-            LOGGER.error("Cowardly refusing to send event generator to a broken mod state");
+            LOGGER.trace("Cowardly refusing to send event generator to a broken mod state");
             return;
         }
 
@@ -323,7 +323,7 @@ public final class ModLoader {
 
     public static <T extends Event & IModBusEvent> void postEvent(T e) {
         if (hasErrors()) {
-            LOGGER.error("Cowardly refusing to send event {} to a broken mod state", e.getClass().getName());
+            LOGGER.trace("Cowardly refusing to send event {} to a broken mod state", e.getClass().getName());
             return;
         }
         for (EventPriority phase : EventPriority.values()) {
@@ -342,7 +342,7 @@ public final class ModLoader {
 
     public static <T extends Event & IModBusEvent> void postEventWithWrapInModOrder(T e, BiConsumer<ModContainer, T> pre, BiConsumer<ModContainer, T> post) {
         if (hasErrors()) {
-            LOGGER.error("Cowardly refusing to send event {} to a broken mod state", e.getClass().getName());
+            LOGGER.trace("Cowardly refusing to send event {} to a broken mod state", e.getClass().getName());
             return;
         }
         for (EventPriority phase : EventPriority.values()) {
