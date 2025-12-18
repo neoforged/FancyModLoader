@@ -85,8 +85,7 @@ public class AccessTransformerTest extends LauncherTest {
         var result = launchAndLoad("neoforgeclient");
         assertThat(result.gameLayerModules()).containsKey("testlib");
 
-        var clazz = Class.forName("testlib.TestClass", false, gameClassLoader);
-        assertEquals(0, clazz.getModifiers(), "Expected the default AT not to be applied for gamelibraries.");
+        assertClassIsPublic("testlib.TestClass");
     }
 
     private void assertClassIsPublic(String className) throws Exception {
