@@ -32,12 +32,12 @@ import org.slf4j.LoggerFactory;
 final class RequiredSystemFiles implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(RequiredSystemFiles.class);
 
-    private static final String COMMON_CLASS = "net/minecraft/DetectedVersion.class";
-    private static final String CLIENT_CLASS = "net/minecraft/client/Minecraft.class";
-    private static final String COMMON_RESOURCE_ROOT = "data/.mcassetsroot";
-    private static final String CLIENT_RESOURCE_ROOT = "assets/.mcassetsroot";
-    private static final String NEOFORGE_COMMON_CLASS = "net/neoforged/neoforge/common/NeoForgeMod.class";
-    private static final String NEOFORGE_CLIENT_CLASS = "net/neoforged/neoforge/client/ClientNeoForgeMod.class";
+    static final String COMMON_CLASS = "net/minecraft/DetectedVersion.class";
+    static final String CLIENT_CLASS = "net/minecraft/client/Minecraft.class";
+    static final String COMMON_RESOURCE_ROOT = "data/.mcassetsroot";
+    static final String CLIENT_RESOURCE_ROOT = "assets/.mcassetsroot";
+    static final String NEOFORGE_COMMON_CLASS = "net/neoforged/neoforge/common/NeoForgeMod.class";
+    static final String NEOFORGE_CLIENT_CLASS = "net/neoforged/neoforge/client/ClientNeoForgeMod.class";
     private JarContents commonClasses;
     private JarContents commonResources;
     private JarContents clientClasses;

@@ -14,9 +14,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.zip.ZipFile;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
@@ -335,24 +335,31 @@ public class GameLocator implements IModFileCandidateLocator {
 
     private void preventLoadingOfObfuscatedClientJar(ILaunchContext context, ClassLoader ourCl) {
         try {
-            var jarsWithEntrypoint = new HashSet<Path>();
-
-            var resources = ourCl.getResources("net/minecraft/client/main/Main.class");
+            var resources = ourCl.getResources(RequiredSystemFiles.COMMON_CLASS);
             while (resources.hasMoreElements()) {
-                jarsWithEntrypoint.add(ClasspathResourceUtils.findJarPathFor("net/minecraft/client/main/Main.class", "minecraft jar", resources.nextElement()));
-            }
+                Path jarPath = ClasspathResourceUtils.findJarPathFor(RequiredSystemFiles.COMMON_CLASS, "minecraft jar", resources.nextElement());
+                try (var zip = new ZipFile(jarPath.toFile())) {
+                    // An unmodified Minecraft Jar must have the resources too
+                    if (zip.getEntry(RequiredSystemFiles.COMMON_RESOURCE_ROOT) == null) {
+                        continue;
+                    }
+                    // If the client class is in it, also make sure it has the client resources and vice-versa
+                    boolean hasClientClasses = zip.getEntry(RequiredSystemFiles.CLIENT_CLASS) != null;
+                    boolean hasClientResources = zip.getEntry(RequiredSystemFiles.CLIENT_RESOURCE_ROOT) != null;
+                    if (hasClientClasses != hasClientResources) {
+                        continue;
+                    }
 
-            // This class would only be present in deobfuscated jars
-            resources = ourCl.getResources("net/minecraft/client/Minecraft.class");
-            while (resources.hasMoreElements()) {
-                jarsWithEntrypoint.remove(ClasspathResourceUtils.findJarPathFor("net/minecraft/client/Minecraft.class", "minecraft jar", resources.nextElement()));
-            }
+                    // If it has a neoforge.mods.toml, it's likely a patched Minecraft
+                    if (zip.getEntry("META-INF/neoforge.mods.toml") != null) {
+                        continue;
+                    }
 
-            for (Path path : jarsWithEntrypoint) {
-                LOG.info("Marking obfuscated client jar as claimed to prevent loading: {}", path);
-                context.addLocated(path);
+                    LOG.info("Marking unmodified client jar as claimed to prevent loading: {}", jarPath);
+                    context.addLocated(jarPath);
+                    return;
+                } catch (IOException ignored) {}
             }
-
         } catch (IOException ignored) {}
     }
 
