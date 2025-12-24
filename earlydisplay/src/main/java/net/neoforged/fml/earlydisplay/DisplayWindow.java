@@ -166,7 +166,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         } else {
             try (var lines = Files.lines(FMLPaths.GAMEDIR.get().resolve(Paths.get("options.txt")))) {
                 this.darkMode = lines
-                        .filter(l -> l.startsWith("darkMojangStudiosBackground"))
+                        .filter(l -> l.startsWith("darkMojangStudiosBackground:"))
                         .findAny()
                         .filter(l -> l.toLowerCase(Locale.ROOT).endsWith("true"))
                         .isPresent();
