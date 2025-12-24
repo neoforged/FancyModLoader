@@ -64,7 +64,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 import joptsimple.OptionParser;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.earlydisplay.error.ErrorDisplay;
@@ -165,10 +164,12 @@ public class DisplayWindow implements ImmediateWindowProvider {
         if (Boolean.getBoolean("fml.earlyWindowDarkMode")) {
             this.darkMode = true;
         } else {
-            try {
-                var optionLines = Files.readAllLines(FMLPaths.GAMEDIR.get().resolve(Paths.get("options.txt")));
-                var options = optionLines.stream().map(l -> l.split(":")).filter(a -> a.length == 2).collect(Collectors.toMap(a -> a[0], a -> a[1]));
-                this.darkMode = Boolean.parseBoolean(options.getOrDefault("darkMojangStudiosBackground", "false"));
+            try (var lines = Files.lines(FMLPaths.GAMEDIR.get().resolve(Paths.get("options.txt")))) {
+                this.darkMode = lines
+                        .filter(l -> l.startsWith("darkMojangStudiosBackground:"))
+                        .findAny()
+                        .filter(l -> l.toLowerCase(Locale.ROOT).endsWith("true"))
+                        .isPresent();
             } catch (NoSuchFileException ignored) {
                 // No options
             } catch (IOException e) {
