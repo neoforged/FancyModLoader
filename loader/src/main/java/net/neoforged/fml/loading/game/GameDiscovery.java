@@ -24,7 +24,6 @@ import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.MavenCoordinate;
-import net.neoforged.fml.loading.ProgramArgs;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.locators.NeoForgeDevDistCleaner;
@@ -35,6 +34,7 @@ import net.neoforged.neoforgespi.LocatedPaths;
 import net.neoforged.neoforgespi.installation.GameDiscoveryOrInstallationService;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
+import net.neoforged.neoforgespi.locating.IncompatibleFileReporting;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -50,14 +50,10 @@ public final class GameDiscovery {
 
     private GameDiscovery() {}
 
-    public static GameDiscoveryResult discoverGame(ProgramArgs programArgs, LocatedPaths locatedPaths, Dist requiredDist, @Nullable GameDiscoveryOrInstallationService gameDiscoveryOrInstallationService) {
+    public static GameDiscoveryResult discoverGame(LocatedPaths locatedPaths, Dist requiredDist, @Nullable GameDiscoveryOrInstallationService gameDiscoveryOrInstallationService) {
         var ourCl = Thread.currentThread().getContextClassLoader();
 
-        var neoForgeVersion = getNeoForgeVersion(programArgs, ourCl);
-
-        programArgs.remove("fml.neoForgeVersion");
-        programArgs.remove("fml.neoFormVersion"); // Remove legacy arguments
-        programArgs.remove("fml.mcVersion"); // Remove legacy arguments
+        var neoForgeVersion = getNeoForgeVersion(ourCl);
 
         // 0) Vanilla Launcher puts the obfuscated jar on the classpath. We mark it as claimed to prevent it from
         // being hoisted into a module, occupying the entrypoint packages.
@@ -80,18 +76,16 @@ public final class GameDiscovery {
         return locateProductionMinecraft(neoForgeVersion, requiredDist, gameDiscoveryOrInstallationService);
     }
 
-    private static String getNeoForgeVersion(ProgramArgs programArgs, ClassLoader ourCl) {
+    private static String getNeoForgeVersion(ClassLoader ourCl) {
         var neoForgeVersion = getNeoForgeVersionFromClasspath(ourCl);
+
         if (neoForgeVersion == null) {
-            neoForgeVersion = programArgs.get("fml.neoForgeVersion");
-            if (neoForgeVersion == null) {
-                LOG.error("NeoForge version must be known to launch FML, in normal environments this is set as a command-line option (--fml.neoForgeVersion)");
-                throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation"));
-            }
-            LOG.debug("Using NeoForge version found on commandline: {}", neoForgeVersion);
-        } else {
-            LOG.debug("Using NeoForge version found on classpath: {}", neoForgeVersion);
+            LOG.error("Could not load the NeoForge version from the version properties file.");
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation"));
         }
+
+        LOG.debug("Locate NeoForge version: {}", neoForgeVersion);
+
         return neoForgeVersion;
     }
 
@@ -110,11 +104,6 @@ public final class GameDiscovery {
         }
     }
 
-    @Nullable
-    private static ModFile readModFile(JarContents jarContents) {
-        return (ModFile) new JarModsDotTomlModFileReader().read(jarContents, ModFileDiscoveryAttributes.DEFAULT);
-    }
-
     private static GameDiscoveryResult handleMergedMinecraftAndNeoForgeJar(Dist requiredDist, LocatedPaths locatedPaths, RequiredSystemFiles systemFiles) {
         LOG.info("Detected a joined NeoForge and Minecraft configuration. Applying filtering...");
 
@@ -122,7 +111,7 @@ public final class GameDiscovery {
         ModFile minecraftModFile;
         if (mcJarContents.containsFile("META-INF/neoforged.mods.toml")) {
             // In this branch, the jar already has a neoforge.mods.toml
-            minecraftModFile = readModFile(mcJarContents);
+            minecraftModFile = (ModFile) new JarModsDotTomlModFileReader().read(mcJarContents, ModFileDiscoveryAttributes.DEFAULT);
             if (minecraftModFile == null) {
                 throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.corrupted_minecraft_jar"));
             }
@@ -178,8 +167,7 @@ public final class GameDiscovery {
                     + systemFiles.getCommonResources() + " and " + systemFiles.getNeoForgeResources());
         }
 
-        var mcJarRoots = new ArrayList<JarContents.FilteredPath>();
-        mcJarRoots.addAll(getMinecraftResourcesRoots(requiredDist, systemFiles));
+        var mcJarRoots = new ArrayList<>(getMinecraftResourcesRoots(requiredDist, systemFiles));
 
         JarContents.PathFilter mcClassesFilter = relativePath -> {
             if (relativePath.endsWith(".class")) {
@@ -401,7 +389,7 @@ public final class GameDiscovery {
                     }
 
                     LOG.info("Marking unmodified client jar as claimed to prevent loading: {}", jarPath);
-                    context.addLocated(jarPath);
+                    locatedPaths.addLocated(jarPath);
                     return;
                 } catch (IOException ignored) {}
             }

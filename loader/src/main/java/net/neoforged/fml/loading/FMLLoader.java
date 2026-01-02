@@ -155,17 +155,19 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     private FMLLoader(LocatedPaths locatedPaths,
-            ClassLoaderStack classLoaderStack,
-            GameDiscoveryResult discoveredGame,
-            ProgramArgs programArgs,
-            Dist dist,
-            Path gameDir) {
+                      ClassLoaderStack classLoaderStack,
+                      List<ModFile> earlyServiceJars,
+                      GameDiscoveryResult discoveredGame,
+                      ProgramArgs programArgs,
+                      Dist dist,
+                      Path gameDir) {
         this.locatedPaths = locatedPaths;
         this.classLoaderStack = classLoaderStack;
         this.discoveredGame = discoveredGame;
         this.programArgs = programArgs;
         this.dist = dist;
         this.gameDir = gameDir;
+        this.earlyServicesJars.addAll(earlyServiceJars);
 
         makeCurrent();
     }
@@ -316,7 +318,7 @@ public final class FMLLoader implements AutoCloseable {
 
         var gameInstallationService = discoverGameInstaller(locatedPaths, programArgs);
 
-        var discoveredGame = runLongRunning(startupArgs, () -> GameDiscovery.discoverGame(programArgs, locatedPaths, dist, gameInstallationService));
+        var discoveredGame = runLongRunning(startupArgs, () -> GameDiscovery.discoverGame(locatedPaths, dist, gameInstallationService));
         var neoForgeVersion = discoveredGame.neoforge().getModFileInfo().versionString();
         var minecraftVersion = discoveredGame.minecraft().getModFileInfo().versionString();
 
@@ -324,10 +326,8 @@ public final class FMLLoader implements AutoCloseable {
         ImmediateWindowHandler.setNeoForgeVersion(neoForgeVersion);
         ImmediateWindowHandler.setMinecraftVersion(minecraftVersion);
 
-        var loader = new FMLLoader(locatedPaths, classLoaderStack, discoveredGame, programArgs, dist, startupArgs.gameDirectory());
+        var loader = new FMLLoader(locatedPaths, classLoaderStack, earlyServiceJars, discoveredGame, programArgs, dist, startupArgs.gameDirectory());
         try {
-            loader.earlyServicesJars.addAll(earlyServiceJars);
-
             var discoveryResult = runLongRunning(startupArgs, loader::runDiscovery);
             for (var issue : discoveryResult.discoveryIssues()) {
                 LOGGER.atLevel(issue.severity() == ModLoadingIssue.Severity.ERROR ? Level.ERROR : Level.WARN)
@@ -538,7 +538,7 @@ public final class FMLLoader implements AutoCloseable {
 
     private static List<ModFile> loadEarlyServices(ClassLoaderStack classLoaderStack, StartupArgs startupArgs) {
         // Search for early services
-        var earlyServicesJars = new ArrayList<>(EarlyServiceDiscovery.findEarlyServiceJars(startupArgs, FMLPaths.MODSDIR.get()));
+        var earlyServicesJars = EarlyServiceDiscovery.findEarlyServiceJars(startupArgs, FMLPaths.MODSDIR.get());
         if (!earlyServicesJars.isEmpty()) {
             classLoaderStack.appendLoader("FML Early Services", earlyServicesJars.stream().map(IModFile::getContents).toList());
         }
