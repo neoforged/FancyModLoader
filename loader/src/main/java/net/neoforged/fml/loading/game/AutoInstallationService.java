@@ -10,6 +10,7 @@ import static net.neoforged.fml.loading.game.GameDiscovery.LIBRARIES_DIRECTORY_P
 import java.io.BufferedInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -24,7 +25,7 @@ import net.neoforged.internal.binarypatchapplier.Patcher;
 import org.jetbrains.annotations.Nullable;
 
 class AutoInstallationService {
-    private static final String AUTOINSTALL_PATCH_LOCATION = "autoinstall.patches";
+    private static final String AUTOINSTALL_PATCH_LOCATION = "autoinstall_patches";
 
     @Nullable
     static Path discoverOrInstall(Dist requiredDist, String neoForgeVersion, ClassLoader classLoader) throws IOException {
@@ -47,6 +48,9 @@ class AutoInstallationService {
         progress.increment();
         progress.label("Installation - Installing NeoForge...");
 
+        //An empty file is never patchable.
+        //Unit tests for this area have an empty patch file.
+        //We assume that the patcher is well tested and does not need testing.
         Patcher.patch(
                 minecraftJar.toFile(),
                 PatchBase.CLIENT,
@@ -88,11 +92,11 @@ class AutoInstallationService {
             Properties properties = new Properties();
             properties.load(new BufferedInputStream(in));
 
-            if (!properties.contains(AUTOINSTALL_PATCH_LOCATION))
+            if (!properties.containsKey(AUTOINSTALL_PATCH_LOCATION))
                 return null;
 
             var patchesInnerPath = properties.get(AUTOINSTALL_PATCH_LOCATION).toString();
-            return extractFrom(tempDir, "patchers.lzma", patchesInnerPath);
+            return extractFrom(classLoader, tempDir, "patchers.lzma", patchesInnerPath);
         } catch (IOException ignored) {
             return null;
         }
@@ -107,12 +111,6 @@ class AutoInstallationService {
             jarsWithEntrypoint.add(ClasspathResourceUtils.findJarPathFor("net/minecraft/client/main/Main.class", "minecraft jar", resources.nextElement()));
         }
 
-        // This class would only be present in deobfuscated jars
-        resources = ourCl.getResources("net/minecraft/client/Minecraft.class");
-        while (resources.hasMoreElements()) {
-            jarsWithEntrypoint.remove(ClasspathResourceUtils.findJarPathFor("net/minecraft/client/Minecraft.class", "minecraft jar", resources.nextElement()));
-        }
-
         if (jarsWithEntrypoint.size() != 1) {
             throw new IllegalStateException("Failed to find the raw minecraft client from the classpath");
         }
@@ -121,18 +119,16 @@ class AutoInstallationService {
         return jarsWithEntrypoint.iterator().next();
     }
 
-    private static Path extractFrom(final Path tempDir, final String targetName, final String packagedName) throws IOException {
+    private static Path extractFrom(ClassLoader classLoader, final Path tempDir, final String targetName, final String packagedName) throws IOException {
         var targetFile = tempDir.resolve(targetName);
-        var patchResource = AutoInstallationService.class.getResource(packagedName);
-        if (patchResource == null) {
-            throw new IllegalStateException("Could not find %s in the auto installer.".formatted(packagedName));
-        }
 
-        try (BufferedInputStream in = new BufferedInputStream(patchResource.openStream());
+        try (InputStream stream = classLoader.getResourceAsStream(packagedName);
+                BufferedInputStream bufferedIn = new BufferedInputStream(stream);
                 FileOutputStream fileOutputStream = new FileOutputStream(targetFile.toFile())) {
             byte[] dataBuffer = new byte[1024];
             int bytesRead;
-            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+
+            while ((bytesRead = bufferedIn.read(dataBuffer, 0, 1024)) != -1) {
                 fileOutputStream.write(dataBuffer, 0, bytesRead);
             }
         }

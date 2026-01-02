@@ -8,6 +8,7 @@ package net.neoforged.fml.loading;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
@@ -406,12 +407,16 @@ public abstract class LauncherTest {
     }
 
     public void assertNeoForgeJar(LaunchResult launchResult) throws IOException {
-        var expectedContent = List.of(
+        var expectedContent = Lists.newArrayList(
                 SimulatedInstallation.NEOFORGE_ASSETS,
                 SimulatedInstallation.NEOFORGE_CLASSES,
                 SimulatedInstallation.NEOFORGE_CLIENT_CLASSES,
                 SimulatedInstallation.NEOFORGE_MODS_TOML,
-                SimulatedInstallation.NEOFORGE_MANIFEST);
+                SimulatedInstallation.NEOFORGE_MANIFEST,
+                installation.getNeoForgeVersionProperties());
+
+        if (installation.getPatches() != null)
+            expectedContent.add(installation.getPatches());
 
         assertModContent(launchResult, "neoforge", expectedContent);
     }

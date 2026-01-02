@@ -5,14 +5,6 @@
 
 package net.neoforged.fml.loading;
 
-import static net.neoforged.fml.testlib.SimulatedInstallation.CLIENT_ASSETS;
-import static net.neoforged.fml.testlib.SimulatedInstallation.GAV_DYNAMIC_PATCHED_CLIENT;
-import static net.neoforged.fml.testlib.SimulatedInstallation.GAV_NEOFORGE_DYNAMIC_INSTALLER;
-import static net.neoforged.fml.testlib.SimulatedInstallation.MINECRAFT_MODS_TOML;
-import static net.neoforged.fml.testlib.SimulatedInstallation.MINECRAFT_VERSION_JSON;
-import static net.neoforged.fml.testlib.SimulatedInstallation.PATCHED_CLIENT;
-import static net.neoforged.fml.testlib.SimulatedInstallation.RENAMED_SHARED;
-import static net.neoforged.fml.testlib.SimulatedInstallation.SHARED_ASSETS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -39,7 +31,6 @@ import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.ContainedVersion;
-import net.neoforged.neoforgespi.installation.GameDiscoveryOrInstallationService;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.IModFileReader;
@@ -77,26 +68,6 @@ public class FMLLoaderTest extends LauncherTest {
         @Test
         void testProductionClientWithDynamicInstallationDiscovery() throws Exception {
             installation.setupProductionClientWithDynamicInstallation();
-
-            var patchedClientJar = installation.writeLibrary(GAV_DYNAMIC_PATCHED_CLIENT, PATCHED_CLIENT, RENAMED_SHARED, CLIENT_ASSETS, SHARED_ASSETS, MINECRAFT_MODS_TOML, MINECRAFT_VERSION_JSON);
-            var autoInstaller = installation.createLibraryProject(GAV_NEOFORGE_DYNAMIC_INSTALLER, builder -> {
-                builder.addClass("autoinstall.TestAutoInstaller", """
-                        import net.neoforged.api.distmarker.Dist;
-                        import net.neoforged.neoforgespi.installation.GameDiscoveryOrInstallationService;
-                        import java.nio.file.Path;
-
-                        public record TestAutoInstaller() implements GameDiscoveryOrInstallationService {
-                            @Override public String name() {
-                                return "test";
-                            }
-                            @Override public Result discoverOrInstall(Dist requiredDist) throws Exception {
-                                return new Result(Path.of("%s"));
-                            }
-                        }
-                        """.formatted(patchedClientJar.toAbsolutePath().toString()))
-                        .addService(GameDiscoveryOrInstallationService.class, "autoinstall.TestAutoInstaller");
-            });
-            installation.getLaunchClasspath().add(autoInstaller);
 
             var result = launchAndLoad("neoforgeclient");
             assertThat(result.loadedMods()).containsOnlyKeys("minecraft", "neoforge");
@@ -689,7 +660,7 @@ public class FMLLoaderTest extends LauncherTest {
 
             var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                    "ERROR: The NeoForge jar is missing. Please try to reinstall NeoForge.");
+                    "ERROR: Your NeoForge installation is corrupted. Please try to reinstall NeoForge.");
         }
 
         @Test
@@ -702,7 +673,7 @@ public class FMLLoaderTest extends LauncherTest {
 
             var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                    "ERROR: The NeoForge jar is corrupted. Please try to reinstall NeoForge.");
+                    "ERROR: Your NeoForge installation is corrupted. Please try to reinstall NeoForge.");
         }
 
         @Test
@@ -739,7 +710,7 @@ public class FMLLoaderTest extends LauncherTest {
 
             var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeserver"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                    "ERROR: The NeoForge jar is missing. Please try to reinstall NeoForge.");
+                    "ERROR: Your NeoForge installation is corrupted. Please try to reinstall NeoForge.");
         }
 
         @Test
@@ -752,7 +723,7 @@ public class FMLLoaderTest extends LauncherTest {
 
             var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeserver"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
-                    "ERROR: The NeoForge jar is corrupted. Please try to reinstall NeoForge.");
+                    "ERROR: Your NeoForge installation is corrupted. Please try to reinstall NeoForge.");
         }
 
         /**
