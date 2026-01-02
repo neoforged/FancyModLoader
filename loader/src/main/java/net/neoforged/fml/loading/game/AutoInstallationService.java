@@ -1,12 +1,6 @@
 package net.neoforged.fml.loading.game;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.MavenCoordinate;
-import net.neoforged.fml.loading.progress.StartupNotificationManager;
-import net.neoforged.fml.util.ClasspathResourceUtils;
-import net.neoforged.internal.binarypatchapplier.PatchBase;
-import net.neoforged.internal.binarypatchapplier.Patcher;
-import org.jetbrains.annotations.Nullable;
+import static net.neoforged.fml.loading.game.GameDiscovery.LIBRARIES_DIRECTORY_PROPERTY;
 
 import java.io.BufferedInputStream;
 import java.io.FileOutputStream;
@@ -16,11 +10,15 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
-
-import static net.neoforged.fml.loading.game.GameDiscovery.LIBRARIES_DIRECTORY_PROPERTY;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.MavenCoordinate;
+import net.neoforged.fml.loading.progress.StartupNotificationManager;
+import net.neoforged.fml.util.ClasspathResourceUtils;
+import net.neoforged.internal.binarypatchapplier.PatchBase;
+import net.neoforged.internal.binarypatchapplier.Patcher;
+import org.jetbrains.annotations.Nullable;
 
 class AutoInstallationService {
-
     private static final String AUTOINSTALL_PATCH_LOCATION = "autoinstall.patches";
 
     @Nullable
@@ -41,7 +39,6 @@ class AutoInstallationService {
         var minecraftJar = getRawMinecraftClientJar();
         var output = tempDir.resolve("client.jar");
 
-
         progress.increment();
         progress.label("Installation - Installing NeoForge...");
 
@@ -51,7 +48,7 @@ class AutoInstallationService {
                 List.of(patchesPath.toFile()),
                 output.toFile(),
                 (ignored) -> {} //We are not outputting debugging information at the moment.
-                );
+        );
 
         progress.increment();
         progress.label("Installation - Finalizing changes...");
@@ -127,7 +124,7 @@ class AutoInstallationService {
         }
 
         try (BufferedInputStream in = new BufferedInputStream(patchResource.openStream());
-             FileOutputStream fileOutputStream = new FileOutputStream(targetFile.toFile())) {
+                FileOutputStream fileOutputStream = new FileOutputStream(targetFile.toFile())) {
             byte[] dataBuffer = new byte[1024];
             int bytesRead;
             while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {

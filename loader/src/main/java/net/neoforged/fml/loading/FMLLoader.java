@@ -154,12 +154,12 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     private FMLLoader(LocatedPaths locatedPaths,
-                      ClassLoaderStack classLoaderStack,
-                      List<ModFile> earlyServiceJars,
-                      GameDiscoveryResult discoveredGame,
-                      ProgramArgs programArgs,
-                      Dist dist,
-                      Path gameDir) {
+            ClassLoaderStack classLoaderStack,
+            List<ModFile> earlyServiceJars,
+            GameDiscoveryResult discoveredGame,
+            ProgramArgs programArgs,
+            Dist dist,
+            Path gameDir) {
         this.locatedPaths = locatedPaths;
         this.classLoaderStack = classLoaderStack;
         this.discoveredGame = discoveredGame;
