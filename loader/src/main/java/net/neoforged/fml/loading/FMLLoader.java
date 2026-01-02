@@ -71,7 +71,6 @@ import net.neoforged.fml.util.PathPrettyPrinting;
 import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.LocatedPaths;
-import net.neoforged.neoforgespi.installation.GameDiscoveryOrInstallationService;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
@@ -316,9 +315,7 @@ public final class FMLLoader implements AutoCloseable {
 
         ImmediateWindowHandler.load(locatedPaths, startupArgs.headless(), programArgs);
 
-        var gameInstallationService = discoverGameInstaller(locatedPaths, programArgs);
-
-        var discoveredGame = runLongRunning(startupArgs, () -> GameDiscovery.discoverGame(locatedPaths, dist, gameInstallationService));
+        var discoveredGame = runLongRunning(startupArgs, () -> GameDiscovery.discoverGame(locatedPaths, dist));
         var neoForgeVersion = discoveredGame.neoforge().getModFileInfo().versionString();
         var minecraftVersion = discoveredGame.minecraft().getModFileInfo().versionString();
 
@@ -400,41 +397,6 @@ public final class FMLLoader implements AutoCloseable {
             }
             throw e;
         }
-    }
-
-    @Nullable
-    private static GameDiscoveryOrInstallationService discoverGameInstaller(LocatedPaths located, ProgramArgs programArgs) {
-        if (programArgs.hasValue("fml.disableInstaller"))
-            return null;
-
-        var providers = ServiceLoaderUtil.loadEarlyServices(located, GameDiscoveryOrInstallationService.class, List.of())
-                .stream()
-                .toList();
-
-        if (providers.size() == 1)
-            return providers.getFirst();
-
-        if (providers.isEmpty()) {
-            LOGGER.error("No installation provider found!");
-            return null;
-        }
-
-        if (!programArgs.hasValue("fml.installer")) {
-            LOGGER.warn("Failed to find game installer, multiple are found, but no selector is provided!");
-            return null;
-        }
-
-        var installerName = programArgs.get("fml.installer");
-        var installer = providers.stream()
-                .filter(p -> Objects.equals(p.name(), installerName))
-                .findFirst();
-
-        if (installer.isEmpty()) {
-            LOGGER.error("Requested installer: {} was not found in: {}", installerName, providers.stream().map(GameDiscoveryOrInstallationService::name).collect(Collectors.joining(", ")));
-            return null;
-        }
-
-        return installer.get();
     }
 
     private static ClassProcessorSet createClassProcessorSet(StartupArgs startupArgs,

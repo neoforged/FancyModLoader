@@ -24,7 +24,6 @@ import net.neoforged.fml.startup.FatalStartupException;
 import net.neoforged.fml.startup.StartupArgs;
 import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
 import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
-import net.neoforged.neoforgespi.installation.GameDiscoveryOrInstallationService;
 import net.neoforged.neoforgespi.locating.IDependencyLocator;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
@@ -40,8 +39,7 @@ final class EarlyServiceDiscovery {
             IModFileReader.class,
             IDependencyLocator.class,
             GraphicsBootstrapper.class,
-            ImmediateWindowProvider.class,
-            GameDiscoveryOrInstallationService.class);
+            ImmediateWindowProvider.class);
 
     private EarlyServiceDiscovery() {}
 

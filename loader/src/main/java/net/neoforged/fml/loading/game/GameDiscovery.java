@@ -31,10 +31,8 @@ import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReade
 import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.fml.util.PathPrettyPrinting;
 import net.neoforged.neoforgespi.LocatedPaths;
-import net.neoforged.neoforgespi.installation.GameDiscoveryOrInstallationService;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
-import net.neoforged.neoforgespi.locating.IncompatibleFileReporting;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -50,7 +48,7 @@ public final class GameDiscovery {
 
     private GameDiscovery() {}
 
-    public static GameDiscoveryResult discoverGame(LocatedPaths locatedPaths, Dist requiredDist, @Nullable GameDiscoveryOrInstallationService gameDiscoveryOrInstallationService) {
+    public static GameDiscoveryResult discoverGame(LocatedPaths locatedPaths, Dist requiredDist) {
         var ourCl = Thread.currentThread().getContextClassLoader();
 
         var neoForgeVersion = getNeoForgeVersion(ourCl);
@@ -73,7 +71,7 @@ public final class GameDiscovery {
         }
 
         // In production, it's in the libraries directory, and we're passed the version to look for on the commandline
-        return locateProductionMinecraft(neoForgeVersion, requiredDist, gameDiscoveryOrInstallationService);
+        return locateProductionMinecraft(neoForgeVersion, requiredDist, ourCl);
     }
 
     private static String getNeoForgeVersion(ClassLoader ourCl) {
@@ -279,7 +277,7 @@ public final class GameDiscovery {
     /**
      * In production, the client and neoforge jars are assembled from partial jars in the libraries folder.
      */
-    private static GameDiscoveryResult locateProductionMinecraft(String neoForgeVersion, Dist requiredDist, @Nullable GameDiscoveryOrInstallationService gameDiscoveryOrInstallationService) {
+    private static GameDiscoveryResult locateProductionMinecraft(String neoForgeVersion, Dist requiredDist, ClassLoader classLoader) {
         // 2) It's neither, but a libraries directory and desired versions are given on the commandline
         var librariesDirectory = System.getProperty(LIBRARIES_DIRECTORY_PROPERTY);
         if (librariesDirectory == null) {
@@ -311,19 +309,17 @@ public final class GameDiscovery {
         var nfModFile = openModFile(neoforgeJar, "neoforge", "fml.modloadingissue.corrupted_neoforge_jar");
 
         if (!Files.exists(patchedMinecraftPath)) {
-            if (gameDiscoveryOrInstallationService != null) {
-                LOG.info("Patched minecraft does not exist. Triggering external discovery or installation service!");
-                try {
-                    var result = gameDiscoveryOrInstallationService.discoverOrInstall(requiredDist);
-                    if (result != null) {
-                        patchedMinecraftPath = result.minecraft();
-                    } else {
-                        LOG.info("Game discovery or installation service: {} did not return a result. Skipping.", gameDiscoveryOrInstallationService.name());
-                    }
-                } catch (Throwable e) {
-                    nfModFile.close();
-                    throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.discovery_service_failure").withCause(e).withSeverity(ModLoadingIssue.Severity.ERROR));
+            LOG.info("Patched minecraft does not exist. Triggering external discovery or installation service!");
+            try {
+                var result = AutoInstallationService.discoverOrInstall(requiredDist, classLoader);
+                if (result != null) {
+                    patchedMinecraftPath = result.minecraft();
+                } else {
+                    LOG.info("Game discovery or installation service did not return a result. Skipping.");
                 }
+            } catch (Throwable e) {
+                nfModFile.close();
+                throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.discovery_service_failure").withCause(e).withSeverity(ModLoadingIssue.Severity.ERROR));
             }
         }
 
