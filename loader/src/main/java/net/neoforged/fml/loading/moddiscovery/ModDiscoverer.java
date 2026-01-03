@@ -69,6 +69,10 @@ public class ModDiscoverer {
         List<ModFile> loadedFiles = new ArrayList<>();
         loadedFiles.add(gameDiscoveryResult.minecraft());
         loadedFiles.add(gameDiscoveryResult.neoforge());
+
+        launchContext.addLocated(gameDiscoveryResult.minecraft().getFilePath());
+        launchContext.addLocated(gameDiscoveryResult.neoforge().getFilePath());
+
         List<ModLoadingIssue> discoveryIssues = new ArrayList<>();
         boolean successfullyLoadedMods = true;
         ImmediateWindowHandler.updateProgress("Discovering mod files");
