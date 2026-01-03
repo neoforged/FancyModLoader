@@ -300,12 +300,12 @@ public final class FMLLoader implements AutoCloseable {
 
             @Override
             public boolean isLocated(Path path) {
-                return paths.contains(path.toAbsolutePath());
+                return paths.contains(path.toAbsolutePath().normalize());
             }
 
             @Override
             public boolean addLocated(Path path) {
-                return paths.add(path.toAbsolutePath());
+                return paths.add(path.toAbsolutePath().normalize());
             }
         };
 
