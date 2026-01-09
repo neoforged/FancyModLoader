@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.List;
+import java.util.function.Supplier;
+
 import net.neoforged.fml.earlydisplay.render.RenderContext;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import net.neoforged.fml.earlydisplay.render.Texture;
@@ -25,11 +27,15 @@ final class Button {
     private final int width;
     private final int height;
     private final String text;
-    private final boolean active;
+    private final Supplier<Boolean> active;
     private final Runnable onPress;
     private boolean focused;
 
     Button(ErrorDisplayWindow window, int x, int y, int width, int height, String text, boolean active, Runnable onPress) {
+        this(window, x, y, width, height, text, () -> active, onPress);
+    }
+
+    Button(ErrorDisplayWindow window, int x, int y, int width, int height, String text, Supplier<Boolean> active, Runnable onPress) {
         this.window = window;
         this.x = x;
         this.y = y;
@@ -41,13 +47,13 @@ final class Button {
     }
 
     void render(RenderContext ctx, SimpleFont font, double mouseX, double mouseY) {
-        boolean highlighted = active && (focused || isMouseOver(mouseX, mouseY));
-        Texture texture = active ? (highlighted ? window.buttonTextureHover : window.buttonTexture) : window.buttonTextureInactive;
+        boolean highlighted = isActive() && (focused || isMouseOver(mouseX, mouseY));
+        Texture texture = isActive() ? (highlighted ? window.buttonTextureHover : window.buttonTexture) : window.buttonTextureInactive;
         ctx.blitTexture(texture, x, y, width, height);
 
         int w = font.stringWidth(text);
         float tx = x + width / 2F - w / 2F;
-        int textColor = active ? 0xFFFFFFFF : 0xFFA0A0A0;
+        int textColor = isActive() ? 0xFFFFFFFF : 0xFFA0A0A0;
         ctx.renderTextWithShadow(tx, y + 2, font, List.of(new SimpleFont.DisplayText(text, textColor)));
     }
 
@@ -56,7 +62,7 @@ final class Button {
     }
 
     boolean isActive() {
-        return active;
+        return active.get();
     }
 
     boolean isFocused() {
@@ -72,7 +78,7 @@ final class Button {
     }
 
     void press() {
-        if (this.active) {
+        if (isActive()) {
             this.onPress.run();
         }
     }

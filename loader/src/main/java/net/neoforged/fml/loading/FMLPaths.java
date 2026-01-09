@@ -19,7 +19,9 @@ import org.slf4j.Logger;
 
 public enum FMLPaths {
     GAMEDIR(),
-    JIJ_CACHEDIR(".cache/jij"),
+    CACHEDIR(".cache"),
+    JIJ_CACHEDIR(true, CACHEDIR, "jij"),
+    AUTOINSTALL_CACHEDIR(true, CACHEDIR, "autoinstall"),
     MODSDIR("mods"),
     CONFIGDIR("config"),
     FMLCONFIG(false, CONFIGDIR, "fml.toml");

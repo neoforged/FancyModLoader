@@ -23,6 +23,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.jarcontents.JarContents;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.MavenCoordinate;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
@@ -35,6 +36,7 @@ import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.jetbrains.annotations.Nullable;
+import org.jline.utils.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -309,17 +311,25 @@ public final class GameDiscovery {
         var nfModFile = openModFile(neoforgeJar, "neoforge", "fml.modloadingissue.corrupted_neoforge_jar");
 
         if (!Files.exists(patchedMinecraftPath)) {
-            LOG.info("Patched minecraft does not exist. Triggering external discovery or installation service!");
-            try {
-                var result = AutoInstallationService.discoverOrInstall(requiredDist, neoForgeVersion, classLoader);
-                if (result != null) {
-                    patchedMinecraftPath = result;
-                } else {
-                    LOG.info("Game discovery or installation service did not return a result. Skipping.");
+            Log.debug("Preinstalled Minecraft does not exist. Checking FML Cache path...");
+            patchedMinecraftPath = FMLPaths.AUTOINSTALL_CACHEDIR.get().resolve((switch (requiredDist) {
+                case CLIENT -> new MavenCoordinate("net.neoforged", "minecraft-client-patched", "", "", neoForgeVersion);
+                case DEDICATED_SERVER -> new MavenCoordinate("net.neoforged", "minecraft-server-patched", "", "", neoForgeVersion);
+            }).toRelativeRepositoryPath());
+
+            if (!Files.exists(patchedMinecraftPath)) {
+                LOG.info("Patched Minecraft does not exist. Triggering external discovery or installation service!");
+                try {
+                    var result = AutoInstallationService.discoverOrInstall(requiredDist, neoForgeVersion, classLoader);
+                    if (result != null) {
+                        patchedMinecraftPath = result;
+                    } else {
+                        LOG.info("Game discovery or installation service did not return a result. Skipping.");
+                    }
+                } catch (Throwable e) {
+                    nfModFile.close();
+                    throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.discovery_service_failure").withCause(e).withSeverity(ModLoadingIssue.Severity.ERROR));
                 }
-            } catch (Throwable e) {
-                nfModFile.close();
-                throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.discovery_service_failure").withCause(e).withSeverity(ModLoadingIssue.Severity.ERROR));
             }
         }
 

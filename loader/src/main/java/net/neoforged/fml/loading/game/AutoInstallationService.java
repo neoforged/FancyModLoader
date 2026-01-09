@@ -5,27 +5,39 @@
 
 package net.neoforged.fml.loading.game;
 
-import static net.neoforged.fml.loading.game.GameDiscovery.LIBRARIES_DIRECTORY_PROPERTY;
-
 import java.io.BufferedInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Properties;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.MavenCoordinate;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.internal.binarypatchapplier.PatchBase;
 import net.neoforged.internal.binarypatchapplier.Patcher;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class AutoInstallationService {
+    private static final Logger LOG = LoggerFactory.getLogger(AutoInstallationService.class);
     private static final String AUTOINSTALL_PATCH_LOCATION = "autoinstall_patches";
+
+    public static void uninstall(Dist distToUninstall, String neoForgeVersion) throws IOException {
+        var patchedMinecraftPath = FMLPaths.AUTOINSTALL_CACHEDIR.get().resolve((switch (distToUninstall) {
+            case CLIENT -> new MavenCoordinate("net.neoforged", "minecraft-client-patched", "", "", neoForgeVersion);
+            case DEDICATED_SERVER -> new MavenCoordinate("net.neoforged", "minecraft-server-patched", "", "", neoForgeVersion);
+        }).toRelativeRepositoryPath());
+
+        Files.deleteIfExists(patchedMinecraftPath);
+    }
 
     @Nullable
     static Path discoverOrInstall(Dist requiredDist, String neoForgeVersion, ClassLoader classLoader) throws IOException {
@@ -33,11 +45,12 @@ class AutoInstallationService {
             return null;
 
         var progress = StartupNotificationManager.addProgressBar("Installation", 3);
-        progress.label("Installation - Extracting resources...");
+        progress.label("Installation - Preparing resources...");
 
         var tempDir = Files.createTempDirectory("fml-auto-installer");
-        var patchesPath = extractPatchesPath(classLoader, tempDir);
-        if (patchesPath == null) {
+        var patchesStream = extractPatchesStream(classLoader);
+        if (patchesStream == null) {
+            LOG.warn("Failed to find patches. Could not perform auto installation!");
             progress.complete();
             return null;
         }
@@ -48,13 +61,11 @@ class AutoInstallationService {
         progress.increment();
         progress.label("Installation - Installing NeoForge...");
 
-        //An empty file is never patchable.
-        //Unit tests for this area have an empty patch file.
-        //We assume that the patcher is well tested and does not need testing.
         Patcher.patch(
                 minecraftJar.toFile(),
                 PatchBase.CLIENT,
-                List.of(patchesPath.toFile()),
+                "patches",
+                patchesStream,
                 output.toFile(),
                 (ignored) -> {} //We are not outputting debugging information at the moment.
         );
@@ -62,7 +73,7 @@ class AutoInstallationService {
         progress.increment();
         progress.label("Installation - Finalizing changes...");
 
-        var patchedMinecraftPath = copyToLibraries(neoForgeVersion, requiredDist, output);
+        var patchedMinecraftPath = copyToCacheDirectory(neoForgeVersion, requiredDist, output);
 
         progress.increment();
         progress.complete();
@@ -70,20 +81,18 @@ class AutoInstallationService {
         return patchedMinecraftPath;
     }
 
-    private static Path copyToLibraries(final String neoForgeVersion, final Dist dist, final Path output) throws IOException {
-        var librariesDirectory = System.getProperty(LIBRARIES_DIRECTORY_PROPERTY);
-        var patchedMinecraftPath = Path.of(librariesDirectory).resolve((switch (dist) {
+    private static Path copyToCacheDirectory(final String neoForgeVersion, final Dist dist, final Path output) throws IOException {
+        var patchedMinecraftPath = FMLPaths.AUTOINSTALL_CACHEDIR.get().resolve((switch (dist) {
             case CLIENT -> new MavenCoordinate("net.neoforged", "minecraft-client-patched", "", "", neoForgeVersion);
             case DEDICATED_SERVER -> new MavenCoordinate("net.neoforged", "minecraft-server-patched", "", "", neoForgeVersion);
         }).toRelativeRepositoryPath());
 
-        Files.createDirectories(patchedMinecraftPath.getParent());
-        Files.copy(output, patchedMinecraftPath);
+        moveInstallationIntoTarget(output, patchedMinecraftPath);
         return patchedMinecraftPath;
     }
 
     @Nullable
-    private static Path extractPatchesPath(ClassLoader classLoader, Path tempDir) {
+    private static InputStream extractPatchesStream(ClassLoader classLoader) {
         try (var in = classLoader.getResourceAsStream("net/neoforged/neoforge/common/version.properties")) {
             if (in == null) {
                 return null;
@@ -96,7 +105,7 @@ class AutoInstallationService {
                 return null;
 
             var patchesInnerPath = properties.get(AUTOINSTALL_PATCH_LOCATION).toString();
-            return extractFrom(classLoader, tempDir, "patchers.lzma", patchesInnerPath);
+            return classLoader.getResourceAsStream(patchesInnerPath);
         } catch (IOException ignored) {
             return null;
         }
@@ -119,20 +128,25 @@ class AutoInstallationService {
         return jarsWithEntrypoint.iterator().next();
     }
 
-    private static Path extractFrom(ClassLoader classLoader, final Path tempDir, final String targetName, final String packagedName) throws IOException {
-        var targetFile = tempDir.resolve(targetName);
-
-        try (InputStream stream = classLoader.getResourceAsStream(packagedName);
-                BufferedInputStream bufferedIn = new BufferedInputStream(stream);
-                FileOutputStream fileOutputStream = new FileOutputStream(targetFile.toFile())) {
-            byte[] dataBuffer = new byte[1024];
-            int bytesRead;
-
-            while ((bytesRead = bufferedIn.read(dataBuffer, 0, 1024)) != -1) {
-                fileOutputStream.write(dataBuffer, 0, bytesRead);
-            }
+    /**
+     * Atomically moves the extracted embedded jar file to its final location.
+     * If an atomic move is not supported, the file will be moved normally.
+     */
+    private static void moveInstallationIntoTarget(Path source, Path destination) {
+        try {
+            Files.createDirectories(destination.getParent());
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to create parent directory for installation " + source + " at " + destination, e);
         }
 
-        return targetFile;
+        try {
+            try {
+                Files.move(source, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException ex) {
+                Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to move installation " + source + " to its final location " + destination, e);
+        }
     }
 }

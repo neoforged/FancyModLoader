@@ -89,5 +89,7 @@
   "fml.button.open.log": "Open Log File",
   "fml.button.open.crashreport": "Open Crash Report",
   "fml.button.open.mods.folder": "Open Mods Folder",
-  "fml.button.quit": "Quit Game"
+  "fml.button.quit": "Quit Game",
+  "fml.button.purge": "Purge Game Cache",
+  "fml.modloadingissue.cache.purge.failed": "Failed to purge the game cache."
 }

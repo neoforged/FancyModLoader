@@ -5,6 +5,7 @@
 
 package net.neoforged.fml.earlydisplay.error;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +22,8 @@ import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import net.neoforged.fml.earlydisplay.render.Texture;
 import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.i18n.FMLTranslations;
+import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.fml.loading.cache.CacheUtils;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11C;
@@ -28,7 +31,8 @@ import org.lwjgl.opengl.GL11C;
 final class ErrorDisplayWindow {
     private static final int DISPLAY_WIDTH = 854;
     private static final int DISPLAY_HEIGHT = 480;
-    private static final int BUTTON_WIDTH = 320;
+    private static final int SMALL_BUTTON_WIDTH = 320;
+    private static final int LARGE_BUTTON_WIDTH = 2 * SMALL_BUTTON_WIDTH + 20;
     private static final int BUTTON_HEIGHT = 40;
     private static final int LIST_BORDER_HEIGHT = 2;
     private static final int SCROLLER_WIDTH = 15;
@@ -36,14 +40,15 @@ final class ErrorDisplayWindow {
     private static final int ENTRY_PADDING = 10;
     private static final int HEADER_Y = 10;
     private static final int HEADER_LINE_HEIGHT = 18;
-    private static final int LEFT_BTN_X = DISPLAY_WIDTH / 2 - 10 - BUTTON_WIDTH;
+    private static final int LEFT_BTN_X = DISPLAY_WIDTH / 2 - 10 - SMALL_BUTTON_WIDTH;
     private static final int RIGHT_BTN_X = DISPLAY_WIDTH / 2 + 10;
-    private static final int TOP_BTN_Y = DISPLAY_HEIGHT - 92;
+    private static final int TOP_BTN_Y = DISPLAY_HEIGHT - 137;
+    private static final int MIDDLE_BTN_Y = DISPLAY_HEIGHT - 92;
     private static final int BOTTOM_BTN_Y = DISPLAY_HEIGHT - 47;
     private static final int LIST_Y_TOP = 70;
-    private static final int LIST_Y_BOTTOM = DISPLAY_HEIGHT - 100;
+    private static final int LIST_Y_BOTTOM = DISPLAY_HEIGHT - 145;
     private static final int LIST_CONTENT_Y_TOP = 74;
-    private static final int LIST_CONTENT_Y_BOTTOM = DISPLAY_HEIGHT - 102;
+    private static final int LIST_CONTENT_Y_BOTTOM = DISPLAY_HEIGHT - 147;
     private static final int LIST_BORDER_TOP_Y2 = LIST_Y_TOP - LIST_BORDER_HEIGHT;
     private static final int LIST_BORDER_TOP_Y1 = LIST_BORDER_TOP_Y2 - LIST_BORDER_HEIGHT;
     private static final int LIST_BORDER_BOTTOM_Y1 = LIST_Y_BOTTOM;
@@ -64,9 +69,9 @@ final class ErrorDisplayWindow {
     final Texture buttonTextureHover;
     final Texture buttonTextureInactive;
     private final List<Button> buttons;
-    private final List<HeaderLine> headerTextLines;
-    private final List<MessageEntry> entries;
-    private final int totalEntryHeight;
+    private List<HeaderLine> headerTextLines;
+    private List<MessageEntry> entries;
+    private int totalEntryHeight;
     private boolean closed = false;
     private int offsetX = 0;
     private int offsetY = 0;
@@ -75,6 +80,11 @@ final class ErrorDisplayWindow {
     private double mouseY = -1;
     private float scrollOffset = 0;
     private boolean draggingScrollbar = false;
+    private boolean purgedCache = false;
+    private List<ModLoadingIssue> issues;
+
+    private final boolean translate;
+    private final BiFunction<String, Object[], String> translator;
 
     ErrorDisplayWindow(
             long windowHandle,
@@ -94,19 +104,26 @@ final class ErrorDisplayWindow {
         this.buttonTexture = Button.loadTexture(true, false);
         this.buttonTextureHover = Button.loadTexture(true, true);
         this.buttonTextureInactive = Button.loadTexture(false, false);
-        boolean translate = mcFont != null;
-        BiFunction<String, Object[], String> translator = translate ? FMLTranslations::parseMessage : FMLTranslations::parseEnglishMessage;
+        this.translate = mcFont != null;
+        this.translator = translate ? FMLTranslations::parseMessage : FMLTranslations::parseEnglishMessage;
         FileOpener opener = FileOpener.get();
         String btnModsText = translator.apply("fml.button.open.mods.folder", new Object[0]);
         String btnReportText = translator.apply("fml.button.open.crashreport", new Object[0]);
         String btnLogText = translator.apply("fml.button.open.log", new Object[0]);
+        String btnPurgeButton = translator.apply("fml.button.purge", new Object[0]);
         String btnQuitText = translator.apply("fml.button.quit", new Object[0]);
         this.buttons = List.of(
-                new Button(this, LEFT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnModsText, modsFolder != null, () -> opener.open(modsFolder)),
-                new Button(this, LEFT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnReportText, crashReportFile != null, () -> opener.open(crashReportFile)),
-                new Button(this, RIGHT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnLogText, logFile != null, () -> opener.open(logFile)),
-                new Button(this, RIGHT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnQuitText, true, () -> closed = true));
+                new Button(this, LEFT_BTN_X, TOP_BTN_Y, SMALL_BUTTON_WIDTH, BUTTON_HEIGHT, btnModsText, modsFolder != null, () -> opener.open(modsFolder)),
+                new Button(this, LEFT_BTN_X, MIDDLE_BTN_Y, SMALL_BUTTON_WIDTH, BUTTON_HEIGHT, btnReportText, crashReportFile != null, () -> opener.open(crashReportFile)),
+                new Button(this, RIGHT_BTN_X, TOP_BTN_Y, SMALL_BUTTON_WIDTH, BUTTON_HEIGHT, btnLogText, logFile != null, () -> opener.open(logFile)),
+                new Button(this, RIGHT_BTN_X, MIDDLE_BTN_Y, SMALL_BUTTON_WIDTH, BUTTON_HEIGHT, btnPurgeButton, () -> !purgedCache, this::purgeCache),
+                new Button(this, LEFT_BTN_X, BOTTOM_BTN_Y, LARGE_BUTTON_WIDTH, BUTTON_HEIGHT, btnQuitText, true, () -> closed = true));
 
+        updateIssues(issues);
+    }
+
+    private void updateIssues(List<ModLoadingIssue> issues) {
+        this.issues = new ArrayList<>(issues);
         List<ModLoadingIssue> warningEntries = issues.stream()
                 .filter(issue -> issue.severity() != ModLoadingIssue.Severity.ERROR)
                 .toList();
@@ -145,6 +162,18 @@ final class ErrorDisplayWindow {
 
     private static void translateEntries(List<ModLoadingIssue> issues, List<MessageEntry> entries, SimpleFont font, Function<ModLoadingIssue, String> translator) {
         issues.stream().map(translator).map(text -> MessageEntry.of(text, font)).forEach(entries::add);
+    }
+
+    private void purgeCache() {
+        this.purgedCache = true;
+        try {
+            CacheUtils.purgeCache();
+        } catch (IOException e) {
+            this.issues.add(new ModLoadingIssue(
+                    ModLoadingIssue.Severity.ERROR, "fml.modloadingissue.cache.purge.failed", List.of(),
+                    e, FMLPaths.CACHEDIR.get(), null, null
+            ));
+        }
     }
 
     void render() {
