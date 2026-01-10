@@ -326,10 +326,12 @@ public final class GameDiscovery {
                     if (zip.getEntry(RequiredSystemFiles.COMMON_RESOURCE_ROOT) == null) {
                         continue;
                     }
-                    // If the client class is in it, also make sure it has the client resources and vice-versa
+                    // If the client class is in it, also make sure it has the client resources.
+                    // Vice versa is not true since the dedicated server jar also has assets/.mcassetsroots
+                    // because it has the English language files.
                     boolean hasClientClasses = zip.getEntry(RequiredSystemFiles.CLIENT_CLASS) != null;
                     boolean hasClientResources = zip.getEntry(RequiredSystemFiles.CLIENT_RESOURCE_ROOT) != null;
-                    if (hasClientClasses != hasClientResources) {
+                    if (hasClientClasses && !hasClientResources) {
                         continue;
                     }
 
