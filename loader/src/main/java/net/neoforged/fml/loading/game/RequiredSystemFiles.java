@@ -85,7 +85,7 @@ final class RequiredSystemFiles implements AutoCloseable {
         if (!missingFiles.isEmpty()) {
             var foundRoots = getAll().stream().distinct().toList();
             LOG.error("Couldn't find {} on classpath, while we did find other required files in: {}", missingFiles, foundRoots);
-            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.missing_minecraft_jar"));
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation"));
         }
     }
 

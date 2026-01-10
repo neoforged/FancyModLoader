@@ -10,7 +10,6 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.List;
 import java.util.function.Supplier;
-
 import net.neoforged.fml.earlydisplay.render.RenderContext;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import net.neoforged.fml.earlydisplay.render.Texture;

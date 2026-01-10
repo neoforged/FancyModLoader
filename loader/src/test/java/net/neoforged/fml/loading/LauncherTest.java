@@ -8,7 +8,6 @@ package net.neoforged.fml.loading;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
@@ -120,7 +119,7 @@ public abstract class LauncherTest {
      */
     LaunchResult launchInstalledDist() throws Exception {
         var supportedDist = switch (installation.getType()) {
-            case PRODUCTION_CLIENT, PRODUCTION_CLIENT_INSTALLED_AT_RUNTIME, USERDEV_FOLDERS, USERDEV_JAR, USERDEV_LEGACY_FOLDERS, USERDEV_LEGACY_JAR -> Dist.CLIENT;
+            case PRODUCTION_CLIENT, USERDEV_FOLDERS, USERDEV_JAR, USERDEV_LEGACY_FOLDERS, USERDEV_LEGACY_JAR, NEOFORGEDEV_CLIENT_IDE, NEOFORGEDEV_CLIENT_GRADLE -> Dist.CLIENT;
             case PRODUCTION_SERVER -> Dist.DEDICATED_SERVER;
         };
         return launchAndLoad(supportedDist, true, List.of());
@@ -131,9 +130,9 @@ public abstract class LauncherTest {
     }
 
     protected LaunchResult launchAndLoadInNeoForgeDevEnvironment(String launchTarget) throws Exception {
-        var additionalClasspath = installation.setupNeoForgeDevProject();
+        installation.setup(SimulatedInstallation.Type.NEOFORGEDEV_CLIENT_IDE);
 
-        return launchAndLoadWithAdditionalClasspath(launchTarget, additionalClasspath);
+        return launchAndLoad(launchTarget);
     }
 
     protected LaunchResult launchAndLoadWithAdditionalClasspath(String launchTarget) throws Exception {
@@ -407,16 +406,13 @@ public abstract class LauncherTest {
     }
 
     public void assertNeoForgeJar(LaunchResult launchResult) throws IOException {
-        var expectedContent = Lists.newArrayList(
-                SimulatedInstallation.NEOFORGE_ASSETS,
-                SimulatedInstallation.NEOFORGE_CLASSES,
-                SimulatedInstallation.NEOFORGE_CLIENT_CLASSES,
-                SimulatedInstallation.NEOFORGE_MODS_TOML,
-                SimulatedInstallation.NEOFORGE_MANIFEST,
-                installation.getNeoForgeVersionProperties());
+        var expectedContent = new ArrayList<IdentifiableContent>();
+        Collections.addAll(expectedContent, SimulatedInstallation.NEOFORGE_UNIVERSAL_JAR_CONTENT);
 
-        if (installation.getPatches() != null)
-            expectedContent.add(installation.getPatches());
+        // In NeoForge's own dev environment, the patches can't exist yet.
+        if (installation.getType().isNeoForgeDev()) {
+            expectedContent.remove(SimulatedInstallation.NEOFORGE_PATCHES);
+        }
 
         assertModContent(launchResult, "neoforge", expectedContent);
     }

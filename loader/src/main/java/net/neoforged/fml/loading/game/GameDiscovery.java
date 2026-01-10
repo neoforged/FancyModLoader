@@ -7,7 +7,6 @@ package net.neoforged.fml.loading.game;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -16,7 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 import net.neoforged.api.distmarker.Dist;
@@ -24,19 +22,16 @@ import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.FMLPaths;
-import net.neoforged.fml.loading.MavenCoordinate;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModJarMetadata;
 import net.neoforged.fml.loading.moddiscovery.locators.NeoForgeDevDistCleaner;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.util.ClasspathResourceUtils;
-import net.neoforged.fml.util.PathPrettyPrinting;
 import net.neoforged.neoforgespi.LocatedPaths;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.jetbrains.annotations.Nullable;
-import org.jline.utils.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,18 +45,16 @@ public final class GameDiscovery {
 
     private GameDiscovery() {}
 
-    public static GameDiscoveryResult discoverGame(LocatedPaths locatedPaths, Dist requiredDist) {
-        var ourCl = Thread.currentThread().getContextClassLoader();
-
-        var neoForgeVersion = getNeoForgeVersion(ourCl);
+    public static GameDiscoveryResult discoverGame(ClassLoader classLoader, LocatedPaths locatedPaths, Dist requiredDist) {
+        var neoForgeVersion = findNeoForge(classLoader);
 
         // 0) Vanilla Launcher puts the obfuscated jar on the classpath. We mark it as claimed to prevent it from
         // being hoisted into a module, occupying the entrypoint packages.
-        preventLoadingOfObfuscatedClientJar(locatedPaths, ourCl);
+        preventLoadingOfObfuscatedClientJar(locatedPaths, classLoader);
 
         // We look for a class present in both Minecraft distributions on the classpath, which would be obfuscated in production (DetectedVersion)
         // If that is present, we assume we're launching in dev (NeoDev or ModDev).
-        try (var systemFiles = RequiredSystemFiles.find(locatedPaths::isLocated, ourCl)) {
+        try (var systemFiles = RequiredSystemFiles.find(locatedPaths::isLocated, classLoader)) {
             if (!systemFiles.isEmpty() && systemFiles.hasMinecraft()) {
                 // If we've only been able to find some of the required files, we need to error
                 systemFiles.checkForMissingMinecraftFiles(requiredDist == Dist.CLIENT);
@@ -73,35 +66,14 @@ public final class GameDiscovery {
         }
 
         // In production, it's in the libraries directory, and we're passed the version to look for on the commandline
-        return locateProductionMinecraft(neoForgeVersion, requiredDist, ourCl);
+        return locateProductionMinecraft(neoForgeVersion, requiredDist, classLoader);
     }
 
-    private static String getNeoForgeVersion(ClassLoader ourCl) {
-        var neoForgeVersion = getNeoForgeVersionFromClasspath(ourCl);
+    private static NeoForgeInfo findNeoForge(ClassLoader ourCl) {
+        var neoForgeVersion = NeoForgeInfo.fromClasspath(ourCl);
 
-        if (neoForgeVersion == null) {
-            LOG.error("Could not load the NeoForge version from the version properties file.");
-            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation"));
-        }
-
-        LOG.debug("Locate NeoForge version: {}", neoForgeVersion);
-
+        LOG.debug("Found NeoForge {} for Minecraft {}", neoForgeVersion.neoForgeVersion(), neoForgeVersion.minecraftVersion());
         return neoForgeVersion;
-    }
-
-    @Nullable
-    private static String getNeoForgeVersionFromClasspath(ClassLoader classLoader) {
-        try (var in = classLoader.getResourceAsStream("net/neoforged/neoforge/common/version.properties")) {
-            if (in == null) {
-                return null;
-            }
-
-            Properties p = new Properties();
-            p.load(new BufferedInputStream(in));
-            return p.getProperty("neoforge_version");
-        } catch (IOException ignored) {
-            return null;
-        }
     }
 
     private static GameDiscoveryResult handleMergedMinecraftAndNeoForgeJar(Dist requiredDist, LocatedPaths locatedPaths, RequiredSystemFiles systemFiles) {
@@ -279,57 +251,22 @@ public final class GameDiscovery {
     /**
      * In production, the client and neoforge jars are assembled from partial jars in the libraries folder.
      */
-    private static GameDiscoveryResult locateProductionMinecraft(String neoForgeVersion, Dist requiredDist, ClassLoader classLoader) {
-        // 2) It's neither, but a libraries directory and desired versions are given on the commandline
-        var librariesDirectory = System.getProperty(LIBRARIES_DIRECTORY_PROPERTY);
-        if (librariesDirectory == null) {
-            LOG.error("When launching in production, the system property {} must point to the libraries directory.", LIBRARIES_DIRECTORY_PROPERTY);
-            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation"));
-        }
+    private static GameDiscoveryResult locateProductionMinecraft(NeoForgeInfo neoForgeVersion, Dist requiredDist, ClassLoader classLoader) {
+        var nfModFile = openModFile(neoForgeVersion.sourcePath(), "neoforge", "fml.modloadingissue.corrupted_neoforge_jar");
 
-        var librariesRoot = Path.of(librariesDirectory);
-        if (!Files.isDirectory(librariesRoot)) {
-            LOG.error("Libraries directory is not readable: {}", librariesRoot);
-            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.corrupted_installation"));
-        }
-
-        PathPrettyPrinting.addSubstitution(librariesRoot, "~libraries/", "");
-
-        // The versions for Minecraft and NeoForm can be read from the NeoForge jar
-        var neoforgeCoordinate = new MavenCoordinate("net.neoforged", "neoforge", "", "universal", neoForgeVersion);
-        var neoforgeJar = librariesRoot.resolve(neoforgeCoordinate.toRelativeRepositoryPath());
-        if (!Files.exists(neoforgeJar)) {
-            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.missing_neoforge_jar").withAffectedPath(neoforgeJar));
-        }
-
-        // Detect if the newer Minecraft installation method is available. If not, we assume the old method.
-        var patchedMinecraftPath = librariesRoot.resolve((switch (requiredDist) {
-            case CLIENT -> new MavenCoordinate("net.neoforged", "minecraft-client-patched", "", "", neoForgeVersion);
-            case DEDICATED_SERVER -> new MavenCoordinate("net.neoforged", "minecraft-server-patched", "", "", neoForgeVersion);
-        }).toRelativeRepositoryPath());
-
-        var nfModFile = openModFile(neoforgeJar, "neoforge", "fml.modloadingissue.corrupted_neoforge_jar");
+        var patchedMinecraftFilename = switch (requiredDist) {
+            case CLIENT -> "minecraft-client-patched-" + neoForgeVersion.neoForgeVersion() + ".jar";
+            case DEDICATED_SERVER -> "minecraft-server-patched-" + neoForgeVersion.neoForgeVersion() + ".jar";
+        };
+        var patchedMinecraftPath = FMLPaths.CACHEDIR.get().resolve(patchedMinecraftFilename);
 
         if (!Files.exists(patchedMinecraftPath)) {
-            Log.debug("Preinstalled Minecraft does not exist. Checking FML Cache path...");
-            patchedMinecraftPath = FMLPaths.AUTOINSTALL_CACHEDIR.get().resolve((switch (requiredDist) {
-                case CLIENT -> new MavenCoordinate("net.neoforged", "minecraft-client-patched", "", "", neoForgeVersion);
-                case DEDICATED_SERVER -> new MavenCoordinate("net.neoforged", "minecraft-server-patched", "", "", neoForgeVersion);
-            }).toRelativeRepositoryPath());
-
-            if (!Files.exists(patchedMinecraftPath)) {
-                LOG.info("Patched Minecraft does not exist. Triggering external discovery or installation service!");
-                try {
-                    var result = AutoInstallationService.discoverOrInstall(requiredDist, neoForgeVersion, classLoader);
-                    if (result != null) {
-                        patchedMinecraftPath = result;
-                    } else {
-                        LOG.info("Game discovery or installation service did not return a result. Skipping.");
-                    }
-                } catch (Throwable e) {
-                    nfModFile.close();
-                    throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.discovery_service_failure").withCause(e).withSeverity(ModLoadingIssue.Severity.ERROR));
-                }
+            LOG.info("Patched Minecraft does not exist. Creating new patched game jar...");
+            try {
+                MinecraftPatcher.discoverOrInstall(classLoader, requiredDist, neoForgeVersion, patchedMinecraftPath);
+            } catch (Throwable e) {
+                nfModFile.close();
+                throw e;
             }
         }
 
@@ -337,6 +274,13 @@ public final class GameDiscovery {
         try {
             minecraftModFile = openModFile(patchedMinecraftPath, "minecraft", "fml.modloadingissue.corrupted_minecraft_jar");
         } catch (Exception e) {
+            // Try deleting it to not leave behind a corrupted Minecraft jar
+            LOG.info("Deleting corrupted Minecraft jar at {}", patchedMinecraftPath);
+            try {
+                Files.delete(patchedMinecraftPath);
+            } catch (IOException ex) {
+                LOG.error("Failed to delete corrupted Minecraft jar at {}", patchedMinecraftPath);
+            }
             nfModFile.close();
             throw e;
         }

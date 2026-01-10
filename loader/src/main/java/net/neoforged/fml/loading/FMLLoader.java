@@ -289,6 +289,11 @@ public final class FMLLoader implements AutoCloseable {
         LOGGER.info("Starting FancyModLoader {} ({}) in {}", FMLVersion.getVersion(), dist, startupArgs.gameDirectory());
 
         PathPrettyPrinting.addRoot(startupArgs.gameDirectory());
+        // We no longer make direct use of libraryDirectory, but only use it to pretty-print the paths for jars located in that dir
+        var librariesDirectory = System.getProperty("libraryDirectory");
+        if (librariesDirectory != null) {
+            PathPrettyPrinting.addSubstitution(Path.of(librariesDirectory), "~libraries/", "");
+        }
 
         var programArgs = ProgramArgs.from(startupArgs.programArgs());
 
@@ -315,7 +320,7 @@ public final class FMLLoader implements AutoCloseable {
 
         ImmediateWindowHandler.load(locatedPaths, startupArgs.headless(), programArgs);
 
-        var discoveredGame = runLongRunning(startupArgs, () -> GameDiscovery.discoverGame(locatedPaths, dist));
+        var discoveredGame = runLongRunning(startupArgs, () -> GameDiscovery.discoverGame(classLoaderStack.getCurrentClassLoader(), locatedPaths, dist));
         var neoForgeVersion = discoveredGame.neoforge().getModFileInfo().versionString();
         var minecraftVersion = discoveredGame.minecraft().getModFileInfo().versionString();
 
