@@ -119,7 +119,7 @@ public abstract class LauncherTest {
      */
     LaunchResult launchInstalledDist() throws Exception {
         var supportedDist = switch (installation.getType()) {
-            case PRODUCTION_CLIENT, USERDEV_FOLDERS, USERDEV_JAR, USERDEV_LEGACY_FOLDERS, USERDEV_LEGACY_JAR -> Dist.CLIENT;
+            case PRODUCTION_CLIENT, USERDEV_FOLDERS, USERDEV_JAR, USERDEV_LEGACY_FOLDERS, USERDEV_LEGACY_JAR, NEOFORGEDEV_CLIENT_IDE, NEOFORGEDEV_CLIENT_GRADLE -> Dist.CLIENT;
             case PRODUCTION_SERVER -> Dist.DEDICATED_SERVER;
         };
         return launchAndLoad(supportedDist, true, List.of());
@@ -130,9 +130,9 @@ public abstract class LauncherTest {
     }
 
     protected LaunchResult launchAndLoadInNeoForgeDevEnvironment(String launchTarget) throws Exception {
-        var additionalClasspath = installation.setupNeoForgeDevProject();
+        installation.setup(SimulatedInstallation.Type.NEOFORGEDEV_CLIENT_IDE);
 
-        return launchAndLoadWithAdditionalClasspath(launchTarget, additionalClasspath);
+        return launchAndLoad(launchTarget);
     }
 
     protected LaunchResult launchAndLoadWithAdditionalClasspath(String launchTarget) throws Exception {
@@ -236,7 +236,7 @@ public abstract class LauncherTest {
                         // TODO: We can pass less in certain scenarios and should (i.e. development)
                         "--fml.mcVersion", SimulatedInstallation.MC_VERSION,
                         "--fml.neoForgeVersion", SimulatedInstallation.NEOFORGE_VERSION,
-                        "--fml.neoFormVersion", SimulatedInstallation.NEOFORM_VERSION
+                        "--fml.neoFormVersion", SimulatedInstallation.NEOFORM_VERSION,
                 },
                 locatedPaths.stream().map(Path::toFile).collect(Collectors.toSet()),
                 additionalClassPath.stream().map(Path::toFile).toList(),
@@ -374,18 +374,6 @@ public abstract class LauncherTest {
      * Asserts a Minecraft Jar in the legacy installation mode where the Minecraft jar is assembled in-memory from different individual pieces.
      * The only noticeable difference is that the Minecraft jar does not have a neoforge.mods.toml.
      */
-    public void assertLegacyMinecraftServerJar(LaunchResult launchResult) throws IOException {
-        var expectedContent = new ArrayList<IdentifiableContent>();
-        Collections.addAll(expectedContent, SimulatedInstallation.SERVER_EXTRA_JAR_CONTENT);
-        expectedContent.add(SimulatedInstallation.PATCHED_SHARED);
-
-        assertModContent(launchResult, "minecraft", expectedContent);
-    }
-
-    /**
-     * Asserts a Minecraft Jar in the legacy installation mode where the Minecraft jar is assembled in-memory from different individual pieces.
-     * The only noticeable difference is that the Minecraft jar does not have a neoforge.mods.toml.
-     */
     public void assertLegacyMinecraftClientJar(LaunchResult launchResult, boolean production) throws IOException {
         var expectedContent = new ArrayList<IdentifiableContent>();
         if (production) {
@@ -418,12 +406,13 @@ public abstract class LauncherTest {
     }
 
     public void assertNeoForgeJar(LaunchResult launchResult) throws IOException {
-        var expectedContent = List.of(
-                SimulatedInstallation.NEOFORGE_ASSETS,
-                SimulatedInstallation.NEOFORGE_CLASSES,
-                SimulatedInstallation.NEOFORGE_CLIENT_CLASSES,
-                SimulatedInstallation.NEOFORGE_MODS_TOML,
-                SimulatedInstallation.NEOFORGE_MANIFEST);
+        var expectedContent = new ArrayList<IdentifiableContent>();
+        Collections.addAll(expectedContent, SimulatedInstallation.NEOFORGE_UNIVERSAL_JAR_CONTENT);
+
+        // In NeoForge's own dev environment, the patches can't exist yet.
+        if (installation.getType().isNeoForgeDev()) {
+            expectedContent.remove(SimulatedInstallation.NEOFORGE_PATCHES);
+        }
 
         assertModContent(launchResult, "neoforge", expectedContent);
     }

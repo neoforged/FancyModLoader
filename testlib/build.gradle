@@ -19,4 +19,5 @@ dependencies {
     implementation "net.neoforged:JarJarMetadata:${jarjar_version}"
     implementation "org.assertj:assertj-core:${assertj_version}"
     implementation "org.junit.jupiter:junit-jupiter-api:$jupiter_version"
+    implementation("net.neoforged.installertools:binarypatcher:${installer_tools_version}")
 }

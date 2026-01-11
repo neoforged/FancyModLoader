@@ -34,6 +34,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import net.neoforged.binarypatcher.DiffOptions;
+import net.neoforged.binarypatcher.Generator;
+import net.neoforged.binarypatcher.PatchBase;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.Metadata;
 import net.neoforged.jarjar.metadata.MetadataIOHandler;
@@ -59,7 +62,7 @@ public class SimulatedInstallation implements AutoCloseable {
          * - A jar with all Minecraft Classes, NeoForge Classes and Resources
          * - A second jar with the original non-class content of the Minecraft jar
          * The Minecraft classes and resources are merged from server+client distributions.
-         *
+         * <p>
          * The difference between FOLDERS and JAR relates to how the "installation appropriate" mod project
          * is put onto the classpath (as folders, or built as a jar file).
          */
@@ -70,16 +73,23 @@ public class SimulatedInstallation implements AutoCloseable {
          * It puts two jars on the classpath:
          * - The merged, patched Minecraft jar, including classes and resources from both distributions
          * - The unmodified NeoForge universal jar
-         *
+         * <p>
          * The difference between FOLDERS and JAR relates to how the "installation appropriate" mod project
          * is put onto the classpath (as folders, or built as a jar file).
          */
         USERDEV_FOLDERS,
         USERDEV_JAR,
+
+        NEOFORGEDEV_CLIENT_IDE,
+        NEOFORGEDEV_CLIENT_GRADLE,
         ;
 
         public boolean isProduction() {
             return this == PRODUCTION_CLIENT || this == PRODUCTION_SERVER;
+        }
+
+        public boolean isNeoForgeDev() {
+            return this == NEOFORGEDEV_CLIENT_IDE || this == NEOFORGEDEV_CLIENT_GRADLE;
         }
     }
 
@@ -92,6 +102,12 @@ public class SimulatedInstallation implements AutoCloseable {
         }
     }
 
+    public static final String LIBRARIES_DIRECTORY_PROPERTY = "libraryDirectory";
+    public static final String MOD_FOLDERS_PROPERTIES = "fml.modFolders";
+    public static final String NEOFORGE_VERSION = "20.4.9999";
+    public static final String MC_VERSION = "1.20.4";
+    public static final String NEOFORM_VERSION = "202401020304";
+
     /**
      * A class that is contained in both client and dedicated server distribution, renamed to official mappings.
      */
@@ -102,13 +118,11 @@ public class SimulatedInstallation implements AutoCloseable {
      */
     public static final IdentifiableContent PATCHED_SHARED = generateClass("PATCHED_SHARED", "net/minecraft/DetectedVersion.class");
     /**
-     * A class that is only in the client distribution, renamed to official mappings.
-     */
-    public static final IdentifiableContent RENAMED_CLIENT = generateClass("RENAMED_CLIENT", "net/minecraft/client/Minecraft.class");
-    /**
      * A neoforge.mods.toml for the Minecraft jar.
      */
     public static final IdentifiableContent MINECRAFT_MODS_TOML = new IdentifiableContent("MINECRAFT_MODS_TOML", "META-INF/neoforge.mods.toml", writeMinecraftModsToml());
+
+    public static final IdentifiableContent MINECRAFT_VERSION_JSON = new IdentifiableContent("MC_VERSION_JSON", "version.json", buildVersionJson(MC_VERSION));
 
     /**
      * A class that is contained in both client and dedicated server distribution, renamed to official mappings,
@@ -116,26 +130,56 @@ public class SimulatedInstallation implements AutoCloseable {
      */
     public static final IdentifiableContent PATCHED_CLIENT = generateClass("PATCHED_CLIENT", "net/minecraft/client/Minecraft.class");
     public static final IdentifiableContent UNPATCHED_CLIENT = generateClass("UNPATCHED_CLIENT", "net/minecraft/client/Minecraft.class");
+
+    private static final byte[] ORIGINAL_CLIENT_JAR = createJarFile(
+            generateClass("CLIENT_MAIN", "net/minecraft/client/main/Main.class"),
+            generateClass("CLIENT_DATA_MAIN", "net/minecraft/client/data/Main.class"),
+            generateClass("SERVER_MAIN", "net/minecraft/server/Main.class"),
+            generateClass("SERVER_DATA_MAIN", "net/minecraft/data/Main.class"),
+            generateClass("GAMETEST_MAIN", "net/minecraft/gametest/Main.class"),
+            generateClass("MINECRAFT_SERVER", "net/minecraft/server/MinecraftServer.class"),
+            UNPATCHED_CLIENT,
+            RENAMED_SHARED,
+            MINECRAFT_VERSION_JSON,
+            SHARED_ASSETS,
+            CLIENT_ASSETS);
+    private static final byte[] ORIGINAL_SERVER_JAR = createJarFile(
+            generateClass("SERVER_MAIN", "net/minecraft/server/Main.class"),
+            generateClass("SERVER_DATA_MAIN", "net/minecraft/data/Main.class"),
+            generateClass("GAMETEST_MAIN", "net/minecraft/gametest/Main.class"),
+            generateClass("MINECRAFT_SERVER", "net/minecraft/server/MinecraftServer.class"),
+            UNPATCHED_CLIENT,
+            RENAMED_SHARED,
+            MINECRAFT_VERSION_JSON,
+            SHARED_ASSETS,
+            CLIENT_ASSETS);
+
+    /**
+     * This simulates creating a Minecraft client modified by NeoForge,
+     * i.e. with added neoforge.mods.toml and modified classes.
+     * Note that this file is inaccessible to the running game and only exists during the Gradle build of NeoForge itself!
+     */
+    private static final byte[] PATCHED_CLIENT_JAR = createJarFile(PATCHED_CLIENT, RENAMED_SHARED, CLIENT_ASSETS, SHARED_ASSETS, MINECRAFT_MODS_TOML, MINECRAFT_VERSION_JSON);
+    /**
+     * Same as {@link #PATCHED_CLIENT_JAR}, but for the dedicated server.
+     */
+    private static final byte[] PATCHED_SERVER_JAR = createJarFile(RENAMED_SHARED, SHARED_ASSETS, MINECRAFT_MODS_TOML, MINECRAFT_VERSION_JSON);
+
     public static final IdentifiableContent NEOFORGE_CLIENT_CLASSES = generateClass("NEOFORGE_CLIENT_CLASSES", "net/neoforged/neoforge/client/ClientNeoForgeMod.class");
     public static final IdentifiableContent NEOFORGE_CLASSES = generateClass("NEOFORGE_CLASSES", "net/neoforged/neoforge/common/NeoForgeMod.class");
     public static final IdentifiableContent NEOFORGE_MODS_TOML = new IdentifiableContent("NEOFORGE_MODS_TOML", "META-INF/neoforge.mods.toml", writeNeoForgeModsToml());
     public static final IdentifiableContent NEOFORGE_MANIFEST = new IdentifiableContent("NEOFORGE_MANIFEST", JarFile.MANIFEST_NAME, writeNeoForgeManifest());
+    public static final IdentifiableContent NEOFORGE_VERSION_PROPERTIES = new IdentifiableContent("NEOFORGE_VERSION_PROPERTIES", "net/neoforged/neoforge/common/version.properties", writeNeoForgeVersionProperties());
     public static final IdentifiableContent NEOFORGE_ASSETS = new IdentifiableContent("NEOFORGE_ASSETS", "neoforged_logo.png");
-
-    public static final String LIBRARIES_DIRECTORY_PROPERTY = "libraryDirectory";
-    public static final String MOD_FOLDERS_PROPERTIES = "fml.modFolders";
-    public static final String NEOFORGE_VERSION = "20.4.9999";
-    public static final String MC_VERSION = "1.20.4";
-    public static final String NEOFORM_VERSION = "202401020304";
-    public static final IdentifiableContent MINECRAFT_VERSION_JSON = new IdentifiableContent("MC_VERSION_JSON", "version.json", buildVersionJson(MC_VERSION));
+    public static final IdentifiableContent NEOFORGE_PATCHES = new IdentifiableContent("NEOFORGE_PATCHES", "META-INF/net/neoforged/patches/patches.lzma", createPatches(
+            ORIGINAL_CLIENT_JAR, ORIGINAL_SERVER_JAR,
+            PATCHED_CLIENT_JAR, PATCHED_SERVER_JAR));
 
     public static final IdentifiableContent[] SERVER_EXTRA_JAR_CONTENT = { SHARED_ASSETS, MINECRAFT_VERSION_JSON };
     public static final IdentifiableContent[] CLIENT_EXTRA_JAR_CONTENT = { CLIENT_ASSETS, SHARED_ASSETS, RESOURCES_MANIFEST, MINECRAFT_VERSION_JSON };
-    public static final IdentifiableContent[] NEOFORGE_UNIVERSAL_JAR_CONTENT = { NEOFORGE_ASSETS, NEOFORGE_CLIENT_CLASSES, NEOFORGE_CLASSES, NEOFORGE_MODS_TOML, NEOFORGE_MANIFEST };
+    public static final IdentifiableContent[] NEOFORGE_UNIVERSAL_JAR_CONTENT = { NEOFORGE_ASSETS, NEOFORGE_CLIENT_CLASSES, NEOFORGE_CLASSES, NEOFORGE_MODS_TOML, NEOFORGE_MANIFEST, NEOFORGE_VERSION_PROPERTIES, NEOFORGE_PATCHES };
     public static final IdentifiableContent[] USERDEV_CLIENT_JAR_CONTENT = { PATCHED_CLIENT, PATCHED_SHARED };
 
-    private static final String GAV_PATCHED_CLIENT = "net.neoforged:minecraft-client-patched:" + NEOFORGE_VERSION;
-    private static final String GAV_PATCHED_SERVER = "net.neoforged:minecraft-server-patched:" + NEOFORGE_VERSION;
     private static final String GAV_NEOFORGE_UNIVERSAL = "net.neoforged:neoforge:" + NEOFORGE_VERSION + ":universal";
 
     private static byte[] buildVersionJson(String mcVersion) {
@@ -177,36 +221,29 @@ public class SimulatedInstallation implements AutoCloseable {
             case PRODUCTION_CLIENT -> {
                 System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
 
-                var patchedClientJar = writeLibrary(GAV_PATCHED_CLIENT, PATCHED_CLIENT, RENAMED_SHARED, CLIENT_ASSETS, SHARED_ASSETS, MINECRAFT_MODS_TOML, MINECRAFT_VERSION_JSON);
+                var originalClientJar = versionsDir.resolve(MC_VERSION + "/" + MC_VERSION + ".jar");
+                Files.createDirectories(originalClientJar.getParent());
+                Files.write(originalClientJar, ORIGINAL_CLIENT_JAR);
+
                 var universalJar = writeLibrary(GAV_NEOFORGE_UNIVERSAL, NEOFORGE_UNIVERSAL_JAR_CONTENT);
+                launchClasspath.add(universalJar);
+                launchClasspath.add(originalClientJar);
 
-                // For the production client, the Vanilla launcher puts the original, obfuscated client jar on the classpath
-                // Since this can influence our detection logic, let's make sure it's included for the tests.
-                Path obfuscatedClientJar = versionsDir.resolve(MC_VERSION).resolve(MC_VERSION + ".jar");
-                writeJarFile(
-                        obfuscatedClientJar,
-                        generateClass("CLIENT_MAIN", "net/minecraft/client/main/Main.class"),
-                        generateClass("CLIENT_DATA_MAIN", "net/minecraft/client/data/Main.class"),
-                        generateClass("SERVER_MAIN", "net/minecraft/server/Main.class"),
-                        generateClass("SERVER_DATA_MAIN", "net/minecraft/data/Main.class"),
-                        generateClass("GAMETEST_MAIN", "net/minecraft/gametest/Main.class"),
-                        generateClass("MINECRAFT_SERVER", "net/minecraft/server/MinecraftServer.class"),
-                        UNPATCHED_CLIENT,
-                        RENAMED_SHARED,
-                        MINECRAFT_VERSION_JSON,
-                        SHARED_ASSETS,
-                        CLIENT_ASSETS);
-                launchClasspath.add(obfuscatedClientJar);
-
-                componentRoots = InstallationComponents.productionJars(patchedClientJar, universalJar);
+                componentRoots = InstallationComponents.productionJars(originalClientJar, universalJar);
             }
             case PRODUCTION_SERVER -> {
                 System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
 
-                var patchedServerJar = writeLibrary(GAV_PATCHED_SERVER, PATCHED_SHARED, SHARED_ASSETS, MINECRAFT_MODS_TOML, MINECRAFT_VERSION_JSON);
-                var universalJar = writeLibrary(GAV_NEOFORGE_UNIVERSAL, NEOFORGE_UNIVERSAL_JAR_CONTENT);
+                // TODO: There's currently no convention for this, this is just where the server-starter jar stores it
+                var originalServerJar = librariesDir.resolve("net/minecraft/server/" + MC_VERSION + "/server-" + MC_VERSION + ".jar");
+                Files.createDirectories(originalServerJar.getParent());
+                Files.write(originalServerJar, ORIGINAL_SERVER_JAR);
 
-                componentRoots = InstallationComponents.productionJars(patchedServerJar, universalJar);
+                var universalJar = writeLibrary(GAV_NEOFORGE_UNIVERSAL, NEOFORGE_UNIVERSAL_JAR_CONTENT);
+                launchClasspath.add(universalJar);
+                launchClasspath.add(originalServerJar);
+
+                componentRoots = InstallationComponents.productionJars(originalServerJar, universalJar);
             }
             case USERDEV_LEGACY_FOLDERS, USERDEV_LEGACY_JAR -> {
                 var neoforgeJar = projectRoot.resolve("neoforge-joined.jar");
@@ -236,6 +273,28 @@ public class SimulatedInstallation implements AutoCloseable {
                 writeJarFile(minecraftJar, PATCHED_CLIENT, PATCHED_SHARED, CLIENT_ASSETS, SHARED_ASSETS, MINECRAFT_MODS_TOML, RESOURCES_MANIFEST, MINECRAFT_VERSION_JSON);
 
                 componentRoots = InstallationComponents.productionJars(minecraftJar, universalJar);
+            }
+            case NEOFORGEDEV_CLIENT_IDE, NEOFORGEDEV_CLIENT_GRADLE -> {
+                // The classes directory in a NeoForge development environment will contain both the Minecraft
+                // and the NeoForge classes. This is due to both calling each other and having to be compiled in
+                // the same javac compilation as a result.
+                var folders = createNeoForgeDevFolders();
+
+                // Emulate the layout of a NeoForge development environment
+                // In dev, the NeoForge sources itself are joined, but the Minecraft sources are not
+                launchClasspath.add(folders.clientClassesDir);
+                // When launching the CLIENT through Gradle, the COMMON output will be included as a jar instead of folder references
+                if (type == Type.NEOFORGEDEV_CLIENT_GRADLE) {
+                    Path commonJarFile = projectRoot.resolve("build/libs/neoforge-common.jar");
+                    createJarFileFromFolders(commonJarFile, folders.commonClassesDir, folders.commonResourcesDir);
+                    launchClasspath.add(commonJarFile);
+                } else {
+                    launchClasspath.add(folders.commonClassesDir);
+                    launchClasspath.add(folders.commonResourcesDir);
+                }
+                launchClasspath.add(folders.clientExtraJar);
+
+                launchModFolders.put("minecraft", List.of(folders.clientClassesDir, folders.commonClassesDir, folders.commonResourcesDir, folders.clientExtraJar));
             }
             default -> throw new UnsupportedOperationException();
         }
@@ -289,59 +348,8 @@ public class SimulatedInstallation implements AutoCloseable {
         setup(Type.PRODUCTION_CLIENT);
     }
 
-    public void setupProductionClientLegacy() throws IOException {
-        System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
-
-        writeLibrary("net.minecraft", "client", MC_VERSION + "-" + NEOFORM_VERSION, "srg", RENAMED_CLIENT, RENAMED_SHARED);
-        writeLibrary("net.minecraft", "client", MC_VERSION + "-" + NEOFORM_VERSION, "extra", CLIENT_ASSETS, SHARED_ASSETS, MINECRAFT_VERSION_JSON);
-        writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "client", PATCHED_CLIENT);
-        writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "universal", NEOFORGE_UNIVERSAL_JAR_CONTENT);
-    }
-
     public void setupProductionServer() throws IOException {
         setup(Type.PRODUCTION_SERVER);
-    }
-
-    public void setupProductionServerLegacy() throws IOException {
-        System.setProperty(LIBRARIES_DIRECTORY_PROPERTY, librariesDir.toString());
-
-        writeLibrary("net.minecraft", "server", MC_VERSION + "-" + NEOFORM_VERSION, "srg", RENAMED_SHARED);
-        writeLibrary("net.minecraft", "server", MC_VERSION + "-" + NEOFORM_VERSION, "extra", SERVER_EXTRA_JAR_CONTENT);
-        writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "server", PATCHED_SHARED);
-        writeLibrary("net.neoforged", "neoforge", NEOFORGE_VERSION, "universal", NEOFORGE_UNIVERSAL_JAR_CONTENT);
-    }
-
-    // The classes directory in a NeoForge development environment will contain both the Minecraft
-    // and the NeoForge classes. This is due to both calling each other and having to be compiled in
-    // the same javac compilation as a result.
-    public List<Path> setupNeoForgeDevProject() throws IOException {
-        var folders = createNeoForgeDevFolders();
-
-        var additionalClasspath = new ArrayList<Path>();
-
-        // Emulate the layout of a NeoForge development environment
-        // In dev, the NeoForge sources itself are joined, but the Minecraft sources are not
-        additionalClasspath.add(folders.clientClassesDir);
-        additionalClasspath.add(folders.commonClassesDir);
-        additionalClasspath.add(folders.commonResourcesDir);
-        additionalClasspath.add(folders.clientExtraJar);
-
-        launchModFolders.put("minecraft", List.of(folders.clientClassesDir, folders.commonClassesDir, folders.commonResourcesDir, folders.clientExtraJar));
-
-        return additionalClasspath;
-    }
-
-    // Similar to setupNeoForgeDevProject, but if the client is launched from Gradle, it will put the built jar files from
-    // the common sourceSet onto the classpath, while adding the client as directories.
-    public List<Path> setupSplitNeoForgeDevProjectForClientLaunch() throws IOException {
-        var folders = createNeoForgeDevFolders();
-
-        Path commonJarFile = projectRoot.resolve("build/libs/neoforge-common.jar");
-        createJarFileFromFolders(commonJarFile, folders.commonClassesDir, folders.commonResourcesDir);
-
-        launchModFolders.put("minecraft", List.of(folders.clientClassesDir, folders.commonClassesDir, folders.commonResourcesDir, folders.clientExtraJar));
-
-        return List.of(folders.clientClassesDir, commonJarFile, folders.clientExtraJar);
     }
 
     protected record NeoForgeDevFolders(
@@ -360,7 +368,7 @@ public class SimulatedInstallation implements AutoCloseable {
         writeFiles(commonClassesDir, PATCHED_SHARED, NEOFORGE_CLASSES);
 
         var resourcesDir = projectRoot.resolve("projects/neoforge/build/resources/main");
-        writeFiles(resourcesDir, NEOFORGE_ASSETS, NEOFORGE_MODS_TOML, NEOFORGE_MANIFEST);
+        writeFiles(resourcesDir, NEOFORGE_ASSETS, NEOFORGE_MODS_TOML, NEOFORGE_MANIFEST, NEOFORGE_VERSION_PROPERTIES);
 
         var clientExtraJar = projectRoot.resolve("client-extra.jar");
         writeJarFile(clientExtraJar, CLIENT_EXTRA_JAR_CONTENT);
@@ -401,6 +409,10 @@ public class SimulatedInstallation implements AutoCloseable {
 
     public Path getGameDir() {
         return gameDir;
+    }
+
+    public Path getVersionsDir() {
+        return versionsDir;
     }
 
     public Path getProjectRoot() {
@@ -510,6 +522,16 @@ public class SimulatedInstallation implements AutoCloseable {
                 """.getBytes();
     }
 
+    private static byte[] writeNeoForgeVersionProperties() {
+        return """
+                neoforge_version=%s
+                neoform_version=1
+                minecraft_version=%s
+                autoinstall_patches=META-INF/net/neoforged/patches/patches.lzma
+                build_type=release
+                """.formatted(NEOFORGE_VERSION, MC_VERSION).getBytes();
+    }
+
     private static byte[] writeMinecraftModsToml() {
         return """
                 loader = "minecraft"
@@ -518,6 +540,47 @@ public class SimulatedInstallation implements AutoCloseable {
                 [[mods]]
                 modId="minecraft"
                 """.getBytes();
+    }
+
+    private static byte[] createPatches(byte[] originalClientJar,
+            byte[] originalServerJar,
+            byte[] patchedClientJar,
+            byte[] patchedServerJar) {
+        List<File> tempFiles = new ArrayList<>();
+        try {
+            var originalClientJarFile = File.createTempFile("original", ".jar");
+            tempFiles.add(originalClientJarFile);
+            Files.write(originalClientJarFile.toPath(), originalClientJar);
+            var originalServerJarFile = File.createTempFile("original", ".jar");
+            tempFiles.add(originalServerJarFile);
+            Files.write(originalServerJarFile.toPath(), originalServerJar);
+            var patchedClientJarFile = File.createTempFile("patched", ".jar");
+            tempFiles.add(patchedClientJarFile);
+            Files.write(patchedClientJarFile.toPath(), patchedClientJar);
+            var patchedServerJarFile = File.createTempFile("patched", ".jar");
+            tempFiles.add(patchedServerJarFile);
+            Files.write(patchedServerJarFile.toPath(), patchedServerJar);
+            var patchBundleFile = File.createTempFile("patched", ".jar");
+            tempFiles.add(patchBundleFile);
+
+            Generator.createPatchBundle(
+                    Map.of(
+                            PatchBase.CLIENT, originalClientJarFile,
+                            PatchBase.SERVER, originalServerJarFile),
+                    Map.of(
+                            PatchBase.CLIENT, patchedClientJarFile,
+                            PatchBase.SERVER, patchedServerJarFile),
+                    patchBundleFile,
+                    new DiffOptions());
+
+            return Files.readAllBytes(patchBundleFile.toPath());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } finally {
+            for (var tempFile : tempFiles) {
+                tempFile.delete();
+            }
+        }
     }
 
     public static IdentifiableContent createManifest(String name, Map<String, String> attributes) throws IOException {
@@ -667,6 +730,29 @@ public class SimulatedInstallation implements AutoCloseable {
         return ModFileBuilder.toJar(path);
     }
 
+    public Path createLibraryProject(String groupArtifactVersion, ModFileBuilder.ModJarCustomizer configurator) throws IOException {
+        String[] parts = groupArtifactVersion.split(":", 4);
+        return createLibraryProject(parts[0], parts[1], parts[2], parts.length > 3 ? parts[3] : null, configurator);
+    }
+
+    public Path createLibraryProject(String group, String artifact, String version, @Nullable String classifier, ModFileBuilder.ModJarCustomizer configurator) throws IOException {
+        var folder = librariesDir.resolve(group.replace('.', '/'))
+                .resolve(artifact)
+                .resolve(version);
+        Files.createDirectories(folder);
+
+        var filename = artifact + "-" + version;
+        if (classifier != null) {
+            filename += "-" + classifier;
+        }
+        filename += ".jar";
+        var file = folder.resolve(filename);
+
+        var builder = ModFileBuilder.toJar(file);
+        configurator.customize(builder);
+        return builder.build();
+    }
+
     /**
      * @param projectSubfolder Can be null to place output into the root project, but can also be a path relative
      *                         to the root project referring to the submodule.
@@ -700,10 +786,18 @@ public class SimulatedInstallation implements AutoCloseable {
         }
     }
 
-    public static IdentifiableContent createJarFile(String name, String relativePath, IdentifiableContent... content) throws IOException {
+    public static IdentifiableContent createJarFile(String name, String relativePath, IdentifiableContent... content) {
+        return new IdentifiableContent(name, relativePath, createJarFile(content));
+    }
+
+    public static byte[] createJarFile(IdentifiableContent... content) {
         var bout = new ByteArrayOutputStream();
-        writeJarFile(bout, content);
-        return new IdentifiableContent(name, relativePath, bout.toByteArray());
+        try {
+            writeJarFile(bout, content);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return bout.toByteArray();
     }
 
     public static void createJarFileFromFolders(Path jarFile, Path... folders) throws IOException {

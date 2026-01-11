@@ -17,6 +17,11 @@ public class ModLoadingException extends RuntimeException {
 
     public ModLoadingException(List<ModLoadingIssue> issues) {
         this.issues = List.copyOf(issues);
+        for (var issue : issues) {
+            if (issue.cause() != null) {
+                addSuppressed(issue.cause());
+            }
+        }
     }
 
     public List<ModLoadingIssue> getIssues() {
