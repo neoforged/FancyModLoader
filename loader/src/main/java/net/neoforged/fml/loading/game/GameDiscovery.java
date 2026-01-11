@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
  */
 public final class GameDiscovery {
     private static final Logger LOG = LoggerFactory.getLogger(GameDiscovery.class);
-    public static final String LIBRARIES_DIRECTORY_PROPERTY = "libraryDirectory";
     public static final String[] NEOFORGE_SPECIFIC_PATH_PREFIXES = { "net/neoforged/neoforge/", "META-INF/services/", JarModsDotTomlModFileReader.MODS_TOML };
 
     private GameDiscovery() {}
