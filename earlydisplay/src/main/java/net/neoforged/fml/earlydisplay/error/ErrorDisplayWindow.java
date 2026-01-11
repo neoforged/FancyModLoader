@@ -170,6 +170,7 @@ final class ErrorDisplayWindow {
             CacheUtils.purgeCache();
         } catch (IOException e) {
             this.issues.add(ModLoadingIssue.error("fml.modloadingissue.cache.purge.failed").withCause(e).withAffectedPath(FMLPaths.CACHEDIR.get()));
+            updateIssues(this.issues);
         }
     }
 
