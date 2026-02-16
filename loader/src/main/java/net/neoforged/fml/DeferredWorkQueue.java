@@ -84,15 +84,15 @@ public class DeferredWorkQueue {
         return null;
     }
 
-    public CompletableFuture<Void> enqueueWork(final ModContainer modInfo, final Runnable work) {
+    public CompletableFuture<Void> enqueueWork(ModContainer modInfo, Runnable work) {
         return enqueueWork(modInfo, taskInfo -> CompletableFuture.runAsync(work, r -> taskInfo.task = r));
     }
 
-    public <T> CompletableFuture<T> enqueueWork(final ModContainer modInfo, final Supplier<T> work) {
+    public <T> CompletableFuture<T> enqueueWork(ModContainer modInfo, Supplier<T> work) {
         return enqueueWork(modInfo, taskInfo -> CompletableFuture.supplyAsync(work, r -> taskInfo.task = r));
     }
 
-    private <T> CompletableFuture<T> enqueueWork(final ModContainer modInfo, Function<TaskInfo, CompletableFuture<T>> futureGen) {
+    private <T> CompletableFuture<T> enqueueWork(ModContainer modInfo, Function<TaskInfo, CompletableFuture<T>> futureGen) {
         TaskInfo taskInfo = new TaskInfo(modInfo);
         CompletableFuture<T> future = futureGen.apply(taskInfo);
         taskInfo.future = future;

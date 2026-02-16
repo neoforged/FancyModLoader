@@ -15,7 +15,7 @@ import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.objectweb.asm.Type;
 
 public class ModAnnotation {
-    public static ModFileScanData.AnnotationData fromModAnnotation(final Type clazz, final ModAnnotation annotation) {
+    public static ModFileScanData.AnnotationData fromModAnnotation(Type clazz, ModAnnotation annotation) {
         return new ModFileScanData.AnnotationData(annotation.asmType, annotation.type, clazz, annotation.member, annotation.values);
     }
 

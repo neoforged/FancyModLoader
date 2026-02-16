@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "extends": "default",
+  "colorScheme": {
+    "screenBackground": "#000000",
+    "text": "#ffffff"
+  }
+}

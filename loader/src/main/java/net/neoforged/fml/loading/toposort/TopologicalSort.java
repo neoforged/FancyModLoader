@@ -61,12 +61,12 @@ public final class TopologicalSort {
         Preconditions.checkArgument(graph.isDirected(), "Cannot topologically sort an undirected graph!");
         Preconditions.checkArgument(!graph.allowsSelfLoops(), "Cannot topologically sort a graph with self loops!");
 
-        final Queue<T> queue = comparator == null ? new ArrayDeque<>() : new PriorityQueue<>(comparator);
-        final Map<T, Integer> degrees = new HashMap<>();
-        final List<T> results = new ArrayList<>();
+        Queue<T> queue = comparator == null ? new ArrayDeque<>() : new PriorityQueue<>(comparator);
+        Map<T, Integer> degrees = new HashMap<>();
+        List<T> results = new ArrayList<>();
 
-        for (final T node : graph.nodes()) {
-            final int degree = graph.inDegree(node);
+        for (T node : graph.nodes()) {
+            int degree = graph.inDegree(node);
             if (degree == 0) {
                 queue.add(node);
             } else {
@@ -75,10 +75,10 @@ public final class TopologicalSort {
         }
 
         while (!queue.isEmpty()) {
-            final T current = queue.remove();
+            T current = queue.remove();
             results.add(current);
-            for (final T successor : graph.successors(current)) {
-                final int updated = degrees.compute(successor, (node, degree) -> Objects.requireNonNull(degree, () -> "Invalid degree present for " + node) - 1);
+            for (T successor : graph.successors(current)) {
+                int updated = degrees.compute(successor, (node, degree) -> Objects.requireNonNull(degree, () -> "Invalid degree present for " + node) - 1);
                 if (updated == 0) {
                     queue.add(successor);
                     degrees.remove(successor);

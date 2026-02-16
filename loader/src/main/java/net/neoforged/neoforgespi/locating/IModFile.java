@@ -5,11 +5,12 @@
 
 package net.neoforged.neoforgespi.locating;
 
-import cpw.mods.jarhandling.SecureJar;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import net.neoforged.fml.jarcontents.JarContents;
+import net.neoforged.fml.jarmoduleinfo.JarModuleInfo;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
@@ -30,46 +31,77 @@ public interface IModFile {
     /**
      * Builds a new mod file instance depending on the current runtime.
      *
-     * @param jar    The secure jar to load the mod file from.
-     * @param parser The parser which is responsible for parsing the metadata of the file itself.
+     * @param contents The secure jar to load the mod file from.
+     * @param parser   The parser which is responsible for parsing the metadata of the file itself.
      * @return The mod file.
      */
-    static IModFile create(SecureJar jar, ModFileInfoParser parser) throws InvalidModFileException {
-        return new ModFile(jar, parser, ModFileDiscoveryAttributes.DEFAULT);
+    static IModFile create(JarContents contents, ModFileInfoParser parser) throws InvalidModFileException {
+        return new ModFile(contents, parser, ModFileDiscoveryAttributes.DEFAULT);
     }
 
     /**
      * Builds a new mod file instance depending on the current runtime.
      *
-     * @param jar        The secure jar to load the mod file from.
+     * @param contents The secure jar to load the mod file from.
+     * @param parser   The parser which is responsible for parsing the metadata of the file itself.
+     * @return The mod file.
+     */
+    static IModFile create(JarContents contents, JarModuleInfo metadata, ModFileInfoParser parser) throws InvalidModFileException {
+        return new ModFile(contents, metadata, parser, ModFileDiscoveryAttributes.DEFAULT);
+    }
+
+    /**
+     * Builds a new mod file instance depending on the current runtime.
+     *
+     * @param contents   The secure jar to load the mod file from.
      * @param parser     The parser which is responsible for parsing the metadata of the file itself.
      * @param attributes Additional attributes of the modfile.
      * @return The mod file.
      */
-    static IModFile create(SecureJar jar, ModFileInfoParser parser, ModFileDiscoveryAttributes attributes) throws InvalidModFileException {
-        return new ModFile(jar, parser, attributes);
+    static IModFile create(JarContents contents, ModFileInfoParser parser, ModFileDiscoveryAttributes attributes) throws InvalidModFileException {
+        return new ModFile(contents, parser, attributes);
     }
 
     /**
      * Builds a new mod file instance depending on the current runtime.
      *
-     * @param jar        The secure jar to load the mod file from.
+     * @param contents   The secure jar to load the mod file from.
+     * @param metadata   Information about the jar contents.
      * @param parser     The parser which is responsible for parsing the metadata of the file itself.
      * @param type       the type of the mod
      * @param attributes Additional attributes of the modfile.
      * @return The mod file.
      */
-    static IModFile create(SecureJar jar, ModFileInfoParser parser, IModFile.Type type, ModFileDiscoveryAttributes attributes) throws InvalidModFileException {
-        return new ModFile(jar, parser, type, attributes);
+    static IModFile create(JarContents contents, JarModuleInfo metadata, ModFileInfoParser parser, IModFile.Type type, ModFileDiscoveryAttributes attributes) throws InvalidModFileException {
+        return new ModFile(contents, metadata, parser, type, attributes);
     }
 
     /**
-     * Invoked to find a particular resource in this mod file, with the given path.
+     * Builds a new mod file instance depending on the current runtime.
      *
-     * @param pathName The string representation of the path to find the mod resource on.
-     * @return The {@link Path} that represents the requested resource.
+     * @param contents   The secure jar to load the mod file from.
+     * @param parser     The parser which is responsible for parsing the metadata of the file itself.
+     * @param type       the type of the mod
+     * @param attributes Additional attributes of the modfile.
+     * @return The mod file.
      */
-    Path findResource(String... pathName);
+    static IModFile create(JarContents contents, ModFileInfoParser parser, IModFile.Type type, ModFileDiscoveryAttributes attributes) throws InvalidModFileException {
+        return new ModFile(contents, null, parser, type, attributes);
+    }
+
+    /**
+     * A unique ID identifying this mod file.
+     *
+     * <p>For mod files containing mods this will correspond with the mod id of the first mod contained in this file.
+     * <p>For non-mod jar files, an approach to generating a unique id is using the same algorithm used by Java
+     * to determine a Java module name for a given Jar file, but this is not guaranteed.
+     */
+    String getId();
+
+    /**
+     * {@return the contents of the mod file, which allow direct access to files in the mods jar file}
+     */
+    JarContents getContents();
 
     /**
      * The mod files specific string data substitution map.
@@ -97,27 +129,10 @@ public interface IModFile {
     Path getFilePath();
 
     /**
-     * The secure jar that represents this mod file.
-     *
-     * @return The secure jar.
-     */
-    SecureJar getSecureJar();
-
-    /**
-     * Sets the security status after verification of the mod file has been concluded.
-     * The security status is only determined if the jar is to be loaded into the runtime.
-     *
-     * @param status The new status.
-     */
-    void setSecurityStatus(SecureJar.Status status);
-
-    /**
      * Returns a list of all mods located inside this jar.
      * <p>
      * If this method returns any entries then {@link #getType()} has to return {@link Type#MOD},
      * else this mod file will not be loaded in the proper module layer in 1.17 and above.
-     * <p>
-     * As such returning entries from this method is mutually exclusive with {@link #getLoaders()}.
      *
      * @return The mods in this mod file.
      */

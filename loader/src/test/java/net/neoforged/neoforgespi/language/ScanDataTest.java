@@ -5,17 +5,36 @@
 
 package net.neoforged.neoforgespi.language;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.IOException;
 import java.lang.annotation.ElementType;
 import java.util.List;
 import java.util.Map;
 import net.neoforged.fml.loading.modscan.ModAnnotation;
 import net.neoforged.fml.test.TestModFile;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Type;
 
 public class ScanDataTest {
+    @Test
+    void testCantGetScanResultsWithoutStartingScan() throws IOException {
+        try (final var mod = modFile()) {
+            var e = assertThrows(IllegalStateException.class, mod::getScanResult);
+            assertThat(e).hasMessageContaining("Scanning of this mod file has not started yet.");
+        }
+    }
+
+    @Test
+    void testCannotStartScanTwice() throws IOException {
+        try (final var mod = modFile()) {
+            mod.scan();
+            var e = assertThrows(IllegalStateException.class, mod::scan);
+            assertThat(e).hasMessageContaining("The mod file scan was already started.");
+        }
+    }
+
     @Test
     void testSimpleAnnotations() throws IOException {
         try (final var mod = modFile()) {
@@ -37,7 +56,7 @@ public class ScanDataTest {
             mod.scan();
 
             final var type = Type.getObjectType("com/example/sc/SimpleCustom");
-            Assertions.assertThat(mod.getScanResult().getAnnotations())
+            assertThat(mod.getScanResult().getAnnotations())
                     .filteredOn(ad -> ad.annotationType().equals(type))
                     .filteredOn(ad -> ad.targetType() == ElementType.TYPE)
                     .containsOnly(
@@ -65,7 +84,7 @@ public class ScanDataTest {
             mod.scan();
 
             final var type = Type.getObjectType("com/example/lst/WithList");
-            Assertions.assertThat(mod.getScanResult().getAnnotations())
+            assertThat(mod.getScanResult().getAnnotations())
                     .filteredOn(ad -> ad.annotationType().equals(type))
                     .filteredOn(ad -> ad.targetType() == ElementType.TYPE)
                     .containsOnly(
@@ -97,7 +116,7 @@ public class ScanDataTest {
             mod.scan();
 
             final var type = Type.getObjectType("com/example/WithEnumList");
-            Assertions.assertThat(mod.getScanResult().getAnnotations())
+            assertThat(mod.getScanResult().getAnnotations())
                     .filteredOn(ad -> ad.annotationType().equals(type))
                     .filteredOn(ad -> ad.targetType() == ElementType.TYPE)
                     .containsOnly(
@@ -127,7 +146,7 @@ public class ScanDataTest {
             mod.scan();
 
             final var type = Type.getObjectType("com/example/SomeAnn");
-            Assertions.assertThat(mod.getScanResult().getAnnotations())
+            assertThat(mod.getScanResult().getAnnotations())
                     .filteredOn(ad -> ad.annotationType().equals(type))
                     .filteredOn(ad -> ad.targetType() == ElementType.METHOD)
                     .containsOnly(
@@ -153,7 +172,7 @@ public class ScanDataTest {
             mod.scan();
 
             final var type = Type.getObjectType("com/example/SomeAnn");
-            Assertions.assertThat(mod.getScanResult().getAnnotations())
+            assertThat(mod.getScanResult().getAnnotations())
                     .filteredOn(ad -> ad.annotationType().equals(type))
                     .filteredOn(ad -> ad.targetType() == ElementType.FIELD)
                     .containsOnly(
@@ -162,10 +181,8 @@ public class ScanDataTest {
         }
     }
 
-    private static TestModFile modFile() {
+    private static TestModFile modFile() throws IOException {
         return TestModFile.newInstance("""
-                modLoader="javafml"
-                loaderVersion="[3,]"
                 license="LGPL v3"
 
                 [[mods]]

@@ -5,10 +5,7 @@
 
 package net.neoforged.fml.common.asm.enumextension;
 
-import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -19,11 +16,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import net.neoforged.coremod.api.ASMAPI;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.asm.ListGeneratorAdapter;
+import net.neoforged.fml.jarcontents.JarResource;
 import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.transformation.ClassProcessor;
+import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
+import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -44,9 +44,7 @@ import org.objectweb.asm.tree.TypeInsnNode;
  * Transforms enums implementing {@link IExtensibleEnum} to add additional entries loaded from files provided by mods
  */
 @ApiStatus.Internal
-public class RuntimeEnumExtender implements ILaunchPluginService {
-    private static final EnumSet<Phase> YAY = EnumSet.of(Phase.BEFORE);
-    private static final EnumSet<Phase> NAY = EnumSet.noneOf(Phase.class);
+public class RuntimeEnumExtender implements ClassProcessor {
     private static final Type MARKER_IFACE = Type.getType(IExtensibleEnum.class);
     private static final Type INDEXED_ANNOTATION = Type.getType(IndexedEnum.class);
     private static final Type NAMED_ANNOTATION = Type.getType(NamedEnum.class);
@@ -66,24 +64,36 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
     private static Map<String, List<EnumPrototype>> prototypes = Map.of();
 
     @Override
-    public String name() {
-        return "runtime_enum_extender";
+    public ProcessorName name() {
+        return ClassProcessorIds.RUNTIME_ENUM_EXTENDER;
     }
 
     @Override
-    public EnumSet<Phase> handlesClass(Type classType, boolean isEmpty) {
-        return isEmpty || !prototypes.containsKey(classType.getInternalName()) ? NAY : YAY;
+    public Set<ProcessorName> runsBefore() {
+        return Set.of(ClassProcessorIds.MIXIN);
     }
 
     @Override
-    public boolean processClass(final Phase phase, final ClassNode classNode, final Type classType) {
+    public OrderingHint orderingHint() {
+        return OrderingHint.EARLY;
+    }
+
+    @Override
+    public boolean handlesClass(SelectionContext context) {
+        return !context.empty() && prototypes.containsKey(context.type().getInternalName());
+    }
+
+    @Override
+    public ComputeFlags processClass(TransformationContext context) {
+        var classNode = context.node();
+        var classType = context.type();
         if ((classNode.access & Opcodes.ACC_ENUM) == 0 || !classNode.interfaces.contains(MARKER_IFACE.getInternalName())) {
             throw new IllegalStateException("Tried to extend non-enum class or non-extensible enum: " + classType);
         }
 
         List<EnumPrototype> protos = prototypes.getOrDefault(classType.getInternalName(), List.of());
         if (protos.isEmpty()) {
-            return false;
+            return ComputeFlags.NO_REWRITE;
         }
 
         MethodNode clinit = findMethod(classNode, mth -> mth.name.equals("<clinit>"));
@@ -116,7 +126,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         List<FieldNode> enumEntries = createEnumEntries(classType, clinitGenerator, ctors, idParamIdx, nameParamIdx, vanillaEntryCount, protos);
         if ($valuesPresent) { // javac
             MethodNode $values = $valuesOpt.get();
-            MethodInsnNode $valuesInsn = ASMAPI.findFirstMethodCall(clinit, ASMAPI.MethodType.STATIC, classType.getInternalName(), $values.name, $values.desc);
+            MethodInsnNode $valuesInsn = findFirstStaticMethodCall(clinit, classType.getInternalName(), $values.name, $values.desc);
             clinit.instructions.insertBefore($valuesInsn, clinitGenerator.insnList);
         } else { // ECJ
             AbstractInsnNode firstValuesArrayInsn = findValuesArrayCreation(classType, clinit);
@@ -126,7 +136,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         ListGeneratorAdapter clinitTailGenerator = new ListGeneratorAdapter(new InsnList());
         buildExtensionInfo(classNode, classType, clinitTailGenerator, infoField, vanillaEntryCount, protos.size());
         returnValuesToExtender(classType, clinitTailGenerator, protos, enumEntries);
-        AbstractInsnNode clinitRetNode = ASMAPI.findFirstInstructionBefore(clinit, Opcodes.RETURN, clinit.instructions.size() - 1);
+        AbstractInsnNode clinitRetNode = findFirstInstructionBefore(clinit, Opcodes.RETURN, clinit.instructions.size() - 1);
         clinit.instructions.insertBefore(clinitRetNode, clinitTailGenerator.insnList);
         classNode.fields.addAll(vanillaEntryCount, enumEntries);
 
@@ -134,14 +144,55 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         appendValuesArray(classType, appendValuesGenerator, enumEntries);
         if ($valuesPresent) { // javac
             MethodNode $values = $valuesOpt.get();
-            AbstractInsnNode $valuesAretInsn = ASMAPI.findFirstInstructionBefore($values, Opcodes.ARETURN, $values.instructions.size() - 1);
+            AbstractInsnNode $valuesAretInsn = findFirstInstructionBefore($values, Opcodes.ARETURN, $values.instructions.size() - 1);
             $values.instructions.insertBefore($valuesAretInsn, appendValuesGenerator.insnList);
         } else { // ECJ
             AbstractInsnNode putStaticInsn = findValuesArrayStore(classType, classNode, clinit, classType.getInternalName());
             clinit.instructions.insertBefore(putStaticInsn, appendValuesGenerator.insnList);
         }
 
-        return true;
+        return ComputeFlags.COMPUTE_FRAMES;
+    }
+
+    /**
+     * Finds the first static method call in the given method matching the given owner, name and descriptor
+     *
+     * @param method     the method to search in
+     * @param owner      the method call's owner to search for
+     * @param name       the method call's name
+     * @param descriptor the method call's descriptor
+     * @return the found method call node, null if none matched after the given index
+     */
+    public static MethodInsnNode findFirstStaticMethodCall(MethodNode method, String owner, String name, String descriptor) {
+        for (int i = 0; i < method.instructions.size(); i++) {
+            AbstractInsnNode node = method.instructions.get(i);
+            if (node instanceof MethodInsnNode methodInsnNode && node.getOpcode() == Opcodes.INVOKESTATIC) {
+                if (methodInsnNode.owner.equals(owner) &&
+                        methodInsnNode.name.equals(name) &&
+                        methodInsnNode.desc.equals(descriptor)) {
+                    return methodInsnNode;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Finds the first instruction with matching opcode before the given index in reverse search
+     *
+     * @param method     the method to search in
+     * @param opCode     the opcode to search for
+     * @param startIndex the index at which to start searching (inclusive)
+     * @return the found instruction node or null if none matched before the given startIndex
+     */
+    public static AbstractInsnNode findFirstInstructionBefore(MethodNode method, int opCode, int startIndex) {
+        for (int i = Math.max(method.instructions.size() - 1, startIndex); i >= 0; i--) {
+            AbstractInsnNode ain = method.instructions.get(i);
+            if (ain.getOpcode() == opCode) {
+                return ain;
+            }
+        }
+        return null;
     }
 
     private static Optional<MethodNode> tryFindMethod(ClassNode classNode, Predicate<MethodNode> predicate) {
@@ -443,7 +494,7 @@ public class RuntimeEnumExtender implements ILaunchPluginService {
         }
     }
 
-    public static void loadEnumPrototypes(Map<IModInfo, Path> paths) {
+    public static void loadEnumPrototypes(Map<IModInfo, JarResource> paths) {
         prototypes = paths.entrySet()
                 .stream()
                 .map(entry -> EnumPrototype.load(entry.getKey(), entry.getValue()))

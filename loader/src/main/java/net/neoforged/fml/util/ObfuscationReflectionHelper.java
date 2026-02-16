@@ -75,7 +75,7 @@ public class ObfuscationReflectionHelper {
      * @throws UnableToFindFieldException   If there was a problem getting the field.
      * @throws UnableToAccessFieldException If there was a problem setting the value of the field.
      */
-    public static <T, E> void setPrivateValue(final Class<? super T> classToAccess, final T instance, @Nullable final E value, final String fieldName) {
+    public static <T, E> void setPrivateValue(Class<? super T> classToAccess, T instance, @Nullable E value, String fieldName) {
         try {
             findField(classToAccess, fieldName).set(instance, value);
         } catch (UnableToFindFieldException e) {
@@ -103,7 +103,7 @@ public class ObfuscationReflectionHelper {
      * @throws NullPointerException        If {@code parameterTypes} is null.
      * @throws UnableToFindMethodException If the method could not be found.
      */
-    public static Method findMethod(final Class<?> clazz, final String methodName, final Class<?>... parameterTypes) {
+    public static Method findMethod(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
         Preconditions.checkNotNull(clazz, "Class to find method on cannot be null.");
         Preconditions.checkNotNull(methodName, "Name of method to find cannot be null.");
         Preconditions.checkArgument(!methodName.isEmpty(), "Name of method to find cannot be empty.");
@@ -132,7 +132,7 @@ public class ObfuscationReflectionHelper {
      * @throws NullPointerException        If {@code parameterTypes} is null.
      * @throws UnknownConstructorException If the constructor could not be found.
      */
-    public static <T> Constructor<T> findConstructor(final Class<T> clazz, final Class<?>... parameterTypes) {
+    public static <T> Constructor<T> findConstructor(Class<T> clazz, Class<?>... parameterTypes) {
         Preconditions.checkNotNull(clazz, "Class to find constructor on cannot be null.");
         Preconditions.checkNotNull(parameterTypes, "Parameter types of constructor to find cannot be null.");
 
@@ -140,8 +140,8 @@ public class ObfuscationReflectionHelper {
             Constructor<T> constructor = clazz.getDeclaredConstructor(parameterTypes);
             constructor.setAccessible(true);
             return constructor;
-        } catch (final NoSuchMethodException e) {
-            final StringBuilder desc = new StringBuilder();
+        } catch (NoSuchMethodException e) {
+            StringBuilder desc = new StringBuilder();
             desc.append(clazz.getSimpleName());
 
             StringJoiner joiner = new StringJoiner(", ", "(", ")");
@@ -169,7 +169,7 @@ public class ObfuscationReflectionHelper {
      * @throws IllegalArgumentException   If {@code fieldName} is empty.
      * @throws UnableToFindFieldException If the field could not be found.
      */
-    public static <T> Field findField(final Class<? super T> clazz, final String fieldName) {
+    public static <T> Field findField(Class<? super T> clazz, String fieldName) {
         Preconditions.checkNotNull(clazz, "Class to find field on cannot be null.");
         Preconditions.checkNotNull(fieldName, "Name of field to find cannot be null.");
         Preconditions.checkArgument(!fieldName.isEmpty(), "Name of field to find cannot be empty.");
@@ -202,7 +202,7 @@ public class ObfuscationReflectionHelper {
     }
 
     public static class UnknownConstructorException extends RuntimeException {
-        public UnknownConstructorException(final String message) {
+        public UnknownConstructorException(String message) {
             super(message);
         }
     }

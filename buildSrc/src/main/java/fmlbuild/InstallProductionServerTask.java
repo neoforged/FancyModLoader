@@ -92,7 +92,7 @@ public abstract class InstallProductionServerTask extends DefaultTask {
         });
 
         // We need to know the name of the main class to split the arg-file into JVM and program arguments
-        var mainClass = getMainClass();
+        var mainClass = "net.neoforged.fml.startup.Server";
         // The difference here is only really in path separators...
         var argFileName = File.pathSeparatorChar == ':' ? "unix_args.txt" : "win_args.txt";
         var argFilePath = installDir.resolve("libraries/net/neoforged/neoforge/" + getNeoForgeVersion().get() + "/" + argFileName);
@@ -120,21 +120,5 @@ public abstract class InstallProductionServerTask extends DefaultTask {
         Files.writeString(getNeoForgeMainClassArgFile().getAsFile().get().toPath(), mainClass, Charset.forName(System.getProperty("native.encoding")));
         // This is read by our own code in UTF-8
         Files.writeString(getNeoForgeProgramArgFile().getAsFile().get().toPath(), programArgs, StandardCharsets.UTF_8);
-    }
-
-    private String getMainClass() throws IOException {
-        String versionContent;
-        try (var zf = new ZipFile(getInstaller().getSingleFile())) {
-            var entry = zf.getEntry("version.json");
-            if (entry == null) {
-                throw new GradleException("The installer " + getInstaller().getSingleFile() + " contains no version.json");
-            }
-            try (var in = zf.getInputStream(entry)) {
-                versionContent = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            }
-        }
-
-        var versionRoot = new Gson().fromJson(versionContent, JsonObject.class);
-        return versionRoot.getAsJsonPrimitive("mainClass").getAsString();
     }
 }

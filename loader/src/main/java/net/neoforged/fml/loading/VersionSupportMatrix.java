@@ -14,23 +14,24 @@ import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
 
-public class VersionSupportMatrix {
+class VersionSupportMatrix {
     private static final HashMap<String, List<ArtifactVersion>> overrideVersions = new HashMap<>();
-    static {
-        final ArtifactVersion version = new DefaultArtifactVersion(FMLLoader.versionInfo().mcVersion());
-        // If the MC version is 1.21.1 and any default version constraint fails,
+
+    public VersionSupportMatrix(VersionInfo versionInfo) {
+        var mcVersion = new DefaultArtifactVersion(versionInfo.mcVersion());
+        // If the MC version is 1.21.8 and any default version constraint fails,
         // we'll also pass the version check if the versions below match
-        if (MavenVersionAdapter.createFromVersionSpec("[1.21.1]").containsVersion(version)) {
-            add("mod.minecraft", "1.21");
-            add("mod.neoforge", "21.0.166");
+        if (MavenVersionAdapter.createFromVersionSpec("[1.21.8]").containsVersion(mcVersion)) {
+            add("mod.minecraft", "1.21.7");
+            add("mod.neoforge", "21.7.26-beta");
         }
     }
 
-    private static void add(String key, String value) {
+    private void add(String key, String value) {
         overrideVersions.computeIfAbsent(key, k -> new ArrayList<>()).add(new DefaultArtifactVersion(value));
     }
 
-    public static boolean testVersionSupportMatrix(VersionRange declaredRange, String lookupId, String type, BiPredicate<String, VersionRange> standardLookup) {
+    public boolean testVersionSupportMatrix(VersionRange declaredRange, String lookupId, String type, BiPredicate<String, VersionRange> standardLookup) {
         if (standardLookup.test(lookupId, declaredRange)) {
             return true;
         }

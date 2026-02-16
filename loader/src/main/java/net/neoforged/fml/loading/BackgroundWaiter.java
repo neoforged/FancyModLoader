@@ -15,7 +15,7 @@ public class BackgroundWaiter {
 
     public static void runAndTick(Runnable r, Runnable tick) {
         ImmediateWindowHandler.updateProgress("Loading bootstrap resources");
-        final Future<?> work = runner.submit(r);
+        Future<?> work = runner.submit(r);
         do {
             tick.run();
             try {

@@ -1,0 +1,121 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
+package net.neoforged.fml.loading;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
+import net.neoforged.fml.ModLoadingException;
+import net.neoforged.fml.testlib.IdentifiableContent;
+import net.neoforged.fml.testlib.RuntimeCompiler;
+import net.neoforged.fml.testlib.SimulatedInstallation;
+import net.neoforged.fml.testlib.args.InstallationTypeSource;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedClass;
+
+@ParameterizedClass
+// Masking files is only relevant for installations that have a merged distribution.
+@InstallationTypeSource({ SimulatedInstallation.Type.USERDEV_FOLDERS, SimulatedInstallation.Type.USERDEV_LEGACY_FOLDERS })
+class DistCleanerTest extends LauncherTest {
+    public DistCleanerTest(SimulatedInstallation.Type type) throws IOException {
+        installation.setup(type);
+    }
+
+    @Test
+    void testEnforceManifest() throws Exception {
+        var clientExtraJar = installation.getComponentRoots().minecraftCommonResourcesRoot();
+
+        // Replaces the proper manifest with one that is empty, ensuring no Minecraft-Dists attribute is present.
+        SimulatedInstallation.addFilesToJar(clientExtraJar,
+                new IdentifiableContent("EMPTY_MANIFEST", JarFile.MANIFEST_NAME, new byte[0]));
+
+        assertThatThrownBy(() -> launchAndLoadWithAdditionalClasspath("neoforgeserverdev"))
+                .isExactlyInstanceOf(ModLoadingException.class)
+                .hasMessage("""
+                        Loading errors encountered:
+                        \t- NeoForge dev environment Minecraft jar does not have a Minecraft-Dists attribute in its manifest; this may be because you have an out-of-date gradle plugin
+                        """);
+    }
+
+    @Test
+    void testUserDevDistCleaning() throws Exception {
+        var clientExtraJar = installation.getComponentRoots().minecraftCommonResourcesRoot();
+        Manifest manifest = new Manifest();
+        manifest.getMainAttributes().putValue(Attributes.Name.MANIFEST_VERSION.toString(), "1.0");
+        manifest.getMainAttributes().putValue("Minecraft-Dists", "client server");
+        var maskedResourcePath = "test/test.json";
+        var maskedClassPath = "test/Masked.class";
+        var loadsMaskedClassPath = "test/LoadsMasked.class";
+        manifest.getEntries().put(maskedResourcePath, new Attributes());
+        manifest.getEntries().put(maskedClassPath, new Attributes());
+        manifest.getAttributes(maskedResourcePath).putValue("Minecraft-Dist", "client");
+        manifest.getAttributes(maskedClassPath).putValue("Minecraft-Dist", "client");
+        var bout = new ByteArrayOutputStream();
+        manifest.write(bout);
+        var manifestBytes = bout.toByteArray();
+
+        var memoryFs = Jimfs.newFileSystem(Configuration.unix());
+        try (var compiler = RuntimeCompiler.createFolder(memoryFs.getPath("/"))) {
+            var compilationBuilder = compiler.builder();
+            compilationBuilder = compilationBuilder.addClass("test.Masked", """
+                    public class Masked {}""");
+            compilationBuilder = compilationBuilder.addClass("test.LoadsMasked", """
+                    public class LoadsMasked {
+                        static {
+                            var masked = test.Masked.class;
+                        }
+                    }""");
+            compilationBuilder.compile();
+        }
+
+        var manifestContent = new IdentifiableContent("MANIFEST", "META-INF/MANIFEST.MF", manifestBytes);
+        var maskedResourceContent = new IdentifiableContent("MASKED_RESOURCE", maskedResourcePath, "{}".getBytes(StandardCharsets.UTF_8));
+        var maskedClassContent = new IdentifiableContent("MASKED_CLASS", maskedClassPath,
+                Files.readAllBytes(memoryFs.getPath("/", maskedClassPath)));
+        var loadsMaskedClassContent = new IdentifiableContent("LOADS_MASKED_CLASS", loadsMaskedClassPath,
+                Files.readAllBytes(memoryFs.getPath("/", loadsMaskedClassPath)));
+
+        SimulatedInstallation.addFilesToJar(
+                clientExtraJar,
+                manifestContent,
+                maskedResourceContent,
+                maskedClassContent,
+                loadsMaskedClassContent);
+
+        var result = launchAndLoadWithAdditionalClasspath("neoforgeserverdev");
+        assertThat(result.issues()).isEmpty();
+        var content = new ArrayList<>(List.of(
+                manifestContent,
+                // Masked classes are still present, as these are removed on class load for the more specific error message
+                maskedClassContent,
+                loadsMaskedClassContent,
+                SimulatedInstallation.CLIENT_ASSETS,
+                SimulatedInstallation.SHARED_ASSETS,
+                SimulatedInstallation.MINECRAFT_VERSION_JSON));
+        content.addAll(List.of(SimulatedInstallation.USERDEV_CLIENT_JAR_CONTENT));
+        if (installation.getType() == SimulatedInstallation.Type.USERDEV_FOLDERS || installation.getType() == SimulatedInstallation.Type.USERDEV_JAR) {
+            // Combined resources + classes + mods toml
+            content.add(SimulatedInstallation.MINECRAFT_MODS_TOML);
+        }
+        assertModContent(result, "minecraft", content);
+        assertThatThrownBy(() -> Class.forName("test.Masked", true, gameClassLoader))
+                .isExactlyInstanceOf(ClassNotFoundException.class).hasMessage("Attempted to load class test.Masked which is not present on the dedicated server");
+        assertThatThrownBy(() -> Class.forName("test.LoadsMasked", true, gameClassLoader))
+                .isExactlyInstanceOf(NoClassDefFoundError.class).hasMessage("test/Masked")
+                .cause().isExactlyInstanceOf(ClassNotFoundException.class).hasMessage("Attempted to load class test.Masked which is not present on the dedicated server");
+    }
+}

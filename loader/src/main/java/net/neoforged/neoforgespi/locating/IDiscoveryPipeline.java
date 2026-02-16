@@ -5,10 +5,10 @@
 
 package net.neoforged.neoforgespi.locating;
 
-import cpw.mods.jarhandling.JarContents;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.neoforgespi.IIssueReporting;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
@@ -47,7 +47,7 @@ public interface IDiscoveryPipeline extends IIssueReporting {
      * Adds a pre-created {@link JarContents jar} to the discovery pipeline
      * to be further processed by registered {@linkplain IModFileReader readers} into a {@linkplain IModFile mod file}.
      *
-     * @param contents                  The contents of the mod file.
+     * @param contents                  The contents of the mod file. The pipeline will take ownership of this and close it when it is no longer used.
      * @param attributes                Additional attributes that describe the circumstance of how this path was discovered.
      * @param incompatibleFileReporting The desired behavior if the given file or folder is deemed to be incompatible with NeoForge.
      * @return The resulting mod file if the file or folder was successfully read.

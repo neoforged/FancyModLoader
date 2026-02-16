@@ -36,7 +36,7 @@ public class ModClassVisitor extends ClassVisitor {
     }
 
     @Override
-    public AnnotationVisitor visitAnnotation(final String annotationName, final boolean runtimeVisible) {
+    public AnnotationVisitor visitAnnotation(String annotationName, boolean runtimeVisible) {
         ModAnnotation ann = new ModAnnotation(ElementType.TYPE, Type.getType(annotationName), this.asmType.getClassName());
         annotations.addFirst(ann);
         return new ModAnnotationVisitor(annotations, ann);
@@ -52,7 +52,7 @@ public class ModClassVisitor extends ClassVisitor {
         return new ModMethodVisitor(name, desc, annotations);
     }
 
-    public void buildData(final Set<ModFileScanData.ClassData> classes, final Set<ModFileScanData.AnnotationData> annotations) {
+    public void buildData(Set<ModFileScanData.ClassData> classes, Set<ModFileScanData.AnnotationData> annotations) {
         classes.add(new ModFileScanData.ClassData(this.asmType, this.asmSuperType, this.interfaces));
         for (var annotation : this.annotations) {
             annotations.add(ModAnnotation.fromModAnnotation(this.asmType, annotation));

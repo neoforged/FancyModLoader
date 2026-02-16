@@ -48,11 +48,11 @@ public final class ProgressMeter {
         return current.get() / (float) steps;
     }
 
-    public void setAbsolute(final int absolute) {
+    public void setAbsolute(int absolute) {
         this.current.set(absolute);
     }
 
-    public void label(final String message) {
+    public void label(String message) {
         this.label = new Message(message, Message.MessageType.ML);
     }
 }

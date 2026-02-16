@@ -12,7 +12,7 @@ import java.util.Optional;
  * This is an interface for querying configuration elements
  */
 public interface IConfigurable {
-    <T> Optional<T> getConfigElement(final String... key);
+    <T> Optional<T> getConfigElement(String... key);
 
-    List<? extends IConfigurable> getConfigList(final String... key);
+    List<? extends IConfigurable> getConfigList(String... key);
 }

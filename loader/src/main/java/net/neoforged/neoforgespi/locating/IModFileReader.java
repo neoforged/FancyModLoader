@@ -5,7 +5,7 @@
 
 package net.neoforged.neoforgespi.locating;
 
-import cpw.mods.jarhandling.JarContents;
+import net.neoforged.fml.jarcontents.JarContents;
 import org.jetbrains.annotations.Nullable;
 
 /**

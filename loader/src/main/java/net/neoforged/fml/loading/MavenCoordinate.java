@@ -61,7 +61,7 @@ public record MavenCoordinate(String groupId, String artifactId, String extensio
      * these coordinates.
      */
     public Path toRelativeRepositoryPath() {
-        final String fileName = artifactId + "-" + version +
+        String fileName = artifactId + "-" + version +
                 (!classifier.isEmpty() ? "-" + classifier : "") +
                 (!extension.isEmpty() ? "." + extension : ".jar");
 

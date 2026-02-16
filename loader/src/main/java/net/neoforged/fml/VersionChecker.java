@@ -111,11 +111,11 @@ public class VersionChecker {
             private String openUrlString(URL url, IModInfo mod) throws IOException, URISyntaxException, InterruptedException {
                 URL currentUrl = url;
 
-                final StringBuilder sb = new StringBuilder();
+                StringBuilder sb = new StringBuilder();
                 sb.append("Java-http-client/").append(System.getProperty("java.version")).append(' ');
-                sb.append("FancyModLoader/").append(FMLLoader.versionInfo().fmlVersion()).append(' ');
+                sb.append("FancyModLoader/").append(FMLVersion.getVersion()).append(' ');
                 sb.append(mod.getModId()).append('/').append(mod.getVersion());
-                final String userAgent = sb.toString();
+                String userAgent = sb.toString();
 
                 for (int redirects = 0; redirects < MAX_HTTP_REDIRECTS; redirects++) {
                     var request = HttpRequest.newBuilder()
@@ -126,7 +126,7 @@ public class VersionChecker {
                             .GET()
                             .build();
 
-                    final HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+                    HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
 
                     int responseCode = response.statusCode();
                     if (responseCode >= 300 && responseCode <= 399) {
@@ -136,9 +136,9 @@ public class VersionChecker {
                         continue;
                     }
 
-                    final boolean isGzipEncoded = response.headers().firstValue("Content-Encoding").orElse("").equals("gzip");
+                    boolean isGzipEncoded = response.headers().firstValue("Content-Encoding").orElse("").equals("gzip");
 
-                    final String bodyStr;
+                    String bodyStr;
                     try (InputStream inStream = isGzipEncoded ? new GZIPInputStream(response.body()) : response.body()) {
                         try (var bufferedReader = new BufferedReader(new InputStreamReader(inStream))) {
                             bodyStr = bufferedReader.lines().collect(Collectors.joining("\n"));
@@ -169,7 +169,7 @@ public class VersionChecker {
                     Map<String, String> promos = (Map<String, String>) json.get("promos");
                     display_url = (String) json.get("homepage");
 
-                    var mcVersion = FMLLoader.versionInfo().mcVersion();
+                    var mcVersion = FMLLoader.getCurrent().getVersionInfo().mcVersion();
                     String rec = promos.get(mcVersion + "-recommended");
                     String lat = promos.get(mcVersion + "-latest");
                     ComparableVersion current = new ComparableVersion(mod.getVersion().toString());

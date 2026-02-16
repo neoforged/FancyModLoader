@@ -28,7 +28,7 @@ public class StartupNotificationManager {
         }
     }
 
-    public static ProgressMeter prependProgressBar(final String barName, final int count) {
+    public static ProgressMeter prependProgressBar(String barName, int count) {
         var pm = new ProgressMeter(barName, count, 0, new Message(barName, Message.MessageType.ML));
         synchronized (progressMeters) {
             progressMeters.addFirst(pm);
@@ -36,7 +36,7 @@ public class StartupNotificationManager {
         return pm;
     }
 
-    public static ProgressMeter addProgressBar(final String barName, final int count) {
+    public static ProgressMeter addProgressBar(String barName, int count) {
         var pm = new ProgressMeter(barName, count, 0, new Message(barName, Message.MessageType.ML));
         synchronized (progressMeters) {
             progressMeters.addLast(pm);
@@ -44,7 +44,7 @@ public class StartupNotificationManager {
         return pm;
     }
 
-    public static void popBar(final ProgressMeter progressMeter) {
+    public static void popBar(ProgressMeter progressMeter) {
         synchronized (progressMeters) {
             progressMeters.removeLastOccurrence(progressMeter);
         }
@@ -53,7 +53,7 @@ public class StartupNotificationManager {
     public record AgeMessage(int age, Message message) {}
 
     public static List<AgeMessage> getMessages() {
-        final long ts = System.nanoTime();
+        long ts = System.nanoTime();
         return messages.values().stream().flatMap(Collection::stream)
                 .sorted(Comparator.comparingLong(Message::timestamp).thenComparing(Message::getText).reversed())
                 .map(m -> new AgeMessage((int) ((ts - m.timestamp()) / 1000000), m))
@@ -78,8 +78,8 @@ public class StartupNotificationManager {
         messages = newMessages;
     }
 
-    public static void addModMessage(final String message) {
-        final String safeMessage = Ascii.truncate(CharMatcher.ascii().retainFrom(message), 80, "~");
+    public static void addModMessage(String message) {
+        String safeMessage = Ascii.truncate(CharMatcher.ascii().retainFrom(message), 80, "~");
         addMessage(Message.MessageType.MOD, safeMessage, 20);
     }
 

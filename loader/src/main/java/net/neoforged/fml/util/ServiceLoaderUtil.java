@@ -5,21 +5,18 @@
 
 package net.neoforged.fml.util;
 
-import com.google.common.collect.Streams;
-import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.niofs.union.UnionFileSystem;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.ServiceConfigurationError;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 import net.neoforged.fml.loading.LogMarkers;
-import net.neoforged.jarjar.nio.pathfs.PathFileSystem;
 import net.neoforged.neoforgespi.ILaunchContext;
 import net.neoforged.neoforgespi.locating.IOrderedProvider;
 import org.jetbrains.annotations.ApiStatus;
@@ -36,20 +33,58 @@ public final class ServiceLoaderUtil {
         return loadServices(context, serviceClass, List.of());
     }
 
+    public static <T> List<T> loadServices(ILaunchContext context, Class<T> serviceClass, Predicate<Class<? extends T>> filter) {
+        return loadServices(context, serviceClass, List.of(), filter);
+    }
+
+    public static <T> List<T> loadServices(ILaunchContext context, Class<T> serviceClass, Collection<T> additionalServices) {
+        return loadServices(context, serviceClass, additionalServices, ignored -> true);
+    }
+
+    /**
+     * Same as {@link #loadServices}, but it also marks any jar file that provided such services as located to prevent it
+     * from being located again as a mod-file or library later.
+     */
+    public static <T> List<T> loadEarlyServices(ILaunchContext context, Class<T> serviceClass, Collection<T> additionalServices) {
+        var services = loadServices(context, serviceClass, additionalServices, ignored -> true);
+
+        for (var service : services) {
+            var codeSource = service.getClass().getProtectionDomain().getCodeSource();
+            if (codeSource != null && codeSource.getLocation() != null) {
+                try {
+                    context.addLocated(Path.of(codeSource.getLocation().toURI()));
+                } catch (IllegalArgumentException | FileSystemNotFoundException | URISyntaxException ignored) {}
+            }
+        }
+
+        return services;
+    }
+
     /**
      * @param serviceClass If the service class implements {@link IOrderedProvider}, the services will automatically be sorted.
      */
-    public static <T> List<T> loadServices(ILaunchContext context, Class<T> serviceClass, Collection<T> additionalServices) {
-        var serviceLoaderServices = context.loadServices(serviceClass).map(p -> {
-            try {
-                return p.get();
-            } catch (ServiceConfigurationError sce) {
-                LOGGER.error("Failed to load implementation for {}", serviceClass, sce);
-                return null;
-            }
-        }).filter(Objects::nonNull);
+    public static <T> List<T> loadServices(ILaunchContext context,
+            Class<T> serviceClass,
+            Collection<T> additionalServices,
+            Predicate<Class<? extends T>> filter) {
+        var serviceLoaderServices = context.loadServices(serviceClass)
+                .filter(p -> {
+                    if (!filter.test(p.type())) {
+                        LOGGER.debug("Filtering out service provider {} for service class {}", p.type(), serviceClass);
+                        return false;
+                    }
+                    return true;
+                })
+                .map(p -> {
+                    try {
+                        return p.get();
+                    } catch (ServiceConfigurationError sce) {
+                        LOGGER.error("Failed to load implementation for {}", serviceClass, sce);
+                        return null;
+                    }
+                }).filter(Objects::nonNull);
 
-        var servicesStream = Streams.concat(additionalServices.stream(), serviceLoaderServices).distinct();
+        var servicesStream = Stream.concat(additionalServices.stream(), serviceLoaderServices).distinct();
 
         var applyPriority = IOrderedProvider.class.isAssignableFrom(serviceClass);
         if (applyPriority) {
@@ -66,9 +101,9 @@ public final class ServiceLoaderUtil {
                 }
 
                 if (additionalServices.contains(service)) {
-                    LOGGER.debug(LogMarkers.CORE, "\t{}[built-in] {}", priorityPrefix, identifyService(context, service));
+                    LOGGER.debug(LogMarkers.CORE, "\t{}[built-in] {}", priorityPrefix, identifyService(service));
                 } else {
-                    LOGGER.debug(LogMarkers.CORE, "\t{}{}", priorityPrefix, identifyService(context, service));
+                    LOGGER.debug(LogMarkers.CORE, "\t{}{}", priorityPrefix, identifyService(service));
                 }
             }
         }
@@ -76,8 +111,8 @@ public final class ServiceLoaderUtil {
         return services;
     }
 
-    private static String identifyService(ILaunchContext context, Object o) {
-        var sourcePath = identifySourcePath(context, o);
+    private static String identifyService(Object o) {
+        var sourcePath = identifySourcePath(o);
         return o.getClass().getName() + " from " + sourcePath;
     }
 
@@ -85,45 +120,14 @@ public final class ServiceLoaderUtil {
      * Given any object, this method tries to build a human-readable chain of paths that identify where the
      * code implementing the given object is coming from.
      */
-    public static String identifySourcePath(ILaunchContext context, Object object) {
+    public static String identifySourcePath(Object object) {
         var codeLocation = object.getClass().getProtectionDomain().getCodeSource().getLocation();
+        Path fsLocation;
         try {
-            return unwrapPath(context, Paths.get(codeLocation.toURI()));
+            fsLocation = Path.of(codeLocation.toURI());
         } catch (URISyntaxException e) {
             return codeLocation.toString();
         }
-    }
-
-    /**
-     * Tries to unwrap the given path if it is from a nested file-system such as JIJ or UnionFS,
-     * while maintaining context in the return (such as "&lt;nested path>" from "&lt;outer jar>").
-     */
-    private static String unwrapPath(ILaunchContext context, Path path) {
-        if (path.getFileSystem() instanceof PathFileSystem pathFileSystem) {
-            return unwrapPath(context, pathFileSystem.getTarget());
-        } else if (path.getFileSystem() instanceof UnionFileSystem unionFileSystem) {
-            if (path.equals(unionFileSystem.getRoot())) {
-                return unwrapPath(context, unionFileSystem.getPrimaryPath());
-            }
-            return unwrapPath(context, unionFileSystem.getPrimaryPath()) + " > " + relativizePath(context, path);
-        }
-        return relativizePath(context, path);
-    }
-
-    private static String relativizePath(ILaunchContext context, Path path) {
-        var gameDir = context.environment().getProperty(IEnvironment.Keys.GAMEDIR.get()).orElse(null);
-
-        String resultPath;
-
-        if (gameDir != null && path.startsWith(gameDir)) {
-            resultPath = gameDir.relativize(path).toString();
-        } else if (Files.isDirectory(path)) {
-            resultPath = path.toAbsolutePath().toString();
-        } else {
-            resultPath = path.getFileName().toString();
-        }
-
-        // Unify separators to ensure it is easier to test
-        return resultPath.replace('\\', '/');
+        return PathPrettyPrinting.prettyPrint(fsLocation);
     }
 }
