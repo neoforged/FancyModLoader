@@ -277,12 +277,12 @@ public class DisplayWindow implements ImmediateWindowProvider {
         LOGGER.error("ERROR DISPLAY\n{}", msgBuilder);
         // we show the display on a new dedicated thread
         var thread = new Thread(() -> {
-            var res = TinyFileDialogs.tinyfd_messageBox("Minecraft: NeoForge", msgBuilder.toString(), "yesno", "error", false);
-            if (res) {
+            var res = TinyFileDialogs.tinyfd_messageBox("Minecraft: NeoForge", msgBuilder.toString(), "yesno", "error", 1);
+            if (res == 1) {
                 try {
                     Desktop.getDesktop().browse(URI.create(ERROR_URL));
                 } catch (IOException ioe) {
-                    TinyFileDialogs.tinyfd_messageBox("Minecraft: NeoForge", "Sadly, we couldn't open your browser.\nVisit " + ERROR_URL, "ok", "error", false);
+                    TinyFileDialogs.tinyfd_messageBox("Minecraft: NeoForge", "Sadly, we couldn't open your browser.\nVisit " + ERROR_URL, "ok", "error", 1);
                 }
             }
         }, "crash-report");
