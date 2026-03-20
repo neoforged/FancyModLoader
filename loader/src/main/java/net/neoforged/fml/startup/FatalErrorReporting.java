@@ -137,7 +137,7 @@ public final class FatalErrorReporting {
                     message,
                     "ok",
                     "error",
-                    false);
+                    1);
         }
         System.exit(1);
     }

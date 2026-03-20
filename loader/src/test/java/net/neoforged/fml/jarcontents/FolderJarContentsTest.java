@@ -201,7 +201,8 @@ class FolderJarContentsTest extends AbstractJarContentsTest {
 
     @Test
     void testToString() {
-        assertEquals("folder(" + tempDir + ")", contents.toString());
+        String expected = tempDir.toString().replace('\\', '/');
+        assertEquals("folder(" + expected + ")", contents.toString());
     }
 
     @Nested

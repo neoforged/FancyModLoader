@@ -98,6 +98,7 @@ class EmptyJarContentsTest {
     @Test
     void testToString() {
         // Should show its identifying primary path and that it's empty in toString
-        assertEquals("empty(" + testPath + ")", emptyJar.toString());
+        String expected = testPath.toString().replace('\\', '/');
+        assertEquals("empty(" + expected + ")", emptyJar.toString());
     }
 }
