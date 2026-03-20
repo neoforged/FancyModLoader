@@ -31,7 +31,6 @@ rootProject.name = 'FancyModLoader'
 include 'loader'
 include 'earlydisplay'
 include 'junit-fml'
-project(':junit-fml').projectDir = file('junit')
 include 'testlib'
 include 'tests'
 enableFeaturePreview "STABLE_CONFIGURATION_CACHE"
