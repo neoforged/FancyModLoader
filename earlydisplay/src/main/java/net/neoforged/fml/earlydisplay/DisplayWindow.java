@@ -17,7 +17,11 @@ import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_CORE_PROFILE;
 import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_DEBUG_CONTEXT;
 import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_FORWARD_COMPAT;
 import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_PROFILE;
+import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM;
+import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_WAYLAND;
+import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_X11;
 import static org.lwjgl.glfw.GLFW.GLFW_RESIZABLE;
+import static org.lwjgl.glfw.GLFW.GLFW_SOFT_FULLSCREEN;
 import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
 import static org.lwjgl.glfw.GLFW.GLFW_VISIBLE;
 import static org.lwjgl.glfw.GLFW.GLFW_X11_CLASS_NAME;
@@ -30,8 +34,10 @@ import static org.lwjgl.glfw.GLFW.glfwGetPrimaryMonitor;
 import static org.lwjgl.glfw.GLFW.glfwGetVideoMode;
 import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
 import static org.lwjgl.glfw.GLFW.glfwInit;
+import static org.lwjgl.glfw.GLFW.glfwInitHint;
 import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwMaximizeWindow;
+import static org.lwjgl.glfw.GLFW.glfwPlatformSupported;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowIcon;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowPos;
@@ -107,6 +113,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private final ProgressMeter mainProgress;
 
     private boolean darkMode;
+    private boolean borderless;
     private Theme theme;
 
     private ScheduledFuture<LoadingScreenRenderer> rendererFuture;
@@ -161,28 +168,30 @@ public class DisplayWindow implements ImmediateWindowProvider {
             assetIndex = parsed.valueOf(assetIndexOpt);
         }
 
-        if (Boolean.getBoolean("fml.earlyWindowDarkMode")) {
-            this.darkMode = true;
-        } else {
-            try (var lines = Files.lines(FMLPaths.GAMEDIR.get().resolve(Paths.get("options.txt")))) {
-                this.darkMode = lines
-                        .filter(l -> l.startsWith("darkMojangStudiosBackground:"))
-                        .findAny()
-                        .filter(l -> l.toLowerCase(Locale.ROOT).endsWith("true"))
-                        .isPresent();
-            } catch (NoSuchFileException ignored) {
-                // No options
-            } catch (IOException e) {
-                LOGGER.warn("Failed to read dark-mode settings from options.txt", e);
-            }
+        boolean[] darkMode = new boolean[] { false };
+        boolean[] borderless = new boolean[] { true };
+        try (var lines = Files.lines(FMLPaths.GAMEDIR.get().resolve(Paths.get("options.txt")))) {
+            lines.forEach(line -> {
+                if (line.startsWith("darkMojangStudiosBackground:")) {
+                    darkMode[0] = line.toLowerCase(Locale.ROOT).endsWith("true");
+                } else if (line.startsWith("exclusiveFullscreen:")) {
+                    borderless[0] = line.toLowerCase(Locale.ROOT).endsWith("false");
+                }
+            });
+        } catch (NoSuchFileException ignored) {
+            // No options
+        } catch (IOException e) {
+            LOGGER.warn("Failed to read options.txt", e);
         }
+        this.darkMode = Boolean.getBoolean("fml.earlyWindowDarkMode") || darkMode[0];
+        this.borderless = borderless[0];
 
         var forcedTheme = FMLConfig.getConfigValue(FMLConfig.ConfigValue.EARLY_LOADING_SCREEN_THEME);
         if (!forcedTheme.isEmpty()) {
             LOGGER.info("Trying to load configured early loading screen theme '{}'", forcedTheme);
             this.theme = loadTheme(forcedTheme);
         } else {
-            this.theme = loadTheme(darkMode);
+            this.theme = loadTheme(this.darkMode);
         }
         this.maximized = parsed.has(maximizedopt) || FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_MAXIMIZED);
 
@@ -296,6 +305,12 @@ public class DisplayWindow implements ImmediateWindowProvider {
         System.exit(1);
     }
 
+    /// Copied from SharedConstants.booleanProperty()
+    private static boolean getBoolProperty(String name) {
+        String value = System.getProperty(name);
+        return value != null && (value.isEmpty() || Boolean.parseBoolean(value));
+    }
+
     /**
      * Called to initialize the window when preparing for the Render Thread.
      * <p>
@@ -308,6 +323,11 @@ public class DisplayWindow implements ImmediateWindowProvider {
      * @return The selected GL profile as an integer pair
      */
     public void initWindow() {
+        boolean preferWayland = getBoolProperty("MC_DEBUG_ENABLED") && getBoolProperty("MC_DEBUG_PREFER_WAYLAND");
+        if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND) && glfwPlatformSupported(GLFW_PLATFORM_X11) && !preferWayland) {
+            glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+        }
+
         // Initialize GLFW with a time guard, in case something goes wrong
         long glfwInitBegin = System.nanoTime();
         if (!glfwInit()) {
@@ -332,6 +352,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        glfwWindowHint(GLFW_SOFT_FULLSCREEN, borderless ? GLFW_TRUE : GLFW_FALSE);
         // End of flags copied from Vanilla Minecraft
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
