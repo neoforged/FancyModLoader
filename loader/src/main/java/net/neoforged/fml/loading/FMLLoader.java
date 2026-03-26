@@ -595,8 +595,8 @@ public final class FMLLoader implements AutoCloseable {
             // Slow, but whatever
             for (int i = 0; i < resourceContent.length - signature.length; i++) {
                 boolean match = true;
-                for (byte signatureB : signature) {
-                    if (resourceContent[i] != signatureB) {
+                for (int j = 0; j < signature.length; j++) {
+                    if (resourceContent[i + j] != signature[j]) {
                         match = false;
                         break;
                     }
