@@ -17,6 +17,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -579,10 +580,36 @@ public final class FMLLoader implements AutoCloseable {
     }
 
     private static boolean detectProduction(ClassLoader classLoader) {
-        // We are not in production when an unobfuscated class is reachable on the classloader
-        // since that means the unobfuscated game is on the classpath. We use DetectedVersion here since
-        // it has existed across many Minecraft versions.
-        return classLoader.getResource("net/minecraft/DetectedVersion.class") == null;
+        // Since Minecraft has been shipping unobfuscated since 26.1, we can no longer identify
+        // that the patched NeoForge is on the classpath by looking for a class that would be
+        // obfuscated in production.
+        // The new heuristic is to load a Minecraft class that we know is patched by NF,
+        // and check for net/neoforged/fml in the bytecode to verify this.
+        try (var resource = classLoader.getResourceAsStream("net/minecraft/SharedConstants.class")) {
+            if (resource == null) {
+                return true; // Likely an error but missing classes will be reported by the game locator more competently
+            }
+
+            var resourceContent = resource.readAllBytes();
+            var signature = "net/neoforged/fml".getBytes(StandardCharsets.UTF_8);
+            // Slow, but whatever
+            for (int i = 0; i < resourceContent.length - signature.length; i++) {
+                boolean match = true;
+                for (int j = 0; j < signature.length; j++) {
+                    if (resourceContent[i + j] != signature[j]) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    // Found signature -> we're definitely in dev
+                    return false;
+                }
+            }
+            return true; // didn't find patched-in NeoForge reference in bytecode -> not in dev
+        } catch (IOException ignored) {
+            return true; // Any error here will be caught later
+        }
     }
 
     private void loadEarlyServices(StartupArgs startupArgs) {
