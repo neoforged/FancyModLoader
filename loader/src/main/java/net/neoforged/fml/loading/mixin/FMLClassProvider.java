@@ -16,8 +16,12 @@ import org.spongepowered.asm.service.IClassProvider;
  */
 class FMLClassProvider implements IClassProvider {
     private static final Logger LOGGER = LogManager.getLogger();
+    
+    private final ClassLoader pluginClassLoader;
 
-    FMLClassProvider() {}
+    FMLClassProvider(ClassLoader pluginClassLoader) {
+        this.pluginClassLoader = pluginClassLoader;
+    }
 
     @Override
     @Deprecated
@@ -28,7 +32,7 @@ class FMLClassProvider implements IClassProvider {
     @Override
     public Class<?> findClass(String name) throws ClassNotFoundException {
         try {
-            return Class.forName(name, true, FMLLoader.getCurrent().getPluginClassLoader());
+            return Class.forName(name, true, pluginClassLoader);
         } catch (ClassNotFoundException e) {
             warnOnDeprecatedTclPluginLoad(name);
             return Class.forName(name, true, FMLLoader.getCurrent().getCurrentClassLoader());
@@ -38,7 +42,7 @@ class FMLClassProvider implements IClassProvider {
     @Override
     public Class<?> findClass(String name, boolean initialize) throws ClassNotFoundException {
         try {
-            return Class.forName(name, initialize, FMLLoader.getCurrent().getPluginClassLoader());
+            return Class.forName(name, initialize, pluginClassLoader);
         } catch (ClassNotFoundException e) {
             warnOnDeprecatedTclPluginLoad(name);
             return Class.forName(name, initialize, FMLLoader.getCurrent().getCurrentClassLoader());
