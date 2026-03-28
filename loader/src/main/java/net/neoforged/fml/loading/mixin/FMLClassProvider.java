@@ -16,7 +16,7 @@ import org.spongepowered.asm.service.IClassProvider;
  */
 class FMLClassProvider implements IClassProvider {
     private static final Logger LOGGER = LogManager.getLogger();
-    
+
     private final ClassLoader pluginClassLoader;
 
     FMLClassProvider(ClassLoader pluginClassLoader) {
