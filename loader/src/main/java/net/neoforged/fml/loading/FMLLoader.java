@@ -107,6 +107,10 @@ public final class FMLLoader implements AutoCloseable {
      */
     private ClassLoader currentClassLoader;
     /**
+     * Supplies the current tail of the class-loader chain, excluding the game layer. It is safe for plugins to load classes from during transformation or the like.
+     */
+    private Supplier<ClassLoader> pluginClassLoader = () -> this.currentClassLoader;
+    /**
      * Resources owned by this loader, such as opened URL classloaders, which
      * will be closed alongside the loader.
      */
@@ -274,6 +278,10 @@ public final class FMLLoader implements AutoCloseable {
 
     public ClassLoader getCurrentClassLoader() {
         return currentClassLoader;
+    }
+
+    public ClassLoader getPluginClassLoader() {
+        return pluginClassLoader.get();
     }
 
     public ProgramArgs getProgramArgs() {
@@ -502,6 +510,8 @@ public final class FMLLoader implements AutoCloseable {
 
         gameLayer = layer;
         ownedResources.add(loader);
+        var parentClassLoader = currentClassLoader;
+        pluginClassLoader = () -> parentClassLoader;
         currentClassLoader = loader;
         Thread.currentThread().setContextClassLoader(loader);
         return loader;
