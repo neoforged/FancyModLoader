@@ -53,9 +53,12 @@ public final class FatalErrorReporting {
         var issues = new ArrayList<ModLoadingIssue>();
         collectModLoadingIssues(t, issues);
 
-        if (issues.isEmpty()) {
-            t = unwrapException(t);
+        t = unwrapException(t);
 
+        // Print the error to the console too so that the stacktrace isn't lost
+        t.printStackTrace();
+
+        if (issues.isEmpty()) {
             if (t instanceof FatalStartupException e) {
                 var errorText = new StringBuilder(e.getMessage());
                 if (e.getCause() != null) {
