@@ -221,12 +221,14 @@ public interface ClassProcessor {
      * The context provided to {@linkplain ClassProcessor class processors}
      * when they are linked with a bytecode source.
      * 
-     * @param processors       an immutable map of the processors that are being linked. The maps iteration order is the order in which the processors will be applied
-     * @param bytecodeProvider a provider to access class bytecode for other classes than the class that is being transformed
+     * @param processors        an immutable map of the processors that are being linked. The maps iteration order is the order in which the processors will be applied
+     * @param bytecodeProvider  a provider to access class bytecode for other classes than the class that is being transformed
+     * @param pluginClassLoader provides access to the classloader before the transforming classloader, for use in safely loading classes
      */
     record LinkContext(
             @Unmodifiable SequencedMap<ProcessorName, ClassProcessor> processors,
-            BytecodeProvider bytecodeProvider) {
+            BytecodeProvider bytecodeProvider,
+            ClassLoader pluginClassLoader) {
         @ApiStatus.Internal
         public LinkContext {}
     }
