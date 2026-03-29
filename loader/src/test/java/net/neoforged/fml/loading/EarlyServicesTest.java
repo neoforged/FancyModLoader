@@ -9,16 +9,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import net.neoforged.fml.testlib.ModFileBuilder;
 import net.neoforged.fml.testlib.SimulatedInstallation;
 import net.neoforged.fml.testlib.args.ClientInstallationTypesSource;
 import net.neoforged.fml.testlib.args.InstallationTypeSource;
+import net.neoforged.fml.testutils.RequiresSymlink;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 
 public class EarlyServicesTest extends LauncherTest {
-    public static ThreadLocal<Boolean> WAS_CALLED = new ThreadLocal<>();
+    public static final ThreadLocal<Boolean> WAS_CALLED = new ThreadLocal<>();
+
+    @BeforeEach
+    void reset() {
+        WAS_CALLED.set(false);
+    }
 
     private static final ContainedJarIdentifier JIJ_TESTMOD_ID = new ContainedJarIdentifier("testmod", "testmod");
 
@@ -79,6 +90,27 @@ public class EarlyServicesTest extends LauncherTest {
 
         assertEquals(Boolean.TRUE, WAS_CALLED.get());
         assertThat(result.loadedMods()).containsKey("testmod");
+    }
+
+    @Test
+    @RequiresSymlink
+    void testEarlyServicesFromSymbolicLink(@TempDir Path symlinkSource) throws Exception {
+        installation.setupProductionClient();
+
+        var modsFolder = installation.getModsFolder();
+        Files.deleteIfExists(modsFolder);
+        Files.createSymbolicLink(modsFolder, symlinkSource);
+
+        var builder = ModFileBuilder.toJar(symlinkSource.resolve("service.jar"))
+                .withMod("testmodservice", "1.0.0");
+        addEarlyService(builder);
+        builder.build();
+
+        var result = launchClient();
+        // Check that the early service was loaded from the symlinked mods folder
+        assertEquals(Boolean.TRUE, WAS_CALLED.get());
+        // And check that the early service wasn't loaded as a mod
+        assertThat(result.loadedMods()).doesNotContainKey("testmodservice");
     }
 
     private static void addEarlyService(ModFileBuilder<?> builder) throws IOException {
