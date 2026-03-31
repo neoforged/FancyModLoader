@@ -48,8 +48,8 @@
   "fml.modloadingissue.technical_error": "Une erreur technique s'est produite lors du chargement du mod : {0}",
   "fml.modloadingissue.invalid_maven_coordinate": "Les coordonnées Maven suivantes sont invalides : {0}",
   "fml.modloadingissue.maven_coordinate_not_found": "Aucun mod avec les coordonnées Maven {0} n'a pu être trouvé dans {1}",
-  "fml.modloadingissue.neodev_missing_dists_attribute": "NeoForge dev environment Minecraft jar does not have a {0} attribute in its manifest; this may be because you have an out-of-date gradle plugin",
-  "fml.modloadingissue.neodev_missing_appropriate_dist": "NeoForge dev environment Minecraft jar does not have a {0} marker in its {1} attribute in its manifest; this may be because you have an out-of-date gradle plugin",
+  "fml.modloadingissue.neodev_missing_dists_attribute": "Le Minecraft jar de l'environnement de développement de NeoForge n'a pas d'attribut {0} dans son manifeste. Vous avez peut-être un plugin gradle obsolète",
+  "fml.modloadingissue.neodev_missing_appropriate_dist": "Le Minecraft jar de l'environnement de développement de NeoForge n'a pas de marqueur {0} dans son attribut {1} dans son manifeste. Vous avez peut-être un plugin gradle obsolète",
   "fml.modloadingissue.failed_to_list_folder_content": "",
   "fml.modloadingissue.failed_to_find_on_classpath": "{0} introuvable sur le chemin d'accès",
   "fml.modloadingissue.multiple_copies_on_classpath": "Plusieurs copies de {0} trouvées sur le chemin d'accès : {1}",
@@ -86,8 +86,8 @@
   "fml.modloadingissue.enumextender.argument.constant.invalid_char": "Caractère {0} invalide à l'index des paramètres {1} pour le champ {2} dans l'enum {3}, spécifié par le mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.argument.constant.unsupported_type": "Type d'argument immédiat {0} non supporté à l'index des paramètres {1} pour le champ {2} dans l'enum {3}, spécifié par le mod {100,modinfo,id}",
   "fml.modloadingissue.enumextender.duplicate": "Champ dupliqué {0} trouvé pour l'enum {1}, fourni par les mods {2} et {3}",
-  "fml.button.open.log": "Open Log File",
-  "fml.button.open.crashreport": "Open Crash Report",
+  "fml.button.open.log": "Ouvrir le journal de log",
+  "fml.button.open.crashreport": "Ouvrir le rapport de crash",
   "fml.button.open.mods.folder": "Ouvrir le dossier Mods",
-  "fml.button.quit": "Quit Game"
+  "fml.button.quit": "Quitter le jeu"
 }
