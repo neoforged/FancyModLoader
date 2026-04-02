@@ -26,9 +26,11 @@ import org.spongepowered.asm.mixin.MixinEnvironment.CompatibilityLevel;
 import org.spongepowered.asm.mixin.MixinEnvironment.Phase;
 import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 import org.spongepowered.asm.mixin.transformer.IMixinTransformerFactory;
+import org.spongepowered.asm.service.IAdviceProvider;
 import org.spongepowered.asm.service.IClassBytecodeProvider;
 import org.spongepowered.asm.service.IClassProvider;
 import org.spongepowered.asm.service.IClassTracker;
+import org.spongepowered.asm.service.IFeatureValidator;
 import org.spongepowered.asm.service.IMixinAuditTrail;
 import org.spongepowered.asm.service.IMixinInternal;
 import org.spongepowered.asm.service.IMixinService;
@@ -57,6 +59,10 @@ public class FMLMixinService implements IMixinService {
     private final FMLClassTracker classTracker = new FMLClassTracker();
 
     private final FMLAuditTrail auditTrail = new FMLAuditTrail();
+
+    private final IFeatureValidator featureValidator = new FMLMixinFeatureValidator();
+
+    private final IAdviceProvider adviceProvider = new FMLMixinAdviceProvider();
 
     private final Map<String, byte[]> mixinConfigContents = new HashMap<>();
 
@@ -170,6 +176,16 @@ public class FMLMixinService implements IMixinService {
 
     FMLAuditTrail getInternalAuditTrail() {
         return this.auditTrail;
+    }
+
+    @Override
+    public IFeatureValidator getFeatureValidator() {
+        return this.featureValidator;
+    }
+
+    @Override
+    public IAdviceProvider getAdviceProvider() {
+        return this.adviceProvider;
     }
 
     public IMixinTransformer getMixinTransformer() {
