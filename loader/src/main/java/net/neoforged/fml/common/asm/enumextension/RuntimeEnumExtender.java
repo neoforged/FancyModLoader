@@ -49,6 +49,7 @@ public class RuntimeEnumExtender implements ClassProcessor {
     private static final Type INDEXED_ANNOTATION = Type.getType(IndexedEnum.class);
     private static final Type NAMED_ANNOTATION = Type.getType(NamedEnum.class);
     private static final Type RESERVED_ANNOTATION = Type.getType(ReservedConstructor.class);
+    private static final Type JST_ADDED_ENTRY = Type.getType(ExtensionEnumEntry.class);
     private static final Type ENUM_PROXY = Type.getType(EnumProxy.class);
     private static final Type NET_CHECK = Type.getType(NetworkedEnum.NetworkCheck.class);
     private static final Type EXT_INFO = Type.getType(ExtensionInfo.class);
@@ -91,14 +92,63 @@ public class RuntimeEnumExtender implements ClassProcessor {
             throw new IllegalStateException("Tried to extend non-enum class or non-extensible enum: " + classType);
         }
 
-        List<EnumPrototype> protos = prototypes.getOrDefault(classType.getInternalName(), List.of());
-        if (protos.isEmpty()) {
-            return ComputeFlags.NO_REWRITE;
-        }
-
         MethodNode clinit = findMethod(classNode, mth -> mth.name.equals("<clinit>"));
         Optional<MethodNode> $valuesOpt = tryFindMethod(classNode, mth -> mth.name.equals("$values"));
         boolean $valuesPresent = $valuesOpt.isPresent();
+
+        boolean requiresRewrite = false;
+        List<FieldNode> enumEntriesToRemove = new ArrayList<>();
+        for (var field : classNode.fields) {
+            if ((field.access & Opcodes.ACC_ENUM) != 0 && field.desc.equals(classType.getDescriptor())) {
+                if (field.invisibleAnnotations != null && field.invisibleAnnotations.stream().anyMatch(anno -> anno.desc.equals(JST_ADDED_ENTRY.getDescriptor()))) {
+                    // We have to remove this field everywhere!
+                    enumEntriesToRemove.add(field);
+                }
+            }
+        }
+        if (!enumEntriesToRemove.isEmpty()) {
+            requiresRewrite = true;
+            classNode.fields.removeAll(enumEntriesToRemove);
+            // Remove enum entries from <clinit>
+
+            var dropValuesGenerator = new ListGeneratorAdapter(new InsnList());
+            removeFieldsValuesArray(classType, dropValuesGenerator, enumEntriesToRemove);
+
+            // Remove construction and field store of the relevant fields in <clinit>
+            for (FieldNode field : enumEntriesToRemove) {
+                var putStaticInsn = findFirstFieldAccess(clinit, Opcodes.PUTSTATIC, classType.getInternalName(), field.name, classType.getDescriptor());
+                AbstractInsnNode insnToRemove = findFirstInstructionBefore(clinit, Opcodes.NEW, clinit.instructions.indexOf(putStaticInsn));
+                // Drop all of these (inclusive)
+                while (insnToRemove != putStaticInsn && insnToRemove != null) {
+                    var next = insnToRemove.getNext();
+                    clinit.instructions.remove(insnToRemove);
+                    insnToRemove = next;
+                }
+                clinit.instructions.remove(putStaticInsn);
+            }
+
+            // Remove enum entries from values array
+            if ($valuesPresent) { // javac
+                MethodNode $values = $valuesOpt.get();
+                AbstractInsnNode $valuesAretInsn = findFirstInstructionBefore($values, Opcodes.ARETURN, $values.instructions.size() - 1);
+                $values.instructions.insertBefore($valuesAretInsn, dropValuesGenerator.insnList);
+
+                // Replace any GETSTATIC of the relevant fields with ACONST_NULL
+                removeRemovedFieldLoads(classType, $values, enumEntriesToRemove);
+            } else { // ECJ
+                AbstractInsnNode putStaticInsn = findValuesArrayStore(classType, classNode, clinit, classType.getInternalName());
+                clinit.instructions.insertBefore(putStaticInsn, dropValuesGenerator.insnList);
+
+                // Replace any GETSTATIC of the relevant fields with ACONST_NULL
+                removeRemovedFieldLoads(classType, clinit, enumEntriesToRemove);
+            }
+        }
+
+        List<EnumPrototype> protos = prototypes.getOrDefault(classType.getInternalName(), List.of());
+        if (protos.isEmpty()) {
+            return requiresRewrite ? ComputeFlags.COMPUTE_FRAMES : ComputeFlags.NO_REWRITE;
+        }
+
         MethodNode getExtInfo = findMethod(classNode, mth -> mth.name.equals("getExtensionInfo") && mth.desc.equals(EXT_INFO_GETTER_DESC));
         Set<String> ctors = classNode.methods.stream()
                 .filter(mth -> mth.name.equals("<init>"))
@@ -171,6 +221,30 @@ public class RuntimeEnumExtender implements ClassProcessor {
                         methodInsnNode.name.equals(name) &&
                         methodInsnNode.desc.equals(descriptor)) {
                     return methodInsnNode;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Finds the first field access in the given method matching the given opcode, owner, name and descriptor
+     * 
+     * @param method     the method to search in
+     * @param opcode     the opcode of the field access to search for
+     * @param owner      the field access's owner to search for
+     * @param name       the field access's name
+     * @param descriptor the field access's descriptor
+     * @return the found field access node, null if none matched
+     */
+    public static FieldInsnNode findFirstFieldAccess(MethodNode method, int opcode, String owner, String name, String descriptor) {
+        for (int i = 0; i < method.instructions.size(); i++) {
+            AbstractInsnNode node = method.instructions.get(i);
+            if (node instanceof FieldInsnNode fieldInsnNode && node.getOpcode() == opcode) {
+                if (fieldInsnNode.owner.equals(owner) &&
+                        fieldInsnNode.name.equals(name) &&
+                        fieldInsnNode.desc.equals(descriptor)) {
+                    return fieldInsnNode;
                 }
             }
         }
@@ -472,6 +546,26 @@ public class RuntimeEnumExtender implements ClassProcessor {
             generator.getStatic(classType, field.name, classType);
             generator.invokeVirtual(ENUM_PROXY, new Method("setValue", "(Ljava/lang/Enum;)V"));
         }
+    }
+
+    private void removeRemovedFieldLoads(Type classType, MethodNode targetMethod, List<FieldNode> enumEntriesToRemove) {
+        Set<String> removedFieldNames = enumEntriesToRemove.stream().map(field -> field.name).collect(Collectors.toSet());
+        for (int i = 0; i < targetMethod.instructions.size(); i++) {
+            var insn = targetMethod.instructions.get(i);
+            if (insn instanceof FieldInsnNode fieldInsn && fieldInsn.getOpcode() == Opcodes.GETSTATIC && fieldInsn.owner.equals(classType.getInternalName()) && removedFieldNames.contains(fieldInsn.name)) {
+                // Replace with null load
+                targetMethod.instructions.set(insn, new InsnNode(Opcodes.ACONST_NULL));
+            }
+        }
+    }
+
+    private static void removeFieldsValuesArray(Type classType, ListGeneratorAdapter generator, List<FieldNode> enumEntries) {
+        generator.dup();
+        generator.arrayLength();
+        generator.push(enumEntries.size());
+        generator.math(GeneratorAdapter.SUB, Type.INT_TYPE);
+        generator.invokeStatic(ARRAYS, new Method("copyOf", "([Ljava/lang/Object;I)[Ljava/lang/Object;"));
+        generator.checkCast(Type.getType("[" + classType.getDescriptor()));
     }
 
     private static void appendValuesArray(Type classType, ListGeneratorAdapter generator, List<FieldNode> enumEntries) {
