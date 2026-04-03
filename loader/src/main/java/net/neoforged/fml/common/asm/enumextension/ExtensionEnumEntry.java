@@ -1,11 +1,10 @@
 package net.neoforged.fml.common.asm.enumextension;
 
-import org.jetbrains.annotations.ApiStatus;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.jetbrains.annotations.ApiStatus;
 
 /**
  * This annotation is added by JST to mark enum entries added by mod enum extensions. This allows for consistent ordering

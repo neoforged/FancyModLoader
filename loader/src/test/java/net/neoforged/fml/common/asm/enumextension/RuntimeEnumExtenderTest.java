@@ -30,7 +30,7 @@ class RuntimeEnumExtenderTest extends LauncherTest {
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                 "ERROR: Enum extender file xyz, provided by mod testmod, does not exist");
     }
-    
+
     @Test
     <T extends Enum<T>> void testStripsJstEntries() throws Exception {
         installation.setupProductionClient();

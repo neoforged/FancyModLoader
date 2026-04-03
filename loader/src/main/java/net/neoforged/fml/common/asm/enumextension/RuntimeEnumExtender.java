@@ -95,7 +95,7 @@ public class RuntimeEnumExtender implements ClassProcessor {
         MethodNode clinit = findMethod(classNode, mth -> mth.name.equals("<clinit>"));
         Optional<MethodNode> $valuesOpt = tryFindMethod(classNode, mth -> mth.name.equals("$values"));
         boolean $valuesPresent = $valuesOpt.isPresent();
-        
+
         boolean requiresRewrite = false;
         List<FieldNode> enumEntriesToRemove = new ArrayList<>();
         for (var field : classNode.fields) {
@@ -110,10 +110,10 @@ public class RuntimeEnumExtender implements ClassProcessor {
             requiresRewrite = true;
             classNode.fields.removeAll(enumEntriesToRemove);
             // Remove enum entries from <clinit>
-            
+
             var dropValuesGenerator = new ListGeneratorAdapter(new InsnList());
             removeFieldsValuesArray(classType, dropValuesGenerator, enumEntriesToRemove);
-            
+
             // Remove construction and field store of the relevant fields in <clinit>
             for (FieldNode field : enumEntriesToRemove) {
                 var putStaticInsn = findFirstFieldAccess(clinit, Opcodes.PUTSTATIC, classType.getInternalName(), field.name, classType.getDescriptor());
@@ -126,13 +126,13 @@ public class RuntimeEnumExtender implements ClassProcessor {
                 }
                 clinit.instructions.remove(putStaticInsn);
             }
-            
+
             // Remove enum entries from values array
             if ($valuesPresent) { // javac
                 MethodNode $values = $valuesOpt.get();
                 AbstractInsnNode $valuesAretInsn = findFirstInstructionBefore($values, Opcodes.ARETURN, $values.instructions.size() - 1);
                 $values.instructions.insertBefore($valuesAretInsn, dropValuesGenerator.insnList);
-                
+
                 // Replace any GETSTATIC of the relevant fields with ACONST_NULL
                 removeRemovedFieldLoads(classType, $values, enumEntriesToRemove);
             } else { // ECJ
@@ -148,7 +148,7 @@ public class RuntimeEnumExtender implements ClassProcessor {
         if (protos.isEmpty()) {
             return requiresRewrite ? ComputeFlags.COMPUTE_FRAMES : ComputeFlags.NO_REWRITE;
         }
-        
+
         MethodNode getExtInfo = findMethod(classNode, mth -> mth.name.equals("getExtensionInfo") && mth.desc.equals(EXT_INFO_GETTER_DESC));
         Set<String> ctors = classNode.methods.stream()
                 .filter(mth -> mth.name.equals("<init>"))
@@ -558,7 +558,7 @@ public class RuntimeEnumExtender implements ClassProcessor {
             }
         }
     }
-    
+
     private static void removeFieldsValuesArray(Type classType, ListGeneratorAdapter generator, List<FieldNode> enumEntries) {
         generator.dup();
         generator.arrayLength();
