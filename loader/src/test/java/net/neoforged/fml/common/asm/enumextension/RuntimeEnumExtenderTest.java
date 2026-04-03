@@ -30,6 +30,54 @@ class RuntimeEnumExtenderTest extends LauncherTest {
         assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                 "ERROR: Enum extender file xyz, provided by mod testmod, does not exist");
     }
+    
+    @Test
+    <T extends Enum<T>> void testStripsJstEntries() throws Exception {
+        installation.setupProductionClient();
+
+        installation.buildModJar("enum_ext_test.jar")
+                .withModsToml(getModsTomlBuilderConsumer("extensions.json"))
+                .addTextFile("extensions.json", """
+                        {
+                            "entries": [
+                                {
+                                    "enum": "testmod/TestEnum",
+                                    "name": "TESTMOD_NEW_CONSTANT",
+                                    "constructor": "()V",
+                                    "parameters": []
+                                }
+                            ]
+                        }
+                        """)
+                .addClass("testmod.TestEnum", """
+                        @net.neoforged.fml.common.asm.enumextension.NamedEnum
+                        public enum TestEnum implements net.neoforged.fml.common.asm.enumextension.IExtensibleEnum {
+                            TEST_THING,
+                            @net.neoforged.fml.common.asm.enumextension.ExtensionEnumEntry TESTMOD_NEW_CONSTANT;
+                            public static net.neoforged.fml.common.asm.enumextension.ExtensionInfo getExtensionInfo() {
+                                return net.neoforged.fml.common.asm.enumextension.ExtensionInfo.nonExtended(TestEnum.class);
+                            }
+                        }
+                        """)
+                .addClass("testmod.TestMod", """
+                        import net.neoforged.fml.common.asm.enumextension.EnumProxy;
+                        @net.neoforged.fml.common.Mod("testmod")
+                        public class TestMod {}
+                        """)
+                .build();
+        launchAndLoad("neoforgeclient");
+
+        Class<T> testEnum = getEnumClass("testmod.TestEnum");
+        var injectedField = testEnum.getField("TESTMOD_NEW_CONSTANT");
+        assertThat(injectedField.getDeclaredAnnotation(ExtensionEnumEntry.class)).isNull();
+        var enumConstants = testEnum.getEnumConstants();
+        assertThat(enumConstants.length).isEqualTo(2);
+        var enumEntry = enumConstants[1];
+        var byName = Enum.valueOf(testEnum, "TESTMOD_NEW_CONSTANT");
+        assertThat(enumEntry).isSameAs(byName);
+        assertThat(enumEntry.name()).isEqualTo("TESTMOD_NEW_CONSTANT");
+        assertThat(enumEntry.ordinal()).isEqualTo(1);
+    }
 
     @Test
     <T extends Enum<T>> void testExtendEnum() throws Exception {
