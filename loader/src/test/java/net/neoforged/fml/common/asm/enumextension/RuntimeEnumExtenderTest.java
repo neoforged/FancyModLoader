@@ -59,11 +59,6 @@ class RuntimeEnumExtenderTest extends LauncherTest {
                             }
                         }
                         """)
-                .addClass("testmod.TestMod", """
-                        import net.neoforged.fml.common.asm.enumextension.EnumProxy;
-                        @net.neoforged.fml.common.Mod("testmod")
-                        public class TestMod {}
-                        """)
                 .build();
         launchAndLoad("neoforgeclient");
 
