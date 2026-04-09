@@ -21,15 +21,15 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import net.neoforged.fml.earlydisplay.render.GlDebug;
-import net.neoforged.fml.earlydisplay.render.GlState;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
+import net.neoforged.fml.earlydisplay.render.Texture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.opengl.GL12C;
+import org.lwjgl.opengl.GL30C;
 
 /**
  * Loader for the GNU Unifont font definitions included in vanilla MC
@@ -152,10 +152,6 @@ final class FontLoader {
 
     @Nullable
     private static SimpleFont buildFont(List<ProtoGlyph> glyphs) {
-        int textureId = GL11C.glGenTextures();
-        GlState.bindTexture2D(textureId);
-        GlDebug.labelTexture(textureId, "unifont texture");
-
         int totalPixels = glyphs.stream().mapToInt(g -> g.width * GLYPH_HEIGHT).sum();
         boolean incWidth = true;
         int texWidth = 512;
@@ -207,7 +203,12 @@ final class FontLoader {
             }
         }
 
-        GL11C.glTexImage2D(GL11C.GL_TEXTURE_2D, 0, GL11C.GL_RED, texWidth, texHeight, 0, GL11C.GL_RED, GL11C.GL_UNSIGNED_BYTE, bitmap);
+        int textureId = Texture.createEmpty("unifont texture", texWidth, texHeight, GL30C.GL_R8, GL11C.GL_RED, false);
+        GL11C.glPixelStorei(GL11C.GL_UNPACK_ROW_LENGTH, texWidth);
+        GL11C.glPixelStorei(GL11C.GL_UNPACK_SKIP_PIXELS, 0);
+        GL11C.glPixelStorei(GL11C.GL_UNPACK_SKIP_ROWS, 0);
+        GL11C.glPixelStorei(GL11C.GL_UNPACK_ALIGNMENT, 4);
+        GL11C.glTexSubImage2D(GL11C.GL_TEXTURE_2D, 0, 0, 0, texWidth, texHeight, GL11C.GL_RED, GL11C.GL_UNSIGNED_BYTE, bitmap);
         GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_WRAP_S, GL12C.GL_CLAMP_TO_EDGE);
         GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_WRAP_T, GL12C.GL_CLAMP_TO_EDGE);
         GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MAG_FILTER, GL11C.GL_NEAREST);
