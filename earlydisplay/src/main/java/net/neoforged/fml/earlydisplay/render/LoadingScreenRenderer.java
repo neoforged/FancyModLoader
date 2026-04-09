@@ -190,6 +190,11 @@ public class LoadingScreenRenderer implements AutoCloseable {
     }
 
     public void stopAutomaticRendering() throws TimeoutException, InterruptedException {
+        if (this.automaticRendering.isCancelled()) {
+            // Auto-render was already canceled, likely by window takeover, and we got here from the early error display triggering after window takeover
+            return;
+        }
+
         this.automaticRendering.cancel(false);
         if (!renderLock.tryAcquire(5, TimeUnit.SECONDS)) {
             throw new TimeoutException();
@@ -236,7 +241,7 @@ public class LoadingScreenRenderer implements AutoCloseable {
         } catch (Throwable t) {
             LOGGER.error("Unexpected error while rendering the loading screen", t);
         } finally {
-            if (this.automaticRendering != null)
+            if (!this.automaticRendering.isCancelled())
                 glfwMakeContextCurrent(0); // we release the gl context IF we're running off the main thread
             renderLock.release();
             rendered = true;
