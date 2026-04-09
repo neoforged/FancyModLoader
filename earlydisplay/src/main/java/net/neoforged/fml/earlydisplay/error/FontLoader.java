@@ -28,7 +28,6 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11C;
-import org.lwjgl.opengl.GL12C;
 import org.lwjgl.opengl.GL30C;
 
 /**
@@ -204,15 +203,7 @@ final class FontLoader {
         }
 
         int textureId = Texture.createEmpty("unifont texture", texWidth, texHeight, GL30C.GL_R8, GL11C.GL_RED, false);
-        GL11C.glPixelStorei(GL11C.GL_UNPACK_ROW_LENGTH, texWidth);
-        GL11C.glPixelStorei(GL11C.GL_UNPACK_SKIP_PIXELS, 0);
-        GL11C.glPixelStorei(GL11C.GL_UNPACK_SKIP_ROWS, 0);
-        GL11C.glPixelStorei(GL11C.GL_UNPACK_ALIGNMENT, 4);
-        GL11C.glTexSubImage2D(GL11C.GL_TEXTURE_2D, 0, 0, 0, texWidth, texHeight, GL11C.GL_RED, GL11C.GL_UNSIGNED_BYTE, bitmap);
-        GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_WRAP_S, GL12C.GL_CLAMP_TO_EDGE);
-        GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_WRAP_T, GL12C.GL_CLAMP_TO_EDGE);
-        GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MAG_FILTER, GL11C.GL_NEAREST);
-        GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MIN_FILTER, GL11C.GL_NEAREST);
+        Texture.writeToTexture(textureId, texWidth, texHeight, GL11C.GL_RED, 1, bitmap);
 
         // SimpleFont relies on at least a space character being present
         if (!glyphMap.containsKey((int) ' ')) {

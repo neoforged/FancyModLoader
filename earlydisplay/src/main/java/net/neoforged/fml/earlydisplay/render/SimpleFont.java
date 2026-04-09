@@ -5,23 +5,8 @@
 
 package net.neoforged.fml.earlydisplay.render;
 
-import static org.lwjgl.opengl.GL11C.GL_NEAREST;
-import static org.lwjgl.opengl.GL11C.GL_UNPACK_ALIGNMENT;
-import static org.lwjgl.opengl.GL11C.GL_UNPACK_ROW_LENGTH;
-import static org.lwjgl.opengl.GL11C.GL_UNPACK_SKIP_PIXELS;
-import static org.lwjgl.opengl.GL11C.GL_UNPACK_SKIP_ROWS;
-import static org.lwjgl.opengl.GL11C.glPixelStorei;
-import static org.lwjgl.opengl.GL11C.glTexSubImage2D;
 import static org.lwjgl.opengl.GL30C.GL_R8;
-import static org.lwjgl.opengl.GL32C.GL_CLAMP_TO_EDGE;
 import static org.lwjgl.opengl.GL32C.GL_RED;
-import static org.lwjgl.opengl.GL32C.GL_TEXTURE_2D;
-import static org.lwjgl.opengl.GL32C.GL_TEXTURE_MAG_FILTER;
-import static org.lwjgl.opengl.GL32C.GL_TEXTURE_MIN_FILTER;
-import static org.lwjgl.opengl.GL32C.GL_TEXTURE_WRAP_S;
-import static org.lwjgl.opengl.GL32C.GL_TEXTURE_WRAP_T;
-import static org.lwjgl.opengl.GL32C.GL_UNSIGNED_BYTE;
-import static org.lwjgl.opengl.GL32C.glTexParameteri;
 import static org.lwjgl.stb.STBTruetype.stbtt_GetPackedQuad;
 import static org.lwjgl.stb.STBTruetype.stbtt_GetScaledFontVMetrics;
 import static org.lwjgl.stb.STBTruetype.stbtt_InitFont;
@@ -154,15 +139,7 @@ public class SimpleFont implements AutoCloseable {
                         stbtt_PackSetSkipMissingCodepoints(pc, true);
                         stbtt_PackFontRanges(pc, buf, 0, packRanges);
                         stbtt_PackEnd(pc);
-                        glPixelStorei(GL_UNPACK_ROW_LENGTH, texwidth);
-                        glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-                        glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-                        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-                        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texwidth, texheight, GL_RED, GL_UNSIGNED_BYTE, bitmap);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                        Texture.writeToTexture(this.textureId, texwidth, texheight, GL_RED, 1, bitmap);
                     }
                 }
                 try (var q = STBTTAlignedQuad.malloc()) {
