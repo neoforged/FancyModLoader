@@ -117,6 +117,10 @@ public class RuntimeEnumExtender implements ClassProcessor {
             // Remove construction and field store of the relevant fields in <clinit>
             for (FieldNode field : enumEntriesToRemove) {
                 var putStaticInsn = findFirstFieldAccess(clinit, Opcodes.PUTSTATIC, classType.getInternalName(), field.name, classType.getDescriptor());
+                if (putStaticInsn == null) {
+                    continue;
+                    // This could happen if the MC jar was processed by InstallerTools, which adds the enum fields but no initializers for them
+                }
                 AbstractInsnNode insnToRemove = findFirstInstructionBefore(clinit, Opcodes.NEW, clinit.instructions.indexOf(putStaticInsn));
                 // Drop all of these (inclusive)
                 while (insnToRemove != putStaticInsn && insnToRemove != null) {
