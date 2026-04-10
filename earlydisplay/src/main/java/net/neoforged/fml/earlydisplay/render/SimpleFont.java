@@ -5,18 +5,8 @@
 
 package net.neoforged.fml.earlydisplay.render;
 
-import static org.lwjgl.opengl.GL11C.GL_NEAREST;
-import static org.lwjgl.opengl.GL32C.GL_CLAMP_TO_EDGE;
+import static org.lwjgl.opengl.GL30C.GL_R8;
 import static org.lwjgl.opengl.GL32C.GL_RED;
-import static org.lwjgl.opengl.GL32C.GL_TEXTURE_2D;
-import static org.lwjgl.opengl.GL32C.GL_TEXTURE_MAG_FILTER;
-import static org.lwjgl.opengl.GL32C.GL_TEXTURE_MIN_FILTER;
-import static org.lwjgl.opengl.GL32C.GL_TEXTURE_WRAP_S;
-import static org.lwjgl.opengl.GL32C.GL_TEXTURE_WRAP_T;
-import static org.lwjgl.opengl.GL32C.GL_UNSIGNED_BYTE;
-import static org.lwjgl.opengl.GL32C.glGenTextures;
-import static org.lwjgl.opengl.GL32C.glTexImage2D;
-import static org.lwjgl.opengl.GL32C.glTexParameteri;
 import static org.lwjgl.stb.STBTruetype.stbtt_GetPackedQuad;
 import static org.lwjgl.stb.STBTruetype.stbtt_GetScaledFontVMetrics;
 import static org.lwjgl.stb.STBTruetype.stbtt_InitFont;
@@ -132,12 +122,10 @@ public class SimpleFont implements AutoCloseable {
             stbtt_GetScaledFontVMetrics(buf, 0, fontSize, ascent, descent, lineGap);
             this.lineSpacing = (int) (ascent[0] - descent[0] + lineGap[0]);
             this.descent = (int) Math.floor(descent[0]);
-            this.textureId = glGenTextures();
-            GlState.bindTexture2D(this.textureId);
-            GlDebug.labelTexture(this.textureId, "font texture " + resource);
+            int texwidth = 256;
+            int texheight = 128;
+            this.textureId = Texture.createEmpty("font texture " + resource, texwidth, texheight, GL_R8, GL_RED, false);
             try (var packedchars = STBTTPackedchar.malloc(ASCII_GLYPH_COUNT)) {
-                int texwidth = 256;
-                int texheight = 128;
                 try (STBTTPackRange.Buffer packRanges = STBTTPackRange.malloc(1)) {
                     var bitmap = BufferUtils.createByteBuffer(texwidth * texheight);
                     try (STBTTPackRange packRange = STBTTPackRange.malloc()) {
@@ -151,11 +139,7 @@ public class SimpleFont implements AutoCloseable {
                         stbtt_PackSetSkipMissingCodepoints(pc, true);
                         stbtt_PackFontRanges(pc, buf, 0, packRanges);
                         stbtt_PackEnd(pc);
-                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, texwidth, texheight, 0, GL_RED, GL_UNSIGNED_BYTE, bitmap);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                        Texture.writeToTexture(this.textureId, texwidth, texheight, GL_RED, 1, bitmap);
                     }
                 }
                 try (var q = STBTTAlignedQuad.malloc()) {
