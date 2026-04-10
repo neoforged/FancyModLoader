@@ -21,6 +21,7 @@ import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 /**
@@ -49,7 +50,10 @@ public final class FatalErrorReporting {
         if (t instanceof FatalStartupException fatalStartupException) {
             gameDir = fatalStartupException.getStartupArgs().gameDirectory();
         }
+        reportFatalError(t, gameDir, null, null);
+    }
 
+    public static void reportFatalError(Throwable t, @Nullable Path gameDir, @Nullable Path logFile, @Nullable Path crashReport) {
         var issues = new ArrayList<ModLoadingIssue>();
         collectModLoadingIssues(t, issues);
 
@@ -76,8 +80,8 @@ public final class FatalErrorReporting {
         ImmediateWindowHandler.displayFatalErrorAndExit(
                 issues,
                 gameDir != null ? gameDir.resolve("mods") : null,
-                null,
-                null);
+                logFile,
+                crashReport);
 
         // When we get here, there was no immediate window provider loaded. We crashed before that got loaded.
         var errorReport = new StringBuilder();
