@@ -99,7 +99,7 @@ public record Texture(int textureId, int physicalWidth, int physicalHeight,
         return texId;
     }
 
-    /// Write the provixed pixel buffer's contents to the specified texture.
+    /// Write the provided pixel buffer's contents to the specified texture.
     ///
     /// @param textureId      The GL ID of the target texture
     /// @param width          The width of the texture in pixels
