@@ -109,10 +109,15 @@ public class RuntimeEnumExtender implements ClassProcessor {
         if (!enumEntriesToRemove.isEmpty()) {
             requiresRewrite = true;
             classNode.fields.removeAll(enumEntriesToRemove);
+        }
+
+        int vanillaEntryCount = getVanillaEntryCount(classNode, classType);
+
+        if (!enumEntriesToRemove.isEmpty()) {
             // Remove enum entries from <clinit>
 
             var dropValuesGenerator = new ListGeneratorAdapter(new InsnList());
-            removeFieldsValuesArray(classType, dropValuesGenerator, enumEntriesToRemove);
+            removeFieldsValuesArray(classType, dropValuesGenerator, vanillaEntryCount);
 
             // Remove construction and field store of the relevant fields in <clinit>
             for (FieldNode field : enumEntriesToRemove) {
@@ -160,7 +165,6 @@ public class RuntimeEnumExtender implements ClassProcessor {
                 .map(mth -> mth.desc)
                 .collect(Collectors.toSet());
 
-        int vanillaEntryCount = getVanillaEntryCount(classNode, classType);
         int idParamIdx = getParameterIndexFromAnnotation(classNode, INDEXED_ANNOTATION);
         int nameParamIdx = getParameterIndexFromAnnotation(classNode, NAMED_ANNOTATION);
 
@@ -563,11 +567,9 @@ public class RuntimeEnumExtender implements ClassProcessor {
         }
     }
 
-    private static void removeFieldsValuesArray(Type classType, ListGeneratorAdapter generator, List<FieldNode> enumEntries) {
+    private static void removeFieldsValuesArray(Type classType, ListGeneratorAdapter generator, int vanillaEntryCount) {
         generator.dup();
-        generator.arrayLength();
-        generator.push(enumEntries.size());
-        generator.math(GeneratorAdapter.SUB, Type.INT_TYPE);
+        generator.push(vanillaEntryCount);
         generator.invokeStatic(ARRAYS, new Method("copyOf", "([Ljava/lang/Object;I)[Ljava/lang/Object;"));
         generator.checkCast(Type.getType("[" + classType.getDescriptor()));
     }
