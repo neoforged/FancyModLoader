@@ -17,13 +17,12 @@ class FMLMixinFeatureValidator implements IFeatureValidator {
 
     @Override
     public void validateEnumExtension(IMixinInfo mixin, ClassInfo targetClass) throws InvalidMixinException {
-        String help = "";
         if (targetClass.findSuperClass(I_EXTENSIBLE_ENUM, ClassInfo.Traversal.ALL, true) != null) {
-            help = ". The target %s is an IExtensibleEnum which can be extended as described ".formatted(targetClass) +
-                    "here https://docs.neoforged.net/docs/advanced/extensibleenums/";
+            throw new InvalidMixinException(
+                    mixin,
+                    ("Mixin Enum Extensions are not supported on target %s because it is an IExtensibleEnum, which " +
+                            "should be extended as described here " +
+                            "https://docs.neoforged.net/docs/advanced/extensibleenums/").formatted(targetClass));
         }
-        throw new InvalidMixinException(
-                mixin,
-                "Mixin Enum Extensions are not currently supported on NeoForge" + help);
     }
 }
