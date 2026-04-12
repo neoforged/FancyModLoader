@@ -107,6 +107,10 @@ public class FMLMixinService implements IMixinService {
         this.bytecodeProvider = bytecodeProvider;
     }
 
+    public void setClassProvider(@Nullable IClassProvider classProvider) {
+        this.classProvider = classProvider;
+    }
+
     @Override
     public void offer(IMixinInternal internal) {
         if (internal instanceof IMixinTransformerFactory mixinTransformerFactory) {
@@ -142,7 +146,7 @@ public class FMLMixinService implements IMixinService {
     @Override
     public IClassProvider getClassProvider() {
         if (this.classProvider == null) {
-            this.classProvider = new FMLClassProvider();
+            throw new IllegalStateException("Service initialisation incomplete, FMLMixinClassProcessor has not yet been linked");
         }
         return this.classProvider;
     }
@@ -150,7 +154,7 @@ public class FMLMixinService implements IMixinService {
     @Override
     public IClassBytecodeProvider getBytecodeProvider() {
         if (this.bytecodeProvider == null) {
-            throw new IllegalStateException("Service initialisation incomplete, launch plugin was not created");
+            throw new IllegalStateException("Service initialisation incomplete, FMLMixinClassProcessor has not yet been linked");
         }
         return this.bytecodeProvider;
     }
