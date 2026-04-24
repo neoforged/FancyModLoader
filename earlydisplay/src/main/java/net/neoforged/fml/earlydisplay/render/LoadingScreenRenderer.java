@@ -195,11 +195,16 @@ public class LoadingScreenRenderer implements AutoCloseable {
             return;
         }
 
-        this.automaticRendering.cancel(false);
+        // We must acquire the render lock to ensure we cancel the future when the background thread is not currently
+        // using the GL context. Otherwise, a race condition may occur when we cancel the future before the
+        // glfwMakeContextCurrent(0) call at the end of renderToScreen. If the BG thread reads that the future is canceled,
+        // it skips releasing the context. The main thread then crashes when it attempts to take ownership of the context.
+        // Since renderToScreen bails immediately without running GL calls if it fails to acquire the lock,
+        // we can safely assume the above won't happen once we have acquired it.
         if (!renderLock.tryAcquire(5, TimeUnit.SECONDS)) {
             throw new TimeoutException();
         }
-        // we don't want the lock, just making sure it's back on the main thread
+        this.automaticRendering.cancel(false);
         renderLock.release();
     }
 
