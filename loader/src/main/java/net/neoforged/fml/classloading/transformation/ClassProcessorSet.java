@@ -113,14 +113,14 @@ public final class ClassProcessorSet {
         return out;
     }
 
-    public void link(Function<ProcessorName, BytecodeProvider> bytecodeProviderLookup) {
+    public void link(Function<ProcessorName, BytecodeProvider> bytecodeProviderLookup, ClassLoader parentClassLoader) {
         if (linked) {
             throw new IllegalStateException("This set of class processors is already linked.");
         }
         linked = true;
 
         for (var processor : sortedProcessors) {
-            var context = new ClassProcessor.LinkContext(processors, bytecodeProviderLookup.apply(processor.name()));
+            var context = new ClassProcessor.LinkContext(processors, bytecodeProviderLookup.apply(processor.name()), parentClassLoader);
             processor.link(context);
         }
     }
