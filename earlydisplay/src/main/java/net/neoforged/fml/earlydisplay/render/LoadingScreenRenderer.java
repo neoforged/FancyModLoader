@@ -120,7 +120,18 @@ public class LoadingScreenRenderer implements AutoCloseable {
         GlState.enableBlend(true);
         GlState.blendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glfwMakeContextCurrent(0);
-        this.automaticRendering = scheduler.scheduleWithFixedDelay(this::renderToScreen, 50, 50, TimeUnit.MILLISECONDS);
+        // We need to acquire the lock here to allow renderToScreenOnThread safe access to this.automaticRendering
+        try {
+            renderLock.acquire();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while initializing rendering.");
+        }
+        try {
+            this.automaticRendering = scheduler.scheduleWithFixedDelay(this::renderToScreenOnThread, 50, 50, TimeUnit.MILLISECONDS);
+        } finally {
+            renderLock.release();
+        }
         // schedule a 50 ms ticker to try and smooth out the rendering
         scheduler.scheduleWithFixedDelay(() -> animationFrame++, 1, 50, TimeUnit.MILLISECONDS);
     }
@@ -190,35 +201,41 @@ public class LoadingScreenRenderer implements AutoCloseable {
     }
 
     public void stopAutomaticRendering() throws TimeoutException, InterruptedException {
-        if (this.automaticRendering.isCancelled()) {
-            // Auto-render was already canceled, likely by window takeover, and we got here from the early error display triggering after window takeover
-            return;
-        }
+        // Note that the future may still be running
+        this.automaticRendering.cancel(false);
 
-        // We must acquire the render lock to ensure we cancel the future when the background thread is not currently
-        // using the GL context. Otherwise, a race condition may occur when we cancel the future before the
-        // glfwMakeContextCurrent(0) call at the end of renderToScreen. If the BG thread reads that the future is canceled,
-        // it skips releasing the context. The main thread then crashes when it attempts to take ownership of the context.
-        // Since renderToScreen bails immediately without running GL calls if it fails to acquire the lock,
-        // we can safely assume the above won't happen once we have acquired it.
+        // Acquiring the lock here ensures that the future-code that may have been
+        // running has now left the critical section at least once after we canceled the future.
         if (!renderLock.tryAcquire(5, TimeUnit.SECONDS)) {
             throw new TimeoutException();
         }
-        this.automaticRendering.cancel(false);
         renderLock.release();
     }
 
-    /**
-     * The main render loop.
-     * renderThread executes this.
-     * <p>
-     * Performs initialization and then ticks the screen at 20 fps.
-     * When the thread is killed, context is destroyed.
-     */
-    public void renderToScreen() {
+    private void renderToScreenOnThread() {
         if (!renderLock.tryAcquire()) {
             return;
         }
+        try {
+            if (automaticRendering.isCancelled()) {
+                // Prevents rendering off-thread once again if we've already been canceled but this future was mid-execution
+                return;
+            }
+
+            renderToScreen();
+
+            glfwMakeContextCurrent(0); // we release the gl context IF we're running off the main thread
+        } finally {
+            renderLock.release();
+        }
+    }
+
+    /**
+     * Renders the loading screen. This can be called from different threads. Before Minecrafts own window
+     * initialization code has run, this is called on a scheduled future (off-thread). After hand-over
+     * it will periodically be called on the main Minecraft thread.
+     */
+    public void renderToScreen() {
         try {
             long nt;
             if ((nt = System.nanoTime()) < nextFrameTime) {
@@ -246,9 +263,6 @@ public class LoadingScreenRenderer implements AutoCloseable {
         } catch (Throwable t) {
             LOGGER.error("Unexpected error while rendering the loading screen", t);
         } finally {
-            if (!this.automaticRendering.isCancelled())
-                glfwMakeContextCurrent(0); // we release the gl context IF we're running off the main thread
-            renderLock.release();
             rendered = true;
         }
     }
