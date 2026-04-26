@@ -195,9 +195,12 @@ public class GameLocator implements IModFileCandidateLocator {
         result.add(buildFilteredMinecraftResourcesFilteredPath(commonResources, context.getRequiredDistribution(), systemFiles));
 
         if (clientResources != null && clientResources != commonResources) {
-            result.add(buildFilteredMinecraftResourcesFilteredPath(clientResources, context.getRequiredDistribution(), systemFiles));
+            JarContents.PathFilter pathFilter = null;
+            if (systemFiles.getClassesRoots().contains(clientResources)) {
+                pathFilter = relativePath -> !relativePath.endsWith(".class");
+            }
+            result.add(new JarContents.FilteredPath(clientResources.getPrimaryPath(), pathFilter));
         }
-
         return result;
     }
 
