@@ -24,12 +24,19 @@ import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.LoadingModList;
+import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
+import org.spongepowered.asm.mixin.FabricUtil;
+import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
+import org.spongepowered.asm.mixin.throwables.MixinApplyError;
+import org.spongepowered.asm.mixin.transformer.throwables.InvalidMixinException;
+import org.spongepowered.asm.mixin.transformer.throwables.MixinTransformerError;
 
 public class FMLModContainer extends ModContainer {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -120,6 +127,7 @@ public class FMLModContainer extends ModContainer {
                 LOGGER.trace(LOADING, "Loaded mod instance {} of type {}", getModId(), modClass.getName());
             } catch (Throwable e) {
                 if (e instanceof InvocationTargetException) e = e.getCause(); // exceptions thrown when a reflected method call throws are wrapped in an InvocationTargetException. However, this isn't useful for the end user who has to dig through the logs to find the actual cause.
+                handleMixinError(e);
                 LOGGER.error(LOADING, "Failed to create mod instance. ModID: {}, class {}", getModId(), modClass.getName(), e);
                 throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.failedtoloadmod").withCause(e).withAffectedMod(modInfo));
             }
@@ -129,8 +137,27 @@ public class FMLModContainer extends ModContainer {
             AutomaticEventSubscriber.inject(this, this.scanResults, layer);
             LOGGER.trace(LOADING, "Completed Automatic event subscribers for {}", getModId());
         } catch (Throwable e) {
+            handleMixinError(e);
             LOGGER.error(LOADING, "Failed to register automatic subscribers. ModID: {}", getModId(), e);
             throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.failedtoloadmod").withCause(e).withAffectedMod(modInfo));
+        }
+    }
+    
+    // Gracefully handle any mixin errors that get thrown while loading mods and blame the correct mod for it
+    private void handleMixinError(Throwable e) {
+        if (e instanceof MixinTransformerError transformerError && 
+                transformerError.getCause() instanceof MixinApplyError mixinApplyError && 
+                mixinApplyError.getCause() instanceof InvalidMixinException invalidMixinException) {
+            IMixinInfo mixin = invalidMixinException.getMixin();
+            
+            String modId = FabricUtil.getModId(mixin.getConfig());
+            ModFileInfo modFileInfo = LoadingModList.get().getModFileById(modId);
+
+            LOGGER.error(LOADING, "Failed to apply mixin. Mixin Class: {}, ModID: {}", mixin.getClassName(), modId, invalidMixinException);
+            ModLoadingIssue issue = ModLoadingIssue.error("fml.modloadingissue.mixin.fail", mixin.getClassName(), modId)
+                    .withCause(invalidMixinException)
+                    .withAffectedModFile(modFileInfo.getFile());
+            throw new ModLoadingException(issue);
         }
     }
 
