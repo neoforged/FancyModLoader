@@ -24,7 +24,6 @@ import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.ModFileScanData;
@@ -142,16 +141,18 @@ public class FMLModContainer extends ModContainer {
             throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.failedtoloadmod").withCause(e).withAffectedMod(modInfo));
         }
     }
-    
+
     // Gracefully handle any mixin errors that get thrown while loading mods and blame the correct mod for it
     private void handleMixinError(Throwable e) {
-        if (e instanceof MixinTransformerError transformerError && 
-                transformerError.getCause() instanceof MixinApplyError mixinApplyError && 
+        if (e instanceof MixinTransformerError transformerError &&
+                transformerError.getCause() instanceof MixinApplyError mixinApplyError &&
                 mixinApplyError.getCause() instanceof InvalidMixinException invalidMixinException) {
             IMixinInfo mixin = invalidMixinException.getMixin();
-            
+
             String modId = FabricUtil.getModId(mixin.getConfig());
-            ModFileInfo modFileInfo = LoadingModList.get().getModFileById(modId);
+            ModFileInfo modFileInfo = FMLLoader.getCurrent()
+                    .getLoadingModList()
+                    .getModFileById(modId);
 
             LOGGER.error(LOADING, "Failed to apply mixin. Mixin Class: {}, ModID: {}", mixin.getClassName(), modId, invalidMixinException);
             ModLoadingIssue issue = ModLoadingIssue.error("fml.modloadingissue.mixin.fail", mixin.getClassName(), modId)
