@@ -139,14 +139,14 @@ public class FMLModContainer extends ModContainer {
             throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.failedtoloadmod").withCause(e).withAffectedMod(modInfo));
         }
     }
-    
+
     // Gracefully handle any mixin errors that get thrown while loading mods and blame the correct mod for it
     private void handleMixinError(Throwable e) {
-        if (e instanceof MixinTransformerError transformerError && 
-                transformerError.getCause() instanceof MixinApplyError mixinApplyError && 
+        if (e instanceof MixinTransformerError transformerError &&
+                transformerError.getCause() instanceof MixinApplyError mixinApplyError &&
                 mixinApplyError.getCause() instanceof InvalidMixinException invalidMixinException) {
             IMixinInfo mixin = invalidMixinException.getMixin();
-            
+
             String modId = FabricUtil.getModId(mixin.getConfig());
             ModFileInfo modFileInfo = LoadingModList.get().getModFileById(modId);
 
