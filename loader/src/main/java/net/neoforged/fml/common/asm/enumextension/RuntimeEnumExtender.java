@@ -501,9 +501,8 @@ public class RuntimeEnumExtender implements ClassProcessor {
                 .stream()
                 .map(entry -> EnumPrototype.load(entry.getKey(), entry.getValue()))
                 .flatMap(List::stream)
-                .filter(proto ->
-                        FMLEnvironment.getDist() != Dist.DEDICATED_SERVER
-                                || !proto.enumName().startsWith("net/minecraft/client/"))
+                .filter(proto -> FMLEnvironment.getDist() != Dist.DEDICATED_SERVER
+                        || !proto.enumName().startsWith("net/minecraft/client/"))
                 .sorted()
                 .reduce(
                         new HashMap<>(),
