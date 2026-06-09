@@ -16,10 +16,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.asm.ListGeneratorAdapter;
 import net.neoforged.fml.jarcontents.JarResource;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
@@ -499,6 +501,9 @@ public class RuntimeEnumExtender implements ClassProcessor {
                 .stream()
                 .map(entry -> EnumPrototype.load(entry.getKey(), entry.getValue()))
                 .flatMap(List::stream)
+                .filter(proto ->
+                        FMLEnvironment.getDist() != Dist.DEDICATED_SERVER
+                                || !proto.enumName().startsWith("net/minecraft/client/"))
                 .sorted()
                 .reduce(
                         new HashMap<>(),
