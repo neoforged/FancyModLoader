@@ -795,6 +795,35 @@ public class FMLLoaderTest extends LauncherTest {
         }
 
         @Test
+        void testDependencyCycle() throws Exception {
+            installation.setupProductionClient();
+            installation.buildModJar("mod_one.jar")
+                    .withModsToml(builder -> {
+                        builder.unlicensedJavaMod();
+                        builder.addMod("mod_one", "1.0");
+                        builder.addDependency("mod_one", "mod_two", "[1.0,)", dep -> dep.set("ordering", "BEFORE"));
+                    })
+                    .build();
+            installation.buildModJar("mod_two.jar")
+                    .withModsToml(builder -> {
+                        builder.unlicensedJavaMod();
+                        builder.addMod("mod_two", "1.0");
+                        builder.addDependency("mod_two", "mod_three", "[1.0,)", dep -> dep.set("ordering", "BEFORE"));
+                    })
+                    .build();
+            installation.buildModJar("mod_three.jar")
+                    .withModsToml(builder -> {
+                        builder.unlicensedJavaMod();
+                        builder.addMod("mod_three", "1.0");
+                        builder.addDependency("mod_three", "mod_one", "[1.0,)", dep -> dep.set("ordering", "BEFORE"));
+                    })
+                    .build();
+
+            var e = assertThrows(ModLoadingException.class, () -> launchInstalledDist());
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly("ERROR: Detected a mod dependency cycle: mod_one, mod_three, mod_two");
+        }
+
+        @Test
         void testDependencyOverride() throws Exception {
             installation.setupProductionClient();
             installation.writeConfig("[dependencyOverrides]", "targetmod = [\"-depmod\", \"-incompatiblemod\"]");
