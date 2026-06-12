@@ -81,7 +81,7 @@ public class ModSorter {
             if (modLoadingException == null) {
                 list = LoadingModList.of(plugins, ms.modFiles, ms.sortedList, issues, ms.modDependencies);
             } else {
-                list = LoadingModList.of(plugins, ms.modFiles, ms.sortedList, concat(issues, modLoadingException.getIssues()), Map.of());
+                list = LoadingModList.of(plugins, ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), concat(issues, modLoadingException.getIssues()), Map.of());
             }
         }
 
