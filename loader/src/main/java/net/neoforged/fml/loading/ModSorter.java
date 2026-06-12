@@ -32,7 +32,6 @@ import java.util.stream.Stream;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
-import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.fml.loading.toposort.CyclePresentException;
 import net.neoforged.fml.loading.toposort.TopologicalSort;
@@ -82,7 +81,7 @@ public class ModSorter {
             if (modLoadingException == null) {
                 list = LoadingModList.of(plugins, ms.modFiles, ms.sortedList, issues, ms.modDependencies);
             } else {
-                list = LoadingModList.of(plugins, ms.modFiles, ms.sortedList, concat(issues, modLoadingException.getIssues()), Map.of());
+                list = LoadingModList.of(plugins, ms.systemMods, ms.systemMods.stream().map(mf -> (ModInfo) mf.getModInfos().get(0)).collect(toList()), concat(issues, modLoadingException.getIssues()), Map.of());
             }
         }
 
@@ -144,14 +143,15 @@ public class ModSorter {
         try {
             sorted = TopologicalSort.topologicalSort(graph, Comparator.comparing(infos::get));
         } catch (CyclePresentException e) {
-            Set<Set<ModFileInfo>> cycles = e.getCycles();
+            Set<Set<ModInfo>> cycles = e.getCycles();
             if (LOGGER.isErrorEnabled(LogMarkers.LOADING)) {
                 LOGGER.error(LogMarkers.LOADING, "Mod Sorting failed.\nDetected Cycles: {}\n", cycles);
             }
             var dataList = cycles.stream()
-                    .<ModFileInfo>mapMulti(Iterable::forEach)
-                    .<IModInfo>mapMulti((mf, c) -> mf.getMods().forEach(c))
-                    .map(IModInfo::getModId)
+                    .map(cycle -> cycle.stream()
+                            .map(IModInfo::getModId)
+                            .sorted()
+                            .collect(Collectors.joining(", ")))
                     .map(list -> ModLoadingIssue.error("fml.modloadingissue.cycle", list).withCause(e))
                     .toList();
             throw new ModLoadingException(dataList);
