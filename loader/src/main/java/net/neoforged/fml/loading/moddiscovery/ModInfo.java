@@ -201,6 +201,11 @@ public class ModInfo implements IModInfo, IConfigurable {
         }
     }
 
+    @Override
+    public String toString() {
+        return modId + " (" + displayName + ") @ " + version;
+    }
+
     class ModVersion implements net.neoforged.neoforgespi.language.IModInfo.ModVersion {
         private IModInfo owner;
         private final String modId;
