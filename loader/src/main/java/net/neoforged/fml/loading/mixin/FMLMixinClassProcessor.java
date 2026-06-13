@@ -34,6 +34,7 @@ public class FMLMixinClassProcessor implements ClassProcessor {
     @Override
     public void link(LinkContext context) {
         this.service.setBytecodeProvider(new FMLClassBytecodeProvider(context.bytecodeProvider(), this));
+        this.service.setClassProvider(new FMLClassProvider(context.pluginClassLoader()));
     }
 
     @Override
