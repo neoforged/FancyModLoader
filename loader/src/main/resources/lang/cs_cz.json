@@ -89,5 +89,6 @@
   "fml.button.open.log": "Otevřít soubor logu",
   "fml.button.open.crashreport": "Otevřít zprávu o selhání",
   "fml.button.open.mods.folder": "Otevřít složku s módy",
-  "fml.button.quit": "Ukončit hru"
+  "fml.button.quit": "Ukončit hru",
+  "fml.modloadingissue.mixin.fail": "Mixin application of {0} from {100,modinfo,name} ({100,modinfo,id}) has failed\n§7{102,exc,msg}"
 }
