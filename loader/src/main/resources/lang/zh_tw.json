@@ -89,5 +89,6 @@
   "fml.button.open.log": "打開日誌文件",
   "fml.button.open.crashreport": "打開崩潰報告",
   "fml.button.open.mods.folder": "開啟模組資料夾",
-  "fml.button.quit": "退出遊戲"
+  "fml.button.quit": "退出遊戲",
+  "fml.modloadingissue.mixin.fail": "Mixin application of {0} from {100,modinfo,name} ({100,modinfo,id}) has failed\n§7{102,exc,msg}"
 }
