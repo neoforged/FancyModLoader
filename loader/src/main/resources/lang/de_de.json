@@ -89,5 +89,6 @@
   "fml.button.open.log": "Log-Datei öffnen",
   "fml.button.open.crashreport": "Absturzbericht öffnen",
   "fml.button.open.mods.folder": "Mods-Ordner öffnen",
-  "fml.button.quit": "Spiel beenden"
+  "fml.button.quit": "Spiel beenden",
+  "fml.modloadingissue.mixin.fail": "Mixin application of {0} from {100,modinfo,name} ({100,modinfo,id}) has failed\n§7{102,exc,msg}"
 }
