@@ -89,5 +89,6 @@
   "fml.button.open.log": "로그 파일 열기",
   "fml.button.open.crashreport": "충돌 보고서 열기",
   "fml.button.open.mods.folder": "모드 폴더 열기",
-  "fml.button.quit": "게임 종료"
+  "fml.button.quit": "게임 종료",
+  "fml.modloadingissue.mixin.fail": "Mixin application of {0} from {100,modinfo,name} ({100,modinfo,id}) has failed\n§7{102,exc,msg}"
 }
