@@ -89,5 +89,6 @@
   "fml.button.open.log": "Відкрити файл журналу",
   "fml.button.open.crashreport": "Відкрити звіт збою",
   "fml.button.open.mods.folder": "Відкрити теку модів",
-  "fml.button.quit": "Вийти з гри"
+  "fml.button.quit": "Вийти з гри",
+  "fml.modloadingissue.mixin.fail": "Mixin application of {0} from {100,modinfo,name} ({100,modinfo,id}) has failed\n§7{102,exc,msg}"
 }
