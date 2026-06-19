@@ -8,17 +8,18 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.neoforged.fml.earlydisplay.DisplayWindow;
+import net.neoforged.fml.earlydisplay.render.LoadingScreenRenderer;
+import net.neoforged.fml.earlydisplay.render.backend.opengl.GlRenderer;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.ProgramArgs;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.opengl.GL;
 
 public class TestEarlyDisplay {
     public static void main(String[] args) throws Exception {
         System.setProperty("java.awt.headless", "true");
-        //System.setProperty("fml.earlyWindowDarkMode", "true");
+        System.setProperty("fml.earlyWindowDarkMode", "true");
 
         FMLPaths.loadAbsolutePaths(findProjectRoot());
         FMLConfig.load();
@@ -33,18 +34,19 @@ public class TestEarlyDisplay {
         AtomicBoolean closed = new AtomicBoolean(false);
 
         // Render once, then take over the window to test that it still works
-        periodicTick.run();
-        long windowId = window.takeOverGlfwWindow();
+        while (!LoadingScreenRenderer.rendered) {
+            periodicTick.run();
+        }
+        long windowHandle = window.getWindowHandle();
+        window.handOverToMinecraft(() -> GlRenderer.setupBackend(windowHandle));
 
-        // The context moves to the main thread now
-        GL.createCapabilities();
-
-        GLFW.glfwSetWindowCloseCallback(windowId, window1 -> {
+        GLFW.glfwSetWindowCloseCallback(windowHandle, _ -> {
             window.close();
             closed.set(true);
         });
 
         StartupNotificationManager.addProgressBar("Test Bar", 20).setAbsolute(10);
+        StartupNotificationManager.addProgressBar("More Test Bar", 0);
 
         while (!closed.get()) {
             try {

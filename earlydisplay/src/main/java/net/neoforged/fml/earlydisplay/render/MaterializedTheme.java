@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
 import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.ThemeResource;
 import net.neoforged.fml.earlydisplay.theme.ThemeShader;
@@ -24,19 +26,19 @@ public record MaterializedTheme(
         Map<String, SimpleFont> fonts,
         Map<String, ElementShader> shaders,
         MaterializedThemeSprites sprites) implements AutoCloseable {
-    public static MaterializedTheme materialize(Theme theme, @Nullable Path externalThemeDirectory) {
+    public static MaterializedTheme materialize(ELSRenderBackend backend, Theme theme, @Nullable Path externalThemeDirectory) {
         return new MaterializedTheme(
                 theme,
                 externalThemeDirectory,
-                loadFonts(theme.fonts(), externalThemeDirectory),
+                loadFonts(backend, theme.fonts(), externalThemeDirectory),
                 loadShaders(theme.shaders(), externalThemeDirectory),
-                loadSprites(theme.sprites(), externalThemeDirectory));
+                loadSprites(backend, theme.sprites(), externalThemeDirectory));
     }
 
     private static Map<String, ElementShader> loadShaders(Map<String, ThemeShader> themeShaders, @Nullable Path externalThemeDirectory) {
         var shaders = new HashMap<String, ElementShader>(themeShaders.size());
         for (var entry : themeShaders.entrySet()) {
-            var shader = ElementShader.create(
+            var shader = new ElementShader(
                     entry.getKey(),
                     entry.getValue().vertexShader(),
                     entry.getValue().fragmentShader(),
@@ -46,11 +48,11 @@ public record MaterializedTheme(
         return shaders;
     }
 
-    private static Map<String, SimpleFont> loadFonts(Map<String, ThemeResource> themeFonts, @Nullable Path externalThemeDirectory) {
+    private static Map<String, SimpleFont> loadFonts(ELSRenderBackend backend, Map<String, ThemeResource> themeFonts, @Nullable Path externalThemeDirectory) {
         var fonts = new HashMap<String, SimpleFont>(themeFonts.size());
         for (var entry : themeFonts.entrySet()) {
             try {
-                fonts.put(entry.getKey(), new SimpleFont(entry.getValue(), externalThemeDirectory));
+                fonts.put(entry.getKey(), new SimpleFont(backend, entry.getValue(), externalThemeDirectory));
             } catch (IOException e) {
                 throw new RuntimeException("Failed to load font " + entry.getKey(), e);
             }
@@ -58,11 +60,11 @@ public record MaterializedTheme(
         return fonts;
     }
 
-    private static MaterializedThemeSprites loadSprites(ThemeSprites sprites, @Nullable Path externalThemeDirectory) {
+    private static MaterializedThemeSprites loadSprites(ELSRenderBackend backend, ThemeSprites sprites, @Nullable Path externalThemeDirectory) {
         return new MaterializedThemeSprites(
-                Texture.create(sprites.progressBarBackground(), externalThemeDirectory),
-                Texture.create(sprites.progressBarForeground(), externalThemeDirectory),
-                Texture.create(sprites.progressBarIndeterminate(), externalThemeDirectory));
+                Texture.create(backend, sprites.progressBarBackground(), externalThemeDirectory),
+                Texture.create(backend, sprites.progressBarForeground(), externalThemeDirectory),
+                Texture.create(backend, sprites.progressBarIndeterminate(), externalThemeDirectory));
     }
 
     public SimpleFont getFont(String fontId) {

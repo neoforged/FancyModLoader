@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.earlydisplay.render.GlState;
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.Callback;
@@ -20,7 +20,7 @@ public final class ErrorDisplay {
     private static final long MINFRAMETIME = TimeUnit.MILLISECONDS.toNanos(10); // This is the FPS cap on the window
 
     public static void fatal(
-            long windowHandle,
+            ELSRenderBackend backend,
             @Nullable String assetsDir,
             @Nullable String assetIndex,
             List<ModLoadingIssue> errors,
@@ -28,18 +28,18 @@ public final class ErrorDisplay {
             @Nullable Path logFile,
             @Nullable Path crashReportFile) {
         // Pre-clear all callbacks that may be left-over from the previous owner of the window
+        long windowHandle = backend.getWindowHandle();
         clearCallbacks(windowHandle);
 
-        ErrorDisplayWindow window = new ErrorDisplayWindow(windowHandle, assetsDir, assetIndex, errors, modsFolder, logFile, crashReportFile);
+        ErrorDisplayWindow window = new ErrorDisplayWindow(backend, assetsDir, assetIndex, errors, modsFolder, logFile, crashReportFile);
 
-        discard(GLFW.glfwSetWindowCloseCallback(window.windowHandle, window::handleClose));
-        discard(GLFW.glfwSetCursorPosCallback(window.windowHandle, window::handleCursorPos));
-        discard(GLFW.glfwSetScrollCallback(window.windowHandle, window::handleMouseScroll));
-        discard(GLFW.glfwSetMouseButtonCallback(window.windowHandle, window::handleMouseButton));
-        discard(GLFW.glfwSetKeyCallback(window.windowHandle, window::handleKey));
+        discard(GLFW.glfwSetWindowCloseCallback(windowHandle, window::handleClose));
+        discard(GLFW.glfwSetCursorPosCallback(windowHandle, window::handleCursorPos));
+        discard(GLFW.glfwSetScrollCallback(windowHandle, window::handleMouseScroll));
+        discard(GLFW.glfwSetMouseButtonCallback(windowHandle, window::handleMouseButton));
+        discard(GLFW.glfwSetKeyCallback(windowHandle, window::handleKey));
 
         long nextFrameTime = 0;
-        GlState.readFromOpenGL();
         while (!window.isClosed()) {
             long nanoTime = System.nanoTime();
             var timeToNextFrame = nextFrameTime - nanoTime;
@@ -51,7 +51,7 @@ public final class ErrorDisplay {
                 GLFW.glfwWaitEventsTimeout(timeToNextFrame / (double) TimeUnit.SECONDS.toNanos(1));
             }
         }
-        window.teardown();
+        window.close(true);
 
         if (THROW_ON_EXIT) {
             throw new FatalLoadingError();

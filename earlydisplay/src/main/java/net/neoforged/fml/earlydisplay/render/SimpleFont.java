@@ -5,8 +5,6 @@
 
 package net.neoforged.fml.earlydisplay.render;
 
-import static org.lwjgl.opengl.GL30C.GL_R8;
-import static org.lwjgl.opengl.GL32C.GL_RED;
 import static org.lwjgl.stb.STBTruetype.stbtt_GetPackedQuad;
 import static org.lwjgl.stb.STBTruetype.stbtt_GetScaledFontVMetrics;
 import static org.lwjgl.stb.STBTruetype.stbtt_InitFont;
@@ -22,11 +20,13 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.IntFunction;
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
+import net.neoforged.fml.earlydisplay.render.backend.ELSTexture;
+import net.neoforged.fml.earlydisplay.render.backend.TextureFormat;
 import net.neoforged.fml.earlydisplay.theme.ThemeResource;
 import net.neoforged.fml.earlydisplay.util.Size;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.GL32C;
 import org.lwjgl.stb.STBTTAlignedQuad;
 import org.lwjgl.stb.STBTTFontinfo;
 import org.lwjgl.stb.STBTTPackContext;
@@ -36,7 +36,7 @@ import org.lwjgl.stb.STBTTPackedchar;
 public class SimpleFont implements AutoCloseable {
     private static final int ASCII_GLYPH_COUNT = 127 - 32;
 
-    private int textureId;
+    private final ELSTexture texture;
     private final int lineSpacing;
     private final int descent;
     private final IntFunction<Glyph> glyphGetter;
@@ -77,10 +77,7 @@ public class SimpleFont implements AutoCloseable {
 
     @Override
     public void close() {
-        if (textureId != 0) {
-            GL32C.glDeleteTextures(textureId);
-            textureId = 0;
-        }
+        this.texture.close();
     }
 
     public record Glyph(char c, int charwidth, int[] pos, float[] uv) {
@@ -90,24 +87,24 @@ public class SimpleFont implements AutoCloseable {
             var x1 = pos.x() + pos()[2];
             var y1 = pos.y() + pos()[3];
             bb.pos(x0, y0).tex(uv()[0], uv()[1]).colour(colour).endVertex();
-            bb.pos(x1, y0).tex(uv()[2], uv()[1]).colour(colour).endVertex();
             bb.pos(x0, y1).tex(uv()[0], uv()[3]).colour(colour).endVertex();
             bb.pos(x1, y1).tex(uv()[2], uv()[3]).colour(colour).endVertex();
+            bb.pos(x1, y0).tex(uv()[2], uv()[1]).colour(colour).endVertex();
             return new Pos(pos.x() + charwidth(), pos.y(), pos.minx());
         }
     }
 
-    public SimpleFont(int lineSpacing, int descent, int textureId, IntFunction<Glyph> glyphGetter) {
+    public SimpleFont(int lineSpacing, int descent, ELSTexture texture, IntFunction<Glyph> glyphGetter) {
         this.lineSpacing = lineSpacing;
         this.descent = descent;
-        this.textureId = textureId;
+        this.texture = texture;
         this.glyphGetter = glyphGetter;
     }
 
     /**
      * Build the font and store it in the textureNumber location
      */
-    public SimpleFont(ThemeResource resource, @Nullable Path externalThemeDirectory) throws IOException {
+    public SimpleFont(ELSRenderBackend backend, ThemeResource resource, @Nullable Path externalThemeDirectory) throws IOException {
         try (var nativeBuffer = resource.toNativeBuffer(externalThemeDirectory)) {
             var buf = nativeBuffer.buffer();
             var info = STBTTFontinfo.create();
@@ -124,7 +121,7 @@ public class SimpleFont implements AutoCloseable {
             this.descent = (int) Math.floor(descent[0]);
             int texwidth = 256;
             int texheight = 128;
-            this.textureId = Texture.createEmpty("font texture " + resource, texwidth, texheight, GL_R8, GL_RED, false);
+            this.texture = backend.createTexture("font texture " + resource, texwidth, texheight, TextureFormat.RED, false);
             try (var packedchars = STBTTPackedchar.malloc(ASCII_GLYPH_COUNT)) {
                 try (STBTTPackRange.Buffer packRanges = STBTTPackRange.malloc(1)) {
                     var bitmap = BufferUtils.createByteBuffer(texwidth * texheight);
@@ -139,7 +136,7 @@ public class SimpleFont implements AutoCloseable {
                         stbtt_PackSetSkipMissingCodepoints(pc, true);
                         stbtt_PackFontRanges(pc, buf, 0, packRanges);
                         stbtt_PackEnd(pc);
-                        Texture.writeToTexture(this.textureId, texwidth, texheight, GL_RED, 1, bitmap);
+                        backend.writeToTexture(this.texture, bitmap);
                     }
                 }
                 try (var q = STBTTAlignedQuad.malloc()) {
@@ -178,8 +175,8 @@ public class SimpleFont implements AutoCloseable {
         return lineSpacing;
     }
 
-    int textureId() {
-        return textureId;
+    ELSTexture texture() {
+        return this.texture;
     }
 
     public int descent() {

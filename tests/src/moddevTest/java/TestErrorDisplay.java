@@ -8,12 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.earlydisplay.DisplayWindow;
-import net.neoforged.fml.earlydisplay.error.ErrorDisplay;
 import net.neoforged.fml.earlydisplay.render.LoadingScreenRenderer;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.ProgramArgs;
-import org.lwjgl.opengl.GL;
 
 public class TestErrorDisplay {
     public static void main(String[] args) throws Exception {
@@ -32,11 +30,9 @@ public class TestErrorDisplay {
         window.setNeoForgeVersion("21.5.123-beta");
 
         // Render at least one frame of the loading screen, then take over the window to display the error window
-        while (!LoadingScreenRenderer.rendered)
+        while (!LoadingScreenRenderer.rendered) {
             periodicTick.run();
-        long windowId = window.takeOverGlfwWindow();
-        GL.createCapabilities();
-        window.close();
+        }
 
         List<ModLoadingIssue> issues = new ArrayList<>();
         String suffix = "\nThisIsAVeryLongLineOfTextWithNoSpacesButItShouldStillBeWrappedToFitTheErrorScreensListWidth";
@@ -59,6 +55,6 @@ public class TestErrorDisplay {
         issues.add(ModLoadingIssue.warning("fml.modloadingissue.discouragedmod",
                 "dimodid", "ownermodid", "somerange",
                 "1.2.3", "fml.modloadingissue.discouragedmod.noreason"));
-        ErrorDisplay.fatal(windowId, null, null, issues, Path.of("./tests/mods"), Path.of("./logs/latest.log"), null);
+        window.displayFatalErrorAndExit(issues, Path.of("./tests/mods"), Path.of("./logs/latest.log"), null);
     }
 }

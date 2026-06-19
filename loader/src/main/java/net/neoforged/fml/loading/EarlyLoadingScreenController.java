@@ -5,6 +5,7 @@
 
 package net.neoforged.fml.loading;
 
+import java.util.function.Supplier;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -24,13 +25,11 @@ public interface EarlyLoadingScreenController {
      * <p>
      * This method can only be called once and once this method is called, any off-thread
      * interaction with the window seizes.
-     *
-     * @return The GLFW window handle for the window in a state that can be used by the game.
      */
-    long takeOverGlfwWindow();
+    void handOverToMinecraft(Supplier<Object> renderBackend);
 
     /**
-     * After calling {@linkplain #takeOverGlfwWindow() taking over} the main window, the game may still want to
+     * After calling {@linkplain #handOverToMinecraft(Supplier) taking over} the main window, the game may still want to
      * periodically ask the loading screen to update itself independently. It will call this method to do so.
      */
     void periodicTick();
