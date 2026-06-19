@@ -8,6 +8,8 @@ package net.neoforged.fml.earlydisplay.render;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
+import net.neoforged.fml.earlydisplay.render.backend.opengl.GlRenderer;
 import net.neoforged.fml.earlydisplay.theme.ThemeResource;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,7 +23,8 @@ class SimpleFontTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        font = new SimpleFont(new ThemeResource("Monocraft.ttf"), null);
+        ELSRenderBackend backend = GlRenderer.setupBackend(0);
+        font = new SimpleFont(backend, new ThemeResource("Monocraft.ttf"), null);
     }
 
     @Test

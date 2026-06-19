@@ -7,11 +7,16 @@ package net.neoforged.fml.earlydisplay.render;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import net.neoforged.fml.earlydisplay.render.backend.ELSDrawCollector;
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
+import net.neoforged.fml.earlydisplay.render.backend.VertexFormat;
 import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 import net.neoforged.fml.earlydisplay.util.Bounds;
 
 public record RenderContext(
+        ELSRenderBackend backend,
+        ELSDrawCollector collector,
         SimpleBufferBuilder sharedBuffer,
         MaterializedTheme theme,
         float availableWidth,
@@ -20,12 +25,6 @@ public record RenderContext(
         int viewportOffsetY,
         float viewportScale,
         int animationFrame) {
-    public ElementShader bindShader(String shaderId) {
-        var shader = theme.getShader(shaderId);
-        shader.activate();
-        return shader;
-    }
-
     public void blitTexture(Texture texture, Bounds bounds) {
         blitTexture(texture, bounds, -1);
     }
@@ -42,7 +41,8 @@ public record RenderContext(
         blitTextureRegion(texture, x, y, width, height, color, 0, 1, 0, 1);
     }
 
-    public void blitTextureRegion(Texture texture,
+    public void blitTextureRegion(
+            Texture texture,
             float x,
             float y,
             float width,
@@ -52,13 +52,7 @@ public record RenderContext(
             float u1,
             float v0,
             float v1) {
-        GlState.bindTexture2D(texture.textureId());
-        GlState.bindSampler(0);
-
-        var shader = bindShader(Theme.SHADER_GUI);
-        shader.setUniform1i(ElementShader.UNIFORM_SAMPLER0, 0);
-
-        sharedBuffer.begin(SimpleBufferBuilder.Format.POS_TEX_COLOR, SimpleBufferBuilder.Mode.QUADS);
+        sharedBuffer.begin(VertexFormat.POS_TEX_COLOR, VertexFormat.Mode.QUADS);
 
         QuadHelper.fillSprite(
                 sharedBuffer,
@@ -76,7 +70,8 @@ public record RenderContext(
                 v0,
                 v1);
 
-        sharedBuffer.draw();
+        SimpleBufferBuilder.Result result = this.sharedBuffer.finishAndUpload(this.backend);
+        this.collector.submitDraw(this.theme.getShader(Theme.SHADER_GUI), texture.texture(), result);
     }
 
     public void renderTextWithShadow(float x, float y, SimpleFont font, List<SimpleFont.DisplayText> texts) {
@@ -86,12 +81,10 @@ public record RenderContext(
     }
 
     public void renderText(float x, float y, SimpleFont font, List<SimpleFont.DisplayText> texts) {
-        GlState.bindTexture2D(font.textureId());
-        GlState.bindSampler(0);
-        bindShader(Theme.SHADER_FONT);
-        sharedBuffer.begin(SimpleBufferBuilder.Format.POS_TEX_COLOR, SimpleBufferBuilder.Mode.QUADS);
+        sharedBuffer.begin(VertexFormat.POS_TEX_COLOR, VertexFormat.Mode.QUADS);
         font.generateVerticesForTexts(x, y, sharedBuffer, texts);
-        sharedBuffer.draw();
+        SimpleBufferBuilder.Result result = this.sharedBuffer.finishAndUpload(this.backend);
+        this.collector.submitDraw(this.theme.getShader(Theme.SHADER_FONT), font.texture(), result);
     }
 
     public void renderIndeterminateProgressBar(Bounds backgroundBounds) {
@@ -142,14 +135,13 @@ public record RenderContext(
 
         blitTexture(sprites.progressBarBackground(), barBounds);
 
-        GlState.scissorTest(true);
-        scissorBox(
+        this.enableScissor(
                 (int) barBounds.left(),
                 (int) barBounds.top(),
                 (int) (barBounds.width() * fillFactor),
                 (int) barBounds.height());
         blitTexture(sprites.progressBarForeground(), barBounds, foregroundColor);
-        GlState.scissorTest(false);
+        this.collector.disableScissor();
     }
 
     public void fillRect(float x, float y, float width, float height, int color) {
@@ -157,18 +149,19 @@ public record RenderContext(
     }
 
     public void fillRect(float x, float y, float width, float height, int colorTop, int colorBottom) {
-        bindShader("color");
-        sharedBuffer.begin(SimpleBufferBuilder.Format.POS_TEX_COLOR, SimpleBufferBuilder.Mode.QUADS);
+        sharedBuffer.begin(VertexFormat.POS_TEX_COLOR, VertexFormat.Mode.QUADS);
         sharedBuffer.pos(x, y).tex(0, 0).colour(colorTop).endVertex();
-        sharedBuffer.pos(x + width, y).tex(0, 0).colour(colorTop).endVertex();
         sharedBuffer.pos(x, y + height).tex(0, 0).colour(colorBottom).endVertex();
         sharedBuffer.pos(x + width, y + height).tex(0, 0).colour(colorBottom).endVertex();
-        sharedBuffer.draw();
+        sharedBuffer.pos(x + width, y).tex(0, 0).colour(colorTop).endVertex();
+
+        SimpleBufferBuilder.Result result = this.sharedBuffer.finishAndUpload(this.backend);
+        this.collector.submitDraw(this.theme.getShader(Theme.SHADER_COLOR), null, result);
     }
 
-    public void scissorBox(int x, int y, int width, int height) {
+    public void enableScissor(int x, int y, int width, int height) {
         // glScissor applies to the whole window, not just the viewport set via glViewport
-        GlState.scissorBox(
+        this.collector.enableScissor(
                 (int) (viewportOffsetX + x * viewportScale),
                 (int) (viewportOffsetY + y * viewportScale),
                 (int) (width * viewportScale),

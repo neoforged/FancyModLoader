@@ -11,21 +11,18 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.earlydisplay.render.EarlyFramebuffer;
-import net.neoforged.fml.earlydisplay.render.ElementShader;
-import net.neoforged.fml.earlydisplay.render.GlState;
-import net.neoforged.fml.earlydisplay.render.MaterializedTheme;
+import net.neoforged.fml.earlydisplay.AbstractEarlyScreen;
 import net.neoforged.fml.earlydisplay.render.RenderContext;
-import net.neoforged.fml.earlydisplay.render.SimpleBufferBuilder;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import net.neoforged.fml.earlydisplay.render.Texture;
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
 import net.neoforged.fml.earlydisplay.theme.Theme;
+import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 import net.neoforged.fml.i18n.FMLTranslations;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.opengl.GL11C;
 
-final class ErrorDisplayWindow {
+final class ErrorDisplayWindow extends AbstractEarlyScreen {
     private static final int DISPLAY_WIDTH = 854;
     private static final int DISPLAY_HEIGHT = 480;
     private static final int BUTTON_WIDTH = 320;
@@ -53,13 +50,10 @@ final class ErrorDisplayWindow {
     private static final int LIST_ENTRY_X = 30;
     private static final int LIST_CONTENT_WIDTH = DISPLAY_WIDTH - (LIST_ENTRY_X * 2);
     private static final int SCROLL_SPEED = 10;
+    private static final ThemeColor CLEAR_COLOR = ThemeColor.ofArgb(0xFF000000);
 
-    final long windowHandle;
-    private final MaterializedTheme theme;
     private final SimpleFont font;
     private final int errorLineHeight;
-    private final EarlyFramebuffer framebuffer;
-    private final SimpleBufferBuilder bufferBuilder;
     final Texture buttonTexture;
     final Texture buttonTextureHover;
     final Texture buttonTextureInactive;
@@ -68,32 +62,26 @@ final class ErrorDisplayWindow {
     private final List<MessageEntry> entries;
     private final int totalEntryHeight;
     private boolean closed = false;
-    private int offsetX = 0;
-    private int offsetY = 0;
-    private float scale = 1F;
     private double mouseX = -1;
     private double mouseY = -1;
     private float scrollOffset = 0;
     private boolean draggingScrollbar = false;
 
     ErrorDisplayWindow(
-            long windowHandle,
+            ELSRenderBackend backend,
             @Nullable String assetsDir,
             @Nullable String assetIndex,
             List<ModLoadingIssue> issues,
             @Nullable Path modsFolder,
             @Nullable Path logFile,
             @Nullable Path crashReportFile) {
-        this.windowHandle = windowHandle;
-        this.theme = MaterializedTheme.materialize(Theme.createDefaultTheme(), null);
-        SimpleFont mcFont = FontLoader.loadVanillaFont(assetsDir, assetIndex);
+        super("FML Error Screen", () -> backend, Theme.createDefaultTheme(), null, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+        SimpleFont mcFont = FontLoader.loadVanillaFont(backend, assetsDir, assetIndex);
         this.font = mcFont != null ? mcFont : theme.getFont(Theme.FONT_DEFAULT);
         this.errorLineHeight = font.lineSpacing() - 5;
-        this.framebuffer = new EarlyFramebuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT);
-        this.bufferBuilder = new SimpleBufferBuilder("shared_error", 8192);
-        this.buttonTexture = Button.loadTexture(true, false);
-        this.buttonTextureHover = Button.loadTexture(true, true);
-        this.buttonTextureInactive = Button.loadTexture(false, false);
+        this.buttonTexture = Button.loadTexture(backend, true, false);
+        this.buttonTextureHover = Button.loadTexture(backend, true, true);
+        this.buttonTextureInactive = Button.loadTexture(backend, false, false);
         boolean translate = mcFont != null;
         BiFunction<String, Object[], String> translator = translate ? FMLTranslations::parseMessage : FMLTranslations::parseEnglishMessage;
         FileOpener opener = FileOpener.get();
@@ -148,55 +136,11 @@ final class ErrorDisplayWindow {
     }
 
     void render() {
-        framebuffer.activate();
-
-        int[] fbWidth = new int[1];
-        int[] fbHeight = new int[1];
-        GLFW.glfwGetFramebufferSize(windowHandle, fbWidth, fbHeight);
-        framebuffer.resize(fbWidth[0], fbHeight[0]);
-
-        // Fit the layout rectangle into the screen while maintaining aspect ratio
-        float desiredAspectRatio = DISPLAY_WIDTH / (float) DISPLAY_HEIGHT;
-        float actualAspectRatio = framebuffer.width() / (float) framebuffer.height();
-        if (actualAspectRatio > desiredAspectRatio) {
-            // This means we are wider than the desired aspect ratio, and have to center horizontally
-            float actualWidth = desiredAspectRatio * framebuffer.height();
-            offsetX = (int) (framebuffer.width() - actualWidth) / 2;
-            offsetY = 0;
-            scale = (float) framebuffer.height() / DISPLAY_HEIGHT;
-            GlState.viewport(offsetX, 0, (int) actualWidth, framebuffer.height());
-        } else {
-            // This means we are taller than the desired aspect ratio, and have to center vertically
-            float actualHeight = framebuffer.width() / desiredAspectRatio;
-            offsetX = 0;
-            offsetY = (int) (framebuffer.height() - actualHeight) / 2;
-            scale = (float) framebuffer.width() / DISPLAY_WIDTH;
-            GlState.viewport(0, offsetY, framebuffer.width(), (int) actualHeight);
-        }
-
-        GlState.clearColor(0F, 0F, 0F, 1F);
-        GL11C.glClear(GL11C.GL_COLOR_BUFFER_BIT | GL11C.GL_DEPTH_BUFFER_BIT);
-        GlState.enableBlend(true);
-        GlState.blendFuncSeparate(GL11C.GL_SRC_ALPHA, GL11C.GL_ONE_MINUS_SRC_ALPHA, GL11C.GL_ZERO, GL11C.GL_ONE);
-
-        RenderContext ctx = new RenderContext(bufferBuilder, theme, DISPLAY_WIDTH, DISPLAY_HEIGHT, offsetX, offsetY, scale, 0);
-        for (ElementShader shader : theme.shaders().values()) {
-            shader.activate();
-            if (shader.hasUniform(ElementShader.UNIFORM_SCREEN_SIZE)) {
-                shader.setUniform2f(ElementShader.UNIFORM_SCREEN_SIZE, DISPLAY_WIDTH, DISPLAY_HEIGHT);
-            }
-        }
-
-        renderToFramebuffer(ctx);
-
-        framebuffer.deactivate();
-
-        GlState.viewport(0, 0, framebuffer.width(), framebuffer.height());
-        framebuffer.blitToScreen(theme.theme().colorScheme().screenBackground(), framebuffer.width(), framebuffer.height());
-        GLFW.glfwSwapBuffers(windowHandle);
+        this.renderToFramebuffer(CLEAR_COLOR);
     }
 
-    private void renderToFramebuffer(RenderContext ctx) {
+    @Override
+    protected void renderToFramebuffer(RenderContext ctx) {
         // Background
         ctx.fillRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0xFF402020, 0xFF501010);
         // Top edge
@@ -215,8 +159,7 @@ final class ErrorDisplayWindow {
             ctx.renderTextWithShadow(x, y, font, line.parts);
         }
 
-        GlState.scissorTest(true);
-        ctx.scissorBox(0, LIST_CONTENT_Y_TOP, DISPLAY_WIDTH, LIST_CONTENT_HEIGHT);
+        ctx.enableScissor(0, LIST_CONTENT_Y_TOP, DISPLAY_WIDTH, LIST_CONTENT_HEIGHT);
         float y = LIST_Y_TOP - scrollOffset;
         for (MessageEntry entry : entries) {
             float entryHeight = errorLineHeight * entry.lineCount();
@@ -243,7 +186,7 @@ final class ErrorDisplayWindow {
             }
             y += ENTRY_PADDING;
         }
-        GlState.scissorTest(false);
+        ctx.collector().disableScissor();
 
         if (totalEntryHeight > LIST_CONTENT_HEIGHT) {
             float scrollFactor = scrollOffset / (totalEntryHeight - LIST_CONTENT_HEIGHT - 1);
@@ -361,14 +304,12 @@ final class ErrorDisplayWindow {
         return closed;
     }
 
-    void teardown() {
-        theme.close();
-        framebuffer.close();
-        bufferBuilder.close();
+    @Override
+    public void close(boolean destroyBackend) {
         buttonTexture.close();
         buttonTextureHover.close();
         buttonTextureInactive.close();
-        SimpleBufferBuilder.destroy();
+        super.close(destroyBackend);
     }
 
     private record HeaderLine(List<SimpleFont.DisplayText> parts, int width) {
