@@ -71,27 +71,24 @@ final class GlRenderBackend extends ELSRenderBackend {
 
     @Override
     public GlBuffer createBuffer(String label, Set<ELSBuffer.Usage> usage, long size) {
-        GlBuffer buffer = createBuffer0(label, usage, size);
-        int bindTarget = GlConst.getBufferBindTarget(buffer.usage());
-        GL33C.glBindBuffer(bindTarget, buffer.bufferId);
-        GL33C.glBufferData(bindTarget, size, GlConst.bufferUsageToGlEnum(buffer.usage()));
+        int bufferId = GL33C.glGenBuffers();
+        int bindTarget = GlConst.getBufferBindTarget(usage);
+        GL33C.glBindBuffer(bindTarget, bufferId);
+        GlDebug.labelBuffer(bufferId, label);
+        GL33C.glBufferData(bindTarget, size, GlConst.bufferUsageToGlEnum(usage));
         GL33C.glBindBuffer(bindTarget, 0);
-        return buffer;
+        return new GlBuffer(bufferId, usage, size);
     }
 
     @Override
     public GlBuffer createBuffer(String label, Set<ELSBuffer.Usage> usage, ByteBuffer data) {
-        GlBuffer buffer = createBuffer0(label, usage, data.remaining());
-        int bindTarget = GlConst.getBufferBindTarget(buffer.usage());
-        GL33C.glBindBuffer(bindTarget, buffer.bufferId);
-        GL33C.glBufferData(bindTarget, data, GlConst.bufferUsageToGlEnum(buffer.usage()));
-        GL33C.glBindBuffer(bindTarget, 0);
-        return buffer;
-    }
-
-    private static GlBuffer createBuffer0(String label, Set<ELSBuffer.Usage> usage, long size) {
         int bufferId = GL33C.glGenBuffers();
+        int size = data.remaining();
+        int bindTarget = GlConst.getBufferBindTarget(usage);
+        GL33C.glBindBuffer(bindTarget, bufferId);
         GlDebug.labelBuffer(bufferId, label);
+        GL33C.glBufferData(bindTarget, data, GlConst.bufferUsageToGlEnum(usage));
+        GL33C.glBindBuffer(bindTarget, 0);
         return new GlBuffer(bufferId, usage, size);
     }
 

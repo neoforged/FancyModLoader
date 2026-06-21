@@ -14,13 +14,15 @@ final class VaoCache implements AutoCloseable {
         boolean enable = false;
         if (vao == null) {
             int id = GL33C.glGenVertexArrays();
+            GlState.bindVertexArray(id);
             GlDebug.labelVertexArray(id, format.name());
             vao = new VAO(id);
             this.cache.put(format, vao);
             enable = true;
+        } else {
+            GlState.bindVertexArray(vao.id);
         }
 
-        GlState.bindVertexArray(vao.id);
         GL33C.glBindBuffer(GL33C.GL_ARRAY_BUFFER, vertexBuffer.buffer().bufferId);
         int stride = format.stride;
         long offset = vertexBuffer.offset();
