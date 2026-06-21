@@ -1,9 +1,9 @@
 package net.neoforged.fml.earlydisplay.render.backend.opengl;
 
-import net.neoforged.fml.earlydisplay.render.ElementShader;
 import net.neoforged.fml.earlydisplay.render.backend.ELSBuffer;
 import net.neoforged.fml.earlydisplay.render.backend.ELSBufferSlice;
 import net.neoforged.fml.earlydisplay.render.backend.ELSRenderPass;
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderPipeline;
 import net.neoforged.fml.earlydisplay.render.backend.ELSTexture;
 import net.neoforged.fml.earlydisplay.render.backend.VertexFormat;
 import org.jetbrains.annotations.Nullable;
@@ -18,7 +18,7 @@ final class GlRenderPass implements ELSRenderPass {
     private final Map<String, @Nullable GlTexture> textures = new HashMap<>();
     private final Map<String, GlBuffer> uniforms = new HashMap<>();
     @Nullable
-    private GlProgram program;
+    private GlCompiledPipeline pipeline;
     @Nullable
     private GlBufferSlice vertexBuffer;
     @Nullable
@@ -45,8 +45,8 @@ final class GlRenderPass implements ELSRenderPass {
     }
 
     @Override
-    public void bindShader(ElementShader shader) {
-        this.program = this.backend.getCompiledShader(shader);
+    public void bindPipeline(ELSRenderPipeline pipeline) {
+        this.pipeline = this.backend.getCompiledPipeline(pipeline);
     }
 
     @Override
@@ -86,23 +86,30 @@ final class GlRenderPass implements ELSRenderPass {
     }
 
     private void setupPipelineState(boolean indexed) {
-        Objects.requireNonNull(this.program, "No shader set");
+        Objects.requireNonNull(this.pipeline, "No pipeline set");
         Objects.requireNonNull(this.vertexBuffer, "No vertex buffer set");
         if (indexed) {
             Objects.requireNonNull(this.indexBuffer, "No index buffer set");
         }
 
-        GlState.useProgram(this.program.program);
+        GlProgram program = this.pipeline.program();
+        GlState.useProgram(program.program);
 
-        GlState.bindSampler(0);
-        for (Map.Entry<String, @Nullable GlTexture> entry : this.textures.entrySet()) {
-            this.program.setSampler(entry.getKey(), 0);
-            GlTexture texture = entry.getValue();
+        String sampler = this.pipeline.info().sampler();
+        if (sampler != null) {
+            program.setSampler(sampler, 0);
+            GlTexture texture = this.textures.get(sampler);
             GlState.bindTexture2D(texture != null ? texture.textureId : 0);
+            GlState.bindSampler(0);
+        } else {
+            GlState.bindTexture2D(0);
         }
 
-        for (Map.Entry<String, GlBuffer> entry : this.uniforms.entrySet()) {
-            this.program.setUniform(entry.getKey(), entry.getValue());
+        for (String uniform : this.pipeline.info().uniforms()) {
+            GlBuffer ubo = this.uniforms.get(uniform);
+            if (ubo != null) {
+                program.setUniform(uniform, ubo);
+            }
         }
 
         this.backend.vaoCache.bindVertexBuffer(VertexFormat.POS_TEX_COLOR, this.vertexBuffer);

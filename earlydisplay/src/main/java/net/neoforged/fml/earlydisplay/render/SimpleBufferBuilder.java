@@ -36,7 +36,7 @@ import org.lwjgl.system.MemoryUtil;
  */
 public class SimpleBufferBuilder implements Closeable {
     private static final MemoryUtil.MemoryAllocator ALLOCATOR = MemoryUtil.getAllocator(false);
-    private static final Set<ELSBuffer.Usage> BUFFER_USAGE = EnumSet.of(ELSBuffer.Usage.VERTEX);
+    private static final Set<ELSBuffer.Usage> BUFFER_USAGE = EnumSet.of(ELSBuffer.Usage.VERTEX, ELSBuffer.Usage.COPY_SRC, ELSBuffer.Usage.COPY_DST);
 
     private final String label;
     private long bufferAddr;   // Pointer to the backing buffer.
@@ -284,7 +284,7 @@ public class SimpleBufferBuilder implements Closeable {
                 ELSBuffer oldBuffer = this.gpuBuffer;
                 this.gpuBuffer = backend.createBuffer(this.label, BUFFER_USAGE, newVBOSize);
                 if (oldBuffer != null) {
-                    backend.copyBufferToBuffer(oldBuffer, this.gpuBuffer);
+                    backend.copyBufferToBuffer(oldBuffer.slice(), this.gpuBuffer.slice(0, oldBuffer.size()));
                     oldBuffer.close();
                 }
             }

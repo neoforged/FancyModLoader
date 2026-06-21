@@ -24,15 +24,26 @@ public enum VertexFormat {
         return this.elements.length;
     }
 
-    public enum Element {
-        POS(2, 2 * 4),
-        TEX(2, 2 * 4),
-        COLOR(4, 4);
+    public int findElement(Element target) {
+        for (int i = 0; i < this.elements.length; i++) {
+            if (this.elements[i] == target) {
+                return i;
+            }
+        }
+        return -1;
+    }
 
+    public enum Element {
+        POS("position", 2, 2 * 4),
+        TEX("uv", 2, 2 * 4),
+        COLOR("color", 4, 4);
+
+        public final String name;
         public final int count;
         public final int width;
 
-        Element(int count, int width) {
+        Element(String name, int count, int width) {
+            this.name = name;
             this.count = count;
             this.width = width;
         }

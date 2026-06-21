@@ -85,6 +85,7 @@ public record MaterializedTheme(
 
     @Override
     public void close() {
-        shaders.values().forEach(ElementShader::close);
+        this.sprites.close();
+        this.fonts.values().forEach(SimpleFont::close);
     }
 }

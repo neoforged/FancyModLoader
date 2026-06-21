@@ -35,6 +35,10 @@ public final class ELSDrawCollector {
     }
 
     public void enableScissor(int x, int y, int width, int height) {
+        if (width <= 0 || height <= 0) {
+            throw new IllegalArgumentException("Stencil area must have non-zero width/height");
+        }
+
         this.scissorEnabled = true;
         this.scissorX = x;
         this.scissorY = y;
@@ -46,9 +50,9 @@ public final class ELSDrawCollector {
         this.scissorEnabled = false;
     }
 
-    public void submitDraw(ElementShader shader, @Nullable ELSTexture texture, @Nullable SimpleBufferBuilder.Result bufferResult) {
+    public void submitDraw(ELSRenderPipeline pipeline, @Nullable ELSTexture texture, @Nullable SimpleBufferBuilder.Result bufferResult) {
         if (bufferResult != null) {
-            this.draws.add(new Draw(shader, texture, bufferResult, this.scissorEnabled, this.scissorX, this.scissorY, this.scissorWidth, this.scissorHeight));
+            this.draws.add(new Draw(pipeline, texture, bufferResult, this.scissorEnabled, this.scissorX, this.scissorY, this.scissorWidth, this.scissorHeight));
         }
     }
 
@@ -77,7 +81,7 @@ public final class ELSDrawCollector {
             for (Draw draw : this.draws) {
                 SimpleBufferBuilder.Result result = draw.bufferResult;
 
-                renderPass.bindShader(draw.shader);
+                renderPass.bindPipeline(draw.pipeline);
                 renderPass.bindVertexBuffer(vertexBuffer.slice(result.vertexOffset(), result.vertexCount() * (long) result.format().stride));
                 renderPass.bindIndexBuffer(result.indexed() ? indexBuffer : null);
                 renderPass.bindTexture(ElementShader.UNIFORM_SAMPLER0, draw.texture);
@@ -98,7 +102,7 @@ public final class ELSDrawCollector {
     }
 
     private record Draw(
-            ElementShader shader,
+            ELSRenderPipeline pipeline,
             @Nullable ELSTexture texture,
             SimpleBufferBuilder.Result bufferResult,
             boolean scissorEnabled,
