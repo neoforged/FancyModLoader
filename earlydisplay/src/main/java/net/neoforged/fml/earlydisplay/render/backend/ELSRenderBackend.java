@@ -40,7 +40,7 @@ public abstract class ELSRenderBackend implements AutoCloseable {
 
     public abstract long getWindowHandle();
 
-    public abstract void acquireContextOwnership();
+    public abstract void acquireContextOwnership(boolean createContext);
 
     public abstract void releaseContextOwnership();
 

@@ -65,7 +65,7 @@ public abstract class AbstractEarlyScreen {
 
         RenderContext context = new RenderContext(this.backend, collector, this.bufferBuilder, this.theme, this.screenWidth, this.screenHeight, this.offsetX, this.offsetY, this.scale, this.animationFrame);
         renderToFramebuffer(context);
-        collector.execute(this.name, this.framebuffer.texture(), this.theme.theme().colorScheme().screenBackground(), this.bufferBuilder.getGpuBuffer(), this.screenWidth, this.screenHeight);
+        collector.execute(this.name, this.framebuffer.texture(), clearColor, this.bufferBuilder.getGpuBuffer(), this.screenWidth, this.screenHeight);
 
         this.backend.presentTexture(this.framebuffer.texture(), clearColor, this.framebuffer.width(), this.framebuffer.height());
     }

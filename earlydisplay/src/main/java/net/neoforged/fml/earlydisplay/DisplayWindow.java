@@ -62,11 +62,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -120,7 +120,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private boolean borderless;
     private Theme theme;
 
-    private ScheduledFuture<LoadingScreenRenderer> rendererFuture;
+    private Future<LoadingScreenRenderer> rendererFuture;
 
     // The GL ID of the window. Used for all operations
     private long window;
@@ -211,20 +211,20 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
         initWindow();
 
-        this.rendererFuture = this.setupRenderer(() -> GlRenderer.setupBackend(this.window), true);
+        this.rendererFuture = this.renderScheduler.schedule(() -> this.setupRenderer(() -> GlRenderer.setupBackend(this.window), true), 1, TimeUnit.MILLISECONDS);
 
         updateProgress("Initializing Game Graphics");
     }
 
-    private ScheduledFuture<LoadingScreenRenderer> setupRenderer(Supplier<ELSRenderBackend> backend, boolean setupAutoRender) {
-        return this.renderScheduler.schedule(() -> new LoadingScreenRenderer(
+    private LoadingScreenRenderer setupRenderer(Supplier<ELSRenderBackend> backend, boolean setupAutoRender) {
+        return new LoadingScreenRenderer(
                 this.renderScheduler,
                 backend,
                 this.theme,
                 getThemePath(),
                 () -> this.minecraftVersion,
                 () -> this.neoForgeVersion,
-                setupAutoRender), 1, TimeUnit.MILLISECONDS);
+                setupAutoRender);
     }
 
     @Override
@@ -492,7 +492,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
         this.shutdownAutomaticRenderer(true);
         glfwDestroyWindow(this.window); // TODO: this makes the post-handover ELS untestable
 
-        this.rendererFuture = this.setupRenderer(() -> (ELSRenderBackend) backend.get(), false);
+        // Perform renderer re-init on the calling thread because the incoming B3D backend cannot move the context to another thread
+        this.rendererFuture = CompletableFuture.completedFuture(this.setupRenderer(() -> (ELSRenderBackend) backend.get(), false));
         try {
             this.repaintTick = this.rendererFuture.get(30, TimeUnit.SECONDS)::renderToScreen;
         } catch (InterruptedException e) {
@@ -533,7 +534,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
         completeProgress();
 
-        renderer.getBackend().acquireContextOwnership();
         // Clean up our hooks
         glfwSetWindowSizeCallback(window, null).close();
         return renderer.getBackend();
@@ -584,8 +584,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
     @Override
     public void displayFatalErrorAndExit(List<ModLoadingIssue> issues, @Nullable Path modsFolder, @Nullable Path logFile, @Nullable Path crashReportFile) {
         ELSRenderBackend backend = this.shutdownAutomaticRenderer(false);
+        backend.acquireContextOwnership(true);
         this.close();
-        backend.acquireContextOwnership();
         ErrorDisplay.fatal(backend, assetsDir, assetIndex, issues, modsFolder, logFile, crashReportFile);
     }
 

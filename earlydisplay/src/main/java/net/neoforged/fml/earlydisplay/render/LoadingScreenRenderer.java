@@ -61,6 +61,7 @@ public final class LoadingScreenRenderer extends AbstractEarlyScreen {
         this.minecraftVersion = minecraftVersion;
         this.neoForgeVersion = neoForgeVersion;
         this.elements = loadElements();
+        this.backend.releaseContextOwnership();
 
         if (setupAutoRender) {
             this.automaticRendering = scheduler.scheduleWithFixedDelay(this::renderAutomatic, 50, 50, TimeUnit.MILLISECONDS);
@@ -77,7 +78,7 @@ public final class LoadingScreenRenderer extends AbstractEarlyScreen {
             return;
         }
         try {
-            this.backend.acquireContextOwnership();
+            this.backend.acquireContextOwnership(false);
             this.renderToScreen();
         } finally {
             this.backend.releaseContextOwnership(); // we release the gl context IF we're running off the main thread
