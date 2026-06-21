@@ -521,8 +521,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
         completeProgress();
 
-        // Clean up our hooks
-        glfwSetWindowSizeCallback(window, null).close();
         return renderer.getBackend();
     }
 
