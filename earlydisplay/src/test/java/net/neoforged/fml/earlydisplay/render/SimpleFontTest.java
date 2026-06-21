@@ -15,15 +15,18 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.lwjgl.glfw.GLFW;
 
 @ExtendWith(WithOffScreenGLSurface.class)
 class SimpleFontTest {
+    @AutoClose
+    private ELSRenderBackend backend;
     @AutoClose
     private SimpleFont font;
 
     @BeforeEach
     void setUp() throws IOException {
-        ELSRenderBackend backend = GlRenderer.setupBackend(0);
+        backend = GlRenderer.setupBackend(GLFW.glfwGetCurrentContext());
         font = new SimpleFont(backend, new ThemeResource("Monocraft.ttf"), null);
     }
 
