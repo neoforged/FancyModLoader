@@ -1,17 +1,21 @@
-package net.neoforged.fml.earlydisplay.render.backend.opengl;
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
 
-import net.neoforged.fml.earlydisplay.render.backend.ELSRenderPipeline;
-import net.neoforged.fml.earlydisplay.render.backend.VertexFormat;
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.opengl.GL33C;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package net.neoforged.fml.earlydisplay.render.backend.opengl;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderPipeline;
+import net.neoforged.fml.earlydisplay.render.backend.VertexFormat;
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.opengl.GL33C;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class GlProgram implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(GlProgram.class);

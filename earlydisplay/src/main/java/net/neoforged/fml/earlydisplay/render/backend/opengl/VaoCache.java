@@ -1,10 +1,14 @@
-package net.neoforged.fml.earlydisplay.render.backend.opengl;
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
 
-import net.neoforged.fml.earlydisplay.render.backend.VertexFormat;
-import org.lwjgl.opengl.GL33C;
+package net.neoforged.fml.earlydisplay.render.backend.opengl;
 
 import java.util.EnumMap;
 import java.util.Map;
+import net.neoforged.fml.earlydisplay.render.backend.VertexFormat;
+import org.lwjgl.opengl.GL33C;
 
 final class VaoCache implements AutoCloseable {
     private final Map<VertexFormat, VAO> cache = new EnumMap<>(VertexFormat.class);

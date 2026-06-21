@@ -1,10 +1,14 @@
-package net.neoforged.fml.earlydisplay.render.backend;
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
 
-import net.neoforged.fml.earlydisplay.theme.ThemeColor;
+package net.neoforged.fml.earlydisplay.render.backend;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Set;
+import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 
 public abstract class ELSRenderBackend implements AutoCloseable {
     final ELSBuffer screenSizeUbo;
