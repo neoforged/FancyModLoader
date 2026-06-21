@@ -49,5 +49,5 @@ final class GlConst {
         return GL33C.GL_STATIC_DRAW;
     }
 
-    private GlConst() { }
+    private GlConst() {}
 }
