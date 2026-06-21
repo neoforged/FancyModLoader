@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.neoforged.fml.earlydisplay.DisplayWindow;
 import net.neoforged.fml.earlydisplay.render.LoadingScreenRenderer;
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
 import net.neoforged.fml.earlydisplay.render.backend.opengl.GlRenderer;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
@@ -38,7 +39,9 @@ public class TestEarlyDisplay {
             periodicTick.run();
         }
         long windowHandle = window.getWindowHandle();
-        window.handOverToMinecraft(() -> GlRenderer.setupBackend(windowHandle));
+        ELSRenderBackend[] backend = new ELSRenderBackend[1];
+        window.handOverToMinecraft(() -> backend[0] = GlRenderer.setupBackend(windowHandle));
+        backend[0].acquireContextOwnership(true);
 
         GLFW.glfwSetWindowCloseCallback(windowHandle, _ -> {
             window.close();

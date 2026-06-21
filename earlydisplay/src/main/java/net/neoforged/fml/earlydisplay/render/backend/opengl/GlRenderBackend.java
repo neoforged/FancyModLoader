@@ -192,8 +192,11 @@ final class GlRenderBackend extends ELSRenderBackend {
     }
 
     @Override
-    public void acquireContextOwnership() {
+    public void acquireContextOwnership(boolean createContext) {
         GLFW.glfwMakeContextCurrent(this.windowHandle);
+        if (createContext) {
+            GL.createCapabilities();
+        }
     }
 
     @Override
