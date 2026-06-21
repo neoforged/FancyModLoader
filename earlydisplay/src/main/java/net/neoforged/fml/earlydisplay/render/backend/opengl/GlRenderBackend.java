@@ -1,5 +1,16 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fml.earlydisplay.render.backend.opengl;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.Set;
 import net.neoforged.fml.earlydisplay.render.ElementShader;
 import net.neoforged.fml.earlydisplay.render.backend.ELSBuffer;
 import net.neoforged.fml.earlydisplay.render.backend.ELSBufferSlice;
@@ -15,13 +26,6 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL33C;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.system.MemoryUtil;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.Set;
 
 final class GlRenderBackend extends ELSRenderBackend {
     private final long windowHandle;
@@ -260,7 +264,7 @@ final class GlRenderBackend extends ELSRenderBackend {
                 ByteBuffer data = MemoryUtil.memAlloc(bufferSize);
                 try {
                     for (int i = 0; i < indexCount; i += INDEX_STRIDE) {
-                        int idx =  i * QUAD_STRIDE / INDEX_STRIDE;
+                        int idx = i * QUAD_STRIDE / INDEX_STRIDE;
                         data.putInt(idx);
                         data.putInt(idx + 1);
                         data.putInt(idx + 2);

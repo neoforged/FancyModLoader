@@ -1,5 +1,13 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fml.earlydisplay.render.backend.opengl;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import net.neoforged.fml.earlydisplay.render.backend.ELSBuffer;
 import net.neoforged.fml.earlydisplay.render.backend.ELSBufferSlice;
 import net.neoforged.fml.earlydisplay.render.backend.ELSRenderPass;
@@ -8,10 +16,6 @@ import net.neoforged.fml.earlydisplay.render.backend.ELSTexture;
 import net.neoforged.fml.earlydisplay.render.backend.VertexFormat;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL33C;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 
 final class GlRenderPass implements ELSRenderPass {
     private final GlRenderBackend backend;

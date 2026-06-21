@@ -1,10 +1,14 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fml.earlydisplay.render.backend.opengl;
 
+import java.util.Set;
 import net.neoforged.fml.earlydisplay.render.backend.ELSBuffer;
 import net.neoforged.fml.earlydisplay.render.backend.TextureFormat;
 import org.lwjgl.opengl.GL33C;
-
-import java.util.Set;
 
 final class GlConst {
     static int toGlInternalId(TextureFormat format) {

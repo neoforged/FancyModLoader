@@ -1,14 +1,18 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
 package net.neoforged.fml.earlydisplay.render.backend;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import net.neoforged.fml.earlydisplay.render.ElementShader;
 import net.neoforged.fml.earlydisplay.render.SimpleBufferBuilder;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryUtil;
-
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 public final class ELSDrawCollector {
     private final ELSRenderBackend backend;
@@ -109,8 +113,7 @@ public final class ELSDrawCollector {
             int scissorX,
             int scissorY,
             int scissorWidth,
-            int scissorHeight
-    ) {
+            int scissorHeight) {
         boolean indexed() {
             return this.bufferResult.indexed();
         }
