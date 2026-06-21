@@ -13,5 +13,5 @@ out vec4 fColour;
 void main() {
     fTex = uv;
     fColour = color;
-    gl_Position = vec4((position / screenSizeVec) * 2 - 1, 0.0, 1.0);
+    gl_Position = vec4((position / screenSizeVec) * 2 - 1, 0.0, 1.0) * vec4(1.0, -1.0, 1.0, 1.0);
 }

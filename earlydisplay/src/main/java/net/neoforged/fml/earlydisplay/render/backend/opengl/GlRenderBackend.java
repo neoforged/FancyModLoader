@@ -4,10 +4,12 @@ import net.neoforged.fml.earlydisplay.render.ElementShader;
 import net.neoforged.fml.earlydisplay.render.backend.ELSBuffer;
 import net.neoforged.fml.earlydisplay.render.backend.ELSBufferSlice;
 import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderPipeline;
 import net.neoforged.fml.earlydisplay.render.backend.ELSTexture;
 import net.neoforged.fml.earlydisplay.render.backend.TextureFormat;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnknownNullability;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL33C;
@@ -24,7 +26,7 @@ import java.util.Set;
 final class GlRenderBackend extends ELSRenderBackend {
     private final long windowHandle;
     private final int maxTextureSize;
-    private final Map<ElementShader, GlProgram> pipelines = new IdentityHashMap<>();
+    private final Map<ELSRenderPipeline, GlCompiledPipeline> pipelines = new IdentityHashMap<>();
     private final QuadAutoIndexBuffer quadAutoIndexBuffer = new QuadAutoIndexBuffer();
     final VaoCache vaoCache = new VaoCache();
 
@@ -34,11 +36,12 @@ final class GlRenderBackend extends ELSRenderBackend {
     }
 
     @Override
-    public void preloadPipelines(Collection<ElementShader> shaders) {
-        for (ElementShader shader : shaders) {
+    public void preloadPipelines(@UnknownNullability Collection<ELSRenderPipeline> pipelines) {
+        for (ELSRenderPipeline pipeline : pipelines) {
+            ElementShader shader = pipeline.shader();
             try (var vertexShader = shader.loadVertexShader(); var fragmentShader = shader.loadFragmentShader()) {
-                GlProgram program = GlProgram.create(shader.getName(), vertexShader.buffer(), fragmentShader.buffer());
-                this.pipelines.put(shader, program);
+                GlProgram program = GlProgram.create(shader.getName(), pipeline, vertexShader.buffer(), fragmentShader.buffer());
+                this.pipelines.put(pipeline, new GlCompiledPipeline(pipeline, program));
             } catch (IOException e) {
                 throw new RuntimeException("Failed to read shaders for " + shader.getName(), e);
             }
@@ -102,10 +105,10 @@ final class GlRenderBackend extends ELSRenderBackend {
     }
 
     @Override
-    public void copyBufferToBuffer(ELSBuffer source, ELSBuffer target) {
-        GL33C.glBindBuffer(GL33C.GL_COPY_READ_BUFFER, ((GlBuffer) source).bufferId);
-        GL33C.glBindBuffer(GL33C.GL_COPY_WRITE_BUFFER, ((GlBuffer) target).bufferId);
-        GL33C.glCopyBufferSubData(GL33C.GL_COPY_READ_BUFFER, GL33C.GL_COPY_WRITE_BUFFER, 0, 0, source.size());
+    public void copyBufferToBuffer(@UnknownNullability ELSBufferSlice source, ELSBufferSlice target) {
+        GL33C.glBindBuffer(GL33C.GL_COPY_READ_BUFFER, ((GlBufferSlice) source).buffer().bufferId);
+        GL33C.glBindBuffer(GL33C.GL_COPY_WRITE_BUFFER, ((GlBufferSlice) target).buffer().bufferId);
+        GL33C.glCopyBufferSubData(GL33C.GL_COPY_READ_BUFFER, GL33C.GL_COPY_WRITE_BUFFER, 0, 0, source.buffer().size());
         GL33C.glBindBuffer(GL33C.GL_COPY_READ_BUFFER, 0);
         GL33C.glBindBuffer(GL33C.GL_COPY_WRITE_BUFFER, 0);
     }
@@ -153,12 +156,11 @@ final class GlRenderBackend extends ELSRenderBackend {
         GlState.bindReadFramebuffer(((GlTexture) texture).fbo());
         GlState.clearColor(backgroundColor.r(), backgroundColor.g(), backgroundColor.b(), 1f);
         GL33C.glClear(GL33C.GL_COLOR_BUFFER_BIT | GL33C.GL_DEPTH_BUFFER_BIT);
-        // src Y are flipped, since our FB is flipped
         GL33C.glBlitFramebuffer(
                 0,
-                height,
-                width,
                 0,
+                width,
+                height,
                 Math.clamp(wleft, 0, windowFBWidth),
                 Math.clamp(wtop, 0, windowFBHeight),
                 Math.clamp(wright, 0, windowFBWidth),
@@ -170,12 +172,12 @@ final class GlRenderBackend extends ELSRenderBackend {
         GLFW.glfwSwapBuffers(this.windowHandle);
     }
 
-    GlProgram getCompiledShader(ElementShader shader) {
-        GlProgram program = this.pipelines.get(shader);
-        if (program == null) {
-            throw new IllegalArgumentException("Unrecognized shader: " + shader);
+    GlCompiledPipeline getCompiledPipeline(ELSRenderPipeline pipeline) {
+        GlCompiledPipeline compiledPipeline = this.pipelines.get(pipeline);
+        if (compiledPipeline == null) {
+            throw new IllegalArgumentException("Unrecognized pipeline: " + pipeline);
         }
-        return program;
+        return compiledPipeline;
     }
 
     @Override
@@ -245,6 +247,7 @@ final class GlRenderBackend extends ELSRenderBackend {
 
     private final class QuadAutoIndexBuffer implements AutoCloseable {
         private static final Set<ELSBuffer.Usage> BUFFER_USAGE = Set.of(ELSBuffer.Usage.INDEX);
+        private static final int QUAD_STRIDE = 4;
         private static final int INDEX_STRIDE = 6;
 
         @Nullable
@@ -257,7 +260,7 @@ final class GlRenderBackend extends ELSRenderBackend {
                 ByteBuffer data = MemoryUtil.memAlloc(bufferSize);
                 try {
                     for (int i = 0; i < indexCount; i += INDEX_STRIDE) {
-                        int idx =  i * 4 / 6;
+                        int idx =  i * QUAD_STRIDE / INDEX_STRIDE;
                         data.putInt(idx);
                         data.putInt(idx + 1);
                         data.putInt(idx + 2);
@@ -270,6 +273,7 @@ final class GlRenderBackend extends ELSRenderBackend {
                         this.buffer.close();
                     }
                     this.buffer = GlRenderBackend.this.createBuffer("ELS quad auto index buffer", BUFFER_USAGE, data);
+                    GlState.bindElementArrayBuffer(0);
                 } finally {
                     MemoryUtil.memFree(data);
                 }

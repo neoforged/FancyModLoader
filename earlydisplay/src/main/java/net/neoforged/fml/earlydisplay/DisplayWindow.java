@@ -5,18 +5,8 @@
 
 package net.neoforged.fml.earlydisplay;
 
-import static org.lwjgl.glfw.GLFW.GLFW_CLIENT_API;
-import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_CREATION_API;
-import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MAJOR;
-import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MINOR;
 import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
-import static org.lwjgl.glfw.GLFW.GLFW_NATIVE_CONTEXT_API;
 import static org.lwjgl.glfw.GLFW.GLFW_NO_ERROR;
-import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_API;
-import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_CORE_PROFILE;
-import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_DEBUG_CONTEXT;
-import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_FORWARD_COMPAT;
-import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_PROFILE;
 import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM;
 import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_COCOA;
 import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_WAYLAND;
@@ -47,7 +37,6 @@ import static org.lwjgl.glfw.GLFW.glfwSetWindowSizeCallback;
 import static org.lwjgl.glfw.GLFW.glfwShowWindow;
 import static org.lwjgl.glfw.GLFW.glfwWindowHint;
 import static org.lwjgl.glfw.GLFW.glfwWindowHintString;
-import static org.lwjgl.opengl.GL32C.GL_TRUE;
 
 import java.awt.Desktop;
 import java.io.IOException;
@@ -348,12 +337,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         // Set window hints for the new window we're gonna create.
         // Start of flags copied from Vanilla Minecraft
         glfwDefaultWindowHints();
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-        glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        GlRenderer.configureWindowHints();
         glfwWindowHint(GLFW_SOFT_FULLSCREEN, borderless ? GLFW_TRUE : GLFW_FALSE);
         // End of flags copied from Vanilla Minecraft
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -364,10 +348,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
         String vanillaWindowTitle = "Minecraft*";
         glfwWindowHintString(GLFW_X11_CLASS_NAME, vanillaWindowTitle);
         glfwWindowHintString(GLFW_X11_INSTANCE_NAME, vanillaWindowTitle);
-        if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DEBUG_OPENGL)) {
-            LOGGER.info("Requesting the creation of an OpenGL debug context");
-            glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-        }
 
         long primaryMonitor = glfwGetPrimaryMonitor();
         if (primaryMonitor == 0) {
@@ -489,8 +469,15 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     @Override
     public void handOverToMinecraft(Supplier<Object> backend) {
+        handOverToMinecraft(backend, true);
+    }
+
+    @VisibleForTesting
+    public void handOverToMinecraft(Supplier<Object> backend, boolean destroyWindow) {
         this.shutdownAutomaticRenderer(true);
-        glfwDestroyWindow(this.window); // TODO: this makes the post-handover ELS untestable
+        if (destroyWindow) {
+            glfwDestroyWindow(this.window);
+        }
 
         // Perform renderer re-init on the calling thread because the incoming B3D backend cannot move the context to another thread
         this.rendererFuture = CompletableFuture.completedFuture(this.setupRenderer(() -> (ELSRenderBackend) backend.get(), false));

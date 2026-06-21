@@ -1,16 +1,22 @@
 package net.neoforged.fml.earlydisplay;
 
 import net.neoforged.fml.earlydisplay.render.EarlyFramebuffer;
+import net.neoforged.fml.earlydisplay.render.ElementShader;
 import net.neoforged.fml.earlydisplay.render.MaterializedTheme;
 import net.neoforged.fml.earlydisplay.render.RenderContext;
 import net.neoforged.fml.earlydisplay.render.SimpleBufferBuilder;
 import net.neoforged.fml.earlydisplay.render.backend.ELSDrawCollector;
 import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderPipeline;
+import net.neoforged.fml.earlydisplay.render.backend.VertexFormat;
 import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 public abstract class AbstractEarlyScreen {
@@ -19,6 +25,7 @@ public abstract class AbstractEarlyScreen {
     protected final int screenWidth;
     protected final int screenHeight;
     protected final MaterializedTheme theme;
+    private final Map<String, ELSRenderPipeline> pipelines;
     protected final EarlyFramebuffer framebuffer;
     protected final SimpleBufferBuilder bufferBuilder;
     protected int animationFrame = 0;
@@ -32,9 +39,23 @@ public abstract class AbstractEarlyScreen {
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
         this.theme = MaterializedTheme.materialize(this.backend, theme, externalThemeDirectory);
-        this.backend.preloadPipelines(this.theme.shaders().values());
+        this.pipelines = buildPipelines(this.theme.shaders());
+        this.backend.preloadPipelines(this.pipelines.values());
         this.framebuffer = new EarlyFramebuffer(this.backend, screenWidth, screenHeight);
         this.bufferBuilder = new SimpleBufferBuilder("shared_error", 8192);
+    }
+
+    private static Map<String, ELSRenderPipeline> buildPipelines(Map<String, ElementShader> shaders) {
+        Map<String, ELSRenderPipeline> pipelines = new HashMap<>();
+        for (Map.Entry<String, ElementShader> entry : shaders.entrySet()) {
+            pipelines.put(entry.getKey(), new ELSRenderPipeline(
+                    entry.getValue(),
+                    VertexFormat.POS_TEX_COLOR,
+                    VertexFormat.Mode.QUADS,
+                    ElementShader.UNIFORM_SAMPLER0,
+                    List.of(ElementShader.UNIFORM_SCREEN_SIZE)));
+        }
+        return pipelines;
     }
 
     protected final void renderToFramebuffer(ThemeColor clearColor) {
@@ -63,11 +84,13 @@ public abstract class AbstractEarlyScreen {
             this.scale = (float) this.framebuffer.width() / this.screenWidth;
         }
 
-        RenderContext context = new RenderContext(this.backend, collector, this.bufferBuilder, this.theme, this.screenWidth, this.screenHeight, this.offsetX, this.offsetY, this.scale, this.animationFrame);
+        RenderContext context = new RenderContext(this.backend, collector, this.bufferBuilder, this.theme, this.pipelines, this.screenWidth, this.screenHeight, this.offsetX, this.offsetY, this.scale, this.framebuffer.height(), this.animationFrame);
         renderToFramebuffer(context);
         collector.execute(this.name, this.framebuffer.texture(), clearColor, this.bufferBuilder.getGpuBuffer(), this.screenWidth, this.screenHeight);
 
         this.backend.presentTexture(this.framebuffer.texture(), clearColor, this.framebuffer.width(), this.framebuffer.height());
+
+        this.bufferBuilder.endFrame();
     }
 
     protected abstract void renderToFramebuffer(RenderContext context);

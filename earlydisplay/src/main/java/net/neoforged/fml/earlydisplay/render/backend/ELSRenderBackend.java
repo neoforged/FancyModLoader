@@ -1,6 +1,5 @@
 package net.neoforged.fml.earlydisplay.render.backend;
 
-import net.neoforged.fml.earlydisplay.render.ElementShader;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 
 import java.nio.ByteBuffer;
@@ -11,10 +10,10 @@ public abstract class ELSRenderBackend implements AutoCloseable {
     final ELSBuffer screenSizeUbo;
 
     protected ELSRenderBackend() {
-        this.screenSizeUbo = this.createBuffer("ScreenSize UBO", Set.of(ELSBuffer.Usage.UNIFORM), 2 * 4);
+        this.screenSizeUbo = this.createBuffer("ScreenSize UBO", Set.of(ELSBuffer.Usage.UNIFORM, ELSBuffer.Usage.COPY_DST), 2 * 4);
     }
 
-    public abstract void preloadPipelines(Collection<ElementShader> shaders);
+    public abstract void preloadPipelines(Collection<ELSRenderPipeline> pipelines);
 
     public abstract ELSTexture createTexture(String debugName, int width, int height, TextureFormat format, boolean linearFilter);
 
@@ -26,7 +25,7 @@ public abstract class ELSRenderBackend implements AutoCloseable {
 
     public abstract void writeToBuffer(ELSBufferSlice buffer, ByteBuffer data);
 
-    public abstract void copyBufferToBuffer(ELSBuffer source, ELSBuffer destination);
+    public abstract void copyBufferToBuffer(ELSBufferSlice source, ELSBufferSlice destination);
 
     public abstract ELSBuffer getQuadAutoIndexBuffer(int indexCount);
 

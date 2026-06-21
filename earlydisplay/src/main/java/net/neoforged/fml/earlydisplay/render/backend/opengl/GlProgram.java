@@ -1,6 +1,7 @@
 package net.neoforged.fml.earlydisplay.render.backend.opengl;
 
-import net.neoforged.fml.earlydisplay.render.ElementShader;
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderPipeline;
+import net.neoforged.fml.earlydisplay.render.backend.VertexFormat;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.GL33C;
 import org.slf4j.Logger;
@@ -60,7 +61,7 @@ final class GlProgram implements AutoCloseable {
         return "GlProgram{" + this.name + "@" + this.program + "}";
     }
 
-    static GlProgram create(String name, ByteBuffer vertexShaderSource, ByteBuffer fragmentShaderSource) {
+    static GlProgram create(String name, ELSRenderPipeline pipeline, ByteBuffer vertexShaderSource, ByteBuffer fragmentShaderSource) {
         int vertexShader = GL33C.glCreateShader(GL33C.GL_VERTEX_SHADER);
         GlDebug.labelShader(vertexShader, "FML " + name + ".vert");
         int fragmentShader = GL33C.glCreateShader(GL33C.GL_FRAGMENT_SHADER);
@@ -85,9 +86,12 @@ final class GlProgram implements AutoCloseable {
 
         int program = GL33C.glCreateProgram();
         GlDebug.labelProgram(program, "EarlyDisplay program");
-        GL33C.glBindAttribLocation(program, 0, "position");
-        GL33C.glBindAttribLocation(program, 1, "uv");
-        GL33C.glBindAttribLocation(program, 2, "color");
+        for (VertexFormat.Element element : VertexFormat.Element.values()) {
+            int idx = pipeline.vertexFormat().findElement(element);
+            if (idx >= 0) {
+                GL33C.glBindAttribLocation(program, idx, element.name);
+            }
+        }
         GL33C.glAttachShader(program, vertexShader);
         GL33C.glAttachShader(program, fragmentShader);
         GL33C.glLinkProgram(program);
@@ -102,19 +106,20 @@ final class GlProgram implements AutoCloseable {
 
         int uniformCount = GL33C.glGetProgrami(program, GL33C.GL_ACTIVE_UNIFORMS);
         Map<String, Integer> uniformLocations = new HashMap<>(uniformCount);
-        //for (var i = 0; i < uniformCount; i++) {
-        //    String uniformName = GL33C.glGetActiveUniformName(program, i);
-        //    uniformLocations.put(uniformName, i);
-        //}
-        int sampler0 = GL33C.glGetUniformLocation(program, ElementShader.UNIFORM_SAMPLER0);
-        if (sampler0 != -1) {
-            uniformLocations.put(ElementShader.UNIFORM_SAMPLER0, sampler0);
+        if (pipeline.sampler() != null) {
+            int samplerLoc = GL33C.glGetUniformLocation(program, pipeline.sampler());
+            if (samplerLoc != -1) {
+                uniformLocations.put(pipeline.sampler(), samplerLoc);
+            }
         }
-        int screenSize = GL33C.glGetUniformBlockIndex(program, ElementShader.UNIFORM_SCREEN_SIZE);
-        if (screenSize != -1) {
-            int uboBinding = 0;
-            GL33C.glUniformBlockBinding(program, screenSize, uboBinding);
-            uniformLocations.put(ElementShader.UNIFORM_SCREEN_SIZE, uboBinding);
+        int uboBinding = 0;
+        for (String uniform : pipeline.uniforms()) {
+            int uboIndex = GL33C.glGetUniformBlockIndex(program, uniform);
+            if (uboIndex != -1) {
+                GL33C.glUniformBlockBinding(program, uboIndex, uboBinding);
+                uniformLocations.put(uniform, uboBinding);
+                uboBinding++;
+            }
         }
 
         return new GlProgram(name, program, uniformLocations);

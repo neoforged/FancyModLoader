@@ -40,7 +40,7 @@ public class TestEarlyDisplay {
         }
         long windowHandle = window.getWindowHandle();
         ELSRenderBackend[] backend = new ELSRenderBackend[1];
-        window.handOverToMinecraft(() -> backend[0] = GlRenderer.setupBackend(windowHandle));
+        window.handOverToMinecraft(() -> backend[0] = GlRenderer.setupBackend(windowHandle), false);
         backend[0].acquireContextOwnership(true);
 
         GLFW.glfwSetWindowCloseCallback(windowHandle, _ -> {

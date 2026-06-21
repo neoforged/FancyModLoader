@@ -11,7 +11,7 @@ import net.neoforged.fml.earlydisplay.theme.NativeBuffer;
 import net.neoforged.fml.earlydisplay.theme.ThemeResource;
 import org.jetbrains.annotations.Nullable;
 
-public class ElementShader implements AutoCloseable {
+public class ElementShader {
     public static final String UNIFORM_SCREEN_SIZE = "screenSize";
     public static final String UNIFORM_SAMPLER0 = "tex";
 
@@ -45,10 +45,6 @@ public class ElementShader implements AutoCloseable {
 
     public NativeBuffer loadFragmentShader() throws IOException {
         return this.fragmentShader.toNativeBuffer(this.externalThemeDirectory);
-    }
-
-    @Override
-    public void close() {
     }
 
     @Override

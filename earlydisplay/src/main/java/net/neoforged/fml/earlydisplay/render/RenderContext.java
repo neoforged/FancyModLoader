@@ -7,9 +7,10 @@ package net.neoforged.fml.earlydisplay.render;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import java.util.Map;
 import net.neoforged.fml.earlydisplay.render.backend.ELSDrawCollector;
 import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
-import net.neoforged.fml.earlydisplay.render.backend.VertexFormat;
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderPipeline;
 import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 import net.neoforged.fml.earlydisplay.util.Bounds;
@@ -19,11 +20,13 @@ public record RenderContext(
         ELSDrawCollector collector,
         SimpleBufferBuilder sharedBuffer,
         MaterializedTheme theme,
+        Map<String, ELSRenderPipeline> pipelines,
         float availableWidth,
         float availableHeight,
         int viewportOffsetX,
         int viewportOffsetY,
         float viewportScale,
+        int windowHeight,
         int animationFrame) {
     public void blitTexture(Texture texture, Bounds bounds) {
         blitTexture(texture, bounds, -1);
@@ -52,7 +55,8 @@ public record RenderContext(
             float u1,
             float v0,
             float v1) {
-        sharedBuffer.begin(VertexFormat.POS_TEX_COLOR, VertexFormat.Mode.QUADS);
+        ELSRenderPipeline pipeline = this.pipelines.get(Theme.SHADER_GUI);
+        sharedBuffer.begin(pipeline.vertexFormat(), pipeline.vertexMode());
 
         QuadHelper.fillSprite(
                 sharedBuffer,
@@ -71,7 +75,7 @@ public record RenderContext(
                 v1);
 
         SimpleBufferBuilder.Result result = this.sharedBuffer.finishAndUpload(this.backend);
-        this.collector.submitDraw(this.theme.getShader(Theme.SHADER_GUI), texture.texture(), result);
+        this.collector.submitDraw(pipeline, texture.texture(), result);
     }
 
     public void renderTextWithShadow(float x, float y, SimpleFont font, List<SimpleFont.DisplayText> texts) {
@@ -81,10 +85,11 @@ public record RenderContext(
     }
 
     public void renderText(float x, float y, SimpleFont font, List<SimpleFont.DisplayText> texts) {
-        sharedBuffer.begin(VertexFormat.POS_TEX_COLOR, VertexFormat.Mode.QUADS);
+        ELSRenderPipeline pipeline = this.pipelines.get(Theme.SHADER_FONT);
+        sharedBuffer.begin(pipeline.vertexFormat(), pipeline.vertexMode());
         font.generateVerticesForTexts(x, y, sharedBuffer, texts);
         SimpleBufferBuilder.Result result = this.sharedBuffer.finishAndUpload(this.backend);
-        this.collector.submitDraw(this.theme.getShader(Theme.SHADER_FONT), font.texture(), result);
+        this.collector.submitDraw(pipeline, font.texture(), result);
     }
 
     public void renderIndeterminateProgressBar(Bounds backgroundBounds) {
@@ -135,6 +140,10 @@ public record RenderContext(
 
         blitTexture(sprites.progressBarBackground(), barBounds);
 
+        if (fillFactor == 0) {
+            return;
+        }
+
         this.enableScissor(
                 (int) barBounds.left(),
                 (int) barBounds.top(),
@@ -149,21 +158,22 @@ public record RenderContext(
     }
 
     public void fillRect(float x, float y, float width, float height, int colorTop, int colorBottom) {
-        sharedBuffer.begin(VertexFormat.POS_TEX_COLOR, VertexFormat.Mode.QUADS);
+        ELSRenderPipeline pipeline = this.pipelines.get(Theme.SHADER_COLOR);
+        sharedBuffer.begin(pipeline.vertexFormat(), pipeline.vertexMode());
         sharedBuffer.pos(x, y).tex(0, 0).colour(colorTop).endVertex();
         sharedBuffer.pos(x, y + height).tex(0, 0).colour(colorBottom).endVertex();
         sharedBuffer.pos(x + width, y + height).tex(0, 0).colour(colorBottom).endVertex();
         sharedBuffer.pos(x + width, y).tex(0, 0).colour(colorTop).endVertex();
 
         SimpleBufferBuilder.Result result = this.sharedBuffer.finishAndUpload(this.backend);
-        this.collector.submitDraw(this.theme.getShader(Theme.SHADER_COLOR), null, result);
+        this.collector.submitDraw(pipeline, null, result);
     }
 
     public void enableScissor(int x, int y, int width, int height) {
         // glScissor applies to the whole window, not just the viewport set via glViewport
         this.collector.enableScissor(
                 (int) (viewportOffsetX + x * viewportScale),
-                (int) (viewportOffsetY + y * viewportScale),
+                (int) (windowHeight - viewportOffsetY - (y + height) * viewportScale),
                 (int) (width * viewportScale),
                 (int) (height * viewportScale));
     }

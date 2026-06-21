@@ -1,6 +1,5 @@
 package net.neoforged.fml.earlydisplay.render.backend;
 
-import net.neoforged.fml.earlydisplay.render.ElementShader;
 import org.jetbrains.annotations.Nullable;
 
 public interface ELSRenderPass extends AutoCloseable {
@@ -10,7 +9,7 @@ public interface ELSRenderPass extends AutoCloseable {
 
     void disableScissor();
 
-    void bindShader(ElementShader shader);
+    void bindPipeline(ELSRenderPipeline pipeline);
 
     void bindTexture(String name, @Nullable ELSTexture texture);
 
