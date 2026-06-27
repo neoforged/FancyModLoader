@@ -12,7 +12,7 @@ import net.neoforged.fml.earlydisplay.render.ElementShader;
 import net.neoforged.fml.earlydisplay.render.SimpleBufferBuilder;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.MemoryStack;
 
 public final class ELSDrawCollector {
     private final ELSRenderBackend backend;
@@ -68,14 +68,12 @@ public final class ELSDrawCollector {
                 .orElse(0);
         ELSBuffer indexBuffer = this.backend.getQuadAutoIndexBuffer(maxIndices);
 
-        ByteBuffer uboData = MemoryUtil.memAlloc(2 * 4);
-        try {
+        try (MemoryStack memoryStack = MemoryStack.stackPush()) {
+            ByteBuffer uboData = memoryStack.malloc(2 * 4);
             uboData.putFloat(screenWidth);
             uboData.putFloat(screenHeight);
             uboData.rewind();
             this.backend.writeToBuffer(this.backend.screenSizeUbo.slice(), uboData);
-        } finally {
-            MemoryUtil.memFree(uboData);
         }
 
         try (ELSRenderPass renderPass = this.backend.createRenderPass(label, target, clearColor)) {

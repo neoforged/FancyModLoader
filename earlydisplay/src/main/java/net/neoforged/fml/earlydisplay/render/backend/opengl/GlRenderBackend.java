@@ -127,6 +127,7 @@ final class GlRenderBackend extends ELSRenderBackend {
         GlDebug.pushGroup(label);
         GlState.bindFramebuffer(((GlTexture) target).fbo());
         GlState.clearColor(clearColor.r(), clearColor.b(), clearColor.g(), clearColor.a());
+        GlState.scissorTest(false);
         GL33C.glColorMask(true, true, true, true);
         GL33C.glClear(GL33C.GL_COLOR_BUFFER_BIT | GL33C.GL_DEPTH_BUFFER_BIT);
         GlState.viewport(0, 0, target.width(), target.height());

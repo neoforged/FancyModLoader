@@ -99,11 +99,11 @@ final class GlRenderPass implements ELSRenderPass {
         GlProgram program = this.pipeline.program();
         GlState.useProgram(program.program);
 
-        String sampler = this.pipeline.info().sampler();
-        if (sampler != null) {
-            program.setSampler(sampler, 0);
-            GlTexture texture = this.textures.get(sampler);
-            GlState.bindTexture2D(texture != null ? texture.textureId : 0);
+        String texture = this.pipeline.info().texture();
+        if (texture != null) {
+            program.setSampler(texture, 0);
+            GlTexture glTexture = this.textures.get(texture);
+            GlState.bindTexture2D(glTexture != null ? glTexture.textureId : 0);
             GlState.bindSampler(0);
         } else {
             GlState.bindTexture2D(0);

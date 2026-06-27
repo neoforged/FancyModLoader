@@ -110,10 +110,10 @@ final class GlProgram implements AutoCloseable {
 
         int uniformCount = GL33C.glGetProgrami(program, GL33C.GL_ACTIVE_UNIFORMS);
         Map<String, Integer> uniformLocations = new HashMap<>(uniformCount);
-        if (pipeline.sampler() != null) {
-            int samplerLoc = GL33C.glGetUniformLocation(program, pipeline.sampler());
+        if (pipeline.texture() != null) {
+            int samplerLoc = GL33C.glGetUniformLocation(program, pipeline.texture());
             if (samplerLoc != -1) {
-                uniformLocations.put(pipeline.sampler(), samplerLoc);
+                uniformLocations.put(pipeline.texture(), samplerLoc);
             }
         }
         int uboBinding = 0;

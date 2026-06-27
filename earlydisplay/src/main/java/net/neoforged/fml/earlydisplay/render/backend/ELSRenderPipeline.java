@@ -13,5 +13,5 @@ public record ELSRenderPipeline(
         ElementShader shader,
         VertexFormat vertexFormat,
         VertexFormat.Mode vertexMode,
-        @Nullable String sampler,
+        @Nullable String texture,
         List<String> uniforms) {}
