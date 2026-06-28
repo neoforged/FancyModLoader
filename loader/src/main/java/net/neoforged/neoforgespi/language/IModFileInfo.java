@@ -36,5 +36,7 @@ public interface IModFileInfo {
     IConfigurable getConfig();
 
     @Nullable
-    URL getIssueURL();
+    default URL getIssueURL() {
+        return null;
+    }
 }

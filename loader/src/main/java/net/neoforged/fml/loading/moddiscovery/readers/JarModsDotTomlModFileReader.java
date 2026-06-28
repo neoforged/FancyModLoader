@@ -6,7 +6,6 @@
 package net.neoforged.fml.loading.moddiscovery.readers;
 
 import com.mojang.logging.LogUtils;
-import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -133,11 +132,6 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
         @Override
         public String getLicense() {
             return license;
-        }
-
-        @Override
-        public @Nullable URL getIssueURL() {
-            return null;
         }
 
         @Override
