@@ -54,9 +54,9 @@
   "fml.modloadingissue.failed_to_find_on_classpath": "{0} introuvable sur le chemin d'accès",
   "fml.modloadingissue.multiple_copies_on_classpath": "Plusieurs copies de {0} trouvées sur le chemin d'accès : {1}",
   "fml.modloadingissue.mixin.duplicate_config": "Une configuration de mixin nommée {0} est fournie à la fois par {101} et {1}",
-  "fml.modloadingissue.mixin.missing_config": "A mixin config named {0} was declared in {101}, but doesn''t exist",
-  "fml.modloadingissue.mixin.requested_behavior_too_old": "Mixin config {0} from {101} requests Mixin behavior version {1}, which is older than the lowest supported version {2}",
-  "fml.modloadingissue.mixin.requested_behavior_too_new": "Mixin config {0} from {101} requests Mixin behavior version {1}, which is newer than the highest supported version {2}. This may be fixable by updating NeoForge",
+  "fml.modloadingissue.mixin.missing_config": "Une configuration de mixin nommée {0} a été déclarée dans {101}, mais n'existe pas",
+  "fml.modloadingissue.mixin.requested_behavior_too_old": "La configuration de Mixin {0} à partir de {101} demande une version de comportement de mixin {1}, qui est plus ancienne que la version la plus faible prise en charge {2}",
+  "fml.modloadingissue.mixin.requested_behavior_too_new": "La config mixin {0} de {101} requiert la version de comportement Mixin {1}, qui est plus récente que la version la plus élevée supportée {2}. Cela peut être résolu en mettant à jour NeoForge",
   "fml.messages.artifactversion.ornotinstalled": "{0,ornull,fml.messages.artifactversion.notinstalled}",
   "fml.messages.artifactversion": "{0,ornull,fml.messages.artifactversion.none}",
   "fml.messages.artifactversion.none": "aucun",
@@ -90,5 +90,5 @@
   "fml.button.open.crashreport": "Ouvrir le rapport de crash",
   "fml.button.open.mods.folder": "Ouvrir le dossier Mods",
   "fml.button.quit": "Quitter le jeu",
-  "fml.modloadingissue.mixin.fail": "Mixin application of {0} from {100,modinfo,name} ({100,modinfo,id}) has failed\n§7{102,exc,msg}"
+  "fml.modloadingissue.mixin.fail": "L'application du mixin {0} depuis {100,modinfo,name} ({100,modinfo,id}) a échoué §7{102,exc,msg}"
 }
