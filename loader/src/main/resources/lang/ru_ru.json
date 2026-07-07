@@ -48,8 +48,8 @@
   "fml.modloadingissue.technical_error": "Произошла техническая ошибка при загрузке мода: {0}",
   "fml.modloadingissue.invalid_maven_coordinate": "Некорректная Maven координата: {0}",
   "fml.modloadingissue.maven_coordinate_not_found": "Не найден мод с Maven координатами {0} в {1}",
-  "fml.modloadingissue.neodev_missing_dists_attribute": "NeoForge dev environment Minecraft jar does not have a {0} attribute in its manifest; this may be because you have an out-of-date gradle plugin",
-  "fml.modloadingissue.neodev_missing_appropriate_dist": "NeoForge dev environment Minecraft jar does not have a {0} marker in its {1} attribute in its manifest; this may be because you have an out-of-date gradle plugin",
+  "fml.modloadingissue.neodev_missing_dists_attribute": "Манифест jar-файла Minecraft для среды разработки NeoForge не содержит аттрибута {0}; вероятно, установлен устаревший плагин gradle",
+  "fml.modloadingissue.neodev_missing_appropriate_dist": "Манифест jar-файла Minecraft не содержит маркера {0} в атрибуте {1}; возможно, причиной является устаревший плагин gradle",
   "fml.modloadingissue.failed_to_list_folder_content": "Не удалось получить список содержимого папки {0}",
   "fml.modloadingissue.failed_to_find_on_classpath": "Не удалось найти {0} в classpath",
   "fml.modloadingissue.multiple_copies_on_classpath": "Найдено множество копий {0} в classpath: {1}",
@@ -90,5 +90,5 @@
   "fml.button.open.crashreport": "Открыть отчёт по сбою",
   "fml.button.open.mods.folder": "Папка с модами",
   "fml.button.quit": "Выйти из игры",
-  "fml.modloadingissue.mixin.fail": "Mixin application of {0} from {100,modinfo,name} ({100,modinfo,id}) has failed\n§7{102,exc,msg}"
+  "fml.modloadingissue.mixin.fail": "Применение миксина {0} из мода {100,modinfo,name} ({100,modinfo,id}) завершилось ошибкой §7{102,exc,msg}"
 }
