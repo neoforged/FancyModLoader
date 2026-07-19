@@ -1,6 +1,6 @@
 {
-  "fml.loadingerrorscreen.errorheader": "Error loading mods\n{0,choice,1#1 error has|1<{0} errors have} occurred during loading",
-  "fml.loadingerrorscreen.warningheader": "{0,choice,1#Warning|1<Warnings} while loading mods\n{0,choice,1#1 warning has|1<{0} warnings have} occurred during loading",
+  "fml.loadingerrorscreen.errorheader": "שגיאה בטעינת מודים\n{0,choice,1#שגיאה אחת ארעה|1<{0} שגיאות ארעו} בעת הטעינה",
+  "fml.loadingerrorscreen.warningheader": "{0,choice,1#אזהרה|1<אזהרות} בטעינת מודים\n{0,choice,1#1 שגיאה ארעה|1<{0} שגיאות ארעו} בעת הטעינה",
   "fml.modloadingissue.language.missingversion": "Mod File {101} needs language provider {0}:{1,vr} to load\n§7We have found {2,i18n,fml.messages.artifactversion}",
   "fml.modloadingissue.language.missing": "Mod File {101} needs language provider {0} to load",
   "fml.modloading.missingclasses": "The Mod File {3} has mods that were not found",
