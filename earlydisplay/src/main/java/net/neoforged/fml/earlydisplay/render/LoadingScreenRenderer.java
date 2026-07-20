@@ -129,6 +129,9 @@ public class LoadingScreenRenderer implements AutoCloseable {
         var elements = new ArrayList<RenderElement>();
 
         var loadingScreen = theme.theme().loadingScreen();
+        if (loadingScreen.background() != null && loadingScreen.background().visible()) {
+            elements.add(new ImageElement(loadingScreen.background(), theme));
+        }
         if (loadingScreen.performance().visible()) {
             elements.add(new PerformanceElement(loadingScreen.performance(), theme));
         }
@@ -187,11 +190,21 @@ public class LoadingScreenRenderer implements AutoCloseable {
     }
 
     public void stopAutomaticRendering() throws TimeoutException, InterruptedException {
-        this.automaticRendering.cancel(false);
+        if (this.automaticRendering.isCancelled()) {
+            // Auto-render was already canceled, likely by window takeover, and we got here from the early error display triggering after window takeover
+            return;
+        }
+
+        // We must acquire the render lock to ensure we cancel the future when the background thread is not currently
+        // using the GL context. Otherwise, a race condition may occur when we cancel the future before the
+        // glfwMakeContextCurrent(0) call at the end of renderToScreen. If the BG thread reads that the future is canceled,
+        // it skips releasing the context. The main thread then crashes when it attempts to take ownership of the context.
+        // Since renderToScreen bails immediately without running GL calls if it fails to acquire the lock,
+        // we can safely assume the above won't happen once we have acquired it.
         if (!renderLock.tryAcquire(5, TimeUnit.SECONDS)) {
             throw new TimeoutException();
         }
-        // we don't want the lock, just making sure it's back on the main thread
+        this.automaticRendering.cancel(false);
         renderLock.release();
     }
 
@@ -233,7 +246,7 @@ public class LoadingScreenRenderer implements AutoCloseable {
         } catch (Throwable t) {
             LOGGER.error("Unexpected error while rendering the loading screen", t);
         } finally {
-            if (this.automaticRendering != null)
+            if (!this.automaticRendering.isCancelled())
                 glfwMakeContextCurrent(0); // we release the gl context IF we're running off the main thread
             renderLock.release();
             rendered = true;

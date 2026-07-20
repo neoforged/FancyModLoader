@@ -97,11 +97,11 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
                 // If the file already exists, reuse it, since it might already be opened.
                 if (!Files.isRegularFile(finalPath)) {
                     moveExtractedFileIntoPlace(tempFile, finalPath);
-
-                    // Mark the extracted file with its source for the duration of this session
-                    PathPrettyPrinting.addSubstitution(
-                            finalPath, PathPrettyPrinting.prettyPrint(file.getFilePath()) + " > " + filename, "");
                 }
+
+                // Mark the extracted file with its source for the duration of this session
+                PathPrettyPrinting.addSubstitution(
+                        finalPath, PathPrettyPrinting.prettyPrint(file.getFilePath()) + " > " + filename, "");
             } finally {
                 try {
                     Files.deleteIfExists(tempFile);

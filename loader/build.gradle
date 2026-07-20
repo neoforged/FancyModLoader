@@ -60,7 +60,7 @@ dependencies {
 
     // Provides the JUnit project as a BOM entry
     constraints {
-        api(project(':junit'))
+        api(project(':junit-fml'))
     }
 }
 

@@ -115,6 +115,7 @@ public class SimulatedInstallation implements AutoCloseable {
      * and containing NeoForge patches.
      */
     public static final IdentifiableContent PATCHED_CLIENT = generateClass("PATCHED_CLIENT", "net/minecraft/client/Minecraft.class");
+    public static final IdentifiableContent UNPATCHED_CLIENT = generateClass("UNPATCHED_CLIENT", "net/minecraft/client/Minecraft.class");
     public static final IdentifiableContent NEOFORGE_CLIENT_CLASSES = generateClass("NEOFORGE_CLIENT_CLASSES", "net/neoforged/neoforge/client/ClientNeoForgeMod.class");
     public static final IdentifiableContent NEOFORGE_CLASSES = generateClass("NEOFORGE_CLASSES", "net/neoforged/neoforge/common/NeoForgeMod.class");
     public static final IdentifiableContent NEOFORGE_MODS_TOML = new IdentifiableContent("NEOFORGE_MODS_TOML", "META-INF/neoforge.mods.toml", writeNeoForgeModsToml());
@@ -190,6 +191,8 @@ public class SimulatedInstallation implements AutoCloseable {
                         generateClass("SERVER_DATA_MAIN", "net/minecraft/data/Main.class"),
                         generateClass("GAMETEST_MAIN", "net/minecraft/gametest/Main.class"),
                         generateClass("MINECRAFT_SERVER", "net/minecraft/server/MinecraftServer.class"),
+                        UNPATCHED_CLIENT,
+                        RENAMED_SHARED,
                         MINECRAFT_VERSION_JSON,
                         SHARED_ASSETS,
                         CLIENT_ASSETS);

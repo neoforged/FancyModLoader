@@ -241,6 +241,12 @@ public class ModFile implements IModFile {
     }
 
     public void close() {
+        // Cancel background scanning to avoid "closed zip file" errors from access to the jar file we're about to close
+        if (futureScanResult != null) {
+            futureScanResult.cancel(true);
+            futureScanResult = null;
+        }
+
         try {
             contents.close();
         } catch (IOException e) {

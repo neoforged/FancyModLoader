@@ -254,7 +254,8 @@ class JarFileContentsTest extends AbstractJarContentsTest {
     @Test
     void testToString() throws IOException {
         JarContents jarContents = getJarContents();
-        assertEquals("jar(" + jarFilePath + ")", jarContents.toString());
+        String expected = jarFilePath.toString().replace('\\', '/');
+        assertEquals("jar(" + expected + ")", jarContents.toString());
     }
 
     /**

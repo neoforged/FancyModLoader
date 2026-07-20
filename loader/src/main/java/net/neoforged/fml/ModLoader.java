@@ -9,7 +9,6 @@ import static net.neoforged.fml.Logging.CORE;
 import static net.neoforged.fml.Logging.LOADING;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -34,7 +33,6 @@ import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
-import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.IModLanguageLoader;
@@ -44,6 +42,7 @@ import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 /**
@@ -72,51 +71,47 @@ public final class ModLoader {
     public static void gatherAndInitializeMods(Executor syncExecutor, Executor parallelExecutor, Runnable periodicTask) {
         var loadingModList = FMLLoader.getCurrent().getLoadingModList();
         loadingIssues.addAll(loadingModList.getModLoadingIssues());
+        throwIfErrors(null);
 
         ForgeFeature.registerFeature("javaVersion", ForgeFeature.VersionFeatureTest.forVersionString(IModInfo.DependencySide.BOTH, System.getProperty("java.version")));
         FMLLoader.getCurrent().backgroundScanHandler.waitForScanToComplete(periodicTask);
         ModList modList = ModList.of(loadingModList.getModFiles().stream().map(ModFileInfo::getFile).toList(),
                 loadingModList.getMods());
+        throwIfErrors(modList);
 
-        if (hasErrors()) {
-            var loadingErrors = getLoadingErrors();
-            for (var loadingError : loadingErrors) {
-                LOGGER.fatal(CORE, "Error during pre-loading phase: {}", FMLTranslations.translateIssueEnglish(loadingError), loadingError.cause());
+        for (var mod : loadingModList.getMods()) {
+            for (var bound : mod.getForgeFeatures()) {
+                if (!ForgeFeature.testFeature(FMLLoader.getCurrent().getDist(), bound)) {
+                    loadingIssues.add(ModLoadingIssue.error("fml.modloadingissue.feature.missing", bound, ForgeFeature.featureValue(bound)).withAffectedMod(mod));
+                }
             }
-            cancelLoading(modList);
-            throw new ModLoadingException(loadingIssues);
         }
-        List<? extends ForgeFeature.Bound> failedBounds = loadingModList.getMods().stream()
-                .map(ModInfo::getForgeFeatures)
-                .flatMap(Collection::stream)
-                .filter(bound -> !ForgeFeature.testFeature(FMLLoader.getCurrent().getDist(), bound))
-                .toList();
-
-        if (!failedBounds.isEmpty()) {
-            LOGGER.fatal(CORE, "Failed to validate feature bounds for mods: {}", failedBounds);
-            for (var fb : failedBounds) {
-                loadingIssues.add(ModLoadingIssue.error("fml.modloadingissue.feature.missing", fb, ForgeFeature.featureValue(fb)).withAffectedMod(fb.modInfo()));
-            }
-            cancelLoading(modList);
-            throw new ModLoadingException(loadingIssues);
-        }
+        throwIfErrors(modList);
 
         var modContainers = loadingModList.getModFiles().stream()
                 .map(ModFileInfo::getFile)
                 .map(ModLoader::buildMods)
                 .<ModContainer>mapMulti(Iterable::forEach)
                 .toList();
-        if (hasErrors()) {
-            for (var loadingError : getLoadingErrors()) {
-                LOGGER.fatal(CORE, "Failed to initialize mod containers: {}", FMLTranslations.translateIssueEnglish(loadingError), loadingError.cause());
-            }
-            cancelLoading(modList);
-            throw new ModLoadingException(loadingIssues);
-        }
+        throwIfErrors(modList);
+
         modList.setLoadedMods(modContainers);
         ModLoader.modList = modList;
 
         constructMods(syncExecutor, parallelExecutor, periodicTask);
+    }
+
+    private static void throwIfErrors(@Nullable ModList modList) {
+        if (hasErrors()) {
+            var loadingErrors = getLoadingErrors();
+            for (var loadingError : loadingErrors) {
+                LOGGER.fatal(CORE, "Error during pre-loading phase: {}", FMLTranslations.translateIssueEnglish(loadingError), loadingError.cause());
+            }
+            if (modList != null) {
+                cancelLoading(modList);
+            }
+            throw new ModLoadingException(loadingIssues);
+        }
     }
 
     private static void cancelLoading(ModList modList) {

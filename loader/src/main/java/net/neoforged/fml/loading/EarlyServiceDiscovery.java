@@ -6,6 +6,7 @@
 package net.neoforged.fml.loading;
 
 import java.io.IOException;
+import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,7 +57,7 @@ final class EarlyServiceDiscovery {
 
         var candidates = new HashSet<Path>();
         try {
-            Files.walkFileTree(directory, Set.of(), 1, new SimpleFileVisitor<>() {
+            Files.walkFileTree(directory, Set.of(FileVisitOption.FOLLOW_LINKS), 1, new SimpleFileVisitor<>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                     if (file.getFileName().toString().endsWith(".jar") && attrs.isRegularFile() && attrs.size() > 0) {
