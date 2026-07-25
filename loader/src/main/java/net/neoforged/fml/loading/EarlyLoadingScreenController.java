@@ -25,8 +25,10 @@ public interface EarlyLoadingScreenController {
      * <p>
      * This method can only be called once and once this method is called, any off-thread
      * interaction with the window seizes.
+     *
+     * @return the state of the ELS window to be applied to the vanilla window
      */
-    void handOverToMinecraft(Supplier<Object> renderBackend);
+    WindowState handOverToMinecraft(Supplier<Object> renderBackend);
 
     /**
      * After calling {@linkplain #handOverToMinecraft(Supplier) taking over} the main window, the game may still want to
@@ -44,4 +46,6 @@ public interface EarlyLoadingScreenController {
      * screen.
      */
     void completeProgress();
+
+    record WindowState(int x, int y, int width, int height, boolean minimized, boolean maximized) {}
 }
