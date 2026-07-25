@@ -32,6 +32,13 @@ public interface ImmediateWindowProvider extends EarlyLoadingScreenController {
     String name();
 
     /**
+     * @return Whether the current environment is supported by this window provider
+     */
+    default boolean isSupportedEnvironment() {
+        return true;
+    }
+
+    /**
      * This is called very early on to initialize ourselves. Use this to initialize the window and other GL core resources.
      *
      * @param args The current program arguments. You can mutate this.
