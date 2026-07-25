@@ -47,5 +47,5 @@ public interface EarlyLoadingScreenController {
      */
     void completeProgress();
 
-    record WindowState(int x, int y, int width, int height, boolean minimized, boolean maximized) {}
+    record WindowState(int x, int y, int width, int height, boolean posValid, boolean minimized, boolean maximized) {}
 }
