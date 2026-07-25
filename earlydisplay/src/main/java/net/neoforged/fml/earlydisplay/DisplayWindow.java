@@ -25,6 +25,7 @@ import static org.lwjgl.glfw.GLFW.glfwGetMonitorPos;
 import static org.lwjgl.glfw.GLFW.glfwGetPlatform;
 import static org.lwjgl.glfw.GLFW.glfwGetPrimaryMonitor;
 import static org.lwjgl.glfw.GLFW.glfwGetVideoMode;
+import static org.lwjgl.glfw.GLFW.glfwGetWindowPos;
 import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
 import static org.lwjgl.glfw.GLFW.glfwInit;
 import static org.lwjgl.glfw.GLFW.glfwInitHint;
@@ -32,6 +33,8 @@ import static org.lwjgl.glfw.GLFW.glfwMaximizeWindow;
 import static org.lwjgl.glfw.GLFW.glfwPlatformSupported;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowIcon;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowIconifyCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowMaximizeCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowPos;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowSizeCallback;
 import static org.lwjgl.glfw.GLFW.glfwShowWindow;
@@ -120,6 +123,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private ScheduledExecutorService renderScheduler;
     private int winWidth;
     private int winHeight;
+    private boolean iconified;
     @Nullable
     private String assetsDir;
     @Nullable
@@ -419,6 +423,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
         setWindowIcon();
 
         glfwSetWindowSizeCallback(window, this::winResize);
+        glfwSetWindowIconifyCallback(window, this::winIconify);
+        glfwSetWindowMaximizeCallback(window, this::winMaximize);
 
         // Show the window
         glfwShowWindow(window);
@@ -463,6 +469,18 @@ public class DisplayWindow implements ImmediateWindowProvider {
         }
     }
 
+    private void winIconify(long window, boolean iconified) {
+        if (window == this.window) {
+            this.iconified = iconified;
+        }
+    }
+
+    private void winMaximize(long window, boolean maximized) {
+        if (window == this.window) {
+            this.maximized = maximized;
+        }
+    }
+
     private static Optional<String> getLastGlfwError() {
         try (MemoryStack memorystack = MemoryStack.stackPush()) {
             PointerBuffer pointerbuffer = memorystack.mallocPointer(1);
@@ -487,13 +505,22 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     @Override
-    public void handOverToMinecraft(Supplier<Object> backend) {
-        handOverToMinecraft(backend, true);
+    public WindowState handOverToMinecraft(Supplier<Object> backend) {
+        return handOverToMinecraft(backend, true);
     }
 
     @VisibleForTesting
-    public void handOverToMinecraft(Supplier<Object> backend, boolean destroyWindow) {
+    public WindowState handOverToMinecraft(Supplier<Object> backend, boolean destroyWindow) {
         this.shutdownAutomaticRenderer(true);
+
+        int[] windowX = new int[1];
+        int[] windowY = new int[1];
+        int[] windowWidth = new int[1];
+        int[] windowHeight = new int[1];
+        glfwGetWindowPos(this.window, windowX, windowY);
+        glfwGetWindowSize(this.window, windowWidth, windowHeight);
+        WindowState windowState = new WindowState(windowX[0], windowY[0], windowWidth[0], windowHeight[0], this.iconified, this.maximized);
+
         if (destroyWindow) {
             glfwDestroyWindow(this.window);
         }
@@ -510,6 +537,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         } catch (ExecutionException e) {
             throw new RuntimeException(e);
         }
+        return windowState;
     }
 
     private ELSRenderBackend shutdownAutomaticRenderer(boolean destroyBackend) {
