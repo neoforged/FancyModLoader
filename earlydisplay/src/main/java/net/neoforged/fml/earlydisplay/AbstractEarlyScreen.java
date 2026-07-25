@@ -36,6 +36,7 @@ public abstract class AbstractEarlyScreen {
     protected int offsetX = 0;
     protected int offsetY = 0;
     protected float scale = 1F;
+    protected boolean minimized = false;
 
     protected AbstractEarlyScreen(String name, Supplier<ELSRenderBackend> backend, Theme theme, @Nullable Path externalThemeDirectory, int screenWidth, int screenHeight) {
         this.name = name;
@@ -63,7 +64,7 @@ public abstract class AbstractEarlyScreen {
     }
 
     protected final void renderToFramebuffer(ThemeColor clearColor) {
-        if (!this.backend.startFrame(this.framebuffer::resize)) {
+        if (!this.backend.startFrame(this::onFramebufferResize)) {
             return;
         }
 
@@ -98,6 +99,17 @@ public abstract class AbstractEarlyScreen {
     }
 
     protected abstract void renderToFramebuffer(RenderContext context);
+
+    private void onFramebufferResize(int width, int height) {
+        if (width != 0 && height != 0) {
+            if (width != this.framebuffer.width() || height != this.framebuffer.height() || this.minimized) {
+                this.framebuffer.resize(width, height);
+                this.minimized = false;
+            }
+        } else {
+            this.minimized = true;
+        }
+    }
 
     public void close(boolean destroyBackend) {
         this.theme.close();
