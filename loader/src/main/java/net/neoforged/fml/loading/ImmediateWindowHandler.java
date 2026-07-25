@@ -53,6 +53,7 @@ public class ImmediateWindowHandler {
                 LOGGER.info("Failed to find ImmediateWindowProvider {}, disabling", providername);
             } else if (!provider.isSupportedEnvironment()) {
                 LOGGER.info("ImmediateWindowProvider {} cannot run in the current environment, disabling", providername);
+                provider = null;
             } else {
                 try {
                     provider.initialize(arguments);
