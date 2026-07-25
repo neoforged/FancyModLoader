@@ -83,6 +83,9 @@ import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.Platform;
+import org.lwjgl.system.linux.DynamicLinkLoader;
+import org.lwjgl.system.windows.WinBase;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,6 +138,22 @@ public class DisplayWindow implements ImmediateWindowProvider {
     @Override
     public String name() {
         return "fmlearlywindow";
+    }
+
+    @Override
+    public boolean isSupportedEnvironment() {
+        try (MemoryStack _ = MemoryStack.stackPush()) {
+            long handle = switch (Platform.get()) {
+                case FREEBSD, MACOSX -> 0L; // RenderDoc does not support MacOS and FreeBSD
+                case LINUX -> DynamicLinkLoader.dlopen("librenderdoc.so", DynamicLinkLoader.RTLD_NOW | DynamicLinkLoader.RTLD_NOLOAD);
+                case WINDOWS -> WinBase.GetModuleHandle(null, "renderdoc.dll");
+            };
+            if (handle != 0L && !Boolean.getBoolean("fml.earlyWindowIgnoreRenderDoc")) {
+                LOGGER.warn("Detected RenderDoc, disabling ELS to avoid potential segfault with multiple OpenGL contexts");
+                return false;
+            }
+            return true;
+        }
     }
 
     @Override
