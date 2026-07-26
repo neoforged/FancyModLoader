@@ -149,7 +149,13 @@ public class DisplayWindow implements ImmediateWindowProvider {
         try (MemoryStack _ = MemoryStack.stackPush()) {
             long handle = switch (Platform.get()) {
                 case FREEBSD, MACOSX -> 0L; // RenderDoc does not support MacOS and FreeBSD
-                case LINUX -> DynamicLinkLoader.dlopen("librenderdoc.so", DynamicLinkLoader.RTLD_NOW | DynamicLinkLoader.RTLD_NOLOAD);
+                case LINUX -> {
+                    long linuxHandle = DynamicLinkLoader.dlopen("librenderdoc.so", DynamicLinkLoader.RTLD_NOW | DynamicLinkLoader.RTLD_NOLOAD);
+                    if (linuxHandle != 0L) {
+                        DynamicLinkLoader.dlclose(linuxHandle);
+                    }
+                    yield linuxHandle;
+                }
                 case WINDOWS -> WinBase.GetModuleHandle(null, "renderdoc.dll");
             };
             if (handle != 0L && !Boolean.getBoolean("fml.earlyWindowIgnoreRenderDoc")) {
