@@ -515,15 +515,12 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
         int[] windowX = new int[1];
         int[] windowY = new int[1];
-        int[] windowWidth = new int[1];
-        int[] windowHeight = new int[1];
         boolean posValid = false;
         if (glfwGetPlatform() != GLFW_PLATFORM_WAYLAND) {
             glfwGetWindowPos(this.window, windowX, windowY);
             posValid = true;
         }
-        glfwGetWindowSize(this.window, windowWidth, windowHeight);
-        WindowState windowState = new WindowState(windowX[0], windowY[0], windowWidth[0], windowHeight[0], posValid, this.iconified, this.maximized);
+        WindowState windowState = new WindowState(windowX[0], windowY[0], winWidth, winHeight, posValid, this.iconified, this.maximized);
 
         if (destroyWindow) {
             glfwDestroyWindow(this.window);
