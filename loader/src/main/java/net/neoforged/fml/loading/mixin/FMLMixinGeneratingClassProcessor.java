@@ -85,22 +85,36 @@ public class FMLMixinGeneratingClassProcessor implements ClassProcessor {
         this.auditTrail.setConsumer(classType.getClassName(), context::audit);
 
         if (generatesClass(registry, classType)) {
+            var innerClasses = classNode.innerClasses;
+            var fields = classNode.fields;
+            var methods = classNode.methods;
+            var recordComponents = classNode.recordComponents;
+            var permittedSubclasses = classNode.permittedSubclasses;
+            var invisibleAnnotations = classNode.invisibleAnnotations;
+            var invisibleTypeAnnotations = classNode.invisibleTypeAnnotations;
+            var visibleAnnotations = classNode.visibleAnnotations;
+            var visibleTypeAnnotations = classNode.visibleTypeAnnotations;
+            var attrs = classNode.attrs;
+            var nestMembers = classNode.nestMembers;
+
             var generated = generateClass(transformer, classType, classNode);
             if (generated) {
                 // Clear out everything that the transformer will not expect to be there when it runs again
                 // This should, in theory, leave basically just the superclass declaration and the like
                 // Luckily, mixin class generators can be safely re-run (this is also done for the bytecode provider)
-                classNode.innerClasses = new ArrayList<>();
-                classNode.fields = new ArrayList<>();
-                classNode.methods = new ArrayList<>();
-                classNode.recordComponents = null;
-                classNode.permittedSubclasses = null;
-                classNode.invisibleAnnotations = null;
-                classNode.invisibleTypeAnnotations = null;
-                classNode.visibleAnnotations = null;
-                classNode.visibleTypeAnnotations = null;
-                classNode.attrs = null;
-                classNode.nestMembers = null;
+                //
+                // If the context is not empty, 
+                classNode.innerClasses = innerClasses;
+                classNode.fields = fields;
+                classNode.methods = methods;
+                classNode.recordComponents = recordComponents;
+                classNode.permittedSubclasses = permittedSubclasses;
+                classNode.invisibleAnnotations = invisibleAnnotations;
+                classNode.invisibleTypeAnnotations = invisibleTypeAnnotations;
+                classNode.visibleAnnotations = visibleAnnotations;
+                classNode.visibleTypeAnnotations = visibleTypeAnnotations;
+                classNode.attrs = attrs;
+                classNode.nestMembers = nestMembers;
 
                 return ComputeFlags.SIMPLE_REWRITE;
             }
