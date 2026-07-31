@@ -10,6 +10,7 @@ import java.util.Set;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.MixinEnvironment;
@@ -85,36 +86,15 @@ public class FMLMixinGeneratingClassProcessor implements ClassProcessor {
         this.auditTrail.setConsumer(classType.getClassName(), context::audit);
 
         if (generatesClass(registry, classType)) {
-            var innerClasses = classNode.innerClasses;
-            var fields = classNode.fields;
-            var methods = classNode.methods;
-            var recordComponents = classNode.recordComponents;
-            var permittedSubclasses = classNode.permittedSubclasses;
-            var invisibleAnnotations = classNode.invisibleAnnotations;
-            var invisibleTypeAnnotations = classNode.invisibleTypeAnnotations;
-            var visibleAnnotations = classNode.visibleAnnotations;
-            var visibleTypeAnnotations = classNode.visibleTypeAnnotations;
-            var attrs = classNode.attrs;
-            var nestMembers = classNode.nestMembers;
+            var deepCopy = new ClassNode(Opcodes.ASM9);
+            classNode.accept(deepCopy);
 
-            var generated = generateClass(transformer, classType, classNode);
+            var generated = generateClass(transformer, classType, deepCopy);
             if (generated) {
-                // Clear out everything that the transformer will not expect to be there when it runs again
-                // This should, in theory, leave basically just the superclass declaration and the like
-                // Luckily, mixin class generators can be safely re-run (this is also done for the bytecode provider)
-                //
-                // If the context is not empty, 
-                classNode.innerClasses = innerClasses;
-                classNode.fields = fields;
-                classNode.methods = methods;
-                classNode.recordComponents = recordComponents;
-                classNode.permittedSubclasses = permittedSubclasses;
-                classNode.invisibleAnnotations = invisibleAnnotations;
-                classNode.invisibleTypeAnnotations = invisibleTypeAnnotations;
-                classNode.visibleAnnotations = visibleAnnotations;
-                classNode.visibleTypeAnnotations = visibleTypeAnnotations;
-                classNode.attrs = attrs;
-                classNode.nestMembers = nestMembers;
+                // Only copy over stuff needed for frames
+                // (type hierarchy)
+                classNode.superName = deepCopy.superName;
+                classNode.interfaces = deepCopy.interfaces;
 
                 return ComputeFlags.SIMPLE_REWRITE;
             }
