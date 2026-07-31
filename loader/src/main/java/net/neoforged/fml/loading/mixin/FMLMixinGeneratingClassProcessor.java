@@ -5,7 +5,6 @@
 
 package net.neoforged.fml.loading.mixin;
 
-import java.util.ArrayList;
 import java.util.Set;
 import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
