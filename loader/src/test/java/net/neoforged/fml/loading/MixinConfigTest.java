@@ -206,6 +206,62 @@ public class MixinConfigTest extends LauncherTest {
         assertThat(Mixins.getConfigs()).extracting("name").containsOnly("test.mixins.json");
     }
 
+    @Test
+    void testFrameRecomputationWithGeneratedClasses() throws Exception {
+        installation.setupProductionClient();
+        installation.buildModJar("mixin-test.jar")
+                .withTestmodModsToml(modsToml -> modsToml.addMixinConfig("test.mixins.json").addMod("test"))
+                .addTextFile("test.mixins.json", """
+                        {
+                            "package": "test.mixin",
+                            "mixins": ["RequiresFrameRecompute"]
+                        }
+                        """)
+                .addClass("test.target.Super", """
+                        public class Super {}
+                        """)
+                .addClass("test.target.Target", """
+                        import net.neoforged.fml.common.Mod;
+
+                        @Mod("test")
+                        public class Target {
+                            {
+                                test(null);
+                            }
+
+                            public static void test(Super obj) {}
+                        }
+                        """)
+                .addClass("test.mixin.RequiresFrameRecompute", """
+                        import org.spongepowered.asm.mixin.injection.At;
+                        import org.spongepowered.asm.mixin.injection.Inject;
+                        import org.spongepowered.asm.mixin.Mixin;
+                        import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+                        import test.target.Super;
+
+                        @Mixin(test.target.Target.class)
+                        public class RequiresFrameRecompute {
+                            @Inject(
+                                method = "test",
+                                at = @At("HEAD")
+                            )
+                            private static void testInject(Super obj, CallbackInfo ci) {
+                                // makes recomputing the stack necessary
+                                takesLocalType(alwaysFalse() ? obj : new Super() {});
+                            }
+
+                            private static boolean alwaysFalse() {
+                                return false;
+                            }
+
+                            private static void takesLocalType(Super object) {}
+                        }
+                        """)
+                .build();
+
+        var result = launchAndLoad("neoforgeclient");
+    }
+
     /**
      * Tests that Mixin configs declared only via the manifest are correctly picked up by Mixin.
      * <p>This is used by mixinextras, for example.
