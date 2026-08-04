@@ -180,7 +180,7 @@ public class ConfigTrackerTest {
             }
         };
         Assertions.assertThatIllegalArgumentException()
-                .isThrownBy(() -> configTracker.registerConfig(ModConfig.Type.COMMON, spec, modContainer, "test.toml"));
+                .isThrownBy(() -> configTracker.registerConfig(ModConfig.Type.STANDARD, spec, modContainer, "test.toml"));
     }
 
     private void waitUntil(Runnable assertion) throws InterruptedException {
