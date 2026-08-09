@@ -438,9 +438,9 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     private void setGlfwWindowIcon() {
         try (var glfwImgBuffer = GLFWImage.malloc(1);
-                var glfwImage = GLFWImage.malloc();
+                var glfwImages = GLFWImage.malloc();
                 var icon = theme.windowIcon().loadAsImage(getThemePath())) {
-            glfwImgBuffer.put(glfwImage.set(icon.width(), icon.height(), icon.imageData()));
+            glfwImgBuffer.put(glfwImages.set(icon.width(), icon.height(), icon.imageData()));
             glfwImgBuffer.flip();
             glfwSetWindowIcon(window, glfwImgBuffer);
         } catch (Exception e) {
