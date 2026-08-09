@@ -580,10 +580,13 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     @Override
     public void periodicTick() {
-        if (rendererFuture.state() == Future.State.FAILED) {
+        Future.State rendererState = rendererFuture.state();
+        if (rendererState == Future.State.FAILED) {
             throw new RuntimeException("Initialization of the loading screen failed.", rendererFuture.exceptionNow());
         }
-        glfwPollEvents();
+        if (rendererState == Future.State.SUCCESS) {
+            rendererFuture.resultNow().runWithBackgroundRenderingPaused(() -> glfwPollEvents());
+        }
         // An event callback could have closed this display, in that case, we do not want to render again
         if (!closed) {
             repaintTick.run();
