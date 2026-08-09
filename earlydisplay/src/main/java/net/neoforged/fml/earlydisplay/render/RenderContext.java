@@ -142,12 +142,16 @@ public record RenderContext(
 
         blitTexture(sprites.progressBarBackground(), barBounds);
 
+        if (fillFactor == 0) {
+            return;
+        }
+
         GlState.scissorTest(true);
         scissorBox(
-                (int) barBounds.left(),
-                (int) barBounds.top(),
-                (int) (barBounds.width() * fillFactor),
-                (int) barBounds.height());
+                barBounds.left(),
+                barBounds.top(),
+                barBounds.width() * fillFactor,
+                barBounds.height());
         blitTexture(sprites.progressBarForeground(), barBounds, foregroundColor);
         GlState.scissorTest(false);
     }
@@ -167,11 +171,19 @@ public record RenderContext(
     }
 
     public void scissorBox(int x, int y, int width, int height) {
+        scissorBox((float) x, (float) y, (float) width, (float) height);
+    }
+
+    private void scissorBox(float x, float y, float width, float height) {
+        if (!(width > 0) || !(height > 0)) {
+            throw new IllegalArgumentException("Scissor area must have non-zero width/height");
+        }
+
         // glScissor applies to the whole window, not just the viewport set via glViewport
-        GlState.scissorBox(
-                (int) (viewportOffsetX + x * viewportScale),
-                (int) (viewportOffsetY + y * viewportScale),
-                (int) (width * viewportScale),
-                (int) (height * viewportScale));
+        int left = (int) Math.floor(viewportOffsetX + x * viewportScale);
+        int right = (int) Math.ceil(viewportOffsetX + (x + width) * viewportScale);
+        int bottom = (int) Math.floor(viewportOffsetY + y * viewportScale);
+        int top = (int) Math.ceil(viewportOffsetY + (y + height) * viewportScale);
+        GlState.scissorBox(left, bottom, right - left, top - bottom);
     }
 }
