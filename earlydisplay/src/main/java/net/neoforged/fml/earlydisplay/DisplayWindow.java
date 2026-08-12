@@ -603,6 +603,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         mainProgress.complete();
     }
 
+    @Override
     public void close() {
         if (!closed) {
             closed = true;

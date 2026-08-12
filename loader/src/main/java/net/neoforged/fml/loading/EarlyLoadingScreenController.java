@@ -5,13 +5,14 @@
 
 package net.neoforged.fml.loading;
 
+import java.io.Closeable;
 import java.util.function.Supplier;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Interface for use by NeoForge to control the early loading screen.
  */
-public interface EarlyLoadingScreenController {
+public interface EarlyLoadingScreenController extends Closeable {
     /**
      * Gets the current loading screen controller.
      */
@@ -46,6 +47,9 @@ public interface EarlyLoadingScreenController {
      * screen.
      */
     void completeProgress();
+
+    @Override
+    default void close() {}
 
     record WindowState(int x, int y, int width, int height, boolean posValid, boolean minimized, boolean maximized) {}
 }
