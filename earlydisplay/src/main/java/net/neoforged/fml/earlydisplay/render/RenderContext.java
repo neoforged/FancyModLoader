@@ -174,7 +174,7 @@ public record RenderContext(
         this.collector.enableScissor(
                 (int) (viewportOffsetX + x * viewportScale),
                 (int) (windowHeight - viewportOffsetY - (y + height) * viewportScale),
-                (int) (width * viewportScale),
-                (int) (height * viewportScale));
+                Math.max(1, (int) (width * viewportScale)),
+                Math.max(1, (int) (height * viewportScale)));
     }
 }
