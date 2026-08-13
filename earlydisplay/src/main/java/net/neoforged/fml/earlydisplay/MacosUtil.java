@@ -6,16 +6,26 @@
 package net.neoforged.fml.earlydisplay;
 
 import java.nio.ByteBuffer;
+import org.lwjgl.glfw.GLFWNativeCocoa;
 import org.lwjgl.system.JNI;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.macosx.ObjCRuntime;
 
 /**
- * Sets the macOS application icon by sending messages directly to AppKit through the Objective-C runtime.
+ * Provides access to macOS APIs by sending messages directly through the Objective-C runtime.
  *
- * <p>The native function, class, and selector handles are pointers, which LWJGL represents as {@code long} values.
+ * <p>The native function, class, window, and selector handles are pointers, which LWJGL represents as {@code long}
+ * values.
  */
-final class MacosApplicationIcon {
+final class MacosUtil {
+    /**
+     * AppKit's {@code NSWindowStyleMaskFullScreen}, defined as {@code 1 << 14} in {@code <AppKit/NSWindow.h>}.
+     *
+     * @see <a href="https://developer.apple.com/documentation/appkit/nswindow/stylemask-swift.struct/fullscreen">Apple's
+     *      NSWindow.StyleMask.fullScreen documentation</a>
+     */
+    private static final long NS_FULL_SCREEN_WINDOW_MASK = 1L << 14;
+
     // Objective-C method calls are dispatched through objc_msgSend(receiver, selector, arguments...)
     private static final long OBJC_MSG_SEND = ObjCRuntime.getLibrary().getFunctionAddress("objc_msgSend");
 
@@ -30,10 +40,11 @@ final class MacosApplicationIcon {
     private static final long INIT_WITH_DATA = ObjCRuntime.sel_registerName("initWithData:");
     private static final long SHARED_APPLICATION = ObjCRuntime.sel_registerName("sharedApplication");
     private static final long SET_APPLICATION_ICON_IMAGE = ObjCRuntime.sel_registerName("setApplicationIconImage:");
+    private static final long STYLE_MASK = ObjCRuntime.sel_registerName("styleMask");
 
-    private MacosApplicationIcon() {}
+    private MacosUtil() {}
 
-    static void set(byte[] iconData) {
+    static void setApplicationIcon(byte[] iconData) {
         // Copy the Java array into native memory so Objective-C can receive a stable pointer to its bytes
         ByteBuffer iconBuffer = MemoryUtil.memAlloc(iconData.length);
         try {
@@ -56,5 +67,16 @@ final class MacosApplicationIcon {
             // Memory allocated by MemoryUtil is not managed by the Java garbage collector so we have to free it
             MemoryUtil.memFree(iconBuffer);
         }
+    }
+
+    static boolean isFullscreen(long windowHandle) {
+        long nsWindow = GLFWNativeCocoa.glfwGetCocoaWindow(windowHandle);
+        return nsWindow != 0L && (getStyleMask(nsWindow) & NS_FULL_SCREEN_WINDOW_MASK) != 0L;
+    }
+
+    private static long getStyleMask(long nsWindow) {
+        // Equivalent to: [nsWindow styleMask]
+        // NSUInteger maps to C long (the J return type in LWJGL's JNI signatures), not a pointer.
+        return JNI.invokePPJ(nsWindow, STYLE_MASK, OBJC_MSG_SEND);
     }
 }
