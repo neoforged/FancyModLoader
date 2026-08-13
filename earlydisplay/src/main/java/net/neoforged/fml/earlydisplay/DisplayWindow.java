@@ -25,6 +25,7 @@ import static org.lwjgl.glfw.GLFW.glfwGetMonitorPos;
 import static org.lwjgl.glfw.GLFW.glfwGetPlatform;
 import static org.lwjgl.glfw.GLFW.glfwGetPrimaryMonitor;
 import static org.lwjgl.glfw.GLFW.glfwGetVideoMode;
+import static org.lwjgl.glfw.GLFW.glfwGetWindowMonitor;
 import static org.lwjgl.glfw.GLFW.glfwGetWindowPos;
 import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
 import static org.lwjgl.glfw.GLFW.glfwInit;
@@ -462,7 +463,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     private void setMacosApplicationIcon() {
         try (var icon = theme.windowIcon().toNativeBuffer(getThemePath())) {
-            MacosApplicationIcon.set(icon.toByteArray());
+            MacosUtil.setApplicationIcon(icon.toByteArray());
         } catch (Exception | LinkageError e) {
             LOGGER.warn("Failed to set macOS application icon", e);
         }
@@ -526,7 +527,24 @@ public class DisplayWindow implements ImmediateWindowProvider {
             glfwGetWindowPos(this.window, windowX, windowY);
             posValid = true;
         }
-        WindowState windowState = new WindowState(windowX[0], windowY[0], winWidth, winHeight, posValid, this.iconified, this.maximized);
+
+        final boolean fullscreen;
+        if (glfwGetPlatform() != GLFW_PLATFORM_COCOA) {
+            // Full screen windows are associated with a specific monitor.
+            // For windowed mode windows, this function returns NULL.
+            // This is how to tell full screen windows from windowed mode windows.
+            // https://www.glfw.org/docs/latest/window_guide.html#window_monitor
+            fullscreen = glfwGetWindowMonitor(this.window) != 0L;
+        } else {
+            // macOS AppKit fullscreen is the exception. toggleFullScreen: moves an otherwise
+            // windowed GLFW window into native fullscreen without attaching a GLFW monitor.
+            // Therefore, its GLFW monitor remains 0L, and we need the additional Cocoa check
+            // https://github.com/glfw/glfw/issues/1216
+            fullscreen = MacosUtil.isFullscreen(this.window);
+        }
+
+        WindowState windowState = new WindowState(
+                windowX[0], windowY[0], winWidth, winHeight, posValid, this.iconified, this.maximized, fullscreen);
 
         if (destroyWindow) {
             glfwDestroyWindow(this.window);

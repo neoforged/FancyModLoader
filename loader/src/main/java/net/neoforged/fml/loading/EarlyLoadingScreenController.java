@@ -51,5 +51,25 @@ public interface EarlyLoadingScreenController extends Closeable {
     @Override
     default void close() {}
 
-    record WindowState(int x, int y, int width, int height, boolean posValid, boolean minimized, boolean maximized) {}
+    /**
+     * A platform-independent snapshot of the early window's presentation state.
+     *
+     * @param x          the horizontal screen coordinate of the window
+     * @param y          the vertical screen coordinate of the window
+     * @param width      the width of the window's content area
+     * @param height     the height of the window's content area
+     * @param posValid   whether {@code x} and {@code y} contain a valid window position
+     * @param minimized  whether the window is minimized or iconified
+     * @param maximized  whether the window is in the platform's maximized or zoomed state
+     * @param fullscreen whether the window is in a platform fullscreen mode, distinct from maximization
+     */
+    record WindowState(
+            int x,
+            int y,
+            int width,
+            int height,
+            boolean posValid,
+            boolean minimized,
+            boolean maximized,
+            boolean fullscreen) {}
 }
