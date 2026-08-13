@@ -36,7 +36,13 @@ public class TestEarlyDisplay {
 
         // Render once, then take over the window to test that it still works
         while (!LoadingScreenRenderer.rendered) {
-            periodicTick.run();
+            try {
+                periodicTick.run();
+                Thread.sleep(20L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
         }
         long windowHandle = window.getWindowHandle();
         ELSRenderBackend[] backend = new ELSRenderBackend[1];

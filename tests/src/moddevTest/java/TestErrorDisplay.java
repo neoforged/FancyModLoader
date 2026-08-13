@@ -31,7 +31,13 @@ public class TestErrorDisplay {
 
         // Render at least one frame of the loading screen, then take over the window to display the error window
         while (!LoadingScreenRenderer.rendered) {
-            periodicTick.run();
+            try {
+                periodicTick.run();
+                Thread.sleep(20L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
         }
 
         List<ModLoadingIssue> issues = new ArrayList<>();
