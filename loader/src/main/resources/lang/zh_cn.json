@@ -90,5 +90,5 @@
   "fml.button.open.crashreport": "打开崩溃报告",
   "fml.button.open.mods.folder": "打开模组文件夹",
   "fml.button.quit": "退出游戏",
-  "fml.modloadingissue.mixin.fail": "Mixin application of {0} from {100,modinfo,name} ({100,modinfo,id}) has failed\n§7{102,exc,msg}"
+  "fml.modloadingissue.mixin.fail": "来自 {100,modinfo,name} ({100,modinfo,id}) 的 {0} Mixin 应用失败\n§7{102,exc,msg}"
 }
