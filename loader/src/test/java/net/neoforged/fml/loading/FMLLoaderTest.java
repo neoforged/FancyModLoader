@@ -402,25 +402,43 @@ class FMLLoaderTest extends LauncherTest {
                     .withModsToml(builder -> {
                         builder.unlicensedJavaMod();
                         builder.addMod("mod_one", "1.0");
-                        builder.addDependency("mod_one", "mod_two", "[1.0,)", dep -> dep.set("ordering", "BEFORE"));
+                        builder.customize(config -> {
+                            var dependency = Config.inMemory();
+                            dependency.set("modId", "mod_two");
+                            dependency.set("versionRange", "[1.0,)");
+                            dependency.set("ordering", "BEFORE");
+                            config.set(List.of("dependencies", "mod_one"), List.of(dependency));
+                        });
                     })
                     .build();
             installation.buildModJar("mod_two.jar")
                     .withModsToml(builder -> {
                         builder.unlicensedJavaMod();
                         builder.addMod("mod_two", "1.0");
-                        builder.addDependency("mod_two", "mod_three", "[1.0,)", dep -> dep.set("ordering", "BEFORE"));
+                        builder.customize(config -> {
+                            var dependency = Config.inMemory();
+                            dependency.set("modId", "mod_three");
+                            dependency.set("versionRange", "[1.0,)");
+                            dependency.set("ordering", "BEFORE");
+                            config.set(List.of("dependencies", "mod_two"), List.of(dependency));
+                        });
                     })
                     .build();
             installation.buildModJar("mod_three.jar")
                     .withModsToml(builder -> {
                         builder.unlicensedJavaMod();
                         builder.addMod("mod_three", "1.0");
-                        builder.addDependency("mod_three", "mod_one", "[1.0,)", dep -> dep.set("ordering", "BEFORE"));
+                        builder.customize(config -> {
+                            var dependency = Config.inMemory();
+                            dependency.set("modId", "mod_one");
+                            dependency.set("versionRange", "[1.0,)");
+                            dependency.set("ordering", "BEFORE");
+                            config.set(List.of("dependencies", "mod_three"), List.of(dependency));
+                        });
                     })
                     .build();
 
-            var e = assertThrows(ModLoadingException.class, () -> launchInstalledDist());
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly("ERROR: Detected a mod dependency cycle: mod_one, mod_three, mod_two");
         }
 
