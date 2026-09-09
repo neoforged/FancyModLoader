@@ -18,6 +18,7 @@ import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_DEBUG_CONTEXT;
 import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_FORWARD_COMPAT;
 import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_PROFILE;
 import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM;
+import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_COCOA;
 import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_WAYLAND;
 import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_X11;
 import static org.lwjgl.glfw.GLFW.GLFW_RESIZABLE;
@@ -30,6 +31,7 @@ import static org.lwjgl.glfw.GLFW.glfwCreateWindow;
 import static org.lwjgl.glfw.GLFW.glfwDefaultWindowHints;
 import static org.lwjgl.glfw.GLFW.glfwGetError;
 import static org.lwjgl.glfw.GLFW.glfwGetMonitorPos;
+import static org.lwjgl.glfw.GLFW.glfwGetPlatform;
 import static org.lwjgl.glfw.GLFW.glfwGetPrimaryMonitor;
 import static org.lwjgl.glfw.GLFW.glfwGetVideoMode;
 import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
@@ -415,7 +417,26 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
         glfwSetWindowPos(window, (vidmode.width() - this.winWidth) / 2 + monitorX, (vidmode.height() - this.winHeight) / 2 + monitorY);
 
-        // Attempt setting the icon
+        setWindowIcon();
+
+        glfwSetWindowSizeCallback(window, this::winResize);
+
+        // Show the window
+        glfwShowWindow(window);
+        getLastGlfwError().ifPresent(error -> LOGGER.warn("Failed to show and position window: {}", error));
+        glfwPollEvents();
+    }
+
+    private void setWindowIcon() {
+        if (glfwGetPlatform() == GLFW_PLATFORM_COCOA) {
+            setMacosApplicationIcon();
+            return;
+        }
+
+        setGlfwWindowIcon();
+    }
+
+    private void setGlfwWindowIcon() {
         try (var glfwImgBuffer = GLFWImage.malloc(1);
                 var glfwImages = GLFWImage.malloc();
                 var icon = theme.windowIcon().loadAsImage(getThemePath())) {
@@ -426,13 +447,14 @@ public class DisplayWindow implements ImmediateWindowProvider {
             LOGGER.error("Failed to load NeoForged icon", e);
         }
         getLastGlfwError().ifPresent(error -> LOGGER.warn("Failed to set window icon: {}", error));
+    }
 
-        glfwSetWindowSizeCallback(window, this::winResize);
-
-        // Show the window
-        glfwShowWindow(window);
-        getLastGlfwError().ifPresent(error -> LOGGER.warn("Failed to show and position window: {}", error));
-        glfwPollEvents();
+    private void setMacosApplicationIcon() {
+        try (var icon = theme.windowIcon().toNativeBuffer(getThemePath())) {
+            MacosApplicationIcon.set(icon.toByteArray());
+        } catch (Exception | LinkageError e) {
+            LOGGER.warn("Failed to set macOS application icon", e);
+        }
     }
 
     private void winResize(long window, int width, int height) {
