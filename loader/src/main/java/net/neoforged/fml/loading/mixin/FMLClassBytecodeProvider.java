@@ -13,16 +13,21 @@ import net.neoforged.neoforgespi.transformation.BytecodeProvider;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
+import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 import org.spongepowered.asm.service.IClassBytecodeProvider;
+import org.spongepowered.asm.service.ISyntheticClassRegistry;
 import org.spongepowered.asm.transformers.MixinClassReader;
 
 class FMLClassBytecodeProvider implements IClassBytecodeProvider {
     private final BytecodeProvider bytecodeProvider;
-    private final FMLMixinClassProcessor classProcessor;
+    private final IMixinTransformer transformer;
+    private final ISyntheticClassRegistry registry;
 
-    FMLClassBytecodeProvider(BytecodeProvider bytecodeProvider, FMLMixinClassProcessor classProcessor) {
+    FMLClassBytecodeProvider(BytecodeProvider bytecodeProvider, FMLMixinService service) {
         this.bytecodeProvider = bytecodeProvider;
-        this.classProcessor = classProcessor;
+
+        this.transformer = service.getMixinTransformer();
+        this.registry = transformer.getExtensions().getSyntheticClassRegistry();
     }
 
     @Override
@@ -71,9 +76,9 @@ class FMLClassBytecodeProvider implements IClassBytecodeProvider {
         }
 
         Type classType = Type.getObjectType(internalName);
-        if (classProcessor.generatesClass(classType)) {
+        if (FMLMixinGeneratingClassProcessor.generatesClass(registry, classType)) {
             ClassNode classNode = new ClassNode();
-            if (classProcessor.generateClass(classType, classNode)) {
+            if (FMLMixinGeneratingClassProcessor.generateClass(transformer, classType, classNode)) {
                 return classNode;
             }
         }

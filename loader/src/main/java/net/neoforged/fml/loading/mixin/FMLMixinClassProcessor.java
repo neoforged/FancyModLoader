@@ -10,7 +10,6 @@ import net.neoforged.neoforgespi.transformation.ClassProcessor;
 import net.neoforged.neoforgespi.transformation.ClassProcessorIds;
 import net.neoforged.neoforgespi.transformation.ProcessorName;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.injection.invoke.arg.ArgsClassGenerator;
 import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
@@ -21,19 +20,12 @@ public class FMLMixinClassProcessor implements ClassProcessor {
     private final FMLClassTracker classTracker;
     private final IMixinTransformer transformer;
     private final ISyntheticClassRegistry registry;
-    private final FMLMixinService service;
 
     public FMLMixinClassProcessor(FMLMixinService service) {
         this.auditTrail = service.getInternalAuditTrail();
         this.classTracker = service.getInternalClassTracker();
         this.transformer = service.getMixinTransformer();
         this.registry = transformer.getExtensions().getSyntheticClassRegistry();
-        this.service = service;
-    }
-
-    @Override
-    public void link(LinkContext context) {
-        this.service.setBytecodeProvider(new FMLClassBytecodeProvider(context.bytecodeProvider(), this));
     }
 
     @Override
@@ -65,20 +57,12 @@ public class FMLMixinClassProcessor implements ClassProcessor {
             return false;
         }
 
-        return this.generatesClass(context.type());
+        return FMLMixinGeneratingClassProcessor.generatesClass(registry, context.type());
     }
 
     private boolean processesClass(Type classType) {
         MixinEnvironment environment = MixinEnvironment.getCurrentEnvironment();
         return this.transformer.couldTransformClass(environment, classType.getClassName());
-    }
-
-    boolean generatesClass(Type classType) {
-        return this.registry.findSyntheticClass(classType.getClassName()) != null;
-    }
-
-    boolean generateClass(Type classType, ClassNode classNode) {
-        return this.transformer.generateClass(MixinEnvironment.getCurrentEnvironment(), classType.getClassName(), classNode);
     }
 
     @Override
@@ -88,8 +72,8 @@ public class FMLMixinClassProcessor implements ClassProcessor {
 
         this.auditTrail.setConsumer(classType.getClassName(), context::audit);
 
-        if (this.generatesClass(classType)) {
-            return this.generateClass(classType, classNode) ? ComputeFlags.COMPUTE_FRAMES : ComputeFlags.NO_REWRITE;
+        if (FMLMixinGeneratingClassProcessor.generatesClass(registry, classType)) {
+            return FMLMixinGeneratingClassProcessor.generateClass(transformer, classType, classNode) ? ComputeFlags.COMPUTE_FRAMES : ComputeFlags.NO_REWRITE;
         }
 
         MixinEnvironment environment = MixinEnvironment.getCurrentEnvironment();
