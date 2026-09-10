@@ -22,13 +22,13 @@ import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
-import net.neoforged.fml.earlydisplay.render.Texture;
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
+import net.neoforged.fml.earlydisplay.render.backend.ELSTexture;
+import net.neoforged.fml.earlydisplay.render.backend.TextureFormat;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.GL11C;
-import org.lwjgl.opengl.GL30C;
 
 /**
  * Loader for the GNU Unifont font definitions included in vanilla MC
@@ -43,7 +43,7 @@ final class FontLoader {
     private static final int GLYPH_HEIGHT = 16;
 
     @Nullable
-    static SimpleFont loadVanillaFont(@Nullable String assetsDir, @Nullable String assetIndex) {
+    static SimpleFont loadVanillaFont(ELSRenderBackend backend, @Nullable String assetsDir, @Nullable String assetIndex) {
         if (assetsDir == null || assetIndex == null) {
             return null;
         }
@@ -93,7 +93,7 @@ final class FontLoader {
             }
         }
 
-        return glyphs.isEmpty() ? null : buildFont(glyphs);
+        return glyphs.isEmpty() ? null : buildFont(backend, glyphs);
     }
 
     private static void parseHexFile(InputStream stream, Consumer<ProtoGlyph> glyphOutput) throws IOException {
@@ -150,7 +150,7 @@ final class FontLoader {
     }
 
     @Nullable
-    private static SimpleFont buildFont(List<ProtoGlyph> glyphs) {
+    private static SimpleFont buildFont(ELSRenderBackend backend, List<ProtoGlyph> glyphs) {
         int totalPixels = glyphs.stream().mapToInt(g -> g.width * GLYPH_HEIGHT).sum();
         boolean incWidth = true;
         int texWidth = 512;
@@ -163,7 +163,7 @@ final class FontLoader {
             }
             incWidth = !incWidth;
         }
-        int maxTexSize = GL11C.glGetInteger(GL11C.GL_MAX_TEXTURE_SIZE);
+        int maxTexSize = backend.getMaxTextureSize();
         if (texWidth > maxTexSize || texHeight > maxTexSize) {
             // Abort if the GPU does not support the texture size required to fit the font atlas
             return null;
@@ -202,14 +202,14 @@ final class FontLoader {
             }
         }
 
-        int textureId = Texture.createEmpty("unifont texture", texWidth, texHeight, GL30C.GL_R8, GL11C.GL_RED, false);
-        Texture.writeToTexture(textureId, texWidth, texHeight, GL11C.GL_RED, 1, bitmap);
+        ELSTexture texture = backend.createTexture("unifont_texture", texWidth, texHeight, TextureFormat.RED, false);
+        backend.writeToTexture(texture, bitmap);
 
         // SimpleFont relies on at least a space character being present
         if (!glyphMap.containsKey((int) ' ')) {
             return null;
         }
-        return new SimpleFont(24, GLYPH_HEIGHT, textureId, glyphMap::get);
+        return new SimpleFont(24, GLYPH_HEIGHT, texture, glyphMap::get);
     }
 
     private record ProtoGlyph(int codepoint, int width, int[] lines) {}

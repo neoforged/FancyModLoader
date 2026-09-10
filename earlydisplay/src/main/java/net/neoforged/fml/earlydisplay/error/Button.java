@@ -12,6 +12,7 @@ import java.util.List;
 import net.neoforged.fml.earlydisplay.render.RenderContext;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import net.neoforged.fml.earlydisplay.render.Texture;
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
 import net.neoforged.fml.earlydisplay.theme.ImageLoader;
 import net.neoforged.fml.earlydisplay.theme.NativeBuffer;
 import net.neoforged.fml.earlydisplay.theme.TextureScaling;
@@ -77,7 +78,7 @@ final class Button {
         }
     }
 
-    static Texture loadTexture(boolean active, boolean highlighted) {
+    static Texture loadTexture(ELSRenderBackend backend, boolean active, boolean highlighted) {
         String suffix = active ? (highlighted ? "_highlighted" : "") : "_disabled";
         String fileName = "assets/minecraft/textures/gui/sprites/widget/button" + suffix + ".png";
         String debugName = "error_button" + suffix;
@@ -90,17 +91,17 @@ final class Button {
                 case ImageLoader.Result.Success success -> {
                     // Sizes are deliberately double the real values to ensure the buttons render identical to vanilla in an environment with double the resolution
                     TextureScaling scaling = new TextureScaling.NineSlice(400, 40, 6, 6, 6, 6, false, false, false);
-                    yield Texture.create(success.image(), debugName, scaling, null);
+                    yield Texture.create(backend, success.image(), debugName, scaling, null);
                 }
-                case ImageLoader.Result.Error ignored -> createFallbackTexture(active, highlighted, suffix);
+                case ImageLoader.Result.Error ignored -> createFallbackTexture(backend, active, highlighted, suffix);
             };
         } catch (IOException e) {
-            texture = createFallbackTexture(active, highlighted, suffix);
+            texture = createFallbackTexture(backend, active, highlighted, suffix);
         }
         return texture;
     }
 
-    private static Texture createFallbackTexture(boolean active, boolean highlighted, String suffix) {
+    private static Texture createFallbackTexture(ELSRenderBackend backend, boolean active, boolean highlighted, String suffix) {
         String name = "error_button_fallback" + suffix;
         int width = 60;
         int height = 20;
@@ -121,6 +122,6 @@ final class Button {
         UncompressedImage image = new UncompressedImage(name, null, buffer, width, height);
         // Sizes are deliberately double the real values to ensure the buttons render identical to vanilla in an environment with double the resolution
         TextureScaling scaling = new TextureScaling.NineSlice(width * 2, height * 2, 2, 2, 2, 2, true, true, false);
-        return Texture.create(image, name, scaling, null);
+        return Texture.create(backend, image, name, scaling, null);
     }
 }

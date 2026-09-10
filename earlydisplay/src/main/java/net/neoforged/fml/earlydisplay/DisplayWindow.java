@@ -5,18 +5,8 @@
 
 package net.neoforged.fml.earlydisplay;
 
-import static org.lwjgl.glfw.GLFW.GLFW_CLIENT_API;
-import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_CREATION_API;
-import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MAJOR;
-import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MINOR;
 import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
-import static org.lwjgl.glfw.GLFW.GLFW_NATIVE_CONTEXT_API;
 import static org.lwjgl.glfw.GLFW.GLFW_NO_ERROR;
-import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_API;
-import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_CORE_PROFILE;
-import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_DEBUG_CONTEXT;
-import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_FORWARD_COMPAT;
-import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_PROFILE;
 import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM;
 import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_COCOA;
 import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_WAYLAND;
@@ -29,26 +19,28 @@ import static org.lwjgl.glfw.GLFW.GLFW_X11_CLASS_NAME;
 import static org.lwjgl.glfw.GLFW.GLFW_X11_INSTANCE_NAME;
 import static org.lwjgl.glfw.GLFW.glfwCreateWindow;
 import static org.lwjgl.glfw.GLFW.glfwDefaultWindowHints;
+import static org.lwjgl.glfw.GLFW.glfwDestroyWindow;
 import static org.lwjgl.glfw.GLFW.glfwGetError;
 import static org.lwjgl.glfw.GLFW.glfwGetMonitorPos;
 import static org.lwjgl.glfw.GLFW.glfwGetPlatform;
 import static org.lwjgl.glfw.GLFW.glfwGetPrimaryMonitor;
 import static org.lwjgl.glfw.GLFW.glfwGetVideoMode;
+import static org.lwjgl.glfw.GLFW.glfwGetWindowMonitor;
+import static org.lwjgl.glfw.GLFW.glfwGetWindowPos;
 import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
 import static org.lwjgl.glfw.GLFW.glfwInit;
 import static org.lwjgl.glfw.GLFW.glfwInitHint;
-import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwMaximizeWindow;
 import static org.lwjgl.glfw.GLFW.glfwPlatformSupported;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowIcon;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowIconifyCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowMaximizeCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowPos;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowSizeCallback;
 import static org.lwjgl.glfw.GLFW.glfwShowWindow;
-import static org.lwjgl.glfw.GLFW.glfwSwapInterval;
 import static org.lwjgl.glfw.GLFW.glfwWindowHint;
 import static org.lwjgl.glfw.GLFW.glfwWindowHintString;
-import static org.lwjgl.opengl.GL32C.GL_TRUE;
 
 import java.awt.Desktop;
 import java.io.IOException;
@@ -63,19 +55,22 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import joptsimple.OptionParser;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.earlydisplay.error.ErrorDisplay;
 import net.neoforged.fml.earlydisplay.render.LoadingScreenRenderer;
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
+import net.neoforged.fml.earlydisplay.render.backend.opengl.GlRenderer;
 import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.ThemeIds;
 import net.neoforged.fml.earlydisplay.theme.ThemeLoader;
@@ -86,12 +81,15 @@ import net.neoforged.fml.loading.progress.ProgressMeter;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
 import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
-import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.Platform;
+import org.lwjgl.system.linux.DynamicLinkLoader;
+import org.lwjgl.system.windows.WinBase;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,7 +116,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private boolean borderless;
     private Theme theme;
 
-    private ScheduledFuture<LoadingScreenRenderer> rendererFuture;
+    private Future<LoadingScreenRenderer> rendererFuture;
 
     // The GL ID of the window. Used for all operations
     private long window;
@@ -126,6 +124,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private ScheduledExecutorService renderScheduler;
     private int winWidth;
     private int winHeight;
+    private boolean iconified;
     @Nullable
     private String assetsDir;
     @Nullable
@@ -144,6 +143,28 @@ public class DisplayWindow implements ImmediateWindowProvider {
     @Override
     public String name() {
         return "fmlearlywindow";
+    }
+
+    @Override
+    public boolean isSupportedEnvironment() {
+        try (MemoryStack _ = MemoryStack.stackPush()) {
+            long handle = switch (Platform.get()) {
+                case FREEBSD, MACOSX -> 0L; // RenderDoc does not support MacOS and FreeBSD
+                case LINUX -> {
+                    long linuxHandle = DynamicLinkLoader.dlopen("librenderdoc.so", DynamicLinkLoader.RTLD_NOW | DynamicLinkLoader.RTLD_NOLOAD);
+                    if (linuxHandle != 0L) {
+                        DynamicLinkLoader.dlclose(linuxHandle);
+                    }
+                    yield linuxHandle;
+                }
+                case WINDOWS -> WinBase.GetModuleHandle(null, "renderdoc.dll");
+            };
+            if (handle != 0L && !Boolean.getBoolean("fml.earlyWindowIgnoreRenderDoc")) {
+                LOGGER.warn("Detected RenderDoc, disabling ELS to avoid potential segfault with multiple OpenGL contexts");
+                return false;
+            }
+            return true;
+        }
     }
 
     @Override
@@ -209,15 +230,20 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
         initWindow();
 
-        this.rendererFuture = renderScheduler.schedule(() -> new LoadingScreenRenderer(
-                renderScheduler,
-                window,
-                theme,
-                getThemePath(),
-                () -> minecraftVersion,
-                () -> neoForgeVersion), 1, TimeUnit.MILLISECONDS);
+        this.rendererFuture = this.renderScheduler.schedule(() -> this.setupRenderer(() -> GlRenderer.setupBackend(this.window), true), 1, TimeUnit.MILLISECONDS);
 
         updateProgress("Initializing Game Graphics");
+    }
+
+    private LoadingScreenRenderer setupRenderer(Supplier<ELSRenderBackend> backend, boolean setupAutoRender) {
+        return new LoadingScreenRenderer(
+                this.renderScheduler,
+                backend,
+                this.theme,
+                getThemePath(),
+                () -> this.minecraftVersion,
+                () -> this.neoForgeVersion,
+                setupAutoRender);
     }
 
     @Override
@@ -263,13 +289,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     private static Path getThemePath() {
         return FMLPaths.CONFIGDIR.get().resolve("fml");
-    }
-
-    // Called from NeoForge
-    public void renderToFramebuffer() {
-        if (rendererFuture.isDone()) {
-            rendererFuture.resultNow().renderToFramebuffer();
-        }
     }
 
     private static final String ERROR_URL = "https://links.neoforged.net/early-display-errors";
@@ -348,12 +367,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         // Set window hints for the new window we're gonna create.
         // Start of flags copied from Vanilla Minecraft
         glfwDefaultWindowHints();
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-        glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        GlRenderer.configureWindowHints();
         glfwWindowHint(GLFW_SOFT_FULLSCREEN, borderless ? GLFW_TRUE : GLFW_FALSE);
         // End of flags copied from Vanilla Minecraft
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -364,10 +378,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
         String vanillaWindowTitle = "Minecraft*";
         glfwWindowHintString(GLFW_X11_CLASS_NAME, vanillaWindowTitle);
         glfwWindowHintString(GLFW_X11_INSTANCE_NAME, vanillaWindowTitle);
-        if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DEBUG_OPENGL)) {
-            LOGGER.info("Requesting the creation of an OpenGL debug context");
-            glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-        }
 
         long primaryMonitor = glfwGetPrimaryMonitor();
         if (primaryMonitor == 0) {
@@ -420,6 +430,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
         setWindowIcon();
 
         glfwSetWindowSizeCallback(window, this::winResize);
+        glfwSetWindowIconifyCallback(window, this::winIconify);
+        glfwSetWindowMaximizeCallback(window, this::winMaximize);
 
         // Show the window
         glfwShowWindow(window);
@@ -451,7 +463,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     private void setMacosApplicationIcon() {
         try (var icon = theme.windowIcon().toNativeBuffer(getThemePath())) {
-            MacosApplicationIcon.set(icon.toByteArray());
+            MacosUtil.setApplicationIcon(icon.toByteArray());
         } catch (Exception | LinkageError e) {
             LOGGER.warn("Failed to set macOS application icon", e);
         }
@@ -461,6 +473,18 @@ public class DisplayWindow implements ImmediateWindowProvider {
         if (window == this.window && width != 0 && height != 0) {
             this.winWidth = width;
             this.winHeight = height;
+        }
+    }
+
+    private void winIconify(long window, boolean iconified) {
+        if (window == this.window) {
+            this.iconified = iconified;
+        }
+    }
+
+    private void winMaximize(long window, boolean maximized) {
+        if (window == this.window) {
+            this.maximized = maximized;
         }
     }
 
@@ -482,13 +506,66 @@ public class DisplayWindow implements ImmediateWindowProvider {
         return Optional.empty();
     }
 
-    /**
-     * Hand-off the window to the vanilla game.
-     * Called on the main thread instead of the game's initialization.
-     *
-     * @return the Window we own.
-     */
-    public long takeOverGlfwWindow() {
+    @VisibleForTesting
+    public long getWindowHandle() {
+        return this.window;
+    }
+
+    @Override
+    public WindowState handOverToMinecraft(Supplier<Object> backend) {
+        return handOverToMinecraft(backend, true);
+    }
+
+    @VisibleForTesting
+    public WindowState handOverToMinecraft(Supplier<Object> backend, boolean destroyWindow) {
+        this.shutdownAutomaticRenderer(true);
+
+        int[] windowX = new int[1];
+        int[] windowY = new int[1];
+        boolean posValid = false;
+        if (glfwGetPlatform() != GLFW_PLATFORM_WAYLAND) {
+            glfwGetWindowPos(this.window, windowX, windowY);
+            posValid = true;
+        }
+
+        final boolean fullscreen;
+        if (glfwGetPlatform() != GLFW_PLATFORM_COCOA) {
+            // Full screen windows are associated with a specific monitor.
+            // For windowed mode windows, this function returns NULL.
+            // This is how to tell full screen windows from windowed mode windows.
+            // https://www.glfw.org/docs/latest/window_guide.html#window_monitor
+            fullscreen = glfwGetWindowMonitor(this.window) != 0L;
+        } else {
+            // macOS AppKit fullscreen is the exception. toggleFullScreen: moves an otherwise
+            // windowed GLFW window into native fullscreen without attaching a GLFW monitor.
+            // Therefore, its GLFW monitor remains 0L, and we need the additional Cocoa check
+            // https://github.com/glfw/glfw/issues/1216
+            fullscreen = MacosUtil.isFullscreen(this.window);
+        }
+
+        WindowState windowState = new WindowState(
+                windowX[0], windowY[0], winWidth, winHeight, posValid, this.iconified, this.maximized, fullscreen);
+
+        if (destroyWindow) {
+            glfwDestroyWindow(this.window);
+        }
+
+        // Perform renderer re-init on the calling thread because the incoming B3D backend cannot move the context to another thread
+        this.rendererFuture = CompletableFuture.completedFuture(this.setupRenderer(() -> (ELSRenderBackend) backend.get(), false));
+        try {
+            this.repaintTick = this.rendererFuture.get(30, TimeUnit.SECONDS)::renderToScreen;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (TimeoutException e) {
+            dumpBackgroundThreadStack();
+            crashElegantly("Cannot hand over rendering to Minecraft! The background loading screen renderer seems stuck.");
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+        return windowState;
+    }
+
+    private ELSRenderBackend shutdownAutomaticRenderer(boolean destroyBackend) {
         // While this should have happened already, wait for it now to continue
         LoadingScreenRenderer renderer;
         try {
@@ -498,7 +575,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         } catch (TimeoutException e) {
             dumpBackgroundThreadStack();
             crashElegantly("We seem to be having trouble initializing the window, waited for 30 seconds");
-            return -1L; // crashElegantly will never return
+            throw new AssertionError(); // crashElegantly will never return
         }
 
         updateProgress("Initializing Game Graphics");
@@ -506,6 +583,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         // Stop the automatic off-thread rendering to move the GL context back to the main thread (this thread)
         try {
             renderer.stopAutomaticRendering();
+            renderer.close(destroyBackend);
         } catch (TimeoutException e) {
             dumpBackgroundThreadStack();
             crashElegantly("Cannot hand over rendering to Minecraft! The background loading screen renderer seems stuck.");
@@ -515,33 +593,18 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
         completeProgress();
 
-        glfwMakeContextCurrent(window);
-        // Set the title to what the game wants
-        glfwSwapInterval(0);
-        // Clean up our hooks
-        glfwSetWindowSizeCallback(window, null).close();
-        this.repaintTick = renderer::renderToScreen; // the repaint will continue to be called until the overlay takes over
-        return window;
-    }
-
-    /**
-     * <strong>Called from Neo</strong>
-     * 
-     * @return The OpenGL texture id of the texture the early loading screen is being rendered into.
-     */
-    public int getFramebufferTextureId() {
-        if (!rendererFuture.isDone()) {
-            throw new IllegalStateException("Initialization of the renderer has not completed yet.");
-        }
-        return rendererFuture.resultNow().getFramebufferTextureId();
+        return renderer.getBackend();
     }
 
     @Override
     public void periodicTick() {
-        if (rendererFuture.state() == Future.State.FAILED) {
+        Future.State rendererState = rendererFuture.state();
+        if (rendererState == Future.State.FAILED) {
             throw new RuntimeException("Initialization of the loading screen failed.", rendererFuture.exceptionNow());
         }
-        glfwPollEvents();
+        if (rendererState == Future.State.SUCCESS) {
+            rendererFuture.resultNow().runWithBackgroundRenderingPaused(() -> glfwPollEvents());
+        }
         // An event callback could have closed this display, in that case, we do not want to render again
         if (!closed) {
             repaintTick.run();
@@ -558,13 +621,14 @@ public class DisplayWindow implements ImmediateWindowProvider {
         mainProgress.complete();
     }
 
+    @Override
     public void close() {
         if (!closed) {
             closed = true;
             // Close the Render Scheduler thread
             renderScheduler.shutdown();
             try {
-                rendererFuture.get().close();
+                rendererFuture.get().close(true);
             } catch (ExecutionException e) {
                 LOGGER.error("Cannot close renderer since it failed to initialize", e);
             } catch (InterruptedException e) {
@@ -580,10 +644,10 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     @Override
     public void displayFatalErrorAndExit(List<ModLoadingIssue> issues, @Nullable Path modsFolder, @Nullable Path logFile, @Nullable Path crashReportFile) {
-        long windowId = this.takeOverGlfwWindow();
-        GL.createCapabilities();
+        ELSRenderBackend backend = this.shutdownAutomaticRenderer(false);
+        backend.acquireContextOwnership(true);
         this.close();
-        ErrorDisplay.fatal(windowId, assetsDir, assetIndex, issues, modsFolder, logFile, crashReportFile);
+        ErrorDisplay.fatal(backend, assetsDir, assetIndex, issues, modsFolder, logFile, crashReportFile);
     }
 
     private static void dumpBackgroundThreadStack() {
