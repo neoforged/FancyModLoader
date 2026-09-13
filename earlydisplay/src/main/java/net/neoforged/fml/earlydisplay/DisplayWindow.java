@@ -465,17 +465,16 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
         int windowX = 0;
         int windowY = 0;
-        boolean posValid = false;
-        String driver = SDLVideo.SDL_GetCurrentVideoDriver();
-        if (driver != null && !driver.equals("wayland")) { // TODO: make sure this actually works (if it's even necessary)
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                IntBuffer x = stack.mallocInt(1);
-                IntBuffer y = stack.mallocInt(1);
-                SDLVideo.SDL_GetWindowPosition(this.window, x, y);
+        boolean posValid = true;
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer x = stack.mallocInt(1);
+            IntBuffer y = stack.mallocInt(1);
+            if (SDLVideo.SDL_GetWindowPosition(this.window, x, y)) {
                 windowX = x.get(0);
                 windowY = y.get(0);
+            } else {
+                posValid = false;
             }
-            posValid = true;
         }
 
         boolean maximized = (SDLVideo.SDL_GetWindowFlags(this.window) & SDLVideo.SDL_WINDOW_MAXIMIZED) != 0;
