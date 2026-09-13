@@ -59,7 +59,7 @@ public interface ImmediateWindowProvider extends EarlyLoadingScreenController {
 
     /**
      * This is called during some very early startup routines to show a crash dialog
-     * using e.g. tinyfd dialogs
+     * using e.g. SDL dialogs
      * 
      * @param message The message to display
      */

@@ -15,7 +15,6 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.lwjgl.glfw.GLFW;
 
 @ExtendWith(WithOffScreenGLSurface.class)
 class SimpleFontTest {
@@ -26,7 +25,8 @@ class SimpleFontTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        backend = GlRenderer.setupBackend(GLFW.glfwGetCurrentContext());
+        // FIXME: create dummy window
+        backend = GlRenderer.setupBackend(0L);
         font = new SimpleFont(backend, new ThemeResource("Monocraft.ttf"), null);
     }
 

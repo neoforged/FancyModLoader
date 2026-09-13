@@ -19,10 +19,22 @@ import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
 import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 import net.neoforged.fml.i18n.FMLTranslations;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.glfw.GLFW;
+import org.lwjgl.sdl.SDLError;
+import org.lwjgl.sdl.SDLEvents;
+import org.lwjgl.sdl.SDLMisc;
+import org.lwjgl.sdl.SDLMouse;
+import org.lwjgl.sdl.SDLScancode;
+import org.lwjgl.sdl.SDL_Event;
+import org.lwjgl.sdl.SDL_KeyboardEvent;
+import org.lwjgl.sdl.SDL_MouseButtonEvent;
+import org.lwjgl.sdl.SDL_MouseMotionEvent;
+import org.lwjgl.sdl.SDL_MouseWheelEvent;
 
 final class ErrorDisplayWindow extends AbstractEarlyScreen {
+    private static final Logger LOGGER = LogManager.getLogger();
     private static final int DISPLAY_WIDTH = 854;
     private static final int DISPLAY_HEIGHT = 480;
     private static final int BUTTON_WIDTH = 320;
@@ -84,15 +96,14 @@ final class ErrorDisplayWindow extends AbstractEarlyScreen {
         this.buttonTextureInactive = Button.loadTexture(backend, false, false);
         boolean translate = mcFont != null;
         BiFunction<String, Object[], String> translator = translate ? FMLTranslations::parseMessage : FMLTranslations::parseEnglishMessage;
-        FileOpener opener = FileOpener.get();
         String btnModsText = translator.apply("fml.button.open.mods.folder", new Object[0]);
         String btnReportText = translator.apply("fml.button.open.crashreport", new Object[0]);
         String btnLogText = translator.apply("fml.button.open.log", new Object[0]);
         String btnQuitText = translator.apply("fml.button.quit", new Object[0]);
         this.buttons = List.of(
-                new Button(this, LEFT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnModsText, modsFolder != null, () -> opener.open(modsFolder)),
-                new Button(this, LEFT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnReportText, crashReportFile != null, () -> opener.open(crashReportFile)),
-                new Button(this, RIGHT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnLogText, logFile != null, () -> opener.open(logFile)),
+                new Button(this, LEFT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnModsText, modsFolder != null, () -> openFile(modsFolder)),
+                new Button(this, LEFT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnReportText, crashReportFile != null, () -> openFile(crashReportFile)),
+                new Button(this, RIGHT_BTN_X, TOP_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnLogText, logFile != null, () -> openFile(logFile)),
                 new Button(this, RIGHT_BTN_X, BOTTOM_BTN_Y, BUTTON_WIDTH, BUTTON_HEIGHT, btnQuitText, true, () -> closed = true));
 
         List<ModLoadingIssue> warningEntries = issues.stream()
@@ -133,6 +144,15 @@ final class ErrorDisplayWindow extends AbstractEarlyScreen {
 
     private static void translateEntries(List<ModLoadingIssue> issues, List<MessageEntry> entries, SimpleFont font, Function<ModLoadingIssue, String> translator) {
         issues.stream().map(translator).map(text -> MessageEntry.of(text, font)).forEach(entries::add);
+    }
+
+    private static void openFile(@Nullable Path file) {
+        if (file != null) {
+            String uri = file.normalize().toUri().toString();
+            if (!SDLMisc.SDL_OpenURL(uri)) {
+                LOGGER.warn("Failed to open URI {}: {}", uri, SDLError.SDL_GetError());
+            }
+        }
     }
 
     void render() {
@@ -208,22 +228,37 @@ final class ErrorDisplayWindow extends AbstractEarlyScreen {
         scrollOffset = Math.clamp(scrollOffset + offY, 0, Math.max(totalEntryHeight - LIST_CONTENT_HEIGHT, 0));
     }
 
-    void handleCursorPos(long ignoredWindow, double mouseX, double mouseY) {
-        this.mouseX = (mouseX - offsetX) / scale;
-        this.mouseY = (mouseY - offsetY) / scale;
+    void handleEvent(SDL_Event event) {
+        long window = SDLEvents.SDL_GetWindowFromEvent(event);
+        switch (event.type()) {
+            case SDLEvents.SDL_EVENT_MOUSE_MOTION -> handleCursorPos(window, event.motion());
+            case SDLEvents.SDL_EVENT_MOUSE_WHEEL -> handleMouseScroll(window, event.wheel());
+            case SDLEvents.SDL_EVENT_MOUSE_BUTTON_DOWN -> handleMouseButton(window, event.button(), true);
+            case SDLEvents.SDL_EVENT_MOUSE_BUTTON_UP -> handleMouseButton(window, event.button(), false);
+            case SDLEvents.SDL_EVENT_KEY_DOWN -> handleKey(window, event.key());
+            case SDLEvents.SDL_EVENT_WINDOW_CLOSE_REQUESTED -> handleClose(window);
+        }
+    }
+
+    void handleCursorPos(long window, SDL_MouseMotionEvent event) {
+        if (window != this.backend.getWindowHandle()) return;
+
+        this.mouseX = (event.x() - offsetX) / scale;
+        this.mouseY = (event.y() - offsetY) / scale;
         if (draggingScrollbar) {
             dragScrollbar(this.mouseY);
         }
     }
 
-    void handleMouseScroll(long ignoredWindow, double ignoredDeltaX, double deltaY) {
-        scroll(-deltaY);
+    void handleMouseScroll(long window, SDL_MouseWheelEvent event) {
+        if (window == this.backend.getWindowHandle()) {
+            scroll(-event.y());
+        }
     }
 
-    void handleMouseButton(long ignoredWindow, int button, int action, int ignoredMods) {
-        if (button != GLFW.GLFW_MOUSE_BUTTON_1) return;
+    void handleMouseButton(long window, SDL_MouseButtonEvent event, boolean press) {
+        if (window != this.backend.getWindowHandle() || event.button() != SDLMouse.SDL_BUTTON_LEFT) return;
 
-        boolean press = action == GLFW.GLFW_PRESS;
         if (press) {
             buttons.forEach(Button::unfocus);
             for (Button btn : buttons) {
@@ -244,19 +279,19 @@ final class ErrorDisplayWindow extends AbstractEarlyScreen {
         }
     }
 
-    void handleKey(long ignoredWindow, int key, int ignoredScancode, int action, int ignoredMods) {
-        if (action == GLFW.GLFW_RELEASE) return;
+    void handleKey(long window, SDL_KeyboardEvent event) {
+        if (window != this.backend.getWindowHandle()) return;
 
-        boolean repeat = action == GLFW.GLFW_REPEAT;
-        switch (key) {
-            case GLFW.GLFW_KEY_ESCAPE -> {
+        boolean repeat = event.repeat();
+        switch (event.scancode()) {
+            case SDLScancode.SDL_SCANCODE_ESCAPE -> {
                 if (!repeat) {
                     closed = true;
                 }
             }
-            case GLFW.GLFW_KEY_PAGE_UP, GLFW.GLFW_KEY_UP -> scroll(-1);
-            case GLFW.GLFW_KEY_PAGE_DOWN, GLFW.GLFW_KEY_DOWN -> scroll(1);
-            case GLFW.GLFW_KEY_TAB -> {
+            case SDLScancode.SDL_SCANCODE_PAGEUP, SDLScancode.SDL_SCANCODE_UP -> scroll(-1);
+            case SDLScancode.SDL_SCANCODE_PAGEDOWN, SDLScancode.SDL_SCANCODE_DOWN -> scroll(1);
+            case SDLScancode.SDL_SCANCODE_TAB -> {
                 if (repeat) break;
 
                 boolean modified = false;
@@ -273,7 +308,7 @@ final class ErrorDisplayWindow extends AbstractEarlyScreen {
                     focusFirstActiveKeyAfter(-1);
                 }
             }
-            case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> {
+            case SDLScancode.SDL_SCANCODE_RETURN, SDLScancode.SDL_SCANCODE_KP_ENTER -> {
                 if (repeat) break;
 
                 for (Button button : buttons) {
@@ -296,8 +331,10 @@ final class ErrorDisplayWindow extends AbstractEarlyScreen {
         }
     }
 
-    void handleClose(long ignoredWindow) {
-        closed = true;
+    void handleClose(long window) {
+        if (window == this.backend.getWindowHandle()) {
+            closed = true;
+        }
     }
 
     boolean isClosed() {

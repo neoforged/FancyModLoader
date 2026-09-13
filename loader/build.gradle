@@ -38,7 +38,7 @@ dependencies {
     implementation("commons-io:commons-io:${commons_io_version}")
 
     implementation(platform("org.lwjgl:lwjgl-bom:${lwjgl_version}"))
-    implementation("org.lwjgl:lwjgl-tinyfd")
+    implementation("org.lwjgl:lwjgl-sdl")
 
     implementation("org.apache.logging.log4j:log4j-core:${log4j_version}")
     annotationProcessor("org.apache.logging.log4j:log4j-core:${log4j_version}")

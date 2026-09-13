@@ -7,6 +7,7 @@ package net.neoforged.fml.earlydisplay.render.backend.opengl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -21,21 +22,24 @@ import net.neoforged.fml.earlydisplay.render.backend.TextureFormat;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnknownNullability;
-import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL33C;
 import org.lwjgl.opengl.GLCapabilities;
+import org.lwjgl.sdl.SDLVideo;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 final class GlRenderBackend extends ELSRenderBackend {
     private final long windowHandle;
+    private final long glContext;
     private final int maxTextureSize;
     private final Map<ELSRenderPipeline, GlCompiledPipeline> pipelines = new IdentityHashMap<>();
     private final QuadAutoIndexBuffer quadAutoIndexBuffer = new QuadAutoIndexBuffer();
     final VaoCache vaoCache = new VaoCache();
 
-    GlRenderBackend(long windowHandle) {
+    GlRenderBackend(long windowHandle, long glContext) {
         this.windowHandle = windowHandle;
+        this.glContext = glContext;
         this.maxTextureSize = GL33C.glGetInteger(GL33C.GL_MAX_TEXTURE_SIZE);
     }
 
@@ -136,10 +140,12 @@ final class GlRenderBackend extends ELSRenderBackend {
 
     @Override
     public boolean startFrame(FramebufferSizeListener listener) {
-        int[] fbWidth = new int[1];
-        int[] fbHeight = new int[1];
-        GLFW.glfwGetFramebufferSize(windowHandle, fbWidth, fbHeight);
-        listener.accept(fbWidth[0], fbHeight[0]);
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer fbWidth = stack.mallocInt(1);
+            IntBuffer fbHeight = stack.mallocInt(1);
+            SDLVideo.SDL_GetWindowSizeInPixels(this.windowHandle, fbWidth, fbHeight);
+            listener.accept(fbWidth.get(0), fbHeight.get(0));
+        }
         return true;
     }
 
@@ -174,7 +180,7 @@ final class GlRenderBackend extends ELSRenderBackend {
                 GL33C.GL_NEAREST);
         GlState.bindFramebuffer(0);
 
-        GLFW.glfwSwapBuffers(this.windowHandle);
+        SDLVideo.SDL_GL_SwapWindow(this.windowHandle);
     }
 
     GlCompiledPipeline getCompiledPipeline(ELSRenderPipeline pipeline) {
@@ -197,7 +203,7 @@ final class GlRenderBackend extends ELSRenderBackend {
 
     @Override
     public void acquireContextOwnership(boolean createContext) {
-        GLFW.glfwMakeContextCurrent(this.windowHandle);
+        SDLVideo.SDL_GL_MakeCurrent(this.windowHandle, this.glContext);
         if (createContext) {
             GL.createCapabilities();
         }
@@ -205,12 +211,14 @@ final class GlRenderBackend extends ELSRenderBackend {
 
     @Override
     public void releaseContextOwnership() {
-        GLFW.glfwMakeContextCurrent(0L);
+        SDLVideo.SDL_GL_MakeCurrent(this.windowHandle, 0L);
     }
 
     @Override
     public void guardResourceCleanup(Runnable cleanupTask) {
-        long previousContext = GLFW.glfwGetCurrentContext();
+        // TODO: check whether this dance is still needed and works at all
+
+        long previousContext = SDLVideo.SDL_GL_GetCurrentContext();
         GLCapabilities previousCaps;
         try {
             previousCaps = GL.getCapabilities();
@@ -220,7 +228,7 @@ final class GlRenderBackend extends ELSRenderBackend {
 
         boolean needsToRestoreContext = previousContext != this.windowHandle;
         if (needsToRestoreContext) {
-            GLFW.glfwMakeContextCurrent(this.windowHandle);
+            SDLVideo.SDL_GL_MakeCurrent(this.windowHandle, this.glContext);
             GL.createCapabilities();
         }
 
@@ -234,7 +242,7 @@ final class GlRenderBackend extends ELSRenderBackend {
             GlState.bindVertexArray(0);
         } finally {
             if (needsToRestoreContext) {
-                GLFW.glfwMakeContextCurrent(previousContext);
+                SDLVideo.SDL_GL_MakeCurrent(this.windowHandle, 0L);
                 GL.setCapabilities(previousCaps);
             }
         }
@@ -243,6 +251,7 @@ final class GlRenderBackend extends ELSRenderBackend {
     @Override
     public void close() {
         this.quadAutoIndexBuffer.close();
+        SDLVideo.SDL_GL_DestroyContext(this.glContext);
     }
 
     @Override

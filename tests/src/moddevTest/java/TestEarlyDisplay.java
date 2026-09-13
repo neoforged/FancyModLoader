@@ -6,7 +6,6 @@
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.atomic.AtomicBoolean;
 import net.neoforged.fml.earlydisplay.DisplayWindow;
 import net.neoforged.fml.earlydisplay.render.LoadingScreenRenderer;
 import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
@@ -15,7 +14,7 @@ import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.ProgramArgs;
 import net.neoforged.fml.loading.progress.StartupNotificationManager;
-import org.lwjgl.glfw.GLFW;
+import org.lwjgl.sdl.SDLInit;
 
 public class TestEarlyDisplay {
     public static void main(String[] args) throws Exception {
@@ -29,10 +28,8 @@ public class TestEarlyDisplay {
         window.initialize(ProgramArgs.from());
         Runnable periodicTick = window::periodicTick;
 
-        window.setMinecraftVersion("1.21.5");
-        window.setNeoForgeVersion("21.5.123-beta");
-
-        AtomicBoolean closed = new AtomicBoolean(false);
+        window.setMinecraftVersion("26.3");
+        window.setNeoForgeVersion("26.3.0.0-alpha");
 
         // Render once, then take over the window to test that it still works
         while (!LoadingScreenRenderer.rendered) {
@@ -49,15 +46,10 @@ public class TestEarlyDisplay {
         window.handOverToMinecraft(() -> backend[0] = GlRenderer.setupBackend(windowHandle), false);
         backend[0].acquireContextOwnership(true);
 
-        GLFW.glfwSetWindowCloseCallback(windowHandle, _ -> {
-            window.close();
-            closed.set(true);
-        });
-
         StartupNotificationManager.addProgressBar("Test Bar", 20).setAbsolute(10);
         StartupNotificationManager.addProgressBar("More Test Bar", 0);
 
-        while (!closed.get()) {
+        while (!window.isClosed()) {
             try {
                 periodicTick.run();
                 Thread.sleep(20L);
@@ -66,6 +58,7 @@ public class TestEarlyDisplay {
                 break;
             }
         }
+        SDLInit.SDL_QuitSubSystem(SDLInit.SDL_INIT_VIDEO);
     }
 
     static Path findProjectRoot() throws Exception {
