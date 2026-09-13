@@ -6,7 +6,6 @@
 package net.neoforged.fml.earlydisplay.render.backend.opengl;
 
 import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
-import net.neoforged.fml.loading.FMLConfig;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL33C;
 import org.lwjgl.opengl.GLCapabilities;
