@@ -34,7 +34,7 @@ public class WithOffScreenGLSurface implements BeforeAllCallback, AfterAllCallba
 
         GlRenderer.configureWindowHints();
 
-        long windowId = SDLVideo.SDL_CreateWindow("Offscreen Test Window", 800, 600, SDLVideo.SDL_WINDOW_OPENGL | SDLVideo.SDL_WINDOW_HIDDEN);
+        long windowId = SDLVideo.SDL_CreateWindow("Offscreen Test Window", 800, 600, SDLVideo.SDL_WINDOW_OPENGL | SDLVideo.SDL_WINDOW_HIDDEN | SDLVideo.SDL_WINDOW_HIGH_PIXEL_DENSITY);
         if (windowId == 0L) {
             throw new IllegalStateException("Failed to create window: " + SDLError.SDL_GetError());
         }
