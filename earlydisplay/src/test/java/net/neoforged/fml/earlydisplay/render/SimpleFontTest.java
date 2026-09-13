@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
-import net.neoforged.fml.earlydisplay.render.backend.opengl.GlRenderer;
 import net.neoforged.fml.earlydisplay.theme.ThemeResource;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,14 +18,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(WithOffScreenGLSurface.class)
 class SimpleFontTest {
     @AutoClose
-    private ELSRenderBackend backend;
-    @AutoClose
     private SimpleFont font;
 
     @BeforeEach
-    void setUp() throws IOException {
-        // FIXME: create dummy window
-        backend = GlRenderer.setupBackend(0L);
+    void setUp(ELSRenderBackend backend) throws IOException {
         font = new SimpleFont(backend, new ThemeResource("Monocraft.ttf"), null);
     }
 
