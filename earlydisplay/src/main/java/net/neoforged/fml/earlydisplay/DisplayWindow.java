@@ -106,6 +106,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private volatile boolean closed;
     private String neoForgeVersion;
     private String minecraftVersion;
+    private Runnable closeCallback = () -> {};
 
     public DisplayWindow() {
         mainProgress = StartupNotificationManager.addProgressBar("", 0);
@@ -540,7 +541,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
                     case SDLEvents.SDL_EVENT_WINDOW_RESIZED -> winResize(window, event.window().data1(), event.window().data2());
                     case SDLEvents.SDL_EVENT_WINDOW_MINIMIZED -> winIconify(window, true);
                     case SDLEvents.SDL_EVENT_WINDOW_RESTORED, SDLEvents.SDL_EVENT_WINDOW_MAXIMIZED -> winIconify(window, false);
-                    case SDLEvents.SDL_EVENT_WINDOW_CLOSE_REQUESTED -> close(); // TODO: check how this interacts with termination of mod loading
+                    case SDLEvents.SDL_EVENT_WINDOW_CLOSE_REQUESTED -> closeCallback.run();
                 }
             }
         }
@@ -603,6 +604,11 @@ public class DisplayWindow implements ImmediateWindowProvider {
     @VisibleForTesting
     public boolean isClosed() {
         return closed;
+    }
+
+    @VisibleForTesting
+    public void setCloseCallback(Runnable closeCallback) {
+        this.closeCallback = closeCallback;
     }
 
     private static void dumpBackgroundThreadStack() {

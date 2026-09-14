@@ -6,6 +6,7 @@
 package net.neoforged.fml.earlydisplay.render.backend.opengl;
 
 import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
+import net.neoforged.fml.loading.FMLConfig;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL33C;
 import org.lwjgl.opengl.GLCapabilities;
@@ -20,14 +21,14 @@ public final class GlRenderer {
         SDLVideo.SDL_GL_SetAttribute(SDLVideo.SDL_GL_CONTEXT_MAJOR_VERSION, 3);
         SDLVideo.SDL_GL_SetAttribute(SDLVideo.SDL_GL_CONTEXT_MINOR_VERSION, 3);
         SDLVideo.SDL_GL_SetAttribute(SDLVideo.SDL_GL_CONTEXT_PROFILE_MASK, SDLVideo.SDL_GL_CONTEXT_PROFILE_CORE);
-        SDLVideo.SDL_GL_SetAttribute(SDLVideo.SDL_GL_CONTEXT_FLAGS, SDLVideo.SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
         SDLVideo.SDL_GL_SetAttribute(SDLVideo.SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
 
-        // TODO: check whether this needs a replacement
-        /*if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DEBUG_OPENGL)) {
+        int contextFlags = SDLVideo.SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG;
+        if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.DEBUG_OPENGL)) {
             LOGGER.info("Requesting the creation of an OpenGL debug context");
-            GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_DEBUG_CONTEXT, GL33C.GL_TRUE);
-        }*/
+            contextFlags |= SDLVideo.SDL_GL_CONTEXT_DEBUG_FLAG;
+        }
+        SDLVideo.SDL_GL_SetAttribute(SDLVideo.SDL_GL_CONTEXT_FLAGS, contextFlags);
     }
 
     public static ELSRenderBackend setupBackend(long windowHandle) {

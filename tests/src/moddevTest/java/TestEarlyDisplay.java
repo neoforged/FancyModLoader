@@ -49,6 +49,7 @@ public class TestEarlyDisplay {
         StartupNotificationManager.addProgressBar("Test Bar", 20).setAbsolute(10);
         StartupNotificationManager.addProgressBar("More Test Bar", 0);
 
+        window.setCloseCallback(window::close);
         while (!window.isClosed()) {
             try {
                 periodicTick.run();

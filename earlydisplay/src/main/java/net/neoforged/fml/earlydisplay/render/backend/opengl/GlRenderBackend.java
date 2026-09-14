@@ -211,13 +211,12 @@ final class GlRenderBackend extends ELSRenderBackend {
 
     @Override
     public void releaseContextOwnership() {
-        SDLVideo.SDL_GL_MakeCurrent(this.windowHandle, 0L);
+        SDLVideo.SDL_GL_MakeCurrent(MemoryUtil.NULL, MemoryUtil.NULL);
     }
 
     @Override
     public void guardResourceCleanup(Runnable cleanupTask) {
-        // TODO: check whether this dance is still needed and works at all
-
+        long previousWindow = SDLVideo.SDL_GL_GetCurrentWindow();
         long previousContext = SDLVideo.SDL_GL_GetCurrentContext();
         GLCapabilities previousCaps;
         try {
@@ -226,7 +225,7 @@ final class GlRenderBackend extends ELSRenderBackend {
             previousCaps = null;
         }
 
-        boolean needsToRestoreContext = previousContext != this.windowHandle;
+        boolean needsToRestoreContext = previousWindow != this.windowHandle;
         if (needsToRestoreContext) {
             SDLVideo.SDL_GL_MakeCurrent(this.windowHandle, this.glContext);
             GL.createCapabilities();
@@ -242,7 +241,7 @@ final class GlRenderBackend extends ELSRenderBackend {
             GlState.bindVertexArray(0);
         } finally {
             if (needsToRestoreContext) {
-                SDLVideo.SDL_GL_MakeCurrent(this.windowHandle, 0L);
+                SDLVideo.SDL_GL_MakeCurrent(previousWindow, previousContext);
                 GL.setCapabilities(previousCaps);
             }
         }
