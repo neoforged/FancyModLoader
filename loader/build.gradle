@@ -1,5 +1,5 @@
 plugins {
-    id 'net.neoforged.jarcompatibilitychecker' version '0.1.20'
+    id 'net.neoforged.jarcompatibilitychecker'
 }
 
 checkJarCompatibility {
@@ -110,7 +110,7 @@ tasks.register('jmh', JavaExec) {
     mainClass = 'org.openjdk.jmh.Main'
     jvmArgs('--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED')
 
-    final results = file("${project.reportsDir}/jmh/result.json")
+    final results = file("${project.layout.buildDirectory.dir('reports').get().asFile}/jmh/result.json")
     doFirst {
         results.parentFile.mkdirs()
     }
