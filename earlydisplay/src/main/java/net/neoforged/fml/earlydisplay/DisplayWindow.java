@@ -59,9 +59,6 @@ import org.lwjgl.sdl.SDL_MessageBoxData;
 import org.lwjgl.sdl.SDL_Rect;
 import org.lwjgl.sdl.SDL_Surface;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.Platform;
-import org.lwjgl.system.linux.DynamicLinkLoader;
-import org.lwjgl.system.windows.WinBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,25 +121,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
             LOGGER.info("Detected CI environment, disabling ELS");
             return false;
         }
-
-        try (MemoryStack _ = MemoryStack.stackPush()) {
-            long handle = switch (Platform.get()) {
-                case FREEBSD, MACOSX -> 0L; // RenderDoc does not support MacOS and FreeBSD
-                case LINUX -> {
-                    long linuxHandle = DynamicLinkLoader.dlopen("librenderdoc.so", DynamicLinkLoader.RTLD_NOW | DynamicLinkLoader.RTLD_NOLOAD);
-                    if (linuxHandle != 0L) {
-                        DynamicLinkLoader.dlclose(linuxHandle);
-                    }
-                    yield linuxHandle;
-                }
-                case WINDOWS -> WinBase.GetModuleHandle(null, "renderdoc.dll");
-            };
-            if (handle != 0L && !Boolean.getBoolean("fml.earlyWindowIgnoreRenderDoc")) {
-                LOGGER.warn("Detected RenderDoc, disabling ELS to avoid potential segfault with multiple OpenGL contexts");
-                return false;
-            }
-            return true;
-        }
+        return true;
     }
 
     @Override
