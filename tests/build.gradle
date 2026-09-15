@@ -4,18 +4,21 @@ plugins {
 
 sourceSets {
     moddevTest
+    moddevTestClient
 }
 
 neoForge {
     enable {
         version = test_neoforge_version
-        enabledSourceSets = [sourceSets.moddevTest]
+        splitDist = true
+        enabledSourceSets = [sourceSets.moddevTest,sourceSets.moddevTestClient]
     }
+    addModdingDependenciesTo(sourceSets.moddevTestClient, true)
     runs {
         client {
             client()
             gameDirectory = file("build/runs/client")
-            sourceSet = sourceSets.moddevTest
+            sourceSet = sourceSets.moddevTestClient
         }
         server {
             server()

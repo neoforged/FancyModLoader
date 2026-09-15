@@ -35,7 +35,7 @@ final class RequiredSystemFiles implements AutoCloseable {
     static final String COMMON_CLASS = "net/minecraft/DetectedVersion.class";
     static final String CLIENT_CLASS = "net/minecraft/client/Minecraft.class";
     static final String COMMON_RESOURCE_ROOT = "data/.mcassetsroot";
-    static final String CLIENT_RESOURCE_ROOT = "assets/.mcassetsroot";
+    static final String CLIENT_RESOURCE_ROOT = "pack.png";//TODO:find a better solution
     static final String NEOFORGE_COMMON_CLASS = "net/neoforged/neoforge/common/NeoForgeMod.class";
     static final String NEOFORGE_CLIENT_CLASS = "net/neoforged/neoforge/client/ClientNeoForgeMod.class";
     private JarContents commonClasses;
