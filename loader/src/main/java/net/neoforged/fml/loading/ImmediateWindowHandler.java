@@ -38,7 +38,7 @@ public class ImmediateWindowHandler {
             return;
         }
 
-        if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)) {
+        if (true/*!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)*/) {
             provider = null;
             LOGGER.info("ImmediateWindowProvider not loading because splash screen is disabled");
         } else {
