@@ -23,6 +23,7 @@ import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.MavenVersionAdapter;
 import net.neoforged.neoforgespi.locating.InvalidModFileException;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 public class ModFileInfo implements IModFileInfo, IConfigurable {
@@ -139,7 +140,8 @@ public class ModFileInfo implements IModFileInfo, IConfigurable {
         return this;
     }
 
-    public URL getIssueURL() {
+    @Override
+    public @Nullable URL getIssueURL() {
         return issueURL;
     }
 
