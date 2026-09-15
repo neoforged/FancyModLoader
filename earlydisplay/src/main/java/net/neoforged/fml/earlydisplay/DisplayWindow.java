@@ -120,6 +120,11 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     @Override
     public boolean isSupportedEnvironment() {
+        if (System.getenv("CI") != null) {
+            LOGGER.info("Detected CI environment, disabling ELS");
+            return false;
+        }
+
         try (MemoryStack _ = MemoryStack.stackPush()) {
             long handle = switch (Platform.get()) {
                 case FREEBSD, MACOSX -> 0L; // RenderDoc does not support MacOS and FreeBSD
