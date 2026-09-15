@@ -21,6 +21,9 @@ public interface EarlyLoadingScreenController extends Closeable {
         return ImmediateWindowHandler.provider;
     }
 
+    /// Stop polling SDL events prior to vanilla window creation.
+    void stopEventPolling();
+
     /**
      * Takes over ownership of the GLFW window created by the early loading screen.
      * <p>

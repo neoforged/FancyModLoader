@@ -107,6 +107,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private String neoForgeVersion;
     private String minecraftVersion;
     private Runnable closeCallback = () -> {};
+    private boolean pollEvents = true;
 
     public DisplayWindow() {
         mainProgress = StartupNotificationManager.addProgressBar("", 0);
@@ -456,6 +457,11 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     @Override
+    public void stopEventPolling() {
+        pollEvents = false;
+    }
+
+    @Override
     public WindowState handOverToMinecraft(Supplier<Object> backend) {
         return handOverToMinecraft(backend, true);
     }
@@ -534,6 +540,10 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     private void pollEvents() {
+        if (!pollEvents) {
+            return;
+        }
+
         try (SDL_Event event = SDL_Event.malloc()) {
             while (SDLEvents.SDL_PollEvent(event)) {
                 long window = SDLEvents.SDL_GetWindowFromEvent(event);
