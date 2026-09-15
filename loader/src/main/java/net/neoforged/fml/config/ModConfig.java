@@ -86,13 +86,13 @@ public final class ModConfig {
 
     public enum Type {
         /**
-         * Common mod config for configuration that needs to be loaded on both environments.
+         * Local mod config for configuration that needs to be loaded on both environments.
          * Loaded on both servers and clients.
          * Stored in the global config directory.
          * Not synced.
-         * Suffix is "-common" by default.
+         * Suffix is "-local" by default.
          */
-        COMMON,
+        LOCAL,
         /**
          * Client config is for configuration affecting the ONLY client state such as graphical options.
          * Only loaded on the client side.
@@ -102,13 +102,13 @@ public final class ModConfig {
          */
         CLIENT,
         /**
-         * Server type config is configuration that is associated with a server instance.
+         * Synced config is configuration that is associated with a server instance and synced to connected clients.
          * Only loaded during server startup.
-         * Stored in a server/save specific "serverconfig" directory.
+         * Stored in a server/save specific "syncedconfig" directory.
          * Synced to clients during connection.
-         * Suffix is "-server" by default.
+         * Suffix is "-synced" by default.
          */
-        SERVER,
+        SYNCED,
         /**
          * Startup configs are for configurations that need to run as early as possible.
          * Loaded as soon as the config is registered to FML.
