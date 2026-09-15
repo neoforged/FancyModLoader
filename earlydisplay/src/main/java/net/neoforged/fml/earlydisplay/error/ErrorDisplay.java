@@ -9,10 +9,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import net.neoforged.fml.ModLoadingIssue;
-import net.neoforged.fml.earlydisplay.render.GlState;
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.glfw.GLFW;
-import org.lwjgl.system.Callback;
+import org.lwjgl.sdl.SDLEvents;
+import org.lwjgl.sdl.SDLInit;
+import org.lwjgl.sdl.SDL_Event;
 
 public final class ErrorDisplay {
     private static final boolean THROW_ON_EXIT = Boolean.getBoolean("fml.loadingErrorThrowOnExit");
@@ -20,70 +21,38 @@ public final class ErrorDisplay {
     private static final long MINFRAMETIME = TimeUnit.MILLISECONDS.toNanos(10); // This is the FPS cap on the window
 
     public static void fatal(
-            long windowHandle,
+            ELSRenderBackend backend,
             @Nullable String assetsDir,
             @Nullable String assetIndex,
             List<ModLoadingIssue> errors,
             @Nullable Path modsFolder,
             @Nullable Path logFile,
             @Nullable Path crashReportFile) {
-        // Pre-clear all callbacks that may be left-over from the previous owner of the window
-        clearCallbacks(windowHandle);
-
-        ErrorDisplayWindow window = new ErrorDisplayWindow(windowHandle, assetsDir, assetIndex, errors, modsFolder, logFile, crashReportFile);
-
-        discard(GLFW.glfwSetWindowCloseCallback(window.windowHandle, window::handleClose));
-        discard(GLFW.glfwSetCursorPosCallback(window.windowHandle, window::handleCursorPos));
-        discard(GLFW.glfwSetScrollCallback(window.windowHandle, window::handleMouseScroll));
-        discard(GLFW.glfwSetMouseButtonCallback(window.windowHandle, window::handleMouseButton));
-        discard(GLFW.glfwSetKeyCallback(window.windowHandle, window::handleKey));
+        ErrorDisplayWindow window = new ErrorDisplayWindow(backend, assetsDir, assetIndex, errors, modsFolder, logFile, crashReportFile);
 
         long nextFrameTime = 0;
-        GlState.readFromOpenGL();
         while (!window.isClosed()) {
             long nanoTime = System.nanoTime();
             var timeToNextFrame = nextFrameTime - nanoTime;
             if (timeToNextFrame <= 0) {
                 window.render();
                 nextFrameTime = nanoTime + MINFRAMETIME;
-                GLFW.glfwPollEvents();
+                try (SDL_Event event = SDL_Event.malloc()) {
+                    while (SDLEvents.SDL_PollEvent(event)) {
+                        window.handleEvent(event);
+                    }
+                }
             } else {
-                GLFW.glfwWaitEventsTimeout(timeToNextFrame / (double) TimeUnit.SECONDS.toNanos(1));
+                SDLEvents.SDL_WaitEventTimeout(null, (int) (timeToNextFrame / (double) TimeUnit.SECONDS.toNanos(1)));
             }
         }
-        window.teardown();
+        window.close(true);
+        SDLInit.SDL_QuitSubSystem(SDLInit.SDL_INIT_VIDEO);
 
         if (THROW_ON_EXIT) {
             throw new FatalLoadingError();
         } else {
             System.exit(1);
-        }
-    }
-
-    private static void clearCallbacks(long windowHandle) {
-        // Clear all other callbacks
-        discard(GLFW.glfwSetWindowPosCallback(windowHandle, null));
-        discard(GLFW.glfwSetWindowSizeCallback(windowHandle, null));
-        discard(GLFW.glfwSetWindowCloseCallback(windowHandle, null));
-        discard(GLFW.glfwSetWindowRefreshCallback(windowHandle, null));
-        discard(GLFW.glfwSetWindowFocusCallback(windowHandle, null));
-        discard(GLFW.glfwSetWindowIconifyCallback(windowHandle, null));
-        discard(GLFW.glfwSetWindowMaximizeCallback(windowHandle, null));
-        discard(GLFW.glfwSetFramebufferSizeCallback(windowHandle, null));
-        discard(GLFW.glfwSetWindowContentScaleCallback(windowHandle, null));
-        discard(GLFW.glfwSetKeyCallback(windowHandle, null));
-        discard(GLFW.glfwSetCharCallback(windowHandle, null));
-        discard(GLFW.glfwSetCharModsCallback(windowHandle, null));
-        discard(GLFW.glfwSetMouseButtonCallback(windowHandle, null));
-        discard(GLFW.glfwSetCursorPosCallback(windowHandle, null));
-        discard(GLFW.glfwSetCursorEnterCallback(windowHandle, null));
-        discard(GLFW.glfwSetScrollCallback(windowHandle, null));
-        discard(GLFW.glfwSetDropCallback(windowHandle, null));
-    }
-
-    private static void discard(@Nullable Callback callback) {
-        if (callback != null) {
-            callback.close();
         }
     }
 
