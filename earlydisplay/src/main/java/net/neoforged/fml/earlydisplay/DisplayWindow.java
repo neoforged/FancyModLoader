@@ -370,7 +370,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
             if (!successfulWindow.get()) crashElegantly("Timed out trying to setup the Game Window.");
         }, 30, TimeUnit.SECONDS);
 
-        long flags = SDLVideo.SDL_WINDOW_OPENGL | SDLVideo.SDL_WINDOW_HIDDEN | SDLVideo.SDL_WINDOW_RESIZABLE | SDLVideo.SDL_WINDOW_HIGH_PIXEL_DENSITY;
+        long flags = SDLVideo.SDL_WINDOW_OPENGL | SDLVideo.SDL_WINDOW_RESIZABLE | SDLVideo.SDL_WINDOW_HIGH_PIXEL_DENSITY;
         this.window = SDLVideo.SDL_CreateWindow("Minecraft: NeoForge Loading...", winWidth, winHeight, flags);
         if (this.window == 0L) {
             String creationError = SDLError.SDL_GetError();
@@ -414,9 +414,9 @@ public class DisplayWindow implements ImmediateWindowProvider {
         setWindowIcon();
 
         // Show the window
-        if (!SDLVideo.SDL_ShowWindow(this.window)) {
-            LOGGER.warn("Failed to show window: {}", SDLError.SDL_GetError());
-        }
+        //if (!SDLVideo.SDL_ShowWindow(this.window)) {
+        //    LOGGER.warn("Failed to show window: {}", SDLError.SDL_GetError());
+        //}
         if (this.maximized) {
             SDLVideo.SDL_MaximizeWindow(this.window);
         }
