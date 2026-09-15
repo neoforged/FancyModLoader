@@ -41,6 +41,7 @@ public abstract class AbstractEarlyScreen {
     protected AbstractEarlyScreen(String name, Supplier<ELSRenderBackend> backend, Theme theme, @Nullable Path externalThemeDirectory, int screenWidth, int screenHeight) {
         this.name = name;
         this.backend = backend.get();
+        this.backend.acquireContextOwnership(false);
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
         this.theme = MaterializedTheme.materialize(this.backend, theme, externalThemeDirectory);
