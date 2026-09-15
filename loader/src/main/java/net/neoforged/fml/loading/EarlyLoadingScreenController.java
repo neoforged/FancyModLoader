@@ -24,14 +24,13 @@ public interface EarlyLoadingScreenController extends Closeable {
     /// Stop polling SDL events prior to vanilla window creation.
     void stopEventPolling();
 
-    /**
-     * Takes over ownership of the GLFW window created by the early loading screen.
-     * <p>
-     * This method can only be called once and once this method is called, any off-thread
-     * interaction with the window seizes.
-     *
-     * @return the state of the ELS window to be applied to the vanilla window
-     */
+    /// Hands over control of the early loading screen to Minecraft, destroys the ELS' own window
+    /// and restarts its rendering with the provided backend on the window spawned by vanilla.
+    ///
+    /// This method can only be called once and once this method is called, any off-thread
+    /// interaction with the window seizes.
+    ///
+    /// @return the state of the ELS window to be applied to the vanilla window
     WindowState handOverToMinecraft(Supplier<Object> renderBackend);
 
     /**
