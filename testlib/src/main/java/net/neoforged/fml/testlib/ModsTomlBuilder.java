@@ -61,6 +61,13 @@ public class ModsTomlBuilder {
         config.add("mixins", List.of(configEntry));
         return this;
     }
+    
+    public ModsTomlBuilder addAccessTransformer(String file) {
+        var configEntry = Config.inMemory();
+        configEntry.set("file", file);
+        config.add("accessTransformers", List.of(configEntry));
+        return this;
+    }
 
     public ModsTomlBuilder setLoader(String loader, String versionRange) {
         config.set("modLoader", loader);

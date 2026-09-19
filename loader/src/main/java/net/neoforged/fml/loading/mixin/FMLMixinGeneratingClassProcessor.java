@@ -54,6 +54,12 @@ public class FMLMixinGeneratingClassProcessor implements ClassProcessor {
     }
 
     @Override
+    public OrderingHint orderingHint() {
+        // Minimize the amount of stuff running between the mixin ClassInfo capture and the actual transformer
+        return OrderingHint.LATE;
+    }
+
+    @Override
     public Set<String> generatesPackages() {
         return Set.of(ArgsClassGenerator.SYNTHETIC_PACKAGE);
     }

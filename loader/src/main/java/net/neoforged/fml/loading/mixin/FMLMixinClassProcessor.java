@@ -39,6 +39,12 @@ public class FMLMixinClassProcessor implements ClassProcessor {
     }
 
     @Override
+    public OrderingHint orderingHint() {
+        // Minimize the amount of stuff running between the mixin ClassInfo capture and the actual transformer
+        return OrderingHint.EARLY;
+    }
+
+    @Override
     public boolean handlesClass(SelectionContext context) {
         // Throw if the class was previously determined to be invalid
         String name = context.type().getClassName();
