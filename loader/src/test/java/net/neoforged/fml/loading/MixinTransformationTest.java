@@ -14,11 +14,10 @@ public class MixinTransformationTest extends LauncherTest implements MixinTestHe
     void testMixinConsistentClassInfoWithAT() throws Exception {
         // ATs must run before mixin's ClassInfo context is captured and before mixin itself runs
         // If they run between the two, local capture will fail on ATed methods due to the inconsistency.
-        
+
         installation.setupProductionClient();
         installation.buildModJar("mixin-test.jar")
-                .withTestmodModsToml(modsToml ->
-                        modsToml.addMixinConfig("test.mixins.json").addAccessTransformer("accesstransformer.cfg").addMod("test"))
+                .withTestmodModsToml(modsToml -> modsToml.addMixinConfig("test.mixins.json").addAccessTransformer("accesstransformer.cfg").addMod("test"))
                 .addTextFile("test.mixins.json", """
                         {
                             "package": "test.mixin",
@@ -70,7 +69,7 @@ public class MixinTransformationTest extends LauncherTest implements MixinTestHe
         var injectedInterface = result.launchClassLoader().loadClass("test.target.IFace");
         assertTrue(injectedInterface.isAssignableFrom(testClass));
     }
-    
+
     @Test
     void testFrameRecomputationWithGeneratedClasses() throws Exception {
         installation.setupProductionClient();
