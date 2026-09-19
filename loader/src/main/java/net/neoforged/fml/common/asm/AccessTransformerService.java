@@ -27,7 +27,13 @@ public class AccessTransformerService implements ClassProcessor {
 
     @Override
     public Set<ProcessorName> runsBefore() {
-        return Set.of(ClassProcessorIds.MIXIN);
+        // Mixins must see changes to access modifiers in their ClassInfo, or will have issues applying
+        return Set.of(ClassProcessorIds.MIXIN_FRAME_CONTEXT);
+    }
+
+    @Override
+    public Set<ProcessorName> runsAfter() {
+        return Set.of();
     }
 
     @Override
