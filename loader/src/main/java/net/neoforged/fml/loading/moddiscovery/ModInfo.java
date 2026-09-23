@@ -7,7 +7,6 @@ package net.neoforged.fml.loading.moddiscovery;
 
 import com.mojang.logging.LogUtils;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -47,7 +46,7 @@ public class ModInfo implements IModInfo, IConfigurable {
 
     private final List<ForgeFeature.Bound> features;
     private final Map<String, Object> properties;
-    private final List<URL> donationUrls;
+    private final Optional<URL> donationURL;
     private final IConfigurable config;
     private final Optional<URL> modUrl;
 
@@ -108,9 +107,8 @@ public class ModInfo implements IModInfo, IConfigurable {
                 .toList();
         this.properties = ownFile.flatMap(mfi -> mfi.<Map<String, Object>>getConfigElement("modproperties", this.modId))
                 .orElse(Collections.emptyMap());
-        this.donationUrls = config.<List<String>>getConfigElement("donationUrls")
-                .map(this::parseDonationUrls)
-                .orElseGet(Collections::emptyList);
+        this.donationURL = config.<String>getConfigElement("donationURL")
+                .map(StringUtils::toURL);
     }
 
     @Override
@@ -159,8 +157,8 @@ public class ModInfo implements IModInfo, IConfigurable {
     }
 
     @Override
-    public List<URL> getDonationURLs() {
-        return this.donationUrls;
+    public Optional<URL> getDonationURL() {
+        return this.donationURL;
     }
 
     @Override
@@ -209,19 +207,6 @@ public class ModInfo implements IModInfo, IConfigurable {
         } else {
             throw new InvalidModFileException("Invalid feature bound {" + e.getValue() + "} for key {" + e.getKey() + "} only strings are accepted", this.owningFile);
         }
-    }
-
-    private List<URL> parseDonationUrls(List<String> configuredLinks) {
-        List<URL> links = new ArrayList<>(configuredLinks.size());
-        configuredLinks.forEach(value -> links.add(parseDonationUrl(value)));
-        return Collections.unmodifiableList(links);
-    }
-
-    private URL parseDonationUrl(Object value) {
-        if (value instanceof String urlString) {
-            return StringUtils.toURL(urlString);
-        }
-        throw new InvalidModFileException("Invalid donation URL '" + value + "'", this.owningFile);
     }
 
     @Override
