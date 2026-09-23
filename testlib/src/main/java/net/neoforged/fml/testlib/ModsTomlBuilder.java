@@ -80,6 +80,7 @@ public class ModsTomlBuilder {
         var modConfig = Config.inMemory();
         modConfig.set("modId", modId);
         modConfig.set("version", version);
+        modConfig.set("donationUrls", List.of());
         customizer.accept(modConfig);
         List<Config> mods = config.get("mods");
         if (mods == null) {

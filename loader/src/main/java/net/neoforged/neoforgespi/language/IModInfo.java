@@ -56,6 +56,8 @@ public interface IModInfo {
 
     Optional<URL> getModURL();
 
+    List<URL> getDonationURLs();
+
     Optional<String> getLogoFile();
 
     boolean getLogoBlur();
