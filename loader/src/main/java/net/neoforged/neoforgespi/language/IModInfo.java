@@ -56,7 +56,9 @@ public interface IModInfo {
 
     Optional<URL> getModURL();
 
-    List<URL> getDonationURLs();
+    default List<URL> getDonationURLs() {
+        return List.of();
+    }
 
     Optional<String> getLogoFile();
 
