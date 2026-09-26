@@ -53,10 +53,10 @@
   "fml.modloadingissue.failed_to_list_folder_content": "Не удалось получить список содержимого папки {0}",
   "fml.modloadingissue.failed_to_find_on_classpath": "Не удалось найти {0} в classpath",
   "fml.modloadingissue.multiple_copies_on_classpath": "Найдено множество копий {0} в classpath: {1}",
-  "fml.modloadingissue.mixin.duplicate_config": "Mixin конфигурация с названием {0} предоставлена сразу в нескольких модификациях: {101} и {1}",
-  "fml.modloadingissue.mixin.missing_config": "Mixin конфигурация с названием {0} объявлена в {101}, но ее не существует",
-  "fml.modloadingissue.mixin.requested_behavior_too_old": "Mixin конфигурация {0} из {101} требует Mixin версии {1}, которая старше минимально поддерживаемой версией {2}",
-  "fml.modloadingissue.mixin.requested_behavior_too_new": "Mixin конфигурация {0} из {101} требует Mixin версии {1}, которая новее, чем самая старшая поддерживаемая версия {2}. Это может быть исправлено благодаря обновлению NeoForge",
+  "fml.modloadingissue.mixin.duplicate_config": "Конфигурация примесей с названием {0} предоставляется как {101}, так и {1}",
+  "fml.modloadingissue.mixin.missing_config": "Конфигурация примесей с названием {0} была объявлена в {101}, но не существует",
+  "fml.modloadingissue.mixin.requested_behavior_too_old": "Конфигурация Mixin {0} из {101} запрашивает версию поведения Mixin {1}, которая ниже минимально поддерживаемой версии {2}",
+  "fml.modloadingissue.mixin.requested_behavior_too_new": "Конфигурация Mixin {0} из {101} запрашивает версию поведения Mixin {1}, которая выше максимально поддерживаемой версии {2}. Это можно исправить, обновив NeoForge",
   "fml.messages.artifactversion.ornotinstalled": "{0,ornull,fml.messages.artifactversion.notinstalled}",
   "fml.messages.artifactversion": "{0,ornull,fml.messages.artifactversion.none}",
   "fml.messages.artifactversion.none": "отсутствует",
@@ -90,5 +90,5 @@
   "fml.button.open.crashreport": "Открыть отчёт по сбою",
   "fml.button.open.mods.folder": "Папка с модами",
   "fml.button.quit": "Выйти из игры",
-  "fml.modloadingissue.mixin.fail": "Применение миксина {0} из мода {100,modinfo,name} ({100,modinfo,id}) завершилось ошибкой §7{102,exc,msg}"
+  "fml.modloadingissue.mixin.fail": "Применение примеси {0} из {100,modinfo,name} ({100,modinfo,id}) завершилось ошибкой\n§7{102,exc,msg}"
 }
