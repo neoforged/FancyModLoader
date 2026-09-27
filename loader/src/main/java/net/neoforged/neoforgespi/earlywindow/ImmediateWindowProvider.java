@@ -32,6 +32,13 @@ public interface ImmediateWindowProvider extends EarlyLoadingScreenController {
     String name();
 
     /**
+     * @return Whether the current environment is supported by this window provider
+     */
+    default boolean isSupportedEnvironment() {
+        return true;
+    }
+
+    /**
      * This is called very early on to initialize ourselves. Use this to initialize the window and other GL core resources.
      *
      * @param args The current program arguments. You can mutate this.
@@ -52,7 +59,7 @@ public interface ImmediateWindowProvider extends EarlyLoadingScreenController {
 
     /**
      * This is called during some very early startup routines to show a crash dialog
-     * using e.g. tinyfd dialogs
+     * using e.g. SDL dialogs
      * 
      * @param message The message to display
      */

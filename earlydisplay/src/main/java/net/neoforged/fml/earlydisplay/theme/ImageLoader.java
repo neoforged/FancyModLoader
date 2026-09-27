@@ -28,7 +28,7 @@ public final class ImageLoader {
     static final Logger LOGGER = LoggerFactory.getLogger(ImageLoader.class);
 
     /**
-     * Load the image resource, and decompress it into native memory for use with OpenGL and other native APIs.
+     * Load the image resource, and decompress it into native memory for use with GPU backends and other native APIs.
      * Note that if the image fails to load for any reason, a dummy "missing" texture is returned instead.
      */
     public static UncompressedImage loadImage(ThemeResource resource, @Nullable Path externalThemeDirectory) {
@@ -42,7 +42,7 @@ public final class ImageLoader {
     }
 
     /**
-     * Load the image resource, and decompress it into native memory for use with OpenGL and other native APIs.
+     * Load the image resource, and decompress it into native memory for use with GPU backends and other native APIs.
      * Note that if the image fails to load for any reason, a dummy "missing" texture is returned instead.
      */
     public static Result tryLoadImage(ThemeResource resource, @Nullable Path externalThemeDirectory) {
@@ -54,7 +54,7 @@ public final class ImageLoader {
     }
 
     /**
-     * Load the image resource, and decompress it into native memory for use with OpenGL and other native APIs.
+     * Load the image resource, and decompress it into native memory for use with GPU backends and other native APIs.
      * Note that if the image fails to load for any reason, a dummy "missing" texture is returned instead.
      */
     public static Result tryLoadImage(String debugName, @Nullable ThemeResource source, NativeBuffer buffer) {

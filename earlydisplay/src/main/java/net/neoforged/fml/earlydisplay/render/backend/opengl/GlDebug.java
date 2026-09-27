@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.earlydisplay.render;
+package net.neoforged.fml.earlydisplay.render.backend.opengl;
 
 import net.neoforged.fml.loading.FMLConfig;
 import org.lwjgl.opengl.EXTDebugLabel;
@@ -15,7 +15,7 @@ import org.lwjgl.opengl.KHRDebug;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class GlDebug {
+final class GlDebug {
     private static final Logger LOG = LoggerFactory.getLogger(GlDebug.class);
 
     private GlDebug() {}

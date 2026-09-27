@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.fml.earlydisplay.render;
+package net.neoforged.fml.earlydisplay.render.backend.opengl;
 
 import static org.lwjgl.opengl.GL11C.GL_SCISSOR_BOX;
 import static org.lwjgl.opengl.GL11C.GL_SCISSOR_TEST;
 import static org.lwjgl.opengl.GL11C.glScissor;
-import static org.lwjgl.opengl.GL20C.glIsProgram;
 import static org.lwjgl.opengl.GL32C.GL_ACTIVE_TEXTURE;
 import static org.lwjgl.opengl.GL32C.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL32C.GL_ARRAY_BUFFER_BINDING;
@@ -55,7 +54,7 @@ import static org.lwjgl.opengl.GL33C.glBindSampler;
  * This class tracks the current state of various OpenGL state elements and only applies changes
  * when necessary, reducing overhead from redundant state changes.
  */
-public final class GlState {
+final class GlState {
     // Viewport state
     private static int viewportX;
     private static int viewportY;
@@ -376,72 +375,5 @@ public final class GlState {
             }
             scissorEnabled = enabled;
         }
-    }
-
-    /**
-     * A snapshot of the OpenGL state.
-     */
-    public record StateSnapshot(
-            int viewportX, int viewportY, int viewportWidth, int viewportHeight,
-            float clearColorRed, float clearColorGreen, float clearColorBlue, float clearColorAlpha,
-            boolean blendEnabled,
-            int blendSrcRGB, int blendDstRGB, int blendSrcAlpha, int blendDstAlpha,
-            int currentProgram,
-            int boundTexture2D, int boundSampler, int activeTextureUnit,
-            int boundVertexArray,
-            int boundDrawFramebuffer, int boundReadFramebuffer,
-            int boundElementArrayBuffer, int boundArrayBuffer,
-            boolean scissorEnabled, int[] scissorBox) {}
-
-    /**
-     * Creates a snapshot of the current OpenGL state.
-     *
-     * @return A StateSnapshot object containing the current state
-     */
-    public static StateSnapshot createSnapshot() {
-        return new StateSnapshot(
-                viewportX, viewportY, viewportWidth, viewportHeight,
-                clearColorRed, clearColorGreen, clearColorBlue, clearColorAlpha,
-                blendEnabled,
-                blendSrcRGB, blendDstRGB, blendSrcAlpha, blendDstAlpha,
-                currentProgram,
-                boundTexture2D, boundSampler, activeTextureUnit,
-                boundVertexArray,
-                boundDrawFramebuffer, boundReadFramebuffer,
-                boundElementArrayBuffer, boundArrayBuffer,
-                scissorEnabled, scissorBox);
-    }
-
-    /**
-     * Applies the state from a snapshot to both this state manager and OpenGL.
-     *
-     * @param snapshot The snapshot to apply
-     */
-    public static void applySnapshot(StateSnapshot snapshot) {
-        viewport(snapshot.viewportX, snapshot.viewportY, snapshot.viewportWidth, snapshot.viewportHeight);
-        clearColor(snapshot.clearColorRed, snapshot.clearColorGreen, snapshot.clearColorBlue, snapshot.clearColorAlpha);
-        enableBlend(snapshot.blendEnabled);
-        blendFuncSeparate(snapshot.blendSrcRGB, snapshot.blendDstRGB, snapshot.blendSrcAlpha, snapshot.blendDstAlpha);
-        // The program might have been flagged for deletion and may no longer be available
-        if (glIsProgram(snapshot.currentProgram)) {
-            useProgram(snapshot.currentProgram);
-        } else {
-            useProgram(0);
-        }
-        bindTexture2D(snapshot.boundTexture2D);
-        bindSampler(snapshot.boundSampler);
-        activeTexture(snapshot.activeTextureUnit);
-        bindVertexArray(snapshot.boundVertexArray);
-        // Handle framebuffers - check if both are the same
-        if (snapshot.boundDrawFramebuffer == snapshot.boundReadFramebuffer) {
-            bindFramebuffer(snapshot.boundDrawFramebuffer);
-        } else {
-            bindDrawFramebuffer(snapshot.boundDrawFramebuffer);
-            bindReadFramebuffer(snapshot.boundReadFramebuffer);
-        }
-        bindElementArrayBuffer(snapshot.boundElementArrayBuffer);
-        bindArrayBuffer(snapshot.boundArrayBuffer);
-        scissorTest(snapshot.scissorEnabled);
-        scissorBox(snapshot.scissorBox[0], snapshot.scissorBox[1], snapshot.scissorBox[2], snapshot.scissorBox[3]);
     }
 }
