@@ -188,7 +188,28 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
         initWindow();
 
-        this.rendererFuture = this.renderScheduler.schedule(() -> this.setupRenderer(() -> GlRenderer.setupBackend(this.window), true), 1, TimeUnit.MILLISECONDS);
+        // SDL requires OpenGL context creation to happen on the main-thread (called in setupBackend):
+        // https://wiki.libsdl.org/SDL3/SDL_GL_CreateContext#thread-safety
+        // On macOS, attaching the context to its view synchronously dispatches to the main queue:
+        // https://github.com/libsdl-org/SDL/blob/release-3.4.4/src/video/cocoa/SDL_cocoaopengl.m#L162-L168
+        // so creating it on the loading thread will deadlock: https://github.com/neoforged/NeoForge/issues/3557
+        var backendSetupFinished = new AtomicBoolean(false);
+        var backendFailFuture = this.renderScheduler.schedule(() -> {
+            if (!backendSetupFinished.get()) crashElegantly("Timed out initializing the early display's OpenGL context.");
+        }, 30, TimeUnit.SECONDS);
+
+        ELSRenderBackend backend;
+        try {
+            backend = GlRenderer.setupBackend(this.window);
+            backend.releaseContextOwnership();
+        } finally {
+            backendSetupFinished.set(true);
+            backendFailFuture.cancel(false);
+        }
+        this.rendererFuture = this.renderScheduler.schedule(() -> {
+            backend.acquireContextOwnership(true);
+            return this.setupRenderer(() -> backend, true);
+        }, 1, TimeUnit.MILLISECONDS);
 
         updateProgress("Initializing Game Graphics");
     }
