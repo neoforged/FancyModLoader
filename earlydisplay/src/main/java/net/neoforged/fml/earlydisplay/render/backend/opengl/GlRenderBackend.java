@@ -130,7 +130,7 @@ final class GlRenderBackend extends ELSRenderBackend {
     public GlRenderPass createRenderPass(String label, ELSTexture target, ThemeColor clearColor) {
         GlDebug.pushGroup(label);
         GlState.bindFramebuffer(((GlTexture) target).fbo());
-        GlState.clearColor(clearColor.r(), clearColor.b(), clearColor.g(), clearColor.a());
+        GlState.clearColor(clearColor.r(), clearColor.g(), clearColor.b(), clearColor.a());
         GlState.scissorTest(false);
         GL33C.glColorMask(true, true, true, true);
         GL33C.glClear(GL33C.GL_COLOR_BUFFER_BIT | GL33C.GL_DEPTH_BUFFER_BIT);
