@@ -70,6 +70,10 @@ public class RuntimeEnumExtender implements ClassProcessor {
 
     @Override
     public Set<ProcessorName> runsBefore() {
+        // This runs before mixin so that mixins cannot make new classes extensible
+        // ...but also has to run after frame recompute.
+        // This has the odd side effect of injected entries being invisible in mixin ClassInfo but present in the
+        // ClassNode that mixin transforms. In practice, this should not matter, but a note is left here for posterity.
         return Set.of(ClassProcessorIds.MIXIN);
     }
 
