@@ -209,10 +209,10 @@ public class ConfigTracker {
         modConfig.setConfig(new LoadedConfig(newConfig, null, modConfig), ModConfigEvent.Reloading::new); // TODO: should maybe be Loading on the first load?
     }
 
-    public void loadDefaultServerConfigs() {
-        configSets.get(ModConfig.Type.SERVER).forEach(modConfig -> {
+    public void loadDefaultSyncedConfigs() {
+        configSets.get(ModConfig.Type.SYNCED).forEach(modConfig -> {
             if (modConfig.loadedConfig != null) {
-                LOGGER.warn("Overwriting non-null config {} at path {} with default server config", modConfig.loadedConfig, modConfig.getFileName());
+                LOGGER.warn("Overwriting non-null config {} at path {} with default synced config", modConfig.loadedConfig, modConfig.getFileName());
             }
 
             modConfig.setConfig(new LoadedConfig(createDefaultConfig(modConfig.getSpec()), null, modConfig), ModConfigEvent.Loading::new);
