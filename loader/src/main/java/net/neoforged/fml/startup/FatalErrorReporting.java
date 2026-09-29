@@ -22,7 +22,7 @@ import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
+import org.lwjgl.sdl.SDLMessageBox;
 
 /**
  * Handles reporting of fatal errors for UI-based entrypoints (i.e. clients).
@@ -132,16 +132,11 @@ public final class FatalErrorReporting {
         if (!GraphicsEnvironment.isHeadless()) {
             showErrorUsingSwing(message);
         } else {
+            // TODO: check whether this is still necessary
             // TinyFD refuses to let us use quotes
             message = message.replace('"', '`');
             message = message.replace('\'', '`');
-
-            TinyFileDialogs.tinyfd_messageBox(
-                    "NeoForge - Fatal Startup Error",
-                    message,
-                    "ok",
-                    "error",
-                    1);
+            SDLMessageBox.SDL_ShowSimpleMessageBox(SDLMessageBox.SDL_MESSAGEBOX_ERROR, "NeoForge - Fatal Startup Error", message, 0L);
         }
         System.exit(1);
     }

@@ -9,6 +9,7 @@ import java.io.IOException;
 import net.neoforged.fml.earlydisplay.render.MaterializedTheme;
 import net.neoforged.fml.earlydisplay.render.RenderContext;
 import net.neoforged.fml.earlydisplay.render.Texture;
+import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
 import net.neoforged.fml.earlydisplay.theme.ImageLoader;
 import net.neoforged.fml.earlydisplay.theme.NativeBuffer;
 import net.neoforged.fml.earlydisplay.theme.TextureScaling;
@@ -29,7 +30,7 @@ public class MojangLogoElement extends RenderElement {
 
     private final Texture mojangLogo;
 
-    public MojangLogoElement(ThemeMojangLogoElement element, MaterializedTheme theme) {
+    public MojangLogoElement(ELSRenderBackend backend, ThemeMojangLogoElement element, MaterializedTheme theme) {
         super(element, theme);
 
         // Try the context classloader first, but if we cannot find a logo there,
@@ -48,7 +49,7 @@ public class MojangLogoElement extends RenderElement {
                     if (loadResult instanceof ImageLoader.Result.Error(Exception exception)) {
                         LOGGER.debug("Failed to load Mojang logo from {}: {}", logoPath, exception);
                     } else if (loadResult instanceof ImageLoader.Result.Success(UncompressedImage image)) {
-                        mojangLogo = Texture.create(image, "mojang logo", new TextureScaling.Stretch(512, 128, true), null);
+                        mojangLogo = Texture.create(backend, image, "mojang logo", new TextureScaling.Stretch(512, 128, true), null);
                         break;
                     }
                 } catch (IOException e) {
