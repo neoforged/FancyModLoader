@@ -104,9 +104,7 @@ class ModSorter {
 
         // If we have conflicts those are considered warnings
         if (!resolutionResult.discouraged.isEmpty()) {
-            list.getModLoadingIssues().add(ModLoadingIssue.warning(
-                    "found mod conflicts",
-                    resolutionResult.buildWarningMessages()));
+            list.getModLoadingIssues().addAll(resolutionResult.buildWarningMessages());
         }
 
         // Close any mod-files discarded due to dependency constraint issues
@@ -252,7 +250,7 @@ class ModSorter {
             return Stream.concat(discouraged.stream()
                     .map(mv -> ModLoadingIssue.warning("fml.modloadingissue.discouragedmod",
                             mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
-                            modVersions.get(mv.getModId()), mv.getReason().orElse("fml.modloadingissue.discouragedmod.noreason")).withAffectedMod(mv.getOwner())),
+                            modVersions.get(mv.getModId()), mv.getReason().orElse("fml.modloading.discouragedmod.noreason")).withAffectedMod(mv.getOwner())),
 
                     Stream.of(ModLoadingIssue.warning("fml.modloadingissue.discouragedmod.proceed")))
                     .toList();
@@ -267,7 +265,7 @@ class ModSorter {
                     incompatibilities.stream()
                             .map(mv -> ModLoadingIssue.error("fml.modloadingissue.incompatiblemod",
                                     mv.getModId(), mv.getOwner().getModId(), mv.getVersionRange(),
-                                    modVersions.get(mv.getModId()), mv.getReason().orElse("fml.modloadingissue.incompatiblemod.noreason")).withAffectedMod(mv.getOwner())))
+                                    modVersions.get(mv.getModId()), mv.getReason().orElse("fml.modloading.incompatiblemod.noreason")).withAffectedMod(mv.getOwner())))
                     .toList();
         }
     }

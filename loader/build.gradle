@@ -1,5 +1,5 @@
 plugins {
-    id 'net.neoforged.jarcompatibilitychecker' version '0.1.13'
+    id 'net.neoforged.jarcompatibilitychecker'
 }
 
 checkJarCompatibility {
@@ -38,7 +38,7 @@ dependencies {
     implementation("commons-io:commons-io:${commons_io_version}")
 
     implementation(platform("org.lwjgl:lwjgl-bom:${lwjgl_version}"))
-    implementation("org.lwjgl:lwjgl-tinyfd")
+    implementation("org.lwjgl:lwjgl-sdl")
 
     implementation("org.apache.logging.log4j:log4j-core:${log4j_version}")
     annotationProcessor("org.apache.logging.log4j:log4j-core:${log4j_version}")
@@ -110,7 +110,7 @@ tasks.register('jmh', JavaExec) {
     mainClass = 'org.openjdk.jmh.Main'
     jvmArgs('--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED')
 
-    final results = file("${project.reportsDir}/jmh/result.json")
+    final results = file("${project.layout.buildDirectory.dir('reports').get().asFile}/jmh/result.json")
     doFirst {
         results.parentFile.mkdirs()
     }

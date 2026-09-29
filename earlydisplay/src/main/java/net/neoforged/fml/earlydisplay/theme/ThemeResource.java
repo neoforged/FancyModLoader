@@ -24,7 +24,7 @@ public record ThemeResource(String path) {
     }
 
     /**
-     * Load the image resource, and decompress it into native memory for use with OpenGL and other native APIs.
+     * Load the image resource, and decompress it into native memory for use with GPU backends and other native APIs.
      * Note that if the image fails to load for any reason, a dummy "missing" texture is returned instead.
      */
     public UncompressedImage loadAsImage(@Nullable Path externalThemeDirectory) {
@@ -32,7 +32,7 @@ public record ThemeResource(String path) {
     }
 
     /**
-     * Load the image resource, and decompress it into native memory for use with OpenGL and other native APIs.
+     * Load the image resource, and decompress it into native memory for use with GPU backends and other native APIs.
      * Note that if the image fails to load for any reason, null is returned.
      */
     @Nullable

@@ -857,6 +857,96 @@ public class FMLLoaderTest extends LauncherTest {
         }
 
         @Test
+        void testIncompatibleMod() throws Exception {
+            installation.setupProductionClient();
+
+            installation.writeModJar("test.jar", new IdentifiableContent("MODS_TOML", "META-INF/neoforge.mods.toml", """
+                    modLoader="javafml"
+                    loaderVersion="[3,)"
+                    license="CC0"
+                    [[mods]]
+                    modId="testproject"
+                    version="0.0.0"
+                    displayName="Test Project"
+                    description='''A test project.'''
+                    [[dependencies.testproject]]
+                    modId="badmod"
+                    type="incompatible"
+                    reason="badmod patches testproject internals and breaks compatibility"
+                    versionRange="[1,)"
+                    ordering="NONE"
+                    side="BOTH"
+                    """.getBytes()));
+            installation.buildModJar("badmod.jar").withMod("badmod", "1.0").build();
+
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
+                    "ERROR: Mod testproject is incompatible with badmod 1 or above"
+                            + "\nCurrently, badmod is 1.0"
+                            + "\nThe reason is: badmod patches testproject internals and breaks compatibility");
+        }
+
+        @Test
+        void testIncompatibleModWithoutReason() throws Exception {
+            installation.setupProductionClient();
+
+            installation.writeModJar("test.jar", new IdentifiableContent("MODS_TOML", "META-INF/neoforge.mods.toml", """
+                    modLoader="javafml"
+                    loaderVersion="[3,)"
+                    license="CC0"
+                    [[mods]]
+                    modId="testproject"
+                    version="0.0.0"
+                    displayName="Test Project"
+                    description='''A test project.'''
+                    [[dependencies.testproject]]
+                    modId="badmod"
+                    type="incompatible"
+                    versionRange="[1,)"
+                    ordering="NONE"
+                    side="BOTH"
+                    """.getBytes()));
+            installation.buildModJar("badmod.jar").withMod("badmod", "1.0").build();
+
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
+            assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
+                    "ERROR: Mod testproject is incompatible with badmod 1 or above"
+                            + "\nCurrently, badmod is 1.0"
+                            + "\nThe reason is: No reason provided");
+        }
+
+        @Test
+        void testDiscouragedMod() throws Exception {
+            installation.setupProductionClient();
+
+            installation.writeModJar("test.jar", new IdentifiableContent("MODS_TOML", "META-INF/neoforge.mods.toml", """
+                    modLoader="javafml"
+                    loaderVersion="[3,)"
+                    license="CC0"
+                    [[mods]]
+                    modId="testproject"
+                    version="0.0.0"
+                    displayName="Test Project"
+                    description='''A test project.'''
+                    [[dependencies.testproject]]
+                    modId="badmod"
+                    type="discouraged"
+                    reason="badmod patches testproject internals and may cause issues"
+                    versionRange="[1,)"
+                    ordering="NONE"
+                    side="BOTH"
+                    """.getBytes()));
+            installation.buildModJar("badmod.jar").withMod("badmod", "1.0").build();
+
+            var result = launchAndLoad("neoforgeclient");
+            assertThat(getTranslatedIssues(result)).containsOnly(
+                    "WARNING: Mod testproject discourages the use of badmod 1 or above"
+                            + "\nCurrently, badmod is 1.0"
+                            + "\nThe reason is: badmod patches testproject internals and may cause issues",
+                    "WARNING: Proceed at your own risk");
+        }
+
+        @Test
         void testDuplicateMods() throws Exception {
             installation.setupProductionClient();
 

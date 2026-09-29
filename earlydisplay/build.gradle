@@ -19,10 +19,9 @@ dependencies {
     compileOnly("org.jetbrains:annotations:${jetbrains_annotations_version}")
     implementation(platform("org.lwjgl:lwjgl-bom:${lwjgl_version}"))
     implementation("org.lwjgl:lwjgl")
-    implementation("org.lwjgl:lwjgl-glfw")
+    implementation("org.lwjgl:lwjgl-sdl")
     implementation("org.lwjgl:lwjgl-opengl")
     implementation("org.lwjgl:lwjgl-stb")
-    implementation("org.lwjgl:lwjgl-tinyfd")
     implementation("org.slf4j:slf4j-api:${slf4j_api_version}")
     implementation("net.sf.jopt-simple:jopt-simple:${jopt_simple_version}")
 
@@ -37,7 +36,7 @@ dependencies {
             classifier = lwjglNatives
         }
     }
-    testRuntimeOnly("org.lwjgl:lwjgl-glfw") {
+    testRuntimeOnly("org.lwjgl:lwjgl-sdl") {
         artifact {
             classifier = lwjglNatives
         }

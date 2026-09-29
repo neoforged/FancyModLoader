@@ -23,6 +23,11 @@ public final class ClassProcessorIds {
     public static final ProcessorName RUNTIME_ENUM_EXTENDER = new ProcessorName("neoforge", "runtime_enum_extender");
     public static final ProcessorName ACCESS_TRANSFORMERS = new ProcessorName("neoforge", "access_transformer");
     public static final ProcessorName MIXIN = new ProcessorName("neoforge", "mixin");
+    /**
+     * A processor which makes superclass changes for mixins (such as for generated classes). Also serves as the capture
+     * point for mixin to look up bytecode.
+     */
+    public static final ProcessorName MIXIN_FRAME_CONTEXT = new ProcessorName("neoforge", "mixin_frame_context");
     public static final ProcessorName DIST_CLEANER = new ProcessorName("neoforge", "neoforge_dev_dist_cleaner");
 
     private ClassProcessorIds() {}

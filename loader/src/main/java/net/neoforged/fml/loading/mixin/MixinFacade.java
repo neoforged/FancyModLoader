@@ -39,6 +39,7 @@ public final class MixinFacade implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(MixinFacade.class);
 
     private final FMLMixinClassProcessor classProcessor;
+    private final FMLMixinGeneratingClassProcessor generatingClassProcessor;
     private final FMLMixinService service;
 
     public MixinFacade() {
@@ -53,10 +54,15 @@ public final class MixinFacade implements AutoCloseable {
 
         service = (FMLMixinService) MixinService.getService();
         this.classProcessor = new FMLMixinClassProcessor(service);
+        this.generatingClassProcessor = new FMLMixinGeneratingClassProcessor(service);
     }
 
     public FMLMixinClassProcessor getClassProcessor() {
         return classProcessor;
+    }
+
+    public FMLMixinGeneratingClassProcessor getGeneratingClassProcessor() {
+        return generatingClassProcessor;
     }
 
     public void finishInitialization(LoadingModList loadingModList, TransformingClassLoader classLoader) {
