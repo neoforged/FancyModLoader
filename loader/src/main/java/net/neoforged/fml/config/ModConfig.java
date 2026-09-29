@@ -104,7 +104,7 @@ public final class ModConfig {
         /**
          * Synced config is configuration that is associated with a server instance and synced to connected clients.
          * Only loaded during server startup.
-         * Stored in a server/save specific "syncedconfig" directory.
+         * Stored in the global config directory by default but will load same config file from world's "syncedconfig" directory as override.
          * Synced to clients during connection.
          * Suffix is "-synced" by default.
          */
