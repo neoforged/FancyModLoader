@@ -128,6 +128,8 @@ public final class FatalErrorReporting {
      * At this point, it doesn't matter if we double-classload from the system classloader, since we're about to exit.
      */
     public static void reportFatalError(String message) {
+        message = message.replaceAll("§[0-9a-fk-or]", "");
+
         System.setProperty("java.awt.headless", "false"); // Overriding what MC set
         if (!GraphicsEnvironment.isHeadless()) {
             showErrorUsingSwing(message);
