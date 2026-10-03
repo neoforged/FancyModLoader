@@ -505,7 +505,7 @@ class FMLLoaderTest extends LauncherTest {
                     """.getBytes()));
             installation.buildModJar("badmod.jar").withMod("badmod", "1.0").build();
 
-            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                     "ERROR: Mod testproject is incompatible with badmod 1 or above"
                             + "\nCurrently, badmod is 1.0"
@@ -534,7 +534,7 @@ class FMLLoaderTest extends LauncherTest {
                     """.getBytes()));
             installation.buildModJar("badmod.jar").withMod("badmod", "1.0").build();
 
-            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("neoforgeclient"));
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(
                     "ERROR: Mod testproject is incompatible with badmod 1 or above"
                             + "\nCurrently, badmod is 1.0"
@@ -564,7 +564,7 @@ class FMLLoaderTest extends LauncherTest {
                     """.getBytes()));
             installation.buildModJar("badmod.jar").withMod("badmod", "1.0").build();
 
-            var result = launchAndLoad("neoforgeclient");
+            var result = launchAndLoad("forgeclient");
             assertThat(getTranslatedIssues(result)).containsOnly(
                     "WARNING: Mod testproject discourages the use of badmod 1 or above"
                             + "\nCurrently, badmod is 1.0"
