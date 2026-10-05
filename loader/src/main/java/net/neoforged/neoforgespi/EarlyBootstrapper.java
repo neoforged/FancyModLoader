@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.neoforgespi.earlywindow;
+package net.neoforged.neoforgespi;
 
 /// Defines a type which can be used to perform any bootstrap operations before
 /// mod discovery and loading starts.

@@ -23,7 +23,7 @@ import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.readers.JarModsDotTomlModFileReader;
 import net.neoforged.fml.startup.FatalStartupException;
 import net.neoforged.fml.startup.StartupArgs;
-import net.neoforged.neoforgespi.earlywindow.EarlyBootstrapper;
+import net.neoforged.neoforgespi.EarlyBootstrapper;
 import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
 import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
 import net.neoforged.neoforgespi.locating.IDependencyLocator;

@@ -31,7 +31,7 @@ import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
 import net.neoforged.jarjar.metadata.ContainedJarMetadata;
 import net.neoforged.jarjar.metadata.ContainedVersion;
-import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
+import net.neoforged.neoforgespi.EarlyBootstrapper;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileReader;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
@@ -1104,7 +1104,7 @@ public class FMLLoaderTest extends LauncherTest {
                             }
                         """)
                 .addClass("test.Bootstrapper", """
-                        public class Bootstrapper implements net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper {
+                        public class Bootstrapper implements net.neoforged.neoforgespi.EarlyBootstrapper {
                             @Override
                             public String name() {
                                 return "dummy";
@@ -1119,7 +1119,7 @@ public class FMLLoaderTest extends LauncherTest {
                             }
                         }
                         """)
-                .addService(GraphicsBootstrapper.class, "test.Bootstrapper"));
+                .addService(EarlyBootstrapper.class, "test.Bootstrapper"));
 
         launchClient();
 
