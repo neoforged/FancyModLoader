@@ -79,6 +79,7 @@ import net.neoforged.fml.util.ClasspathResourceUtils;
 import net.neoforged.fml.util.PathPrettyPrinting;
 import net.neoforged.fml.util.ServiceLoaderUtil;
 import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.earlywindow.EarlyBootstrapper;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
@@ -331,6 +332,12 @@ public final class FMLLoader implements AutoCloseable {
             }
 
             loader.loadEarlyServices(startupArgs);
+
+            ServiceLoaderUtil.loadEarlyServices(launchContext, EarlyBootstrapper.class, List.of())
+                    .forEach(bootstrap -> {
+                        LOGGER.info("Running early bootstrap plugin {}", bootstrap.name());
+                        bootstrap.bootstrap(loader.programArgs.getArguments());
+                    });
 
             ImmediateWindowHandler.load(launchContext, startupArgs.headless(), loader.programArgs);
             // Report known versions no
