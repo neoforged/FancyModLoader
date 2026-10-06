@@ -336,7 +336,7 @@ public final class FMLLoader implements AutoCloseable {
             ServiceLoaderUtil.loadEarlyServices(launchContext, EarlyBootstrapper.class, List.of())
                     .forEach(bootstrap -> {
                         LOGGER.info("Running early bootstrap plugin {}", bootstrap.name());
-                        bootstrap.bootstrap(loader.programArgs.getArguments());
+                        bootstrap.bootstrap(loader.programArgs);
                     });
 
             ImmediateWindowHandler.load(launchContext, startupArgs.headless(), loader.programArgs);
