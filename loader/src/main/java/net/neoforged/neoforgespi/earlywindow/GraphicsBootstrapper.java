@@ -7,16 +7,10 @@ package net.neoforged.neoforgespi.earlywindow;
 
 import net.neoforged.fml.loading.ProgramArgs;
 
-/**
- * Defines a type which can be used to perform any bootstrap operations before
- * creating a window during the early loading window process.
- */
+/// Defines a type which can be used to perform any bootstrap operations before
+/// creating a window during the early loading window process.
 public interface GraphicsBootstrapper {
-    /**
-     * The name of this bootstrapper. This is used for logging purposes.
-     *
-     * @return The name of this bootstrapper.
-     */
+    /// {@return the name of this bootstrapper} This is used for logging purposes.
     String name();
 
     /// Performs any bootstrapping that needs to be done before creating a

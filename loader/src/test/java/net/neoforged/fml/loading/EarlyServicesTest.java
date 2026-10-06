@@ -122,7 +122,7 @@ public class EarlyServicesTest extends LauncherTest {
                     }
 
                     @Override
-                    public void bootstrap(String[] arguments) {
+                    public void bootstrap(net.neoforged.fml.loading.ProgramArgs arguments) {
                         net.neoforged.fml.loading.EarlyServicesTest.WAS_CALLED.set(true);
                     }
                 }

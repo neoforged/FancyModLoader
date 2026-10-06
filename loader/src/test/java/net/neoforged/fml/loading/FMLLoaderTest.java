@@ -1111,7 +1111,7 @@ public class FMLLoaderTest extends LauncherTest {
                             }
 
                             @Override
-                            public void bootstrap(String[] arguments) {
+                            public void bootstrap(net.neoforged.fml.loading.ProgramArgs arguments) {
                                 net.neoforged.fml.loading.FMLLoader.getCurrent().addCloseCallback(() -> {
                                     NotLoadedYet.dummy = true; // This will fail if the CL is already closed
                                     net.neoforged.fml.loading.FMLLoaderTest.closeCallbackCalled = true;
