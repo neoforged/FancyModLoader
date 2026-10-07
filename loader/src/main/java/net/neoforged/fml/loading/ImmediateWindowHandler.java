@@ -26,17 +26,17 @@ public class ImmediateWindowHandler {
     static ImmediateWindowProvider provider;
 
     public static void load(ILaunchContext context, boolean headless, ProgramArgs arguments) {
-        ServiceLoaderUtil.loadEarlyServices(context, GraphicsBootstrapper.class, List.of())
-                .forEach(bootstrap -> {
-                    LOGGER.info("Running graphics bootstrap plugin {}", bootstrap.name());
-                    bootstrap.bootstrap(arguments.getArguments()); // TODO: Should take ProgramArgs so it can *remove* args
-                });
-
         if (headless) {
             provider = null;
             LOGGER.info("Not loading early display in headless mode.");
             return;
         }
+
+        ServiceLoaderUtil.loadEarlyServices(context, GraphicsBootstrapper.class, List.of())
+                .forEach(bootstrap -> {
+                    LOGGER.info("Running graphics bootstrap plugin {}", bootstrap.name());
+                    bootstrap.bootstrap(arguments);
+                });
 
         if (!FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)) {
             provider = null;

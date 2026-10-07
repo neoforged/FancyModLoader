@@ -17,7 +17,7 @@ import net.neoforged.fml.testlib.args.ClientInstallationTypesSource;
 import net.neoforged.fml.testlib.args.InstallationTypeSource;
 import net.neoforged.fml.testutils.RequiresSymlink;
 import net.neoforged.jarjar.metadata.ContainedJarIdentifier;
-import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
+import net.neoforged.neoforgespi.EarlyBootstrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -115,18 +115,18 @@ public class EarlyServicesTest extends LauncherTest {
 
     private static void addEarlyService(ModFileBuilder<?> builder) throws IOException {
         builder.addClass("bootstrap.Bootstrapper", """
-                public class Bootstrapper implements net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper {
+                public class Bootstrapper implements net.neoforged.neoforgespi.EarlyBootstrapper {
                     @Override
                     public String name() {
                         return "test";
                     }
 
                     @Override
-                    public void bootstrap(String[] arguments) {
+                    public void bootstrap(net.neoforged.fml.loading.ProgramArgs arguments) {
                         net.neoforged.fml.loading.EarlyServicesTest.WAS_CALLED.set(true);
                     }
                 }
                 """)
-                .addService(GraphicsBootstrapper.class, "bootstrap.Bootstrapper");
+                .addService(EarlyBootstrapper.class, "bootstrap.Bootstrapper");
     }
 }
