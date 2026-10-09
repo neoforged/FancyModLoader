@@ -27,7 +27,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
+import org.jetbrains.annotations.UnmodifiableView;
 import org.slf4j.Logger;
 
 public class FMLConfig {
@@ -200,39 +203,39 @@ public class FMLConfig {
         FMLConfig.dependencyOverrides = Collections.unmodifiableMap(dependencyOverrides);
     }
 
-    public static String getConfigValue(@NotNull ConfigValue v) {
+    public static String getConfigValue(ConfigValue v) {
         return v.getConfigValue(INSTANCE.configData);
     }
 
-    public static boolean getBoolConfigValue(@NotNull ConfigValue v) {
+    public static boolean getBoolConfigValue(ConfigValue v) {
         return v.getConfigValue(INSTANCE.configData);
     }
 
-    public static int getIntConfigValue(@NotNull ConfigValue v) {
+    public static int getIntConfigValue(ConfigValue v) {
         return v.getConfigValue(INSTANCE.configData);
     }
 
-    public static <A> List<A> getListConfigValue(@NotNull ConfigValue v) {
+    public static <A> List<A> getListConfigValue(ConfigValue v) {
         return v.getConfigValue(INSTANCE.configData);
     }
 
     @ApiStatus.Internal
-    public static String getDefaultConfigValue(@NotNull ConfigValue v) {
+    public static String getDefaultConfigValue(ConfigValue v) {
         return v.getDefaultConfigValue();
     }
 
     @ApiStatus.Internal
-    public static boolean getDefaultBoolConfigValue(@NotNull ConfigValue v) {
+    public static boolean getDefaultBoolConfigValue(ConfigValue v) {
         return v.getDefaultConfigValue();
     }
 
     @ApiStatus.Internal
-    public static int getDefaultIntConfigValue(@NotNull ConfigValue v) {
+    public static int getDefaultIntConfigValue(ConfigValue v) {
         return v.getDefaultConfigValue();
     }
 
     @ApiStatus.Internal
-    public static <A> List<A> getDefaultListConfigValue(@NotNull ConfigValue v) {
+    public static <A> List<A> getDefaultListConfigValue(ConfigValue v) {
         return v.getDefaultConfigValue();
     }
 

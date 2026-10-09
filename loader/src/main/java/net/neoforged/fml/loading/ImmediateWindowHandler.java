@@ -17,7 +17,6 @@ import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 @ApiStatus.Internal
@@ -27,7 +26,7 @@ public class ImmediateWindowHandler {
     @Nullable
     static ImmediateWindowProvider provider;
 
-    private static @NotNull Optional<ImmediateWindowProvider> loadProviderByName(ILaunchContext context, String providerName) {
+    private static Optional<ImmediateWindowProvider> loadProviderByName(ILaunchContext context, String providerName) {
         return ServiceLoaderUtil.loadEarlyServices(context, ImmediateWindowProvider.class, List.of())
                 .stream()
                 .filter(p -> Objects.equals(p.name(), providerName))
@@ -35,7 +34,7 @@ public class ImmediateWindowHandler {
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    private static boolean tryLoadProvider(ILaunchContext context, @NotNull String providerName, ProgramArgs arguments) {
+    private static boolean tryLoadProvider(ILaunchContext context, String providerName, ProgramArgs arguments) {
         LOGGER.info("Loading ImmediateWindowProvider {}", providerName);
         provider = loadProviderByName(context, providerName).orElse(null);
 
