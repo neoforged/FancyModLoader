@@ -21,7 +21,7 @@ import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.fml.loading.ImmediateWindowHandler;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.lwjgl.sdl.SDLMessageBox;
 
 /**

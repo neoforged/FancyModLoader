@@ -20,8 +20,7 @@ import net.neoforged.fml.earlydisplay.render.backend.ELSRenderPipeline;
 import net.neoforged.fml.earlydisplay.render.backend.ELSTexture;
 import net.neoforged.fml.earlydisplay.render.backend.TextureFormat;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.UnknownNullability;
+import org.jspecify.annotations.Nullable;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL33C;
 import org.lwjgl.opengl.GLCapabilities;
@@ -44,7 +43,7 @@ final class GlRenderBackend extends ELSRenderBackend {
     }
 
     @Override
-    public void preloadPipelines(@UnknownNullability Collection<ELSRenderPipeline> pipelines) {
+    public void preloadPipelines(Collection<ELSRenderPipeline> pipelines) {
         for (ELSRenderPipeline pipeline : pipelines) {
             ElementShader shader = pipeline.shader();
             try (var vertexShader = shader.loadVertexShader(); var fragmentShader = shader.loadFragmentShader()) {
@@ -113,7 +112,7 @@ final class GlRenderBackend extends ELSRenderBackend {
     }
 
     @Override
-    public void copyBufferToBuffer(@UnknownNullability ELSBufferSlice source, ELSBufferSlice target) {
+    public void copyBufferToBuffer(ELSBufferSlice source, ELSBufferSlice target) {
         GL33C.glBindBuffer(GL33C.GL_COPY_READ_BUFFER, ((GlBufferSlice) source).buffer().bufferId);
         GL33C.glBindBuffer(GL33C.GL_COPY_WRITE_BUFFER, ((GlBufferSlice) target).buffer().bufferId);
         GL33C.glCopyBufferSubData(GL33C.GL_COPY_READ_BUFFER, GL33C.GL_COPY_WRITE_BUFFER, 0, 0, source.buffer().size());

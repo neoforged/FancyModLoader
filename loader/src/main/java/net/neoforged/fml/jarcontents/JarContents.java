@@ -19,7 +19,7 @@ import java.util.Optional;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Access to the contents of a list of {@link Path}s, interpreted as a jar file.
@@ -47,7 +47,7 @@ public interface JarContents extends Closeable {
         }
     }
 
-    record FilteredPath(Path path, @Nullable CompositeJarContents.PathFilter filter) {
+    record FilteredPath(Path path, CompositeJarContents.@Nullable PathFilter filter) {
         public FilteredPath(Path path) {
             this(path, null);
         }

@@ -14,7 +14,7 @@ import net.neoforged.fml.earlydisplay.theme.Theme;
 import net.neoforged.fml.earlydisplay.theme.ThemeResource;
 import net.neoforged.fml.earlydisplay.theme.ThemeShader;
 import net.neoforged.fml.earlydisplay.theme.ThemeSprites;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A themes resources loaded for rendering at runtime.

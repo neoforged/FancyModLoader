@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.lwjgl.sdl.SDLEvents;
 import org.lwjgl.sdl.SDLInit;
 import org.lwjgl.sdl.SDL_Event;

@@ -25,7 +25,7 @@ import net.neoforged.fml.earlydisplay.render.backend.ELSTexture;
 import net.neoforged.fml.earlydisplay.render.backend.TextureFormat;
 import net.neoforged.fml.earlydisplay.theme.ThemeResource;
 import net.neoforged.fml.earlydisplay.util.Size;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.stb.STBTTAlignedQuad;
 import org.lwjgl.stb.STBTTFontinfo;

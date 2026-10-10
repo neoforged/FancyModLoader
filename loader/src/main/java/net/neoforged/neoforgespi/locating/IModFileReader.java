@@ -6,7 +6,7 @@
 package net.neoforged.neoforgespi.locating;
 
 import net.neoforged.fml.jarcontents.JarContents;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Inspects {@link JarContents} found by {@link IModFileCandidateLocator} and tries to turn them into {@link IModFile}.

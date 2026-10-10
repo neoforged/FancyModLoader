@@ -11,7 +11,7 @@ import java.util.List;
 import net.neoforged.fml.earlydisplay.render.ElementShader;
 import net.neoforged.fml.earlydisplay.render.SimpleBufferBuilder;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.lwjgl.system.MemoryStack;
 
 public final class ELSDrawCollector {
@@ -54,7 +54,7 @@ public final class ELSDrawCollector {
         this.scissorEnabled = false;
     }
 
-    public void submitDraw(ELSRenderPipeline pipeline, @Nullable ELSTexture texture, @Nullable SimpleBufferBuilder.Result bufferResult) {
+    public void submitDraw(ELSRenderPipeline pipeline, @Nullable ELSTexture texture, SimpleBufferBuilder.@Nullable Result bufferResult) {
         if (bufferResult != null) {
             this.draws.add(new Draw(pipeline, texture, bufferResult, this.scissorEnabled, this.scissorX, this.scissorY, this.scissorWidth, this.scissorHeight));
         }

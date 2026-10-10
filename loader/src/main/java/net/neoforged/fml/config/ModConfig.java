@@ -13,7 +13,7 @@ import java.util.function.Function;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.loading.StringUtils;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public final class ModConfig {
     private final Type type;
@@ -56,8 +56,7 @@ public final class ModConfig {
      * Retrieve the currently loaded config, for direct manipulation of the underlying {@link CommentedConfig}.
      * Note that the config will change on reloads, and will be {@code null} when the config is not loaded.
      */
-    @Nullable
-    public IConfigSpec.ILoadedConfig getLoadedConfig() {
+    public IConfigSpec.@Nullable ILoadedConfig getLoadedConfig() {
         return loadedConfig;
     }
 

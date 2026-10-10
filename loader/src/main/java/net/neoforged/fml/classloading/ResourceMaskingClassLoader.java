@@ -13,7 +13,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import net.neoforged.fml.util.ClasspathResourceUtils;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * This class loader will filter the resources returned from {@link #getResources(String)} and {@link #getResource(String)}

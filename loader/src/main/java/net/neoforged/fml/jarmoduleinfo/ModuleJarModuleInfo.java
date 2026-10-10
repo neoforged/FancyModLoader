@@ -11,7 +11,7 @@ import java.lang.module.ModuleDescriptor;
 import java.nio.ByteBuffer;
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.jarcontents.JarResource;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * {@link JarModuleInfo} implementation for a modular jar.

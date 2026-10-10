@@ -9,7 +9,7 @@ import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileReader;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * This reader will essentially handle <strong>all</strong> files as plain Java libraries,

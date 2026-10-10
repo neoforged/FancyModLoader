@@ -37,7 +37,7 @@ import net.neoforged.fml.earlydisplay.theme.elements.ThemeDecorativeElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeImageElement;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeLabelElement;
 import net.neoforged.fml.earlydisplay.util.StyleLength;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

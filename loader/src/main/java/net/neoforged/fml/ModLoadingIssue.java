@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.util.List;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public record ModLoadingIssue(
         Severity severity,

@@ -52,6 +52,15 @@ allprojects {
     test {
         useJUnitPlatform()
     }
+
+    immaculate {
+        workflows.named("java").configure {
+            custom 'jspecifyNullable', { String fileContents ->
+                fileContents.replace('org.jetbrains.annotations.Nullable', 'org.jspecify.annotations.Nullable')
+                        .replace('javax.annotation.Nullable', 'org.jspecify.annotations.Nullable')
+            }
+        }
+    }
 }
 
 subprojects { subProject ->

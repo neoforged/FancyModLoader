@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.maven.artifact.versioning.VersionRange;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public interface IModFileInfo {
     List<IModInfo> getMods();

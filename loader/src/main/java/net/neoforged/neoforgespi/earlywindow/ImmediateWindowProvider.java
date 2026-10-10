@@ -10,7 +10,7 @@ import java.util.List;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.EarlyLoadingScreenController;
 import net.neoforged.fml.loading.ProgramArgs;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * This is for allowing the plugging in of alternative early display implementations.
