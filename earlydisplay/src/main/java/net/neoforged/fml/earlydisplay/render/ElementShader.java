@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import net.neoforged.fml.earlydisplay.theme.NativeBuffer;
 import net.neoforged.fml.earlydisplay.theme.ThemeResource;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class ElementShader {
     public static final String UNIFORM_SCREEN_SIZE = "screenSize";

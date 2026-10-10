@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.jar.Manifest;
 import net.neoforged.fml.util.PathPrettyPrinting;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * An immutable, empty jar content, which is identified by a {@link Path}, which may or may not exist.

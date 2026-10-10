@@ -7,7 +7,7 @@ package net.neoforged.fml.loading;
 
 import java.io.Closeable;
 import java.util.function.Supplier;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Interface for use by NeoForge to control the early loading screen.

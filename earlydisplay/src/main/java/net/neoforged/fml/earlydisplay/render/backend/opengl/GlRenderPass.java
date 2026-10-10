@@ -14,7 +14,7 @@ import net.neoforged.fml.earlydisplay.render.backend.ELSRenderPass;
 import net.neoforged.fml.earlydisplay.render.backend.ELSRenderPipeline;
 import net.neoforged.fml.earlydisplay.render.backend.ELSTexture;
 import net.neoforged.fml.earlydisplay.render.backend.VertexFormat;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.lwjgl.opengl.GL33C;
 
 final class GlRenderPass implements ELSRenderPass {

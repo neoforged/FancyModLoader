@@ -8,7 +8,7 @@ package net.neoforged.fml.jarmoduleinfo;
 import java.lang.module.ModuleDescriptor;
 import java.util.Set;
 import net.neoforged.fml.jarcontents.JarContents;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Describes the modular properties of a Jar file, with direct access to the module name and version,

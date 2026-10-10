@@ -7,7 +7,7 @@ package net.neoforged.fml.jarmoduleinfo;
 
 import java.lang.module.ModuleDescriptor;
 import net.neoforged.fml.jarcontents.JarContents;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * {@link JarModuleInfo} implementation for a non-modular jar, turning it into an automatic module.

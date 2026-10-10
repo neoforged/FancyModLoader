@@ -27,7 +27,7 @@ import net.neoforged.fml.earlydisplay.render.backend.ELSTexture;
 import net.neoforged.fml.earlydisplay.render.backend.TextureFormat;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.lwjgl.BufferUtils;
 
 /**

@@ -8,7 +8,7 @@ package net.neoforged.fml.mclanguageprovider;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforgespi.language.IModInfo;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class MinecraftModContainer extends ModContainer {
     public MinecraftModContainer(IModInfo info) {

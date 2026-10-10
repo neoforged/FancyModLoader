@@ -20,7 +20,7 @@ import net.neoforged.fml.earlydisplay.render.backend.ELSRenderPipeline;
 import net.neoforged.fml.earlydisplay.render.backend.ELSTexture;
 import net.neoforged.fml.earlydisplay.render.backend.TextureFormat;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.jetbrains.annotations.UnknownNullability;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL33C;

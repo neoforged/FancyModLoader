@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     compileOnlyApi "org.jetbrains:annotations:${jetbrains_annotations_version}"
+    api "org.jspecify:jspecify:${jspecify_version}"
     api "com.google.guava:guava:${guava_version}"
     api "com.electronwill.night-config:core:${nightconfig_version}"
     api "com.electronwill.night-config:toml:${nightconfig_version}"

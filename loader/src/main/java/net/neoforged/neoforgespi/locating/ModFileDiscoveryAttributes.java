@@ -5,7 +5,7 @@
 
 package net.neoforged.neoforgespi.locating;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Attributes of a modfile relating to how it was discovered.

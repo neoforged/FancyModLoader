@@ -13,7 +13,7 @@ import net.neoforged.fml.testlib.IdentifiableContent;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileReader;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class CustomSubclassModFileReader implements IModFileReader {
     public static final IdentifiableContent TRIGGER = new IdentifiableContent("CUSTOM_MODFILE_SUBCLASS_TRIGGER", "custom_modfile_subclass_trigger");

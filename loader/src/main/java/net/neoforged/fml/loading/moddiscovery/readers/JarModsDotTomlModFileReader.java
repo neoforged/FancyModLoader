@@ -25,7 +25,7 @@ import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IModFileReader;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /**
@@ -54,8 +54,7 @@ public class JarModsDotTomlModFileReader implements IModFileReader {
         return mod;
     }
 
-    @Nullable
-    private static IModFile.Type getModType(JarContents jar) {
+    private static IModFile.@Nullable Type getModType(JarContents jar) {
         Manifest jarManifest = jar.getManifest();
         if (jarManifest == null) {
             return null;

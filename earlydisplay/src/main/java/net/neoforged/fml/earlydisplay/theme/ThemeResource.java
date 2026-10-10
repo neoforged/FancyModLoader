@@ -8,7 +8,7 @@ package net.neoforged.fml.earlydisplay.theme;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public record ThemeResource(String path) {
     public NativeBuffer toNativeBuffer(@Nullable Path externalThemeDirectory) throws IOException {

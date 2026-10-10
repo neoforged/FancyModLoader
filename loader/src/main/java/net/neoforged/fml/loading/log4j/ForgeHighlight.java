@@ -19,7 +19,7 @@ import org.apache.logging.log4j.core.pattern.HighlightConverter;
 import org.apache.logging.log4j.core.pattern.PatternConverter;
 import org.apache.logging.log4j.status.StatusLogger;
 import org.apache.logging.log4j.util.PerformanceSensitive;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A wrapper for {@link HighlightConverter} that auto-disables ANSI when the terminal doesn't support it.

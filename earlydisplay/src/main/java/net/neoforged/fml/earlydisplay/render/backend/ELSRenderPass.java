@@ -5,7 +5,7 @@
 
 package net.neoforged.fml.earlydisplay.render.backend;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public interface ELSRenderPass extends AutoCloseable {
     void setViewport(int x, int y, int width, int height);

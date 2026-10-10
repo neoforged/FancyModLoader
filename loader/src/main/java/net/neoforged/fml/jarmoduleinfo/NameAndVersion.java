@@ -5,7 +5,7 @@
 
 package net.neoforged.fml.jarmoduleinfo;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Holder class for name and version of a module, used in {@link JarModuleInfo} computations.

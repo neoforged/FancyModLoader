@@ -13,7 +13,7 @@ import net.neoforged.fml.earlydisplay.render.backend.ELSBuffer;
 import net.neoforged.fml.earlydisplay.render.backend.ELSRenderBackend;
 import net.neoforged.fml.earlydisplay.render.backend.VertexFormat;
 import net.neoforged.fml.earlydisplay.theme.ThemeColor;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.lwjgl.system.MemoryUtil;
 
 /**

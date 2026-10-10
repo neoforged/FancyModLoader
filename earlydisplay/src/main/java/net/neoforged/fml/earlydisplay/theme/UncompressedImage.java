@@ -6,7 +6,7 @@
 package net.neoforged.fml.earlydisplay.theme;
 
 import java.nio.ByteBuffer;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Image data loaded into memory and decompressed.

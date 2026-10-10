@@ -11,7 +11,7 @@ import net.neoforged.fml.earlydisplay.render.SimpleFont;
 import net.neoforged.fml.earlydisplay.theme.elements.ThemeElement;
 import net.neoforged.fml.earlydisplay.util.Bounds;
 import net.neoforged.fml.earlydisplay.util.StyleLength;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public abstract class RenderElement implements AutoCloseable {
     protected final MaterializedTheme theme;

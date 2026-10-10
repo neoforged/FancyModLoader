@@ -13,7 +13,7 @@ import net.neoforged.fml.earlydisplay.theme.AnimationMetadata;
 import net.neoforged.fml.earlydisplay.theme.TextureScaling;
 import net.neoforged.fml.earlydisplay.theme.ThemeTexture;
 import net.neoforged.fml.earlydisplay.theme.UncompressedImage;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public record Texture(ELSTexture texture, TextureScaling scaling, @Nullable AnimationMetadata animationMetadata) implements AutoCloseable {
     public int width() {

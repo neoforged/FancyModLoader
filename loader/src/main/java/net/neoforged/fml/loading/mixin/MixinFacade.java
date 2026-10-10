@@ -21,7 +21,7 @@ import net.neoforged.fml.loading.moddiscovery.ModFileParser;
 import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

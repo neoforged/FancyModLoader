@@ -7,7 +7,7 @@ package net.neoforged.fml.earlydisplay.render.backend;
 
 import java.util.List;
 import net.neoforged.fml.earlydisplay.render.ElementShader;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public record ELSRenderPipeline(
         ElementShader shader,

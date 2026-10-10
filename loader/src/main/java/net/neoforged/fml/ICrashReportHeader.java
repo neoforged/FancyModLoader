@@ -5,7 +5,7 @@
 
 package net.neoforged.fml;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Supplies a header to add to crash reports.

@@ -8,7 +8,7 @@ package net.neoforged.fml.earlydisplay.error;
 import java.util.ArrayList;
 import java.util.List;
 import net.neoforged.fml.earlydisplay.render.SimpleFont;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 final class FormatHelper {
     static List<List<SimpleFont.DisplayText>> formatText(String text, SimpleFont font, int defaultColor, int maxWidth) {

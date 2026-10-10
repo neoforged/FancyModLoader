@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.jar.Manifest;
 import net.neoforged.fml.jarcontents.JarContents.FilteredPath;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;

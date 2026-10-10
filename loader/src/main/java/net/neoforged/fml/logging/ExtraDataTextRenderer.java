@@ -17,7 +17,7 @@ package net.neoforged.fml.logging;
 import net.neoforged.fml.classloading.transformation.ClassProcessorAuditSource;
 import net.neoforged.fml.loading.FMLLoader;
 import org.apache.logging.log4j.core.pattern.TextRenderer;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class ExtraDataTextRenderer implements TextRenderer {
     private final TextRenderer wrapped;

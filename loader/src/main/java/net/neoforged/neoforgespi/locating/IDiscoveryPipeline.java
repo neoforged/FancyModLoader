@@ -11,7 +11,7 @@ import java.util.Optional;
 import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.neoforgespi.IIssueReporting;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Offers services to {@link IModFileCandidateLocator locators} for adding mod files in various stages to the
