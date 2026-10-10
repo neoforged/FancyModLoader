@@ -83,7 +83,7 @@ public final class FatalErrorReporting {
                 logFile,
                 crashReport);
 
-        // When we get here, there was no immediate window provider loaded. We crashed before that got loaded.
+        // When we get here, there was no immediate window provider loaded.
         var errorReport = new StringBuilder();
         for (var issue : issues) {
             errorReport.append(FMLTranslations.translateIssue(issue));
@@ -129,6 +129,14 @@ public final class FatalErrorReporting {
      */
     public static void reportFatalError(String message) {
         message = message.replaceAll("§[0-9a-fk-or]", "");
+
+        // In CI/CD where DISPLAY is set (i.e. Xvfb), showing the error using Swing will hang the build,
+        // since while the dialog can be shown, there'll be no one to click "Ok"
+        if (System.getenv("CI") != null) {
+            System.err.println("There was a fatal startup error:");
+            System.err.println(message);
+            System.exit(1);
+        }
 
         System.setProperty("java.awt.headless", "false"); // Overriding what MC set
         if (!GraphicsEnvironment.isHeadless()) {
