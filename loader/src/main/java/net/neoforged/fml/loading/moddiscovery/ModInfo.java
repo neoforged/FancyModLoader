@@ -46,6 +46,7 @@ public class ModInfo implements IModInfo, IConfigurable {
 
     private final List<ForgeFeature.Bound> features;
     private final Map<String, Object> properties;
+    private final Optional<URL> donationURL;
     private final IConfigurable config;
     private final Optional<URL> modUrl;
 
@@ -106,6 +107,8 @@ public class ModInfo implements IModInfo, IConfigurable {
                 .toList();
         this.properties = ownFile.flatMap(mfi -> mfi.<Map<String, Object>>getConfigElement("modproperties", this.modId))
                 .orElse(Collections.emptyMap());
+        this.donationURL = config.<String>getConfigElement("donationURL")
+                .map(StringUtils::toURL);
     }
 
     @Override
@@ -151,6 +154,11 @@ public class ModInfo implements IModInfo, IConfigurable {
     @Override
     public Map<String, Object> getModProperties() {
         return this.properties;
+    }
+
+    @Override
+    public Optional<URL> getDonationURL() {
+        return this.donationURL;
     }
 
     @Override
