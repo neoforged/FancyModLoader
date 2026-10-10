@@ -82,11 +82,6 @@ immaculate {
         getFiles().setFrom(sourceDirs.filter {
             !it.toPath().startsWith(buildDir.get().toPath()) && it.getName().endsWith(".java")
         } )
-
-        custom 'jspecifyNullable', { String fileContents ->
-            fileContents.replace('org.jetbrains.annotations.Nullable', 'org.jspecify.annotations.Nullable')
-                    .replace('javax.annotation.Nullable', 'org.jspecify.annotations.Nullable')
-        }
     }
 }
 
