@@ -81,7 +81,7 @@ public class ImmediateWindowHandler {
         final var providerName = FMLConfig.getConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER);
 
         if (!tryLoadProvider(context, providerName, arguments)) {
-            final var defaultProviderName = FMLConfig.getDefaultConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER);
+            String defaultProviderName = FMLConfig.getDefaultConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER);
 
             LOGGER.warn("Fallbacking to default ImmediateWindowProvider {}", defaultProviderName);
             if (providerName.equals(defaultProviderName) || !tryLoadProvider(context, defaultProviderName, arguments)) {
