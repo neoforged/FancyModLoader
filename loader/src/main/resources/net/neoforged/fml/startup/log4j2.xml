@@ -68,6 +68,13 @@
             </filters>
         </Logger>
 
+        <!-- Netty's native transport probes (Epoll/KQueue) attach the unavailability cause to their DEBUG log only when
+             TRACE is enabled, which it is because the root logger is "all". Rendering that cause with %xEx makes Log4j
+             initialize the failed io.netty.channel.*.Native class and throws NoClassDefFoundError inside the appender
+             (NeoForged/NeoForge#3224). Capping these two loggers at DEBUG keeps the one-line message and drops the cause. -->
+        <Logger name="io.netty.channel.epoll.Epoll" level="debug"/>
+        <Logger name="io.netty.channel.kqueue.KQueue" level="debug"/>
+
         <Root level="all">
             <AppenderRef ref="Console" level="${sys:forge.logging.console.level:-info}"/>
             <AppenderRef ref="ServerGuiConsole" level="${sys:forge.logging.console.level:-info}"/>
