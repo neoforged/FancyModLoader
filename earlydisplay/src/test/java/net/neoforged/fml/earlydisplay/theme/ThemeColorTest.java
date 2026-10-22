@@ -8,9 +8,8 @@ package net.neoforged.fml.earlydisplay.theme;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.jupiter.api.Test;
-
 import java.awt.Color;
+import org.junit.jupiter.api.Test;
 
 class ThemeColorTest {
     @Test

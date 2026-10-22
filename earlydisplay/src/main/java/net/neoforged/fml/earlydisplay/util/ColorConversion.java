@@ -37,7 +37,7 @@ public class ColorConversion {
         } else {
             saturation = range / (1 - Math.abs(2 * max - range - 1));
         }
-        return new float[]{ hue / 360f, saturation, max };
+        return new float[] { hue / 360f, saturation, max };
     }
 
     public static int HSBtoRGB(float H, float S, float B) {
