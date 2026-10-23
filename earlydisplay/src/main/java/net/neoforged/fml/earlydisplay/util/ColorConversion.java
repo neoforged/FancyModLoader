@@ -35,7 +35,7 @@ public class ColorConversion {
         if (mid == 0 || mid == 1) {
             saturation = 0;
         } else {
-            saturation = range / (1 - Math.abs(2 * max - range - 1));
+            saturation = range / (max + min);
         }
         return new float[] { hue / 360f, saturation, max };
     }
