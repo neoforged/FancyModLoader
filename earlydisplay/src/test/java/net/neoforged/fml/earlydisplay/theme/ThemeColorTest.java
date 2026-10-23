@@ -10,6 +10,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.awt.Color;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class ThemeColorTest {
     @Test
@@ -28,19 +30,34 @@ class ThemeColorTest {
         assertEquals(ThemeColor.ofBytes(0, 0, 255), ThemeColor.ofArgb(0xFF0000FF));
     }
 
-    @Test
-    void testToHsb() {
-        assertArrayEquals(ThemeColor.WHITE.toHsb(), Color.RGBtoHSB(255, 255, 255, null));
-        assertArrayEquals(ThemeColor.ofBytes(255, 0, 0).toHsb(), Color.RGBtoHSB(255, 0, 0, null));
-        assertArrayEquals(ThemeColor.ofBytes(0, 255, 0).toHsb(), Color.RGBtoHSB(0, 255, 0, null));
-        assertArrayEquals(ThemeColor.ofBytes(0, 0, 255).toHsb(), Color.RGBtoHSB(0, 0, 255, null));
+    @ParameterizedTest
+    @CsvSource({
+            "255, 255, 255",
+            "127, 127, 127",
+            "255, 0, 0",
+            "127, 0, 0",
+            "0, 255, 0",
+            "0, 127, 0",
+            "0, 0, 255",
+            "0, 0, 127"
+    })
+    void testToHsb(int r, int g, int b) {
+        assertArrayEquals(ThemeColor.ofBytes(r, g, b).toHsb(), Color.RGBtoHSB(r, g, b, null));
     }
 
-    @Test
-    void testFromHsb() {
-        assertEquals(ThemeColor.ofHsb(0f, 0f, 1f), ThemeColor.ofBytes(255, 255, 255));
-        assertEquals(ThemeColor.ofHsb(0f, 1f, 1f), ThemeColor.ofBytes(255, 0, 0));
-        assertEquals(ThemeColor.ofHsb(120f, 1f, 1f), ThemeColor.ofBytes(0, 255, 0));
-        assertEquals(ThemeColor.ofHsb(240f, 1f, 1f), ThemeColor.ofBytes(0, 0, 255));
+    @ParameterizedTest
+    @CsvSource({
+            "255, 255, 255",
+            "127, 127, 127",
+            "255, 0, 0",
+            "127, 0, 0",
+            "0, 255, 0",
+            "0, 127, 0",
+            "0, 0, 255",
+            "0, 0, 127"
+    })
+    void testFromHsb(int r, int g, int b) {
+        float[] hsb = Color.RGBtoHSB(r, g, b, null);
+        assertEquals(ThemeColor.ofHsb(hsb[0] * 360, hsb[1], hsb[2]), ThemeColor.ofBytes(r, g, b));
     }
 }
