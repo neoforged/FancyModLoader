@@ -42,7 +42,7 @@ class ThemeColorTest {
             "0, 0, 127"
     })
     void testToHsb(int r, int g, int b) {
-        assertArrayEquals(ThemeColor.ofBytes(r, g, b).toHsb(), Color.RGBtoHSB(r, g, b, null));
+        assertArrayEquals(Color.RGBtoHSB(r, g, b, null), ThemeColor.ofBytes(r, g, b).toHsb());
     }
 
     @ParameterizedTest
@@ -58,6 +58,6 @@ class ThemeColorTest {
     })
     void testFromHsb(int r, int g, int b) {
         float[] hsb = Color.RGBtoHSB(r, g, b, null);
-        assertEquals(ThemeColor.ofHsb(hsb[0] * 360, hsb[1], hsb[2]), ThemeColor.ofBytes(r, g, b));
+        assertEquals(ThemeColor.ofBytes(r, g, b), ThemeColor.ofHsb(hsb[0] * 360, hsb[1], hsb[2]));
     }
 }
