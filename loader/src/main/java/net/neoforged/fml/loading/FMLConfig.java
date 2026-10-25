@@ -125,32 +125,33 @@ public class FMLConfig {
                 dependencyOverrides.targetMod = ["-dep1", "+dep2"]""");
     }
 
-    private CommentedConfig configData;
+    private volatile CommentedConfig configData;
 
     private void loadFrom(Path configFile) {
-        this.configData = CommentedConfig.of(LinkedHashMap::new, TomlFormat.instance());
+        final var newConfig = CommentedConfig.of(LinkedHashMap::new, TomlFormat.instance());
 
         if (Files.exists(configFile)) {
             try (var configStream = Files.newInputStream(configFile)) {
-                new TomlParser().parse(configStream, configData, ParsingMode.REPLACE);
+                new TomlParser().parse(configStream, newConfig, ParsingMode.REPLACE);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to read FML config", e);
             }
 
-            if (!configSpec.isCorrect(this.configData)) {
+            if (!configSpec.isCorrect(newConfig)) {
                 LOGGER.warn(LogMarkers.CORE, "Configuration file {} is not correct. Correcting", configFile);
-                configSpec.correct(this.configData, (action, path, incorrectValue, correctedValue) -> LOGGER.warn(LogMarkers.CORE, "Incorrect key {} was corrected from {} to {}", path, incorrectValue, correctedValue));
+                configSpec.correct(newConfig, (action, path, incorrectValue, correctedValue) -> LOGGER.warn(LogMarkers.CORE, "Incorrect key {} was corrected from {} to {}", path, incorrectValue, correctedValue));
             }
         } else {
             // This populates the config with the default values.
-            configSpec.correct(this.configData);
+            configSpec.correct(newConfig);
 
             // Since dependency overrides have an empty validator, they need to be added manually.
             // (Correct doesn't correct an absent value since it's valid).
-            this.configData.set("dependencyOverrides", this.configData.createSubConfig());
+            newConfig.set("dependencyOverrides", newConfig.createSubConfig());
         }
 
-        this.configData.putAllComments(configComments);
+        newConfig.putAllComments(configComments);
+        this.configData = newConfig;
         saveConfig(configFile);
     }
 
