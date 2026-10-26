@@ -5,7 +5,7 @@
 
 package net.neoforged.fml.earlydisplay.theme;
 
-import java.awt.Color;
+import net.neoforged.fml.earlydisplay.util.ColorConversion;
 
 public record ThemeColor(float r, float g, float b, float a) {
 
@@ -71,11 +71,11 @@ public record ThemeColor(float r, float g, float b, float a) {
     }
 
     public float[] toHsb() {
-        return Color.RGBtoHSB(rByte(), gByte(), bByte(), null);
+        return ColorConversion.RGBtoHSB(rByte(), gByte(), bByte());
     }
 
     public static ThemeColor ofHsb(float h, float s, float b) {
-        return ofRgb(Color.HSBtoRGB(h, s, Math.clamp(b, 0, 1)));
+        return ofRgb(ColorConversion.HSBtoRGB(h, s, Math.clamp(b, 0, 1)));
     }
 
     public static ThemeColor scale(ThemeColor color, float scale) {

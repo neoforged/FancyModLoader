@@ -5,9 +5,13 @@
 
 package net.neoforged.fml.earlydisplay.theme;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.awt.Color;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class ThemeColorTest {
     @Test
@@ -24,5 +28,36 @@ class ThemeColorTest {
         assertEquals(ThemeColor.ofBytes(255, 0, 0), ThemeColor.ofArgb(0xFFFF0000));
         assertEquals(ThemeColor.ofBytes(0, 255, 0), ThemeColor.ofArgb(0xFF00FF00));
         assertEquals(ThemeColor.ofBytes(0, 0, 255), ThemeColor.ofArgb(0xFF0000FF));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "255, 255, 255",
+            "127, 127, 127",
+            "255, 0, 0",
+            "127, 0, 0",
+            "0, 255, 0",
+            "0, 127, 0",
+            "0, 0, 255",
+            "0, 0, 127"
+    })
+    void testToHsb(int r, int g, int b) {
+        assertArrayEquals(Color.RGBtoHSB(r, g, b, null), ThemeColor.ofBytes(r, g, b).toHsb());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "255, 255, 255",
+            "127, 127, 127",
+            "255, 0, 0",
+            "127, 0, 0",
+            "0, 255, 0",
+            "0, 127, 0",
+            "0, 0, 255",
+            "0, 0, 127"
+    })
+    void testFromHsb(int r, int g, int b) {
+        float[] hsb = Color.RGBtoHSB(r, g, b, null);
+        assertEquals(ThemeColor.ofBytes(r, g, b), ThemeColor.ofHsb(hsb[0] * 360, hsb[1], hsb[2]));
     }
 }
