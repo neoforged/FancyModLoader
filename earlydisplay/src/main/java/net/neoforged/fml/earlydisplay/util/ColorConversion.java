@@ -44,13 +44,13 @@ public class ColorConversion {
         float h = H % 360;
         float s = Math.clamp(S, 0f, 1f);
         float v = Math.clamp(B, 0f, 1f);
-        Function<Integer, Float> func = (n) -> {
-            float k = (n + h / 60) % 6;
-            return v - v * s * Math.max(0, Math.min(Math.min(k, 4 - k), 1));
-        };
-        float r = func.apply(5);
-        float g = func.apply(3);
-        float b = func.apply(1);
+
+        float rk = (5 + h / 60) % 6;
+        float r = v - v * s * Math.max(0, Math.min(Math.min(rk, 4 - rk), 1));
+        float gk = (3 + h / 60) % 6;
+        float g = v - v * s * Math.max(0, Math.min(Math.min(gk, 4 - gk), 1));
+        float bk = (1 + h / 60) % 6;
+        float b = v - v * s * Math.max(0, Math.min(Math.min(bk, 4 - bk), 1));
         return (int) (r * 255) << 16 | (int) (g * 255) << 8 | (int) (b * 255);
     }
 }
