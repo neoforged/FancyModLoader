@@ -5,8 +5,6 @@
 
 package net.neoforged.fml.earlydisplay.util;
 
-import java.util.function.Function;
-
 public class ColorConversion {
     private ColorConversion() {}
 
