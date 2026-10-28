@@ -5,6 +5,7 @@
 
 package net.neoforged.neoforgespi.language;
 
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import net.neoforged.neoforgespi.locating.IModFile;
@@ -33,4 +34,9 @@ public interface IModFileInfo {
     IModFile getFile();
 
     IConfigurable getConfig();
+
+    @Nullable
+    default URL getIssueURL() {
+        return null;
+    }
 }

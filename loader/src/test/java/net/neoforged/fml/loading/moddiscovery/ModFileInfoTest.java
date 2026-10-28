@@ -75,4 +75,34 @@ class ModFileInfoTest {
         var mod = info.getMods().getFirst();
         assertEquals("testmod", mod.getModId());
     }
+
+    @Test
+    void testIssueTrackerURL() {
+        config.set("issueTrackerURL", "https://github.com/neoforged/NeoForge/issues");
+
+        IModFileInfo info = new ModFileInfo(modFile, new NightConfigWrapper(config), callback);
+
+        assertThat(info.getIssueURL()).hasToString("https://github.com/neoforged/NeoForge/issues");
+    }
+
+    @Test
+    void testMissingIssueTrackerURL() {
+        IModFileInfo info = new ModFileInfo(modFile, new NightConfigWrapper(config), callback);
+
+        assertThat(info.getIssueURL()).isNull();
+    }
+
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+            ' '
+            https://example.invalid/issues
+            https://myurl.me/issues
+            """)
+    void testIgnoredIssueTrackerURL(String issueTrackerURL) {
+        config.set("issueTrackerURL", issueTrackerURL);
+
+        IModFileInfo info = new ModFileInfo(modFile, new NightConfigWrapper(config), callback);
+
+        assertThat(info.getIssueURL()).isNull();
+    }
 }
