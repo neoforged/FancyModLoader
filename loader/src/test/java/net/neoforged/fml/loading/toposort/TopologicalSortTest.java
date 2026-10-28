@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
  */
 @SuppressWarnings("UnstableApiUsage") // suppress warnings from @Beta
 class TopologicalSortTest {
-
     @Test
     void resultProperlySorted() {
         MutableGraph<String> graph = GraphBuilder.directed().build();
@@ -31,7 +30,7 @@ class TopologicalSortTest {
         graph.putEdge("a", "c");
         graph.putEdge("b", "c");
         assertThat(TopologicalSort.topologicalSort(graph, Comparator.naturalOrder()))
-            .isEqualTo(List.of("a", "b", "c"));
+                .isEqualTo(List.of("a", "b", "c"));
     }
 
     @Test
@@ -40,9 +39,9 @@ class TopologicalSortTest {
         graph.putEdge("a", "b");
         graph.putEdge("b", "a");
         assertThatThrownBy(() -> TopologicalSort.topologicalSort(graph, Comparator.naturalOrder()))
-            .isInstanceOf(CyclePresentException.class)
-            .hasMessageContaining("a")
-            .hasMessageContaining("b");
+                .isInstanceOf(CyclePresentException.class)
+                .hasMessageContaining("a")
+                .hasMessageContaining("b");
     }
 
     @Test
