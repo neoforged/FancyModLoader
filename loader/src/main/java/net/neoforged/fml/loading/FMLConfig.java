@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.UnmodifiableView;
 import org.slf4j.Logger;
@@ -75,8 +77,12 @@ public class FMLConfig {
         }
 
         @SuppressWarnings("unchecked")
-        private <T> T getConfigValue(CommentedConfig config) {
+        private <T> T getConfigValue(@Nullable CommentedConfig config) {
             return (T) this.entryFunction.apply(config != null ? config.get(this.entry) : this.defaultValue);
+        }
+
+        private <T> T getDefaultConfigValue() {
+            return getConfigValue(null);
         }
 
         private <T> void setConfigValue(CommentedConfig configData, T value) {
@@ -211,6 +217,26 @@ public class FMLConfig {
 
     public static <A> List<A> getListConfigValue(ConfigValue v) {
         return v.getConfigValue(INSTANCE.configData);
+    }
+
+    @ApiStatus.Internal
+    public static String getDefaultConfigValue(ConfigValue v) {
+        return v.getDefaultConfigValue();
+    }
+
+    @ApiStatus.Internal
+    public static boolean getDefaultBoolConfigValue(ConfigValue v) {
+        return v.getDefaultConfigValue();
+    }
+
+    @ApiStatus.Internal
+    public static int getDefaultIntConfigValue(ConfigValue v) {
+        return v.getDefaultConfigValue();
+    }
+
+    @ApiStatus.Internal
+    public static <A> List<A> getDefaultListConfigValue(ConfigValue v) {
+        return v.getDefaultConfigValue();
     }
 
     public static <T> void updateConfig(ConfigValue v, T value) {
