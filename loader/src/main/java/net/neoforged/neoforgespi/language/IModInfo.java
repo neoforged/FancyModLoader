@@ -56,6 +56,10 @@ public interface IModInfo {
 
     Optional<URL> getModURL();
 
+    default Optional<URL> getDonationURL() {
+        return Optional.empty();
+    }
+
     Optional<String> getLogoFile();
 
     boolean getLogoBlur();
