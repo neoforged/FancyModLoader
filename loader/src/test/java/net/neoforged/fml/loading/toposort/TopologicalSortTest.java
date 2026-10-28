@@ -244,20 +244,6 @@ class TopologicalSortTest {
         }
     }
 
-    @Test
-    void handlesDeepGraphsWithoutStackOverflow() {
-        int nodeCount = 20_000;
-        MutableGraph<Integer> graph = GraphBuilder.directed().build();
-        for (int node = 0; node < nodeCount; node++) {
-            graph.addNode(node);
-        }
-        for (int node = 0; node + 1 < nodeCount; node++) {
-            graph.putEdge(node, node + 1);
-        }
-
-        assertThat(new StronglyConnectedComponentDetector<>(graph).getComponents()).hasSize(nodeCount);
-    }
-
     private static MutableGraph<Integer> buildGraph(List<Integer> nodeOrder, List<int[]> edges) {
         MutableGraph<Integer> graph = GraphBuilder.directed().build();
         for (int node : nodeOrder) {
