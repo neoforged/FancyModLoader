@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -72,7 +73,7 @@ public class ModDirTransformerDiscoverer implements ITransformerDiscoveryService
             // Skip if the mods dir doesn't exist yet.
             return;
         }
-        try (var walk = Files.walk(modsDir, 1)) {
+        try (var walk = Files.walk(modsDir, 1, FileVisitOption.FOLLOW_LINKS)) {
             // Collect to list first, and then parallel stream it.
             // Before JDK 19, Files.walk streams are not parallelized efficiently for small numbers of elements.
             // See https://bugs.openjdk.org/browse/JDK-8280915.
