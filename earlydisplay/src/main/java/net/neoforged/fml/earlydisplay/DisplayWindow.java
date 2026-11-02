@@ -442,15 +442,20 @@ public class DisplayWindow implements ImmediateWindowProvider {
         int monitorX = x[0];
         int monitorY = y[0];
 //        glfwSetWindowSizeLimits(window, 854, 480, GLFW_DONT_CARE, GLFW_DONT_CARE);
-        if (this.maximized) {
-            glfwMaximizeWindow(window);
-        }
-
         glfwGetWindowSize(window, x, y);
         this.winWidth = x[0];
         this.winHeight = y[0];
 
         glfwSetWindowPos(window, (vidmode.width() - this.winWidth) / 2 + monitorX, (vidmode.height() - this.winHeight) / 2 + monitorY);
+
+        // Maximize only after centering: moving an already maximized window (as done above) pushes it off its work
+        // area on Windows, so the bottom of the window ended up behind the taskbar.
+        if (this.maximized) {
+            glfwMaximizeWindow(window);
+            glfwGetWindowSize(window, x, y);
+            this.winWidth = x[0];
+            this.winHeight = y[0];
+        }
 
         // Attempt setting the icon
         int[] channels = new int[1];
