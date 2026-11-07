@@ -145,5 +145,9 @@ public class UniqueModListBuilder {
     public record UniqueModListData(
             List<ModFile> modFiles,
             List<ModFile> discardedFiles,
-            Map<String, List<ModFile>> modFilesByFirstId) {}
+            Map<String, List<ModFile>> modFilesByFirstId) {
+        public UniqueModListData(List<ModFile> modFiles, Map<String, List<ModFile>> modFilesByFirstId) {
+            this(modFiles, List.of(), modFilesByFirstId);
+        }
+    }
 }
