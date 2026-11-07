@@ -81,6 +81,9 @@ public abstract class LauncherTest {
 
     protected TransformingClassLoader gameClassLoader;
 
+    // Closed after each test so extracted Jar-in-Jar files in the game directory can be deleted
+    private final List<SecureJar> launchedJars = new ArrayList<>();
+
     @BeforeAll
     static void ensureAddOpensForUnionFs() {
         // We abuse the ByteBuddy agent that Mockito also uses to open java.lang to UnionFS
@@ -133,6 +136,10 @@ public abstract class LauncherTest {
 
     @AfterEach
     void clearSystemProperties() throws Exception {
+        for (var jar : launchedJars) {
+            jar.close();
+        }
+        launchedJars.clear();
         gameClassLoader = null;
         installation.close();
         Launcher.INSTANCE = null;
@@ -240,6 +247,8 @@ public abstract class LauncherTest {
                 .collect(Collectors.toMap(
                         SecureJar::name,
                         Function.identity()));
+        launchedJars.addAll(pluginSecureJars.values());
+        launchedJars.addAll(gameSecureJars.values());
 
         // Wait for background scans of all mods to complete
         for (var modFile : loadingModList.getModFiles()) {

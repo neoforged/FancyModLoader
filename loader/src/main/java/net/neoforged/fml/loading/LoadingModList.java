@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.common.asm.enumextension.RuntimeEnumExtender;
@@ -30,6 +31,8 @@ import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.fml.loading.modscan.BackgroundScanHandler;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.locating.IModFile;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 /**
@@ -40,6 +43,8 @@ public class LoadingModList {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static LoadingModList INSTANCE;
     private final List<IModFileInfo> plugins;
+    // Library plugins have no IModFileInfo, so we keep their ModFiles to look them up by path
+    private final List<ModFile> pluginFiles;
     private final List<ModFileInfo> modFiles;
     private final List<ModInfo> sortedList;
     private final Map<ModInfo, List<ModInfo>> modDependencies;
@@ -50,6 +55,7 @@ public class LoadingModList {
         this.plugins = plugins.stream()
                 .map(ModFile::getModFileInfo)
                 .collect(Collectors.toList());
+        this.pluginFiles = List.copyOf(plugins);
         this.modFiles = modFiles.stream()
                 .map(ModFile::getModFileInfo)
                 .map(ModFileInfo.class::cast)
@@ -126,6 +132,14 @@ public class LoadingModList {
 
     public List<ModFileInfo> getModFiles() {
         return modFiles;
+    }
+
+    @Nullable
+    public IModFile findLoadedFile(Path filePath) {
+        return Stream.concat(pluginFiles.stream(), modFiles.stream().map(ModFileInfo::getFile))
+                .filter(file -> file.getFilePath().equals(filePath))
+                .findFirst()
+                .orElse(null);
     }
 
     public Path findResource(final String className) {

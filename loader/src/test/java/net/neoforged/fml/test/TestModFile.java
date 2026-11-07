@@ -13,6 +13,7 @@ import com.google.errorprone.annotations.CheckReturnValue;
 import cpw.mods.jarhandling.JarContentsBuilder;
 import cpw.mods.jarhandling.SecureJar;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
@@ -66,9 +67,13 @@ public class TestModFile extends ModFile implements AutoCloseable {
     }
 
     @Override
-    public void close() throws IOException {
-        getSecureJar().getRootPath().getFileSystem().close();
-        fileSystem.close();
+    public void close() {
+        super.close();
+        try {
+            fileSystem.close();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override

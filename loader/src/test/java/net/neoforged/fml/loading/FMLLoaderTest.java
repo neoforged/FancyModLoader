@@ -11,11 +11,21 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.electronwill.nightconfig.core.Config;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.nio.file.spi.FileSystemProvider;
+import java.security.MessageDigest;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.zip.ZipFile;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModWorkManager;
@@ -32,6 +42,22 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 class FMLLoaderTest extends LauncherTest {
     private static final ContainedVersion JIJ_V1 = new ContainedVersion(VersionRange.createFromVersion("1.0"), new DefaultArtifactVersion("1.0"));
+    private static final String NESTED_JAR_ENTRY = "META-INF/jarjar/nested-1.0.jar";
+
+    private byte[] buildModWithNestedMod() throws Exception {
+        var outerJar = installation.buildModJar("outer.jar")
+                .withMod("outer", "1.0")
+                .withJarInJar(new ContainedJarIdentifier("modgroup", "nested"), child -> child.withMod("nested", "1.0"))
+                .build();
+        try (var zip = new ZipFile(outerJar.toFile())) {
+            return zip.getInputStream(zip.getEntry(NESTED_JAR_ENTRY)).readAllBytes();
+        }
+    }
+
+    private Path jijCachePath(byte[] nestedBytes) throws Exception {
+        var checksum = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(nestedBytes));
+        return installation.getGameDir().resolve(".cache/jij").resolve(checksum).resolve("nested-1.0.jar").toAbsolutePath().normalize();
+    }
 
     @Nested
     class WithoutMods {
@@ -223,6 +249,95 @@ class FMLLoaderTest extends LauncherTest {
         }
 
         @Test
+        @SuppressWarnings("unchecked")
+        void testJarInJarExtractsToDiskAndClosesUnusedJars() throws Exception {
+            installation.setupProductionClient();
+            installation.setupModInModsFolder("superseded_mod", "2.0");
+
+            var range1To2 = new ContainedVersion(VersionRange.createFromVersionSpec("[1.0,2.0)"), new DefaultArtifactVersion("1.0"));
+            var range1To2V15 = new ContainedVersion(VersionRange.createFromVersionSpec("[1.0,2.0)"), new DefaultArtifactVersion("1.5"));
+            var range1To3 = new ContainedVersion(VersionRange.createFromVersionSpec("[1.0,3.0)"), new DefaultArtifactVersion("1.0"));
+
+            installation.buildModJar("outer1.jar")
+                    .withMod("outer1", "1.0")
+                    .withJarInJar(new ContainedJarIdentifier("modgroup", "shared_dep"), range1To2, child -> child.withMod("shared_dep", "1.0"))
+                    .withJarInJar(new ContainedJarIdentifier("modgroup", "superseded_mod"), range1To3, child -> child.withMod("superseded_mod", "1.0"))
+                    .build();
+
+            installation.buildModJar("outer2.jar")
+                    .withMod("outer2", "1.0")
+                    .withJarInJar(new ContainedJarIdentifier("modgroup", "shared_dep"), range1To2V15, child -> child.withMod("shared_dep", "1.5"))
+                    .build();
+
+            var unionProvider = FileSystemProvider.installedProviders().stream()
+                    .filter(p -> p.getScheme().equals("union"))
+                    .findFirst()
+                    .orElseThrow();
+            var unionFsField = unionProvider.getClass().getDeclaredField("fileSystems");
+            unionFsField.setAccessible(true);
+            var unionFsMap = (Map<String, FileSystem>) unionFsField.get(unionProvider);
+            Set<String> baselineUnionKeys = new HashSet<>(unionFsMap.keySet());
+
+            var jijProvider = FileSystemProvider.installedProviders().stream()
+                    .filter(p -> p.getScheme().equals("jij"))
+                    .findFirst()
+                    .orElseThrow();
+            var jijFsField = jijProvider.getClass().getSuperclass().getDeclaredField("fileSystems");
+            jijFsField.setAccessible(true);
+            var jijFsMap = (Map<String, FileSystem>) jijFsField.get(jijProvider);
+
+            var result = launchAndLoad("forgeclient");
+            assertThat(result.issues()).isEmpty();
+            assertEquals("1.5", result.loadedMods().get("shared_dep").versionString());
+            assertEquals("2.0", result.loadedMods().get("superseded_mod").versionString());
+
+            var primaryPath = result.loadedMods().get("shared_dep").getFile().getFilePath();
+            assertEquals("file", primaryPath.toUri().getScheme());
+            assertThat(primaryPath).startsWith(FMLPaths.JIJ_CACHEDIR.get());
+            assertThat(jijFsMap).isEmpty();
+
+            Set<String> newUnionKeys = new HashSet<>(unionFsMap.keySet());
+            newUnionKeys.removeAll(baselineUnionKeys);
+            assertThat(newUnionKeys).anyMatch(key -> key.contains("/.cache/jij/") && key.contains("/shared_dep-1.5.jar"));
+            assertThat(newUnionKeys).anyMatch(key -> key.contains("/mods/superseded_mod-2.0.jar"));
+            // shared_dep-1.0 lost version selection and the nested superseded_mod-1.0 lost to the copy in mods/, so both must be closed
+            assertThat(newUnionKeys)
+                    .filteredOn(key -> key.contains("/.cache/jij/"))
+                    .allMatch(key -> key.contains("/shared_dep-1.5.jar"));
+        }
+
+        @Test
+        void testExistingJarInJarCacheEntryIsReused() throws Exception {
+            installation.setupProductionClient();
+            var nestedBytes = buildModWithNestedMod();
+            var cachedPath = jijCachePath(nestedBytes);
+            Files.createDirectories(cachedPath.getParent());
+            Files.write(cachedPath, nestedBytes);
+            var lastModified = FileTime.from(Instant.parse("2020-01-01T00:00:00Z"));
+            Files.setLastModifiedTime(cachedPath, lastModified);
+
+            var result = launchAndLoad("forgeclient");
+            assertThat(result.issues()).isEmpty();
+            assertThat(result.loadedMods()).containsKey("nested");
+            assertEquals(cachedPath, result.loadedMods().get("nested").getFile().getFilePath());
+            assertEquals(lastModified, Files.getLastModifiedTime(cachedPath));
+        }
+
+        @Test
+        void testTruncatedJarInJarCacheEntryIsReplaced() throws Exception {
+            installation.setupProductionClient();
+            var nestedBytes = buildModWithNestedMod();
+            var cachedPath = jijCachePath(nestedBytes);
+            Files.createDirectories(cachedPath.getParent());
+            Files.write(cachedPath, Arrays.copyOf(nestedBytes, nestedBytes.length / 2));
+
+            var result = launchAndLoad("forgeclient");
+            assertThat(result.issues()).isEmpty();
+            assertThat(result.loadedMods()).containsKey("nested");
+            assertThat(Files.readAllBytes(cachedPath)).isEqualTo(nestedBytes);
+        }
+
+        @Test
         void testUserdevWithModProject() throws Exception {
             var additionalClasspath = installation.setupUserdevProject();
 
@@ -330,6 +445,20 @@ class FMLLoaderTest extends LauncherTest {
 
             var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
             assertThat(getTranslatedIssues(e.getIssues())).containsOnly(expectedError);
+        }
+
+        @Test
+        void testJarInJarExtractionFailureIsReportedAsIssue() throws Exception {
+            installation.setupProductionClient();
+            var nestedBytes = buildModWithNestedMod();
+            // We put a regular file where the jar's checksum directory belongs so that creating the directory fails
+            var checksumDir = jijCachePath(nestedBytes).getParent();
+            Files.createDirectories(checksumDir.getParent());
+            Files.writeString(checksumDir, "not a directory");
+
+            var e = assertThrows(ModLoadingException.class, () -> launchAndLoad("forgeclient"));
+            assertThat(getTranslatedIssues(e.getIssues()))
+                    .anyMatch(issue -> issue.startsWith("ERROR: A technical error occurred during mod loading: Failed to extract META-INF/jarjar/nested-1.0.jar"));
         }
 
         @Test
