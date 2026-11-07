@@ -21,7 +21,8 @@ public enum FMLPaths {
     GAMEDIR(),
     MODSDIR("mods"),
     CONFIGDIR("config"),
-    FMLCONFIG(false, CONFIGDIR, "fml.toml");
+    FMLCONFIG(false, CONFIGDIR, "fml.toml"),
+    JIJ_CACHEDIR(".cache/jij");
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private final Path relativePath;

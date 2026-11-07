@@ -5,19 +5,22 @@
 
 package net.neoforged.fml.loading.moddiscovery.locators;
 
-import com.google.common.collect.ImmutableMap;
 import com.mojang.logging.LogUtils;
 import cpw.mods.jarhandling.JarContents;
+import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +30,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.jarjar.selection.JarSelector;
 import net.neoforged.neoforgespi.language.IModInfo;
@@ -37,7 +41,6 @@ import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import net.neoforged.neoforgespi.locating.ModFileLoadingException;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 public class JarInJarDependencyLocator implements IDependencyLocator {
@@ -71,8 +74,6 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
             for (var modFile : createdModFiles.values()) {
                 if (!loadedDependencies.contains(modFile) && modFile instanceof ModFile mf) {
                     mf.close();
-                    // Each embedded jar has its own jij: file system, which holds another copy of the jar in memory
-                    closeQuietly(mf.getFilePath().getFileSystem());
                 }
             }
         }
@@ -86,34 +87,33 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
         return loadModFileFrom(file, path, pipeline, new HashMap<>());
     }
 
-    @SuppressWarnings("resource")
     private Optional<IModFile> loadModFileFrom(
             IModFile file,
             final Path path,
             IDiscoveryPipeline pipeline,
             Map<EmbeddedJarKey, IModFile> createdModFiles) {
         var innerModFile = createdModFiles.computeIfAbsent(new EmbeddedJarKey(file, path), ignored -> {
-            FileSystem zipFS = null;
-            JarContents jar = null;
+            var cachedPath = extractToCache(file, path);
             try {
-                var pathInModFile = file.findResource(path.toString());
-                var filePathUri = new URI("jij:" + (pathInModFile.toAbsolutePath().toUri().getRawSchemeSpecificPart())).normalize();
-                var outerFsArgs = ImmutableMap.of("packagePath", pathInModFile);
-                zipFS = FileSystems.newFileSystem(filePathUri, outerFsArgs);
-                jar = JarContents.of(zipFS.getPath("/"));
-                var providerResult = pipeline.readModFile(jar, ModFileDiscoveryAttributes.DEFAULT.withParent(file));
-                if (providerResult == null) {
-                    closeQuietly(jar);
-                    closeQuietly(zipFS);
+                var jar = JarContents.of(cachedPath);
+                try {
+                    var providerResult = pipeline.readModFile(jar, ModFileDiscoveryAttributes.DEFAULT.withParent(file));
+                    if (providerResult == null) {
+                        jar.close();
+                    }
+                    return providerResult;
+                } catch (Throwable t) {
+                    try {
+                        jar.close();
+                    } catch (IOException closeEx) {
+                        t.addSuppressed(closeEx);
+                    }
+                    throw t;
                 }
-                return providerResult;
             } catch (Exception e) {
-                closeQuietly(jar);
-                closeQuietly(zipFS);
                 LOGGER.error("Failed to load mod file {} from {}", path, file.getFileName());
                 final RuntimeException exception = new ModFileLoadingException("Failed to load mod file " + file.getFileName());
                 exception.initCause(e);
-
                 throw exception;
             }
         });
@@ -121,14 +121,57 @@ public class JarInJarDependencyLocator implements IDependencyLocator {
         return Optional.ofNullable(innerModFile);
     }
 
-    private static void closeQuietly(@Nullable AutoCloseable closeable) {
-        if (closeable == null) {
-            return;
-        }
+    private static Path extractToCache(IModFile file, Path path) {
+        var cacheDir = FMLPaths.JIJ_CACHEDIR.get();
         try {
-            closeable.close();
-        } catch (Exception e) {
-            LOGGER.error("Failed to close {}", closeable, e);
+            Files.createDirectories(cacheDir);
+            var tempFile = Files.createTempFile(cacheDir, "_jij", ".tmp");
+            try {
+                String checksum = extractEmbeddedJarFile(file, path, tempFile);
+                // We must keep the original filename, since JarMetadata may derive the module name and version from it
+                var cachedPath = cacheDir.resolve(checksum).resolve(path.getFileName().toString());
+                moveIntoCache(tempFile, cachedPath);
+                return cachedPath;
+            } finally {
+                try {
+                    Files.deleteIfExists(tempFile);
+                } catch (IOException e) {
+                    LOGGER.error("Failed to remove temporary file {}", tempFile, e);
+                }
+            }
+        } catch (IOException e) {
+            throw new ModLoadingException(ModLoadingIssue.error("fml.modloadingissue.technical_error", "Failed to extract " + path + " into " + cacheDir)
+                    .withAffectedModFile(file)
+                    .withCause(e));
+        }
+    }
+
+    private static String extractEmbeddedJarFile(IModFile file, Path path, Path destination) throws IOException {
+        var pathInModFile = file.findResource(path.toString());
+        try (var inStream = Files.newInputStream(pathInModFile); var outStream = Files.newOutputStream(destination)) {
+            MessageDigest digest;
+            try {
+                digest = MessageDigest.getInstance("SHA-256");
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException("Missing default JCA algorithm SHA-256.", e);
+            }
+
+            var digestOut = new DigestOutputStream(outStream, digest);
+            inStream.transferTo(digestOut);
+
+            return HexFormat.of().formatHex(digest.digest());
+        }
+    }
+
+    private static void moveIntoCache(Path tempFile, Path cachedPath) throws IOException {
+        Files.createDirectories(cachedPath.getParent());
+        try {
+            Files.move(tempFile, cachedPath);
+        } catch (FileAlreadyExistsException e) {
+            // Another game instance sharing this directory might have the existing file open, so we only replace it if it looks truncated
+            if (Files.size(cachedPath) != Files.size(tempFile)) {
+                Files.move(tempFile, cachedPath, StandardCopyOption.REPLACE_EXISTING);
+            }
         }
     }
 
