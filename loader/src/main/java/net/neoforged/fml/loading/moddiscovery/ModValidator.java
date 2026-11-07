@@ -58,6 +58,7 @@ public class ModValidator {
             if (!modFile.identifyMods()) {
                 LOGGER.warn(LogMarkers.SCAN, "File {} has been ignored - it is invalid", modFile.getFilePath());
                 iterator.remove();
+                modFile.close();
             }
         }
     }
@@ -83,10 +84,19 @@ public class ModValidator {
             } catch (ModLoadingException e) {
                 issues.addAll(e.getIssues());
                 iterator.remove();
+                closeUnlessGameLibrary(modFile);
             } catch (Exception e) {
                 issues.add(ModLoadingIssue.error("fml.modloadingissue.technical_error").withAffectedModFile(modFile).withCause(e));
                 iterator.remove();
+                closeUnlessGameLibrary(modFile);
             }
+        }
+    }
+
+    private static void closeUnlessGameLibrary(ModFile modFile) {
+        // We still put every game library on the game layer in getModResources, including ones removed from candidateMods here
+        if (modFile.getType() != IModFile.Type.GAMELIBRARY) {
+            modFile.close();
         }
     }
 

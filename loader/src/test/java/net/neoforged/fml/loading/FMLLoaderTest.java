@@ -11,7 +11,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.electronwill.nightconfig.core.Config;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -220,6 +222,45 @@ class FMLLoaderTest extends LauncherTest {
             var loadedMod = result.loadedMods().get("testmod1");
             assertNotNull(loadedMod);
             assertEquals("12.0", loadedMod.versionString());
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void testJarInJarClosesUnusedJars() throws Exception {
+            installation.setupProductionClient();
+            installation.setupModInModsFolder("superseded_mod", "2.0");
+
+            var range1To2 = new ContainedVersion(VersionRange.createFromVersionSpec("[1.0,2.0)"), new DefaultArtifactVersion("1.0"));
+            var range1To2V15 = new ContainedVersion(VersionRange.createFromVersionSpec("[1.0,2.0)"), new DefaultArtifactVersion("1.5"));
+            var range1To3 = new ContainedVersion(VersionRange.createFromVersionSpec("[1.0,3.0)"), new DefaultArtifactVersion("1.0"));
+
+            installation.buildModJar("outer1.jar")
+                    .withMod("outer1", "1.0")
+                    .withJarInJar(new ContainedJarIdentifier("modgroup", "shared_dep"), range1To2, child -> child.withMod("shared_dep", "1.0"))
+                    .withJarInJar(new ContainedJarIdentifier("modgroup", "superseded_mod"), range1To3, child -> child.withMod("superseded_mod", "1.0"))
+                    .build();
+
+            installation.buildModJar("outer2.jar")
+                    .withMod("outer2", "1.0")
+                    .withJarInJar(new ContainedJarIdentifier("modgroup", "shared_dep"), range1To2V15, child -> child.withMod("shared_dep", "1.5"))
+                    .build();
+
+            var jijProvider = FileSystemProvider.installedProviders().stream()
+                    .filter(p -> p.getScheme().equals("jij"))
+                    .findFirst()
+                    .orElseThrow();
+            var jijFsField = jijProvider.getClass().getSuperclass().getDeclaredField("fileSystems");
+            jijFsField.setAccessible(true);
+            var jijFsMap = (Map<String, FileSystem>) jijFsField.get(jijProvider);
+
+            var result = launchAndLoad("forgeclient");
+            assertThat(result.issues()).isEmpty();
+            assertEquals("1.5", result.loadedMods().get("shared_dep").versionString());
+            assertEquals("2.0", result.loadedMods().get("superseded_mod").versionString());
+
+            assertThat(jijFsMap.keySet()).anyMatch(key -> key.contains("/shared_dep-1.5.jar"));
+            // shared_dep-1.0 lost version selection and the nested superseded_mod-1.0 lost to the copy in mods/, so both must be closed
+            assertThat(jijFsMap.keySet()).noneMatch(key -> key.contains("/shared_dep-1.0.jar") || key.contains("/superseded_mod-1.0.jar"));
         }
 
         @Test
