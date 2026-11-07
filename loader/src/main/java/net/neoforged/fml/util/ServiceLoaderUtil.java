@@ -18,11 +18,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.ServiceConfigurationError;
+import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.fml.loading.LogMarkers;
 import net.neoforged.jarjar.nio.pathfs.PathFileSystem;
 import net.neoforged.neoforgespi.ILaunchContext;
+import net.neoforged.neoforgespi.locating.IModFile;
 import net.neoforged.neoforgespi.locating.IOrderedProvider;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,7 +110,21 @@ public final class ServiceLoaderUtil {
             }
             return unwrapPath(context, unionFileSystem.getPrimaryPath()) + " > " + relativizePath(context, path);
         }
+        var parentFile = findParentOfLoadedFile(path);
+        if (parentFile != null) {
+            return unwrapPath(context, parentFile.getFilePath()) + " > " + path.getFileName();
+        }
         return relativizePath(context, path);
+    }
+
+    @Nullable
+    private static IModFile findParentOfLoadedFile(Path path) {
+        var loadingModList = LoadingModList.get();
+        if (loadingModList == null) {
+            return null;
+        }
+        var loadedFile = loadingModList.findLoadedFile(path);
+        return loadedFile != null ? loadedFile.getDiscoveryAttributes().parent() : null;
     }
 
     private static String relativizePath(ILaunchContext context, Path path) {
