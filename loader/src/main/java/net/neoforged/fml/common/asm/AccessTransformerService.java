@@ -43,6 +43,6 @@ public class AccessTransformerService implements ClassProcessor {
 
     @Override
     public boolean handlesClass(SelectionContext context) {
-        return !context.empty() && engine.getTargets().contains(context.type());
+        return !context.empty() && engine.containsClassTarget(context.type());
     }
 }
