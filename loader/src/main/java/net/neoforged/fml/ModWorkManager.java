@@ -11,6 +11,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
+import java.util.concurrent.atomic.AtomicInteger;
 import net.neoforged.fml.loading.FMLConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,14 +41,15 @@ public class ModWorkManager {
         if (parallelThreadPool == null) {
             int loadingThreadCount = FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.MAX_THREADS);
             LOGGER.debug(LOADING, "Using {} threads for parallel mod-loading", loadingThreadCount);
-            parallelThreadPool = new ForkJoinPool(loadingThreadCount, ModWorkManager::newForkJoinWorkerThread, null, false);
+            AtomicInteger threadIndex = new AtomicInteger();
+            parallelThreadPool = new ForkJoinPool(loadingThreadCount, pool -> newForkJoinWorkerThread(pool, threadIndex.getAndIncrement()), null, false);
         }
         return parallelThreadPool;
     }
 
-    private static ForkJoinWorkerThread newForkJoinWorkerThread(ForkJoinPool pool) {
+    private static ForkJoinWorkerThread newForkJoinWorkerThread(ForkJoinPool pool, int threadIndex) {
         ForkJoinWorkerThread thread = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
-        thread.setName("modloading-worker-" + thread.getPoolIndex());
+        thread.setName("modloading-worker-" + threadIndex);
         // The default sets it to the SystemClassloader, so copy the current one.
         thread.setContextClassLoader(Thread.currentThread().getContextClassLoader());
         return thread;
