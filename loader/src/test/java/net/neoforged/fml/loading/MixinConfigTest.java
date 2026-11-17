@@ -123,7 +123,7 @@ public class MixinConfigTest extends LauncherTest implements MixinTestHelper {
     void testRequestedMixinBehaviorIsValid() throws Exception {
         installation.setupProductionClient();
         installation.buildModJar("mixin-test.jar")
-                .withTestmodModsToml(modsToml -> modsToml.addMixinConfig("test.mixins.json", "0.17.4"))
+                .withTestmodModsToml(modsToml -> modsToml.addMixinConfig("test.mixins.json", "0.17.5"))
                 .addTextFile("test.mixins.json", "{}")
                 .build();
 
