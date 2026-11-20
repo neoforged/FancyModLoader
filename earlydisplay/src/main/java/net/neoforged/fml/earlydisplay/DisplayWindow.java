@@ -330,6 +330,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
      * As long as we can verify that, then GL (and things like OS X) have no complaints with doing this.
      */
     public void initWindow() {
+        // Keep in sync with com.mojang.blaze3d.systems.RenderSystem#initBackendSystem()
+
         // Initialize SDL with a time guard, in case something goes wrong
         long sdlInitBegin = System.nanoTime();
         SDLInit.SDL_SetAppMetadataProperty(SDLInit.SDL_PROP_APP_METADATA_NAME_STRING, "Minecraft");
@@ -343,7 +345,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
         SDLHints.SDL_SetHint(SDLHints.SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE, "0");
         SDLHints.SDL_SetHint(SDLHints.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
         SDLHints.SDL_SetHint(SDLHints.SDL_HINT_ENABLE_SCREEN_KEYBOARD, "0");
-        SDLHints.SDL_SetHint(SDLHints.SDL_HINT_IME_IMPLEMENTED_UI, "composition, candidates");
+        SDLHints.SDL_SetHint(SDLHints.SDL_HINT_IME_IMPLEMENTED_UI, "composition");
         if (!SDLInit.SDL_Init(SDLInit.SDL_INIT_VIDEO)) {
             String error = SDLError.SDL_GetError();
             crashElegantly("We are unable to initialize the graphics system.\nSDL_Init failed.\n");
