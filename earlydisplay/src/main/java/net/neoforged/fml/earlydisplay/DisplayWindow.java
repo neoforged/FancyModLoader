@@ -343,7 +343,8 @@ public class DisplayWindow implements ImmediateWindowProvider {
         SDLHints.SDL_SetHint(SDLHints.SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE, "0");
         SDLHints.SDL_SetHint(SDLHints.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
         SDLHints.SDL_SetHint(SDLHints.SDL_HINT_ENABLE_SCREEN_KEYBOARD, "0");
-        SDLHints.SDL_SetHint(SDLHints.SDL_HINT_IME_IMPLEMENTED_UI, "composition, candidates");
+        // Keep in sync with com.mojang.blaze3d.systems.RenderSystem#initBackendSystem()
+        SDLHints.SDL_SetHint(SDLHints.SDL_HINT_IME_IMPLEMENTED_UI, "composition");
         if (!SDLInit.SDL_Init(SDLInit.SDL_INIT_VIDEO)) {
             String error = SDLError.SDL_GetError();
             crashElegantly("We are unable to initialize the graphics system.\nSDL_Init failed.\n");
