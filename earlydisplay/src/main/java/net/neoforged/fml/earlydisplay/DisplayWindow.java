@@ -331,7 +331,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
      */
     public void initWindow() {
         // Keep in sync with com.mojang.blaze3d.systems.RenderSystem#initBackendSystem()
-        
+
         // Initialize SDL with a time guard, in case something goes wrong
         long sdlInitBegin = System.nanoTime();
         SDLInit.SDL_SetAppMetadataProperty(SDLInit.SDL_PROP_APP_METADATA_NAME_STRING, "Minecraft");
