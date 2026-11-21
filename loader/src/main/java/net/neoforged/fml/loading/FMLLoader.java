@@ -593,7 +593,7 @@ public final class FMLLoader implements AutoCloseable {
         // obfuscated in production.
         // The new heuristic is to load a Minecraft class that we know is patched by NF,
         // and check for net/neoforged/fml in the bytecode to verify this.
-        try (var resource = classLoader.getResourceAsStream("net/minecraft/SharedConstants.class")) {
+        try (var resource = classLoader.getResourceAsStream("net/minecraft/util/DevUtil.class")) {
             if (resource == null) {
                 return true; // Likely an error but missing classes will be reported by the game locator more competently
             }
